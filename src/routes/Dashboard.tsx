@@ -1,0 +1,352 @@
+import {
+  CheckCircle,
+  AlertCircle,
+  Flame,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  DollarSign,
+  Dumbbell,
+  Target,
+  ArrowRight
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { format, isToday, parseISO } from 'date-fns';
+import { ResponsiveContainer, LineChart, Line } from 'recharts';
+import { cn } from '../lib/utils';
+import { useHealthMetrics } from '../hooks/useHealthData';
+import { useOverdueTasks } from '../hooks/useTasks';
+import { useWeeklyAdherence, useHabits } from '../hooks/useHabits';
+import { useCategoryBreakdown } from '../hooks/useFinance';
+import { useUpcomingEvents } from '../hooks/useCalendar';
+import { useProjects } from '../hooks/useProjects';
+import { habitLogDB } from '../db/database';
+import { useUIStore } from '../stores/useUIStore';
+import { PrayerWidget } from '../components/PrayerWidget';
+
+export default function Dashboard() {
+  const { metrics, hasData: hasHealthData } = useHealthMetrics();
+  const { data: overdueTasks = [] } = useOverdueTasks();
+  const { adherence, habits } = useWeeklyAdherence();
+  const { totalIncome, totalExpenses, balance } = useCategoryBreakdown();
+  const upcomingEvents = useUpcomingEvents(7);
+  const { data: projects = [] } = useProjects();
+  const { data: allHabits = [] } = useHabits();
+  const { privacyMode } = useUIStore();
+
+  // Get today's habit completion
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const todayLogs = habitLogDB.getByDate(todayStr);
+  const completedToday = todayLogs.filter(l => l.completed).length;
+
+  // Active projects count
+  const activeProjects = projects.filter(p => p.status === 'Active').length;
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground">
+          {format(today, 'EEEE, MMMM d, yyyy')}
+        </p>
+      </div>
+
+      {/* Prayer Times Widget */}
+      <PrayerWidget />
+
+      {/* Primary Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Weight */}
+        <Link to="/health" className="group">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Dumbbell size={14} className="text-muted-foreground" />
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Weight</h3>
+                </div>
+                <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                  {hasHealthData ? `${metrics.weight.current} kg` : '-'}
+                </div>
+              </div>
+              {metrics.weight.trend !== 0 && (
+                <div className={cn("text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1",
+                  metrics.weight.trend < 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                )}>
+                  {metrics.weight.trend < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                  {Math.abs(metrics.weight.trend)}%
+                </div>
+              )}
+            </div>
+            {metrics.weight.history.length > 0 && (
+              <div className="h-8 w-full mt-2 opacity-50">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metrics.weight.history.map((val, i) => ({ i, val }))}>
+                    <Line
+                      type="monotone"
+                      dataKey="val"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      dot={false}
+                      className={metrics.weight.trend < 0 ? "text-green-500" : "text-red-500"}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Muscle Mass */}
+        <Link to="/health" className="group">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp size={14} className="text-muted-foreground" />
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Muscle</h3>
+                </div>
+                <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                  {hasHealthData ? `${metrics.smm.current} kg` : '-'}
+                </div>
+              </div>
+              {metrics.smm.trend !== 0 && (
+                <div className={cn("text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1",
+                  metrics.smm.trend > 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                )}>
+                  {metrics.smm.trend > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  {Math.abs(metrics.smm.trend)}%
+                </div>
+              )}
+            </div>
+            {metrics.smm.history.length > 0 && (
+              <div className="h-8 w-full mt-2 opacity-50">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={metrics.smm.history.map((val, i) => ({ i, val }))}>
+                    <Line
+                      type="monotone"
+                      dataKey="val"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      dot={false}
+                      className={metrics.smm.trend > 0 ? "text-green-500" : "text-red-500"}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+        </Link>
+
+        {/* Weekly Adherence */}
+        <Link to="/habits" className="group">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+            <div>
+              <div className="flex items-center gap-2">
+                <Target size={14} className="text-muted-foreground" />
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Habits</h3>
+              </div>
+              <div className="mt-2 text-2xl font-bold tabular-nums">{adherence}%</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {completedToday}/{allHabits.length} today
+              </p>
+            </div>
+            <div className="w-full bg-secondary h-2 rounded-full mt-3 overflow-hidden">
+              <div
+                className={cn("h-full rounded-full transition-all duration-500",
+                  adherence >= 80 ? "bg-green-500" : adherence >= 60 ? "bg-amber-500" : "bg-red-500"
+                )}
+                style={{ width: `${adherence}%` }}
+              />
+            </div>
+          </div>
+        </Link>
+
+        {/* Monthly Balance */}
+        <Link to="/finance" className="group">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+            <div>
+              <div className="flex items-center gap-2">
+                <DollarSign size={14} className="text-muted-foreground" />
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Balance</h3>
+              </div>
+              <div className={cn(
+                "mt-2 text-2xl font-bold tabular-nums",
+                balance >= 0 ? "text-green-500" : "text-red-500",
+                privacyMode && "blur-sm"
+              )}>
+                ${Math.abs(balance).toLocaleString()}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {format(today, 'MMMM')}
+              </p>
+            </div>
+          </div>
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Overdue Tasks */}
+        <section className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="text-amber-500" size={18} />
+              <h2 className="font-semibold">Overdue Tasks</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">{overdueTasks.length} items</span>
+          </div>
+          <div className="p-4">
+            {overdueTasks.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <CheckCircle className="mx-auto mb-2 opacity-50" size={24} />
+                <p className="text-sm">No overdue tasks. Great job!</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {overdueTasks.slice(0, 5).map(task => (
+                  <div key={task.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                    <span className="font-medium text-sm truncate">{task.title}</span>
+                    <span className="text-xs text-red-400 font-mono flex-shrink-0 ml-2">
+                      {format(new Date(task.due_date!), 'MMM d')}
+                    </span>
+                  </div>
+                ))}
+                {overdueTasks.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center pt-2">
+                    +{overdueTasks.length - 5} more
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Upcoming Events */}
+        <section className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-4 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="text-blue-500" size={18} />
+              <h2 className="font-semibold">Upcoming Events</h2>
+            </div>
+            <Link to="/calendar" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+              View all <ArrowRight size={12} />
+            </Link>
+          </div>
+          <div className="p-4">
+            {upcomingEvents.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <Calendar className="mx-auto mb-2 opacity-50" size={24} />
+                <p className="text-sm">No upcoming events</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {upcomingEvents.slice(0, 5).map(event => (
+                  <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                    <div
+                      className="w-2 h-8 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: event.color }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{event.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {isToday(parseISO(event.start_time))
+                          ? `Today, ${format(parseISO(event.start_time), 'h:mm a')}`
+                          : format(parseISO(event.start_time), 'EEE, MMM d · h:mm a')
+                        }
+                      </p>
+                    </div>
+                    {event.type === 'Shift' && (
+                      <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded">
+                        Shift
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
+
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
+          <p className="text-2xl font-bold mt-1">{activeProjects}</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Body Fat</p>
+          <p className={cn(
+            "text-2xl font-bold mt-1 tabular-nums",
+            metrics.pbf.current < 18 ? "text-green-500" : metrics.pbf.current > 25 ? "text-red-500" : "text-amber-500",
+            privacyMode && "blur-sm"
+          )}>
+            {hasHealthData ? `${metrics.pbf.current}%` : '-'}
+          </p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">BMR</p>
+          <p className={cn("text-2xl font-bold mt-1 tabular-nums", privacyMode && "blur-sm")}>
+            {hasHealthData ? `${metrics.bmr.current}` : '-'}
+          </p>
+          <p className="text-xs text-muted-foreground">kcal/day</p>
+        </div>
+        <div className="rounded-xl border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Expenses</p>
+          <p className={cn("text-2xl font-bold mt-1 text-red-500 tabular-nums", privacyMode && "blur-sm")}>
+            ${totalExpenses.toLocaleString()}
+          </p>
+          <p className="text-xs text-muted-foreground">{format(today, 'MMMM')}</p>
+        </div>
+      </div>
+
+      {/* Today's Habits Quick View */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Flame className="text-amber-500" size={18} />
+            <h2 className="font-semibold">Today's Habits</h2>
+          </div>
+          <Link to="/habits" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
+            View all <ArrowRight size={12} />
+          </Link>
+        </div>
+        <div className="p-4">
+          {allHabits.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <Flame className="mx-auto mb-2 opacity-50" size={24} />
+              <p className="text-sm">No habits set up yet</p>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {allHabits.map(habit => {
+                const isCompleted = todayLogs.some(l => l.habit_id === habit.id && l.completed);
+                return (
+                  <Link
+                    key={habit.id}
+                    to="/habits"
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
+                      isCompleted
+                        ? "bg-green-500/20 text-green-400"
+                        : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+                    )}
+                  >
+                    <div
+                      className="w-2 h-2 rounded-full"
+                      style={{ backgroundColor: habit.color }}
+                    />
+                    <span className="text-sm font-medium">{habit.title}</span>
+                    {isCompleted && <CheckCircle size={14} />}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}

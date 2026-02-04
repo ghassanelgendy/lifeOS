@@ -1,0 +1,96 @@
+import { Moon, Sun, Sunrise, Sunset, MapPin, Loader2, MoonStar } from 'lucide-react';
+import { usePrayerTimes } from '../hooks/usePrayerTimes';
+import { cn } from '../lib/utils';
+import { format } from 'date-fns';
+
+export function PrayerWidget() {
+    const { times, location, error, nextPrayer, timeToNext } = usePrayerTimes();
+
+    if (error) {
+        return (
+            <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-center text-muted-foreground text-sm min-h-[150px]">
+                <span>{error}</span>
+            </div>
+        );
+    }
+
+    if (!location || times.length === 0) {
+        return (
+            <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center justify-center text-muted-foreground text-sm min-h-[150px] gap-2">
+                <Loader2 className="animate-spin" size={24} />
+                <span>Locating...</span>
+            </div>
+        );
+    }
+
+    const getIcon = (name: string) => {
+        switch (name) {
+            case 'Fajr': return MoonStar;
+            case 'Sunrise': return Sunrise;
+            case 'Dhuhr': return Sun;
+            case 'Asr': return Sun;
+            case 'Maghrib': return Sunset;
+            case 'Isha': return Moon;
+            default: return Sun;
+        }
+    };
+
+    return (
+        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+                <div>
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                        Prayer Times
+                    </h3>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                        <MapPin size={10} />
+                        <span>{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</span>
+                    </div>
+                </div>
+
+                {nextPrayer && (
+                    <div className="text-right ml-4">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Next: {nextPrayer}</div>
+                        <div className="text-xl font-bold font-mono text-primary animate-in fade-in">
+                            {timeToNext}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Grid */}
+            <div className="grid grid-cols-3 gap-2">
+                {times.map((prayer) => {
+                    const Icon = getIcon(prayer.name);
+                    return (
+                        <div
+                            key={prayer.name}
+                            className={cn(
+                                "flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-300",
+                                prayer.isNext
+                                    ? "bg-primary/10 border-primary shadow-sm scale-105"
+                                    : "bg-secondary/30 border-transparent hover:bg-secondary/50"
+                            )}
+                        >
+                            <Icon size={18} className={cn(
+                                "mb-1",
+                                prayer.isNext ? "text-primary" : "text-muted-foreground"
+                            )} />
+                            <span className={cn(
+                                "text-xs font-medium",
+                                prayer.isNext ? "text-foreground" : "text-muted-foreground"
+                            )}>{prayer.name}</span>
+                            <span className={cn(
+                                "text-sm font-bold mt-0.5",
+                                prayer.isNext ? "text-primary" : "text-foreground"
+                            )}>
+                                {format(prayer.time, 'h:mm a')}
+                            </span>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
+}
