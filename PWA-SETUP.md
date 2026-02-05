@@ -59,3 +59,61 @@ If you’re running the app locally:
 - **Safe area insets** – layout respects the notch and home indicator when running as a standalone PWA.
 
 After adding to Home Screen, opening the icon launches lifeOS in standalone mode and uses the service worker for caching and updates.
+
+---
+
+## Task reminder push notifications (iOS)
+
+When a task has a **due date only**, you get a push at **12:00 AM** (midnight) on that day. When it has **date + time**, you get a push at that exact time. The notification text is: **Ready to "[task name]"**. On iOS you get quick actions: **Mark as done** and **Postpone 1 Hour**.
+
+### 1. Generate VAPID keys
+
+Run once (Node.js):
+
+```bash
+npx web-push generate-vapid-keys
+```
+
+You’ll get a **public** and **private** key. Keep the private key secret.
+
+### 2. Configure the app and Supabase
+
+- **App (client):** In your project `.env`, add:
+  ```env
+  VITE_VAPID_PUBLIC_KEY=your_public_key_here
+  ```
+- **Supabase (server):** In Supabase Dashboard → Project Settings → Edge Functions → Secrets, add:
+  - `VAPID_PUBLIC_KEY` = same public key
+  - `VAPID_PRIVATE_KEY` = your private key
+
+### 3. Push subscriptions table
+
+Run the SQL in `supabase_push_subscriptions.sql` in the Supabase SQL Editor so the app can store push subscriptions and the Edge Function can read them.
+
+### 4. Deploy the Edge Function
+
+From the project root:
+
+```bash
+supabase functions deploy send-task-reminders
+supabase secrets set VAPID_PUBLIC_KEY=your_public_key
+supabase secrets set VAPID_PRIVATE_KEY=your_private_key
+```
+
+### 5. Call the function every minute (cron)
+
+The function must run every minute so tasks fire at the right time. Options:
+
+- **cron-job.org:** Create a job that runs every minute and sends a GET or POST request to:
+  `https://<your-project-ref>.supabase.co/functions/v1/send-task-reminders`
+  Add the header: `Authorization: Bearer <your-anon-or-service-role-key>` (or use the “Invoke” URL with the key in the dashboard).
+- **Supabase Dashboard:** You can invoke the function manually for testing; for production use an external cron or Supabase’s scheduled invocations if available.
+
+### 6. Enable reminders in the app
+
+1. Open lifeOS (ideally from the Home Screen so it’s a PWA).
+2. Go to **Settings**.
+3. Under **Notifications**, tap **Enable** for “Task reminders”.
+4. Allow notifications when the browser prompts.
+
+After this, due tasks will trigger a push at midnight (date-only) or at their set time, with **Mark as done** and **Postpone 1 Hour** on iOS.

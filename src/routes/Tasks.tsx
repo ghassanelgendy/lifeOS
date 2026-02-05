@@ -15,7 +15,9 @@ import {
   Trash2,
   Sparkles,
 } from 'lucide-react';
-import { format, isToday, isTomorrow, isPast, addDays } from 'date-fns';
+import { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { format, isToday, isTomorrow, isPast, addDays, addHours } from 'date-fns';
 import { cn } from '../lib/utils';
 import {
   useTasks,
@@ -93,6 +95,55 @@ export default function Tasks() {
   const [showCompleted, setShowCompleted] = useState(false);
 
   const quickAddRef = useRef<HTMLInputElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const notificationHandled = useRef<string | null>(null);
+
+  // Handle notification quick actions (Mark as done / Postpone 1 Hour)
+  useEffect(() => {
+    const taskId = searchParams.get('taskId');
+    const action = searchParams.get('notification');
+    if (!taskId || !action || (action !== 'done' && action !== 'postpone')) return;
+    const key = `${taskId}:${action}`;
+    if (notificationHandled.current === key) return;
+    notificationHandled.current = key;
+
+    const clearParams = () => {
+      notificationHandled.current = null;
+      setSearchParams((p) => {
+        p.delete('taskId');
+        p.delete('notification');
+        return p;
+      });
+    };
+
+    if (action === 'done') {
+      toggleTask.mutate(taskId, { onSettled: clearParams });
+      return;
+    }
+
+    if (action === 'postpone') {
+      const task = allTasks.find((t) => t.id === taskId);
+      if (!task) {
+        clearParams();
+        return;
+      }
+      const dueDate = task.due_date ? new Date(task.due_date) : new Date();
+      const next = addHours(
+        task.due_time ? new Date(`${task.due_date?.split('T')[0]}T${task.due_time}:00`) : dueDate,
+        1
+      );
+      updateTask.mutate(
+        {
+          id: taskId,
+          data: {
+            due_date: next.toISOString().split('T')[0],
+            due_time: format(next, 'HH:mm'),
+          },
+        },
+        { onSettled: clearParams }
+      );
+    }
+  }, [searchParams, setSearchParams, toggleTask, updateTask, allTasks]);
 
   // Form state for editing
   const [editForm, setEditForm] = useState<Partial<CreateInput<Task>>>({});

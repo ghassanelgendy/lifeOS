@@ -18,6 +18,7 @@ export function usePrayerTimes() {
     useEffect(() => {
         if (!navigator.geolocation) {
             setError('Geolocation is not supported by your browser');
+            setLocation({ lat: 30.0444, lng: 31.2357 }); // Fallback: Cairo, Egypt
             return;
         }
 
@@ -31,9 +32,8 @@ export function usePrayerTimes() {
             (err) => {
                 setError('Unable to retrieve location');
                 console.error(err);
-                // Default to Mecca coordinates if location fails? Or just show error.
-                // Let's default to Mecca for a nice fallback experience
-                setLocation({ lat: 21.4225, lng: 39.8262 });
+                // Fallback to Cairo, Egypt when location is not available
+                setLocation({ lat: 30.0444, lng: 31.2357 });
             }
         );
     }, []);

@@ -10,7 +10,8 @@ import {
   Info,
   RefreshCw,
   Smartphone,
-  Check
+  Check,
+  Bell,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
@@ -18,11 +19,14 @@ import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button } from '../components/ui';
 import { NAV_ITEMS } from '../components/AppShell';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 export default function SettingsPage() {
   const { privacyMode, togglePrivacyMode, theme, setTheme, mobileNavItems, setMobileNavItems } = useUIStore();
+  const push = usePushNotifications();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [pushStatus, setPushStatus] = useState<string | null>(null);
 
   // Export data
   const handleExport = () => {
@@ -151,6 +155,62 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Task reminders (push notifications) */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Notifications</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bell size={20} />
+              <div>
+                <p className="font-medium">Task reminders</p>
+                <p className="text-sm text-muted-foreground">
+                  Get notified when a task is due (date-only at 12:00 AM, or at set time). Add lifeOS to Home Screen for iOS.
+                </p>
+              </div>
+            </div>
+            {push.supported && push.vapidConfigured ? (
+              <div className="flex items-center gap-2">
+                {push.isEnabled ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => push.disable().then(() => setPushStatus('Reminders off')).catch(() => setPushStatus('Failed to disable'))}
+                    disabled={push.isDisabling}
+                  >
+                    {push.isDisabling ? '…' : 'Disable'}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() =>
+                      push.enable().then(() => setPushStatus('Reminders on')).catch((e) => setPushStatus(e?.message ?? 'Failed to enable'))
+                    }
+                    disabled={push.isEnabling}
+                  >
+                    {push.isEnabling ? '…' : 'Enable'}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {!push.supported ? 'Not supported in this browser.' : !push.vapidConfigured ? 'Server not configured (VAPID key).' : ''}
+              </p>
+            )}
+          </div>
+          {pushStatus && (
+            <p
+              className={cn(
+                'text-sm px-3 py-2 rounded-lg',
+                pushStatus.includes('Failed') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+              )}
+            >
+              {pushStatus}
+            </p>
+          )}
         </div>
       </section>
 
