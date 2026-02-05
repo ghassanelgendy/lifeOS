@@ -61,7 +61,7 @@ export function usePrayerTimes() {
 
         const interval = setInterval(() => {
             const now = new Date();
-            const current = prayerTimes.currentPrayer();
+            // const current = prayerTimes.currentPrayer();
             const next = prayerTimes.nextPrayer();
 
             let nextTime = prayerTimes.timeForPrayer(next);

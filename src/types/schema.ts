@@ -10,8 +10,16 @@ export interface InBodyScan {
   visceral_fat_level: number;
   bmr_kcal: number;
   bmi: number;
-  body_fat_mass: number;
   note?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WellnessLog {
+  id: string;
+  date: string; // ISO-8601 date (YYYY-MM-DD)
+  sleep_hours: number;
+  screen_time_minutes: number;
   created_at: string;
   updated_at: string;
 }
