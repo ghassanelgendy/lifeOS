@@ -111,7 +111,13 @@ export function AppShell() {
         </div>
 
         {/* Mobile Bottom Tab Bar */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/80 backdrop-blur-lg pb-safe-area-bottom z-50">
+        <nav 
+          className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
+          style={{
+            paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
+            height: 'calc(64px + env(safe-area-inset-bottom))'
+          }}
+        >
           <div className="flex justify-around items-center h-16">
             {mobileNavigation.map((item) => (
               <NavLink
@@ -119,12 +125,12 @@ export function AppShell() {
                 to={item.href}
                 end={item.href === '/'}
                 className={({ isActive }) => cn(
-                  "flex flex-col items-center justify-center w-full h-full hover:text-foreground transition-colors",
+                  "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150",
                   isActive ? "text-foreground" : "text-muted-foreground"
                 )}
               >
-                <item.icon size={22} />
-                <span className="text-[10px] mt-1">{item.label}</span>
+                <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
               </NavLink>
             ))}
           </div>
