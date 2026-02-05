@@ -11,7 +11,7 @@ import {
   CheckSquare
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useMatch } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
@@ -33,6 +33,25 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Finance', icon: Wallet, href: '/finance' },
   { label: 'Settings', icon: Settings, href: '/settings' },
 ];
+
+function MobileNavLink({ item }: { item: NavItem }) {
+  const match = useMatch({ path: item.href, end: item.href === '/' });
+  const isActive = !!match;
+  const Icon = item.icon;
+  return (
+    <NavLink
+      to={item.href}
+      end={item.href === '/'}
+      className={({ isActive: active }) => cn(
+        "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150",
+        active ? "text-foreground" : "text-muted-foreground"
+      )}
+    >
+      <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+      <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
+    </NavLink>
+  );
+}
 
 export function AppShell() {
   const { isSidebarCollapsed, toggleSidebar, mobileNavItems } = useUIStore();
@@ -120,18 +139,7 @@ export function AppShell() {
         >
           <div className="flex justify-around items-center h-16">
             {mobileNavigation.map((item) => (
-              <NavLink
-                key={item.href}
-                to={item.href}
-                end={item.href === '/'}
-                className={({ isActive }) => cn(
-                  "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150",
-                  isActive ? "text-foreground" : "text-muted-foreground"
-                )}
-              >
-                <item.icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
-              </NavLink>
+              <MobileNavLink key={item.href} item={item} />
             ))}
           </div>
         </nav>
