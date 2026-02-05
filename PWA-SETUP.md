@@ -90,9 +90,9 @@ You’ll get a **public** and **private** key. Keep the private key secret.
 
 Run the SQL in `supabase_push_subscriptions.sql` in the Supabase SQL Editor so the app can store push subscriptions and the Edge Function can read them.
 
-### 4. Deploy the Edge Function
+### 4. Deploy the Edge Function (Supabase, not Vercel)
 
-From the project root:
+Run this from your machine (the function runs on Supabase, not on Vercel):
 
 ```bash
 supabase functions deploy send-task-reminders
@@ -102,18 +102,32 @@ supabase secrets set VAPID_PRIVATE_KEY=your_private_key
 
 ### 5. Call the function every minute (cron)
 
-The function must run every minute so tasks fire at the right time. Options:
+The function must run every minute so tasks fire at the right time.
 
-- **cron-job.org:** Create a job that runs every minute and sends a GET or POST request to:
+**If you host on Vercel:** The repo includes a Vercel Cron that does this for you. In Vercel:
+
+1. **Environment variables** (Project → Settings → Environment Variables) — add for **Production** (and Preview if you want):
+   - `VITE_SUPABASE_URL` — your Supabase project URL (e.g. `https://xxx.supabase.co`)
+   - `VITE_SUPABASE_ANON_KEY` or `VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY` — for the frontend
+   - `VITE_VAPID_PUBLIC_KEY` — same public key as in step 2 (so “Task reminders” works in the app)
+   - `SUPABASE_SERVICE_ROLE_KEY` — from Supabase Dashboard → Project Settings → API → `service_role` (secret). Used by the cron API to call the Edge Function.
+
+2. **Redeploy** after saving env vars. The cron is defined in `vercel.json` and runs every minute, calling `/api/cron/send-task-reminders`, which invokes your Supabase Edge Function.
+
+3. **(Optional)** Add `CRON_SECRET` (e.g. a long random string) in Vercel; then in the same project add it as a secret so only Vercel’s cron can call the endpoint.
+
+**If you don’t use Vercel:**
+
+- **cron-job.org:** Create a job that runs every minute (`* * * * *`) and sends a POST request to:
   `https://<your-project-ref>.supabase.co/functions/v1/send-task-reminders`
-  Add the header: `Authorization: Bearer <your-anon-or-service-role-key>` (or use the “Invoke” URL with the key in the dashboard).
-- **Supabase Dashboard:** You can invoke the function manually for testing; for production use an external cron or Supabase’s scheduled invocations if available.
+  with header: `Authorization: Bearer <your-service-role-key>`.
+- **Supabase Dashboard:** Invoke the function manually for testing.
 
 ### 6. Enable reminders in the app
 
-1. Open lifeOS (ideally from the Home Screen so it’s a PWA).
-2. Go to **Settings**.
-3. Under **Notifications**, tap **Enable** for “Task reminders”.
+1. Open lifeOS at your **Vercel URL** (e.g. `https://your-app.vercel.app`).
+2. Add it to the Home Screen (Safari → Share → Add to Home Screen) so it works as a PWA.
+3. In the app, go to **Settings** → **Notifications** → tap **Enable** for “Task reminders”.
 4. Allow notifications when the browser prompts.
 
 After this, due tasks will trigger a push at midnight (date-only) or at their set time, with **Mark as done** and **Postpone 1 Hour** on iOS.

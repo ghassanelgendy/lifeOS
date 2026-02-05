@@ -1,6 +1,7 @@
 // Send Web Push task reminders for tasks due this minute (UTC).
 // Call this every minute via cron (e.g. cron-job.org) or Supabase pg_cron.
 // Requires: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY in Supabase secrets.
+/// <reference path="../deno.d.ts" />
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import webpush from 'npm:web-push@3.6.7';
@@ -16,13 +17,16 @@ if (!vapidPublic || !vapidPrivate) {
 
 webpush.setVapidDetails('mailto:lifeos@example.com', vapidPublic!, vapidPrivate!);
 
-const supabase = createClient(supabaseUrl, serviceRoleKey);
+const supabase = createClient(supabaseUrl, serviceRoleKey) as SupabaseClient;
 
 function getDueMoment(dueDate: string, dueTime: string | null): Date {
   const datePart = dueDate.split('T')[0];
   const timePart = dueTime ?? '00:00';
   return new Date(`${datePart}T${timePart}:00.000Z`);
 }
+
+type TaskRow = { id: string; title: string; due_date: string; due_time: string | null };
+type SubRow = { endpoint: string; p256dh: string; auth: string };
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -35,24 +39,30 @@ Deno.serve(async (req: Request) => {
     windowStart.setUTCSeconds(0, 0);
     const windowEnd = new Date(windowStart.getTime() + 60_000);
 
-    const { data: tasks, error: tasksError } = await supabase
+    const tasksRes = await supabase
       .from('tasks')
       .select('id, title, due_date, due_time')
       .eq('is_completed', false)
       .not('due_date', 'is', null)
       .is('parent_id', null);
+    const tasksResult: { data: TaskRow[] | null; error: { message: string } | null } = tasksRes as unknown as { data: TaskRow[] | null; error: { message: string } | null };
+    const { data: tasks, error: tasksError } = tasksResult;
 
     if (tasksError) {
       console.error(tasksError);
       return new Response(JSON.stringify({ error: tasksError.message }), { status: 500 });
     }
 
-    const dueNow = (tasks ?? []).filter((t) => {
+    const dueNow = (tasks ?? []).filter((t: TaskRow) => {
       const due = getDueMoment(t.due_date, t.due_time ?? null);
       return due >= windowStart && due < windowEnd;
     });
 
-    const { data: subs, error: subsError } = await supabase.from('push_subscriptions').select('endpoint, p256dh, auth');
+    const subsRes = await supabase
+      .from('push_subscriptions')
+      .select('endpoint, p256dh, auth');
+    const subsResult: { data: SubRow[] | null; error: { message: string } | null } = subsRes as unknown as { data: SubRow[] | null; error: { message: string } | null };
+    const { data: subs, error: subsError } = subsResult;
     if (subsError || !subs?.length) {
       return new Response(JSON.stringify({ sent: 0, tasks: dueNow.length, subscriptions: 0 }), {
         headers: { 'Content-Type': 'application/json' },
