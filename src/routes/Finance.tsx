@@ -1,27 +1,18 @@
 import { useState } from 'react';
 import {
   Plus,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  PieChart,
+  ArrowUpRight,
+  ArrowDownRight,
   Edit2,
   Trash2,
-  ArrowUpRight,
-  ArrowDownRight
+  DollarSign
 } from 'lucide-react';
 import {
   PieChart as RechartsPie,
   Pie,
   Cell,
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend
+  Tooltip
 } from 'recharts';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -30,12 +21,11 @@ import {
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
-  useCategoryBreakdown,
-  useFinancialSummary
+  useCategoryBreakdown
 } from '../hooks/useFinance';
 import { useUIStore } from '../stores/useUIStore';
-import { Modal, Button, Input, Select, TextArea } from '../components/ui';
-import type { Transaction, CreateInput, TransactionType, TransactionCategory } from '../types/schema';
+import { Modal, Button, Input, Select } from '../components/ui';
+import type { Transaction, CreateInput, TransactionCategory } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
   { value: 'food', label: 'Food & Dining' },
@@ -72,7 +62,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function Finance() {
   const { data: transactions = [], isLoading } = useTransactions();
-  const { data: summary } = useFinancialSummary();
   const { expensesByCategory, totalExpenses, totalIncome, balance } = useCategoryBreakdown();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
@@ -230,7 +219,7 @@ export default function Finance() {
                     outerRadius={100}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
                     {pieChartData.map((entry, index) => (
@@ -238,7 +227,7 @@ export default function Finance() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => [`$${value.toLocaleString()}`, 'Amount']}
+                    formatter={(value: number | undefined) => [`$${(value || 0).toLocaleString()}`, 'Amount']}
                     contentStyle={{
                       backgroundColor: '#18181b',
                       border: '1px solid #27272a',

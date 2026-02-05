@@ -26,15 +26,20 @@ import {
 } from 'date-fns';
 import { cn } from '../lib/utils';
 import {
-  useCalendarEvents,
   useCreateCalendarEvent,
   useUpdateCalendarEvent,
   useDeleteCalendarEvent,
+
   useExpandedCalendarEvents
 } from '../hooks/useCalendar';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, RecurrencePattern } from '../types/schema';
 import { useTasks } from '../hooks/useTasks';
+
+type ExtendedCalendarEvent = CalendarEvent & {
+  isRecurringInstance?: boolean;
+  originalId?: string;
+};
 
 const EVENT_TYPE_COLORS: Record<EventType, string> = {
   Event: '#3b82f6',     // Blue
@@ -50,7 +55,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [view, setView] = useState<'month' | 'week'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
 
   // Get calendar range based on view
   const monthStart = startOfMonth(currentDate);
@@ -118,7 +123,7 @@ export default function CalendarPage() {
   };
 
   // Modal handlers
-  const handleOpenModal = (event?: CalendarEvent, date?: Date) => {
+  const handleOpenModal = (event?: ExtendedCalendarEvent, date?: Date) => {
     if (event) {
       setEditingEvent(event);
       setFormData({
@@ -183,7 +188,7 @@ export default function CalendarPage() {
     }
   };
 
-  const handleDelete = (event: CalendarEvent) => {
+  const handleDelete = (event: ExtendedCalendarEvent) => {
     if (confirm('Delete this event?')) {
       const eventId = event.originalId || event.id;
       deleteEvent.mutate(eventId);

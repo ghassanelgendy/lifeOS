@@ -44,7 +44,7 @@ export async function seedDatabase(): Promise<void> {
   ]).select();
 
   const thesisProject = projects?.find(p => p.title === 'Supply Chain Optimization');
-  const awsProject = projects?.find(p => p.title === 'AWS Solutions Architect');
+  // const awsProject = projects?.find(p => p.title === 'AWS Solutions Architect');
 
   // ========================
   // Task Lists
@@ -56,9 +56,7 @@ export async function seedDatabase(): Promise<void> {
     { name: 'Study', color: '#a855f7', icon: 'GraduationCap', sort_order: 3, is_default: false },
   ]).select();
 
-  const inboxList = lists?.find(l => l.name === 'Inbox');
   const personalList = lists?.find(l => l.name === 'Personal');
-  const workList = lists?.find(l => l.name === 'Work');
   const studyList = lists?.find(l => l.name === 'Study');
 
   // ========================
@@ -74,7 +72,6 @@ export async function seedDatabase(): Promise<void> {
   ]).select();
 
   const urgentTag = tags?.find(t => t.name === 'Urgent');
-  const importantTag = tags?.find(t => t.name === 'Important');
   const reviewTag = tags?.find(t => t.name === 'Review');
 
   // ========================

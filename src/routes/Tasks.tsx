@@ -1,26 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import {
   Plus,
   Calendar as CalendarIcon,
   Check,
   ChevronRight,
   ChevronDown,
-  Inbox,
   Star,
-  Clock,
   CalendarDays,
   CheckCircle2,
-  MoreHorizontal,
   Flag,
   Tag as TagIcon,
   Repeat,
   ListTodo,
   Trash2,
-  Edit2,
-  ArrowRightCircle,
   Sparkles,
-  X,
-  GripVertical
 } from 'lucide-react';
 import { format, isToday, isTomorrow, isPast, addDays } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -33,7 +26,6 @@ import {
   useWeekTasks,
   useCompletedTasks,
   useOverdueTasks,
-  useTasksByList,
   useCreateTask,
   useUpdateTask,
   useToggleTask,
@@ -43,9 +35,9 @@ import {
   useCreateSubtask,
   useConvertTaskToHabit,
 } from '../hooks/useTasks';
-import { taskDB, tagDB } from '../db/database';
+import { taskDB } from '../db/database';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
-import type { Task, TaskList, Tag, CreateInput, TaskPriority, TaskRecurrence } from '../types/schema';
+import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },

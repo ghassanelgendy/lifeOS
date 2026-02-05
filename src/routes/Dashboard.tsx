@@ -27,8 +27,8 @@ import { PrayerWidget } from '../components/PrayerWidget';
 export default function Dashboard() {
   const { metrics, hasData: hasHealthData } = useHealthMetrics();
   const { data: overdueTasks = [] } = useOverdueTasks();
-  const { adherence, habits } = useWeeklyAdherence();
-  const { totalIncome, totalExpenses, balance } = useCategoryBreakdown();
+  const { adherence } = useWeeklyAdherence();
+  const { totalExpenses, balance } = useCategoryBreakdown();
   const upcomingEvents = useUpcomingEvents(7);
   const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();

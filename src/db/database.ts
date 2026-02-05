@@ -100,8 +100,8 @@ export const inBodyDB = {
     const scan: InBodyScan = {
       ...input,
       id: uuidv4(),
-      weight_kg: round1(input.weight_kg),
-      muscle_mass_kg: round1(input.muscle_mass_kg),
+      weight: round1(input.weight),
+      skeletal_muscle_mass: round1(input.skeletal_muscle_mass),
       body_fat_percent: round1(input.body_fat_percent),
       created_at: now(),
       updated_at: now(),
@@ -119,8 +119,9 @@ export const inBodyDB = {
     const updated: InBodyScan = {
       ...db.inbody_scans[index],
       ...input,
-      weight_kg: input.weight_kg !== undefined ? round1(input.weight_kg) : db.inbody_scans[index].weight_kg,
-      muscle_mass_kg: input.muscle_mass_kg !== undefined ? round1(input.muscle_mass_kg) : db.inbody_scans[index].muscle_mass_kg,
+      ...input,
+      weight: input.weight !== undefined ? round1(input.weight) : db.inbody_scans[index].weight,
+      skeletal_muscle_mass: input.skeletal_muscle_mass !== undefined ? round1(input.skeletal_muscle_mass) : db.inbody_scans[index].skeletal_muscle_mass,
       body_fat_percent: input.body_fat_percent !== undefined ? round1(input.body_fat_percent) : db.inbody_scans[index].body_fat_percent,
       updated_at: now(),
     };
@@ -665,7 +666,7 @@ export const taskDB = {
       frequency: task.recurrence === 'daily' ? 'Daily' : 'Weekly',
       target_count: 1,
       color: '#22c55e',
-      is_active: true,
+      is_archived: false,
     });
 
     // Delete the task
@@ -724,7 +725,7 @@ export const taskDB = {
 // ========================
 export const habitDB = {
   getAll(): Habit[] {
-    return loadDB().habits.filter((h) => h.is_active).sort((a, b) =>
+    return loadDB().habits.filter((h) => !h.is_archived).sort((a, b) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   },
@@ -738,7 +739,7 @@ export const habitDB = {
     const habit: Habit = {
       ...input,
       id: uuidv4(),
-      is_active: true,
+      is_archived: false,
       created_at: now(),
       updated_at: now(),
     };
@@ -763,8 +764,8 @@ export const habitDB = {
   },
 
   delete(id: string): boolean {
-    // Soft delete - just mark as inactive
-    return habitDB.update(id, { is_active: false }) !== null;
+    // Soft delete - just mark as archived
+    return habitDB.update(id, { is_archived: true }) !== null;
   },
 };
 

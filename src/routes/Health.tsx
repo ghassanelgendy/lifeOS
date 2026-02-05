@@ -1,23 +1,23 @@
 import { useState } from 'react';
 import { Plus, TrendingUp, TrendingDown, Minus, Edit2, Trash2 } from 'lucide-react';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
 } from 'recharts';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
-import { 
-  useInBodyScans, 
-  useHealthMetrics, 
-  useCreateInBodyScan, 
-  useUpdateInBodyScan, 
-  useDeleteInBodyScan 
+import {
+  useInBodyScans,
+  useHealthMetrics,
+  useCreateInBodyScan,
+  useUpdateInBodyScan,
+  useDeleteInBodyScan
 } from '../hooks/useHealthData';
 import { Modal, Button, Input } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
@@ -35,8 +35,8 @@ export default function Health() {
   const [editingScan, setEditingScan] = useState<InBodyScan | null>(null);
   const [formData, setFormData] = useState<Partial<CreateInput<InBodyScan>>>({
     date: new Date().toISOString().split('T')[0],
-    weight_kg: 0,
-    muscle_mass_kg: 0,
+    weight: 0,
+    skeletal_muscle_mass: 0,
     body_fat_percent: 0,
     visceral_fat_level: 0,
     bmr_kcal: 0,
@@ -48,8 +48,8 @@ export default function Health() {
     .reverse()
     .map((scan) => ({
       date: format(new Date(scan.date), 'MMM'),
-      weight: scan.weight_kg,
-      muscle: scan.muscle_mass_kg,
+      weight: scan.weight,
+      muscle: scan.skeletal_muscle_mass,
       fat: scan.body_fat_percent,
     }));
 
@@ -58,8 +58,8 @@ export default function Health() {
       setEditingScan(scan);
       setFormData({
         date: scan.date.split('T')[0],
-        weight_kg: scan.weight_kg,
-        muscle_mass_kg: scan.muscle_mass_kg,
+        weight: scan.weight,
+        skeletal_muscle_mass: scan.skeletal_muscle_mass,
         body_fat_percent: scan.body_fat_percent,
         visceral_fat_level: scan.visceral_fat_level,
         bmr_kcal: scan.bmr_kcal,
@@ -69,8 +69,8 @@ export default function Health() {
       setEditingScan(null);
       setFormData({
         date: new Date().toISOString().split('T')[0],
-        weight_kg: 0,
-        muscle_mass_kg: 0,
+        weight: 0,
+        skeletal_muscle_mass: 0,
         body_fat_percent: 0,
         visceral_fat_level: 0,
         bmr_kcal: 0,
@@ -81,7 +81,7 @@ export default function Health() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (editingScan) {
       updateMutation.mutate({
         id: editingScan.id,
@@ -151,7 +151,7 @@ export default function Health() {
               <div className="flex items-center gap-1 mt-2 text-xs">
                 <TrendIndicator value={metric.positive ? metric.trend : -metric.trend} />
                 <span className={cn(
-                  metric.trend > 0 
+                  metric.trend > 0
                     ? (metric.positive ? "text-green-500" : "text-red-500")
                     : (metric.positive ? "text-red-500" : "text-green-500")
                 )}>
@@ -173,39 +173,39 @@ export default function Health() {
               <XAxis dataKey="date" stroke="#71717a" fontSize={12} />
               <YAxis yAxisId="left" stroke="#71717a" fontSize={12} />
               <YAxis yAxisId="right" orientation="right" stroke="#71717a" fontSize={12} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: '#18181b', 
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: '#18181b',
                   border: '1px solid #27272a',
                   borderRadius: '8px',
                   fontSize: '12px'
-                }} 
+                }}
               />
               <Legend />
-              <Line 
+              <Line
                 yAxisId="left"
-                type="monotone" 
-                dataKey="weight" 
+                type="monotone"
+                dataKey="weight"
                 name="Weight (kg)"
-                stroke="#3b82f6" 
+                stroke="#3b82f6"
                 strokeWidth={2}
                 dot={{ fill: '#3b82f6', strokeWidth: 2 }}
               />
-              <Line 
+              <Line
                 yAxisId="left"
-                type="monotone" 
-                dataKey="muscle" 
+                type="monotone"
+                dataKey="muscle"
                 name="Muscle Mass (kg)"
-                stroke="#22c55e" 
+                stroke="#22c55e"
                 strokeWidth={2}
                 dot={{ fill: '#22c55e', strokeWidth: 2 }}
               />
-              <Line 
+              <Line
                 yAxisId="right"
-                type="monotone" 
-                dataKey="fat" 
+                type="monotone"
+                dataKey="fat"
                 name="Body Fat (%)"
-                stroke="#ef4444" 
+                stroke="#ef4444"
                 strokeWidth={2}
                 dot={{ fill: '#ef4444', strokeWidth: 2 }}
               />
@@ -241,20 +241,20 @@ export default function Health() {
                       {format(new Date(scan.date), 'MMM d, yyyy')}
                     </td>
                     <td className={cn("px-4 py-3 text-right tabular-nums", privacyMode && "blur-sm")}>
-                      {scan.weight_kg} kg
+                      {scan.weight} kg
                       {prevScan && (
-                        <DiffBadge current={scan.weight_kg} previous={prevScan.weight_kg} />
+                        <DiffBadge current={scan.weight} previous={prevScan.weight} />
                       )}
                     </td>
                     <td className={cn("px-4 py-3 text-right tabular-nums", privacyMode && "blur-sm")}>
-                      {scan.muscle_mass_kg} kg
+                      {scan.skeletal_muscle_mass} kg
                       {prevScan && (
-                        <DiffBadge current={scan.muscle_mass_kg} previous={prevScan.muscle_mass_kg} positive />
+                        <DiffBadge current={scan.skeletal_muscle_mass} previous={prevScan.skeletal_muscle_mass} positive />
                       )}
                     </td>
                     <td className={cn("px-4 py-3 text-right tabular-nums", privacyMode && "blur-sm",
-                      scan.body_fat_percent < 15 ? "text-green-500" : 
-                      scan.body_fat_percent > 25 ? "text-red-500" : "text-amber-500"
+                      scan.body_fat_percent < 15 ? "text-green-500" :
+                        scan.body_fat_percent > 25 ? "text-red-500" : "text-amber-500"
                     )}>
                       {scan.body_fat_percent}%
                       {prevScan && (
@@ -310,16 +310,16 @@ export default function Health() {
               label="Weight (kg)"
               type="number"
               step="0.1"
-              value={formData.weight_kg}
-              onChange={(e) => setFormData({ ...formData, weight_kg: parseFloat(e.target.value) || 0 })}
+              value={formData.weight}
+              onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
               required
             />
             <Input
               label="Muscle Mass (kg)"
               type="number"
               step="0.1"
-              value={formData.muscle_mass_kg}
-              onChange={(e) => setFormData({ ...formData, muscle_mass_kg: parseFloat(e.target.value) || 0 })}
+              value={formData.skeletal_muscle_mass}
+              onChange={(e) => setFormData({ ...formData, skeletal_muscle_mass: parseFloat(e.target.value) || 0 })}
               required
             />
           </div>

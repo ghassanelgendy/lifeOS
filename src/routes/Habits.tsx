@@ -1,9 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import {
   Plus,
   Flame,
   Check,
-  X,
   Edit2,
   Trash2,
   Calendar,
@@ -14,7 +13,6 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  isSameDay,
   isToday,
   subDays
 } from 'date-fns';

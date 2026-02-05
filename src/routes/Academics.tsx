@@ -1,33 +1,30 @@
 import { useState } from 'react';
-import { 
-  Plus, 
-  BookOpen, 
-  Award, 
-  Code, 
-  Edit2, 
-  Trash2, 
+import {
+  Plus,
+  BookOpen,
+  Award,
+  Code,
+  Edit2,
+  Trash2,
   ExternalLink,
   ChevronDown,
   ChevronRight,
   FileText,
   CheckCircle,
-  Clock,
   Pause
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
-import { 
-  useProjects, 
-  useCreateProject, 
-  useUpdateProject, 
+import {
+  useProjects,
+  useCreateProject,
+  useUpdateProject,
   useDeleteProject,
   usePapers,
-  usePapersByProject,
   useCreatePaper,
   useUpdatePaper,
   useDeletePaper
 } from '../hooks/useProjects';
-import { useTasksByProject } from '../hooks/useTasks';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import type { Project, AcademicPaper, CreateInput, ProjectType, ProjectStatus, PaperMethodology, PaperStatus } from '../types/schema';
 
@@ -333,9 +330,9 @@ export default function Academics() {
                               <tr key={paper.id} className="hover:bg-secondary/20 transition-colors">
                                 <td className="px-3 py-2 font-medium max-w-[200px] truncate">
                                   {paper.url ? (
-                                    <a 
-                                      href={paper.url} 
-                                      target="_blank" 
+                                    <a
+                                      href={paper.url}
+                                      target="_blank"
                                       rel="noopener noreferrer"
                                       className="flex items-center gap-1 hover:text-blue-400"
                                       onClick={(e) => e.stopPropagation()}

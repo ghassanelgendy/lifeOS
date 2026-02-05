@@ -31,10 +31,10 @@ export function InBodyTable({ data, className }: InBodyTableProps) {
                   {new Date(record.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
                 </td>
                 <td className={cn("px-4 py-3 font-mono text-zinc-300 tabular-nums", privacyMode && "blur-sm")}>
-                  {record.weight_kg}
+                  {record.weight}
                 </td>
                 <td className={cn("px-4 py-3 font-mono text-zinc-300 tabular-nums", privacyMode && "blur-sm")}>
-                  {record.muscle_mass_kg}
+                  {record.skeletal_muscle_mass}
                 </td>
                 <td className={cn(
                   "px-4 py-3 font-mono font-medium tabular-nums",
