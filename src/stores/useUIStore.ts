@@ -8,6 +8,18 @@ const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/habits', '/calendar', '/settings'];
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 
+// Accent color themes (used for primary, ring, accents)
+export const ACCENT_THEMES = ['zinc', 'blue', 'green', 'violet', 'rose', 'amber'] as const;
+export type AccentTheme = (typeof ACCENT_THEMES)[number];
+export const ACCENT_THEME_LABELS: Record<AccentTheme, string> = {
+  zinc: 'Zinc',
+  blue: 'Blue',
+  green: 'Green',
+  violet: 'Violet',
+  rose: 'Rose',
+  amber: 'Amber',
+};
+
 interface UIState {
   // Sidebar
   isSidebarCollapsed: boolean;
@@ -27,6 +39,8 @@ interface UIState {
   // Theme (dark by default per PRD)
   theme: 'dark' | 'light';
   setTheme: (theme: 'dark' | 'light') => void;
+  accentTheme: AccentTheme;
+  setAccentTheme: (accent: AccentTheme) => void;
 
   // Mobile Navigation Customization
   mobileNavItems: string[];
@@ -62,6 +76,8 @@ export const useUIStore = create<UIState>()(
       // Theme
       theme: 'dark',
       setTheme: (theme) => set({ theme }),
+      accentTheme: 'zinc',
+      setAccentTheme: (accentTheme) => set({ accentTheme }),
 
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,
@@ -96,6 +112,7 @@ export const useUIStore = create<UIState>()(
         isSidebarCollapsed: state.isSidebarCollapsed,
         privacyMode: state.privacyMode,
         theme: state.theme,
+        accentTheme: state.accentTheme,
         mobileNavItems: state.mobileNavItems,
         dashboardWidgetOrder: state.dashboardWidgetOrder,
         dashboardWidgetVisible: state.dashboardWidgetVisible,

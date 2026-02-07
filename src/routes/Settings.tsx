@@ -19,8 +19,7 @@ import {
   User,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useUIStore } from '../stores/useUIStore';
-import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
+import { useUIStore, DASHBOARD_WIDGET_IDS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
 import { useAuth } from '../contexts/AuthContext';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
@@ -44,6 +43,8 @@ export default function SettingsPage() {
     togglePrivacyMode,
     theme,
     setTheme,
+    accentTheme,
+    setAccentTheme,
     mobileNavItems,
     setMobileNavItems,
     dashboardWidgetOrder,
@@ -201,6 +202,35 @@ export default function SettingsPage() {
               >
                 <Moon size={16} />
               </button>
+            </div>
+          </div>
+
+          {/* Accent color */}
+          <div className="pt-2 border-t border-border">
+            <p className="font-medium mb-2">Accent color</p>
+            <p className="text-sm text-muted-foreground mb-3">Choose a color for buttons, links, and focus rings</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {ACCENT_THEMES.map((accent) => {
+                const isSelected = accentTheme === accent;
+                const swatchColor = accent === 'zinc' ? 'hsl(240 4% 46%)' : accent === 'blue' ? 'hsl(217 91% 60%)' : accent === 'green' ? 'hsl(142 71% 45%)' : accent === 'violet' ? 'hsl(258 90% 66%)' : accent === 'rose' ? 'hsl(350 89% 60%)' : 'hsl(38 92% 50%)';
+                return (
+                  <button
+                    key={accent}
+                    type="button"
+                    onClick={() => setAccentTheme(accent as AccentTheme)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-2.5 rounded-lg border-2 transition-colors",
+                      isSelected ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full shrink-0 border-2 border-white/20 shadow-inner"
+                      style={{ backgroundColor: swatchColor }}
+                    />
+                    <span className="text-xs font-medium">{ACCENT_THEME_LABELS[accent as AccentTheme]}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

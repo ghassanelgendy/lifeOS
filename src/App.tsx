@@ -6,6 +6,7 @@ import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useUIStore } from './stores/useUIStore';
 import { AppShell } from './components/AppShell';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
@@ -48,6 +49,19 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function ThemeSync() {
+  const theme = useUIStore((s) => s.theme);
+  const accentTheme = useUIStore((s) => s.accentTheme);
+  useEffect(() => {
+    document.documentElement.classList.remove('light', 'dark');
+    document.documentElement.classList.add(theme);
+    document.documentElement.setAttribute('data-accent', accentTheme);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
+  }, [theme, accentTheme]);
+  return null;
+}
+
 function AppInner() {
   useEffect(() => {
     if (isOnline()) seedDatabase();
@@ -68,8 +82,10 @@ function AppInner() {
   }, []);
 
   return (
-    <BrowserRouter>
-      <Routes>
+    <>
+      <ThemeSync />
+      <BrowserRouter>
+        <Routes>
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
         <Route path="*" element={<ProtectedRoute />}>
@@ -86,6 +102,7 @@ function AppInner() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </>
   );
 }
 
