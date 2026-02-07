@@ -21,11 +21,11 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             'bg-destructive text-destructive-foreground hover:bg-destructive/90': variant === 'destructive',
             'hover:bg-secondary hover:text-secondary-foreground': variant === 'ghost',
             'border border-border bg-transparent hover:bg-secondary': variant === 'outline',
-            // Sizes
-            'h-8 px-3 text-xs': size === 'sm',
-            'h-10 px-4 text-sm': size === 'md',
-            'h-12 px-6 text-base': size === 'lg',
-            'h-10 w-10 p-0': size === 'icon',
+            // Sizes – touch-friendly min 44px on mobile (via min-h)
+            'min-h-[44px] h-8 px-3 text-xs md:min-h-0': size === 'sm',
+            'min-h-[44px] h-10 px-4 text-sm md:min-h-0': size === 'md',
+            'min-h-[48px] h-12 px-6 text-base': size === 'lg',
+            'min-h-[44px] min-w-[44px] h-10 w-10 p-0 md:min-h-0 md:min-w-0': size === 'icon',
           },
           className
         )}

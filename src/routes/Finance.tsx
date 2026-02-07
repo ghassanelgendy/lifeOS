@@ -5,7 +5,7 @@ import {
   ArrowDownRight,
   Edit2,
   Trash2,
-  DollarSign
+  Banknote
 } from 'lucide-react';
 import {
   PieChart as RechartsPie,
@@ -15,7 +15,7 @@ import {
   Tooltip
 } from 'recharts';
 import { format } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import {
   useTransactions,
   useCreateTransaction,
@@ -163,7 +163,7 @@ export default function Finance() {
             <div>
               <p className="text-sm text-muted-foreground">Income</p>
               <p className={cn("text-2xl font-bold text-green-500 tabular-nums", privacyMode && "blur-sm")}>
-                ${totalIncome.toLocaleString()}
+                {formatCurrency(totalIncome)}
               </p>
             </div>
             <div className="p-3 rounded-full bg-green-500/10">
@@ -176,7 +176,7 @@ export default function Finance() {
             <div>
               <p className="text-sm text-muted-foreground">Expenses</p>
               <p className={cn("text-2xl font-bold text-red-500 tabular-nums", privacyMode && "blur-sm")}>
-                ${totalExpenses.toLocaleString()}
+                {formatCurrency(totalExpenses)}
               </p>
             </div>
             <div className="p-3 rounded-full bg-red-500/10">
@@ -193,11 +193,11 @@ export default function Finance() {
                 balance >= 0 ? "text-green-500" : "text-red-500",
                 privacyMode && "blur-sm"
               )}>
-                ${balance.toLocaleString()}
+                {formatCurrency(balance)}
               </p>
             </div>
             <div className={cn("p-3 rounded-full", balance >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-              <DollarSign className={balance >= 0 ? "text-green-500" : "text-red-500"} size={24} />
+              <Banknote className={balance >= 0 ? "text-green-500" : "text-red-500"} size={24} />
             </div>
           </div>
         </div>
@@ -227,7 +227,7 @@ export default function Finance() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number | undefined) => [`$${(value || 0).toLocaleString()}`, 'Amount']}
+                    formatter={(value: number | undefined) => [formatCurrency(value || 0), 'Amount']}
                     contentStyle={{
                       backgroundColor: '#18181b',
                       border: '1px solid #27272a',
@@ -259,7 +259,7 @@ export default function Finance() {
                     />
                     <span className="flex-1 text-sm">{item.name}</span>
                     <span className={cn("font-medium tabular-nums", privacyMode && "blur-sm")}>
-                      ${item.value.toLocaleString()}
+                      {formatCurrency(item.value)}
                     </span>
                     <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
                       <div
@@ -329,20 +329,20 @@ export default function Finance() {
                       transaction.type === 'income' ? "text-green-500" : "text-red-500",
                       privacyMode && "blur-sm"
                     )}>
-                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleOpenModal(transaction)}
-                          className="p-1.5 rounded hover:bg-secondary transition-colors"
+                          className="icon-touch p-1.5 rounded hover:bg-secondary transition-colors"
                           title="Edit"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(transaction.id)}
-                          className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                          className="icon-touch p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={14} />
@@ -386,22 +386,22 @@ export default function Finance() {
                     transaction.type === 'income' ? "text-green-500" : "text-red-500",
                     privacyMode && "blur-sm"
                   )}>
-                    {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toLocaleString()}
+                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                   </div>
                   <div className="flex justify-end gap-1 mt-1">
                     <button
                       onClick={() => handleOpenModal(transaction)}
-                      className="p-1 rounded hover:bg-secondary transition-colors"
+                      className="icon-touch p-1 rounded hover:bg-secondary transition-colors"
                       title="Edit"
                     >
-                      <Edit2 size={12} />
+                      <Edit2 size={18} />
                     </button>
                     <button
                       onClick={() => handleDelete(transaction.id)}
-                      className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                      className="icon-touch p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
                       title="Delete"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={18} />
                     </button>
                   </div>
                 </div>

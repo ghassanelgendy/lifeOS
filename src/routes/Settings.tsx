@@ -12,17 +12,42 @@ import {
   Smartphone,
   Check,
   Bell,
+  LayoutDashboard,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
+import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button } from '../components/ui';
 import { NAV_ITEMS } from '../components/AppShell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 
+const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
+  prayer: 'Prayer times',
+  stats: 'Stats (Weight, Muscle, Habits, Balance)',
+  overdue: 'Overdue tasks',
+  events: 'Upcoming events',
+  quickstats: 'Quick stats (Projects, Body fat, BMR, Expenses)',
+  habits: "Today's habits",
+};
+
 export default function SettingsPage() {
-  const { privacyMode, togglePrivacyMode, theme, setTheme, mobileNavItems, setMobileNavItems } = useUIStore();
+  const {
+    privacyMode,
+    togglePrivacyMode,
+    theme,
+    setTheme,
+    mobileNavItems,
+    setMobileNavItems,
+    dashboardWidgetOrder,
+    dashboardWidgetVisible,
+    toggleDashboardWidget,
+    moveDashboardWidget,
+  } = useUIStore();
   const push = usePushNotifications();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -155,6 +180,61 @@ export default function SettingsPage() {
               </button>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Dashboard */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Dashboard</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Choose which sections to show and in what order.
+          </p>
+        </div>
+        <div className="p-4 space-y-2">
+          {(dashboardWidgetOrder?.length ? dashboardWidgetOrder : DASHBOARD_WIDGET_IDS).map((id, index) => {
+            const visible = dashboardWidgetVisible[id] !== false;
+            return (
+              <div
+                key={id}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                  visible ? "border-border bg-card" : "border-border/50 bg-secondary/20 opacity-75"
+                )}
+              >
+                <GripVertical size={16} className="text-muted-foreground flex-shrink-0" />
+                <label className="flex-1 flex items-center gap-2 cursor-pointer min-h-[44px]">
+                  <input
+                    type="checkbox"
+                    checked={visible}
+                    onChange={() => toggleDashboardWidget(id)}
+                    className="rounded border-border"
+                  />
+                  <span className="font-medium">{DASHBOARD_WIDGET_LABELS[id] ?? id}</span>
+                </label>
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => moveDashboardWidget(id, 'up')}
+                    disabled={index === 0}
+                    className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                    title="Move up"
+                  >
+                    <ChevronUp size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveDashboardWidget(id, 'down')}
+                    disabled={index === (dashboardWidgetOrder?.length ?? DASHBOARD_WIDGET_IDS.length) - 1}
+                    className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                    title="Move down"
+                  >
+                    <ChevronDown size={18} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 

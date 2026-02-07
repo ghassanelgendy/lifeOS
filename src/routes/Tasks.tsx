@@ -39,6 +39,7 @@ import {
 } from '../hooks/useTasks';
 import { taskDB } from '../db/database';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
+import { SwipeableRow } from '../components/SwipeableRow';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
@@ -95,6 +96,8 @@ export default function Tasks() {
   const [showCompleted, setShowCompleted] = useState(false);
 
   const quickAddRef = useRef<HTMLInputElement>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
+  const taskListRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const notificationHandled = useRef<string | null>(null);
 
@@ -144,6 +147,85 @@ export default function Tasks() {
       );
     }
   }, [searchParams, setSearchParams, toggleTask, updateTask, allTasks]);
+
+  // Swipe from left edge to open lists sidebar (mobile)
+  useEffect(() => {
+    const main = mainContentRef.current;
+    if (!main) return;
+    const EDGE = 24;
+    const THRESHOLD = 50;
+    let startX = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.innerWidth >= 768) return;
+      if (e.touches[0].clientX < EDGE) startX = e.touches[0].clientX;
+      else startX = -1;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (window.innerWidth >= 768 || startX < 0) return;
+      const dx = e.touches[0].clientX - startX;
+      if (dx > THRESHOLD) {
+        setShowListsSidebar(true);
+        startX = -1;
+      }
+    };
+
+    const onTouchEnd = () => { startX = -1; };
+
+    main.addEventListener('touchstart', onTouchStart, { passive: true });
+    main.addEventListener('touchmove', onTouchMove, { passive: true });
+    main.addEventListener('touchend', onTouchEnd);
+    return () => {
+      main.removeEventListener('touchstart', onTouchStart);
+      main.removeEventListener('touchmove', onTouchMove);
+      main.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
+  // Swipe left/right to change view (Today ↔ Week ↔ Upcoming) on mobile
+  const VIEW_SWIPE_ORDER: ViewType[] = ['today', 'week', 'upcoming'];
+  useEffect(() => {
+    const list = taskListRef.current;
+    if (!list) return;
+    const THRESHOLD = 60;
+    let startX = 0;
+    let startY = 0;
+
+    const onTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (window.innerWidth >= 768) return;
+      if (!VIEW_SWIPE_ORDER.includes(activeView)) return;
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      if (Math.abs(dx) < THRESHOLD || Math.abs(dy) > Math.abs(dx)) return;
+      if (list.scrollTop > 10) return; // only when scrolled to top
+
+      const idx = VIEW_SWIPE_ORDER.indexOf(activeView);
+      if (dx < 0 && idx < VIEW_SWIPE_ORDER.length - 1) {
+        setActiveView(VIEW_SWIPE_ORDER[idx + 1]);
+        setActiveListId(null);
+        setActiveTagId(null);
+      } else if (dx > 0 && idx > 0) {
+        setActiveView(VIEW_SWIPE_ORDER[idx - 1]);
+        setActiveListId(null);
+        setActiveTagId(null);
+      }
+    };
+
+    list.addEventListener('touchstart', onTouchStart, { passive: true });
+    list.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      list.removeEventListener('touchstart', onTouchStart);
+      list.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [activeView]);
 
   // Form state for editing
   const [editForm, setEditForm] = useState<Partial<CreateInput<Task>>>({});
@@ -310,6 +392,22 @@ export default function Tasks() {
     });
   };
 
+  // Postpone task by 1 hour (for swipe action)
+  const handlePostponeTask = (task: Task) => {
+    const dueDate = task.due_date ? new Date(task.due_date) : new Date();
+    const next = addHours(
+      task.due_time ? new Date(`${task.due_date?.split('T')[0]}T${task.due_time}:00`) : dueDate,
+      1
+    );
+    updateTask.mutate({
+      id: task.id,
+      data: {
+        due_date: next.toISOString().split('T')[0],
+        due_time: format(next, 'HH:mm'),
+      },
+    });
+  };
+
   // Format due date display
   const formatDueDate = (task: Task): { text: string; className: string } => {
     if (!task.due_date) return { text: '', className: '' };
@@ -471,8 +569,8 @@ export default function Tasks() {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col overflow-hidden">
+      {/* Main Content - swipe from left edge to open sidebar on mobile */}
+      <main ref={mainContentRef} className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -495,8 +593,8 @@ export default function Tasks() {
           </Button>
         </header>
 
-        {/* Task List */}
-        <div className="flex-1 overflow-y-auto p-4">
+        {/* Task List - swipe L/R at top to change view (Today/Week/Upcoming) on mobile */}
+        <div ref={taskListRef} className="flex-1 overflow-y-auto p-4">
           {/* Quick Add */}
           {isAddingTask && (
             <form onSubmit={handleQuickAdd} className="mb-4 p-3 rounded-xl border border-border bg-card">
@@ -636,18 +734,25 @@ export default function Tasks() {
             </form>
           )}
 
-          {/* Tasks */}
+          {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
           <div className="space-y-1">
             {incompleteTasks.map((task) => (
-              <TaskItem
+              <SwipeableRow
                 key={task.id}
-                task={task}
-                tags={tags}
-                onToggle={() => toggleTask.mutate(task.id)}
-                onEdit={() => handleEditTask(task)}
+                onDone={() => toggleTask.mutate(task.id)}
+                onPostpone={() => handlePostponeTask(task)}
                 onDelete={() => deleteTask.mutate(task.id)}
-                formatDueDate={formatDueDate}
-              />
+                showPostpone={!!(task.due_date || task.due_time)}
+              >
+                <TaskItem
+                  task={task}
+                  tags={tags}
+                  onToggle={() => toggleTask.mutate(task.id)}
+                  onEdit={() => handleEditTask(task)}
+                  onDelete={() => deleteTask.mutate(task.id)}
+                  formatDueDate={formatDueDate}
+                />
+              </SwipeableRow>
             ))}
           </div>
 
@@ -664,15 +769,21 @@ export default function Tasks() {
               {showCompleted && (
                 <div className="mt-2 space-y-1 opacity-60">
                   {completedDisplayTasks.slice(0, 10).map((task) => (
-                    <TaskItem
+                    <SwipeableRow
                       key={task.id}
-                      task={task}
-                      tags={tags}
-                      onToggle={() => toggleTask.mutate(task.id)}
-                      onEdit={() => handleEditTask(task)}
+                      onDone={() => toggleTask.mutate(task.id)}
                       onDelete={() => deleteTask.mutate(task.id)}
-                      formatDueDate={formatDueDate}
-                    />
+                      showPostpone={false}
+                    >
+                      <TaskItem
+                        task={task}
+                        tags={tags}
+                        onToggle={() => toggleTask.mutate(task.id)}
+                        onEdit={() => handleEditTask(task)}
+                        onDelete={() => deleteTask.mutate(task.id)}
+                        formatDueDate={formatDueDate}
+                      />
+                    </SwipeableRow>
                   ))}
                 </div>
               )}

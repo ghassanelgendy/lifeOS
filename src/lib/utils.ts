@@ -9,3 +9,10 @@ export function cn(...inputs: ClassValue[]) {
 export function round1(num: number): number {
     return Math.round(num * 10) / 10;
 }
+
+// App currency (Egyptian Pound)
+export const CURRENCY_SYMBOL = 'E£';
+
+export function formatCurrency(amount: number): string {
+    return `${CURRENCY_SYMBOL}${amount.toLocaleString()}`;
+}

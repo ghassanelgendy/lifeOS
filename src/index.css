@@ -58,6 +58,26 @@
       font-size: 16px !important;
     }
   }
+
+  /* iOS / touch: minimum 44px touch targets (Apple HIG) */
+  @media (hover: none) and (pointer: coarse) {
+    button:not(.no-touch-target),
+    [role="button"]:not(.no-touch-target),
+    a[href]:not(.no-touch-target) {
+      min-height: 25px;
+      min-width: 25px;
+    }
+    /* Inline icon buttons: ensure tap area is large enough */
+    button.icon-touch,
+    .icon-touch {
+      min-height: 25px;
+      min-width: 25px;
+      padding: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
 }
 
 @layer utilities {

@@ -5,7 +5,7 @@ import {
   TrendingUp,
   TrendingDown,
   Calendar,
-  DollarSign,
+  Banknote,
   Dumbbell,
   Target,
   ArrowRight
@@ -13,7 +13,7 @@ import {
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
-import { cn } from '../lib/utils';
+import { cn, formatCurrency } from '../lib/utils';
 import { useHealthMetrics } from '../hooks/useHealthData';
 import { useOverdueTasks } from '../hooks/useTasks';
 import { useWeeklyAdherence, useHabits } from '../hooks/useHabits';
@@ -22,6 +22,7 @@ import { useUpcomingEvents } from '../hooks/useCalendar';
 import { useProjects } from '../hooks/useProjects';
 import { habitLogDB } from '../db/database';
 import { useUIStore } from '../stores/useUIStore';
+import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
 import { PrayerWidget } from '../components/PrayerWidget';
 
 export default function Dashboard() {
@@ -32,7 +33,10 @@ export default function Dashboard() {
   const upcomingEvents = useUpcomingEvents(7);
   const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
-  const { privacyMode } = useUIStore();
+  const { privacyMode, dashboardWidgetOrder, dashboardWidgetVisible } = useUIStore();
+
+  const order = dashboardWidgetOrder?.length ? dashboardWidgetOrder : [...DASHBOARD_WIDGET_IDS];
+  const isVisible = (id: string) => dashboardWidgetVisible?.[id] !== false;
 
   // Get today's habit completion
   const today = new Date();
@@ -53,11 +57,12 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Prayer Times Widget */}
-      <PrayerWidget />
-
-      {/* Primary Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Widgets in user-defined order */}
+      {order.filter(isVisible).map((widgetId) => {
+        if (widgetId === 'prayer') return <PrayerWidget key="prayer" />;
+        if (widgetId === 'stats')
+          return (
+            <div key="stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Weight */}
         <Link to="/health" className="group">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
@@ -169,7 +174,7 @@ export default function Dashboard() {
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
             <div>
               <div className="flex items-center gap-2">
-                <DollarSign size={14} className="text-muted-foreground" />
+                <Banknote size={14} className="text-muted-foreground" />
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Balance</h3>
               </div>
               <div className={cn(
@@ -177,7 +182,7 @@ export default function Dashboard() {
                 balance >= 0 ? "text-green-500" : "text-red-500",
                 privacyMode && "blur-sm"
               )}>
-                ${Math.abs(balance).toLocaleString()}
+                {formatCurrency(Math.abs(balance))}
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {format(today, 'MMMM')}
@@ -186,10 +191,10 @@ export default function Dashboard() {
           </div>
         </Link>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Overdue Tasks */}
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
+          );
+        if (widgetId === 'overdue')
+          return (
+        <section key="overdue" className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <AlertCircle className="text-amber-500" size={18} />
@@ -222,9 +227,10 @@ export default function Dashboard() {
             )}
           </div>
         </section>
-
-        {/* Upcoming Events */}
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
+          );
+        if (widgetId === 'events')
+          return (
+        <section key="events" className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="p-4 border-b border-border flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="text-blue-500" size={18} />
@@ -268,10 +274,10 @@ export default function Dashboard() {
             )}
           </div>
         </section>
-      </div>
-
-      {/* Quick Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          );
+        if (widgetId === 'quickstats')
+          return (
+      <div key="quickstats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
           <p className="text-2xl font-bold mt-1">{activeProjects}</p>
@@ -296,14 +302,15 @@ export default function Dashboard() {
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Expenses</p>
           <p className={cn("text-2xl font-bold mt-1 text-red-500 tabular-nums", privacyMode && "blur-sm")}>
-            ${totalExpenses.toLocaleString()}
+            {formatCurrency(totalExpenses)}
           </p>
           <p className="text-xs text-muted-foreground">{format(today, 'MMMM')}</p>
         </div>
       </div>
-
-      {/* Today's Habits Quick View */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+          );
+        if (widgetId === 'habits')
+          return (
+      <section key="habits" className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Flame className="text-amber-500" size={18} />
@@ -347,6 +354,9 @@ export default function Dashboard() {
           )}
         </div>
       </section>
+          );
+        return null;
+      })}
     </div>
   );
 }

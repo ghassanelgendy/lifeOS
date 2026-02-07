@@ -38,14 +38,11 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
 
             // Only handle downward pull and if we are at the top
             if (diff > 0 && container.scrollTop <= 0) {
-                // Prevent default only if we are actually pulling to refresh
-                // This stops the browser's native overscroll/refresh behavior if desired
-                // but here we might want to allow normal scroll if not committed to pull
-                if (e.cancelable && diff < MAX_PULL) {
-                    // e.preventDefault(); // Optional: depending on if we want to block native scroll completely
+                // Prevent document/body overscroll so the LifeOS header doesn't get dragged (iOS)
+                if (e.cancelable) {
+                    e.preventDefault();
                 }
 
-                // Logarithmic resistance
                 const resistance = diff * 0.5;
                 setPullDistance(Math.min(resistance, MAX_PULL));
             }
@@ -93,15 +90,12 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
         <div
             ref={containerRef}
             className="h-full overflow-y-auto relative no-scrollbar"
-            style={{ touchAction: 'pan-y' }}
+            style={{ touchAction: 'pan-y', overscrollBehaviorY: 'contain' }}
         >
-            {/* Refresh Indicator */}
+            {/* Refresh indicator in fixed top area - content does NOT move */}
             <div
-                className="absolute top-0 left-0 right-0 flex justify-center items-center pointer-events-none transition-transform duration-200 ease-out z-50"
-                style={{
-                    transform: `translateY(${pullDistance - 40}px)`,
-                    height: '40px'
-                }}
+                className="absolute top-0 left-0 right-0 flex justify-center items-center pointer-events-none z-50 h-12"
+                style={{ transform: `translateY(${Math.min(pullDistance, 48) - 48}px)` }}
             >
                 <div className={cn(
                     "bg-card border border-border rounded-full p-2 shadow-sm flex items-center justify-center transition-opacity",
@@ -115,13 +109,8 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                 </div>
             </div>
 
-            {/* Content */}
-            <div
-                style={{
-                    transform: `translateY(${isRefreshing ? 40 : pullDistance}px)`,
-                    transition: isRefreshing ? 'transform 0.2s ease-out' : 'transform 0s'
-                }}
-            >
+            {/* Content stays fixed - no translate so title doesn't move */}
+            <div className="relative">
                 {children}
             </div>
         </div>

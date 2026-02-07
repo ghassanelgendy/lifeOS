@@ -4,6 +4,10 @@ import { persist } from 'zustand/middleware';
 // Default mobile nav items (5 max)
 const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/habits', '/calendar', '/settings'];
 
+// Dashboard widget ids (default order)
+export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;
+export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
+
 interface UIState {
   // Sidebar
   isSidebarCollapsed: boolean;
@@ -27,6 +31,14 @@ interface UIState {
   // Mobile Navigation Customization
   mobileNavItems: string[];
   setMobileNavItems: (items: string[]) => void;
+
+  // Dashboard: widget order and visibility
+  dashboardWidgetOrder: string[];
+  dashboardWidgetVisible: Record<string, boolean>;
+  setDashboardWidgetOrder: (order: string[]) => void;
+  setDashboardWidgetVisible: (visible: Record<string, boolean>) => void;
+  toggleDashboardWidget: (id: string) => void;
+  moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -54,6 +66,29 @@ export const useUIStore = create<UIState>()(
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,
       setMobileNavItems: (items) => set({ mobileNavItems: items }),
+
+      // Dashboard
+      dashboardWidgetOrder: [...DASHBOARD_WIDGET_IDS],
+      dashboardWidgetVisible: DASHBOARD_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
+      setDashboardWidgetOrder: (order) => set({ dashboardWidgetOrder: order }),
+      setDashboardWidgetVisible: (visible) => set({ dashboardWidgetVisible: visible }),
+      toggleDashboardWidget: (id) =>
+        set((state) => ({
+          dashboardWidgetVisible: {
+            ...state.dashboardWidgetVisible,
+            [id]: !state.dashboardWidgetVisible[id],
+          },
+        })),
+      moveDashboardWidget: (id, direction) =>
+        set((state) => {
+          const order = [...state.dashboardWidgetOrder];
+          const i = order.indexOf(id);
+          if (i === -1) return state;
+          const j = direction === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= order.length) return state;
+          [order[i], order[j]] = [order[j], order[i]];
+          return { dashboardWidgetOrder: order };
+        }),
     }),
     {
       name: 'lifeos-ui-store',
@@ -62,6 +97,8 @@ export const useUIStore = create<UIState>()(
         privacyMode: state.privacyMode,
         theme: state.theme,
         mobileNavItems: state.mobileNavItems,
+        dashboardWidgetOrder: state.dashboardWidgetOrder,
+        dashboardWidgetVisible: state.dashboardWidgetVisible,
       }),
     }
   )
