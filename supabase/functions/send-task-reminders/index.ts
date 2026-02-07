@@ -11,89 +11,121 @@ const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY');
 const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 if (!vapidPublic || !vapidPrivate) {
   console.error('Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY');
 }
 
 webpush.setVapidDetails('mailto:lifeos@example.com', vapidPublic!, vapidPrivate!);
 
-const supabase = createClient(supabaseUrl, serviceRoleKey) as SupabaseClient;
-
-function getDueMoment(dueDate: string, dueTime: string | null): Date {
-  const datePart = dueDate.split('T')[0];
-  const timePart = dueTime ?? '00:00';
-  return new Date(`${datePart}T${timePart}:00.000Z`);
-}
-
-type TaskRow = { id: string; title: string; due_date: string; due_time: string | null };
-type SubRow = { endpoint: string; p256dh: string; auth: string };
+const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*' } });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const now = new Date();
-    const windowStart = new Date(now);
-    windowStart.setUTCSeconds(0, 0);
-    const windowEnd = new Date(windowStart.getTime() + 60_000);
-
-    const tasksRes = await supabase
-      .from('tasks')
-      .select('id, title, due_date, due_time')
-      .eq('is_completed', false)
-      .not('due_date', 'is', null)
-      .is('parent_id', null);
-    const tasksResult: { data: TaskRow[] | null; error: { message: string } | null } = tasksRes as unknown as { data: TaskRow[] | null; error: { message: string } | null };
-    const { data: tasks, error: tasksError } = tasksResult;
-
-    if (tasksError) {
-      console.error(tasksError);
-      return new Response(JSON.stringify({ error: tasksError.message }), { status: 500 });
-    }
-
-    const dueNow = (tasks ?? []).filter((t: TaskRow) => {
-      const due = getDueMoment(t.due_date, t.due_time ?? null);
-      return due >= windowStart && due < windowEnd;
-    });
-
-    const subsRes = await supabase
+    // 1. Get all unique timezones from subscriptions
+    const { data: timezones, error: tzError } = await supabase
       .from('push_subscriptions')
-      .select('endpoint, p256dh, auth');
-    const subsResult: { data: SubRow[] | null; error: { message: string } | null } = subsRes as unknown as { data: SubRow[] | null; error: { message: string } | null };
-    const { data: subs, error: subsError } = subsResult;
-    if (subsError || !subs?.length) {
-      return new Response(JSON.stringify({ sent: 0, tasks: dueNow.length, subscriptions: 0 }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+      .select('timezone')
+      .not('timezone', 'is', null);
 
-    let sent = 0;
-    for (const task of dueNow) {
-      const payload = JSON.stringify({ taskId: task.id, title: task.title });
-      for (const sub of subs) {
-        try {
-          await webpush.sendNotification(
-            {
-              endpoint: sub.endpoint,
-              keys: { p256dh: sub.p256dh, auth: sub.auth },
-            },
-            payload
-          );
-          sent++;
-        } catch (e) {
-          console.error('Push failed', sub.endpoint.slice(0, 50), e);
+    if (tzError) throw tzError;
+
+    // Get unique timezones (e.g. ['America/New_York', 'Europe/London'])
+    const uniqueTimezones = [...new Set((timezones as any[]).map((t: any) => t.timezone))];
+    const results: any[] = [];
+
+    // 2. Process each timezone
+    for (const tz of uniqueTimezones) {
+      if (typeof tz !== 'string') continue;
+
+      try {
+        // Calculate current local time in this timezone
+        const now = new Date();
+        const localDate = new Intl.DateTimeFormat('en-CA', {
+          timeZone: tz,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).format(now); // "YYYY-MM-DD"
+
+        const localTime = new Intl.DateTimeFormat('en-GB', {
+          timeZone: tz,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false
+        }).format(now); // "HH:mm"
+
+        // Get tasks due at this local time
+        const { data: tasks, error: tasksError } = await supabase
+          .from('tasks')
+          .select('id, title, due_date, due_time')
+          .eq('is_completed', false)
+          .eq('due_date', localDate)
+          .eq('due_time', localTime)
+          .is('parent_id', null);
+
+        if (tasksError) {
+          console.error(`Error querying tasks for ${tz}:`, tasksError);
+          continue;
         }
+
+        const taskList = tasks as any[];
+        if (!taskList || taskList.length === 0) continue;
+
+        // Get subscriptions in this timezone
+        const { data: subs, error: subsError } = await supabase
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth')
+          .eq('timezone', tz);
+
+        const subList = subs as any[];
+        if (subsError || !subList?.length) continue;
+
+        let sent = 0;
+        for (const task of taskList) {
+          const payload = JSON.stringify({ taskId: task.id, title: task.title });
+          for (const sub of subList) {
+            try {
+              await webpush.sendNotification(
+                {
+                  endpoint: sub.endpoint,
+                  keys: { p256dh: sub.p256dh, auth: sub.auth },
+                },
+                payload
+              );
+              sent++;
+            } catch (e) {
+              console.error('Push failed', sub.endpoint.slice(0, 50), e);
+              // Clean up dead subscriptions
+              if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
+                await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+              }
+            }
+          }
+        }
+        results.push({ timezone: tz, tasks: taskList.length, sent });
+      } catch (tzProcError) {
+        console.error(`Failed to process timezone ${tz}`, tzProcError);
       }
     }
 
     return new Response(
-      JSON.stringify({ sent, tasks: dueNow.length, subscriptions: subs.length }),
-      { headers: { 'Content-Type': 'application/json' } }
+      JSON.stringify({ results }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
     console.error(err);
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String(err) }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
 });

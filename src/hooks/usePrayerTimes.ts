@@ -7,41 +7,18 @@ export interface PrayerTimeData {
     isNext: boolean;
 }
 
+// Cairo, Egypt (fixed location)
+const CAIRO_COORDS = { lat: 30.0444, lng: 31.2357 };
+
 export function usePrayerTimes() {
     const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
-    const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [error, setError] = useState<string | null>(null);
     const [nextPrayer, setNextPrayer] = useState<string | null>(null);
     const [timeToNext, setTimeToNext] = useState<string>('');
 
-    // Get Location
+    const location = CAIRO_COORDS;
+
+    // Calculate Times (Cairo)
     useEffect(() => {
-        if (!navigator.geolocation) {
-            setError('Geolocation is not supported by your browser');
-            setLocation({ lat: 30.0444, lng: 31.2357 }); // Fallback: Cairo, Egypt
-            return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setLocation({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                });
-            },
-            (err) => {
-                setError('Unable to retrieve location');
-                console.error(err);
-                // Fallback to Cairo, Egypt when location is not available
-                setLocation({ lat: 30.0444, lng: 31.2357 });
-            }
-        );
-    }, []);
-
-    // Calculate Times
-    useEffect(() => {
-        if (!location) return;
-
         const coords = new Coordinates(location.lat, location.lng);
         const date = new Date();
         const params = CalculationMethod.MuslimWorldLeague();
@@ -53,7 +30,7 @@ export function usePrayerTimes() {
         } catch (e) {
             console.error("Error calculating prayer times", e);
         }
-    }, [location]);
+    }, []);
 
     // Update Countdown and Next Prayer
     useEffect(() => {
@@ -70,7 +47,7 @@ export function usePrayerTimes() {
             if (next === 'none') {
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
-                const coords = new Coordinates(location!.lat, location!.lng);
+                const coords = new Coordinates(location.lat, location.lng);
                 const params = CalculationMethod.MuslimWorldLeague();
                 const tomorrowTimes = new PrayerTimes(coords, tomorrow, params);
                 nextTime = tomorrowTimes.fajr;
@@ -94,7 +71,7 @@ export function usePrayerTimes() {
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [prayerTimes, location]);
+    }, [prayerTimes]);
 
     const formattedTimes: PrayerTimeData[] = prayerTimes ? [
         { name: 'Fajr', time: prayerTimes.fajr, isNext: nextPrayer === 'fajr' },
@@ -108,7 +85,7 @@ export function usePrayerTimes() {
     return {
         times: formattedTimes,
         location,
-        error,
+        error: null,
         nextPrayer,
         timeToNext
     };

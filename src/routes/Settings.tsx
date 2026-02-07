@@ -177,13 +177,29 @@ export default function SettingsPage() {
             {push.supported && push.vapidConfigured ? (
               <div className="flex items-center gap-2">
                 {push.isEnabled ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => push.disable().then(() => setPushStatus('Reminders off')).catch(() => setPushStatus('Failed to disable'))}
-                    disabled={push.isDisabling}
-                  >
-                    {push.isDisabling ? '…' : 'Disable'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => push.sendTestNotification()
+                        .then(() => setPushStatus('Test sent!'))
+                        .catch((e) => {
+                          console.error('Test Notification Error:', e);
+                          setPushStatus(e?.message ?? 'Test failed');
+                        })
+                      }
+                      disabled={push.isSendingTest}
+                      title="Send a generic test notification now"
+                    >
+                      {push.isSendingTest ? 'Sending...' : 'Test'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => push.disable().then(() => setPushStatus('Reminders off')).catch(() => setPushStatus('Failed to disable'))}
+                      disabled={push.isDisabling}
+                    >
+                      {push.isDisabling ? '…' : 'Disable'}
+                    </Button>
+                  </div>
                 ) : (
                   <Button
                     onClick={() =>

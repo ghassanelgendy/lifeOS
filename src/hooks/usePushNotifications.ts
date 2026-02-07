@@ -63,6 +63,27 @@ export function usePushNotifications() {
     },
   });
 
+  const testNotificationMutation = useMutation({
+    mutationFn: async () => {
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      if (!sub) throw new Error('No subscription found');
+
+      const { endpoint } = sub.toJSON();
+      if (!endpoint) throw new Error('Invalid subscription');
+
+      const { error } = await supabase.functions.invoke('send-test-notification', {
+        body: { endpoint },
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY}`,
+        },
+      });
+
+      if (error) throw error;
+      return true;
+    },
+  });
+
   return {
     supported,
     vapidConfigured,
@@ -70,8 +91,10 @@ export function usePushNotifications() {
     isEnabled: permission === 'granted',
     enable: enableMutation.mutateAsync,
     disable: disableMutation.mutateAsync,
+    sendTestNotification: testNotificationMutation.mutateAsync,
     isEnabling: enableMutation.isPending,
     isDisabling: disableMutation.isPending,
-    error: enableMutation.error ?? disableMutation.error,
+    isSendingTest: testNotificationMutation.isPending,
+    error: enableMutation.error ?? disableMutation.error ?? testNotificationMutation.error,
   };
 }

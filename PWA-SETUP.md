@@ -124,6 +124,17 @@ The function must run every minute so tasks fire at the right time.
   with header: `Authorization: Bearer <your-service-role-key>`.
 - **Supabase Dashboard:** Invoke the function manually for testing.
 
+#### Cron runs but I don’t get a notification
+
+1. **Check the cron response** (e.g. in cron-job.org execution history). You should see JSON like `{ "sent": 0, "tasks": 0, "subscriptions": 1 }`:
+   - **subscriptions: 0** → No push subscription stored. In the app (from **Home Screen**), go to **Settings** → **Notifications** → tap **Enable**, allow notifications, and try again.
+   - **tasks: 0** → No task was due in that minute. Times are in **UTC**. Create a task with due date+time = current UTC time + 1–2 minutes (e.g. use [time.is/UTC](https://time.is/UTC)) and wait for that minute.
+   - **sent: 1** (or more) but no notification → Push was sent; check device: **Settings** → **Notifications** (iOS) and ensure your site is allowed, and that you opened the app from the **Home Screen** (PWA), not from Safari’s tab.
+
+2. **Supabase:** In **Table Editor** → **push_subscriptions** there should be at least one row after you enable reminders. If the table is empty, enable reminders again in the app and accept the permission prompt.
+
+3. **iOS:** Notifications only work when the app is installed (Add to Home Screen) and notification permission was granted for that origin. Open the app from the Home Screen icon, then enable reminders in Settings.
+
 ### 6. Enable reminders in the app
 
 1. Open lifeOS at your **Vercel URL** (e.g. `https://your-app.vercel.app`).
