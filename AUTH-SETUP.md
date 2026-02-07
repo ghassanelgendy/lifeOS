@@ -8,6 +8,17 @@ LifeOS uses Supabase Auth so each user only sees their own data.
 2. Go to **Authentication** → **Providers**.
 3. Enable **Email** (and optionally **Email confirmations** if you want users to verify email before signing in).
 
+### Optional: Google sign-in
+
+1. In Supabase: **Authentication** → **Providers** → **Google** → Enable.
+2. In [Google Cloud Console](https://console.cloud.google.com/): create a project (or use existing) → **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
+3. Application type: **Web application**. Add **Authorized redirect URIs**:  
+   `https://<YOUR_PROJECT_REF>.supabase.co/auth/v1/callback`  
+   (find your project ref in Supabase Dashboard → Settings → General → Reference ID.)
+4. Copy the **Client ID** and **Client Secret** into Supabase Google provider settings and Save.
+
+After that, “Continue with Google” on the login and signup pages will work.
+
 ## 2. Run the migration
 
 1. In Supabase Dashboard go to **SQL Editor**.
@@ -38,7 +49,7 @@ UPDATE projects SET user_id = 'YOUR_USER_UUID' WHERE user_id IS NULL;
 
 - **Unauthenticated:** Redirected to `/login`. Sign up at `/signup`.
 - **Authenticated:** Full app access; all Supabase queries are scoped by the current user via RLS.
-- **Seed data:** Runs once per user (after first login) and creates sample projects, task lists, tags, and tasks for that user.
+- **Seed data:** Runs once per user (after first login) and creates only default tags; no tasks or projects.
 - **Sign out:** Settings → Account → Sign out.
 
 ## 5. Environment
