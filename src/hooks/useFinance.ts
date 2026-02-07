@@ -16,16 +16,33 @@ function budgetsKey(userId: string | undefined) {
   return [...BUDGETS_KEY, userId] as const;
 }
 
+// Safety: if RLS is not enabled, the API can return other users' rows. Filter to current user and warn.
+function filterToCurrentUser<T extends { user_id?: string | null }>(
+  data: T[],
+  currentUserId: string,
+  entityName: string
+): T[] {
+  const own = data.filter((row) => row.user_id == null || row.user_id === currentUserId);
+  if (own.length !== data.length) {
+    console.error(
+      `[LifeOS] ${entityName}: API returned rows belonging to other users. Enable RLS in Supabase. See supabase/migrations/20250205100000_enable_rls_on_tables.sql`
+    );
+  }
+  return own;
+}
+
 // Transactions
 export function useTransactions() {
   const { user } = useAuth();
   const key = transactionsKey(user?.id);
+  const userId = user?.id;
   return useQuery({
     queryKey: key,
     queryFn: async () => {
       const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
       if (error) throw error;
-      return data as Transaction[];
+      const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
+      return userId ? (filterToCurrentUser(list, userId, 'transactions') as Transaction[]) : list;
     },
     enabled: !!user?.id,
   });
@@ -34,6 +51,7 @@ export function useTransactions() {
 export function useTransactionsByRange(start: string, end: string) {
   const { user } = useAuth();
   const key = transactionsKey(user?.id);
+  const userId = user?.id;
   return useQuery({
     queryKey: [...key, 'range', start, end],
     queryFn: async () => {
@@ -44,7 +62,8 @@ export function useTransactionsByRange(start: string, end: string) {
         .lte('date', end)
         .order('date', { ascending: false });
       if (error) throw error;
-      return data as Transaction[];
+      const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
+      return userId ? (filterToCurrentUser(list, userId, 'transactions (range)') as Transaction[]) : list;
     },
     enabled: !!user?.id && !!start && !!end,
   });
@@ -125,12 +144,14 @@ export function useDeleteTransaction() {
 export function useBudgets() {
   const { user } = useAuth();
   const key = budgetsKey(user?.id);
+  const userId = user?.id;
   return useQuery({
     queryKey: key,
     queryFn: async () => {
       const { data, error } = await supabase.from('budgets').select('*');
       if (error) throw error;
-      return data as Budget[];
+      const list = (data ?? []) as (Budget & { user_id?: string | null })[];
+      return userId ? (filterToCurrentUser(list, userId, 'budgets') as Budget[]) : list;
     },
     enabled: !!user?.id,
   });
@@ -187,17 +208,25 @@ export function useFinancialSummary(year?: number, month?: number) {
 
   const { user } = useAuth();
   const key = transactionsKey(user?.id);
+  const userId = user?.id;
 
   return useQuery({
     queryKey: [...key, 'summary', targetYear, targetMonth],
     queryFn: async () => {
-      const { data: transactions, error } = await supabase
+      const { data: raw, error } = await supabase
         .from('transactions')
         .select('*')
         .gte('date', startDate)
         .lte('date', endDate);
 
       if (error) throw error;
+      const transactions = userId
+        ? filterToCurrentUser(
+            (raw ?? []) as (Transaction & { user_id?: string | null })[],
+            userId,
+            'transactions (summary)'
+          )
+        : (raw ?? []);
 
       let totalIncome = 0;
       let totalExpenses = 0;

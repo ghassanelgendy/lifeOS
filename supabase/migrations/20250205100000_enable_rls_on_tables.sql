@@ -1,6 +1,12 @@
+-- =============================================================================
+-- ENABLE ROW LEVEL SECURITY (REQUIRED FOR PER-USER DATA)
+-- =============================================================================
+-- Without this, ALL users see ALL rows. Run this entire script in:
+--   Supabase Dashboard → SQL Editor → New query → Paste → Run
+-- =============================================================================
+
 -- Enable Row Level Security on all user-scoped tables.
--- Without this, the policies from 20250205000000_add_auth_user_id_and_rls.sql have no effect.
--- Run this in Supabase SQL Editor if transactions (or other data) are visible to all users.
+-- The policies from 20250205000000_add_auth_user_id_and_rls.sql have no effect until RLS is on.
 
 alter table inbody_scans enable row level security;
 alter table projects enable row level security;
