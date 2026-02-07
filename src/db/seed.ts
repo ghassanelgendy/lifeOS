@@ -1,11 +1,14 @@
 import { supabase } from '../lib/supabase';
 
-// Check if database is already seeded
-const SEED_KEY = 'lifeos_seeded_supabase';
-
 export async function seedDatabase(): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) {
+    return; // Only seed when user is authenticated
+  }
+
+  const SEED_KEY = `lifeos_seeded_${session.user.id}`;
   if (localStorage.getItem(SEED_KEY)) {
-    return; // Already seeded
+    return; // Already seeded for this user
   }
 
   // Double check if data exists in DB to avoid dupes if localStorage was cleared but DB wasn't
@@ -113,13 +116,16 @@ export async function seedDatabase(): Promise<void> {
     ]);
   }
 
-  // Mark as seeded
+  // Mark as seeded for this user
   localStorage.setItem(SEED_KEY, 'true');
   console.log('Database seeded successfully!');
 }
 
-// Function to reset and reseed
-export function resetDatabase(): void {
-  localStorage.removeItem(SEED_KEY);
-  seedDatabase();
+// Function to reset and reseed (call after ensuring session exists)
+export async function resetDatabase(): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.user) {
+    localStorage.removeItem(`lifeos_seeded_${session.user.id}`);
+    await seedDatabase();
+  }
 }

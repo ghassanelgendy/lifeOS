@@ -15,10 +15,13 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
+  LogOut,
+  User,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
+import { useAuth } from '../contexts/AuthContext';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button } from '../components/ui';
@@ -35,6 +38,7 @@ const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
 };
 
 export default function SettingsPage() {
+  const { user, signOut } = useAuth();
   const {
     privacyMode,
     togglePrivacyMode,
@@ -103,10 +107,10 @@ export default function SettingsPage() {
   };
 
   // Reset data
-  const handleReset = () => {
+  const handleReset = async () => {
     if (confirm('This will delete ALL your data and restore default sample data. Are you sure?')) {
       if (confirm('This action cannot be undone. Continue?')) {
-        resetDatabase();
+        await resetDatabase();
         window.location.reload();
       }
     }
@@ -142,6 +146,26 @@ export default function SettingsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">Manage your app preferences and data</p>
       </div>
+
+      {/* Account */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Account</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <User size={20} className="text-muted-foreground" />
+            <div>
+              <p className="font-medium">{user?.email ?? '—'}</p>
+              <p className="text-sm text-muted-foreground">Signed in with Supabase Auth</p>
+            </div>
+          </div>
+          <Button variant="outline" onClick={() => signOut()} className="gap-2">
+            <LogOut size={18} />
+            Sign out
+          </Button>
+        </div>
+      </section>
 
       {/* Appearance */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
