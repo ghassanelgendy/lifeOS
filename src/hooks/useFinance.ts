@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Transaction, Budget, CreateInput, UpdateInput, TransactionCategory } from '../types/schema';
 import { round1 } from '../lib/utils';
 
@@ -41,12 +42,19 @@ export function useCreateTransaction() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<Transaction>) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'transactions', op: 'create', payload: input as Record<string, unknown> });
+        const now = new Date().toISOString();
+        const optimistic: Transaction = { ...input, id: `offline-tx-${Date.now()}`, created_at: now, updated_at: now } as Transaction;
+        queryClient.setQueryData(TRANSACTIONS_KEY, (old: Transaction[] | undefined) => [optimistic, ...(old ?? [])]);
+        return optimistic;
+      }
       const { data, error } = await supabase.from('transactions').insert(input).select().single();
       if (error) throw error;
       return data as Transaction;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
   });
 }
@@ -56,12 +64,20 @@ export function useUpdateTransaction() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Transaction> }) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'transactions', op: 'update', id, payload: data as Record<string, unknown> });
+        queryClient.setQueryData(TRANSACTIONS_KEY, (old: Transaction[] | undefined) =>
+          (old ?? []).map((t) => (t.id === id ? { ...t, ...data } : t))
+        );
+        const prev = (queryClient.getQueryData(TRANSACTIONS_KEY) as Transaction[] | undefined)?.find((t) => t.id === id);
+        return { ...prev, ...data, id } as Transaction;
+      }
       const { data: updated, error } = await supabase.from('transactions').update(data).eq('id', id).select().single();
       if (error) throw error;
       return updated as Transaction;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
   });
 }
@@ -71,12 +87,17 @@ export function useDeleteTransaction() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'transactions', op: 'delete', id });
+        queryClient.setQueryData(TRANSACTIONS_KEY, (old: Transaction[] | undefined) => (old ?? []).filter((t) => t.id !== id));
+        return true;
+      }
       const { error } = await supabase.from('transactions').delete().eq('id', id);
       if (error) throw error;
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
     },
   });
 }

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
 
 const TASKS_KEY = ['tasks'];
@@ -219,12 +220,33 @@ export function useCreateTask() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<Task>) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'tasks', op: 'create', payload: input as Record<string, unknown> });
+        const optimistic: Task = {
+          ...input,
+          id: `offline-${Date.now()}`,
+          parent_id: input.parent_id ?? null,
+          list_id: input.list_id ?? null,
+          project_id: input.project_id ?? null,
+          tag_ids: input.tag_ids ?? [],
+          is_completed: false,
+          priority: input.priority ?? 'none',
+          recurrence: input.recurrence ?? 'none',
+          recurrence_interval: input.recurrence_interval ?? 1,
+          recurrence_end: input.recurrence_end ?? null,
+          completed_at: undefined,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        } as Task;
+        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => [...(old ?? []), optimistic]);
+        return optimistic;
+      }
       const { data, error } = await supabase.from('tasks').insert(input).select().single();
       if (error) throw error;
       return data as Task;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
     },
   });
 }
@@ -261,6 +283,14 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task> }) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload: data as Record<string, unknown> });
+        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) =>
+          (old ?? []).map((t) => (t.id === id ? { ...t, ...data, updated_at: new Date().toISOString() } : t))
+        );
+        const prev = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined)?.find((t) => t.id === id);
+        return { ...prev, ...data, id, updated_at: new Date().toISOString() } as Task;
+      }
       const { data: updated, error } = await supabase
         .from('tasks')
         .update(data)
@@ -272,7 +302,7 @@ export function useUpdateTask() {
       return updated as Task;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
     },
   });
 }
@@ -282,12 +312,23 @@ export function useToggleTask() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Get current status first
+      if (!isOnline()) {
+        const tasks = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined) ?? [];
+        const task = tasks.find((t) => t.id === id);
+        if (!task) throw new Error('Task not found');
+        const newCompleted = !task.is_completed;
+        const payload = { is_completed: newCompleted, completed_at: newCompleted ? new Date().toISOString() : null };
+        addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload });
+        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) =>
+          (old ?? []).map((t) =>
+            t.id === id ? { ...t, ...payload, updated_at: new Date().toISOString() } : t
+          )
+        );
+        return { ...task, ...payload } as Task;
+      }
       const { data: task } = await supabase.from('tasks').select('is_completed').eq('id', id).single();
       if (!task) throw new Error('Task not found');
-
       const newCompleted = !task.is_completed;
-
       const { data: updated, error } = await supabase
         .from('tasks')
         .update({
@@ -297,12 +338,11 @@ export function useToggleTask() {
         .eq('id', id)
         .select()
         .single();
-
       if (error) throw error;
       return updated as Task;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
     },
   });
 }
@@ -312,12 +352,17 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'tasks', op: 'delete', id });
+        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => (old ?? []).filter((t) => t.id !== id));
+        return true;
+      }
       const { error } = await supabase.from('tasks').delete().eq('id', id);
       if (error) throw error;
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
     },
   });
 }

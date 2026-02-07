@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
+import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { AppShell } from './components/AppShell';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
@@ -14,14 +16,35 @@ import Habits from './routes/Habits';
 import SettingsPage from './routes/Settings';
 import './App.css';
 
+const persister = createSyncStoragePersister({
+  storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  key: 'lifeos_query_cache',
+  throttleTime: 1000,
+});
+const PERSIST_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
+
 function App() {
-  // Seed database on first load
   useEffect(() => {
-    seedDatabase();
+    if (isOnline()) seedDatabase();
+  }, []);
+
+  // When back online: push queued changes then pull (refetch)
+  useEffect(() => {
+    const handleOnline = async () => {
+      const { processed } = await processOfflineQueue();
+      if (processed > 0) {
+        await queryClient.invalidateQueries();
+      } else {
+        queryClient.invalidateQueries();
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: PERSIST_MAX_AGE }}>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AppShell />}>
@@ -36,7 +59,7 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   );
 }
 

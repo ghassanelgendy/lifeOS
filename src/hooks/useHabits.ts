@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Habit, CreateInput, UpdateInput, HabitLog } from '../types/schema';
-import { round1 } from '../lib/utils'; // Assuming round1 is available in utils, or inline it
+import { round1 } from '../lib/utils';
 
 const HABITS_KEY = ['habits'];
 const HABIT_LOGS_KEY = ['habit-logs'];
@@ -43,12 +44,18 @@ export function useCreateHabit() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<Habit>) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'habits', op: 'create', payload: { ...input, is_archived: false } as Record<string, unknown> });
+        const optimistic: Habit = { ...input, id: `offline-h-${Date.now()}`, is_archived: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Habit;
+        queryClient.setQueryData(HABITS_KEY, (old: Habit[] | undefined) => [...(old ?? []), optimistic]);
+        return optimistic;
+      }
       const { data, error } = await supabase.from('habits').insert({ ...input, is_archived: false }).select().single();
       if (error) throw error;
       return data as Habit;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: HABITS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: HABITS_KEY });
     },
   });
 }
@@ -58,12 +65,20 @@ export function useUpdateHabit() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Habit> }) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'habits', op: 'update', id, payload: data as Record<string, unknown> });
+        queryClient.setQueryData(HABITS_KEY, (old: Habit[] | undefined) =>
+          (old ?? []).map((h) => (h.id === id ? { ...h, ...data, updated_at: new Date().toISOString() } : h))
+        );
+        const prev = (queryClient.getQueryData(HABITS_KEY) as Habit[] | undefined)?.find((h) => h.id === id);
+        return { ...prev, ...data, id } as Habit;
+      }
       const { data: updated, error } = await supabase.from('habits').update(data).eq('id', id).select().single();
       if (error) throw error;
       return updated as Habit;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: HABITS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: HABITS_KEY });
     },
   });
 }
@@ -73,13 +88,17 @@ export function useDeleteHabit() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      // Soft delete
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'habits', op: 'delete', id });
+        queryClient.setQueryData(HABITS_KEY, (old: Habit[] | undefined) => (old ?? []).map((h) => (h.id === id ? { ...h, is_archived: true } : h)));
+        return true;
+      }
       const { error } = await supabase.from('habits').update({ is_archived: true }).eq('id', id);
       if (error) throw error;
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: HABITS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: HABITS_KEY });
     },
   });
 }

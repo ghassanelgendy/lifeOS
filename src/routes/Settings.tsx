@@ -12,7 +12,6 @@ import {
   Smartphone,
   Check,
   Bell,
-  LayoutDashboard,
   ChevronUp,
   ChevronDown,
   GripVertical,

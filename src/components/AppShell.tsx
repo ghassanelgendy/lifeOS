@@ -15,6 +15,7 @@ import { NavLink, Outlet, useMatch } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
+import { OfflineBanner } from './OfflineBanner';
 
 export interface NavItem {
   label: string;
@@ -115,10 +116,11 @@ export function AppShell() {
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile Header */}
-        {/* Mobile Header */}
         <header className="md:hidden flex h-14 items-center justify-center border-b border-border px-4 bg-background">
           <span className="font-bold text-lg">LifeOS</span>
         </header>
+
+        <OfflineBanner />
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-hidden relative">
