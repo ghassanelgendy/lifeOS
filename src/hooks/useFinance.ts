@@ -4,25 +4,38 @@ import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Transaction, Budget, CreateInput, UpdateInput, TransactionCategory } from '../types/schema';
 import { round1 } from '../lib/utils';
+import { useAuth } from '../contexts/AuthContext';
 
 const TRANSACTIONS_KEY = ['transactions'];
 const BUDGETS_KEY = ['budgets'];
 
+function transactionsKey(userId: string | undefined) {
+  return [...TRANSACTIONS_KEY, userId] as const;
+}
+function budgetsKey(userId: string | undefined) {
+  return [...BUDGETS_KEY, userId] as const;
+}
+
 // Transactions
 export function useTransactions() {
+  const { user } = useAuth();
+  const key = transactionsKey(user?.id);
   return useQuery({
-    queryKey: TRANSACTIONS_KEY,
+    queryKey: key,
     queryFn: async () => {
       const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
       if (error) throw error;
       return data as Transaction[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useTransactionsByRange(start: string, end: string) {
+  const { user } = useAuth();
+  const key = transactionsKey(user?.id);
   return useQuery({
-    queryKey: [...TRANSACTIONS_KEY, 'range', start, end],
+    queryKey: [...key, 'range', start, end],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('transactions')
@@ -33,12 +46,14 @@ export function useTransactionsByRange(start: string, end: string) {
       if (error) throw error;
       return data as Transaction[];
     },
-    enabled: !!start && !!end,
+    enabled: !!user?.id && !!start && !!end,
   });
 }
 
 export function useCreateTransaction() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = transactionsKey(user?.id);
 
   return useMutation({
     mutationFn: async (input: CreateInput<Transaction>) => {
@@ -46,7 +61,7 @@ export function useCreateTransaction() {
         addToOfflineQueue({ entity: 'transactions', op: 'create', payload: input as Record<string, unknown> });
         const now = new Date().toISOString();
         const optimistic: Transaction = { ...input, id: `offline-tx-${Date.now()}`, created_at: now, updated_at: now } as Transaction;
-        queryClient.setQueryData(TRANSACTIONS_KEY, (old: Transaction[] | undefined) => [optimistic, ...(old ?? [])]);
+        queryClient.setQueryData(key, (old: Transaction[] | undefined) => [optimistic, ...(old ?? [])]);
         return optimistic;
       }
       const { data, error } = await supabase.from('transactions').insert(input).select().single();
@@ -54,22 +69,24 @@ export function useCreateTransaction() {
       return data as Transaction;
     },
     onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }
 
 export function useUpdateTransaction() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = transactionsKey(user?.id);
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Transaction> }) => {
       if (!isOnline()) {
         addToOfflineQueue({ entity: 'transactions', op: 'update', id, payload: data as Record<string, unknown> });
-        queryClient.setQueryData(TRANSACTIONS_KEY, (old: Transaction[] | undefined) =>
+        queryClient.setQueryData(key, (old: Transaction[] | undefined) =>
           (old ?? []).map((t) => (t.id === id ? { ...t, ...data } : t))
         );
-        const prev = (queryClient.getQueryData(TRANSACTIONS_KEY) as Transaction[] | undefined)?.find((t) => t.id === id);
+        const prev = (queryClient.getQueryData(key) as Transaction[] | undefined)?.find((t) => t.id === id);
         return { ...prev, ...data, id } as Transaction;
       }
       const { data: updated, error } = await supabase.from('transactions').update(data).eq('id', id).select().single();
@@ -77,19 +94,21 @@ export function useUpdateTransaction() {
       return updated as Transaction;
     },
     onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }
 
 export function useDeleteTransaction() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = transactionsKey(user?.id);
 
   return useMutation({
     mutationFn: async (id: string) => {
       if (!isOnline()) {
         addToOfflineQueue({ entity: 'transactions', op: 'delete', id });
-        queryClient.setQueryData(TRANSACTIONS_KEY, (old: Transaction[] | undefined) => (old ?? []).filter((t) => t.id !== id));
+        queryClient.setQueryData(key, (old: Transaction[] | undefined) => (old ?? []).filter((t) => t.id !== id));
         return true;
       }
       const { error } = await supabase.from('transactions').delete().eq('id', id);
@@ -97,45 +116,52 @@ export function useDeleteTransaction() {
       return true;
     },
     onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }
 
 // Budgets
 export function useBudgets() {
+  const { user } = useAuth();
+  const key = budgetsKey(user?.id);
   return useQuery({
-    queryKey: BUDGETS_KEY,
+    queryKey: key,
     queryFn: async () => {
       const { data, error } = await supabase.from('budgets').select('*');
       if (error) throw error;
       return data as Budget[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useUpsertBudget() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = budgetsKey(user?.id);
 
   return useMutation({
     mutationFn: async ({ category, monthlyLimit }: { category: TransactionCategory; monthlyLimit: number }) => {
       // Upsert based on category
       const { data, error } = await supabase
         .from('budgets')
-        .upsert({ category, monthly_limit: monthlyLimit }, { onConflict: 'category' })
+        .upsert({ category, monthly_limit: monthlyLimit }, { onConflict: 'user_id,category' })
         .select()
         .single();
       if (error) throw error;
       return data as Budget;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BUDGETS_KEY });
+      queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }
 
 export function useDeleteBudget() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = budgetsKey(user?.id);
 
   return useMutation({
     mutationFn: async (category: TransactionCategory) => {
@@ -144,7 +170,7 @@ export function useDeleteBudget() {
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: BUDGETS_KEY });
+      queryClient.invalidateQueries({ queryKey: key });
     },
   });
 }
@@ -159,8 +185,11 @@ export function useFinancialSummary(year?: number, month?: number) {
   const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
   const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
 
+  const { user } = useAuth();
+  const key = transactionsKey(user?.id);
+
   return useQuery({
-    queryKey: [...TRANSACTIONS_KEY, 'summary', targetYear, targetMonth],
+    queryKey: [...key, 'summary', targetYear, targetMonth],
     queryFn: async () => {
       const { data: transactions, error } = await supabase
         .from('transactions')
@@ -185,6 +214,7 @@ export function useFinancialSummary(year?: number, month?: number) {
         savingsRate: totalIncome > 0 ? round1(((totalIncome - totalExpenses) / totalIncome) * 100) : 0
       };
     },
+    enabled: !!user?.id,
   });
 }
 

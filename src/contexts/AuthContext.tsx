@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
+
+const PERSISTED_CACHE_KEY = 'lifeos_query_cache';
 
 interface AuthState {
   user: User | null;
@@ -63,6 +66,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    queryClient.clear();
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(PERSISTED_CACHE_KEY);
+    }
   };
 
   const value: AuthState = {
