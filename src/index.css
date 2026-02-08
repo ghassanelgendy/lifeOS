@@ -307,6 +307,22 @@ html.light[data-accent="amber"] {
   }
 }
 
+/* iOS-style modal: slide up from bottom */
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.modal-backdrop-ios {
+  animation: modal-backdrop-in 0.25s ease-out;
+}
+.modal-sheet-ios {
+  animation: modal-sheet-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 @layer utilities {
   .privacy-mode {
     filter: blur(4px);

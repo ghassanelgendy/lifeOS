@@ -41,8 +41,8 @@ import {
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, RecurrencePattern } from '../types/schema';
 import { useTasks } from '../hooks/useTasks';
+import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
 import { downloadCalendarIcs } from '../lib/calendarExport';
-import { useUIStore } from '../stores/useUIStore';
 import type { IcalEvent } from '../lib/icalSubscribe';
 
 type ExtendedCalendarEvent = (CalendarEvent & {
@@ -77,8 +77,7 @@ export default function CalendarPage() {
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
   const { data: allEvents = [] } = useCalendarEvents();
-  const icalSubscriptionUrls = useUIStore((s) => s.icalSubscriptionUrls);
-  const setIcalSubscriptionUrls = useUIStore((s) => s.setIcalSubscriptionUrls);
+  const { urls: icalSubscriptionUrls, addUrl: addIcalUrl, removeUrl: removeIcalUrl } = useIcalSubscriptions();
   const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, icalSubscriptionUrls);
   const [newIcalUrl, setNewIcalUrl] = useState('');
   const createEvent = useCreateCalendarEvent();
@@ -127,13 +126,12 @@ export default function CalendarPage() {
   const handleAddIcalUrl = () => {
     const url = newIcalUrl.trim().replace(/^webcal:\/\//i, 'https://');
     if (!url || !url.startsWith('http')) return;
-    if (icalSubscriptionUrls.includes(url)) return;
-    setIcalSubscriptionUrls([...icalSubscriptionUrls, url]);
+    addIcalUrl(url);
     setNewIcalUrl('');
   };
 
   const handleRemoveIcalUrl = (url: string) => {
-    setIcalSubscriptionUrls(icalSubscriptionUrls.filter((u) => u !== url));
+    removeIcalUrl(url);
   };
 
   // Get tasks for a specific day

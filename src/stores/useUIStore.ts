@@ -25,6 +25,9 @@ interface UIState {
   isSidebarCollapsed: boolean;
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  // Mobile drawer (slide from left, e.g. on Tasks swipe-from-left)
+  isMobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
 
   // Modals
   activeModal: string | null;
@@ -53,10 +56,6 @@ interface UIState {
   setDashboardWidgetVisible: (visible: Record<string, boolean>) => void;
   toggleDashboardWidget: (id: string) => void;
   moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
-
-  // iCal subscription URLs (show external calendar in app calendar)
-  icalSubscriptionUrls: string[];
-  setIcalSubscriptionUrls: (urls: string[]) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -66,6 +65,8 @@ export const useUIStore = create<UIState>()(
       isSidebarCollapsed: false,
       toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
+      isMobileSidebarOpen: false,
+      setMobileSidebarOpen: (open) => set({ isMobileSidebarOpen: open }),
 
       // Modals
       activeModal: null,
@@ -109,10 +110,6 @@ export const useUIStore = create<UIState>()(
           [order[i], order[j]] = [order[j], order[i]];
           return { dashboardWidgetOrder: order };
         }),
-
-      // iCal subscriptions
-      icalSubscriptionUrls: [],
-      setIcalSubscriptionUrls: (icalSubscriptionUrls) => set({ icalSubscriptionUrls }),
     }),
     {
       name: 'lifeos-ui-store',
@@ -121,7 +118,6 @@ export const useUIStore = create<UIState>()(
         privacyMode: state.privacyMode,
         theme: state.theme,
         accentTheme: state.accentTheme,
-        icalSubscriptionUrls: state.icalSubscriptionUrls,
         mobileNavItems: state.mobileNavItems,
         dashboardWidgetOrder: state.dashboardWidgetOrder,
         dashboardWidgetVisible: state.dashboardWidgetVisible,

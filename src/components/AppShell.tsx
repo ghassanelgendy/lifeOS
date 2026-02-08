@@ -10,8 +10,9 @@ import {
   Target,
   CheckSquare
 } from 'lucide-react';
+import { useRef, useCallback } from 'react';
 import { cn } from '../lib/utils';
-import { NavLink, Outlet, useMatch } from 'react-router-dom';
+import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
@@ -54,15 +55,118 @@ function MobileNavLink({ item }: { item: NavItem }) {
   );
 }
 
-export function AppShell() {
-  const { isSidebarCollapsed, toggleSidebar, mobileNavItems } = useUIStore();
+const SWIPE_EDGE_PX = 24;
+const SWIPE_MIN_DELTA = 50;
+const CENTER_SWIPE_MIN = 0.25;
+const CENTER_SWIPE_MAX = 0.75;
 
-  // Filter NAV_ITEMS based on user's mobile nav selection
+export function AppShell() {
+  const { isSidebarCollapsed, toggleSidebar, mobileNavItems, isMobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
   const mobileNavigation = NAV_ITEMS.filter(item => mobileNavItems.includes(item.href));
+  const currentIndex = mobileNavigation.findIndex(
+    (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
+  );
+  const isOnTasks = location.pathname === '/tasks';
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStart.current = { x: t.clientX, y: t.clientY };
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (!touchStart.current) return;
+    const t = e.changedTouches[0];
+    const deltaX = t.clientX - touchStart.current.x;
+    const deltaY = t.clientY - touchStart.current.y;
+    const w = window.innerWidth;
+
+    // Swipe from left edge (e.g. on Tasks) → open mobile sidebar
+    if (isOnTasks && touchStart.current.x < SWIPE_EDGE_PX && deltaX > SWIPE_MIN_DELTA) {
+      setMobileSidebarOpen(true);
+      touchStart.current = null;
+      return;
+    }
+
+    // Swipe from center → navigate tabs (only if mostly horizontal)
+    if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_MIN_DELTA) {
+      touchStart.current = null;
+      return;
+    }
+    const startRatio = touchStart.current.x / w;
+    if (startRatio < CENTER_SWIPE_MIN || startRatio > CENTER_SWIPE_MAX) {
+      touchStart.current = null;
+      return;
+    }
+    if (deltaX > SWIPE_MIN_DELTA && currentIndex > 0) {
+      navigate(mobileNavigation[currentIndex - 1].href);
+    } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigation.length - 1) {
+      navigate(mobileNavigation[currentIndex + 1].href);
+    }
+    touchStart.current = null;
+  }, [isOnTasks, currentIndex, mobileNavigation, navigate, setMobileSidebarOpen]);
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground font-sans">
       <CommandPalette />
+      {/* Mobile drawer (slide from left) */}
+      <>
+        <div
+          className={cn(
+            "md:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-300",
+            isMobileSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          onClick={() => setMobileSidebarOpen(false)}
+          aria-hidden
+        />
+        <aside
+          className={cn(
+            "md:hidden fixed top-0 left-0 z-50 w-72 max-w-[85vw] h-full flex flex-col bg-card border-r border-border shadow-xl transition-transform duration-300 ease-out",
+            isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+          )}
+          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        >
+          <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
+            <span className="text-xl font-bold tracking-tight">LifeOS</span>
+            <button onClick={() => setMobileSidebarOpen(false)} className="p-1 hover:bg-secondary rounded-md">
+              <X size={20} />
+            </button>
+          </div>
+          <nav className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 px-2">
+            {NAV_ITEMS.filter(item => item.href !== '/settings').map((item) => (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                end={item.href === '/'}
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary",
+                  isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
+                )}
+                onClick={() => setMobileSidebarOpen(false)}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </nav>
+          <div className="p-4 border-t border-border">
+            <NavLink
+              to="/settings"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary",
+                isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
+              )}
+              onClick={() => setMobileSidebarOpen(false)}
+            >
+              <Settings size={28} />
+              <span>Settings</span>
+            </NavLink>
+          </div>
+        </aside>
+      </>
       {/* Desktop Sidebar */}
       <aside
         className={cn(
@@ -115,15 +219,30 @@ export function AppShell() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        {/* Mobile Header */}
-        <header className="md:hidden flex h-14 items-center justify-center border-b border-border px-4 bg-background">
+        {/* Mobile Header — safe area top for iOS standalone (notch/status bar) */}
+        <header
+          className="md:hidden flex h-14 items-center justify-between border-b border-border px-4 bg-background shrink-0"
+          style={{ paddingTop: 'env(safe-area-inset-top)', minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}
+        >
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="p-2 -ml-2 hover:bg-secondary rounded-lg touch-manipulation"
+            aria-label="Open menu"
+          >
+            <Menu size={24} />
+          </button>
           <span className="font-bold text-lg">LifeOS</span>
+          <div className="w-10" />
         </header>
 
         <OfflineBanner />
 
-        {/* Scrollable Content */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
+        {/* Scrollable Content — swipe from center: change tab; on Tasks, swipe from left edge: open drawer */}
+        <div
+          className="flex-1 flex flex-col min-h-0 overflow-hidden relative touch-pan-y"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
           <PullToRefresh>
             <div className="flex-1 flex flex-col min-h-0 overflow-auto p-4 md:p-6 pb-24 md:pb-6">
               <Outlet />
