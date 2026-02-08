@@ -25,6 +25,8 @@ import {
   isToday,
   addMonths,
   subMonths,
+  addWeeks,
+  subWeeks,
   parseISO
 } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -67,8 +69,10 @@ export default function CalendarPage() {
   // Get calendar range based on view
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart);
-  const calendarEnd = endOfWeek(monthEnd);
+  const calendarStart =
+    view === 'week' ? startOfWeek(currentDate) : startOfWeek(monthStart);
+  const calendarEnd =
+    view === 'week' ? endOfWeek(currentDate) : endOfWeek(monthEnd);
 
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
@@ -143,11 +147,11 @@ export default function CalendarPage() {
 
   // Navigation
   const goToPrevious = () => {
-    setCurrentDate(subMonths(currentDate, 1));
+    setCurrentDate(view === 'week' ? subWeeks(currentDate, 1) : subMonths(currentDate, 1));
   };
 
   const goToNext = () => {
-    setCurrentDate(addMonths(currentDate, 1));
+    setCurrentDate(view === 'week' ? addWeeks(currentDate, 1) : addMonths(currentDate, 1));
   };
 
   const goToToday = () => {
@@ -271,7 +275,9 @@ export default function CalendarPage() {
             <ChevronLeft size={20} />
           </button>
           <h2 className="text-xl font-semibold min-w-[180px] text-center">
-            {format(currentDate, 'MMMM yyyy')}
+            {view === 'week'
+              ? `${format(calendarStart, 'MMM d')} – ${format(calendarEnd, 'MMM d, yyyy')}`
+              : format(currentDate, 'MMMM yyyy')}
           </h2>
           <button
             onClick={goToNext}
@@ -329,7 +335,8 @@ export default function CalendarPage() {
                     key={index}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "min-h-[100px] p-1 border-b border-r border-border cursor-pointer transition-colors",
+                      "p-1 border-b border-r border-border cursor-pointer transition-colors",
+                      view === 'week' ? "min-h-[200px]" : "min-h-[100px]",
                       !isCurrentMonth && "bg-secondary/30",
                       isSelected && "bg-secondary",
                       "hover:bg-secondary/50"

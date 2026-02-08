@@ -4,8 +4,25 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  publicDir: 'public',
+  build: {
+    rollupOptions: {
+      input: 'index.html',
+    },
+  },
   plugins: [
     react(),
+    // Prevent api/*.ts from being processed by esbuild (avoids "Invalid loader: ics" from PWA build)
+    {
+      name: 'ignore-api',
+      load(id) {
+        const n = id.replace(/\\/g, '/');
+        if (n.includes('/api/') && (n.endsWith('.ts') || n.endsWith('.tsx'))) {
+          return 'export default {}';
+        }
+        return null;
+      },
+    },
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',

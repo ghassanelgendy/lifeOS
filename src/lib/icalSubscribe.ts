@@ -1,12 +1,11 @@
 /**
  * Fetch and parse iCalendar (.ics) from a URL for display in the app calendar.
- * Supports basic VEVENT (SUMMARY, DTSTART, DTEND, all-day or timed).
  */
 
 export interface IcalEvent {
   id: string;
   title: string;
-  start_time: string; // ISO
+  start_time: string;
   end_time: string;
   all_day: boolean;
   description?: string;
@@ -15,12 +14,10 @@ export interface IcalEvent {
   icalUrl: string;
 }
 
-/** Unfold folded lines (continuation lines start with space) */
 function unfold(ical: string): string {
   return ical.replace(/\r?\n[ \t]/g, '');
 }
 
-/** Parse a single VEVENT block into IcalEvent or null */
 function parseVevent(block: string, icalUrl: string): IcalEvent | null {
   const lines = block.split(/\r?\n/);
   let summary = '';
@@ -63,7 +60,7 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
     d.setDate(d.getDate() + 1);
     dtEnd = d.toISOString();
   } else if (!dtEnd) {
-    dtEnd = dtStart; // fallback
+    dtEnd = dtStart;
   }
 
   return {
@@ -77,7 +74,6 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
   };
 }
 
-/** Parse YYYYMMDD to ISO date string (start of day UTC) */
 function parseIcalDate(value: string): string {
   const v = value.replace(/\s/g, '');
   if (v.length < 8) return '';
@@ -87,7 +83,6 @@ function parseIcalDate(value: string): string {
   return new Date(Date.UTC(y, m, d)).toISOString();
 }
 
-/** Parse YYYYMMDDTHHmmssZ or YYYYMMDDTHHmmss to ISO string */
 function parseIcalDateTime(value: string): string {
   const v = value.replace(/\s/g, '');
   if (v.length < 15) return '';
@@ -103,9 +98,6 @@ function parseIcalDateTime(value: string): string {
   return new Date(y, m, day, h, min, sec).toISOString();
 }
 
-/**
- * Parse iCalendar text into an array of IcalEvent.
- */
 export function parseIcalToEvents(icalText: string, sourceUrl: string): IcalEvent[] {
   const unfolded = unfold(icalText);
   const events: IcalEvent[] = [];
@@ -118,9 +110,6 @@ export function parseIcalToEvents(icalText: string, sourceUrl: string): IcalEven
   return events;
 }
 
-/**
- * Fetch iCal from URL and return events. Converts webcal:// to https://.
- */
 export async function fetchIcalEvents(
   url: string,
   startDate: Date,
@@ -129,7 +118,13 @@ export async function fetchIcalEvents(
   const href = url.replace(/^webcal:\/\//i, 'https://').trim();
   if (!href.startsWith('https://') && !href.startsWith('http://')) return [];
 
-  const res = await fetch(href, { cache: 'no-store' });
+  // Use same-origin proxy to avoid CORS (external calendars usually don't allow cross-origin)
+  const isBrowser = typeof window !== 'undefined';
+  const fetchUrl = isBrowser
+    ? `${window.location.origin}/api/proxy?url=${encodeURIComponent(href)}`
+    : href;
+
+  const res = await fetch(fetchUrl, { cache: 'no-store' });
   if (!res.ok) return [];
   const text = await res.text();
   const events = parseIcalToEvents(text, url);
