@@ -150,14 +150,23 @@ create table habit_logs (
 -- ========================
 -- Transactions
 -- ========================
+-- Date, Time, Cash Flow, Amount, Bank, Type, Entity, Direction, Account, Details, Category
 create table transactions (
   id uuid primary key default uuid_generate_v4(),
-  type text not null, -- 'income' or 'expense'
+  -- Core (existing)
+  type text not null, -- 'income' or 'expense' (drives Cash Flow: Cash In (+) / Cash Out (-))
   category text not null,
   amount numeric(10,2) not null,
-  description text,
+  description text, -- Details
   date date not null,
+  time time, -- optional time of day (e.g. 13:38)
   is_recurring boolean default false,
+  -- Extended (bank / statement-style)
+  bank text, -- e.g. 'QNB'
+  transaction_type text, -- e.g. 'IPN Transfer'
+  entity text, -- counterparty or entity name
+  direction text, -- 'In' or 'Out'
+  account text, -- e.g. '***50' (masked account)
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
@@ -169,6 +178,19 @@ create table budgets (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   updated_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- ========================
+-- User banks (tags: written once, chosen from list; per user)
+-- ========================
+create table user_banks (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid references auth.users(id) on delete cascade,
+  name text not null,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- One bank name per user (case-insensitive dedup)
+create unique index user_banks_user_id_lower_name_idx on user_banks (user_id, lower(trim(name)));
 
 -- ========================
 -- Security (RLS) - Allow ALL for now (MVP)
@@ -184,6 +206,7 @@ alter table habits enable row level security;
 alter table habit_logs enable row level security;
 alter table transactions enable row level security;
 alter table budgets enable row level security;
+alter table user_banks enable row level security;
 
 -- Policy to allow all access (since we don't have auth setup yet)
 create policy "Public Access" on inbody_scans for all using (true);
@@ -197,3 +220,4 @@ create policy "Public Access" on habits for all using (true);
 create policy "Public Access" on habit_logs for all using (true);
 create policy "Public Access" on transactions for all using (true);
 create policy "Public Access" on budgets for all using (true);
+create policy "Public Access" on user_banks for all using (true);

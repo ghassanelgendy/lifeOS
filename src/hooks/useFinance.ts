@@ -247,10 +247,8 @@ export function useFinancialSummary(year?: number, month?: number) {
   });
 }
 
-// Category breakdown for current month
-export function useCategoryBreakdown() {
-  const { data: transactions = [] } = useTransactions();
-
+// Category breakdown for current month (optionally from a pre-filtered list)
+function computeBreakdownFromTransactions(transactions: Transaction[]) {
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
@@ -282,6 +280,17 @@ export function useCategoryBreakdown() {
     balance: round1(totalIncome - totalExpenses),
     transactions: monthlyTransactions,
   };
+}
+
+/** Breakdown from a given list (e.g. filtered by bank). Use for bank-scoped stats. */
+export function getBreakdownFromTransactions(transactions: Transaction[]) {
+  return computeBreakdownFromTransactions(transactions);
+}
+
+// Category breakdown for current month (all transactions)
+export function useCategoryBreakdown() {
+  const { data: transactions = [] } = useTransactions();
+  return computeBreakdownFromTransactions(transactions);
 }
 
 // Budget vs Actual spending

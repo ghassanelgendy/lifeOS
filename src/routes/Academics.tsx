@@ -206,7 +206,7 @@ export default function Academics() {
         </div>
         <Button onClick={() => handleOpenProjectModal()}>
           <Plus size={18} />
-          New Project
+        
         </Button>
       </div>
 

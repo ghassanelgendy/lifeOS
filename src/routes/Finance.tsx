@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Plus,
   ArrowUpRight,
@@ -8,21 +8,28 @@ import {
   Banknote
 } from 'lucide-react';
 import {
-  PieChart as RechartsPie,
-  Pie,
-  Cell,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
   ResponsiveContainer,
-  Tooltip
+  Tooltip,
+  Cell,
+  CartesianGrid
 } from 'recharts';
-import { format } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { cn, formatCurrency } from '../lib/utils';
 import {
   useTransactions,
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
-  useCategoryBreakdown
+  getBreakdownFromTransactions
 } from '../hooks/useFinance';
+import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
+import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../stores/useUIStore';
 import { Modal, Button, Input, Select } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory } from '../types/schema';
@@ -62,11 +69,35 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function Finance() {
   const { data: transactions = [], isLoading } = useTransactions();
-  const { expensesByCategory, totalExpenses, totalIncome, balance } = useCategoryBreakdown();
+  const { data: banks = [], isLoading: banksLoading } = useUserBanks();
+  const ensureDefaultBanks = useEnsureDefaultBanks();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
   const { privacyMode } = useUIStore();
+
+  // Ensure default banks exist once (Orange Cash, QNB, HSBC, SAIB, NBE, Cash)
+  const { user } = useAuth();
+  const hasEnsuredDefaults = useRef(false);
+  useEffect(() => {
+    if (!user?.id || banksLoading || banks.length > 0 || hasEnsuredDefaults.current) return;
+    hasEnsuredDefaults.current = true;
+    ensureDefaultBanks.mutate();
+  }, [user?.id, banksLoading, banks.length]);
+
+  const [selectedBank, setSelectedBank] = useState<string>(''); // '' = All (consolidated)
+  const filteredTransactions =
+    selectedBank === ''
+      ? transactions
+      : transactions.filter((t) => (t.bank || '').trim() === selectedBank);
+  const { expensesByCategory, totalExpenses, totalIncome, balance } =
+    getBreakdownFromTransactions(filteredTransactions);
+
+  const bankOptions = useMemo(() => {
+    const fromBanks = banks.map((b) => b.name);
+    const fromTx = transactions.map((t) => t.bank).filter(Boolean) as string[];
+    return [...new Set([...fromBanks, ...fromTx])].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  }, [banks, transactions]);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -76,27 +107,98 @@ export default function Finance() {
     amount: 0,
     description: '',
     date: new Date().toISOString().split('T')[0],
+    time: '',
     is_recurring: false,
+    bank: '',
+    transaction_type: '',
+    entity: '',
+    direction: 'Out',
+    account: '',
   });
 
-  // Prepare pie chart data
-  const pieChartData = Object.entries(expensesByCategory).map(([category, amount]) => ({
-    name: EXPENSE_CATEGORIES.find(c => c.value === category)?.label || category,
-    value: amount,
-    color: CATEGORY_COLORS[category],
-  }));
+  // Graph type: category (bar), overtime (line/area), accounts (by bank – only when All view)
+  type GraphType = 'category' | 'overtime' | 'accounts';
+  const [graphType, setGraphType] = useState<GraphType>('category');
+  useEffect(() => {
+    if (selectedBank !== '' && graphType === 'accounts') setGraphType('category');
+  }, [selectedBank, graphType]);
+
+  // Expense-by-category data (for bar chart and category list)
+  const chartData = useMemo(
+    () =>
+      Object.entries(expensesByCategory)
+        .map(([category, amount]) => ({
+          name: EXPENSE_CATEGORIES.find((c) => c.value === category)?.label || category,
+          value: amount,
+          color: CATEGORY_COLORS[category],
+        }))
+        .sort((a, b) => b.value - a.value),
+    [expensesByCategory]
+  );
+
+  // Over time: last 6 months income/expense/balance (from filtered transactions)
+  const overtimeData = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = subMonths(now, 5 - i);
+      const start = startOfMonth(d).toISOString().split('T')[0];
+      const end = endOfMonth(d).toISOString().split('T')[0];
+      const inRange = filteredTransactions.filter(
+        (t) => t.date >= start && t.date <= end
+      );
+      let income = 0;
+      let expense = 0;
+      inRange.forEach((t) => {
+        if (t.type === 'income') income += t.amount;
+        else expense += t.amount;
+      });
+      return {
+        month: format(d, 'MMM'),
+        fullMonth: format(d, 'MMMM yyyy'),
+        income: Math.round(income * 100) / 100,
+        expense: Math.round(expense * 100) / 100,
+        balance: Math.round((income - expense) * 100) / 100,
+      };
+    });
+  }, [filteredTransactions]);
+
+  // By account: per-bank totals (only meaningful when viewing All)
+  const accountsData = useMemo(() => {
+    const byBank: Record<string, { income: number; expense: number }> = {};
+    filteredTransactions.forEach((t) => {
+      const bank = (t.bank || '').trim() || '—';
+      if (!byBank[bank]) byBank[bank] = { income: 0, expense: 0 };
+      if (t.type === 'income') byBank[bank].income += t.amount;
+      else byBank[bank].expense += t.amount;
+    });
+    return Object.entries(byBank)
+      .map(([name, { income, expense }]) => ({
+        name,
+        income: Math.round(income * 100) / 100,
+        expense: Math.round(expense * 100) / 100,
+        balance: Math.round((income - expense) * 100) / 100,
+      }))
+      .sort((a, b) => b.balance - a.balance);
+  }, [filteredTransactions]);
 
   // Modal handlers
   const handleOpenModal = (transaction?: Transaction) => {
     if (transaction) {
       setEditingTransaction(transaction);
+      const d = transaction.date.split('T')[0];
       setFormData({
         type: transaction.type,
         category: transaction.category,
         amount: transaction.amount,
         description: transaction.description,
-        date: transaction.date.split('T')[0],
+        date: d,
+        time: transaction.time ? transaction.time.slice(0, 5) : '',
         is_recurring: transaction.is_recurring,
+        bank: transaction.bank ?? '',
+        transaction_type: transaction.transaction_type ?? '',
+        entity: transaction.entity ?? '',
+        direction: transaction.direction ?? (transaction.type === 'income' ? 'In' : 'Out'),
+        account: transaction.account ?? '',
       });
     } else {
       setEditingTransaction(null);
@@ -106,23 +208,39 @@ export default function Finance() {
         amount: 0,
         description: '',
         date: new Date().toISOString().split('T')[0],
+        time: '',
         is_recurring: false,
+        bank: '',
+        transaction_type: '',
+        entity: '',
+        direction: 'Out',
+        account: '',
       });
     }
     setIsModalOpen(true);
   };
 
+  const sanitizePayload = (data: Partial<CreateInput<Transaction>>): CreateInput<Transaction> => {
+    const out = { ...data } as Record<string, unknown>;
+    ['time', 'bank', 'transaction_type', 'entity', 'account'].forEach((k) => {
+      if (out[k] === '') delete out[k];
+    });
+    if (out.direction === '') delete out.direction;
+    return out as CreateInput<Transaction>;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const payload = sanitizePayload(formData as Partial<CreateInput<Transaction>>);
     if (editingTransaction) {
       updateTransaction.mutate({
         id: editingTransaction.id,
-        data: formData,
+        data: payload,
       }, {
         onSuccess: () => setIsModalOpen(false),
       });
     } else {
-      createTransaction.mutate(formData as CreateInput<Transaction>, {
+      createTransaction.mutate(payload, {
         onSuccess: () => setIsModalOpen(false),
       });
     }
@@ -153,6 +271,20 @@ export default function Finance() {
         <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add transaction">
           <Plus size={22} />
         </Button>
+      </div>
+
+      {/* Bank filter: All (consolidated) or single bank */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm text-muted-foreground">View:</span>
+        <Select
+          value={selectedBank}
+          onChange={(e) => setSelectedBank(e.target.value)}
+          options={[
+            { value: '', label: 'All (consolidated)' },
+            ...bankOptions.map((name) => ({ value: name, label: name })),
+          ]}
+          className="w-full sm:w-auto max-w-[200px]"
+        />
       </div>
 
       {/* Summary Cards */}
@@ -203,54 +335,205 @@ export default function Finance() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Expense Breakdown Chart */}
-        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
-          <h2 className="text-lg font-semibold mb-4">Expense Breakdown</h2>
-          {pieChartData.length > 0 ? (
-            <div className="h-[280px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <RechartsPie>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${((percent || 0) * 100).toFixed(0)}%`}
-                    labelLine={false}
+        {/* Chart card with iOS-style graph type selector */}
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-sm overflow-hidden">
+          {/* iOS-style segmented control */}
+          <div className="flex p-1 bg-secondary/50 rounded-xl mb-4">
+            <button
+              type="button"
+              onClick={() => setGraphType('category')}
+              className={cn(
+                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                graphType === 'category'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              By category
+            </button>
+            <button
+              type="button"
+              onClick={() => setGraphType('overtime')}
+              className={cn(
+                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                graphType === 'overtime'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Over time
+            </button>
+            {selectedBank === '' && (
+              <button
+                type="button"
+                onClick={() => setGraphType('accounts')}
+                className={cn(
+                  'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                  graphType === 'accounts'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                By account
+              </button>
+            )}
+          </div>
+
+          <div
+            className="w-full -mx-1 select-none"
+            style={{ height: 260, minHeight: 260, minWidth: 0 }}
+            role="img"
+            aria-label="Chart"
+          >
+            {graphType === 'category' && (
+              chartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260} minWidth={0}>
+                  <BarChart
+                    data={chartData}
+                    layout="vertical"
+                    margin={{ top: 8, right: 12, left: 4, bottom: 8 }}
                   >
-                    {pieChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value: number | undefined) => [formatCurrency(value || 0), 'Amount']}
-                    contentStyle={{
-                      backgroundColor: '#18181b',
-                      border: '1px solid #27272a',
-                      borderRadius: '8px'
-                    }}
-                  />
-                </RechartsPie>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="h-[280px] flex items-center justify-center text-muted-foreground">
-              No expense data for this month
-            </div>
-          )}
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={92}
+                      tick={{ fontSize: 13, fill: 'var(--color-muted-foreground)' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      formatter={(value: number | undefined) => [formatCurrency(value ?? 0), 'Spent']}
+                      contentStyle={{
+                        backgroundColor: 'var(--color-card)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 12,
+                        fontSize: 14,
+                        padding: '10px 14px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      }}
+                      cursor={false}
+                      itemStyle={{ paddingTop: 4 }}
+                    />
+                    <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={24}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`bar-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  No expenses this month
+                </div>
+              )
+            )}
+
+            {graphType === 'overtime' && (
+              overtimeData.some((d) => d.income !== 0 || d.expense !== 0) ? (
+                <ResponsiveContainer width="100%" height={260} minWidth={0}>
+                  <AreaChart
+                    data={overtimeData}
+                    margin={{ top: 12, right: 12, left: 4, bottom: 8 }}
+                  >
+                    <defs>
+                      <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(34, 197, 94)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="rgb(34, 197, 94)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="rgb(239, 68, 68)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="rgb(239, 68, 68)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.5} vertical={false} />
+                    <XAxis
+                      dataKey="month"
+                      tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v) => (v >= 1000 ? `${v / 1000}k` : String(v))}
+                    />
+                    <Tooltip
+                      cursor={false}
+                      contentStyle={{
+                        backgroundColor: 'var(--color-card)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 12,
+                        fontSize: 13,
+                        padding: '10px 14px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      }}
+                      formatter={(value, name) => [
+                        formatCurrency(typeof value === 'number' ? value : 0),
+                        name === 'income' ? 'Income' : 'Expense',
+                      ]}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.fullMonth ?? ''}
+                    />
+                    <Area type="monotone" dataKey="income" stroke="rgb(34, 197, 94)" strokeWidth={2} fill="url(#incomeGrad)" />
+                    <Area type="monotone" dataKey="expense" stroke="rgb(239, 68, 68)" strokeWidth={2} fill="url(#expenseGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  No data in the last 6 months
+                </div>
+              )
+            )}
+
+            {graphType === 'accounts' && selectedBank === '' && (
+              accountsData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={260} minWidth={0}>
+                  <BarChart
+                    data={accountsData}
+                    layout="vertical"
+                    margin={{ top: 8, right: 12, left: 4, bottom: 8 }}
+                  >
+                    <XAxis type="number" hide />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      width={88}
+                      tick={{ fontSize: 13, fill: 'var(--color-muted-foreground)' }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      cursor={false}
+                      contentStyle={{
+                        backgroundColor: 'var(--color-card)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 12,
+                        fontSize: 13,
+                        padding: '10px 14px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      }}
+                      formatter={(value) => [formatCurrency(typeof value === 'number' ? value : 0), 'Balance']}
+                      labelFormatter={(label) => label === '—' ? 'No bank' : label}
+                    />
+                    <Bar dataKey="balance" radius={[0, 6, 6, 0]} maxBarSize={24} fill="var(--color-primary)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                  No account data
+                </div>
+              )
+            )}
+          </div>
         </div>
 
-        {/* Category List */}
-        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+        {/* Category List – iOS style */}
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-sm">
           <h2 className="text-lg font-semibold mb-4">By Category</h2>
           <div className="space-y-3">
-            {pieChartData.length > 0 ? (
-              pieChartData
-                .sort((a, b) => b.value - a.value)
-                .map((item) => (
+            {chartData.length > 0 ? (
+              chartData.map((item) => (
                   <div key={item.name} className="flex items-center gap-3">
                     <div
                       className="w-3 h-3 rounded-full flex-shrink-0"
@@ -264,7 +547,7 @@ export default function Finance() {
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
-                          width: `${(item.value / totalExpenses) * 100}%`,
+                          width: `${totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0}%`,
                           backgroundColor: item.color
                         }}
                       />
@@ -289,24 +572,48 @@ export default function Finance() {
             <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-left font-medium">Description</th>
-                <th className="px-4 py-3 text-left font-medium">Category</th>
+                <th className="px-4 py-3 text-left font-medium">Cash Flow</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
+                <th className="px-4 py-3 text-left font-medium">Bank</th>
+                <th className="px-4 py-3 text-left font-medium">Type</th>
+                <th className="px-4 py-3 text-left font-medium">Entity</th>
+                <th className="px-4 py-3 text-left font-medium">Direction</th>
+                <th className="px-4 py-3 text-left font-medium">Account</th>
+                <th className="px-4 py-3 text-left font-medium">Details</th>
+                <th className="px-4 py-3 text-left font-medium">Category</th>
                 <th className="px-4 py-3 text-right font-medium">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {transactions.slice(0, 20).map((transaction) => {
+              {filteredTransactions.slice(0, 20).map((transaction) => {
                 const categoryLabel = transaction.type === 'income'
                   ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
                   : EXPENSE_CATEGORIES.find(c => c.value === transaction.category)?.label;
+                const cashFlow = transaction.type === 'income' ? 'Cash In (+)' : 'Cash Out (-)';
+                const timeStr = transaction.time ? transaction.time.slice(0, 5) : '';
 
                 return (
                   <tr key={transaction.id} className="hover:bg-secondary/20 transition-colors">
-                    <td className="px-4 py-3 text-muted-foreground">
+                    <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {format(new Date(transaction.date), 'MMM d')}
+                      {timeStr && <span className="block text-xs">{timeStr}</span>}
                     </td>
-                    <td className="px-4 py-3 font-medium">
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
+                      {cashFlow}
+                    </td>
+                    <td className={cn(
+                      "px-4 py-3 text-right font-medium tabular-nums whitespace-nowrap",
+                      transaction.type === 'income' ? "text-green-500" : "text-red-500",
+                      privacyMode && "blur-sm"
+                    )}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    </td>
+                    <td className="px-4 py-3 text-muted-foreground">{transaction.bank || '-'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{transaction.transaction_type || '-'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{transaction.entity || '-'}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{transaction.direction || '-'}</td>
+                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{transaction.account || '-'}</td>
+                    <td className="px-4 py-3 font-medium max-w-[140px] truncate" title={transaction.description ?? undefined}>
                       {transaction.description || '-'}
                       {transaction.is_recurring && (
                         <span className="ml-2 text-xs bg-secondary px-1.5 py-0.5 rounded">Recurring</span>
@@ -322,13 +629,6 @@ export default function Finance() {
                       >
                         {categoryLabel}
                       </span>
-                    </td>
-                    <td className={cn(
-                      "px-4 py-3 text-right font-medium tabular-nums",
-                      transaction.type === 'income' ? "text-green-500" : "text-red-500",
-                      privacyMode && "blur-sm"
-                    )}>
-                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex justify-end gap-1">
@@ -356,7 +656,7 @@ export default function Finance() {
         </div>
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-border">
-          {transactions.slice(0, 20).map((transaction) => {
+          {filteredTransactions.slice(0, 20).map((transaction) => {
             const categoryLabel = transaction.type === 'income'
               ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
               : EXPENSE_CATEGORIES.find(c => c.value === transaction.category)?.label;
@@ -376,6 +676,10 @@ export default function Finance() {
                   <div className="font-medium truncate">{transaction.description || categoryLabel}</div>
                   <div className="text-xs text-muted-foreground">
                     {format(new Date(transaction.date), 'MMM d')}
+                    {transaction.time && ` · ${transaction.time.slice(0, 5)}`}
+                    {transaction.bank && ` · ${transaction.bank}`}
+                    {transaction.transaction_type && ` · ${transaction.transaction_type}`}
+                    {transaction.direction && ` · ${transaction.direction}`}
                     {transaction.is_recurring && ' · Recurring'}
                   </div>
                 </div>
@@ -420,7 +724,7 @@ export default function Finance() {
           <div className="flex gap-2 p-1 bg-secondary rounded-lg">
             <button
               type="button"
-              onClick={() => setFormData({ ...formData, type: 'expense', category: 'food' })}
+              onClick={() => setFormData({ ...formData, type: 'expense', category: 'food', direction: 'Out' })}
               className={cn(
                 "flex-1 py-2 rounded text-sm font-medium transition-colors",
                 formData.type === 'expense' ? "bg-red-500 text-white" : "hover:bg-background/50"
@@ -430,7 +734,7 @@ export default function Finance() {
             </button>
             <button
               type="button"
-              onClick={() => setFormData({ ...formData, type: 'income', category: 'salary' })}
+              onClick={() => setFormData({ ...formData, type: 'income', category: 'salary', direction: 'In' })}
               className={cn(
                 "flex-1 py-2 rounded text-sm font-medium transition-colors",
                 formData.type === 'income' ? "bg-green-500 text-white" : "hover:bg-background/50"
@@ -457,16 +761,67 @@ export default function Finance() {
             options={formData.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES}
           />
 
-          <Input
-            label="Date"
-            type="date"
-            value={formData.date}
-            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-            required
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              required
+            />
+            <Input
+              label="Time"
+              type="time"
+              value={formData.time ?? ''}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value || undefined })}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Bank"
+              value={formData.bank ?? ''}
+              onChange={(e) => setFormData({ ...formData, bank: e.target.value || undefined })}
+              options={[
+                { value: '', label: '—' },
+                ...bankOptions.map((name) => ({ value: name, label: name })),
+              ]}
+            />
+            <Select
+              label="Direction"
+              value={formData.direction ?? 'Out'}
+              onChange={(e) => setFormData({ ...formData, direction: e.target.value as 'In' | 'Out' })}
+              options={[
+                { value: 'In', label: 'In' },
+                { value: 'Out', label: 'Out' },
+              ]}
+            />
+          </div>
 
           <Input
-            label="Description"
+            label="Type"
+            value={formData.transaction_type ?? ''}
+            onChange={(e) => setFormData({ ...formData, transaction_type: e.target.value || undefined })}
+            placeholder="e.g. IPN Transfer"
+          />
+
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Entity"
+              value={formData.entity ?? ''}
+              onChange={(e) => setFormData({ ...formData, entity: e.target.value || undefined })}
+              placeholder="Counterparty"
+            />
+            <Input
+              label="Account"
+              value={formData.account ?? ''}
+              onChange={(e) => setFormData({ ...formData, account: e.target.value || undefined })}
+              placeholder="e.g. ***50"
+            />
+          </div>
+
+          <Input
+            label="Details"
             value={formData.description || ''}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="What was this for?"

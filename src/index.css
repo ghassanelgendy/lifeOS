@@ -379,3 +379,10 @@ html.light[data-accent="amber"] {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted-foreground);
 }
+
+/* Charts: no text/element selection (iOS-friendly) */
+.recharts-wrapper,
+.recharts-surface {
+  user-select: none;
+  -webkit-user-select: none;
+}

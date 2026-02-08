@@ -35,9 +35,11 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     <div
       ref={overlayRef}
       className={cn(
-        "fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop-ios",
+        "fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop-ios",
+        "min-h-[100dvh] sm:min-h-0",
         "pb-[calc(64px+env(safe-area-inset-bottom))] sm:pb-0 sm:p-4 sm:bg-background/80"
       )}
+      style={{ height: '100dvh' }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
       <div
@@ -45,7 +47,8 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
           "relative w-full max-w-lg bg-card border border-border shadow-2xl modal-sheet-ios",
           "rounded-t-2xl sm:rounded-xl",
           "flex flex-col border-b-0 sm:border-b border-border",
-          "max-h-[min(calc(100dvh-6rem),85dvh)]",
+          "max-h-[calc(100dvh-64px-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
+          "min-h-0",
           className
         )}
       >
@@ -58,7 +61,10 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
             <X size={20} />
           </button>
         </div>
-        <div className="p-4 overflow-y-auto min-h-0 flex-1 overscroll-contain">
+        <div
+          className="p-4 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain overscroll-y-auto"
+          style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
+        >
           {children}
         </div>
       </div>

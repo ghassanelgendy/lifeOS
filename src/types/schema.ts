@@ -186,11 +186,24 @@ export interface Transaction {
   type: TransactionType;
   category: TransactionCategory;
   amount: number;
-  description?: string;
+  description?: string; // Details
   date: string; // ISO-8601
+  time?: string; // HH:mm or HH:mm:ss
   is_recurring: boolean;
+  bank?: string;
+  transaction_type?: string; // e.g. IPN Transfer
+  entity?: string;
+  direction?: 'In' | 'Out';
+  account?: string; // e.g. ***50
   created_at: string;
   updated_at: string;
+}
+
+export interface UserBank {
+  id: string;
+  user_id?: string | null;
+  name: string;
+  created_at: string;
 }
 
 export interface Budget {
