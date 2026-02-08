@@ -150,31 +150,31 @@ export function AppShell() {
         />
         <aside
           className={cn(
-            "md:hidden fixed top-0 left-0 z-50 w-72 max-w-[85vw] h-full flex flex-col bg-card border-r border-border shadow-xl transition-transform duration-300 ease-out",
+            "md:hidden fixed top-0 left-0 z-50 w-[min(22rem,94vw)] min-w-[18rem] h-full flex flex-col bg-card border-r border-border shadow-xl transition-transform duration-300 ease-out",
             isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
           <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
             <span className="text-xl font-bold tracking-tight">LifeOS</span>
-            <button onClick={() => setMobileSidebarOpen(false)} className="p-1 hover:bg-secondary rounded-md">
-              <X size={20} />
+            <button onClick={() => setMobileSidebarOpen(false)} className="p-1 hover:bg-secondary rounded-md touch-manipulation">
+              <X size={24} />
             </button>
           </div>
-          <nav className="flex-1 overflow-y-auto py-4 flex flex-col gap-0.5 px-3">
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 flex flex-col gap-0.5 px-3">
             {NAV_ITEMS.filter(item => item.href !== '/settings').map((item) => (
               <NavLink
                 key={item.href}
                 to={item.href}
                 end={item.href === '/'}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-4 rounded-xl px-4 py-3.5 text-base font-medium transition-colors hover:bg-secondary",
+                  "flex items-center gap-4 rounded-xl px-4 py-3.5 text-lg font-medium transition-colors hover:bg-secondary min-h-[3.25rem]",
                   isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <item.icon size={24} />
-                <span>{item.label}</span>
+                <item.icon size={26} className="shrink-0" />
+                <span className="min-w-0 break-words">{item.label}</span>
               </NavLink>
             ))}
           </nav>
@@ -182,13 +182,13 @@ export function AppShell() {
             <NavLink
               to="/settings"
               className={({ isActive }) => cn(
-                "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-base font-medium hover:bg-secondary",
+                "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-lg font-medium hover:bg-secondary min-h-[3.25rem]",
                 isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
               )}
               onClick={() => setMobileSidebarOpen(false)}
             >
-              <Settings size={24} />
-              <span>Settings</span>
+              <Settings size={26} className="shrink-0" />
+              <span className="min-w-0 break-words">Settings</span>
             </NavLink>
           </div>
         </aside>

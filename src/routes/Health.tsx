@@ -124,9 +124,8 @@ export default function Health() {
           <h1 className="text-3xl font-bold tracking-tight">Health & Bio-Metrics</h1>
           <p className="text-muted-foreground">Track your body composition with InBody scans</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={18} />
-          Add Scan
+        <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add scan">
+          <Plus size={22} />
         </Button>
       </div>
 

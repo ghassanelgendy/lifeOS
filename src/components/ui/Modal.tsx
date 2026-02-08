@@ -35,8 +35,8 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     <div
       ref={overlayRef}
       className={cn(
-        "fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop-ios",
-        "sm:p-4 sm:bg-background/80"
+        "fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop-ios",
+        "pb-[calc(64px+env(safe-area-inset-bottom))] sm:pb-0 sm:p-4 sm:bg-background/80"
       )}
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
@@ -44,21 +44,21 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
         className={cn(
           "relative w-full max-w-lg bg-card border border-border shadow-2xl modal-sheet-ios",
           "rounded-t-2xl sm:rounded-xl",
-          "max-h-[85vh] flex flex-col",
-          "border-b-0 sm:border-b border-border",
+          "flex flex-col border-b-0 sm:border-b border-border",
+          "max-h-[min(calc(100dvh-6rem),85dvh)]",
           className
         )}
       >
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
-          <h2 className="text-lg font-semibold">{title}</h2>
+          <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-md hover:bg-secondary transition-colors touch-manipulation"
+            className="p-1 rounded-md hover:bg-secondary transition-colors touch-manipulation absolute right-3 top-3"
           >
             <X size={20} />
           </button>
         </div>
-        <div className="p-4 overflow-y-auto min-h-0 flex-1">
+        <div className="p-4 overflow-y-auto min-h-0 flex-1 overscroll-contain">
           {children}
         </div>
       </div>

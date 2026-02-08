@@ -150,9 +150,8 @@ export default function Finance() {
           <h1 className="text-3xl font-bold tracking-tight">Finance</h1>
           <p className="text-muted-foreground">Track income, expenses, and budgets</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
-          <Plus size={18} />
-          Add Transaction
+        <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add transaction">
+          <Plus size={22} />
         </Button>
       </div>
 

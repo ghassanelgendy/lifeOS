@@ -438,131 +438,134 @@ export default function Tasks() {
         />
       )}
 
-      {/* Sidebar - Fixed overlay on mobile, full height on desktop */}
-      <aside className={cn(
-        "flex flex-col border-r border-border bg-card transition-all duration-300 min-h-full",
-        // Mobile: fixed overlay from left
-        "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
-        showListsSidebar
-          ? "w-64 translate-x-0"
-          : "-translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden md:min-w-0"
-      )}>
-        <div className="p-4 space-y-1 shrink-0">
-          {/* Smart Lists */}
+      {/* Sidebar - Fixed overlay on mobile; space above bottom bar so content isn't cut */}
+      <aside
+        className={cn(
+          "flex flex-col border-r border-border bg-card transition-all duration-300",
+          "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
+          "h-[100dvh] md:h-full md:min-h-full",
+          "overflow-hidden",
+          showListsSidebar ? "w-[min(20rem,85vw)] translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0 md:min-w-0"
+        )}
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'calc(64px + env(safe-area-inset-bottom))',
+        }}
+      >
+        <div className="p-4 space-y-0.5 shrink-0">
+          {/* Smart Lists - text-base on mobile so not small/cut */}
           <button
             onClick={() => { setActiveView('today'); setActiveListId(null); setActiveTagId(null); }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
               activeView === 'today' ? "bg-blue-500/20 text-blue-500" : "hover:bg-secondary text-muted-foreground"
             )}
           >
-            <Star size={18} />
-            <span className="flex-1 text-left">Today</span>
-            <span className="text-xs">{todayTasks.length + overdueTasks.length}</span>
+            <Star size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+            <span className="flex-1 min-w-0 text-left">Today</span>
+            <span className="text-sm md:text-xs shrink-0">{todayTasks.length + overdueTasks.length}</span>
           </button>
           <button
             onClick={() => { setActiveView('week'); setActiveListId(null); setActiveTagId(null); }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
               activeView === 'week' ? "bg-purple-500/20 text-purple-500" : "hover:bg-secondary text-muted-foreground"
             )}
           >
-            <CalendarIcon size={18} />
-            <span className="flex-1 text-left">This Week</span>
-            <span className="text-xs">{weekTasks.length}</span>
+            <CalendarIcon size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+            <span className="flex-1 min-w-0 text-left">This Week</span>
+            <span className="text-sm md:text-xs shrink-0">{weekTasks.length}</span>
           </button>
           <button
             onClick={() => { setActiveView('upcoming'); setActiveListId(null); setActiveTagId(null); }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
               activeView === 'upcoming' ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
             )}
           >
-            <CalendarDays size={18} />
-            <span className="flex-1 text-left">Upcoming</span>
-            <span className="text-xs">{upcomingTasks.length}</span>
+            <CalendarDays size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+            <span className="flex-1 min-w-0 text-left">Upcoming</span>
+            <span className="text-sm md:text-xs shrink-0">{upcomingTasks.length}</span>
           </button>
           <button
             onClick={() => { setActiveView('all'); setActiveListId(null); setActiveTagId(null); }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
               activeView === 'all' ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
             )}
           >
-            <ListTodo size={18} />
-            <span className="flex-1 text-left">All Tasks</span>
-            <span className="text-xs">{allTasks.filter(t => !t.is_completed).length}</span>
+            <ListTodo size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+            <span className="flex-1 min-w-0 text-left">All Tasks</span>
+            <span className="text-sm md:text-xs shrink-0">{allTasks.filter(t => !t.is_completed).length}</span>
           </button>
           <button
             onClick={() => { setActiveView('completed'); setActiveListId(null); setActiveTagId(null); }}
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
               activeView === 'completed' ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
             )}
           >
-            <CheckCircle2 size={18} />
-            <span className="flex-1 text-left">Completed</span>
-            <span className="text-xs">{completedTasks.length}</span>
+            <CheckCircle2 size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+            <span className="flex-1 min-w-0 text-left">Completed</span>
+            <span className="text-sm md:text-xs shrink-0">{completedTasks.length}</span>
           </button>
         </div>
 
         <div className="border-t border-border shrink-0" />
 
-        {/* Lists + Tags: starts right after Completed, fills rest and scrolls */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lists</span>
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-4">
+          <div className="flex items-center justify-end mb-2">
             <button
               onClick={() => setIsListModalOpen(true)}
-              className="p-1 rounded hover:bg-secondary transition-colors"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
+              aria-label="Add list"
             >
-              <Plus size={14} />
+              <Plus size={20} className="md:w-[14px] md:h-[14px]" />
             </button>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {taskLists.map((list) => (
               <button
                 key={list.id}
                 onClick={() => { setActiveView('list'); setActiveListId(list.id); setActiveTagId(null); }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
                   activeView === 'list' && activeListId === list.id
                     ? "bg-secondary text-foreground"
                     : "hover:bg-secondary text-muted-foreground"
                 )}
               >
-                <div className="w-3 h-3 rounded" style={{ backgroundColor: list.color }} />
-                <span className="flex-1 text-left truncate">{list.name}</span>
-                <span className="text-xs">{taskDB.getByList(list.id).filter(t => !t.is_completed).length}</span>
+                <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
+                <span className="flex-1 min-w-0 text-left break-words">{list.name}</span>
+                <span className="text-sm md:text-xs shrink-0">{taskDB.getByList(list.id).filter(t => !t.is_completed).length}</span>
               </button>
             ))}
           </div>
 
-          {/* Tags */}
-          <div className="flex items-center justify-between mt-4 mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
+          <div className="flex items-center justify-end mt-4 mb-2">
             <button
               onClick={() => setIsTagModalOpen(true)}
-              className="p-1 rounded hover:bg-secondary transition-colors"
+              className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
+              aria-label="Add tag"
             >
-              <Plus size={14} />
+              <Plus size={20} className="md:w-[14px] md:h-[14px]" />
             </button>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-0.5">
             {tags.map((tag) => (
               <button
                 key={tag.id}
                 onClick={() => { setActiveView('tag'); setActiveTagId(tag.id); setActiveListId(null); }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
                   activeView === 'tag' && activeTagId === tag.id
                     ? "bg-secondary text-foreground"
                     : "hover:bg-secondary text-muted-foreground"
                 )}
               >
-                <TagIcon size={14} style={{ color: tag.color }} />
-                <span className="flex-1 text-left truncate">{tag.name}</span>
-                <span className="text-xs">{taskDB.getByTag(tag.id).filter(t => !t.is_completed).length}</span>
+                <TagIcon size={18} className="shrink-0 md:w-[14px] md:h-[14px]" style={{ color: tag.color }} />
+                <span className="flex-1 min-w-0 text-left break-words">{tag.name}</span>
+                <span className="text-sm md:text-xs shrink-0">{taskDB.getByTag(tag.id).filter(t => !t.is_completed).length}</span>
               </button>
             ))}
           </div>
@@ -587,9 +590,8 @@ export default function Tasks() {
               </span>
             )}
           </div>
-          <Button onClick={() => setIsAddingTask(true)}>
-            <Plus size={18} />
-            Add Task
+          <Button onClick={() => setIsAddingTask(true)} className="p-2" aria-label="Add task">
+            <Plus size={22} />
           </Button>
         </header>
 
@@ -726,8 +728,8 @@ export default function Tasks() {
                   <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddingTask(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" size="sm" disabled={!newTaskTitle.trim()}>
-                    Add Task
+                  <Button type="submit" size="sm" disabled={!newTaskTitle.trim()} className="p-2" aria-label="Add task">
+                    <Plus size={18} />
                   </Button>
                 </div>
               </div>
