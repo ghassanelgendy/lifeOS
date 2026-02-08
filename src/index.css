@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Lock scroll to content area only — title bar, sidebar, bottom bar stay fixed */
+html,
+body {
+  overflow: hidden;
+  height: 100%;
+}
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+
 /* Dark theme (default) */
 @theme {
   --color-background: hsl(240 10% 3.9%);

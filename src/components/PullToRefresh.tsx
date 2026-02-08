@@ -89,8 +89,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
     return (
         <div
             ref={containerRef}
-            className="h-full overflow-y-auto relative no-scrollbar"
-            style={{ touchAction: 'pan-y', overscrollBehaviorY: 'contain' }}
+            className="h-full min-h-0 overflow-auto relative no-scrollbar overscroll-contain"
         >
             {/* Refresh indicator in fixed top area - content does NOT move */}
             <div

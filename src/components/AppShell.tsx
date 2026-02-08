@@ -96,12 +96,9 @@ export function AppShell() {
     const t = e.touches[0];
     const deltaX = t.clientX - touchStart.current.x;
     const deltaY = t.clientY - touchStart.current.y;
-    const w = window.innerWidth;
-    const startRatio = touchStart.current.x / w;
     const horizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 15;
     const fromLeftEdge = touchStart.current.x < SWIPE_EDGE_PX;
-    const fromCenter = startRatio >= CENTER_SWIPE_MIN && startRatio <= CENTER_SWIPE_MAX;
-    if (horizontalSwipe && (fromLeftEdge || fromCenter)) {
+    if (horizontalSwipe && fromLeftEdge) {
       e.preventDefault();
     }
   }, []);
@@ -139,7 +136,7 @@ export function AppShell() {
   }, [isOnTasks, currentIndex, mobileNavigation, navigate, setMobileSidebarOpen]);
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-foreground font-sans">
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">
       <CommandPalette />
       {/* Mobile drawer (slide from left) */}
       <>
@@ -266,19 +263,18 @@ export function AppShell() {
 
         <OfflineBanner />
 
-        {/* Scrollable Content — parallax section transition; swipe: tabs / drawer; prevent iOS back gesture */}
+        {/* Only this content area scrolls; header/sidebar/bottom bar are fixed */}
         <div
-          className="flex-1 flex flex-col min-h-0 overflow-hidden relative touch-pan-y"
+          className="flex-1 flex flex-col min-h-0 overflow-hidden relative"
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
-          style={{ touchAction: 'pan-y', overscrollBehaviorX: 'none' }}
         >
           <PullToRefresh>
             <div
               key={location.pathname}
               className={cn(
-                "flex-1 flex flex-col min-h-0 overflow-auto p-4 md:p-6 pb-24 md:pb-6 section-slide-in"
+                "flex flex-col min-h-full p-4 md:p-6 pb-24 md:pb-6 section-slide-in"
               )}
               style={
                 {
