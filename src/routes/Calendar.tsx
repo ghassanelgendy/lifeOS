@@ -157,19 +157,21 @@ export default function CalendarPage() {
   // Modal handlers
   const handleOpenModal = (event?: ExtendedCalendarEvent, date?: Date) => {
     if (event) {
-      setEditingEvent(event);
+      if ('isIcal' in event && event.isIcal) return;
+      const calEvent = event as CalendarEvent & { isRecurringInstance?: boolean; originalId?: string };
+      setEditingEvent(calEvent);
       setFormData({
-        title: event.title,
-        type: event.type,
-        start_time: event.start_time.slice(0, 16),
-        end_time: event.end_time.slice(0, 16),
-        all_day: event.all_day,
-        color: event.color,
-        description: event.description,
-        location: event.location,
-        recurrence: event.recurrence,
-        recurrence_end: event.recurrence_end?.split('T')[0] || '',
-        shift_person: event.shift_person,
+        title: calEvent.title,
+        type: calEvent.type,
+        start_time: calEvent.start_time.slice(0, 16),
+        end_time: calEvent.end_time.slice(0, 16),
+        all_day: calEvent.all_day,
+        color: calEvent.color,
+        description: calEvent.description,
+        location: calEvent.location,
+        recurrence: calEvent.recurrence,
+        recurrence_end: calEvent.recurrence_end?.split('T')[0] || '',
+        shift_person: calEvent.shift_person,
       });
     } else {
       setEditingEvent(null);
@@ -205,8 +207,8 @@ export default function CalendarPage() {
     } as CreateInput<CalendarEvent>;
 
     if (editingEvent) {
-      // If editing a recurring instance, edit the original
-      const eventId = editingEvent.originalId || editingEvent.id;
+      // If editing a recurring instance, edit the original (editingEvent is always app event, not ical)
+      const eventId = ('originalId' in editingEvent && editingEvent.originalId) || editingEvent.id;
       updateEvent.mutate({
         id: eventId,
         data: eventData,
@@ -221,8 +223,9 @@ export default function CalendarPage() {
   };
 
   const handleDelete = (event: ExtendedCalendarEvent) => {
+    if ('isIcal' in event && event.isIcal) return;
     if (confirm('Delete this event?')) {
-      const eventId = event.originalId || event.id;
+      const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
       deleteEvent.mutate(eventId);
     }
   };
@@ -445,7 +448,7 @@ export default function CalendarPage() {
                             {event.location}
                           </div>
                         )}
-                        {event.isRecurringInstance && (
+                        {'isRecurringInstance' in event && event.isRecurringInstance && (
                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                             <Repeat size={12} />
                             Recurring
