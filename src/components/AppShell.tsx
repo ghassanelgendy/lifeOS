@@ -123,9 +123,9 @@ export function AppShell() {
         <OfflineBanner />
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           <PullToRefresh>
-            <div className="p-4 md:p-6 pb-24 md:pb-6 min-h-full">
+            <div className="flex-1 flex flex-col min-h-0 overflow-auto p-4 md:p-6 pb-24 md:pb-6">
               <Outlet />
             </div>
           </PullToRefresh>

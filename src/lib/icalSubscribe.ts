@@ -1,0 +1,140 @@
+/**
+ * Fetch and parse iCalendar (.ics) from a URL for display in the app calendar.
+ * Supports basic VEVENT (SUMMARY, DTSTART, DTEND, all-day or timed).
+ */
+
+export interface IcalEvent {
+  id: string;
+  title: string;
+  start_time: string; // ISO
+  end_time: string;
+  all_day: boolean;
+  description?: string;
+  location?: string;
+  isIcal: true;
+  icalUrl: string;
+}
+
+/** Unfold folded lines (continuation lines start with space) */
+function unfold(ical: string): string {
+  return ical.replace(/\r?\n[ \t]/g, '');
+}
+
+/** Parse a single VEVENT block into IcalEvent or null */
+function parseVevent(block: string, icalUrl: string): IcalEvent | null {
+  const lines = block.split(/\r?\n/);
+  let summary = '';
+  let dtStart = '';
+  let dtStartAllDay = false;
+  let dtEnd = '';
+  let dtEndAllDay = false;
+  let uid = '';
+
+  for (const line of lines) {
+    const [key, ...rest] = line.split(':');
+    const value = rest.join(':').trim();
+    const keyUpper = (key || '').split(';')[0].toUpperCase();
+
+    if (keyUpper === 'SUMMARY') summary = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+    else if (keyUpper === 'UID') uid = value;
+    else if (keyUpper === 'DTSTART') {
+      if ((key || '').toUpperCase().includes('VALUE=DATE')) {
+        dtStartAllDay = true;
+        dtStart = parseIcalDate(value);
+      } else {
+        dtStart = parseIcalDateTime(value);
+      }
+    } else if (keyUpper === 'DTEND') {
+      if ((key || '').toUpperCase().includes('VALUE=DATE')) {
+        dtEndAllDay = true;
+        dtEnd = parseIcalDate(value);
+      } else {
+        dtEnd = parseIcalDateTime(value);
+      }
+    }
+  }
+
+  if (!summary && !uid) summary = 'Untitled';
+  if (!dtStart) return null;
+
+  const allDay = dtStartAllDay && dtEndAllDay;
+  if (!dtEnd && allDay) {
+    const d = new Date(dtStart);
+    d.setDate(d.getDate() + 1);
+    dtEnd = d.toISOString();
+  } else if (!dtEnd) {
+    dtEnd = dtStart; // fallback
+  }
+
+  return {
+    id: uid || `ical-${icalUrl}-${dtStart}-${Math.random().toString(36).slice(2)}`,
+    title: summary,
+    start_time: dtStart,
+    end_time: dtEnd,
+    all_day: allDay,
+    isIcal: true,
+    icalUrl,
+  };
+}
+
+/** Parse YYYYMMDD to ISO date string (start of day UTC) */
+function parseIcalDate(value: string): string {
+  const v = value.replace(/\s/g, '');
+  if (v.length < 8) return '';
+  const y = parseInt(v.slice(0, 4), 10);
+  const m = parseInt(v.slice(4, 6), 10) - 1;
+  const d = parseInt(v.slice(6, 8), 10);
+  return new Date(Date.UTC(y, m, d)).toISOString();
+}
+
+/** Parse YYYYMMDDTHHmmssZ or YYYYMMDDTHHmmss to ISO string */
+function parseIcalDateTime(value: string): string {
+  const v = value.replace(/\s/g, '');
+  if (v.length < 15) return '';
+  const y = parseInt(v.slice(0, 4), 10);
+  const m = parseInt(v.slice(4, 6), 10) - 1;
+  const day = parseInt(v.slice(6, 8), 10);
+  const isUtc = v.slice(-1) === 'Z' || v.length <= 8;
+  if (v.length <= 8) return new Date(Date.UTC(y, m, day)).toISOString();
+  const h = parseInt(v.slice(9, 11), 10);
+  const min = parseInt(v.slice(11, 13), 10);
+  const sec = parseInt(v.slice(13, 15), 10) || 0;
+  if (isUtc) return new Date(Date.UTC(y, m, day, h, min, sec)).toISOString();
+  return new Date(y, m, day, h, min, sec).toISOString();
+}
+
+/**
+ * Parse iCalendar text into an array of IcalEvent.
+ */
+export function parseIcalToEvents(icalText: string, sourceUrl: string): IcalEvent[] {
+  const unfolded = unfold(icalText);
+  const events: IcalEvent[] = [];
+  const veventRegex = /BEGIN:VEVENT[\s\S]*?END:VEVENT/gi;
+  let m: RegExpExecArray | null;
+  while ((m = veventRegex.exec(unfolded)) !== null) {
+    const parsed = parseVevent(m[0], sourceUrl);
+    if (parsed) events.push(parsed);
+  }
+  return events;
+}
+
+/**
+ * Fetch iCal from URL and return events. Converts webcal:// to https://.
+ */
+export async function fetchIcalEvents(
+  url: string,
+  startDate: Date,
+  endDate: Date
+): Promise<IcalEvent[]> {
+  const href = url.replace(/^webcal:\/\//i, 'https://').trim();
+  if (!href.startsWith('https://') && !href.startsWith('http://')) return [];
+
+  const res = await fetch(href, { cache: 'no-store' });
+  if (!res.ok) return [];
+  const text = await res.text();
+  const events = parseIcalToEvents(text, url);
+  return events.filter((e) => {
+    const start = new Date(e.start_time);
+    return start >= startDate && start <= endDate;
+  });
+}

@@ -8,7 +8,10 @@ import {
   Edit2,
   Trash2,
   Repeat,
-  CheckSquare
+  CheckSquare,
+  CalendarPlus,
+  Link2,
+  X
 } from 'lucide-react';
 import {
   format,
@@ -29,17 +32,21 @@ import {
   useCreateCalendarEvent,
   useUpdateCalendarEvent,
   useDeleteCalendarEvent,
-
-  useExpandedCalendarEvents
+  useExpandedCalendarEvents,
+  useCalendarEvents,
+  useIcalSubscriptionEvents,
 } from '../hooks/useCalendar';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, RecurrencePattern } from '../types/schema';
 import { useTasks } from '../hooks/useTasks';
+import { downloadCalendarIcs } from '../lib/calendarExport';
+import { useUIStore } from '../stores/useUIStore';
+import type { IcalEvent } from '../lib/icalSubscribe';
 
-type ExtendedCalendarEvent = CalendarEvent & {
+type ExtendedCalendarEvent = (CalendarEvent & {
   isRecurringInstance?: boolean;
   originalId?: string;
-};
+}) | (IcalEvent & { color?: string });
 
 const EVENT_TYPE_COLORS: Record<EventType, string> = {
   Event: '#3b82f6',     // Blue
@@ -65,6 +72,11 @@ export default function CalendarPage() {
 
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
+  const { data: allEvents = [] } = useCalendarEvents();
+  const icalSubscriptionUrls = useUIStore((s) => s.icalSubscriptionUrls);
+  const setIcalSubscriptionUrls = useUIStore((s) => s.setIcalSubscriptionUrls);
+  const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, icalSubscriptionUrls);
+  const [newIcalUrl, setNewIcalUrl] = useState('');
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
@@ -87,6 +99,14 @@ export default function CalendarPage() {
     shift_person: '',
   });
 
+  // Merge app events with subscribed iCal events (subscriptions use slate color)
+  const allMergedEvents = useMemo(() => {
+    const icalWithColor = icalEvents.map((e) => ({ ...e, color: '#64748b' }));
+    return [...events, ...icalWithColor].sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+  }, [events, icalEvents]);
+
   // Generate calendar days
   const calendarDays = useMemo(() => {
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
@@ -94,10 +114,22 @@ export default function CalendarPage() {
 
   // Get events for a specific day
   const getEventsForDay = (day: Date) => {
-    return events.filter((event) => {
+    return allMergedEvents.filter((event) => {
       const eventDate = parseISO(event.start_time);
       return isSameDay(eventDate, day);
     });
+  };
+
+  const handleAddIcalUrl = () => {
+    const url = newIcalUrl.trim().replace(/^webcal:\/\//i, 'https://');
+    if (!url || !url.startsWith('http')) return;
+    if (icalSubscriptionUrls.includes(url)) return;
+    setIcalSubscriptionUrls([...icalSubscriptionUrls, url]);
+    setNewIcalUrl('');
+  };
+
+  const handleRemoveIcalUrl = (url: string) => {
+    setIcalSubscriptionUrls(icalSubscriptionUrls.filter((u) => u !== url));
   };
 
   // Get tasks for a specific day
@@ -206,9 +238,18 @@ export default function CalendarPage() {
           <h1 className="text-3xl font-bold tracking-tight">Calendar</h1>
           <p className="text-muted-foreground">Manage events, shifts, and deadlines</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={goToToday}>
             Today
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCalendarIcs(allEvents)}
+            title="Export events as .ics to add to Apple Calendar, Google Calendar, etc."
+          >
+            <CalendarPlus size={18} />
+            Add to Calendar
           </Button>
           <Button onClick={() => handleOpenModal()}>
             <Plus size={18} />
@@ -302,20 +343,28 @@ export default function CalendarPage() {
                     </div>
                     <div className="space-y-0.5 overflow-hidden">
                       {/* Events */}
-                      {dayEvents.slice(0, 2).map((event) => (
-                        <div
-                          key={event.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenModal(event);
-                          }}
-                          className="text-[10px] px-1 py-0.5 rounded truncate cursor-pointer hover:opacity-80"
-                          style={{ backgroundColor: `${event.color}30`, color: event.color }}
-                        >
-                          {event.type === 'Shift' && '🔶 '}
-                          {event.title}
-                        </div>
-                      ))}
+                      {dayEvents.slice(0, 2).map((event) => {
+                        const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
+                        const isIcal = 'isIcal' in event && event.isIcal;
+                        return (
+                          <div
+                            key={event.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isIcal) handleOpenModal(event as ExtendedCalendarEvent);
+                            }}
+                            className={cn(
+                              "text-[10px] px-1 py-0.5 rounded truncate hover:opacity-80",
+                              !isIcal && "cursor-pointer"
+                            )}
+                            style={{ backgroundColor: `${color}30`, color }}
+                          >
+                            {'type' in event && event.type === 'Shift' && '🔶 '}
+                            {isIcal && <Link2 size={8} className="inline mr-0.5 opacity-70" />}
+                            {event.title}
+                          </div>
+                        );
+                      })}
                       {/* Tasks */}
                       {dayTasks.slice(0, dayEvents.length >= 2 ? 1 : 2).map((task) => (
                         <div
@@ -364,7 +413,10 @@ export default function CalendarPage() {
                   No events scheduled
                 </p>
               ) : (
-                selectedDayEvents.map((event) => (
+                selectedDayEvents.map((event) => {
+                  const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
+                  const isIcal = 'isIcal' in event && event.isIcal;
+                  return (
                   <div
                     key={event.id}
                     className="p-3 rounded-lg border border-border hover:bg-secondary/20 transition-colors"
@@ -374,8 +426,9 @@ export default function CalendarPage() {
                         <div className="flex items-center gap-2">
                           <div
                             className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: event.color }}
+                            style={{ backgroundColor: color }}
                           />
+                          {isIcal && <Link2 size={12} className="text-muted-foreground flex-shrink-0" />}
                           <span className="font-medium text-sm truncate">{event.title}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
@@ -399,23 +452,70 @@ export default function CalendarPage() {
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleOpenModal(event)}
-                          className="p-1 rounded hover:bg-secondary transition-colors"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(event)}
-                          className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                      {!isIcal && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenModal(event as ExtendedCalendarEvent)}
+                            className="p-1 rounded hover:bg-secondary transition-colors"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(event as ExtendedCalendarEvent)}
+                            className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ))
+                  );
+                })
+              )}
+            </div>
+
+            {/* Subscribed iCal calendars */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                <Link2 size={12} />
+                iCal link
+              </h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                Add a calendar URL to show its events here (e.g. Google Calendar, Apple Calendar).
+              </p>
+              <div className="flex gap-2 mb-2">
+                <input
+                  type="url"
+                  value={newIcalUrl}
+                  onChange={(e) => setNewIcalUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddIcalUrl()}
+                  placeholder="https:// or webcal://..."
+                  className="flex-1 min-w-0 rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
+                />
+                <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()}>
+                  Add
+                </Button>
+              </div>
+              {icalSubscriptionUrls.length > 0 && (
+                <ul className="space-y-1">
+                  {icalSubscriptionUrls.map((url) => (
+                    <li key={url} className="flex items-center gap-2 text-xs">
+                      <span className="flex-1 truncate text-muted-foreground" title={url}>
+                        {url.replace(/^https?:\/\//, '').slice(0, 40)}
+                        {(url.replace(/^https?:\/\//, '').length > 40) ? '…' : ''}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveIcalUrl(url)}
+                        className="p-1 rounded hover:bg-destructive/20 text-destructive shrink-0"
+                        aria-label="Remove"
+                      >
+                        <X size={14} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 
@@ -435,6 +535,10 @@ export default function CalendarPage() {
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded bg-purple-500" />
                   <span className="text-xs">Task</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#64748b' }} />
+                  <span className="text-xs">iCal link</span>
                 </div>
               </div>
             </div>

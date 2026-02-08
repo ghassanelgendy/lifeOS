@@ -429,8 +429,8 @@ export default function Habits() {
               type="number"
               min={1}
               max={7}
-              value={formData.target_count}
-              onChange={(e) => setFormData({ ...formData, target_count: parseInt(e.target.value) || 1 })}
+              value={formData.target_count === 0 ? '' : formData.target_count}
+              onChange={(e) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
             />
           </div>
 

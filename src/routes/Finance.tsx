@@ -445,8 +445,9 @@ export default function Finance() {
             label="Amount"
             type="number"
             step="0.01"
-            value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
+            min={0}
+            value={formData.amount === 0 ? '' : formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
             required
           />
 

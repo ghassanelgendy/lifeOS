@@ -3,8 +3,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { CalendarEvent, CreateInput, UpdateInput } from '../types/schema';
 import { addDays, addWeeks, addMonths, isBefore, parseISO, format } from 'date-fns';
+import { fetchIcalEvents } from '../lib/icalSubscribe';
+import type { IcalEvent } from '../lib/icalSubscribe';
 
 const QUERY_KEY = ['calendar-events'];
+const ICAL_QUERY_KEY = ['ical-subscription'];
 
 export function useCalendarEvents() {
   return useQuery({
@@ -154,6 +157,30 @@ export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
   return expandedEvents.sort((a, b) =>
     new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
   );
+}
+
+/** Fetch events from subscribed iCal URLs for the given date range */
+export function useIcalSubscriptionEvents(
+  startDate: Date,
+  endDate: Date,
+  urls: string[]
+) {
+  return useQuery({
+    queryKey: [...ICAL_QUERY_KEY, startDate.toISOString(), endDate.toISOString(), ...urls],
+    queryFn: async (): Promise<IcalEvent[]> => {
+      if (urls.length === 0) return [];
+      const results = await Promise.allSettled(
+        urls.map((url) => fetchIcalEvents(url, startDate, endDate))
+      );
+      const events: IcalEvent[] = [];
+      results.forEach((r) => {
+        if (r.status === 'fulfilled') events.push(...r.value);
+      });
+      return events.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
+    },
+    enabled: urls.length > 0 && !!startDate && !!endDate,
+    staleTime: 1000 * 60 * 5, // 5 min
+  });
 }
 
 // Get upcoming events for dashboard

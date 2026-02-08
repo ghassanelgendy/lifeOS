@@ -53,6 +53,10 @@ interface UIState {
   setDashboardWidgetVisible: (visible: Record<string, boolean>) => void;
   toggleDashboardWidget: (id: string) => void;
   moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
+
+  // iCal subscription URLs (show external calendar in app calendar)
+  icalSubscriptionUrls: string[];
+  setIcalSubscriptionUrls: (urls: string[]) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -105,6 +109,10 @@ export const useUIStore = create<UIState>()(
           [order[i], order[j]] = [order[j], order[i]];
           return { dashboardWidgetOrder: order };
         }),
+
+      // iCal subscriptions
+      icalSubscriptionUrls: [],
+      setIcalSubscriptionUrls: (icalSubscriptionUrls) => set({ icalSubscriptionUrls }),
     }),
     {
       name: 'lifeos-ui-store',
@@ -113,6 +121,7 @@ export const useUIStore = create<UIState>()(
         privacyMode: state.privacyMode,
         theme: state.theme,
         accentTheme: state.accentTheme,
+        icalSubscriptionUrls: state.icalSubscriptionUrls,
         mobileNavItems: state.mobileNavItems,
         dashboardWidgetOrder: state.dashboardWidgetOrder,
         dashboardWidgetVisible: state.dashboardWidgetVisible,

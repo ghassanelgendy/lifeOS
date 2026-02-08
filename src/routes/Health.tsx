@@ -310,16 +310,18 @@ export default function Health() {
               label="Weight (kg)"
               type="number"
               step="0.1"
-              value={formData.weight}
-              onChange={(e) => setFormData({ ...formData, weight: parseFloat(e.target.value) || 0 })}
+              min={0}
+              value={formData.weight === 0 ? '' : formData.weight}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
               required
             />
             <Input
               label="Muscle Mass (kg)"
               type="number"
               step="0.1"
-              value={formData.skeletal_muscle_mass}
-              onChange={(e) => setFormData({ ...formData, skeletal_muscle_mass: parseFloat(e.target.value) || 0 })}
+              min={0}
+              value={formData.skeletal_muscle_mass === 0 ? '' : formData.skeletal_muscle_mass}
+              onChange={(e) => setFormData({ ...formData, skeletal_muscle_mass: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
               required
             />
           </div>
@@ -328,23 +330,26 @@ export default function Health() {
               label="Body Fat (%)"
               type="number"
               step="0.1"
-              value={formData.body_fat_percent}
-              onChange={(e) => setFormData({ ...formData, body_fat_percent: parseFloat(e.target.value) || 0 })}
+              min={0}
+              value={formData.body_fat_percent === 0 ? '' : formData.body_fat_percent}
+              onChange={(e) => setFormData({ ...formData, body_fat_percent: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
               required
             />
             <Input
               label="Visceral Fat Level"
               type="number"
-              value={formData.visceral_fat_level}
-              onChange={(e) => setFormData({ ...formData, visceral_fat_level: parseInt(e.target.value) || 0 })}
+              min={0}
+              value={formData.visceral_fat_level === 0 ? '' : formData.visceral_fat_level}
+              onChange={(e) => setFormData({ ...formData, visceral_fat_level: e.target.value === '' ? 0 : parseInt(e.target.value, 10) || 0 })}
               required
             />
           </div>
           <Input
             label="BMR (kcal)"
             type="number"
-            value={formData.bmr_kcal}
-            onChange={(e) => setFormData({ ...formData, bmr_kcal: parseInt(e.target.value) || 0 })}
+            min={0}
+            value={formData.bmr_kcal === 0 ? '' : formData.bmr_kcal}
+            onChange={(e) => setFormData({ ...formData, bmr_kcal: e.target.value === '' ? 0 : parseInt(e.target.value, 10) || 0 })}
             required
           />
           <Input

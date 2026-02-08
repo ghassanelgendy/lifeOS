@@ -429,7 +429,7 @@ export default function Tasks() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-8rem)] -m-4 md:-m-6 relative">
+    <div className="flex flex-1 min-h-0 -m-4 md:-m-6 relative">
       {/* Mobile Sidebar Backdrop */}
       {showListsSidebar && (
         <div
@@ -438,16 +438,16 @@ export default function Tasks() {
         />
       )}
 
-      {/* Sidebar - Fixed overlay on mobile, inline on desktop */}
+      {/* Sidebar - Fixed overlay on mobile, full height on desktop */}
       <aside className={cn(
-        "flex flex-col border-r border-border bg-card transition-all duration-300",
+        "flex flex-col border-r border-border bg-card transition-all duration-300 min-h-full",
         // Mobile: fixed overlay from left
-        "fixed md:relative inset-y-0 left-0 z-50",
+        "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
         showListsSidebar
           ? "w-64 translate-x-0"
-          : "-translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden"
+          : "-translate-x-full md:translate-x-0 md:w-0 md:overflow-hidden md:min-w-0"
       )}>
-        <div className="p-4 space-y-1 overflow-y-auto flex-1">
+        <div className="p-4 space-y-1 shrink-0">
           {/* Smart Lists */}
           <button
             onClick={() => { setActiveView('today'); setActiveListId(null); setActiveTagId(null); }}
@@ -506,10 +506,10 @@ export default function Tasks() {
           </button>
         </div>
 
-        <div className="border-t border-border my-2" />
+        <div className="border-t border-border shrink-0" />
 
-        {/* Lists */}
-        <div className="flex-1 overflow-y-auto px-4">
+        {/* Lists + Tags: starts right after Completed, fills rest and scrolls */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lists</span>
             <button

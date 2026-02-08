@@ -497,8 +497,8 @@ export default function Academics() {
             <Input
               label="Year"
               type="number"
-              value={paperForm.year}
-              onChange={(e) => setPaperForm({ ...paperForm, year: parseInt(e.target.value) || undefined })}
+              value={paperForm.year === undefined || paperForm.year === 0 ? '' : paperForm.year}
+              onChange={(e) => setPaperForm({ ...paperForm, year: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || undefined })}
               min={1900}
               max={2100}
             />
