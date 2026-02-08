@@ -3,6 +3,14 @@
  * The IDE uses these; the actual runtime is Deno (Supabase).
  */
 
+declare module "https://deno.land/std@0.168.0/http/server.ts" {
+  export function serve(handler: (req: Request) => Response | Promise<Response>): void;
+}
+
+declare module "https://esm.sh/@supabase/supabase-js@2" {
+  export function createClient(url: string, key: string): SupabaseClient;
+}
+
 declare namespace Deno {
   namespace env {
     function get(key: string): string | undefined;
@@ -15,7 +23,13 @@ interface SupabaseQueryBuilder<T = unknown> {
   eq(column: string, value: unknown): this;
   not(column: string, op: string, value: unknown): this;
   is(column: string, value: null): this;
-  then<TResult>(onfulfilled?: (value: { data: T | null; error: { message: string } | null }) => TResult | PromiseLike<TResult>): PromiseLike<TResult>;
+  order(column: string, opts?: { ascending?: boolean }): this;
+  gte(column: string, value: string): this;
+  insert(data: Record<string, unknown> | Record<string, unknown>[]): this;
+  update(data: Record<string, unknown>): this;
+  delete(): this;
+  single(): this;
+  then<TResult>(onfulfilled?: (value: { data: T | null; error: { message: string } | null } | { data: T[] | null; error: { message: string } | null }) => TResult | PromiseLike<TResult>): PromiseLike<TResult>;
 }
 
 interface SupabaseClient {

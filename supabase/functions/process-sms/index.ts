@@ -1,6 +1,11 @@
+/// <reference path="../deno.d.ts" />
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { TransactionParser } from './parser.ts';
+import { enrichWithGemini, type GeminiEnrichment } from './gemini.ts';
+
+type TransactionRule = { id?: string; entity_pattern?: string; bank?: string; transaction_type?: string; category: string; type: 'income' | 'expense' };
+type InsertedTransaction = { id: string; amount: number; category: string; type: string; entity?: string | null; bank?: string | null };
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,7 +32,7 @@ function getUserIdFromBody(body: Record<string, unknown>): string | undefined {
   return typeof v === 'string' && v.trim() ? v.trim() : undefined;
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -68,21 +73,70 @@ serve(async (req) => {
 
     console.log('Parsed transaction:', parsed);
 
+    // Skip inserting OTP-only, PIN update, request submitted, etc.
+    if (parsed.skipInsert) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: 'Message is not a transaction (e.g. OTP, PIN update).',
+          parsed: { bank: parsed.bank, type: parsed.type },
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    // ===== OPTIONAL: GEMINI AI VERIFY & ENRICH =====
+    let aiEnrichment: GeminiEnrichment | null = null;
+    const geminiKey = Deno.env.get('GEMINI_API_KEY');
+    const geminiModel = Deno.env.get('GEMINI_MODEL');
+    const useAi = body.use_ai !== false;
+    if (geminiKey && useAi) {
+      try {
+        aiEnrichment = await enrichWithGemini(geminiKey, message, {
+          amount: parsed.amount,
+          bank: parsed.bank,
+          type: parsed.type,
+          entity: parsed.entity,
+          direction: parsed.direction,
+          date: parsed.date,
+          time: parsed.time,
+          account: parsed.account,
+        }, geminiModel || undefined);
+        if (aiEnrichment?.is_valid === false) {
+          return new Response(
+            JSON.stringify({
+              success: true,
+              skipped: true,
+              reason: 'AI verified: not a valid transaction to record.',
+              ai_corrections: aiEnrichment.corrections ?? undefined,
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+        if (aiEnrichment) console.log('Gemini enrichment:', aiEnrichment);
+      } catch (e) {
+        console.error('Gemini enrichment failed:', e);
+      }
+    }
+
     // ===== SMART CATEGORIZATION =====
     
     // Get user's categorization rules
-    const { data: rules } = await supabaseClient
+    const { data: rulesData } = await supabaseClient
       .from('transaction_rules')
       .select('*')
       .eq('user_id', userId)
       .eq('is_active', true)
       .order('priority', { ascending: false });
+    const rules = (rulesData ?? []) as TransactionRule[];
 
     let category = 'Uncategorized';
-    let type = parsed.direction === 'In' ? 'income' : 'expense';
+    let type: 'income' | 'expense' = parsed.direction === 'In' ? 'income' : 'expense';
+    if (parsed.direction === 'None' || parsed.type === 'Declined') type = 'expense';
 
     // Apply rules
-    if (rules && rules.length > 0) {
+    if (rules.length > 0) {
       for (const rule of rules) {
         let matches = false;
 
@@ -115,47 +169,55 @@ serve(async (req) => {
 
     // Fallback categorization based on transaction type
     if (category === 'Uncategorized') {
-      category = getDefaultCategory(parsed.type, parsed.entity);
+      if (aiEnrichment?.category && VALID_CATEGORIES.has(aiEnrichment.category)) {
+        category = aiEnrichment.category;
+      } else {
+        category = getDefaultCategory(parsed.type, parsed.entity);
+      }
     }
     category = toSchemaCategory(category);
 
-    // ===== DATE PARSING =====
-    
-    let transactionDate = null;
-    if (parsed.date) {
+    // Override type from AI if valid
+    if (aiEnrichment?.type === 'income' || aiEnrichment?.type === 'expense') {
+      type = aiEnrichment.type;
+    }
+
+    // ===== DATE PARSING (AI overrides when provided and valid) =====
+    const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
+    let transactionDate: string;
+    if (aiEnrichment?.date && isoDateRe.test(aiEnrichment.date)) {
+      transactionDate = aiEnrichment.date;
+    } else if (parsed.date) {
       try {
         const dateParts = parsed.date.split(/[/-]/);
         if (dateParts.length === 3) {
-          const day = parseInt(dateParts[0]);
-          const month = parseInt(dateParts[1]) - 1;
-          let year = parseInt(dateParts[2]);
-          
-          if (year < 100) {
-            year += 2000;
-          }
-          
+          const day = parseInt(dateParts[0], 10);
+          const month = parseInt(dateParts[1], 10) - 1;
+          let year = parseInt(dateParts[2], 10);
+          if (year < 100) year += 2000;
           transactionDate = new Date(year, month, day).toISOString().split('T')[0];
+        } else {
+          transactionDate = new Date().toISOString().split('T')[0];
         }
       } catch (e) {
         console.error('Date parsing error:', e);
-        // Use current date as fallback
         transactionDate = new Date().toISOString().split('T')[0];
       }
     } else {
-      // No date in SMS, use current date
       transactionDate = new Date().toISOString().split('T')[0];
     }
 
     // ===== DUPLICATE CHECK =====
     
-    const { data: duplicates } = await supabaseClient
+    const { data: duplicatesData } = await supabaseClient
       .from('transactions')
       .select('id')
       .eq('user_id', userId)
       .eq('original_message', parsed.originalMessage)
       .gte('created_at', new Date(Date.now() - 300000).toISOString()); // Last 5 minutes
+    const duplicates = (duplicatesData ?? []) as { id: string }[];
 
-    if (duplicates && duplicates.length > 0) {
+    if (duplicates.length > 0) {
       console.log('Duplicate detected:', duplicates[0].id);
       return new Response(
         JSON.stringify({
@@ -178,26 +240,35 @@ serve(async (req) => {
       ? parsed.cashFlow
       : (type === 'income' ? 'Cash In (+)' : 'Cash Out (-)');
 
-    const { data: insertedData, error: insertError } = await supabaseClient
+    const finalAmount = aiEnrichment?.amount != null ? aiEnrichment.amount : (parsed.amount ? parseFloat(parsed.amount) : 0);
+    const finalDescription = (aiEnrichment?.description?.trim()) || parsed.entity || `${parsed.type} - ${parsed.bank}`;
+    const finalEntity = (aiEnrichment?.entity != null ? aiEnrichment.entity : parsed.entity) || null;
+    const finalBank = (aiEnrichment?.bank?.trim()) || parsed.bank || null;
+    const finalTransactionType = (aiEnrichment?.transaction_type?.trim()) || parsed.type || null;
+    const finalTime = (aiEnrichment?.time?.trim()) || parsed.time || null;
+    const finalAccount = (aiEnrichment?.account != null ? aiEnrichment.account : parsed.account) || null;
+    const processingNotes = aiEnrichment?.corrections?.trim() || null;
+
+    const { data: insertedDataRaw, error: insertError } = await supabaseClient
       .from('transactions')
       .insert({
         type,
         category,
-        amount: parsed.amount ? parseFloat(parsed.amount) : 0,
-        description: parsed.entity || `${parsed.type} - ${parsed.bank}`,
+        amount: finalAmount,
+        description: finalDescription,
         date: transactionDate,
         is_recurring: false,
-        time: parsed.time || null,
-        bank: parsed.bank || null,
-        transaction_type: parsed.type || null,
-        entity: parsed.entity || null,
+        time: finalTime,
+        bank: finalBank,
+        transaction_type: finalTransactionType,
+        entity: finalEntity,
         direction: parsed.direction || null,
-        account: parsed.account || null,
+        account: finalAccount,
         original_message: parsed.originalMessage || null,
         raw_sms: rawSms ?? message,
         sender: sender ?? null,
         parsed_successfully: true,
-        processing_notes: null,
+        processing_notes: processingNotes,
         cash_flow: cashFlow,
         device_info: deviceInfo ?? null,
         source: 'sms',
@@ -210,6 +281,7 @@ serve(async (req) => {
       console.error('Insert error:', insertError);
       throw insertError;
     }
+    const insertedData = insertedDataRaw as InsertedTransaction;
 
     console.log('Transaction inserted:', insertedData.id);
 
@@ -232,11 +304,12 @@ serve(async (req) => {
           amount: insertedData.amount,
           category: insertedData.category,
           type: insertedData.type,
-          entity: parsed.entity,
-          bank: parsed.bank
+          entity: finalEntity ?? parsed.entity,
+          bank: finalBank ?? parsed.bank,
         },
         budgetWarning: budgetWarning,
-        parsed: parsed
+        parsed: parsed,
+        ...(aiEnrichment && { ai_enrichment: { category: aiEnrichment.category, corrections: aiEnrichment.corrections } }),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -244,13 +317,13 @@ serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error:', error);
-    
+    const message = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: error.message
+        error: message
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -283,31 +356,43 @@ function toSchemaCategory(cat: string): string {
   return 'other_expense';
 }
 
-// Map to LifeOS schema categories
+// Map to LifeOS schema categories (entity + transaction type → category)
 
 function getDefaultCategory(transactionType: string, entity: string | null): string {
   const type = transactionType.toLowerCase();
-  const ent = (entity || '').toLowerCase();
-  const isIn = /in|credit|received|deposit|إضافة/.test(type) || /in|credit|received/.test(ent);
+  const ent = (entity || '').toLowerCase().trim();
+  const isIn = /in|credit|received|deposit|إضافة|reversal/.test(type) || /in|credit|received/.test(ent);
 
   if (isIn) {
     if (type.includes('salary') || type.includes('payroll')) return 'salary';
     if (type.includes('freelance') || type.includes('invoice')) return 'freelance';
     if (type.includes('investment') || type.includes('dividend')) return 'investment';
-    return 'other_income';
+    return 'Other';
   }
 
   if (type.includes('atm') || type.includes('withdrawal') || type.includes('cash')) return 'other_expense';
   if (type.includes('fee') || type.includes('charge') || type.includes('charges')) return 'utilities';
   if (type.includes('ipn') || type.includes('transfer')) return 'other_expense';
 
-  if (ent.includes('carrefour') || ent.includes('metro') || ent.includes('market') || ent.includes('grocery') || ent.includes('سوبرماركت')) return 'food';
-  if (ent.includes('uber') || ent.includes('taxi') || ent.includes('careem') || ent.includes('petrol') || ent.includes('بنزين')) return 'transport';
-  if (ent.includes('restaurant') || ent.includes('cafe') || ent.includes('مطعم') || ent.includes('كافيه')) return 'food';
-  if (ent.includes('cinema') || ent.includes('netflix') || ent.includes('entertainment')) return 'entertainment';
-  if (ent.includes('hospital') || ent.includes('pharmacy') || ent.includes('doctor') || ent.includes('صيدلية')) return 'health';
-  if (ent.includes('school') || ent.includes('university') || ent.includes('course') || ent.includes('تعليم')) return 'education';
-  if (ent.includes('mall') || ent.includes('shop') || ent.includes('store') || ent.includes('متجر')) return 'shopping';
+  // Food & dining (check entity first so "Other" is only when nothing matches)
+  if (
+    /gourmet|carrefour|metro|market|grocery|سوبرماركت|restaurant|cafe|مطعم|كافيه|valu|valu\s*shop|noon\s*e\s*commerce|noon|mcdonald|kfc|starbucks|dominos|pizza|food|dining/.test(ent)
+  ) return 'food';
+
+  // Transport
+  if (/uber|taxi|careem|petrol|بنزين|transport|fuel|gas/.test(ent)) return 'transport';
+
+  // Entertainment
+  if (/cinema|netflix|entertainment|apple\.com|spotify|game/.test(ent)) return 'entertainment';
+
+  // Health
+  if (/hospital|pharmacy|doctor|صيدلية|clinic|medical/.test(ent)) return 'health';
+
+  // Education
+  if (/school|university|course|تعليم|education/.test(ent)) return 'education';
+
+  // Shopping (generic stores, malls, merchants)
+  if (/mall|shop|store|متجر|shopping|acceptmerchant|merchant/.test(ent)) return 'shopping';
 
   return 'other_expense';
 }

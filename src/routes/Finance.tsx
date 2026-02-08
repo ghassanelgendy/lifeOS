@@ -90,6 +90,24 @@ export default function Finance() {
     selectedBank === ''
       ? transactions
       : transactions.filter((t) => (t.bank || '').trim() === selectedBank);
+
+  // View all + date filter (month or day)
+  const [viewAllTransactions, setViewAllTransactions] = useState(false);
+  type DateFilterMode = 'all' | 'month' | 'day';
+  const [dateFilterMode, setDateFilterMode] = useState<DateFilterMode>('all');
+  const [filterMonth, setFilterMonth] = useState<string>(() => format(new Date(), 'yyyy-MM'));
+  const [filterDay, setFilterDay] = useState<string>(() => format(new Date(), 'yyyy-MM-dd'));
+  const dateFilteredTransactions = useMemo(() => {
+    if (dateFilterMode === 'all') return filteredTransactions;
+    if (dateFilterMode === 'month' && filterMonth)
+      return filteredTransactions.filter((t) => (t.date || '').startsWith(filterMonth));
+    if (dateFilterMode === 'day' && filterDay)
+      return filteredTransactions.filter((t) => (t.date || '').split('T')[0] === filterDay);
+    return filteredTransactions;
+  }, [filteredTransactions, dateFilterMode, filterMonth, filterDay]);
+  const displayedTransactions = viewAllTransactions
+    ? dateFilteredTransactions
+    : filteredTransactions.slice(0, 20);
   const { expensesByCategory, totalExpenses, totalIncome, balance } =
     getBreakdownFromTransactions(filteredTransactions);
 
@@ -561,10 +579,78 @@ export default function Finance() {
         </div>
       </div>
 
-      {/* Recent Transactions */}
+      {/* Recent / All Transactions */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Recent Transactions</h2>
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-lg font-semibold">
+              {viewAllTransactions ? 'All Transactions' : 'Recent Transactions'}
+            </h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-sm"
+              onClick={() => setViewAllTransactions(!viewAllTransactions)}
+            >
+              {viewAllTransactions ? 'Show recent' : 'View all'}
+            </Button>
+          </div>
+          {viewAllTransactions && (
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm text-muted-foreground">Filter:</span>
+              <div className="flex p-1 bg-secondary/50 rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setDateFilterMode('all')}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                    dateFilterMode === 'all' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateFilterMode('month')}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                    dateFilterMode === 'month' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  By month
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDateFilterMode('day')}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                    dateFilterMode === 'day' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  By day
+                </button>
+              </div>
+              {dateFilterMode === 'month' && (
+                <input
+                  type="month"
+                  value={filterMonth}
+                  onChange={(e) => setFilterMonth(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              )}
+              {dateFilterMode === 'day' && (
+                <input
+                  type="date"
+                  value={filterDay}
+                  onChange={(e) => setFilterDay(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              )}
+              <span className="text-sm text-muted-foreground">
+                {displayedTransactions.length} transaction{displayedTransactions.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+          )}
         </div>
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
@@ -572,7 +658,6 @@ export default function Finance() {
             <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
-                <th className="px-4 py-3 text-left font-medium">Cash Flow</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
                 <th className="px-4 py-3 text-left font-medium">Bank</th>
                 <th className="px-4 py-3 text-left font-medium">Type</th>
@@ -585,11 +670,10 @@ export default function Finance() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredTransactions.slice(0, 20).map((transaction) => {
+              {displayedTransactions.map((transaction) => {
                 const categoryLabel = transaction.type === 'income'
                   ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
                   : EXPENSE_CATEGORIES.find(c => c.value === transaction.category)?.label;
-                const cashFlow = transaction.type === 'income' ? 'Cash In (+)' : 'Cash Out (-)';
                 const timeStr = transaction.time ? transaction.time.slice(0, 5) : '';
 
                 return (
@@ -597,9 +681,6 @@ export default function Finance() {
                     <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                       {format(new Date(transaction.date), 'MMM d')}
                       {timeStr && <span className="block text-xs">{timeStr}</span>}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                      {cashFlow}
                     </td>
                     <td className={cn(
                       "px-4 py-3 text-right font-medium tabular-nums whitespace-nowrap",
@@ -656,7 +737,7 @@ export default function Finance() {
         </div>
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-border">
-          {filteredTransactions.slice(0, 20).map((transaction) => {
+          {displayedTransactions.map((transaction) => {
             const categoryLabel = transaction.type === 'income'
               ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
               : EXPENSE_CATEGORIES.find(c => c.value === transaction.category)?.label;

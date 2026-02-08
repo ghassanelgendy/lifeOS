@@ -8,7 +8,8 @@
     "target": "ESNext",
     "lib": ["ESNext"],
     "noUnusedLocals": false,
-    "noUnusedParameters": false
+    "noUnusedParameters": false,
+    "allowImportingTsExtensions": true
   },
   "include": ["**/*.ts", "deno.d.ts"],
   "exclude": ["node_modules"]
