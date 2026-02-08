@@ -81,6 +81,28 @@ function AppInner() {
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 
+  // PWA: when a new service worker takes over, reload so the app gets latest code
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const reloadWhenNewController = () => window.location.reload();
+    navigator.serviceWorker.addEventListener('controllerchange', reloadWhenNewController);
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', reloadWhenNewController);
+  }, []);
+
+  // PWA: check for updates on load and when app becomes visible (e.g. user returns to tab)
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const checkForUpdates = () => {
+      navigator.serviceWorker.ready.then((reg) => reg.update());
+    };
+    checkForUpdates();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') checkForUpdates();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   return (
     <>
       <ThemeSync />

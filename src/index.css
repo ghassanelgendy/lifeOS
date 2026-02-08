@@ -323,6 +323,21 @@ html.light[data-accent="amber"] {
   animation: modal-sheet-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
+/* Parallax-style section transition (slide between tabs) */
+@keyframes section-slide-in {
+  from {
+    transform: translateX(var(--section-dx, 0));
+    opacity: 0.85;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+.section-slide-in {
+  animation: section-slide-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
 @layer utilities {
   .privacy-mode {
     filter: blur(4px);
