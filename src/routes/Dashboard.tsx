@@ -37,7 +37,7 @@ export default function Dashboard() {
   const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
   const { privacyMode, dashboardWidgetOrder, dashboardWidgetVisible } = useUIStore();
-  const { avg7Days: screentimeAvg, trend: screentimeTrend, history: screentimeHistory, avgSwitches7Days, todaySwitches } = useScreentimeMetrics(7);
+  const { avg7Days: screentimeAvg, trend: screentimeTrend, history: screentimeHistory } = useScreentimeMetrics(7);
   const todayScreentime = useTodayScreentime();
 
   const order = dashboardWidgetOrder?.length ? dashboardWidgetOrder : [...DASHBOARD_WIDGET_IDS];

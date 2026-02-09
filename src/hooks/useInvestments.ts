@@ -6,7 +6,6 @@ import type {
   InvestmentTransaction,
   CreateInput,
   UpdateInput,
-  TransactionCategory,
 } from '../types/schema';
 import { useAuth } from '../contexts/AuthContext';
 
