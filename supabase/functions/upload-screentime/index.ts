@@ -250,7 +250,7 @@ Deno.serve(async (req: Request) => {
         const batch = appRows.slice(i, i + batchSize);
         const { data, error } = await supabase
           .from('screentime_daily_app_stats')
-          .upsert(batch)
+          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' })
           .select() as { data: any[] | null; error: { message: string } | null };
         
         if (error) {
@@ -268,7 +268,7 @@ Deno.serve(async (req: Request) => {
         const batch = websiteRows.slice(i, i + batchSize);
         const { data, error } = await supabase
           .from('screentime_daily_website_stats')
-          .upsert(batch)
+          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' })
           .select() as { data: any[] | null; error: { message: string } | null };
         
         if (error) {
