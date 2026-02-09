@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO } from 'date-fns';
-import { Monitor, Smartphone, Globe, TrendingUp, TrendingDown, Clock, RefreshCw } from 'lucide-react';
+import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, AreaChart, Area } from 'recharts';
 import { cn } from '../lib/utils';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
@@ -102,7 +102,6 @@ export default function Screentime() {
 
   // Total = app time only. Websites are tracked inside the browser app, so adding them would double-count.
   const totalAppSeconds = Object.values(aggregatedApps).reduce((sum: number, app: any) => sum + app.total_time_seconds, 0);
-  const totalWebsiteSeconds = Object.values(aggregatedWebsites).reduce((sum: number, site: any) => sum + site.total_time_seconds, 0);
   const totalSeconds = totalAppSeconds;
   const totalMinutes = Math.round(totalSeconds / 60);
   const totalHours = Math.floor(totalMinutes / 60);
