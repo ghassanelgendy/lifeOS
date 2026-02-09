@@ -26,6 +26,7 @@ interface SupabaseQueryBuilder<T = unknown> {
   order(column: string, opts?: { ascending?: boolean }): this;
   gte(column: string, value: string): this;
   insert(data: Record<string, unknown> | Record<string, unknown>[]): this;
+  upsert(data: Record<string, unknown> | Record<string, unknown>[], opts?: { onConflict?: string; ignoreDuplicates?: boolean }): this;
   update(data: Record<string, unknown>): this;
   delete(): this;
   single(): this;

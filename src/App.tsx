@@ -15,6 +15,7 @@ import Academics from './routes/Academics';
 import CalendarPage from './routes/Calendar';
 import Finance from './routes/Finance';
 import Habits from './routes/Habits';
+import Screentime from './routes/Screentime';
 import SettingsPage from './routes/Settings';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
@@ -119,6 +120,7 @@ function AppInner() {
             <Route path="academics" element={<Academics />} />
             <Route path="calendar" element={<CalendarPage />} />
             <Route path="finance" element={<Finance />} />
+            <Route path="screentime" element={<Screentime />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

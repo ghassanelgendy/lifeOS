@@ -151,4 +151,5 @@ export async function enrichWithGemini(
     enrichment.category = normalizeCategory(enrichment.category) || enrichment.category;
   }
   return enrichment;
+
 }

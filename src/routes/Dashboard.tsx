@@ -8,7 +8,9 @@ import {
   Banknote,
   Dumbbell,
   Target,
-  ArrowRight
+  ArrowRight,
+  Monitor,
+  RefreshCw
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
@@ -24,6 +26,7 @@ import { habitLogDB } from '../db/database';
 import { useUIStore } from '../stores/useUIStore';
 import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
 import { PrayerWidget } from '../components/PrayerWidget';
+import { useScreentimeMetrics, useTodayScreentime } from '../hooks/useScreentime';
 
 export default function Dashboard() {
   const { metrics, hasData: hasHealthData } = useHealthMetrics();
@@ -34,6 +37,8 @@ export default function Dashboard() {
   const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
   const { privacyMode, dashboardWidgetOrder, dashboardWidgetVisible } = useUIStore();
+  const { avg7Days: screentimeAvg, trend: screentimeTrend, history: screentimeHistory, avgSwitches7Days, todaySwitches } = useScreentimeMetrics(7);
+  const todayScreentime = useTodayScreentime();
 
   const order = dashboardWidgetOrder?.length ? dashboardWidgetOrder : [...DASHBOARD_WIDGET_IDS];
   const isVisible = (id: string) => dashboardWidgetVisible?.[id] !== false;
@@ -62,7 +67,7 @@ export default function Dashboard() {
         if (widgetId === 'prayer') return <PrayerWidget key="prayer" />;
         if (widgetId === 'stats')
           return (
-            <div key="stats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div key="stats" className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {/* Weight */}
         <Link to="/health" className="group">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
@@ -188,6 +193,56 @@ export default function Dashboard() {
                 {format(today, 'MMMM')}
               </p>
             </div>
+          </div>
+        </Link>
+
+        {/* Screen Time */}
+        <Link to="/screentime" className="group">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Monitor size={14} className="text-muted-foreground" />
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Screen Time</h3>
+                </div>
+                <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                  {screentimeAvg > 0 ? `${Math.floor(screentimeAvg / 60)}h ${screentimeAvg % 60}m` : '-'}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <p className="text-xs text-muted-foreground">7-day avg</p>
+                  {todayScreentime.totalSwitches > 0 && (
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <RefreshCw size={10} />
+                      <span className={cn(privacyMode && "blur-sm")}>{todayScreentime.totalSwitches.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {screentimeTrend !== 0 && (
+                <div className={cn("text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1",
+                  screentimeTrend < 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                )}>
+                  {screentimeTrend < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                  {Math.abs(screentimeTrend)}%
+                </div>
+              )}
+            </div>
+            {screentimeHistory.length > 0 && (
+              <div className="h-8 w-full mt-2 opacity-50">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={screentimeHistory.map((d, i) => ({ i, val: d.minutes }))}>
+                    <Line
+                      type="monotone"
+                      dataKey="val"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                      dot={false}
+                      className={screentimeTrend < 0 ? "text-green-500" : "text-red-500"}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
           </div>
         </Link>
       </div>

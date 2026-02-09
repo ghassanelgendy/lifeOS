@@ -25,6 +25,59 @@ export interface WellnessLog {
 }
 
 // ========================
+// Screentime Tracking
+// ========================
+export interface ScreentimeAppStat {
+  id: string;
+  user_id?: string | null;
+  date: string; // YYYY-MM-DD
+  source: string; // 'pc', 'mobile', 'web'
+  device_id?: string | null;
+  platform: string; // 'windows', 'android', 'ios', 'macos', 'linux'
+  app_name: string;
+  category?: string | null;
+  process_path?: string | null;
+  total_time_seconds: number;
+  session_count: number;
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
+  last_active_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScreentimeWebsiteStat {
+  id: string;
+  user_id?: string | null;
+  date: string; // YYYY-MM-DD
+  source: string;
+  device_id?: string | null;
+  platform: string;
+  domain: string;
+  favicon_url?: string | null;
+  total_time_seconds: number;
+  session_count: number;
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
+  last_active_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScreentimeDailySummary {
+  id: string;
+  user_id?: string | null;
+  date: string; // YYYY-MM-DD
+  source: string;
+  device_id?: string | null;
+  platform: string;
+  total_switches: number;
+  total_apps: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ========================
 // Academic & Career (Deep Work Engine)
 // ========================
 export type ProjectType = 'Thesis' | 'Certification' | 'Coding';
