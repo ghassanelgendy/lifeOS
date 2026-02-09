@@ -90,10 +90,17 @@ export default function Tasks() {
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([]);
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
   const [showListsSidebar, setShowListsSidebar] = useState(() => window.innerWidth >= 768);
+  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+
+  const TAGS_VISIBLE_COLLAPSED = 4;
+  const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
+    ? tags
+    : tags.slice(0, TAGS_VISIBLE_COLLAPSED);
+  const hiddenTagsCount = tags.length - tagsToShow.length;
 
   const quickAddRef = useRef<HTMLInputElement>(null);
   const mainContentRef = useRef<HTMLDivElement>(null);
@@ -441,18 +448,16 @@ export default function Tasks() {
       {/* Sidebar - Fixed overlay on mobile; space above bottom bar so content isn't cut */}
       <aside
         className={cn(
-          "flex flex-col border-r border-border bg-card transition-all duration-300",
+          "flex flex-col border-r border-border bg-card transition-all duration-300 shrink-0",
           "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
           "h-[100dvh] md:h-full md:min-h-full",
           "overflow-hidden",
-          showListsSidebar ? "w-[min(20rem,85vw)] translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0 md:min-w-0"
+          "pt-[env(safe-area-inset-top)] pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-4",
+          showListsSidebar ? "w-[min(20rem,85vw)] md:w-80 translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:overflow-hidden"
         )}
-        style={{
-          paddingTop: 'env(safe-area-inset-top)',
-          paddingBottom: 'calc(64px + env(safe-area-inset-bottom))',
-        }}
       >
         <div className="p-4 space-y-0.5 shrink-0">
+          <span className="block px-4 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Smart Lists</span>
           {/* Smart Lists - text-base on mobile so not small/cut */}
           <button
             onClick={() => { setActiveView('today'); setActiveListId(null); setActiveTagId(null); }}
@@ -514,7 +519,8 @@ export default function Tasks() {
         <div className="border-t border-border shrink-0" />
 
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-4">
-          <div className="flex items-center justify-end mb-2">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lists</span>
             <button
               onClick={() => setIsListModalOpen(true)}
               className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
@@ -542,7 +548,8 @@ export default function Tasks() {
             ))}
           </div>
 
-          <div className="flex items-center justify-end mt-4 mb-2">
+          <div className="flex items-center justify-between mt-4 mb-2">
+            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
             <button
               onClick={() => setIsTagModalOpen(true)}
               className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
@@ -552,7 +559,7 @@ export default function Tasks() {
             </button>
           </div>
           <div className="space-y-0.5">
-            {tags.map((tag) => (
+            {tagsToShow.map((tag) => (
               <button
                 key={tag.id}
                 onClick={() => { setActiveView('tag'); setActiveTagId(tag.id); setActiveListId(null); }}
@@ -568,12 +575,20 @@ export default function Tasks() {
                 <span className="text-sm md:text-xs shrink-0">{taskDB.getByTag(tag.id).filter(t => !t.is_completed).length}</span>
               </button>
             ))}
+            {hiddenTagsCount > 0 && (
+              <button
+                onClick={() => setTagsExpanded(true)}
+                className="w-full flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+              >
+                +{hiddenTagsCount} more
+              </button>
+            )}
           </div>
         </div>
       </aside>
 
       {/* Main Content - swipe from left edge to open sidebar on mobile */}
-      <main ref={mainContentRef} className="flex-1 flex flex-col overflow-hidden">
+      <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">

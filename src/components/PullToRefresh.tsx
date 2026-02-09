@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -8,7 +9,9 @@ interface PullToRefreshProps {
 }
 
 export function PullToRefresh({ children }: PullToRefreshProps) {
+    const location = useLocation();
     const queryClient = useQueryClient();
+    const isTasks = location.pathname === '/tasks';
     const [startY, setStartY] = useState<number | null>(null);
     const [pullDistance, setPullDistance] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -108,8 +111,8 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                 </div>
             </div>
 
-            {/* Content stays fixed - no translate so title doesn't move */}
-            <div className="relative">
+            {/* Content: on Tasks, h-full constrains to viewport so sidebar spans to bottom; elsewhere min-h-full allows scroll */}
+            <div className={cn("relative", isTasks ? "h-full" : "min-h-full")}>
                 {children}
             </div>
         </div>

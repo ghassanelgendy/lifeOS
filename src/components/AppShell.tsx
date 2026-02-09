@@ -274,7 +274,8 @@ export function AppShell() {
             <div
               key={location.pathname}
               className={cn(
-                "flex flex-col min-h-full p-4 md:p-6 pb-24 md:pb-6 section-slide-in"
+                "flex flex-col p-4 md:p-6 pb-24 md:pb-6 section-slide-in",
+                isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full"
               )}
               style={
                 {
