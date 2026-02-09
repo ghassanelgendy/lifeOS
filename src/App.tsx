@@ -8,6 +8,7 @@ import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUIStore } from './stores/useUIStore';
 import { AppShell } from './components/AppShell';
+import { LoadingScreen } from './components/LoadingScreen';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
 import Health from './routes/Health';
@@ -27,14 +28,6 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 const PERSIST_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
-
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-      <div className="animate-pulse">Loading...</div>
-    </div>
-  );
-}
 
 function ProtectedRoute() {
   const { user, loading } = useAuth();

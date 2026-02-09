@@ -386,3 +386,10 @@ html.light[data-accent="amber"] {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* Loading screen indeterminate bar */
+@keyframes loading-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(220%); }
+  100% { transform: translateX(-100%); }
+}
