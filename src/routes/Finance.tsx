@@ -29,10 +29,19 @@ import {
   getBreakdownFromTransactions
 } from '../hooks/useFinance';
 import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
+import {
+  useInvestmentAccounts,
+  useInvestmentTransactions,
+  useEnsureDefaultInvestmentAccounts,
+  useCreateInvestmentTransaction,
+  useUpdateInvestmentTransaction,
+  useDeleteInvestmentTransaction,
+  getInvestmentBreakdown,
+} from '../hooks/useInvestments';
 import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../stores/useUIStore';
 import { Modal, Button, Input, Select } from '../components/ui';
-import type { Transaction, CreateInput, TransactionCategory } from '../types/schema';
+import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
   { value: 'food', label: 'Food & Dining' },
@@ -67,25 +76,54 @@ const CATEGORY_COLORS: Record<string, string> = {
   other_income: '#6b7280',
 };
 
+type FinanceTab = 'transactions' | 'banks' | 'investments';
+
 export default function Finance() {
+  const [activeTab, setActiveTab] = useState<FinanceTab>('transactions');
   const { data: transactions = [], isLoading } = useTransactions();
   const { data: banks = [], isLoading: banksLoading } = useUserBanks();
+  const { data: investmentAccounts = [], isLoading: invAccountsLoading } = useInvestmentAccounts();
+  const { data: investmentTransactions = [], isLoading: invTxLoading } = useInvestmentTransactions();
   const ensureDefaultBanks = useEnsureDefaultBanks();
+  const ensureDefaultInvestmentAccounts = useEnsureDefaultInvestmentAccounts();
   const createTransaction = useCreateTransaction();
   const updateTransaction = useUpdateTransaction();
   const deleteTransaction = useDeleteTransaction();
+  const createInvestmentTransaction = useCreateInvestmentTransaction();
+  const updateInvestmentTransaction = useUpdateInvestmentTransaction();
+  const deleteInvestmentTransaction = useDeleteInvestmentTransaction();
   const { privacyMode } = useUIStore();
 
-  // Ensure default banks exist once (Orange Cash, QNB, HSBC, SAIB, NBE, Cash)
   const { user } = useAuth();
   const hasEnsuredDefaults = useRef(false);
+  const hasEnsuredInvDefaults = useRef(false);
+
+  // Ensure default banks exist once
   useEffect(() => {
     if (!user?.id || banksLoading || banks.length > 0 || hasEnsuredDefaults.current) return;
     hasEnsuredDefaults.current = true;
     ensureDefaultBanks.mutate();
   }, [user?.id, banksLoading, banks.length]);
 
+  // Ensure default investment accounts (Thndr, Fawry) exist once
+  useEffect(() => {
+    if (!user?.id || invAccountsLoading || activeTab !== 'investments' || hasEnsuredInvDefaults.current) return;
+    if (investmentAccounts.length > 0) {
+      hasEnsuredInvDefaults.current = true;
+      return;
+    }
+    hasEnsuredInvDefaults.current = true;
+    ensureDefaultInvestmentAccounts.mutate();
+  }, [user?.id, invAccountsLoading, investmentAccounts.length, activeTab]);
+
   const [selectedBank, setSelectedBank] = useState<string>(''); // '' = All (consolidated)
+  const [selectedInvestmentAccount, setSelectedInvestmentAccount] = useState<string>(''); // '' = All
+  const filteredInvestmentTransactions =
+    selectedInvestmentAccount === ''
+      ? investmentTransactions
+      : investmentTransactions.filter((t) => t.account_id === selectedInvestmentAccount);
+  const investmentBreakdown = getInvestmentBreakdown(filteredInvestmentTransactions);
+
   const filteredTransactions =
     selectedBank === ''
       ? transactions
@@ -117,8 +155,44 @@ export default function Finance() {
     return [...new Set([...fromBanks, ...fromTx])].filter(Boolean).sort((a, b) => a.localeCompare(b));
   }, [banks, transactions]);
 
+  const perBankStats = useMemo(() => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const monthlyTx = transactions.filter((t) => {
+      const d = new Date(t.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+    const byBank: Record<string, { cashIn: number; cashOut: number; cashflow: number }> = {};
+    monthlyTx.forEach((t) => {
+      const bank = (t.bank || '').trim() || '—';
+      if (!byBank[bank]) byBank[bank] = { cashIn: 0, cashOut: 0, cashflow: 0 };
+      if (t.type === 'income') {
+        byBank[bank].cashIn += Number(t.amount);
+      } else {
+        byBank[bank].cashOut += Number(t.amount);
+      }
+      byBank[bank].cashflow = byBank[bank].cashIn - byBank[bank].cashOut;
+    });
+    return byBank;
+  }, [transactions]);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [isInvestmentModalOpen, setIsInvestmentModalOpen] = useState(false);
+  const [editingInvestmentTransaction, setEditingInvestmentTransaction] = useState<InvestmentTransaction | null>(null);
+  const [investmentFormData, setInvestmentFormData] = useState<Partial<CreateInput<InvestmentTransaction>>>({
+    type: 'income',
+    category: 'investment',
+    amount: 0,
+    description: '',
+    date: new Date().toISOString().split('T')[0],
+    time: '',
+    is_recurring: false,
+    account_id: '',
+    entity: '',
+    direction: 'In',
+  });
   const [formData, setFormData] = useState<Partial<CreateInput<Transaction>>>({
     type: 'expense',
     category: 'food',
@@ -278,6 +352,70 @@ export default function Finance() {
     );
   }
 
+  // Investment modal handlers
+  const handleOpenInvestmentModal = (tx?: InvestmentTransaction) => {
+    if (tx) {
+      setEditingInvestmentTransaction(tx);
+      setInvestmentFormData({
+        type: tx.type,
+        category: tx.category,
+        amount: tx.amount,
+        description: tx.description,
+        date: tx.date.split('T')[0],
+        time: tx.time?.slice(0, 5) ?? '',
+        is_recurring: tx.is_recurring,
+        account_id: tx.account_id,
+        entity: tx.entity,
+        direction: tx.direction ?? (tx.type === 'income' ? 'In' : 'Out'),
+      });
+    } else {
+      setEditingInvestmentTransaction(null);
+      setInvestmentFormData({
+        type: 'income',
+        category: 'investment',
+        amount: 0,
+        description: '',
+        date: new Date().toISOString().split('T')[0],
+        time: '',
+        is_recurring: false,
+        account_id: investmentAccounts[0]?.id ?? '',
+        entity: '',
+        direction: 'In',
+      });
+    }
+    setIsInvestmentModalOpen(true);
+  };
+
+  const sanitizeInvestmentPayload = (data: Partial<CreateInput<InvestmentTransaction>>): CreateInput<InvestmentTransaction> => {
+    const out = { ...data } as Record<string, unknown>;
+    ['time', 'description', 'entity', 'direction', 'transaction_type'].forEach((k) => {
+      if (out[k] === '' || out[k] == null) delete out[k];
+    });
+    return out as CreateInput<InvestmentTransaction>;
+  };
+
+  const handleSubmitInvestment = (e: React.FormEvent) => {
+    e.preventDefault();
+    const accountId = investmentFormData.account_id || investmentAccounts[0]?.id;
+    if (!accountId) return;
+    const payload = sanitizeInvestmentPayload({
+      ...investmentFormData,
+      account_id: accountId,
+    });
+    if (editingInvestmentTransaction) {
+      updateInvestmentTransaction.mutate(
+        { id: editingInvestmentTransaction.id, data: payload },
+        { onSuccess: () => setIsInvestmentModalOpen(false) }
+      );
+    } else {
+      createInvestmentTransaction.mutate(payload, { onSuccess: () => setIsInvestmentModalOpen(false) });
+    }
+  };
+
+  const handleDeleteInvestment = (id: string) => {
+    if (confirm('Delete this investment transaction?')) deleteInvestmentTransaction.mutate(id);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
@@ -286,11 +424,55 @@ export default function Finance() {
           <h1 className="text-3xl font-bold tracking-tight">Finance</h1>
           <p className="text-muted-foreground">Track income, expenses, and budgets</p>
         </div>
-        <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add transaction">
-          <Plus size={22} />
-        </Button>
+        {activeTab === 'transactions' && (
+          <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add transaction">
+            <Plus size={22} />
+          </Button>
+        )}
+        {activeTab === 'investments' && (
+          <Button onClick={() => handleOpenInvestmentModal()} className="p-2" aria-label="Add investment transaction">
+            <Plus size={22} />
+          </Button>
+        )}
       </div>
 
+      {/* Tabs */}
+      <div className="flex p-1 bg-secondary/50 rounded-xl">
+        <button
+          type="button"
+          onClick={() => setActiveTab('transactions')}
+          className={cn(
+            'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+            activeTab === 'transactions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Transactions
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('banks')}
+          className={cn(
+            'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+            activeTab === 'banks' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Banks
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('investments')}
+          className={cn(
+            'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+            activeTab === 'investments' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+          )}
+        >
+          Investments
+        </button>
+      </div>
+
+      {/* Transactions tab */}
+      {activeTab === 'transactions' && (
+        <>
       {/* Bank filter: All (consolidated) or single bank */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm text-muted-foreground">View:</span>
@@ -929,6 +1111,231 @@ export default function Finance() {
           </div>
         </form>
       </Modal>
+        </>
+      )}
+
+      {/* Banks tab */}
+      {activeTab === 'banks' && (
+        <div className="rounded-2xl border border-border bg-card p-4 md:p-6 overflow-hidden">
+          <h2 className="text-lg font-semibold mb-4">Your Banks</h2>
+          <p className="text-sm text-muted-foreground mb-4">Cash In, Cash Out, and Cashflow per bank (current month).</p>
+          <div className="space-y-2">
+            {bankOptions.length === 0 && !banksLoading && (
+              <p className="text-sm text-muted-foreground">No banks yet. Add a transaction and select a bank to create one.</p>
+            )}
+            {bankOptions.map((bankName) => {
+              const stats = perBankStats[bankName] ?? { cashIn: 0, cashOut: 0, cashflow: 0 };
+              return (
+                <div key={bankName} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-4 rounded-lg bg-secondary/30">
+                  <span className="font-medium shrink-0 w-24">{bankName}</span>
+                  <div className="flex flex-wrap gap-4 sm:ml-auto">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Cash In</span>
+                      <p className={cn("font-semibold tabular-nums text-green-500", privacyMode && "blur-sm")}>
+                        {formatCurrency(stats.cashIn)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Cash Out</span>
+                      <p className={cn("font-semibold tabular-nums text-red-500", privacyMode && "blur-sm")}>
+                        {formatCurrency(stats.cashOut)}
+                      </p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Cashflow</span>
+                      <p className={cn(
+                        "font-semibold tabular-nums",
+                        stats.cashflow >= 0 ? "text-green-500" : "text-red-500",
+                        privacyMode && "blur-sm"
+                      )}>
+                        {formatCurrency(stats.cashflow)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Investments tab */}
+      {activeTab === 'investments' && (
+        <>
+          {(invAccountsLoading || invTxLoading) ? (
+            <div className="flex justify-center h-64 items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm text-muted-foreground">Account:</span>
+                <Select
+                  value={selectedInvestmentAccount}
+                  onChange={(e) => setSelectedInvestmentAccount(e.target.value)}
+                  options={[
+                    { value: '', label: 'All' },
+                    ...investmentAccounts.map((a) => ({ value: a.id, label: a.name })),
+                  ]}
+                  className="w-full sm:w-auto max-w-[200px]"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <p className="text-sm text-muted-foreground">Income</p>
+                  <p className={cn("text-2xl font-bold text-green-500 tabular-nums", privacyMode && "blur-sm")}>
+                    {formatCurrency(investmentBreakdown.totalIncome)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <p className="text-sm text-muted-foreground">Expenses</p>
+                  <p className={cn("text-2xl font-bold text-red-500 tabular-nums", privacyMode && "blur-sm")}>
+                    {formatCurrency(investmentBreakdown.totalExpense)}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border bg-card p-4">
+                  <p className="text-sm text-muted-foreground">Balance</p>
+                  <p className={cn(
+                    "text-2xl font-bold tabular-nums",
+                    investmentBreakdown.balance >= 0 ? "text-green-500" : "text-red-500",
+                    privacyMode && "blur-sm"
+                  )}>
+                    {formatCurrency(investmentBreakdown.balance)}
+                  </p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                <div className="p-4 border-b border-border">
+                  <h2 className="font-semibold">Investment Transactions</h2>
+                  <p className="text-sm text-muted-foreground">Thndr and Fawry — separate from your main finances</p>
+                </div>
+                <div className="divide-y divide-border">
+                  {filteredInvestmentTransactions.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground">No investment transactions yet.</div>
+                  ) : (
+                    filteredInvestmentTransactions.map((tx) => {
+                      const account = investmentAccounts.find((a) => a.id === tx.account_id);
+                      const catLabel = tx.type === 'income'
+                        ? INCOME_CATEGORIES.find((c) => c.value === tx.category)?.label
+                        : EXPENSE_CATEGORIES.find((c) => c.value === tx.category)?.label;
+                      return (
+                        <div key={tx.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20">
+                          <div className={cn(
+                            "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                            tx.type === 'income' ? "bg-green-500/10" : "bg-red-500/10"
+                          )}>
+                            {tx.type === 'income' ? <ArrowUpRight className="text-green-500" size={18} /> : <ArrowDownRight className="text-red-500" size={18} />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium truncate">{tx.description || catLabel}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {format(new Date(tx.date), 'MMM d')} · {account?.name ?? '—'}
+                            </div>
+                          </div>
+                          <div className="text-right flex items-center gap-2">
+                            <span className={cn(
+                              "font-medium tabular-nums",
+                              tx.type === 'income' ? "text-green-500" : "text-red-500",
+                              privacyMode && "blur-sm"
+                            )}>
+                              {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
+                            </span>
+                            <button onClick={() => handleOpenInvestmentModal(tx)} className="p-1.5 rounded hover:bg-secondary" title="Edit">
+                              <Edit2 size={14} />
+                            </button>
+                            <button onClick={() => handleDeleteInvestment(tx.id)} className="p-1.5 rounded hover:bg-destructive/20 text-destructive" title="Delete">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+              <Modal
+                isOpen={isInvestmentModalOpen}
+                onClose={() => setIsInvestmentModalOpen(false)}
+                title={editingInvestmentTransaction ? 'Edit Investment' : 'New Investment'}
+              >
+                <form onSubmit={handleSubmitInvestment} className="space-y-4">
+                  <div className="flex gap-2 p-1 bg-secondary rounded-lg">
+                    <button
+                      type="button"
+                      onClick={() => setInvestmentFormData({ ...investmentFormData, type: 'expense', category: 'other_expense', direction: 'Out' })}
+                      className={cn(
+                        "flex-1 py-2 rounded text-sm font-medium transition-colors",
+                        investmentFormData.type === 'expense' ? "bg-red-500 text-white" : "hover:bg-background/50"
+                      )}
+                    >
+                      Out
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInvestmentFormData({ ...investmentFormData, type: 'income', category: 'investment', direction: 'In' })}
+                      className={cn(
+                        "flex-1 py-2 rounded text-sm font-medium transition-colors",
+                        investmentFormData.type === 'income' ? "bg-green-500 text-white" : "hover:bg-background/50"
+                      )}
+                    >
+                      In
+                    </button>
+                  </div>
+                  <Select
+                    label="Account"
+                    value={investmentFormData.account_id ?? ''}
+                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, account_id: e.target.value })}
+                    options={investmentAccounts.map((a) => ({ value: a.id, label: a.name }))}
+                    required
+                  />
+                  <Input
+                    label="Amount"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={investmentFormData.amount === 0 ? '' : investmentFormData.amount}
+                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                    required
+                  />
+                  <Select
+                    label="Category"
+                    value={investmentFormData.category}
+                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, category: e.target.value as TransactionCategory })}
+                    options={investmentFormData.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label="Date"
+                      type="date"
+                      value={investmentFormData.date ?? ''}
+                      onChange={(e) => setInvestmentFormData({ ...investmentFormData, date: e.target.value })}
+                      required
+                    />
+                    <Input
+                      label="Time"
+                      type="time"
+                      value={investmentFormData.time ?? ''}
+                      onChange={(e) => setInvestmentFormData({ ...investmentFormData, time: e.target.value || undefined })}
+                    />
+                  </div>
+                  <Input
+                    label="Details"
+                    value={investmentFormData.description || ''}
+                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, description: e.target.value })}
+                    placeholder="What was this for?"
+                  />
+                  <div className="flex justify-end gap-2 pt-4">
+                    <Button type="button" variant="ghost" onClick={() => setIsInvestmentModalOpen(false)}>Cancel</Button>
+                    <Button type="submit" disabled={createInvestmentTransaction.isPending || updateInvestmentTransaction.isPending}>
+                      {editingInvestmentTransaction ? 'Update' : 'Add'}
+                    </Button>
+                  </div>
+                </form>
+              </Modal>
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

@@ -214,6 +214,32 @@ export interface Budget {
   updated_at: string;
 }
 
+// Investments: isolated from regular transactions (Thndr, Fawry)
+export interface InvestmentAccount {
+  id: string;
+  user_id?: string | null;
+  name: string;
+  created_at: string;
+}
+
+export interface InvestmentTransaction {
+  id: string;
+  user_id?: string | null;
+  account_id: string;
+  type: TransactionType;
+  category: TransactionCategory;
+  amount: number;
+  description?: string;
+  date: string;
+  time?: string;
+  is_recurring: boolean;
+  entity?: string;
+  direction?: 'In' | 'Out';
+  transaction_type?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ========================
 // App Settings
 // ========================
