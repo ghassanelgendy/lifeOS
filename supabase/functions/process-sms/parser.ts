@@ -183,7 +183,10 @@ export class TransactionParser {
     const line = text;
     if (/from hsbc:|your hsbc/i.test(line)) return 'HSBC';
     if (/orange cash|orange money|اورنچ كاش|receiver dial|recharged to|your new balance.*transaction id/i.test(lower)) return 'Orange Cash';
-    if (/الاهلى|nbe\s+otp|nbe\s+atm|بطاقة المدفوعة مقدماً|ببطاقتكم مسبقة الدفع|NBE OTP/i.test(line) || (/تم خصم|تم إضافة|تم تنفيذ|تم إستلام/.test(line) && /رقم 5432|بطاقة/.test(line))) return 'NBE';
+    // NBE: explicit branding, or Arabic instant-transfer wording (تم إضافة/تنفيذ/إستلام + تحويل لحظي/لحسابكم/رقم مرجعي)
+    if (/الاهلى|nbe\s+otp|nbe\s+atm|بطاقة المدفوعة مقدماً|ببطاقتكم مسبقة الدفع|NBE OTP/i.test(line)) return 'NBE';
+    if ((/تم خصم|تم إضافة|تم تنفيذ|تم إستلام/.test(line) && /رقم 5432|بطاقة/.test(line)) ||
+        (/تم إضافة تحويل لحظي|تم تنفيذ تحويل لحظي|تم إستلام عملية تحويل/.test(line) && /لحسابكم|رقم مرجعي|للمزيد اتصل/.test(line))) return 'NBE';
     if (/qnb|كشف حساب كارتك|المنتهي ب\s*\d.*1473/i.test(lower)) return 'QNB';
     if (/ipn transfer (sent|received)|ref#\s*\w+/i.test(lower) && !/hsbc|orange|nbe/i.test(lower)) return 'QNB';
     if (/your (debit|credit) card\s*\*+/i.test(lower)) return 'QNB';
@@ -281,6 +284,14 @@ export class TransactionParser {
     if (/declined|ناسف لعدم إتمام/i.test(text)) {
       data.type = 'Declined';
       data.direction = 'None';
+      return data;
+    }
+    // Arabic: instant transfer added to your account = income (in case bank wasn't detected as NBE)
+    if (/تم إضافة تحويل لحظي لحسابكم|تم إضافة تحويل لحظي/.test(text)) {
+      data.type = 'IPN In';
+      data.direction = 'In';
+      m = /من\s+([^\d]+?)(?:\s+ورقم|\s+رقم مرجعي|$)/.exec(text);
+      if (m) data.entity = m[1].trim();
       return data;
     }
     if (/ipn transfer sent|transfer sent with amount/i.test(lower)) {

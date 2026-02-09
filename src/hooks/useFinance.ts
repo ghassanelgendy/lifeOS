@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
@@ -11,6 +12,33 @@ const BUDGETS_KEY = ['budgets'];
 
 function transactionsKey(userId: string | undefined) {
   return [...TRANSACTIONS_KEY, userId] as const;
+}
+
+/** Invalidate transactions queries when the table changes or when the app becomes visible (so expenses update). */
+export function useTransactionsRealtime() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('transactions-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transactions' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+        }
+      )
+      .subscribe();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') queryClient.invalidateQueries({ queryKey: TRANSACTIONS_KEY });
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [user?.id, queryClient]);
 }
 function budgetsKey(userId: string | undefined) {
   return [...BUDGETS_KEY, userId] as const;

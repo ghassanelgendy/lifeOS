@@ -237,6 +237,40 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Merge duplicate app rows (same user/date/source/device/platform/app_name) so one row per key
+    const appRowsByKey = new Map<string, typeof appRows[0]>();
+    for (const row of appRows) {
+      const key = `${row.date}|${row.source}|${row.device_id}|${row.platform}|${row.app_name}`;
+      const existing = appRowsByKey.get(key);
+      if (existing) {
+        existing.total_time_seconds += row.total_time_seconds;
+        existing.session_count += row.session_count;
+        if (row.last_active_at && (!existing.last_active_at || row.last_active_at > existing.last_active_at)) existing.last_active_at = row.last_active_at;
+        if (row.first_seen_at && (!existing.first_seen_at || row.first_seen_at < existing.first_seen_at)) existing.first_seen_at = row.first_seen_at;
+        if (row.last_seen_at && (!existing.last_seen_at || row.last_seen_at > existing.last_seen_at)) existing.last_seen_at = row.last_seen_at;
+      } else {
+        appRowsByKey.set(key, { ...row });
+      }
+    }
+    const mergedAppRows = Array.from(appRowsByKey.values());
+
+    // Merge duplicate website rows (same user/date/source/device/platform/domain)
+    const websiteRowsByKey = new Map<string, typeof websiteRows[0]>();
+    for (const row of websiteRows) {
+      const key = `${row.date}|${row.source}|${row.device_id}|${row.platform}|${row.domain}`;
+      const existing = websiteRowsByKey.get(key);
+      if (existing) {
+        existing.total_time_seconds += row.total_time_seconds;
+        existing.session_count += row.session_count;
+        if (row.last_active_at && (!existing.last_active_at || row.last_active_at > existing.last_active_at)) existing.last_active_at = row.last_active_at;
+        if (row.first_seen_at && (!existing.first_seen_at || row.first_seen_at < existing.first_seen_at)) existing.first_seen_at = row.first_seen_at;
+        if (row.last_seen_at && (!existing.last_seen_at || row.last_seen_at > existing.last_seen_at)) existing.last_seen_at = row.last_seen_at;
+      } else {
+        websiteRowsByKey.set(key, { ...row });
+      }
+    }
+    const mergedWebsiteRows = Array.from(websiteRowsByKey.values());
+
     let appInserted = 0;
     let websiteInserted = 0;
     let summaryInserted = 0;
@@ -244,10 +278,10 @@ Deno.serve(async (req: Request) => {
     const websiteErrors: string[] = [];
     const summaryErrors: string[] = [];
 
-    if (appRows.length > 0) {
+    if (mergedAppRows.length > 0) {
       const batchSize = 500;
-      for (let i = 0; i < appRows.length; i += batchSize) {
-        const batch = appRows.slice(i, i + batchSize);
+      for (let i = 0; i < mergedAppRows.length; i += batchSize) {
+        const batch = mergedAppRows.slice(i, i + batchSize);
         const { data, error } = await supabase
           .from('screentime_daily_app_stats')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' })
@@ -262,10 +296,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    if (websiteRows.length > 0) {
+    if (mergedWebsiteRows.length > 0) {
       const batchSize = 500;
-      for (let i = 0; i < websiteRows.length; i += batchSize) {
-        const batch = websiteRows.slice(i, i + batchSize);
+      for (let i = 0; i < mergedWebsiteRows.length; i += batchSize) {
+        const batch = mergedWebsiteRows.slice(i, i + batchSize);
         const { data, error } = await supabase
           .from('screentime_daily_website_stats')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' })
@@ -310,8 +344,8 @@ Deno.serve(async (req: Request) => {
             summaries: summaryInserted,
           },
           total: {
-            apps: appRows.length,
-            websites: websiteRows.length,
+            apps: mergedAppRows.length,
+            websites: mergedWebsiteRows.length,
             summaries: summaryRows.length,
           },
           errors: {
@@ -333,8 +367,8 @@ Deno.serve(async (req: Request) => {
           summaries: summaryInserted,
         },
         total: {
-          apps: appRows.length,
-          websites: websiteRows.length,
+          apps: mergedAppRows.length,
+          websites: mergedWebsiteRows.length,
           summaries: summaryRows.length,
         },
       }),

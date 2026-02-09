@@ -62,12 +62,21 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* Widgets in user-defined order */}
-      {order.filter(isVisible).map((widgetId) => {
+      {/* Widgets in user-defined order — single visible widget spans full width */}
+      {(() => {
+        const visibleIds = order.filter(isVisible);
+        const isAlone = visibleIds.length === 1;
+        return visibleIds.map((widgetId) => {
         if (widgetId === 'prayer') return <PrayerWidget key="prayer" />;
         if (widgetId === 'stats')
           return (
-            <div key="stats" className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div
+              key="stats"
+              className={cn(
+                'grid gap-4',
+                isAlone ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-5'
+              )}
+            >
         {/* Weight */}
         <Link to="/health" className="group">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
@@ -196,9 +205,9 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        {/* Screen Time */}
-        <Link to="/screentime" className="group">
-          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+        {/* Screen Time — span 2 rows so it gets more space in the grid */}
+        <Link to="/screentime" className="group row-span-2">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full min-h-[theme(spacing.32)]">
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-2">
@@ -332,7 +341,13 @@ export default function Dashboard() {
           );
         if (widgetId === 'quickstats')
           return (
-      <div key="quickstats" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div
+        key="quickstats"
+        className={cn(
+          'grid gap-4',
+          isAlone ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-4'
+        )}
+      >
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
           <p className="text-2xl font-bold mt-1">{activeProjects}</p>
@@ -411,7 +426,8 @@ export default function Dashboard() {
       </section>
           );
         return null;
-      })}
+      });
+      })()}
     </div>
   );
 }

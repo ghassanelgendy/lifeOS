@@ -5,6 +5,7 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
+import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUIStore } from './stores/useUIStore';
 import { AppShell } from './components/AppShell';
@@ -57,6 +58,7 @@ function ThemeSync() {
 }
 
 function AppInner() {
+  useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
   useEffect(() => {
     if (isOnline()) seedDatabase();
   }, []);
