@@ -32,6 +32,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const previousUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
+    const startedAt = Date.now();
+    const MIN_LOADING_MS = 2200;
+
     supabase.auth.getSession()
       .then(({ data: { session: s } }) => {
         setSession(s);
@@ -43,7 +46,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         previousUserIdRef.current = null;
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        const elapsed = Date.now() - startedAt;
+        const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+        setTimeout(() => setLoading(false), remaining);
+      });
 
     const {
       data: { subscription },

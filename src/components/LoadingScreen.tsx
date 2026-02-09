@@ -26,11 +26,11 @@ export function LoadingScreen() {
       />
 
       <div className="relative z-10 flex flex-col items-center gap-10">
-        {/* Wordmark: life + spinning O + S */}
-        <div className="flex items-center justify-center gap-0.5">
+        {/* Wordmark: life + spinning O + S — spaced so the circle never overlaps text */}
+        <div className="flex items-center justify-center gap-3">
           <span className="text-3xl font-bold tracking-tight text-foreground select-none">life</span>
           <span
-            className="inline-block w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin flex-shrink-0"
+            className="inline-flex items-center justify-center w-7 h-7 rounded-full border-2 border-primary border-t-transparent animate-spin flex-shrink-0"
             style={{ animationDuration: '0.9s' }}
             aria-hidden
           />
