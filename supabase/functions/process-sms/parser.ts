@@ -22,7 +22,7 @@ export class TransactionParser {
   private reTime12 = /\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([APap][Mm])\b/;
   private reTime24 = /\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(?:AM|PM|\b)/;
   private reTimeArabic = /(?:الساعه|الساعة)\s*(\d{1,2}):(\d{2})/;
-  private reDayMonthAr = /(?:يوم|بتاريخ)\s*(\d{1,2})[\/\-](\d{1,2})/;
+  private reDayMonthAr = /(?:يوم|بتاريخ)\s*(\d{1,2})([\/\-])(\d{1,2})/;
 
   /** EGP 2738.00, 44.00EGP, مبلغ 200.00 جم, 9208.08 جنيه, amount 240.00 EGP, بمبلغ 800.00EGP */
   /** Priority: transaction amount only (never balance). Then generic EGP but skip if in balance context. */
@@ -111,12 +111,18 @@ export class TransactionParser {
       if (y < 100) y += 2000;
       return this.toISODate(y, mon, day);
     }
-    // Arabic: يوم 25/09 (DD/MM) or يوم 09-26 (MM-DD)
+    // Arabic: يوم 25/09 (DD/MM) or يوم 02-10 (MM-DD in Egyptian NBE: month 02, day 10 = 10 Feb)
     m = this.reDayMonthAr.exec(text);
     if (m) {
       const a = parseInt(m[1], 10);
-      const b = parseInt(m[2], 10);
+      const sep = m[2];
+      const b = parseInt(m[3], 10);
       const y = new Date().getFullYear();
+      if (sep === '-') {
+        // Dash: Egyptian bank format MM-DD (e.g. يوم 02-10 = 10 Feb)
+        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return this.toISODate(y, a - 1, b);
+      }
+      // Slash or fallback: DD/MM (e.g. يوم 25/09 = 25 Sep)
       if (b > 12) return this.toISODate(y, a - 1, b);
       return this.toISODate(y, b - 1, a);
     }
