@@ -25,3 +25,5 @@ dist-ssr
 /.electron-cache
 /dist-electron
 /release
+/supabase/functions/upload-screentime - Copy
+/supabase/functions/upload-screentime-chronos
