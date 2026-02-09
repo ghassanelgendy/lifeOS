@@ -192,24 +192,34 @@ export default function Screentime() {
     });
   }, [appStats, websiteStats]);
 
-  // Get computed CSS color values for charts
-  const [primaryColor, setPrimaryColor] = useState<string>('#8b5cf6');
-  const [accentColor, setAccentColor] = useState<string>('#10b981');
+  // Accent-based shades for charts (one hue, different shades per entity)
+  const [accentShades, setAccentShades] = useState<{ base: string; light: string; lighter: string }>({
+    base: '#8b5cf6',
+    light: '#a78bfa',
+    lighter: '#c4b5fd',
+  });
 
   useEffect(() => {
-    // Get computed CSS variable values
     const root = document.documentElement;
-    const primary = getComputedStyle(root).getPropertyValue('--color-primary').trim();
-    const accentForeground = getComputedStyle(root).getPropertyValue('--color-accent-foreground').trim();
-    
-    // Convert HSL to RGB if needed, or use as-is
-    if (primary) {
-      setPrimaryColor(primary.startsWith('hsl') ? hslToHex(primary) : primary);
-    }
-    if (accentForeground) {
-      setAccentColor(accentForeground.startsWith('hsl') ? hslToHex(accentForeground) : accentForeground);
-    }
+    const accentVar = getComputedStyle(root).getPropertyValue('--color-primary').trim();
+    const hex = accentVar && accentVar.startsWith('hsl') ? hslToHex(accentVar) : (accentVar || '#8b5cf6');
+    setAccentShades({
+      base: hex,
+      light: hexLighten(hex, 0.35),
+      lighter: hexLighten(hex, 0.55),
+    });
   }, [accentTheme]);
+
+  function hexLighten(hex: string, mixWithWhite: number): string {
+    const n = hex.replace('#', '');
+    const r = parseInt(n.slice(0, 2), 16);
+    const g = parseInt(n.slice(2, 4), 16);
+    const b = parseInt(n.slice(4, 6), 16);
+    const wr = Math.round(r + (255 - r) * mixWithWhite);
+    const wg = Math.round(g + (255 - g) * mixWithWhite);
+    const wb = Math.round(b + (255 - b) * mixWithWhite);
+    return `#${wr.toString(16).padStart(2, '0')}${wg.toString(16).padStart(2, '0')}${wb.toString(16).padStart(2, '0')}`;
+  }
 
   // Helper function to convert HSL to hex
   function hslToHex(hsl: string): string {
@@ -433,8 +443,8 @@ export default function Screentime() {
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
                 <Legend />
-                <Bar dataKey="topApp" fill="var(--color-primary)" name="Top app" isAnimationActive={false} />
-                <Bar dataKey="other" fill="var(--color-accent-foreground)" name="Other apps" isAnimationActive={false} />
+                <Bar dataKey="topApp" fill={accentShades.base} name="Top app" isAnimationActive={false} />
+                <Bar dataKey="other" fill={accentShades.light} name="Other apps" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -447,13 +457,13 @@ export default function Screentime() {
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorApps" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={primaryColor} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={primaryColor} stopOpacity={0}/>
+                  <linearGradient id="colorTopApp" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={accentShades.base} stopOpacity={0.35}/>
+                    <stop offset="95%" stopColor={accentShades.base} stopOpacity={0}/>
                   </linearGradient>
-                  <linearGradient id="colorWebsites" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={accentColor} stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor={accentColor} stopOpacity={0}/>
+                  <linearGradient id="colorOtherApps" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={accentShades.light} stopOpacity={0.35}/>
+                    <stop offset="95%" stopColor={accentShades.light} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="date" />
@@ -470,8 +480,8 @@ export default function Screentime() {
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="topApp" stroke={primaryColor} fillOpacity={1} fill="url(#colorApps)" name="Top app" />
-                <Area type="monotone" dataKey="other" stroke={accentColor} fillOpacity={1} fill="url(#colorWebsites)" name="Other apps" />
+                <Area type="monotone" dataKey="topApp" stroke={accentShades.base} fillOpacity={1} fill="url(#colorTopApp)" name="Top app" />
+                <Area type="monotone" dataKey="other" stroke={accentShades.light} fillOpacity={1} fill="url(#colorOtherApps)" name="Other apps" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -498,7 +508,7 @@ export default function Screentime() {
                   itemStyle={{ color: 'var(--color-foreground)' }}
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
-                <Bar dataKey="hours" fill="var(--color-primary)" isAnimationActive={false} />
+                <Bar dataKey="hours" fill={accentShades.base} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -525,7 +535,7 @@ export default function Screentime() {
                   itemStyle={{ color: 'var(--color-foreground)' }}
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
-                <Bar dataKey="minutes" fill="var(--color-primary)" isAnimationActive={false} />
+                <Bar dataKey="minutes" fill={accentShades.light} isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
             <p className="text-xs text-muted-foreground mt-2">
