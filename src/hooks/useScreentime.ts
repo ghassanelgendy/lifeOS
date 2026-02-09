@@ -93,10 +93,8 @@ export function useTodayScreentime() {
     return acc;
   }, [] as ScreentimeWebsiteStat[]);
   
-  // Calculate totals using aggregated values (matches PC tracker TotalTime)
-  const totalSeconds = 
-    aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0) +
-    aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
+  // Total = app time only. Website time is a breakdown within the browser app, so adding it would double-count.
+  const totalSeconds = aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
   
   const totalMinutes = Math.round(totalSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
@@ -161,7 +159,7 @@ export function useScreentimeMetrics(days: number = 30) {
     websiteMap.set(stat.domain, current + stat.total_time_seconds);
   });
   
-  // Sum aggregated values per day
+  // Sum aggregated values per day. Total = apps only (websites are browser breakdown, not extra time).
   dailyAppAggregates.forEach((appMap, date) => {
     const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0 };
     const appTotal = Array.from(appMap.values()).reduce((sum, val) => sum + val, 0);
@@ -169,12 +167,11 @@ export function useScreentimeMetrics(days: number = 30) {
     existing.total += appTotal;
     dailyStats.set(date, existing);
   });
-  
+
   dailyWebsiteAggregates.forEach((websiteMap, date) => {
     const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0 };
     const websiteTotal = Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
     existing.websites += websiteTotal;
-    existing.total += websiteTotal;
     dailyStats.set(date, existing);
   });
 

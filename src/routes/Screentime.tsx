@@ -100,11 +100,10 @@ export default function Screentime() {
       remainingMinutes: Math.round((site.total_time_seconds % 3600) / 60),
     }));
 
-  // Calculate totals using aggregated values (to avoid double-counting same app/website)
-  // This matches what the PC tracker shows (TotalTime per day)
+  // Total = app time only. Websites are tracked inside the browser app, so adding them would double-count.
   const totalAppSeconds = Object.values(aggregatedApps).reduce((sum: number, app: any) => sum + app.total_time_seconds, 0);
   const totalWebsiteSeconds = Object.values(aggregatedWebsites).reduce((sum: number, site: any) => sum + site.total_time_seconds, 0);
-  const totalSeconds = totalAppSeconds + totalWebsiteSeconds;
+  const totalSeconds = totalAppSeconds;
   const totalMinutes = Math.round(totalSeconds / 60);
   const totalHours = Math.floor(totalMinutes / 60);
   const remainingMinutes = totalMinutes % 60;
@@ -359,7 +358,7 @@ export default function Screentime() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {topWebsites.length} tracked sites
+            In browser · {topWebsites.length} sites
           </p>
         </div>
       </div>

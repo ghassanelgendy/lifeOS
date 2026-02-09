@@ -35,11 +35,18 @@ interface WebsiteData {
 
 interface DayData {
   Date: string;
-  Apps: Record<string, AppData>;
-  Websites: Record<string, WebsiteData>;
+  Apps?: Record<string, AppData>;
+  Websites?: Record<string, WebsiteData>;
   TotalSwitches?: number;
   TotalTime?: string;
   TotalApps?: number;
+}
+
+/** One entry per day for screentime_daily_summary (sent by tracker at root level). */
+interface DailySummaryItem {
+  date: string; // "YYYY-MM-DD"
+  total_switches: number;
+  total_apps: number;
 }
 
 interface ScreentimePayload {
@@ -47,7 +54,8 @@ interface ScreentimePayload {
   device_id?: string;
   platform: string;
   source: string;
-  data: {
+  /** Per-day app/website usage (nested year → month → week → day). */
+  data?: {
     Years: Record<string, {
       Months: Record<string, {
         Weeks: Record<string, {
@@ -56,6 +64,8 @@ interface ScreentimePayload {
       }>;
     }>;
   };
+  /** Per-day summary for screentime_daily_summary (preferred over inferring from data.Years). */
+  daily_summaries?: DailySummaryItem[];
 }
 
 function parseTimeToSeconds(timeStr: string): number {
@@ -105,9 +115,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!payload.data || !payload.data.Years) {
+    const hasYears = payload.data && typeof payload.data.Years === 'object' && Object.keys(payload.data.Years).length > 0;
+    const hasDailySummaries = Array.isArray(payload.daily_summaries) && payload.daily_summaries.length > 0;
+    if (!hasYears && !hasDailySummaries) {
       return new Response(
-        JSON.stringify({ error: 'data.Years is required' }),
+        JSON.stringify({ error: 'Either data.Years or daily_summaries is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -128,95 +140,94 @@ Deno.serve(async (req: Request) => {
     const websiteRows: any[] = [];
     const summaryRows: any[] = [];
 
-    for (const yearKey in payload.data.Years) {
-      const year = payload.data.Years[yearKey];
-      if (!year.Months) continue;
-      
-      for (const monthKey in year.Months) {
-        const month = year.Months[monthKey];
-        if (!month.Weeks) continue;
-        
-        for (const weekKey in month.Weeks) {
-          const week = month.Weeks[weekKey];
-          if (!week.Days) continue;
-          
-          for (const dayKey in week.Days) {
-            const day = week.Days[dayKey];
-            if (!day.Date) continue;
-            
-            const dateStr = parseDateToDateString(day.Date);
-            
-            // Debug: Log day structure to see what fields are available
-            if (Object.keys(day).length > 0 && !day.TotalSwitches && !day.TotalApps) {
-              console.log(`[DEBUG] Day ${dateStr} keys:`, Object.keys(day));
-              console.log(`[DEBUG] Day ${dateStr} sample:`, JSON.stringify(day).substring(0, 200));
-            }
+    // Build daily summary rows from root-level daily_summaries (preferred)
+    if (hasDailySummaries && payload.daily_summaries) {
+      for (const item of payload.daily_summaries) {
+        const dateStr = parseDateToDateString(item.date);
+        summaryRows.push({
+          user_id: payload.user_id,
+          date: dateStr,
+          source,
+          device_id: deviceId,
+          platform,
+          total_switches: typeof item.total_switches === 'number' ? item.total_switches : 0,
+          total_apps: typeof item.total_apps === 'number' ? item.total_apps : 0,
+        });
+      }
+    }
 
-            if (day.Apps) {
-              for (const appKey in day.Apps) {
-                const app = day.Apps[appKey];
-                appRows.push({
+    // Build app/website rows and optionally summary from data.Years
+    if (hasYears && payload.data) {
+      for (const yearKey in payload.data.Years) {
+        const year = payload.data.Years[yearKey];
+        if (!year.Months) continue;
+
+        for (const monthKey in year.Months) {
+          const month = year.Months[monthKey];
+          if (!month.Weeks) continue;
+
+          for (const weekKey in month.Weeks) {
+            const week = month.Weeks[weekKey];
+            if (!week.Days) continue;
+
+            for (const dayKey in week.Days) {
+              const day = week.Days[dayKey];
+              const dateStr = day.Date ? parseDateToDateString(day.Date) : parseDateToDateString(dayKey);
+
+              if (day.Apps) {
+                for (const appKey in day.Apps) {
+                  const app = day.Apps[appKey];
+                  appRows.push({
+                    user_id: payload.user_id,
+                    date: dateStr,
+                    source,
+                    device_id: deviceId,
+                    platform,
+                    app_name: app.AppName || appKey,
+                    category: app.Category || 'Uncategorized',
+                    process_path: app.ProcessPath || null,
+                    total_time_seconds: parseTimeToSeconds(app.TotalTime),
+                    session_count: app.SessionCount || 0,
+                    first_seen_at: app.FirstSeen ? parseTimestamp(app.FirstSeen) : null,
+                    last_seen_at: app.LastSeen ? parseTimestamp(app.LastSeen) : null,
+                    last_active_at: app.LastActiveTime ? parseTimestamp(app.LastActiveTime) : null,
+                  });
+                }
+              }
+
+              if (day.Websites) {
+                for (const domainKey in day.Websites) {
+                  const website = day.Websites[domainKey];
+                  websiteRows.push({
+                    user_id: payload.user_id,
+                    date: dateStr,
+                    source,
+                    device_id: deviceId,
+                    platform,
+                    domain: website.Domain || domainKey,
+                    favicon_url: website.FaviconUrl || null,
+                    total_time_seconds: parseTimeToSeconds(website.TotalTime),
+                    session_count: website.SessionCount || 0,
+                    first_seen_at: website.FirstSeen ? parseTimestamp(website.FirstSeen) : null,
+                    last_seen_at: website.LastSeen ? parseTimestamp(website.LastSeen) : null,
+                    last_active_at: website.LastActiveTime ? parseTimestamp(website.LastActiveTime) : null,
+                  });
+                }
+              }
+
+              // Fallback: if no daily_summaries was sent, derive summary from day (legacy)
+              if (!hasDailySummaries) {
+                summaryRows.push({
                   user_id: payload.user_id,
                   date: dateStr,
                   source,
                   device_id: deviceId,
                   platform,
-                  app_name: app.AppName || appKey,
-                  category: app.Category || 'Uncategorized',
-                  process_path: app.ProcessPath || null,
-                  total_time_seconds: parseTimeToSeconds(app.TotalTime),
-                  session_count: app.SessionCount || 0,
-                  first_seen_at: app.FirstSeen ? parseTimestamp(app.FirstSeen) : null,
-                  last_seen_at: app.LastSeen ? parseTimestamp(app.LastSeen) : null,
-                  last_active_at: app.LastActiveTime ? parseTimestamp(app.LastActiveTime) : null,
+                  total_switches: day.TotalSwitches ?? 0,
+                  total_apps: day.TotalApps ?? 0,
                 });
               }
             }
-
-            if (day.Websites) {
-              for (const domainKey in day.Websites) {
-                const website = day.Websites[domainKey];
-                websiteRows.push({
-                  user_id: payload.user_id,
-                  date: dateStr,
-                  source,
-                  device_id: deviceId,
-                  platform,
-                  domain: website.Domain || domainKey,
-                  favicon_url: website.FaviconUrl || null,
-                  total_time_seconds: parseTimeToSeconds(website.TotalTime),
-                  session_count: website.SessionCount || 0,
-                  first_seen_at: website.FirstSeen ? parseTimestamp(website.FirstSeen) : null,
-                  last_seen_at: website.LastSeen ? parseTimestamp(website.LastSeen) : null,
-                  last_active_at: website.LastActiveTime ? parseTimestamp(website.LastActiveTime) : null,
-                });
-              }
-            }
-
-            // Store daily summary (switches, total apps)
-            // Always create a summary row for each day, even if switches/apps are 0 or missing
-            const switches = day.TotalSwitches ?? 0;
-            const apps = day.TotalApps ?? 0;
-            
-            // Debug logging: Check if TotalSwitches field exists in the day object
-            if (day.TotalSwitches === undefined && day.TotalApps === undefined) {
-              console.log(`[WARN] Day ${dateStr}: TotalSwitches and TotalApps are both undefined. Available keys:`, Object.keys(day));
-            }
-            
-            // Log for debugging if switches are present
-            if (switches > 0) {
-              console.log(`[${dateStr}] Adding summary: switches=${switches}, apps=${apps}`);
-            }
-            
-            summaryRows.push({
-              user_id: payload.user_id,
-              date: dateStr,
-              source,
-              device_id: deviceId,
-              platform,
-              total_switches: switches,
-              total_apps: apps,
-            });
           }
         }
       }
@@ -265,36 +276,23 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Insert daily summaries (switches)
-    console.log(`Total summary rows to insert: ${summaryRows.length}`);
+    // Insert daily summaries (switches) into screentime_daily_summary
     if (summaryRows.length > 0) {
-      // Log first few rows for debugging
-      if (summaryRows.length > 0) {
-        console.log('Sample summary row:', JSON.stringify(summaryRows[0], null, 2));
-      }
-      
       const batchSize = 500;
       for (let i = 0; i < summaryRows.length; i += batchSize) {
         const batch = summaryRows.slice(i, i + batchSize);
-        console.log(`Inserting summary batch ${Math.floor(i / batchSize) + 1}, size: ${batch.length}`);
-        
         const { data, error } = await supabase
           .from('screentime_daily_summary')
           .upsert(batch)
           .select() as { data: any[] | null; error: { message: string } | null };
-        
+
         if (error) {
           console.error(`Error inserting summary batch ${Math.floor(i / batchSize) + 1}:`, error);
-          console.error('Batch data:', JSON.stringify(batch.slice(0, 2), null, 2)); // Log first 2 rows of failed batch
           summaryErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
         } else {
-          const inserted = Array.isArray(data) ? data.length : 0;
-          console.log(`Successfully inserted ${inserted} summary rows in batch ${Math.floor(i / batchSize) + 1}`);
-          summaryInserted += inserted;
+          summaryInserted += Array.isArray(data) ? data.length : 0;
         }
       }
-    } else {
-      console.warn('No summary rows to insert! Check if TotalSwitches/TotalApps are in the JSON payload.');
     }
 
     if (appErrors.length > 0 || websiteErrors.length > 0 || summaryErrors.length > 0) {
