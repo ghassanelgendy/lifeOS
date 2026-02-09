@@ -67,7 +67,13 @@ export function useTransactions() {
   return useQuery({
     queryKey: key,
     queryFn: async () => {
-      const { data, error } = await supabase.from('transactions').select('*').order('date', { ascending: false });
+      const q = supabase
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (userId) q.eq('user_id', userId);
+      const { data, error } = await q;
       if (error) throw error;
       const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
       return userId ? (filterToCurrentUser(list, userId, 'transactions') as Transaction[]) : list;
@@ -83,12 +89,15 @@ export function useTransactionsByRange(start: string, end: string) {
   return useQuery({
     queryKey: [...key, 'range', start, end],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('transactions')
         .select('*')
         .gte('date', start)
         .lte('date', end)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (userId) q.eq('user_id', userId);
+      const { data, error } = await q;
       if (error) throw error;
       const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
       return userId ? (filterToCurrentUser(list, userId, 'transactions (range)') as Transaction[]) : list;
@@ -136,7 +145,9 @@ export function useUpdateTransaction() {
         const prev = (queryClient.getQueryData(key) as Transaction[] | undefined)?.find((t) => t.id === id);
         return { ...prev, ...data, id } as Transaction;
       }
-      const { data: updated, error } = await supabase.from('transactions').update(data).eq('id', id).select().single();
+      const upd = supabase.from('transactions').update(data).eq('id', id);
+      if (user?.id) upd.eq('user_id', user.id);
+      const { data: updated, error } = await upd.select().single();
       if (error) throw error;
       return updated as Transaction;
     },
@@ -158,7 +169,9 @@ export function useDeleteTransaction() {
         queryClient.setQueryData(key, (old: Transaction[] | undefined) => (old ?? []).filter((t) => t.id !== id));
         return true;
       }
-      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      const del = supabase.from('transactions').delete().eq('id', id);
+      if (user?.id) del.eq('user_id', user.id);
+      const { error } = await del;
       if (error) throw error;
       return true;
     },
@@ -241,11 +254,13 @@ export function useFinancialSummary(year?: number, month?: number) {
   return useQuery({
     queryKey: [...key, 'summary', targetYear, targetMonth],
     queryFn: async () => {
-      const { data: raw, error } = await supabase
+      const q = supabase
         .from('transactions')
         .select('*')
         .gte('date', startDate)
         .lte('date', endDate);
+      if (userId) q.eq('user_id', userId);
+      const { data: raw, error } = await q;
 
       if (error) throw error;
       const transactions = userId

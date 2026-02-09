@@ -205,25 +205,25 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        {/* Screen Time — span 2 rows so it gets more space in the grid */}
-        <Link to="/screentime" className="group row-span-2">
-          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full min-h-[theme(spacing.32)]">
-            <div className="flex justify-between items-start">
-              <div>
+        {/* Screen Time — same height as other stats cards */}
+        <Link to="/screentime" className="group col-span-2 md:col-span-1">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full min-h-0">
+            <div className="flex justify-between items-start gap-2 min-h-0">
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <Monitor size={14} className="text-muted-foreground" />
+                  <Monitor size={14} className="text-muted-foreground flex-shrink-0" />
                   <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Screen Time</h3>
                 </div>
                 <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
                   {screentimeAvg > 0 ? `${Math.floor(screentimeAvg / 60)}h ${screentimeAvg % 60}m` : '-'}
                 </div>
-                <div className="flex items-center gap-3 mt-1">
-                  <p className="text-xs text-muted-foreground">7-day avg</p>
+                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                  <span>7-day avg</span>
                   {todayScreentime.totalSwitches > 0 && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1">
                       <RefreshCw size={10} />
                       <span className={cn(privacyMode && "blur-sm")}>{todayScreentime.totalSwitches.toLocaleString()}</span>
-                    </div>
+                    </span>
                   )}
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function Dashboard() {
               )}
             </div>
             {screentimeHistory.length > 0 && (
-              <div className="h-8 w-full mt-2 opacity-50">
+              <div className="h-8 w-full mt-2 opacity-50 flex-shrink-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={screentimeHistory.map((d, i) => ({ i, val: d.minutes }))}>
                     <Line

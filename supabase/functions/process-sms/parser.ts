@@ -66,10 +66,10 @@ export class TransactionParser {
     return null;
   }
 
-  /** Normalize date to YYYY-MM-DD. Supports 01/01, 01/01/25, 03-09-2025, 13SEP25, يوم 25/09 */
+  /** Normalize date to YYYY-MM-DD. Supports 01/01, 01/01/25, 03-09-2025, 13SEP25, يوم 25/09, "on 09/02 at 11:42" */
   extractDate(text: string): string | null {
-    // DD/MM (no year) - use current year
-    let m = /\b(\d{1,2})\/(\d{1,2})\b(?!\s*\d{2,4})/.exec(text);
+    // DD/MM (no year) - use current year. Don't match if followed by /YYYY (next regex handles that).
+    let m = /\b(\d{1,2})\/(\d{1,2})\b(?!\s*\/\s*\d{2,4})/.exec(text);
     if (m) {
       const d = parseInt(m[1], 10);
       const mon = parseInt(m[2], 10) - 1;
@@ -183,10 +183,10 @@ export class TransactionParser {
     const line = text;
     if (/from hsbc:|your hsbc/i.test(line)) return 'HSBC';
     if (/orange cash|orange money|اورنچ كاش|receiver dial|recharged to|your new balance.*transaction id/i.test(lower)) return 'Orange Cash';
-    // NBE: explicit branding, or Arabic instant-transfer wording (تم إضافة/تنفيذ/إستلام + تحويل لحظي/لحسابكم/رقم مرجعي)
-    if (/الاهلى|nbe\s+otp|nbe\s+atm|بطاقة المدفوعة مقدماً|ببطاقتكم مسبقة الدفع|NBE OTP/i.test(line)) return 'NBE';
+    // NBE: explicit branding, or Arabic instant-transfer wording (تم إضافة/تنفيذ/إستلام + تحويل لحظي/لحسابكم/لبطاقتكم/رقم مرجعي)
+    if (/الاهلى|nbe\s+otp|nbe\s+atm|بطاقة المدفوعة مقدماً|ببطاقتكم مسبقة الدفع|لبطاقتكم مسبقة الدفع|NBE OTP/i.test(line)) return 'NBE';
     if ((/تم خصم|تم إضافة|تم تنفيذ|تم إستلام/.test(line) && /رقم 5432|بطاقة/.test(line)) ||
-        (/تم إضافة تحويل لحظي|تم تنفيذ تحويل لحظي|تم إستلام عملية تحويل/.test(line) && /لحسابكم|رقم مرجعي|للمزيد اتصل/.test(line))) return 'NBE';
+        (/تم إضافة تحويل لحظي|تم تنفيذ تحويل لحظي|تم إستلام عملية تحويل/.test(line) && /لحسابكم|لبطاقتكم|رقم مرجعي|للمزيد اتصل/.test(line))) return 'NBE';
     if (/qnb|كشف حساب كارتك|المنتهي ب\s*\d.*1473/i.test(lower)) return 'QNB';
     if (/ipn transfer (sent|received)|ref#\s*\w+/i.test(lower) && !/hsbc|orange|nbe/i.test(lower)) return 'QNB';
     if (/your (debit|credit) card\s*\*+/i.test(lower)) return 'QNB';

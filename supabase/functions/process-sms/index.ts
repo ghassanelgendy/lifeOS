@@ -189,15 +189,20 @@ serve(async (req: Request) => {
       transactionDate = aiEnrichment.date;
     } else if (parsed.date) {
       try {
-        const dateParts = parsed.date.split(/[/-]/);
-        if (dateParts.length === 3) {
-          const day = parseInt(dateParts[0], 10);
-          const month = parseInt(dateParts[1], 10) - 1;
-          let year = parseInt(dateParts[2], 10);
-          if (year < 100) year += 2000;
-          transactionDate = new Date(year, month, day).toISOString().split('T')[0];
+        // Parser returns YYYY-MM-DD; use as-is. Otherwise treat as DD/MM/YYYY or DD-MM-YYYY.
+        if (isoDateRe.test(parsed.date)) {
+          transactionDate = parsed.date;
         } else {
-          transactionDate = new Date().toISOString().split('T')[0];
+          const dateParts = parsed.date.split(/[/-]/);
+          if (dateParts.length === 3) {
+            const day = parseInt(dateParts[0], 10);
+            const month = parseInt(dateParts[1], 10) - 1;
+            let year = parseInt(dateParts[2], 10);
+            if (year < 100) year += 2000;
+            transactionDate = new Date(year, month, day).toISOString().split('T')[0];
+          } else {
+            transactionDate = new Date().toISOString().split('T')[0];
+          }
         }
       } catch (e) {
         console.error('Date parsing error:', e);

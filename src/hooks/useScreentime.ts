@@ -2,62 +2,72 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { ScreentimeAppStat, ScreentimeWebsiteStat, ScreentimeDailySummary } from '../types/schema';
 import { format, subDays } from 'date-fns';
+import { useAuth } from '../contexts/AuthContext';
 
 const QUERY_KEY = ['screentime'];
 
 // Get app stats for a date range
 export function useScreentimeAppStats(startDate: string, endDate: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...QUERY_KEY, 'apps', startDate, endDate],
+    queryKey: [...QUERY_KEY, 'apps', startDate, endDate, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('screentime_daily_app_stats')
         .select('*')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: false })
         .order('total_time_seconds', { ascending: false });
-      
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as ScreentimeAppStat[];
     },
+    enabled: !!user?.id,
   });
 }
 
 // Get website stats for a date range
 export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...QUERY_KEY, 'websites', startDate, endDate],
+    queryKey: [...QUERY_KEY, 'websites', startDate, endDate, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('screentime_daily_website_stats')
         .select('*')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: false })
         .order('total_time_seconds', { ascending: false });
-      
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as ScreentimeWebsiteStat[];
     },
+    enabled: !!user?.id,
   });
 }
 
 // Get daily summaries (switches) for a date range
 export function useScreentimeDailySummaries(startDate: string, endDate: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...QUERY_KEY, 'summaries', startDate, endDate],
+    queryKey: [...QUERY_KEY, 'summaries', startDate, endDate, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('screentime_daily_summary')
         .select('*')
         .gte('date', startDate)
         .lte('date', endDate)
         .order('date', { ascending: false });
-      
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as ScreentimeDailySummary[];
     },
+    enabled: !!user?.id,
   });
 }
 
