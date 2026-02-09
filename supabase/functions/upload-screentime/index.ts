@@ -141,10 +141,13 @@ Deno.serve(async (req: Request) => {
     const summaryRows: any[] = [];
 
     // Build daily summary rows from root-level daily_summaries (preferred)
+    // Deduplicate by date so one row per (user_id, date, source, device_id, platform); last occurrence wins
     if (hasDailySummaries && payload.daily_summaries) {
+      const byKey = new Map<string, { user_id: string; date: string; source: string; device_id: string; platform: string; total_switches: number; total_apps: number }>();
       for (const item of payload.daily_summaries) {
         const dateStr = parseDateToDateString(item.date);
-        summaryRows.push({
+        const key = `${dateStr}|${source}|${deviceId}|${platform}`;
+        byKey.set(key, {
           user_id: payload.user_id,
           date: dateStr,
           source,
@@ -154,6 +157,7 @@ Deno.serve(async (req: Request) => {
           total_apps: typeof item.total_apps === 'number' ? item.total_apps : 0,
         });
       }
+      summaryRows.push(...byKey.values());
     }
 
     // Build app/website rows and optionally summary from data.Years
@@ -283,7 +287,7 @@ Deno.serve(async (req: Request) => {
         const batch = summaryRows.slice(i, i + batchSize);
         const { data, error } = await supabase
           .from('screentime_daily_summary')
-          .upsert(batch)
+          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' })
           .select() as { data: any[] | null; error: { message: string } | null };
 
         if (error) {
