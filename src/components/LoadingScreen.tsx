@@ -29,13 +29,6 @@ export function LoadingScreen() {
         {/* Wordmark */}
         <span className="text-3xl font-bold tracking-tight text-foreground select-none">lifeOS</span>
 
-        {/* Loading spinner (circle below wordmark) */}
-        <span
-          className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin flex-shrink-0"
-          style={{ animationDuration: '0.9s' }}
-          aria-hidden
-        />
-
         {/* Bouncing dots */}
         <div className="flex items-center justify-center gap-1.5">
           {[0, 1, 2].map((i) => (
