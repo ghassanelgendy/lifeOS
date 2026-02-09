@@ -144,8 +144,8 @@ export function useScreentimeMetrics(days: number = 30) {
   const { data: websiteStats = [], isLoading: websitesLoading } = useScreentimeWebsiteStats(startDate, endDate);
   const { data: summaries = [], isLoading: summariesLoading } = useScreentimeDailySummaries(startDate, endDate);
   
-  // Group by date
-  const dailyStats = new Map<string, { apps: number; websites: number; total: number; switches: number }>();
+  // Group by date (topApp/otherApps = split of app time for charts; no apps vs websites)
+  const dailyStats = new Map<string, { apps: number; websites: number; total: number; switches: number; topApp: number; otherApps: number }>();
   
   // Aggregate by date and app_name/domain to avoid double-counting
   const dailyAppAggregates = new Map<string, Map<string, number>>();
@@ -169,36 +169,39 @@ export function useScreentimeMetrics(days: number = 30) {
     websiteMap.set(stat.domain, current + stat.total_time_seconds);
   });
   
-  // Sum aggregated values per day. Total = apps only (websites are browser breakdown, not extra time).
+  // Per-day: total app time and "top app" vs "other apps" (meaningful split; no apps vs websites).
   dailyAppAggregates.forEach((appMap, date) => {
-    const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0 };
+    const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
     const appTotal = Array.from(appMap.values()).reduce((sum, val) => sum + val, 0);
+    const topAppSeconds = appMap.size > 0 ? Math.max(...appMap.values()) : 0;
+    const otherAppSeconds = appTotal - topAppSeconds;
     existing.apps += appTotal;
     existing.total += appTotal;
+    existing.topApp = topAppSeconds;
+    existing.otherApps = otherAppSeconds;
     dailyStats.set(date, existing);
   });
 
   dailyWebsiteAggregates.forEach((websiteMap, date) => {
-    const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0 };
-    const websiteTotal = Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
-    existing.websites += websiteTotal;
+    const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
+    existing.websites += Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
     dailyStats.set(date, existing);
   });
 
   // Add switches from summaries
   summaries.forEach(summary => {
-    const existing = dailyStats.get(summary.date) || { apps: 0, websites: 0, total: 0, switches: 0 };
+    const existing = dailyStats.get(summary.date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
     existing.switches += summary.total_switches || 0;
     dailyStats.set(summary.date, existing);
   });
   
-  // Convert to array and sort by date
+  // Convert to array and sort by date (topApp/otherApps for "Top app vs Other" charts)
   const history = Array.from(dailyStats.entries())
     .map(([date, stats]) => ({
       date,
       minutes: Math.round(stats.total / 60),
-      appMinutes: Math.round(stats.apps / 60),
-      websiteMinutes: Math.round(stats.websites / 60),
+      topAppMinutes: Math.round((stats.topApp ?? 0) / 60),
+      otherMinutes: Math.round((stats.otherApps ?? 0) / 60),
       switches: stats.switches,
     }))
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());

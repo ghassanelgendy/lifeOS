@@ -111,7 +111,7 @@ export class TransactionParser {
       if (y < 100) y += 2000;
       return this.toISODate(y, mon, day);
     }
-    // Arabic: يوم 25/09 (DD/MM) or يوم 02-10 (MM-DD in Egyptian NBE: month 02, day 10 = 10 Feb)
+    // Arabic: يوم 25/09 (DD/MM) or يوم 02-10 / يوم 10-02 (Egyptian: 10 Feb = day 10, month 2)
     m = this.reDayMonthAr.exec(text);
     if (m) {
       const a = parseInt(m[1], 10);
@@ -119,8 +119,10 @@ export class TransactionParser {
       const b = parseInt(m[3], 10);
       const y = new Date().getFullYear();
       if (sep === '-') {
-        // Dash: Egyptian bank format MM-DD (e.g. يوم 02-10 = 10 Feb)
-        if (a >= 1 && a <= 12 && b >= 1 && b <= 31) return this.toISODate(y, a - 1, b);
+        // Dash: Egyptian bank format — smaller number = month, larger = day (02-10 and 10-02 both = 10 Feb)
+        const lo = Math.min(a, b);
+        const hi = Math.max(a, b);
+        if (lo >= 1 && lo <= 12 && hi >= 1 && hi <= 31) return this.toISODate(y, lo - 1, hi);
       }
       // Slash or fallback: DD/MM (e.g. يوم 25/09 = 25 Sep)
       if (b > 12) return this.toISODate(y, a - 1, b);

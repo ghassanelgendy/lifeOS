@@ -108,12 +108,12 @@ export default function Screentime() {
   const totalHours = Math.floor(totalMinutes / 60);
   const remainingMinutes = totalMinutes % 60;
 
-  // Prepare chart data
+  // Prepare chart data (Top app vs Other apps — meaningful; no apps vs websites)
   const chartData = history.map(d => ({
     date: format(new Date(d.date), 'MMM d'),
     minutes: d.minutes,
-    apps: d.appMinutes,
-    websites: d.websiteMinutes,
+    topApp: d.topAppMinutes,
+    other: d.otherMinutes,
   }));
 
   // Weekly pattern: aggregate by day of week (in hours)
@@ -294,8 +294,8 @@ export default function Screentime() {
             </div>
           </div>
           <div className="flex gap-4 text-sm text-muted-foreground">
-            <span>{Object.keys(aggregatedApps).length} unique apps</span>
-            <span>{Object.keys(aggregatedWebsites).length} unique sites</span>
+            <span>{Object.keys(aggregatedApps).length} apps</span>
+            <span>{Object.keys(aggregatedWebsites).length} sites in browser</span>
           </div>
         </div>
 
@@ -331,34 +331,43 @@ export default function Screentime() {
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-purple-500/10">
-              <Smartphone className="text-purple-500" size={20} />
+              <TrendingUp className="text-purple-500" size={20} />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Apps</p>
+              <p className="text-sm text-muted-foreground">Top app</p>
               <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                {Math.round(totalAppSeconds / 60)}m
+                {topApps.length > 0
+                  ? (() => {
+                      const top = topApps[0];
+                      return top.hours > 0 ? `${top.hours}h ${top.remainingMinutes}m` : `${top.minutes}m`;
+                    })()
+                  : '—'}
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {topApps.length} tracked apps
+            {topApps.length > 0 ? topApps[0].app_name : 'No data'}
           </p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 rounded-lg bg-green-500/10">
-              <Globe className="text-green-500" size={20} />
+              <Monitor className="text-green-500" size={20} />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Websites</p>
+              <p className="text-sm text-muted-foreground">Other apps</p>
               <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                {Math.round(totalWebsiteSeconds / 60)}m
+                {(() => {
+                  const otherSeconds = totalAppSeconds - (topApps.length > 0 ? topApps[0].total_time_seconds : 0);
+                  const m = Math.round(otherSeconds / 60);
+                  return m > 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+                })()}
               </p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            In browser · {topWebsites.length} sites
+            Rest of your apps
           </p>
         </div>
       </div>
@@ -425,8 +434,8 @@ export default function Screentime() {
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
                 <Legend />
-                <Bar dataKey="apps" fill="var(--color-primary)" name="Apps" isAnimationActive={false} />
-                <Bar dataKey="websites" fill="var(--color-accent-foreground)" name="Websites" isAnimationActive={false} />
+                <Bar dataKey="topApp" fill="var(--color-primary)" name="Top app" isAnimationActive={false} />
+                <Bar dataKey="other" fill="var(--color-accent-foreground)" name="Other apps" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -462,8 +471,8 @@ export default function Screentime() {
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="apps" stroke={primaryColor} fillOpacity={1} fill="url(#colorApps)" name="Apps" />
-                <Area type="monotone" dataKey="websites" stroke={accentColor} fillOpacity={1} fill="url(#colorWebsites)" name="Websites" />
+                <Area type="monotone" dataKey="topApp" stroke={primaryColor} fillOpacity={1} fill="url(#colorApps)" name="Top app" />
+                <Area type="monotone" dataKey="other" stroke={accentColor} fillOpacity={1} fill="url(#colorWebsites)" name="Other apps" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
