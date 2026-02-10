@@ -182,35 +182,11 @@ serve(async (req: Request) => {
       type = aiEnrichment.type;
     }
 
-    // ===== DATE PARSING (AI overrides when provided and valid) =====
-    const isoDateRe = /^\d{4}-\d{2}-\d{2}$/;
-    let transactionDate: string;
-    if (aiEnrichment?.date && isoDateRe.test(aiEnrichment.date)) {
-      transactionDate = aiEnrichment.date;
-    } else if (parsed.date) {
-      try {
-        // Parser returns YYYY-MM-DD; use as-is. Otherwise treat as DD/MM/YYYY or DD-MM-YYYY.
-        if (isoDateRe.test(parsed.date)) {
-          transactionDate = parsed.date;
-        } else {
-          const dateParts = parsed.date.split(/[/-]/);
-          if (dateParts.length === 3) {
-            const day = parseInt(dateParts[0], 10);
-            const month = parseInt(dateParts[1], 10) - 1;
-            let year = parseInt(dateParts[2], 10);
-            if (year < 100) year += 2000;
-            transactionDate = new Date(year, month, day).toISOString().split('T')[0];
-          } else {
-            transactionDate = new Date().toISOString().split('T')[0];
-          }
-        }
-      } catch (e) {
-        console.error('Date parsing error:', e);
-        transactionDate = new Date().toISOString().split('T')[0];
-      }
-    } else {
-      transactionDate = new Date().toISOString().split('T')[0];
-    }
+    // ===== DATE: always use invocation date (edge function clock) =====
+    // To avoid inconsistencies from SMS formats and timezones, we ignore any parsed/AI dates
+    // and always record the transaction on the date the function is invoked.
+    const now = new Date();
+    const transactionDate = now.toISOString().split('T')[0];
 
     // ===== DUPLICATE CHECK =====
     
