@@ -21,7 +21,7 @@ import {
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import {
   useTasks,
@@ -1181,7 +1181,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
   return (
     <div
       className={cn(
-        "group flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all cursor-pointer",
+        "task-item group flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all duration-150 ease-out cursor-pointer",
         task.is_completed && "opacity-50"
       )}
       onClick={onEdit}
@@ -1198,7 +1198,23 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
             : "border-muted-foreground hover:border-foreground"
         )}
       >
-        {task.is_completed && <Check size={12} className="text-white" />}
+        <svg
+          className={cn(
+            "task-checkmark",
+            task.is_completed && "task-checkmark--active"
+          )}
+          viewBox="0 0 16 16"
+        >
+          <path
+            className="task-checkmark__check"
+            d="M4 8.5 7 11 12 5"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
       <div className="flex-1 min-w-0">
@@ -1226,7 +1242,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
             <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
               <CalendarIcon size={12} />
               {dueInfo.text}
-              {task.due_time && ` ${task.due_time}`}
+              {task.due_time && ` ${formatTime12h(task.due_time)}`}
             </span>
           )}
           {taskTags.map((tag) => (

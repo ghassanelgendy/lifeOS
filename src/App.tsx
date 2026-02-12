@@ -82,6 +82,21 @@ function AppInner() {
     };
 
     window.addEventListener('online', handleOnline);
+
+    // Listen for background sync messages from the service worker
+    if ('serviceWorker' in navigator) {
+      const onMessage = (event: MessageEvent) => {
+        if ((event.data as any)?.type === 'LIFEOS_SYNC_OFFLINE_QUEUE') {
+          void handleOnline();
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', onMessage);
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        navigator.serviceWorker.removeEventListener('message', onMessage);
+      };
+    }
+
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 

@@ -6,6 +6,7 @@ import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Transaction, Budget, CreateInput, UpdateInput, TransactionCategory } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
+import { idbSaveTransactions, idbGetTransactions } from '../db/indexedDb';
 
 const TRANSACTIONS_KEY = ['transactions'];
 const BUDGETS_KEY = ['budgets'];
@@ -67,16 +68,24 @@ export function useTransactions() {
   return useQuery({
     queryKey: key,
     queryFn: async () => {
-      const q = supabase
-        .from('transactions')
-        .select('*')
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (userId) q.eq('user_id', userId);
-      const { data, error } = await q;
-      if (error) throw error;
-      const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
-      return userId ? (filterToCurrentUser(list, userId, 'transactions') as Transaction[]) : list;
+      try {
+        const q = supabase
+          .from('transactions')
+          .select('*')
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false });
+        if (userId) q.eq('user_id', userId);
+        const { data, error } = await q;
+        if (error) throw error;
+        const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
+        const own = userId ? (filterToCurrentUser(list, userId, 'transactions') as Transaction[]) : (list as Transaction[]);
+        void idbSaveTransactions(own);
+        return own;
+      } catch {
+        // Offline fallback: load from IndexedDB snapshot.
+        const local = await idbGetTransactions();
+        return local as Transaction[];
+      }
     },
     enabled: !!user?.id,
   });
@@ -113,16 +122,51 @@ export function useCreateTransaction() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<Transaction>) => {
+      const now = new Date();
+      const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
+      const existingList = (queryClient.getQueryData(key) as Transaction[] | undefined) ?? [];
+
+      // 3‑minute dedup: same amount + same direction within the last 3 minutes.
+      const isDuplicate = existingList.some((t) => {
+        if (!t.created_at) return false;
+        const createdAt = new Date(t.created_at);
+        return (
+          createdAt >= threeMinutesAgo &&
+          createdAt <= now &&
+          Number(t.amount) === Number(input.amount) &&
+          t.direction === input.direction
+        );
+      });
+
+      if (isDuplicate) {
+        // Ignore duplicate; return a no-op result.
+        return Promise.resolve(undefined as unknown as Transaction);
+      }
+
       if (!isOnline()) {
         addToOfflineQueue({ entity: 'transactions', op: 'create', payload: input as Record<string, unknown> });
-        const now = new Date().toISOString();
-        const optimistic: Transaction = { ...input, id: `offline-tx-${Date.now()}`, created_at: now, updated_at: now } as Transaction;
-        queryClient.setQueryData(key, (old: Transaction[] | undefined) => [optimistic, ...(old ?? [])]);
+        const nowIso = now.toISOString();
+        const optimistic: Transaction = {
+          ...input,
+          id: `offline-tx-${Date.now()}`,
+          created_at: nowIso,
+          updated_at: nowIso,
+        } as Transaction;
+        const prev = (queryClient.getQueryData(key) as Transaction[] | undefined) ?? [];
+        const next = [optimistic, ...prev];
+        queryClient.setQueryData(key, next);
+        void idbSaveTransactions(next);
         return optimistic;
       }
+
       const { data, error } = await supabase.from('transactions').insert(input).select().single();
       if (error) throw error;
-      return data as Transaction;
+      const created = data as Transaction;
+      const prev = (queryClient.getQueryData(key) as Transaction[] | undefined) ?? [];
+      const next = [created, ...prev];
+      queryClient.setQueryData(key, next);
+      void idbSaveTransactions(next);
+      return created;
     },
     onSuccess: () => {
       if (isOnline()) queryClient.invalidateQueries({ queryKey: key });

@@ -42,13 +42,13 @@ function nextDayOfWeek(dayNum: number): Date {
 }
 
 /**
- * Parse time string "12:00", "9:30 am", "14:00" → HH:mm 24h
+ * Parse time string like "12", "12:00", "9:30 am", "14:00" → HH:mm 24h
  * Implements "next occurrence" logic for ambiguous times (e.g., 2:00 at 11 AM -> 2 PM)
  */
 function parseTimeString(match: string): { time: string; originalMatch: string } | null {
   const trimmed = match.trim().toLowerCase();
-  // Ensure it matches H:MM or HH:MM strictly
-  const timeRegex = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/;
+  // Match H, HH, H:MM or HH:MM optionally with am/pm
+  const timeRegex = /^(\d{1,2})(?::(\d{2}))?\s*(am|pm)?$/;
   const execResult = timeRegex.exec(trimmed);
 
   if (execResult) {
@@ -143,9 +143,9 @@ export function parseTaskInput(title: string): TaskInputParseResult {
   }
 
 
-  // Time: 12:00, 9:30 am, 14:00 (first occurrence)
-  // Ensure it matches H:MM or HH:MM strictly
-  const timeRegex = /\b(\d{1,2}:\d{2}\s*(?:am|pm)?)\b/gi;
+  // Time: 12, 12:00, 9:30 am, 14:00 (first occurrence)
+  // Match hour or hour:minute with optional am/pm
+  const timeRegex = /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/gi;
   const timeMatch = timeRegex.exec(currentTitle); // Using currentTitle for pattern matching
   if (timeMatch && !time) {
     const parsedTimeResult = parseTimeString(timeMatch[1]);
@@ -282,6 +282,20 @@ export function parseTaskInput(title: string): TaskInputParseResult {
   dateMonthDayRegex.lastIndex = 0;
   monthDayDateRegex.lastIndex = 0;
 
+  // If time was set but no date was found during parsing, set date to nearest day (today or tomorrow)
+  // This only applies when user types just a time like "12:00" without any date specification
+  if (time && !date) {
+    const [hours, minutes] = time.split(':').map(Number);
+    const now = new Date();
+    const todayAtTime = set(now, { hours, minutes, seconds: 0, milliseconds: 0 });
+    
+    // If the time today is in the past, set date to tomorrow; otherwise today
+    if (isPast(todayAtTime)) {
+      date = format(addDays(startOfToday(), 1), 'yyyy-MM-dd');
+    } else {
+      date = format(startOfToday(), 'yyyy-MM-dd');
+    }
+  }
 
   return { textToDisplay: title, date, time, priority, trigger, triggerQuery, detectedTokens };
 }

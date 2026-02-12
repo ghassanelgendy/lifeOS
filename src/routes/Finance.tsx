@@ -20,7 +20,7 @@ import {
   CartesianGrid
 } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { cn, formatCurrency } from '../lib/utils';
+import { cn, formatCurrency, formatTime12h } from '../lib/utils';
 import {
   useTransactions,
   useCreateTransaction,
@@ -672,10 +672,11 @@ export default function Finance() {
                       contentStyle={{
                         backgroundColor: 'var(--color-card)',
                         border: '1px solid var(--color-border)',
-                        borderRadius: 12,
+                        borderRadius: 12, 
                         fontSize: 14,
                         padding: '10px 14px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                        color: '#fffff',
                       }}
                       cursor={false}
                       itemStyle={{ paddingTop: 4 }}
@@ -921,7 +922,7 @@ export default function Finance() {
                 const categoryLabel = transaction.type === 'income'
                   ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
                   : EXPENSE_CATEGORIES.find(c => c.value === transaction.category)?.label;
-                const timeStr = transaction.time ? transaction.time.slice(0, 5) : '';
+                const timeStr = transaction.time ? formatTime12h(transaction.time) : '';
 
                 return (
                   <tr key={transaction.id} className="hover:bg-secondary/20 transition-colors">

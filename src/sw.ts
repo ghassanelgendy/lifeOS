@@ -13,6 +13,21 @@ clientsClaim();
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
+// Background sync stub: when supported, we can register a sync from the app
+// and react here. For now, we just listen for a named sync event and nudge
+// clients to run their own processOfflineQueue (so logic stays in app bundle).
+self.addEventListener('sync', (event: SyncEvent) => {
+  if (event.tag !== 'lifeos-sync-offline-queue') return;
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of clients) {
+        client.postMessage({ type: 'LIFEOS_SYNC_OFFLINE_QUEUE' });
+      }
+    })()
+  );
+});
+
 // --- Push notifications (task reminders) ---
 
 const NOTIFICATION_ACTIONS = [

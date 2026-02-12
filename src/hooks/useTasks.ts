@@ -1,9 +1,16 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { useAuth } from '../contexts/AuthContext';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
+import {
+  idbSaveTasks,
+  idbSaveTaskLists,
+  idbSaveTags,
+  idbGetTasks,
+} from '../db/indexedDb';
 
 const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
@@ -21,7 +28,10 @@ export function useTaskLists() {
       if (user?.id) q.eq('user_id', user.id);
       const { data, error } = await q;
       if (error) throw error;
-      return data as TaskList[];
+      const lists = (data ?? []) as TaskList[];
+      // Keep IndexedDB in sync for offline sidebar rendering.
+      void idbSaveTaskLists(lists);
+      return lists;
     },
     enabled: !!user?.id,
   });
@@ -39,7 +49,9 @@ export function useTags() {
       if (user?.id) q.eq('user_id', user.id);
       const { data, error } = await q;
       if (error) throw error;
-      return data as Tag[];
+      const tags = (data ?? []) as Tag[];
+      void idbSaveTags(tags);
+      return tags;
     },
     enabled: !!user?.id,
   });
@@ -53,16 +65,25 @@ export function useTasks() {
   return useQuery({
     queryKey: [...TASKS_KEY, user?.id],
     queryFn: async () => {
-      const q = supabase
-        .from('tasks')
-        .select('*')
-        .is('parent_id', null)
-        .order('is_completed', { ascending: true })
-        .order('due_date', { ascending: true, nullsFirst: false });
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
+      // Try remote first; on success mirror into IndexedDB.
+      try {
+        const q = supabase
+          .from('tasks')
+          .select('*')
+          .is('parent_id', null)
+          .order('is_completed', { ascending: true })
+          .order('due_date', { ascending: true, nullsFirst: false });
+        if (user?.id) q.eq('user_id', user.id);
+        const { data, error } = await q;
+        if (error) throw error;
+        const tasks = (data ?? []) as Task[];
+        void idbSaveTasks(tasks);
+        return tasks;
+      } catch {
+        // Offline or API failure: fall back to IndexedDB snapshot.
+        const local = await idbGetTasks();
+        return (user?.id ? (local as Task[]).filter((t) => (t as any).user_id == null || (t as any).user_id === user.id) : local) as Task[];
+      }
     },
     enabled: !!user?.id,
   });
@@ -237,14 +258,19 @@ export function useCompletedTasks() {
 
 export function useCreateTask() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (input: CreateInput<Task>) => {
+      const nowIso = new Date().toISOString();
+      const key = [...TASKS_KEY, user?.id];
+
+      // Offline: local-first + queued sync
       if (!isOnline()) {
-        addToOfflineQueue({ entity: 'tasks', op: 'create', payload: input as Record<string, unknown> });
+        const id = uuidv4();
         const optimistic: Task = {
           ...input,
-          id: `offline-${Date.now()}`,
+          id,
           parent_id: input.parent_id ?? null,
           list_id: input.list_id ?? null,
           project_id: input.project_id ?? null,
@@ -255,18 +281,28 @@ export function useCreateTask() {
           recurrence_interval: input.recurrence_interval ?? 1,
           recurrence_end: input.recurrence_end ?? null,
           completed_at: undefined,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: nowIso,
+          updated_at: nowIso,
         } as Task;
-        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => [...(old ?? []), optimistic]);
+
+        queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), optimistic]);
+        const existing = await idbGetTasks();
+        await idbSaveTasks([...existing, optimistic]);
+
+        addToOfflineQueue({ entity: 'tasks', op: 'create', payload: optimistic as unknown as Record<string, unknown> });
         return optimistic;
       }
+
+      // Online: go through Supabase, then mirror into IndexedDB.
       const { data, error } = await supabase.from('tasks').insert(input).select().single();
       if (error) throw error;
-      return data as Task;
-    },
-    onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      const created = data as Task;
+
+      queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), created]);
+      const existing = await idbGetTasks();
+      await idbSaveTasks([...existing, created]);
+
+      return created;
     },
   });
 }
