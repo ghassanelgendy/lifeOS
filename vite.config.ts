@@ -12,13 +12,28 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    // Prevent api/*.ts from being processed by esbuild (avoids "Invalid loader: ics" from PWA build)
+    // Exclude api/* (Vercel serverless) from Vite so esbuild never sees it (avoids "Invalid loader: ics")
     {
       name: 'ignore-api',
-      load(id) {
+      enforce: 'pre',
+      resolveId(id) {
         const n = id.replace(/\\/g, '/');
         if (n.includes('/api/') && (n.endsWith('.ts') || n.endsWith('.tsx'))) {
+          return '\0virtual:api-stub';
+        }
+        return null;
+      },
+      load(id) {
+        const n = id.replace(/\\/g, '/');
+        if (id === '\0virtual:api-stub' || (n.includes('/api/') && (n.endsWith('.ts') || n.endsWith('.tsx')))) {
           return 'export default {}';
+        }
+        return null;
+      },
+      transform(_, id) {
+        const n = id.replace(/\\/g, '/');
+        if (n.includes('/api/')) {
+          return { code: 'export default {}', map: null };
         }
         return null;
       },

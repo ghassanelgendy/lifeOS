@@ -40,6 +40,7 @@ import {
 import { taskDB } from '../db/database';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import { SwipeableRow } from '../components/SwipeableRow';
+import { parseTaskInput, type SuggestionTrigger } from '../lib/taskInputSuggestions';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
@@ -88,6 +89,8 @@ export default function Tasks() {
   const [newTaskTime, setNewTaskTime] = useState('');
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('none');
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([]);
+  const [newTaskListId, setNewTaskListId] = useState<string | null>(null); // from ~ list suggestion
+  const [suggestionTrigger, setSuggestionTrigger] = useState<SuggestionTrigger>(null);
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
   const [showListsSidebar, setShowListsSidebar] = useState(() => window.innerWidth >= 768);
   const [tagsExpanded, setTagsExpanded] = useState(false);
@@ -107,6 +110,26 @@ export default function Tasks() {
   const taskListRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const notificationHandled = useRef<string | null>(null);
+
+  // Smart task input: parse time (12:00), date (sunday, tmrw), ~ lists, ! priority, # tags
+  const handleQuickAddTitleChange = (rawTitle: string) => {
+    const parsed = parseTaskInput(rawTitle);
+    if (parsed.date) setNewTaskDate(parsed.date);
+    if (parsed.time) setNewTaskTime(parsed.time);
+    if (parsed.trigger !== null) {
+      setSuggestionTrigger(parsed.trigger);
+      setNewTaskTitle(rawTitle);
+      return;
+    }
+    setSuggestionTrigger(null);
+    // Strip detected date/time/day tokens from title
+    setNewTaskTitle((parsed.date || parsed.time) && parsed.cleanTitle !== rawTitle ? parsed.cleanTitle : rawTitle);
+  };
+
+  const stripTriggerFromTitle = () => {
+    setNewTaskTitle((t) => t.replace(/\s*(~|!|#)\s*[^\s]*$/, '').trim());
+    setSuggestionTrigger(null);
+  };
 
   // Handle notification quick actions (Mark as done / Postpone 1 Hour)
   useEffect(() => {
@@ -301,14 +324,13 @@ export default function Tasks() {
     if (!newTaskTitle.trim()) return;
 
     const defaultListId = taskLists.find(l => l.is_default)?.id;
-
     createTask.mutate({
       title: newTaskTitle.trim(),
       is_completed: false,
       priority: newTaskPriority,
       tag_ids: newTaskTagIds,
       recurrence: 'none',
-      list_id: activeView === 'list' && activeListId ? activeListId : defaultListId,
+      list_id: newTaskListId ?? (activeView === 'list' && activeListId ? activeListId : defaultListId),
       due_date: newTaskDate || (activeView === 'today' ? new Date().toISOString().split('T')[0] : undefined),
       due_time: newTaskTime || undefined,
     }, {
@@ -318,6 +340,8 @@ export default function Tasks() {
         setNewTaskTime('');
         setNewTaskPriority('none');
         setNewTaskTagIds([]);
+        setNewTaskListId(null);
+        setSuggestionTrigger(null);
         setIsTagSelectorOpen(false);
         setIsAddingTask(false);
       },
@@ -603,27 +627,87 @@ export default function Tasks() {
         <div ref={taskListRef} className="flex-1 overflow-y-auto p-4">
           {/* Quick Add */}
           {isAddingTask && (
-            <form onSubmit={handleQuickAdd} className="mb-4 p-3 rounded-xl border border-border bg-card">
+            <form onSubmit={handleQuickAdd} className="mb-4 p-3 rounded-xl border border-border bg-card relative">
               <input
                 ref={quickAddRef}
                 autoFocus
                 type="text"
                 value={newTaskTitle}
-                onChange={(e) => setNewTaskTitle(e.target.value)}
-                placeholder="What needs to be done?"
+                onChange={(e) => handleQuickAddTitleChange(e.target.value)}
+                placeholder="Add task (e.g. 12:00, sunday, tmrw, ~ list, ! priority, # tag)"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
+                    setSuggestionTrigger(null);
                     setIsAddingTask(false);
                     setNewTaskTitle('');
                     setNewTaskDate('');
                     setNewTaskTime('');
                     setNewTaskPriority('none');
                     setNewTaskTagIds([]);
+                    setNewTaskListId(null);
                     setIsTagSelectorOpen(false);
                   }
                 }}
               />
+              {/* Smart suggestions: ~ list, ! priority, # tag */}
+              {suggestionTrigger === 'list' && (
+                <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground mb-2">Choose list</p>
+                  {taskLists.map((list) => (
+                    <button
+                      key={list.id}
+                      type="button"
+                      onClick={() => {
+                        setNewTaskListId(list.id);
+                        stripTriggerFromTitle();
+                      }}
+                      className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-secondary flex items-center gap-2"
+                    >
+                      <div className="w-3 h-3 rounded" style={{ backgroundColor: list.color }} />
+                      {list.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {suggestionTrigger === 'priority' && (
+                <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 flex gap-2 flex-wrap">
+                  <p className="text-xs text-muted-foreground w-full mb-1">Priority</p>
+                  {(['high', 'medium', 'low'] as const).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => {
+                        setNewTaskPriority(p);
+                        stripTriggerFromTitle();
+                      }}
+                      className={cn("px-3 py-1.5 rounded text-sm font-medium", PRIORITY_CONFIG[p].color, "bg-secondary")}
+                    >
+                      <Flag size={14} className="inline mr-1" fill="currentColor" />
+                      {PRIORITY_CONFIG[p].label}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {suggestionTrigger === 'tag' && (
+                <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                  <p className="text-xs text-muted-foreground mb-2">Add tag</p>
+                  {tags.map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => {
+                        if (!newTaskTagIds.includes(tag.id)) setNewTaskTagIds([...newTaskTagIds, tag.id]);
+                        stripTriggerFromTitle();
+                      }}
+                      className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-secondary flex items-center gap-2"
+                    >
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                      {tag.name}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-col gap-2 mt-3">
                 <div className="flex gap-2">
                   <button

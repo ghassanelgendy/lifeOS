@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { queryClient } from './lib/queryClient';
+
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { useTransactionsRealtime } from './hooks/useFinance';
@@ -108,6 +110,7 @@ function AppInner() {
   return (
     <>
       <ThemeSync />
+      <Analytics />
       <BrowserRouter>
         <Routes>
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />

@@ -194,30 +194,6 @@ export default function Finance() {
     return [...new Set([...fromBanks, ...fromTx])].filter(Boolean).sort((a, b) => a.localeCompare(b));
   }, [banks, transactions]);
 
-  const qnbPerCardStats = useMemo(() => {
-    if (selectedBank !== 'QNB') return null;
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-    const monthlyTx = bankFilteredTransactions.filter((t) => {
-      const d = new Date(t.date);
-      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-    });
-    const debit = { cashIn: 0, cashOut: 0 };
-    const credit = { cashIn: 0, cashOut: 0 };
-    monthlyTx.forEach((t) => {
-      const acc = (t.account || '').replace(/\s/g, '');
-      if (QNB_DEBIT.test(acc)) {
-        if (t.type === 'income') debit.cashIn += Number(t.amount);
-        else debit.cashOut += Number(t.amount);
-      } else if (QNB_CREDIT.test(acc)) {
-        if (t.type === 'income') credit.cashIn += Number(t.amount);
-        else credit.cashOut += Number(t.amount);
-      }
-    });
-    return { debit, credit };
-  }, [selectedBank, bankFilteredTransactions]);
-
   const perBankStats = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
@@ -577,23 +553,7 @@ export default function Finance() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {qnbPerCardStats && (
-          <div className="rounded-xl border border-border bg-card p-4 col-span-1 md:col-span-3">
-            <p className="text-sm font-medium mb-2">QNB Per-card (this month)</p>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="text-muted-foreground">Debit (0050/**7893)</p>
-                <p className="text-green-500">+{formatCurrency(qnbPerCardStats.debit.cashIn)}</p>
-                <p className="text-red-500">−{formatCurrency(qnbPerCardStats.debit.cashOut)}</p>
-              </div>
-              <div>
-                <p className="text-muted-foreground">Credit (****1473)</p>
-                <p className="text-green-500">+{formatCurrency(qnbPerCardStats.credit.cashIn)}</p>
-                <p className="text-red-500">−{formatCurrency(qnbPerCardStats.credit.cashOut)}</p>
-              </div>
-            </div>
-          </div>
-        )}
+  
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <div>
