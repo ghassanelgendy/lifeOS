@@ -21,6 +21,7 @@ import {
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_WIDGET_IDS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
 import { useAuth } from '../contexts/AuthContext';
+import { useTaskLists } from '../hooks/useTasks';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button } from '../components/ui';
@@ -51,7 +52,12 @@ export default function SettingsPage() {
     dashboardWidgetVisible,
     toggleDashboardWidget,
     moveDashboardWidget,
+    defaultTab,
+    setDefaultTab,
+    defaultTaskListId,
+    setDefaultTaskListId,
   } = useUIStore();
+  const { data: taskLists = [] } = useTaskLists();
   const push = usePushNotifications();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
@@ -141,7 +147,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-2xl md:max-w-none">
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
@@ -232,6 +238,52 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Default Pages */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Default Pages</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Choose the default page when opening the app and the default todo list.
+          </p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <p className="font-medium mb-2">Default tab</p>
+            <p className="text-sm text-muted-foreground mb-2">Opening the app will show this page first</p>
+            <select
+              value={defaultTab}
+              onChange={(e) => setDefaultTab(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              {NAV_ITEMS.filter((n) => n.href !== '/settings').map((item) => {
+                const val = item.href === '/' ? 'dashboard' : item.href.slice(1);
+                return (
+                  <option key={item.href} value={val}>
+                    {item.label}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <p className="font-medium mb-2">Default todo list</p>
+            <p className="text-sm text-muted-foreground mb-2">When opening Tasks, show this list by default</p>
+            <select
+              value={defaultTaskListId ?? ''}
+              onChange={(e) => setDefaultTaskListId(e.target.value || null)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">None (show all)</option>
+              {taskLists.map((list) => (
+                <option key={list.id} value={list.id}>
+                  {list.name}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </section>

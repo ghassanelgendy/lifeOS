@@ -2,6 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
+import { useAuth } from '../contexts/AuthContext';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
 
 const TASKS_KEY = ['tasks'];
@@ -12,13 +13,17 @@ const TAGS_KEY = ['tags'];
 // Task Lists
 // ========================
 export function useTaskLists() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: LISTS_KEY,
+    queryKey: [...LISTS_KEY, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('task_lists').select('*').order('sort_order');
+      const q = supabase.from('task_lists').select('*').order('sort_order');
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as TaskList[];
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -26,13 +31,17 @@ export function useTaskLists() {
 // Tags
 // ========================
 export function useTags() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: TAGS_KEY,
+    queryKey: [...TAGS_KEY, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('tags').select('*').order('name');
+      const q = supabase.from('tags').select('*').order('name');
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Tag[];
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -40,133 +49,141 @@ export function useTags() {
 // Tasks
 // ========================
 export function useTasks() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: TASKS_KEY,
+    queryKey: [...TASKS_KEY, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .is('parent_id', null)
         .order('is_completed', { ascending: true })
         .order('due_date', { ascending: true, nullsFirst: false });
-
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useTasksByList(listId: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'list', listId],
+    queryKey: [...TASKS_KEY, 'list', listId, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('list_id', listId)
-        .is('parent_id', null);
+      const q = supabase.from('tasks').select('*').eq('list_id', listId).is('parent_id', null);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
-    enabled: !!listId,
+    enabled: !!listId && !!user?.id,
   });
 }
 
 export function useTasksByProject(projectId: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'project', projectId],
+    queryKey: [...TASKS_KEY, 'project', projectId, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('project_id', projectId)
-        .is('parent_id', null);
+      const q = supabase.from('tasks').select('*').eq('project_id', projectId).is('parent_id', null);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
-    enabled: !!projectId,
+    enabled: !!projectId && !!user?.id,
   });
 }
 
 export function useTasksByTag(tagId: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'tag', tagId],
+    queryKey: [...TASKS_KEY, 'tag', tagId, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('tasks')
-        .select('*')
-        .contains('tag_ids', [tagId]) // Assuming tag_ids is a text[] in Postgres
-        .is('parent_id', null);
+      const q = supabase.from('tasks').select('*').contains('tag_ids', [tagId]).is('parent_id', null);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
-    enabled: !!tagId,
+    enabled: !!tagId && !!user?.id,
   });
 }
 
 export function useOverdueTasks() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'overdue'],
+    queryKey: [...TASKS_KEY, 'overdue', user?.id],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .lt('due_date', today)
         .eq('is_completed', false)
         .is('parent_id', null);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useTodayTasks() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'today'],
+    queryKey: [...TASKS_KEY, 'today', user?.id],
     queryFn: async () => {
       const today = new Date().toISOString().split('T')[0];
-      // Supabase date filtering on timestamp columns needs care, but if stored as date or we match start of day
-      // Assuming due_date is stored as ISO string or timestamp
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .gte('due_date', `${today}T00:00:00`)
         .lte('due_date', `${today}T23:59:59`)
         .eq('is_completed', false)
         .is('parent_id', null);
-
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useUpcomingTasks(days: number = 7) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'upcoming', days],
+    queryKey: [...TASKS_KEY, 'upcoming', days, user?.id],
     queryFn: async () => {
       const today = new Date();
       const future = new Date(today);
       future.setDate(future.getDate() + days);
-
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .gte('due_date', today.toISOString())
         .lte('due_date', future.toISOString())
         .eq('is_completed', false)
         .is('parent_id', null);
-
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useWeekTasks() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'week'],
+    queryKey: [...TASKS_KEY, 'week', user?.id],
     queryFn: async () => {
       const today = new Date();
       const monday = new Date(today);
@@ -174,40 +191,43 @@ export function useWeekTasks() {
       const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
       monday.setDate(today.getDate() + diff);
       monday.setHours(0, 0, 0, 0);
-
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       sunday.setHours(23, 59, 59, 999);
-
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .gte('due_date', monday.toISOString())
         .lte('due_date', sunday.toISOString())
         .eq('is_completed', false)
         .is('parent_id', null);
-
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useCompletedTasks() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...TASKS_KEY, 'completed'],
+    queryKey: [...TASKS_KEY, 'completed', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .eq('is_completed', true)
         .is('parent_id', null)
         .order('completed_at', { ascending: false })
         .limit(50);
-
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Task[];
     },
+    enabled: !!user?.id,
   });
 }
 

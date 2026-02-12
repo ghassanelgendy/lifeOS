@@ -3,6 +3,26 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 const QUERY_KEY = 'ical-subscriptions';
+const DEFAULT_COLOR = '#3b82f6';
+
+export type IcalSubscription = { url: string; color: string };
+
+function parseSubscriptions(data: { urls?: unknown; subscriptions?: unknown } | null): IcalSubscription[] {
+  if (!data) return [];
+  const subs = data.subscriptions;
+  if (Array.isArray(subs) && subs.length > 0) {
+    return subs
+      .filter((s): s is IcalSubscription => s && typeof s === 'object' && typeof (s as IcalSubscription).url === 'string')
+      .map((s) => ({ url: (s as IcalSubscription).url, color: (s as IcalSubscription).color || DEFAULT_COLOR }));
+  }
+  const urls = data.urls;
+  if (Array.isArray(urls)) {
+    return urls
+      .filter((u): u is string => typeof u === 'string')
+      .map((url) => ({ url, color: DEFAULT_COLOR }));
+  }
+  return [];
+}
 
 export function useIcalSubscriptions() {
   const { user } = useAuth();
@@ -10,56 +30,64 @@ export function useIcalSubscriptions() {
 
   const query = useQuery({
     queryKey: [QUERY_KEY, user?.id],
-    queryFn: async (): Promise<string[]> => {
+    queryFn: async (): Promise<IcalSubscription[]> => {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from('user_ical_subscriptions')
-        .select('urls')
+        .select('urls, subscriptions')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error) throw error;
-      const urls = (data?.urls as string[] | null) ?? [];
-      return Array.isArray(urls) ? urls : [];
+      return parseSubscriptions(data);
     },
     enabled: !!user?.id,
   });
 
+  const subscriptionList = query.data ?? [];
+
   const mutation = useMutation({
-    mutationFn: async (urls: string[]) => {
+    mutationFn: async (subscriptions: IcalSubscription[]) => {
       if (!user?.id) return;
+      const urls = subscriptions.map((s) => s.url);
       await supabase
         .from('user_ical_subscriptions')
-        .upsert({ user_id: user.id, urls }, { onConflict: 'user_id' });
+        .upsert(
+          { user_id: user.id, urls, subscriptions },
+          { onConflict: 'user_id' }
+        );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [QUERY_KEY, user?.id] });
     },
   });
 
-  const urls = query.data ?? [];
+  const urls = subscriptionList.map((s) => s.url);
 
-  const setUrls = (next: string[]) => {
-    if (!user?.id) return;
-    mutation.mutate(next);
-  };
-
-  const addUrl = (url: string) => {
+  const addUrl = (url: string, color: string = DEFAULT_COLOR) => {
     if (!user?.id) return;
     const normalized = url.trim().replace(/^webcal:\/\//i, 'https://');
     if (!normalized || urls.includes(normalized)) return;
-    mutation.mutate([...urls, normalized]);
+    mutation.mutate([...subscriptionList, { url: normalized, color }]);
   };
 
   const removeUrl = (url: string) => {
     if (!user?.id) return;
-    mutation.mutate(urls.filter((u) => u !== url));
+    mutation.mutate(subscriptionList.filter((s) => s.url !== url));
+  };
+
+  const setColor = (url: string, color: string) => {
+    if (!user?.id) return;
+    mutation.mutate(
+      subscriptionList.map((s) => (s.url === url ? { ...s, color } : s))
+    );
   };
 
   return {
+    subscriptionList,
     urls,
-    setUrls,
     addUrl,
     removeUrl,
+    setColor,
     isLoading: query.isLoading,
   };
 }

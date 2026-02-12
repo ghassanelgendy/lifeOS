@@ -6,13 +6,15 @@
 const GEMINI_DEFAULT_MODEL = 'gemini-2.5-flash';
 
 /** Allowed categories. Prefer specific; other_expense/other_income ONLY when search finds nothing. */
-const CATEGORIES_EXPENSE = ['food', 'transport', 'utilities', 'entertainment', 'health', 'education', 'shopping'] as const;
+const CATEGORIES_EXPENSE = ['food', 'transport', 'utilities', 'entertainment', 'health', 'education', 'shopping', 'ipn'] as const;
 const CATEGORIES_INCOME = ['salary', 'freelance', 'investment'] as const;
 const FALLBACK_CATEGORIES = ['other_expense', 'other_income'] as const;
 export const VALID_CATEGORIES = [...CATEGORIES_EXPENSE, ...CATEGORIES_INCOME, ...FALLBACK_CATEGORIES];
 
 export interface GeminiEnrichment {
   is_valid: boolean;
+  /** true if message is promotional (offers, ads, subscription prompts); skip insert. */
+  is_promotion?: boolean;
   /** YYYY-MM-DD from the original message (Egypt/local date). Required when message contains a date. */
   date?: string;
   /** HH:mm or HH:mm:ss (24h). Required when message contains a time. */
@@ -52,6 +54,7 @@ Valid category values (exactly these strings): ${VALID_CATEGORIES.join(', ')}
 JSON schema (use only these keys):
 {
   "is_valid": boolean,
+  "is_promotion": boolean (true if promotional/marketing; false otherwise),
   "date": "YYYY-MM-DD" or null,
   "time": "HH:mm" or "HH:mm:ss" or null,
   "category": "one of valid categories",
@@ -68,6 +71,7 @@ JSON schema (use only these keys):
 
 Rules summary:
 - is_valid: true only for real transactions (payments, transfers); false for OTP, PIN update, ads, statements.
+- is_promotion: true for promotional/marketing messages (offers, ads, subscription prompts like "اشترك في", cashback promos, "رد ب 1 الاّن"); false otherwise. When is_promotion is true, is_valid must be false.
 - Use Google Search to identify what the merchant/entity is and choose the correct category. Never return "others" or "Other"; only the exact category strings listed. Do not default to other_expense/other_income without searching first.
 - date and time must come from the message when present; otherwise omit or use today for date.
 - amount must be the transaction value in EGP, not balance.`;

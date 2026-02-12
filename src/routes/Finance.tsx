@@ -51,6 +51,7 @@ const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
   { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
   { value: 'shopping', label: 'Shopping' },
+  { value: 'ipn', label: 'IPN' },
   { value: 'other_expense', label: 'Other' },
 ];
 
@@ -69,6 +70,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   health: '#3b82f6',
   education: '#8b5cf6',
   shopping: '#ec4899',
+  ipn: '#a855f7',
   other_expense: '#6b7280',
   salary: '#22c55e',
   freelance: '#3b82f6',
@@ -117,6 +119,8 @@ export default function Finance() {
   }, [user?.id, invAccountsLoading, investmentAccounts.length, activeTab]);
 
   const [selectedBank, setSelectedBank] = useState<string>(''); // '' = All (consolidated)
+  const [selectedQNBAccount, setSelectedQNBAccount] = useState<'all' | 'debit' | 'credit'>('all'); // Only when bank is QNB
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvestmentAccount, setSelectedInvestmentAccount] = useState<string>(''); // '' = All
   const filteredInvestmentTransactions =
     selectedInvestmentAccount === ''
@@ -124,10 +128,23 @@ export default function Finance() {
       : investmentTransactions.filter((t) => t.account_id === selectedInvestmentAccount);
   const investmentBreakdown = getInvestmentBreakdown(filteredInvestmentTransactions);
 
-  const filteredTransactions =
+  const bankFilteredTransactions =
     selectedBank === ''
       ? transactions
       : transactions.filter((t) => (t.bank || '').trim() === selectedBank);
+
+  // QNB account filter (visible only when bank is QNB): debit 0050/**7893, credit ****1473
+  const QNB_DEBIT = /0050|\*\*7893|7893/;
+  const QNB_CREDIT = /1473|\*\*\*1473/;
+  const filteredTransactions = useMemo(() => {
+    if (selectedBank !== 'QNB' || selectedQNBAccount === 'all') return bankFilteredTransactions;
+    return bankFilteredTransactions.filter((t) => {
+      const acc = (t.account || '').replace(/\s/g, '');
+      if (selectedQNBAccount === 'debit') return QNB_DEBIT.test(acc);
+      if (selectedQNBAccount === 'credit') return QNB_CREDIT.test(acc);
+      return true;
+    });
+  }, [bankFilteredTransactions, selectedBank, selectedQNBAccount]);
 
   // View all + date filter (month or day)
   const [viewAllTransactions, setViewAllTransactions] = useState(false);
@@ -143,9 +160,31 @@ export default function Finance() {
       return filteredTransactions.filter((t) => (t.date || '').split('T')[0] === filterDay);
     return filteredTransactions;
   }, [filteredTransactions, dateFilterMode, filterMonth, filterDay]);
+
+  // Search: matches description, entity, bank, account, transaction_type
+  const searchFilteredTransactions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return dateFilteredTransactions;
+    return dateFilteredTransactions.filter((t) => {
+      const meta = [
+        t.description,
+        t.entity,
+        t.bank,
+        t.account,
+        t.transaction_type,
+        t.category,
+        t.direction,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return meta.includes(q);
+    });
+  }, [dateFilteredTransactions, searchQuery]);
+
   const displayedTransactions = viewAllTransactions
-    ? dateFilteredTransactions
-    : filteredTransactions.slice(0, 20);
+    ? searchFilteredTransactions
+    : searchFilteredTransactions.slice(0, 20);
   const { expensesByCategory, totalExpenses, totalIncome, balance } =
     getBreakdownFromTransactions(filteredTransactions);
 
@@ -154,6 +193,30 @@ export default function Finance() {
     const fromTx = transactions.map((t) => t.bank).filter(Boolean) as string[];
     return [...new Set([...fromBanks, ...fromTx])].filter(Boolean).sort((a, b) => a.localeCompare(b));
   }, [banks, transactions]);
+
+  const qnbPerCardStats = useMemo(() => {
+    if (selectedBank !== 'QNB') return null;
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+    const monthlyTx = bankFilteredTransactions.filter((t) => {
+      const d = new Date(t.date);
+      return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+    });
+    const debit = { cashIn: 0, cashOut: 0 };
+    const credit = { cashIn: 0, cashOut: 0 };
+    monthlyTx.forEach((t) => {
+      const acc = (t.account || '').replace(/\s/g, '');
+      if (QNB_DEBIT.test(acc)) {
+        if (t.type === 'income') debit.cashIn += Number(t.amount);
+        else debit.cashOut += Number(t.amount);
+      } else if (QNB_CREDIT.test(acc)) {
+        if (t.type === 'income') credit.cashIn += Number(t.amount);
+        else credit.cashOut += Number(t.amount);
+      }
+    });
+    return { debit, credit };
+  }, [selectedBank, bankFilteredTransactions]);
 
   const perBankStats = useMemo(() => {
     const now = new Date();
@@ -478,17 +541,59 @@ export default function Finance() {
         <span className="text-sm text-muted-foreground">View:</span>
         <Select
           value={selectedBank}
-          onChange={(e) => setSelectedBank(e.target.value)}
+          onChange={(e) => {
+            setSelectedBank(e.target.value);
+            if (e.target.value !== 'QNB') setSelectedQNBAccount('all');
+          }}
           options={[
             { value: '', label: 'All (consolidated)' },
             ...bankOptions.map((name) => ({ value: name, label: name })),
           ]}
           className="w-full sm:w-auto max-w-[200px]"
         />
+        {selectedBank === 'QNB' && (
+          <>
+            <span className="text-sm text-muted-foreground">Card:</span>
+            <Select
+              value={selectedQNBAccount}
+              onChange={(e) => setSelectedQNBAccount(e.target.value as 'all' | 'debit' | 'credit')}
+              options={[
+                { value: 'all', label: 'All cards' },
+                { value: 'debit', label: 'Debit (0050/**7893)' },
+                { value: 'credit', label: 'Credit (****1473)' },
+              ]}
+              className="w-full sm:w-auto max-w-[180px]"
+            />
+          </>
+        )}
+        <Input
+          type="search"
+          placeholder="Search transactions..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="ml-auto max-w-[200px]"
+        />
       </div>
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {qnbPerCardStats && (
+          <div className="rounded-xl border border-border bg-card p-4 col-span-1 md:col-span-3">
+            <p className="text-sm font-medium mb-2">QNB Per-card (this month)</p>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Debit (0050/**7893)</p>
+                <p className="text-green-500">+{formatCurrency(qnbPerCardStats.debit.cashIn)}</p>
+                <p className="text-red-500">−{formatCurrency(qnbPerCardStats.debit.cashOut)}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Credit (****1473)</p>
+                <p className="text-green-500">+{formatCurrency(qnbPerCardStats.credit.cashIn)}</p>
+                <p className="text-red-500">−{formatCurrency(qnbPerCardStats.credit.cashOut)}</p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <div>

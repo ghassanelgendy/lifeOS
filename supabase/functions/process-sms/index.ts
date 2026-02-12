@@ -32,6 +32,24 @@ function getUserIdFromBody(body: Record<string, unknown>): string | undefined {
   return typeof v === 'string' && v.trim() ? v.trim() : undefined;
 }
 
+/** Quick filter: promotions/ads (does not affect transaction detection). */
+function isPromotionQuickFilter(message: string): boolean {
+  const m = message.trim();
+  // Shortcode/ref in QNB promos (e.g. ت.ض204899052)
+  if (/\b204899052\b/.test(m)) return true;
+  // "Reply 1 now" / subscription prompt (نجم أفلام, etc.)
+  if (/رد\s*ب\s*1\s*(?:الاّن|الآن)/.test(m)) return true;
+  // "Congrats you won X gift" / prize promo
+  if (/مبروك\s*كسبت\s*[\d\s]*(?:وحدة\s*)?هدية/.test(m)) return true;
+  // "Subscribe to X" (نجم أفلام format)
+  if (/اشترك\s*في\s*[^ب]+ب\s*\d+\s*جنيه/.test(m)) return true;
+  // "Your chance to win" promo
+  if (/فرصتك\s*تكسب\s*[\d,]+/.test(m)) return true;
+  // Cashback promo (خروجة ال Valentine, etc.)
+  if (/كاش\s*باك|cash\s*back|100%\s*كاش\s*باك|رجعلك\s*100%/.test(m)) return true;
+  return false;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -66,6 +84,18 @@ serve(async (req: Request) => {
     }
 
     console.log('Processing SMS:', { sender, messageLength: message.length, userId });
+
+    // Skip promotions (marketing, offers, subscription prompts) — does not affect transaction detection
+    if (isPromotionQuickFilter(message)) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          skipped: true,
+          reason: 'Message is a promotion (offers, ads, subscription prompts).',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
 
     // Parse the transaction
     const parser = new TransactionParser();
@@ -103,12 +133,14 @@ serve(async (req: Request) => {
           time: parsed.time,
           account: parsed.account,
         }, geminiModel || undefined);
-        if (aiEnrichment?.is_valid === false) {
+        if (aiEnrichment?.is_promotion === true || aiEnrichment?.is_valid === false) {
           return new Response(
             JSON.stringify({
               success: true,
               skipped: true,
-              reason: 'AI verified: not a valid transaction to record.',
+              reason: aiEnrichment?.is_promotion === true
+                ? 'AI classified as promotion (offers, ads, marketing).'
+                : 'AI verified: not a valid transaction to record.',
               ai_corrections: aiEnrichment.corrections ?? undefined,
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
@@ -317,7 +349,7 @@ serve(async (req: Request) => {
 // ===== HELPER FUNCTIONS =====
 const VALID_CATEGORIES = new Set([
   'salary', 'freelance', 'investment', 'other_income',
-  'food', 'transport', 'utilities', 'entertainment', 'health', 'education', 'shopping', 'other_expense'
+  'food', 'transport', 'utilities', 'entertainment', 'health', 'education', 'shopping', 'ipn', 'other_expense'
 ]);
 
 function toSchemaCategory(cat: string): string {
@@ -333,6 +365,7 @@ function toSchemaCategory(cat: string): string {
   if (/health|pharmacy|hospital/.test(lower)) return 'health';
   if (/education|school|course/.test(lower)) return 'education';
   if (/shopping|mall|store/.test(lower)) return 'shopping';
+  if (/ipn|transfer/.test(lower)) return 'ipn';
   if (/income|in|credit/.test(lower)) return 'other_income';
   return 'other_expense';
 }
@@ -353,7 +386,7 @@ function getDefaultCategory(transactionType: string, entity: string | null): str
 
   if (type.includes('atm') || type.includes('withdrawal') || type.includes('cash')) return 'other_expense';
   if (type.includes('fee') || type.includes('charge') || type.includes('charges')) return 'utilities';
-  if (type.includes('ipn') || type.includes('transfer')) return 'other_expense';
+  if (type.includes('ipn') || type.includes('transfer')) return 'ipn';
 
   // Food & dining (check entity first so "Other" is only when nothing matches)
   if (

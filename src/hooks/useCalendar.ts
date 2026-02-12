@@ -1,34 +1,39 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import type { CalendarEvent, CreateInput, UpdateInput } from '../types/schema';
 import { addDays, addWeeks, addMonths, isBefore, parseISO, format } from 'date-fns';
 import { fetchIcalEvents } from '../lib/icalSubscribe';
 import type { IcalEvent } from '../lib/icalSubscribe';
+import type { IcalSubscription } from './useIcalSubscriptions';
 
 const QUERY_KEY = ['calendar-events'];
 const ICAL_QUERY_KEY = ['ical-subscription'];
 
 export function useCalendarEvents() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: QUERY_KEY,
+    queryKey: [...QUERY_KEY, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('calendar_events').select('*');
+      const q = supabase.from('calendar_events').select('*');
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as CalendarEvent[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useCalendarEventsByRange(start: string, end: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...QUERY_KEY, 'range', start, end],
+    queryKey: [...QUERY_KEY, 'range', start, end, user?.id],
     queryFn: async () => {
-      // Simple client-side filtering for range if recurrence is involved is hard in SQL without expansion
-      // For MVP, fetch all events and filter or better: fetch events that start inside range OR are recurring
-      // Since dataset is small, fetching all might be acceptable, but let's try to filter non-recurring at least
-
-      const { data, error } = await supabase.from('calendar_events').select('*');
+      const q = supabase.from('calendar_events').select('*');
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
 
       // We will filter in JS because of recurrence logic needing to be checked against range
@@ -42,19 +47,22 @@ export function useCalendarEventsByRange(start: string, end: string) {
         return eventStart >= startDate && eventStart <= endDate;
       });
     },
-    enabled: !!start && !!end,
+    enabled: !!start && !!end && !!user?.id,
   });
 }
 
 export function useCalendarEvent(id: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...QUERY_KEY, id],
+    queryKey: [...QUERY_KEY, id, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('calendar_events').select('*').eq('id', id).single();
+      const q = supabase.from('calendar_events').select('*').eq('id', id);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q.single();
       if (error) throw error;
       return data as CalendarEvent;
     },
-    enabled: !!id,
+    enabled: !!id && !!user?.id,
   });
 }
 
@@ -159,26 +167,30 @@ export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
   );
 }
 
-/** Fetch events from subscribed iCal URLs for the given date range */
+/** Fetch events from subscribed iCal URLs for the given date range; returns events with color per subscription */
 export function useIcalSubscriptionEvents(
   startDate: Date,
   endDate: Date,
-  urls: string[]
+  subscriptions: IcalSubscription[]
 ) {
+  const urls = subscriptions.map((s) => s.url);
   return useQuery({
     queryKey: [...ICAL_QUERY_KEY, startDate.toISOString(), endDate.toISOString(), ...urls],
-    queryFn: async (): Promise<IcalEvent[]> => {
-      if (urls.length === 0) return [];
+    queryFn: async (): Promise<(IcalEvent & { color?: string })[]> => {
+      if (subscriptions.length === 0) return [];
       const results = await Promise.allSettled(
-        urls.map((url) => fetchIcalEvents(url, startDate, endDate))
+        subscriptions.map((sub) => fetchIcalEvents(sub.url, startDate, endDate))
       );
-      const events: IcalEvent[] = [];
-      results.forEach((r) => {
-        if (r.status === 'fulfilled') events.push(...r.value);
+      const events: (IcalEvent & { color?: string })[] = [];
+      results.forEach((r, i) => {
+        const color = subscriptions[i]?.color ?? '#3b82f6';
+        if (r.status === 'fulfilled') {
+          r.value.forEach((e) => events.push({ ...e, color }));
+        }
       });
       return events.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     },
-    enabled: urls.length > 0 && !!startDate && !!endDate,
+    enabled: subscriptions.length > 0 && !!startDate && !!endDate,
     staleTime: 1000 * 60 * 5, // 5 min
   });
 }
@@ -204,23 +216,24 @@ export function useShiftEvents() {
 
 // Get tasks with due dates for calendar display
 export function useTasksForCalendar(startDate: Date, endDate: Date) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: ['tasks', 'calendar', startDate.toISOString(), endDate.toISOString()],
+    queryKey: ['tasks', 'calendar', startDate.toISOString(), endDate.toISOString(), user?.id],
     queryFn: async () => {
-      // Fetch tasks within range or just all active tasks with due date
-      const { data, error } = await supabase
+      const q = supabase
         .from('tasks')
         .select('*')
         .not('due_date', 'is', null)
-        .eq('is_completed', false); // Optional: show completed? Usually calendar shows pending
-
+        .eq('is_completed', false);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
-
-      return (data || []).filter((task) => {
-        const dueDate = parseISO(task.due_date!); // we filtered nulls
+      return (data || []).filter((task: { due_date: string }) => {
+        const dueDate = parseISO(task.due_date);
         return dueDate >= startDate && dueDate <= endDate;
       });
     },
+    enabled: !!user?.id,
   });
 }
 

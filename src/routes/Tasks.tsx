@@ -19,6 +19,7 @@ import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours } from 'date-fns';
 import { cn } from '../lib/utils';
+import { useUIStore } from '../stores/useUIStore';
 import {
   useTasks,
   useTaskLists,
@@ -34,7 +35,6 @@ import {
   useDeleteTask,
   useCreateTaskList,
   useCreateTag,
-  useCreateSubtask,
   useConvertTaskToHabit,
 } from '../hooks/useTasks';
 import { taskDB } from '../db/database';
@@ -75,11 +75,11 @@ export default function Tasks() {
   const deleteTask = useDeleteTask();
   const createTaskList = useCreateTaskList();
   const createTag = useCreateTag();
-  const createSubtask = useCreateSubtask();
   const convertToHabit = useConvertTaskToHabit();
 
+  const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
   const [activeView, setActiveView] = useState<ViewType>('today');
-  const [activeListId, setActiveListId] = useState<string | null>(null);
+  const [activeListId, setActiveListId] = useState<string | null>(defaultTaskListId);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -240,7 +240,6 @@ export default function Tasks() {
   const [newListColor, setNewListColor] = useState('#3b82f6');
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
 
   // Get tasks based on current view
   const getDisplayTasks = (): Task[] => {
@@ -388,16 +387,6 @@ export default function Tasks() {
     });
   };
 
-  // Add subtask
-  const handleAddSubtask = (parentId: string) => {
-    if (!newSubtaskTitle.trim()) return;
-    createSubtask.mutate({
-      parentId,
-      title: newSubtaskTitle.trim(),
-    }, {
-      onSuccess: () => setNewSubtaskTitle(''),
-    });
-  };
 
   // Postpone task by 1 hour (for swipe action)
   const handlePostponeTask = (task: Task) => {
@@ -926,35 +915,6 @@ export default function Tasks() {
             </div>
           </div>
 
-          {/* Subtasks */}
-          {selectedTask && (
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Subtasks</label>
-              <div className="mt-2 space-y-1">
-                {/* Subtasks editing disabled for now during migration */}
-                <div className="text-sm text-muted-foreground italic">Subtasks are being migrated...</div>
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleAddSubtask(selectedTask.id);
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <input
-                    type="text"
-                    value={newSubtaskTitle}
-                    onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                    placeholder="Add subtask..."
-                    className="flex-1 px-2 py-1.5 rounded-lg bg-secondary/30 text-sm outline-none placeholder:text-muted-foreground"
-                  />
-                  <Button type="submit" size="sm" variant="ghost" disabled={!newSubtaskTitle.trim()}>
-                    <Plus size={14} />
-                  </Button>
-                </form>
-              </div>
-            </div>
-          )}
-
           {/* Actions */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="flex items-center gap-2">
@@ -1079,9 +1039,6 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority];
-  // Subtask logic removed for now
-  const subtasks: any[] = [];
-  const completedSubtasks = 0;
 
   return (
     <div
@@ -1132,12 +1089,6 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
               <CalendarIcon size={12} />
               {dueInfo.text}
               {task.due_time && ` ${task.due_time}`}
-            </span>
-          )}
-          {subtasks.length > 0 && (
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <CheckCircle2 size={12} />
-              {completedSubtasks}/{subtasks.length}
             </span>
           )}
           {taskTags.map((tag) => (

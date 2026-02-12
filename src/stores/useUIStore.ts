@@ -56,6 +56,12 @@ interface UIState {
   setDashboardWidgetVisible: (visible: Record<string, boolean>) => void;
   toggleDashboardWidget: (id: string) => void;
   moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
+
+  // Default pages
+  defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
+  setDefaultTab: (tab: string) => void;
+  defaultTaskListId: string | null;
+  setDefaultTaskListId: (id: string | null) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -110,6 +116,12 @@ export const useUIStore = create<UIState>()(
           [order[i], order[j]] = [order[j], order[i]];
           return { dashboardWidgetOrder: order };
         }),
+
+      // Default pages
+      defaultTab: 'dashboard',
+      setDefaultTab: (defaultTab) => set({ defaultTab }),
+      defaultTaskListId: null,
+      setDefaultTaskListId: (defaultTaskListId) => set({ defaultTaskListId }),
     }),
     {
       name: 'lifeos-ui-store',
@@ -121,6 +133,8 @@ export const useUIStore = create<UIState>()(
         mobileNavItems: state.mobileNavItems,
         dashboardWidgetOrder: state.dashboardWidgetOrder,
         dashboardWidgetVisible: state.dashboardWidgetVisible,
+        defaultTab: state.defaultTab,
+        defaultTaskListId: state.defaultTaskListId,
       }),
     }
   )

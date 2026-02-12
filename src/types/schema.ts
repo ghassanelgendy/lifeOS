@@ -232,7 +232,7 @@ export interface HabitLog {
 export type TransactionType = 'income' | 'expense';
 export type TransactionCategory =
   | 'salary' | 'freelance' | 'investment' | 'other_income'
-  | 'food' | 'transport' | 'utilities' | 'entertainment' | 'health' | 'education' | 'shopping' | 'other_expense';
+  | 'food' | 'transport' | 'utilities' | 'entertainment' | 'health' | 'education' | 'shopping' | 'ipn' | 'other_expense';
 
 export interface Transaction {
   id: string;

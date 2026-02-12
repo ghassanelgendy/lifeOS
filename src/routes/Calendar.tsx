@@ -77,9 +77,10 @@ export default function CalendarPage() {
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
   const { data: allEvents = [] } = useCalendarEvents();
-  const { urls: icalSubscriptionUrls, addUrl: addIcalUrl, removeUrl: removeIcalUrl } = useIcalSubscriptions();
-  const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, icalSubscriptionUrls);
+  const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, setColor: setIcalColor } = useIcalSubscriptions();
+  const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, subscriptionList);
   const [newIcalUrl, setNewIcalUrl] = useState('');
+  const [newIcalColor, setNewIcalColor] = useState('#3b82f6');
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
@@ -102,9 +103,9 @@ export default function CalendarPage() {
     shift_person: '',
   });
 
-  // Merge app events with subscribed iCal events (subscriptions use slate color)
+  // Merge app events with subscribed iCal events (each subscription has its own color)
   const allMergedEvents = useMemo(() => {
-    const icalWithColor = icalEvents.map((e) => ({ ...e, color: '#64748b' }));
+    const icalWithColor = icalEvents.map((e) => ({ ...e, color: (e as { color?: string }).color ?? '#3b82f6' }));
     return [...events, ...icalWithColor].sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     );
@@ -126,7 +127,7 @@ export default function CalendarPage() {
   const handleAddIcalUrl = () => {
     const url = newIcalUrl.trim().replace(/^webcal:\/\//i, 'https://');
     if (!url || !url.startsWith('http')) return;
-    addIcalUrl(url);
+    addIcalUrl(url, newIcalColor);
     setNewIcalUrl('');
   };
 
@@ -501,21 +502,37 @@ export default function CalendarPage() {
                   placeholder="https:// or webcal://..."
                   className="flex-1 min-w-0 rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                 />
-                <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()}>
-                  Add
-                </Button>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={newIcalColor}
+                    onChange={(e) => setNewIcalColor(e.target.value)}
+                    className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
+                    title="Color for this calendar"
+                  />
+                  <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()}>
+                    Add
+                  </Button>
+                </div>
               </div>
-              {icalSubscriptionUrls.length > 0 && (
+              {subscriptionList.length > 0 && (
                 <ul className="space-y-1">
-                  {icalSubscriptionUrls.map((url) => (
-                    <li key={url} className="flex items-center gap-2 text-xs">
-                      <span className="flex-1 truncate text-muted-foreground" title={url}>
-                        {url.replace(/^https?:\/\//, '').slice(0, 40)}
-                        {(url.replace(/^https?:\/\//, '').length > 40) ? '…' : ''}
+                  {subscriptionList.map((sub) => (
+                    <li key={sub.url} className="flex items-center gap-2 text-xs">
+                      <input
+                        type="color"
+                        value={sub.color}
+                        onChange={(e) => setIcalColor(sub.url, e.target.value)}
+                        className="w-5 h-5 rounded border border-border cursor-pointer bg-transparent shrink-0"
+                        title="Change color"
+                      />
+                      <span className="flex-1 truncate text-muted-foreground" title={sub.url}>
+                        {sub.url.replace(/^https?:\/\//, '').slice(0, 36)}
+                        {(sub.url.replace(/^https?:\/\//, '').length > 36) ? '…' : ''}
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleRemoveIcalUrl(url)}
+                        onClick={() => removeIcalUrl(sub.url)}
                         className="p-1 rounded hover:bg-destructive/20 text-destructive shrink-0"
                         aria-label="Remove"
                       >
