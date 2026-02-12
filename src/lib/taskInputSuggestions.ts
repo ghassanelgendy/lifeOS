@@ -69,7 +69,7 @@ function parseTimeString(match: string): { time: string; originalMatch: string }
       // If the parsed time (as is) is in the past, assume it means PM if h < 12
       // e.g. now 11 AM, user types "2:00" -> should be 2 PM.
       // now 3 PM, user types "2:00" -> should be 2 AM (tomorrow).
-      if (h < 12 && isPast(parsedDate, now)) {
+      if (h < 12 && isPast(parsedDate)) {
         h += 12; // Try setting it to PM
         parsedDate = set(parsedDate, { hours: h });
       }
