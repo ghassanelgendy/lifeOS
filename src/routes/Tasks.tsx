@@ -14,6 +14,7 @@ import {
   ListTodo,
   Trash2,
   Sparkles,
+  Clock, // Add Clock icon import
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -99,6 +100,12 @@ export default function Tasks() {
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
 
+  // New state for displaying highlighted date/time
+  const [highlightedDate, setHighlightedDate] = useState<string | undefined>(undefined);
+  const [highlightedTime, setHighlightedTime] = useState<string | undefined>(undefined);
+  // Debug state for detected tokens
+  const [debugDetectedTokens, setDebugDetectedTokens] = useState<any[]>([]);
+
   const TAGS_VISIBLE_COLLAPSED = 4;
   const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
     ? tags
@@ -113,17 +120,35 @@ export default function Tasks() {
 
   // Smart task input: parse time (12:00), date (sunday, tmrw), ~ lists, ! priority, # tags
   const handleQuickAddTitleChange = (rawTitle: string) => {
+    // Always update the input field with the raw title initially
+    setNewTaskTitle(rawTitle);
+
     const parsed = parseTaskInput(rawTitle);
-    if (parsed.date) setNewTaskDate(parsed.date);
-    if (parsed.time) setNewTaskTime(parsed.time);
+
+    // Set the actual date/time for task creation
+    setNewTaskDate(parsed.date || '');
+    setNewTaskTime(parsed.time || '');
+
+    // Set highlighted date/time for visual feedback
+    if (parsed.date) {
+      const d = new Date(parsed.date);
+      if (isToday(d)) setHighlightedDate('Today');
+      else if (isTomorrow(d)) setHighlightedDate('Tomorrow');
+      else setHighlightedDate(format(d, 'MMM d'));
+    } else {
+      setHighlightedDate(undefined);
+    }
+    setHighlightedTime(parsed.time);
+
+    // Set debug tokens for verification
+    setDebugDetectedTokens(parsed.detectedTokens);
+
+
     if (parsed.trigger !== null) {
       setSuggestionTrigger(parsed.trigger);
-      setNewTaskTitle(rawTitle);
-      return;
+    } else {
+      setSuggestionTrigger(null);
     }
-    setSuggestionTrigger(null);
-    // Strip detected date/time/day tokens from title
-    setNewTaskTitle((parsed.date || parsed.time) && parsed.cleanTitle !== rawTitle ? parsed.cleanTitle : rawTitle);
   };
 
   const stripTriggerFromTitle = () => {
@@ -344,6 +369,9 @@ export default function Tasks() {
         setSuggestionTrigger(null);
         setIsTagSelectorOpen(false);
         setIsAddingTask(false);
+        setHighlightedDate(undefined); // Clear highlights
+        setHighlightedTime(undefined); // Clear highlights
+        setDebugDetectedTokens([]); // Clear debug tokens
       },
     });
   };
@@ -634,7 +662,7 @@ export default function Tasks() {
                 type="text"
                 value={newTaskTitle}
                 onChange={(e) => handleQuickAddTitleChange(e.target.value)}
-                placeholder="Add task (e.g. 12:00, sunday, tmrw, ~ list, ! priority, # tag)"
+                placeholder="Add task (e.g. 12:00, 15 June, tmrw, ~ list, ! priority, # tag)"
                 className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
@@ -647,9 +675,40 @@ export default function Tasks() {
                     setNewTaskTagIds([]);
                     setNewTaskListId(null);
                     setIsTagSelectorOpen(false);
+                    setHighlightedDate(undefined); // Clear highlights
+                    setHighlightedTime(undefined); // Clear highlights
+                    setDebugDetectedTokens([]); // Clear debug tokens
                   }
                 }}
               />
+              {/* Visual feedback for parsed date/time */}
+              {(highlightedDate || highlightedTime) && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                  {highlightedDate && (
+                    <span className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      <CalendarIcon size={12} /> {highlightedDate}
+                    </span>
+                  )}
+                  {highlightedTime && (
+                    <span className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                      <Clock size={12} /> {highlightedTime}
+                    </span>
+                  )}
+                </div>
+              )}
+               {/* Debug output for detected tokens */}
+               {debugDetectedTokens.length > 0 && (
+                <div className="text-xs text-muted-foreground mt-2 border-t border-border pt-2">
+                  <p>Detected Tokens (Debug):</p>
+                  <ul className="list-disc pl-4">
+                    {debugDetectedTokens.map((token, index) => (
+                      <li key={index}>
+                        <strong>{token.type}</strong>: "{token.text}" (Start: {token.start}, End: {token.end})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {/* Smart suggestions: ~ list, ! priority, # tag */}
               {suggestionTrigger === 'list' && (
                 <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
