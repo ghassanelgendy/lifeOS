@@ -15,6 +15,8 @@ import {
   Trash2,
   Sparkles,
   Clock, // Add Clock icon import
+  Sun,
+  ArrowRight,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -61,6 +63,16 @@ const RECURRENCE_OPTIONS: { value: TaskRecurrence; label: string }[] = [
 
 type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'list' | 'tag';
 
+// Define the order and properties of smart lists
+const SMART_LISTS = [
+  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: any[], overdueTasks: any[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-blue-500/20 text-blue-500" },
+  { id: 'week', label: 'This Week', icon: CalendarIcon, viewType: 'week', getCount: (weekTasks: any[]) => weekTasks.length, colorClass: "bg-purple-500/20 text-purple-500" },
+  { id: 'upcoming', label: 'Upcoming', icon: CalendarDays, viewType: 'upcoming', getCount: (upcomingTasks: any[]) => upcomingTasks.length, colorClass: "bg-secondary text-foreground" },
+  { id: 'all', label: 'All Tasks', icon: ListTodo, viewType: 'all', getCount: (allTasks: any[]) => allTasks.filter(t => !t.is_completed).length, colorClass: "bg-secondary text-foreground" },
+  { id: 'completed', label: 'Completed', icon: CheckCircle2, viewType: 'completed', getCount: (completedTasks: any[]) => completedTasks.length, colorClass: "bg-secondary text-foreground" },
+];
+const SMART_LIST_IDS = new Set(SMART_LISTS.map((l) => l.id));
+
 export default function Tasks() {
   const { data: allTasks = [] } = useTasks();
   const { data: taskLists = [] } = useTaskLists();
@@ -79,9 +91,10 @@ export default function Tasks() {
   const createTag = useCreateTag();
   const convertToHabit = useConvertTaskToHabit();
 
+  const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
   const [activeView, setActiveView] = useState<ViewType>('today');
-  const [activeListId, setActiveListId] = useState<string | null>(defaultTaskListId);
+  const [activeListId, setActiveListId] = useState<string | null>(null);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -103,8 +116,6 @@ export default function Tasks() {
   // New state for displaying highlighted date/time
   const [highlightedDate, setHighlightedDate] = useState<string | undefined>(undefined);
   const [highlightedTime, setHighlightedTime] = useState<string | undefined>(undefined);
-  // Debug state for detected tokens
-  const [debugDetectedTokens, setDebugDetectedTokens] = useState<any[]>([]);
 
   const TAGS_VISIBLE_COLLAPSED = 4;
   const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
@@ -118,6 +129,21 @@ export default function Tasks() {
   const [searchParams, setSearchParams] = useSearchParams();
   const notificationHandled = useRef<string | null>(null);
 
+  // Apply default Tasks view when opening the page (and after persist rehydration on mobile)
+  const effectiveDefaultView = defaultTaskView ?? defaultTaskListId ?? null;
+  useEffect(() => {
+    if (effectiveDefaultView == null || effectiveDefaultView === '') return;
+    if (SMART_LIST_IDS.has(effectiveDefaultView)) {
+      setActiveView(effectiveDefaultView as ViewType);
+      setActiveListId(null);
+      setActiveTagId(null);
+    } else {
+      setActiveView('list');
+      setActiveListId(effectiveDefaultView);
+      setActiveTagId(null);
+    }
+  }, [effectiveDefaultView]);
+
   // Smart task input: parse time (12:00), date (sunday, tmrw), ~ lists, ! priority, # tags
   const handleQuickAddTitleChange = (rawTitle: string) => {
     // Always update the input field with the raw title initially
@@ -128,6 +154,13 @@ export default function Tasks() {
     // Set the actual date/time for task creation
     setNewTaskDate(parsed.date || '');
     setNewTaskTime(parsed.time || '');
+
+    // AUTO-ASSIGN PRIORITY
+    if (parsed.priority) {
+      setNewTaskPriority(parsed.priority);
+    } else {
+      setNewTaskPriority('none'); // Reset if no priority detected
+    }
 
     // Set highlighted date/time for visual feedback
     if (parsed.date) {
@@ -144,7 +177,8 @@ export default function Tasks() {
     setDebugDetectedTokens(parsed.detectedTokens);
 
 
-    if (parsed.trigger !== null) {
+    // Adjust suggestion trigger: do not show priority suggestion if auto-assigned
+    if (parsed.trigger !== null && parsed.trigger !== 'priority') { // Only set trigger if not priority
       setSuggestionTrigger(parsed.trigger);
     } else {
       setSuggestionTrigger(null);
@@ -356,7 +390,11 @@ export default function Tasks() {
       tag_ids: newTaskTagIds,
       recurrence: 'none',
       list_id: newTaskListId ?? (activeView === 'list' && activeListId ? activeListId : defaultListId),
-      due_date: newTaskDate || (activeView === 'today' ? new Date().toISOString().split('T')[0] : undefined),
+      due_date: newTaskDate || (
+        activeView === 'today' ? toDateString(new Date()) :
+        (activeView === 'week' || activeView === 'upcoming') ? toDateString(addDays(new Date(), 1)) : // Default to tomorrow for 'week' and 'upcoming' views
+        undefined
+      ),
       due_time: newTaskTime || undefined,
     }, {
       onSuccess: () => {
@@ -371,7 +409,6 @@ export default function Tasks() {
         setIsAddingTask(false);
         setHighlightedDate(undefined); // Clear highlights
         setHighlightedTime(undefined); // Clear highlights
-        setDebugDetectedTokens([]); // Clear debug tokens
       },
     });
   };
@@ -500,61 +537,26 @@ export default function Tasks() {
         <div className="p-4 space-y-0.5 shrink-0">
           <span className="block px-4 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Smart Lists</span>
           {/* Smart Lists - text-base on mobile so not small/cut */}
-          <button
-            onClick={() => { setActiveView('today'); setActiveListId(null); setActiveTagId(null); }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-              activeView === 'today' ? "bg-blue-500/20 text-blue-500" : "hover:bg-secondary text-muted-foreground"
-            )}
-          >
-            <Star size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
-            <span className="flex-1 min-w-0 text-left">Today</span>
-            <span className="text-sm md:text-xs shrink-0">{todayTasks.length + overdueTasks.length}</span>
-          </button>
-          <button
-            onClick={() => { setActiveView('week'); setActiveListId(null); setActiveTagId(null); }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-              activeView === 'week' ? "bg-purple-500/20 text-purple-500" : "hover:bg-secondary text-muted-foreground"
-            )}
-          >
-            <CalendarIcon size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
-            <span className="flex-1 min-w-0 text-left">This Week</span>
-            <span className="text-sm md:text-xs shrink-0">{weekTasks.length}</span>
-          </button>
-          <button
-            onClick={() => { setActiveView('upcoming'); setActiveListId(null); setActiveTagId(null); }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-              activeView === 'upcoming' ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
-            )}
-          >
-            <CalendarDays size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
-            <span className="flex-1 min-w-0 text-left">Upcoming</span>
-            <span className="text-sm md:text-xs shrink-0">{upcomingTasks.length}</span>
-          </button>
-          <button
-            onClick={() => { setActiveView('all'); setActiveListId(null); setActiveTagId(null); }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-              activeView === 'all' ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
-            )}
-          >
-            <ListTodo size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
-            <span className="flex-1 min-w-0 text-left">All Tasks</span>
-            <span className="text-sm md:text-xs shrink-0">{allTasks.filter(t => !t.is_completed).length}</span>
-          </button>
-          <button
-            onClick={() => { setActiveView('completed'); setActiveListId(null); setActiveTagId(null); }}
-            className={cn(
-              "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-              activeView === 'completed' ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
-            )}
-          >
-            <CheckCircle2 size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
-            <span className="flex-1 min-w-0 text-left">Completed</span>
-            <span className="text-sm md:text-xs shrink-0">{completedTasks.length}</span>
-          </button>
+          {SMART_LISTS.map((list) => (
+            <button
+              key={list.id}
+              onClick={() => { setActiveView(list.viewType); setActiveListId(null); setActiveTagId(null); }}
+              className={cn(
+                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
+                activeView === list.viewType ? list.colorClass : "hover:bg-secondary text-muted-foreground"
+              )}
+            >
+              <list.icon size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+              <span className="flex-1 min-w-0 text-left">{list.label}</span>
+              <span className="text-sm md:text-xs shrink-0">
+                {list.id === 'today' && list.getCount(todayTasks, overdueTasks)}
+                {list.id === 'week' && list.getCount(weekTasks)}
+                {list.id === 'upcoming' && list.getCount(upcomingTasks)}
+                {list.id === 'all' && list.getCount(allTasks)}
+                {list.id === 'completed' && list.getCount(completedTasks)}
+              </span>
+            </button>
+          ))}
         </div>
 
         <div className="border-t border-border shrink-0" />
@@ -629,7 +631,7 @@ export default function Tasks() {
       </aside>
 
       {/* Main Content - swipe from left edge to open sidebar on mobile */}
-      <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden">
+      <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
         <header className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-3">
@@ -677,7 +679,6 @@ export default function Tasks() {
                     setIsTagSelectorOpen(false);
                     setHighlightedDate(undefined); // Clear highlights
                     setHighlightedTime(undefined); // Clear highlights
-                    setDebugDetectedTokens([]); // Clear debug tokens
                   }
                 }}
               />
@@ -696,19 +697,7 @@ export default function Tasks() {
                   )}
                 </div>
               )}
-               {/* Debug output for detected tokens */}
-               {debugDetectedTokens.length > 0 && (
-                <div className="text-xs text-muted-foreground mt-2 border-t border-border pt-2">
-                  <p>Detected Tokens (Debug):</p>
-                  <ul className="list-disc pl-4">
-                    {debugDetectedTokens.map((token, index) => (
-                      <li key={index}>
-                        <strong>{token.type}</strong>: "{token.text}" (Start: {token.start}, End: {token.end})
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+
               {/* Smart suggestions: ~ list, ! priority, # tag */}
               {suggestionTrigger === 'list' && (
                 <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
@@ -772,23 +761,23 @@ export default function Tasks() {
                   <button
                     type="button"
                     onClick={() => setNewTaskDate(format(new Date(), 'yyyy-MM-dd'))}
-                    className="px-2 py-1 text-xs bg-secondary rounded hover:bg-secondary/80 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
                   >
-                    Today
+                    <Sun size={14} /> Today
                   </button>
                   <button
                     type="button"
                     onClick={() => setNewTaskDate(format(addDays(new Date(), 1), 'yyyy-MM-dd'))}
-                    className="px-2 py-1 text-xs bg-secondary rounded hover:bg-secondary/80 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
                   >
-                    Tomorrow
+                    <ArrowRight size={14} /> Tomorrow
                   </button>
                   <button
                     type="button"
                     onClick={() => setNewTaskDate(format(addDays(new Date(), 7), 'yyyy-MM-dd'))}
-                    className="px-2 py-1 text-xs bg-secondary rounded hover:bg-secondary/80 transition-colors"
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
                   >
-                    Next Week
+                    <CalendarDays size={14} /> Next Week
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
@@ -796,13 +785,13 @@ export default function Tasks() {
                     type="date"
                     value={newTaskDate}
                     onChange={(e) => setNewTaskDate(e.target.value)}
-                    className="bg-secondary/50 text-xs px-2 py-1 rounded border border-border outline-none focus:border-primary"
+                    className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
                   <input
                     type="time"
                     value={newTaskTime}
                     onChange={(e) => setNewTaskTime(e.target.value)}
-                    className="bg-secondary/50 text-xs px-2 py-1 rounded border border-border outline-none focus:border-primary"
+                    className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
                 </div>
               </div>

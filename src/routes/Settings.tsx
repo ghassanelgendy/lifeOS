@@ -54,6 +54,8 @@ export default function SettingsPage() {
     moveDashboardWidget,
     defaultTab,
     setDefaultTab,
+    defaultTaskView,
+    setDefaultTaskView,
     defaultTaskListId,
     setDefaultTaskListId,
   } = useUIStore();
@@ -270,19 +272,34 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <p className="font-medium mb-2">Default todo list</p>
-            <p className="text-sm text-muted-foreground mb-2">When opening Tasks, show this list by default</p>
+            <p className="font-medium mb-2">Default Tasks view</p>
+            <p className="text-sm text-muted-foreground mb-2">When opening Tasks, show this view by default (works on mobile too)</p>
             <select
-              value={defaultTaskListId ?? ''}
-              onChange={(e) => setDefaultTaskListId(e.target.value || null)}
+              value={(defaultTaskView ?? defaultTaskListId) ?? ''}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                setDefaultTaskView(v);
+                setDefaultTaskListId(v);
+              }}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">None (show all)</option>
-              {taskLists.map((list) => (
-                <option key={list.id} value={list.id}>
-                  {list.name}
-                </option>
-              ))}
+              <option value="">Today (default)</option>
+              <optgroup label="Smart lists">
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="all">All Tasks</option>
+                <option value="completed">Completed</option>
+              </optgroup>
+              {taskLists.length > 0 && (
+                <optgroup label="My lists">
+                  {taskLists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      {list.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
         </div>

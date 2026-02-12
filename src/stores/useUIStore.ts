@@ -60,6 +60,9 @@ interface UIState {
   // Default pages
   defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
   setDefaultTab: (tab: string) => void;
+  /** Default Tasks view: smart list id ('today'|'week'|'upcoming'|'all'|'completed') or custom list uuid */
+  defaultTaskView: string | null;
+  setDefaultTaskView: (id: string | null) => void;
   defaultTaskListId: string | null;
   setDefaultTaskListId: (id: string | null) => void;
 }
@@ -120,6 +123,8 @@ export const useUIStore = create<UIState>()(
       // Default pages
       defaultTab: 'dashboard',
       setDefaultTab: (defaultTab) => set({ defaultTab }),
+      defaultTaskView: null,
+      setDefaultTaskView: (defaultTaskView) => set({ defaultTaskView }),
       defaultTaskListId: null,
       setDefaultTaskListId: (defaultTaskListId) => set({ defaultTaskListId }),
     }),
@@ -134,6 +139,7 @@ export const useUIStore = create<UIState>()(
         dashboardWidgetOrder: state.dashboardWidgetOrder,
         dashboardWidgetVisible: state.dashboardWidgetVisible,
         defaultTab: state.defaultTab,
+        defaultTaskView: state.defaultTaskView,
         defaultTaskListId: state.defaultTaskListId,
       }),
     }

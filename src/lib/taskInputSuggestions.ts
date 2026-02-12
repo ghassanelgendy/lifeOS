@@ -47,7 +47,8 @@ function nextDayOfWeek(dayNum: number): Date {
  */
 function parseTimeString(match: string): { time: string; originalMatch: string; start: number; end: number } | null {
   const trimmed = match.trim().toLowerCase();
-  const timeRegex = /(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/;
+  // Ensure it matches H:MM or HH:MM strictly
+  const timeRegex = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/;
   const execResult = timeRegex.exec(trimmed);
 
   if (execResult) {
@@ -145,8 +146,8 @@ export function parseTaskInput(title: string): TaskInputParseResult {
 
 
   // Time: 12:00, 9:30 am, 14:00 (first occurrence)
-  // Need to use the original title for index tracking
-  const timeRegex = /\b(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/gi;
+  // Ensure it matches H:MM or HH:MM strictly
+  const timeRegex = /\b(\d{1,2}:\d{2}\s*(?:am|pm)?)\b/gi;
   const timeMatch = timeRegex.exec(currentTitle); // Using currentTitle for pattern matching
   if (timeMatch && !time) {
     const parsedTimeResult = parseTimeString(timeMatch[1]);
@@ -212,6 +213,21 @@ export function parseTaskInput(title: string): TaskInputParseResult {
     }
     re.lastIndex = 0;
   }
+
+  // Priority shortcuts: !high, !medium, !low
+  const priorityRegex = /\b!(high|medium|low)\b/gi;
+  const priorityMatch = priorityRegex.exec(currentTitle);
+  if (priorityMatch && !priority) {
+    priority = priorityMatch[1].toLowerCase() as 'high' | 'medium' | 'low';
+    detectedTokens.push({
+      text: priorityMatch[0],
+      type: 'priority',
+      start: priorityMatch.index,
+      end: priorityMatch.index + priorityMatch[0].length,
+    });
+    currentTitle = currentTitle.replace(priorityMatch[0], ' '.repeat(priorityMatch[0].length));
+  }
+  priorityRegex.lastIndex = 0;
 
   // Month day formats: 15 June, June 15, 1 Jan
   const dateMonthDayRegex = /\b(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:uary|ruary|ch|il|e|y|ust|tember|ober|ember)?\b/gi;
