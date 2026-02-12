@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
 
-import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
+import { cleanupOutdatedCaches, precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
+import { registerRoute, NavigationRoute } from 'workbox-routing';
 
 declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: Array<{ url: string; revision?: string }> };
 
@@ -12,6 +13,14 @@ clientsClaim();
 // Precaching (manifest injected by vite-plugin-pwa)
 precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
+
+// App-shell style navigation: serve cached index.html for all navigations, so the SPA loads offline.
+// Exclude API routes so they can still go to network when online.
+const appShellHandler = createHandlerBoundToURL('/index.html');
+const navigationRoute = new NavigationRoute(appShellHandler, {
+  denylist: [/^\/api\//],
+});
+registerRoute(navigationRoute);
 
 // Background sync stub: when supported, we can register a sync from the app
 // and react here. For now, we just listen for a named sync event and nudge
