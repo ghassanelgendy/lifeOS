@@ -131,10 +131,6 @@ export default function CalendarPage() {
     setNewIcalUrl('');
   };
 
-  const handleRemoveIcalUrl = (url: string) => {
-    removeIcalUrl(url);
-  };
-
   // Get tasks for a specific day
   const getTasksForDay = (day: Date) => {
     return tasksWithDates.filter((task) => {
