@@ -45,7 +45,7 @@ function nextDayOfWeek(dayNum: number): Date {
  * Parse time string "12:00", "9:30 am", "14:00" → HH:mm 24h
  * Implements "next occurrence" logic for ambiguous times (e.g., 2:00 at 11 AM -> 2 PM)
  */
-function parseTimeString(match: string): { time: string; originalMatch: string; start: number; end: number } | null {
+function parseTimeString(match: string): { time: string; originalMatch: string } | null {
   const trimmed = match.trim().toLowerCase();
   // Ensure it matches H:MM or HH:MM strictly
   const timeRegex = /^(\d{1,2}):(\d{2})\s*(am|pm)?$/;
@@ -83,8 +83,6 @@ function parseTimeString(match: string): { time: string; originalMatch: string; 
     return {
       time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
       originalMatch: match,
-      start: execResult.index || 0,
-      end: (execResult.index || 0) + match.length
     };
   }
   return null;

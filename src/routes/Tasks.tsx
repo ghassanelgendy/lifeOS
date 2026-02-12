@@ -43,7 +43,7 @@ import {
 import { taskDB } from '../db/database';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import { SwipeableRow } from '../components/SwipeableRow';
-import { parseTaskInput, type SuggestionTrigger } from '../lib/taskInputSuggestions';
+import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
@@ -63,13 +63,22 @@ const RECURRENCE_OPTIONS: { value: TaskRecurrence; label: string }[] = [
 
 type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'list' | 'tag';
 
+interface SmartListConfig {
+  id: string;
+  label: string;
+  icon: React.ElementType;
+  viewType: ViewType;
+  getCount: (...args: any[]) => number; // Flexible argument types
+  colorClass: string;
+}
+
 // Define the order and properties of smart lists
-const SMART_LISTS = [
-  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: any[], overdueTasks: any[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-blue-500/20 text-blue-500" },
-  { id: 'week', label: 'This Week', icon: CalendarIcon, viewType: 'week', getCount: (weekTasks: any[]) => weekTasks.length, colorClass: "bg-purple-500/20 text-purple-500" },
-  { id: 'upcoming', label: 'Upcoming', icon: CalendarDays, viewType: 'upcoming', getCount: (upcomingTasks: any[]) => upcomingTasks.length, colorClass: "bg-secondary text-foreground" },
-  { id: 'all', label: 'All Tasks', icon: ListTodo, viewType: 'all', getCount: (allTasks: any[]) => allTasks.filter(t => !t.is_completed).length, colorClass: "bg-secondary text-foreground" },
-  { id: 'completed', label: 'Completed', icon: CheckCircle2, viewType: 'completed', getCount: (completedTasks: any[]) => completedTasks.length, colorClass: "bg-secondary text-foreground" },
+const SMART_LISTS: SmartListConfig[] = [
+  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: Task[], overdueTasks: Task[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-blue-500/20 text-blue-500" },
+  { id: 'week', label: 'This Week', icon: CalendarIcon, viewType: 'week', getCount: (weekTasks: Task[]) => weekTasks.length, colorClass: "bg-purple-500/20 text-purple-500" },
+  { id: 'upcoming', label: 'Upcoming', icon: CalendarDays, viewType: 'upcoming', getCount: (upcomingTasks: Task[]) => upcomingTasks.length, colorClass: "bg-secondary text-foreground" },
+  { id: 'all', label: 'All Tasks', icon: ListTodo, viewType: 'all', getCount: (allTasks: Task[]) => allTasks.filter(t => !t.is_completed).length, colorClass: "bg-secondary text-foreground" },
+  { id: 'completed', label: 'Completed', icon: CheckCircle2, viewType: 'completed', getCount: (completedTasks: Task[]) => completedTasks.length, colorClass: "bg-secondary text-foreground" },
 ];
 const SMART_LIST_IDS = new Set(SMART_LISTS.map((l) => l.id));
 
@@ -172,9 +181,6 @@ export default function Tasks() {
       setHighlightedDate(undefined);
     }
     setHighlightedTime(parsed.time);
-
-    // Set debug tokens for verification
-    setDebugDetectedTokens(parsed.detectedTokens);
 
 
     // Adjust suggestion trigger: do not show priority suggestion if auto-assigned
@@ -540,7 +546,7 @@ export default function Tasks() {
           {SMART_LISTS.map((list) => (
             <button
               key={list.id}
-              onClick={() => { setActiveView(list.viewType); setActiveListId(null); setActiveTagId(null); }}
+              onClick={() => { setActiveView(list.viewType as ViewType); setActiveListId(null); setActiveTagId(null); }}
               className={cn(
                 "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
                 activeView === list.viewType ? list.colorClass : "hover:bg-secondary text-muted-foreground"
