@@ -12,6 +12,7 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const scrollPositionRef = useRef<number>(0);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -19,13 +20,32 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
     };
 
     if (isOpen) {
+      // Save current scroll position
+      scrollPositionRef.current = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Lock body scroll while maintaining scroll position
       document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
+      const body = document.body;
+      body.style.position = 'fixed';
+      body.style.top = `-${scrollPositionRef.current}px`;
+      body.style.left = '0';
+      body.style.right = '0';
+      body.style.overflow = 'hidden';
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
+      
+      // Restore scroll position and unlock body
+      const body = document.body;
+      body.style.position = '';
+      body.style.top = '';
+      body.style.left = '';
+      body.style.right = '';
+      body.style.overflow = '';
+      
+      // Restore scroll position
+      window.scrollTo(0, scrollPositionRef.current);
     };
   }, [isOpen, onClose]);
 
@@ -62,10 +82,16 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
           </button>
         </div>
         <div
-          className="p-4 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain overscroll-y-auto"
-          style={{ WebkitOverflowScrolling: 'touch', paddingBottom: 'max(env(safe-area-inset-bottom), 1rem)' }}
+          className="p-4 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain overscroll-y-auto min-w-0"
+          style={{ 
+            WebkitOverflowScrolling: 'touch', 
+            paddingBottom: 'calc(1rem + max(env(safe-area-inset-bottom), 0px))',
+            maxHeight: 'calc(100dvh - 64px - env(safe-area-inset-bottom) - 4rem)'
+          }}
         >
-          {children}
+          <div className="min-w-0">
+            {children}
+          </div>
         </div>
       </div>
     </div>

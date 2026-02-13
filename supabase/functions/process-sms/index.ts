@@ -209,14 +209,14 @@ serve(async (req: Request) => {
     }
     category = toSchemaCategory(category);
 
-    // Ensure category is never blank - default to other_expense if empty/null/undefined
-    if (!category || category.trim() === '' || category === 'Uncategorized') {
-      category = 'other_expense';
-    }
-
     // Override type from AI if valid
     if (aiEnrichment?.type === 'income' || aiEnrichment?.type === 'expense') {
       type = aiEnrichment.type;
+    }
+
+    // Ensure category is never blank - default based on transaction type
+    if (!category || category.trim() === '' || category === 'Uncategorized') {
+      category = type === 'income' ? 'other_income' : 'other_expense';
     }
 
     // ===== DATE: always use invocation date (edge function clock) =====
@@ -372,6 +372,8 @@ function toSchemaCategory(cat: string): string {
   if (/shopping|mall|store/.test(lower)) return 'shopping';
   if (/ipn|transfer/.test(lower)) return 'ipn';
   if (/income|in|credit/.test(lower)) return 'other_income';
+  // Handle "Other" - default to other_expense, but caller should determine based on transaction type
+  if (lower === 'other') return 'other_expense';
   return 'other_expense';
 }
 
@@ -386,7 +388,7 @@ function getDefaultCategory(transactionType: string, entity: string | null): str
     if (type.includes('salary') || type.includes('payroll')) return 'salary';
     if (type.includes('freelance') || type.includes('invoice')) return 'freelance';
     if (type.includes('investment') || type.includes('dividend')) return 'investment';
-    return 'Other';
+    return 'other_income';
   }
 
   if (type.includes('atm') || type.includes('withdrawal') || type.includes('cash')) return 'other_expense';

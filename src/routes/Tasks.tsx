@@ -969,19 +969,23 @@ export default function Tasks() {
             placeholder="Add details..."
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Due Date"
-              type="date"
-              value={editForm.due_date || ''}
-              onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-            />
-            <Input
-              label="Due Time"
-              type="time"
-              value={editForm.due_time || ''}
-              onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
-            />
+          <div className="grid grid-cols-2 gap-4 min-w-0">
+            <div className="min-w-0">
+              <Input
+                label="Due Date"
+                type="date"
+                value={editForm.due_date || ''}
+                onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+              />
+            </div>
+            <div className="min-w-0">
+              <Input
+                label="Due Time"
+                type="time"
+                value={editForm.due_time || ''}
+                onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
