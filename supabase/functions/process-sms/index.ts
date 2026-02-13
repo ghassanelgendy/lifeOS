@@ -209,6 +209,11 @@ serve(async (req: Request) => {
     }
     category = toSchemaCategory(category);
 
+    // Ensure category is never blank - default to other_expense if empty/null/undefined
+    if (!category || category.trim() === '' || category === 'Uncategorized') {
+      category = 'other_expense';
+    }
+
     // Override type from AI if valid
     if (aiEnrichment?.type === 'income' || aiEnrichment?.type === 'expense') {
       type = aiEnrichment.type;
