@@ -283,6 +283,10 @@ export default function Tasks() {
   useEffect(() => {
     const list = taskListRef.current;
     if (!list) return;
+    // Disable horizontal swipe navigation between views here to avoid
+    // conflicts with per-task swipe actions (Done / +1h / Delete).
+    const ENABLE_VIEW_SWIPE = false;
+    if (!ENABLE_VIEW_SWIPE) return;
     const THRESHOLD = 60;
     let startX = 0;
     let startY = 0;

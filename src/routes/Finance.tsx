@@ -19,7 +19,7 @@ import {
   Cell,
   CartesianGrid
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { cn, formatCurrency, formatTime12h } from '../lib/utils';
 import {
   useTransactions,
@@ -267,13 +267,71 @@ export default function Finance() {
     [expensesByCategory]
   );
 
-  // Over time: last 6 months income/expense/balance (from filtered transactions)
+  // Over time: dynamic period based on available transactions.
+  // - If data spans <= ~60 days: show DAILY points.
+  // - Otherwise: show MONTHLY aggregates (up to last 6 months with data).
   const overtimeData = useMemo(() => {
-    const now = new Date();
-    return Array.from({ length: 6 }, (_, i) => {
-      const d = subMonths(now, 5 - i);
+    if (filteredTransactions.length === 0) return [];
+
+    // Determine earliest and latest transaction months
+    const dates = filteredTransactions
+      .map((t) => new Date(t.date))
+      .filter((d) => !Number.isNaN(d.getTime()));
+    if (dates.length === 0) return [];
+
+    const earliest = dates.reduce((min, d) => (d < min ? d : min), dates[0]);
+    const latest = dates.reduce((max, d) => (d > max ? d : max), dates[0]);
+
+    const daySpan = Math.max(1, differenceInCalendarDays(startOfDay(latest), startOfDay(earliest)) + 1);
+
+    // If the data spans roughly <= 2 months, show daily points
+    if (daySpan <= 60) {
+      const points: {
+        label: string;
+        fullLabel: string;
+        income: number;
+        expense: number;
+        balance: number;
+      }[] = [];
+
+      for (let i = 0; i < daySpan; i++) {
+        const d = startOfDay(earliest);
+        d.setDate(d.getDate() + i);
+        const dayStr = d.toISOString().split('T')[0];
+        const inRange = filteredTransactions.filter((t) => (t.date || '').split('T')[0] === dayStr);
+        let income = 0;
+        let expense = 0;
+        inRange.forEach((t) => {
+          if (t.type === 'income') income += t.amount;
+          else expense += t.amount;
+        });
+        points.push({
+          label: format(d, 'MMM d'),
+          fullLabel: format(d, 'MMM d, yyyy'),
+          income: Math.round(income * 100) / 100,
+          expense: Math.round(expense * 100) / 100,
+          balance: Math.round((income - expense) * 100) / 100,
+        });
+      }
+      return points;
+    }
+
+    // Otherwise: show monthly aggregates for the active data window (up to last 6 months)
+    const startMonth = startOfMonth(earliest);
+    const endMonth = startOfMonth(latest);
+    const totalMonths =
+      (endMonth.getFullYear() - startMonth.getFullYear()) * 12 +
+      (endMonth.getMonth() - startMonth.getMonth()) +
+      1;
+
+    const monthsToShow = Math.min(6, Math.max(1, totalMonths));
+    const anchor = endMonth;
+
+    return Array.from({ length: monthsToShow }, (_, i) => {
+      const d = subMonths(anchor, monthsToShow - 1 - i);
       const start = startOfMonth(d).toISOString().split('T')[0];
       const end = endOfMonth(d).toISOString().split('T')[0];
+
       const inRange = filteredTransactions.filter(
         (t) => t.date >= start && t.date <= end
       );
@@ -284,8 +342,8 @@ export default function Finance() {
         else expense += t.amount;
       });
       return {
-        month: format(d, 'MMM'),
-        fullMonth: format(d, 'MMMM yyyy'),
+        label: format(d, 'MMM'),
+        fullLabel: format(d, 'MMMM yyyy'),
         income: Math.round(income * 100) / 100,
         expense: Math.round(expense * 100) / 100,
         balance: Math.round((income - expense) * 100) / 100,
@@ -672,11 +730,11 @@ export default function Finance() {
                       contentStyle={{
                         backgroundColor: 'var(--color-card)',
                         border: '1px solid var(--color-border)',
-                        borderRadius: 12, 
+                        borderRadius: 12,
                         fontSize: 14,
                         padding: '10px 14px',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        color: '#fffff',
+                        color: '#ffffff',
                       }}
                       cursor={false}
                       itemStyle={{ paddingTop: 4 }}
@@ -714,7 +772,7 @@ export default function Finance() {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.5} vertical={false} />
                     <XAxis
-                      dataKey="month"
+                      dataKey="label"
                       tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
                       axisLine={false}
                       tickLine={false}
@@ -739,7 +797,7 @@ export default function Finance() {
                         formatCurrency(typeof value === 'number' ? value : 0),
                         name === 'income' ? 'Income' : 'Expense',
                       ]}
-                      labelFormatter={(_, payload) => payload?.[0]?.payload?.fullMonth ?? ''}
+                      labelFormatter={(_, payload) => payload?.[0]?.payload?.fullLabel ?? ''}
                     />
                     <Area type="monotone" dataKey="income" stroke="rgb(34, 197, 94)" strokeWidth={2} fill="url(#incomeGrad)" />
                     <Area type="monotone" dataKey="expense" stroke="rgb(239, 68, 68)" strokeWidth={2} fill="url(#expenseGrad)" />

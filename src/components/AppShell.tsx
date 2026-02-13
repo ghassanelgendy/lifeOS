@@ -18,6 +18,7 @@ import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
 import { OfflineBanner } from './OfflineBanner';
+import { AppFooter } from './AppFooter';
 
 export interface NavItem {
   label: string;
@@ -288,6 +289,7 @@ export function AppShell() {
               <Outlet />
             </div>
           </PullToRefresh>
+          <AppFooter />
         </div>
 
         {/* Mobile Bottom Tab Bar */}

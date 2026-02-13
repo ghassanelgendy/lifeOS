@@ -9,6 +9,20 @@
 import { supabase } from './supabase';
 import { idbGetOfflineQueue, idbSetOfflineQueue, type IdbQueueEntry } from '../db/indexedDb';
 
+let lastSyncAt: string | null = null;
+const LAST_SYNC_KEY = 'lifeos_last_sync_at';
+
+function loadLastSyncFromStorage() {
+  if (lastSyncAt !== null) return;
+  if (typeof window === 'undefined') return;
+  try {
+    const stored = window.localStorage.getItem(LAST_SYNC_KEY);
+    if (stored) lastSyncAt = stored;
+  } catch {
+    // ignore
+  }
+}
+
 export type QueuedOp =
   | { entity: 'tasks'; op: 'create'; payload: Record<string, unknown> }
   | { entity: 'tasks'; op: 'update'; id: string; payload: Record<string, unknown> }
@@ -108,6 +122,18 @@ export async function processOfflineQueue(
   }
 
   await idbSetOfflineQueue(remaining);
+  if (processed > 0) {
+    const nowIso = new Date().toISOString();
+    lastSyncAt = nowIso;
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(LAST_SYNC_KEY, nowIso);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   return { processed, failed };
 }
 
@@ -117,3 +143,14 @@ export function getOfflineQueueLength(): number {
   // Here we return 0 until an async path is introduced in the UI.
   return 0;
 }
+
+export function getLastSyncAt(): string | null {
+  loadLastSyncFromStorage();
+  return lastSyncAt;
+}
+
+export async function getOfflineQueueLengthAsync(): Promise<number> {
+  const queue = await idbGetOfflineQueue();
+  return queue.length;
+}
+
