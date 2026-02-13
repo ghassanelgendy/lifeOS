@@ -3,7 +3,7 @@ import { Check, Clock, Trash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const SWIPE_THRESHOLD = 80;
-const MAX_SWIPE = 160;
+const MAX_SWIPE = 280; // Increased to accommodate all 3 buttons (Done ~100px + +1h ~90px + Delete ~100px)
 
 interface SwipeableRowProps {
   children: React.ReactNode;
