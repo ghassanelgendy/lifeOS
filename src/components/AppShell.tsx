@@ -113,9 +113,15 @@ export function AppShell() {
     const deltaY = t.clientY - touchStart.current.y;
     const w = window.innerWidth;
 
-    // Swipe from left edge (e.g. on Tasks) → open mobile sidebar
+    // Swipe from left edge on Tasks → open mobile sidebar
     if (isOnTasks && touchStart.current.x < SWIPE_EDGE_PX && deltaX > SWIPE_MIN_DELTA) {
       setMobileSidebarOpen(true);
+      touchStart.current = null;
+      return;
+    }
+
+    // On Tasks page, disable horizontal tab navigation so task swipe actions work smoothly
+    if (isOnTasks) {
       touchStart.current = null;
       return;
     }
