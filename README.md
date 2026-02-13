@@ -1,7 +1,7 @@
 
 <div align="center">
   <a href="https://life-os-tan.vercel.app/" target="_blank">
-    <img src="https://raw.githubusercontent.com/ghassanelgendy/lifeOS/main/public/web-app-manifest-192x192.png" alt="lifeOS Logo" width="150">
+    <img src="https://raw.githubusercontent.com/ghassanelgendy/lifeOS/capacitorJS/public/favicon-96x96.png" alt="lifeOS Logo" width="150">
   </a>
   <h1>lifeOS</h1>
   <p>Your life, quantified and organized. In one place.</p>
