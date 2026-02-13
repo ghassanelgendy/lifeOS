@@ -27,3 +27,6 @@ dist-ssr
 /release
 /supabase/functions/upload-screentime - Copy
 /supabase/functions/upload-screentime-chronos
+
+# Environment
+.env
