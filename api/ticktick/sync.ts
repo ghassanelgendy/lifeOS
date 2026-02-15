@@ -83,11 +83,15 @@ function mapLifeOSTaskToTickTick(task: {
     content: task.description ?? '',
     status: task.is_completed ? 1 : 0,
   };
-  if (task.due_date) {
-    let dueDate = task.due_date;
-    if (task.due_time) dueDate += `T${task.due_time}:00.000Z`;
-    else dueDate += 'T12:00:00.000Z';
+  // Normalize due_date to YYYY-MM-DD (strip time if present)
+  const dateOnly = task.due_date ? task.due_date.split('T')[0].slice(0, 10) : undefined;
+  if (dateOnly) {
+    const timePart = task.due_time && /^\d{1,2}:\d{2}$/.test(task.due_time)
+      ? `${task.due_time.padStart(5, '0').slice(0, 5)}:00.000Z`
+      : '12:00:00.000Z';
+    const dueDate = `${dateOnly}T${timePart}`;
     payload.dueDate = dueDate;
+    payload.startDate = dueDate; // TickTick often shows due date when both are set
   }
   const p = task.priority === 'high' ? 5 : task.priority === 'medium' ? 3 : task.priority === 'low' ? 1 : 0;
   payload.priority = p;

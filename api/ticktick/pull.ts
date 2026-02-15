@@ -175,7 +175,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (Array.isArray(projectTasks)) allTasks.push(...projectTasks);
     }
 
-    const ticktickIds = new Set(allTasks.map((t) => t.id));
     const now = new Date().toISOString();
 
     const { data: existingRows } = await supabase
@@ -230,14 +229,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const toDelete = (existingRows ?? [])
-      .filter((r: { ticktick_id: string }) => r.ticktick_id && !ticktickIds.has(r.ticktick_id))
-      .map((r: { id: string }) => r.id);
-    let deleted = 0;
-    if (toDelete.length > 0) {
-      const { error: delErr } = await supabase.from('tasks').delete().in('id', toDelete).eq('user_id', userId);
-      if (!delErr) deleted = toDelete.length;
-    }
+    // Do not delete LifeOS tasks whose ticktick_id is missing from TickTick response:
+    // New tasks created from LifeOS are often placed in TickTick Inbox, which the Open API
+    // may not return in /project list, so they would be wrongly deleted.
+    const deleted = 0;
 
     return res.status(200).json({ success: true, inserted, updated, deleted, total: allTasks.length });
   } catch (e) {
