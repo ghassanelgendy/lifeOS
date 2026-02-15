@@ -9,6 +9,7 @@ import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { useTransactionsRealtime } from './hooks/useFinance';
+import { useTickTickPullSync } from './hooks/useTickTick';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppShell } from './components/AppShell';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -68,6 +69,7 @@ function ThemeSync() {
 
 function AppInner() {
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+  useTickTickPullSync(); // 2-way sync: pull TickTick → LifeOS when connected (on load + every 2 min)
   useEffect(() => {
     if (isOnline()) seedDatabase();
   }, []);

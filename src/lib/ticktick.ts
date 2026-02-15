@@ -87,6 +87,27 @@ export async function importFromTickTick(): Promise<{ imported: number; total: n
   return { imported: json.imported ?? 0, total: json.total ?? 0 };
 }
 
+/** Pull from TickTick into LifeOS (2-way sync: merge + remove deleted in TickTick). Call on load and periodically when connected. */
+export async function pullFromTickTick(): Promise<{ inserted: number; updated: number; deleted: number; total: number; error?: string }> {
+  const { supabase } = await import('./supabase');
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { inserted: 0, updated: 0, deleted: 0, total: 0, error: 'Not signed in' };
+
+  const res = await fetch(`${API_BASE}/api/ticktick/pull`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) return { inserted: 0, updated: 0, deleted: 0, total: 0, error: json.error || res.statusText };
+  return {
+    inserted: json.inserted ?? 0,
+    updated: json.updated ?? 0,
+    deleted: json.deleted ?? 0,
+    total: json.total ?? 0,
+  };
+}
+
 export async function disconnectTickTick(): Promise<{ success: boolean; error?: string }> {
   const { supabase } = await import('./supabase');
   const { data } = await supabase.auth.getSession();

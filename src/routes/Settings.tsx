@@ -28,7 +28,8 @@ import { resetDatabase } from '../db/seed';
 import { Button } from '../components/ui';
 import { NAV_ITEMS } from '../components/AppShell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { useTickTickStatus, connectTickTick, importTickTickTasks, disconnectTickTickIntegration } from '../hooks/useTickTick';
+import { useTickTickStatus, connectTickTick, importTickTickTasks, syncNowFromTickTick, disconnectTickTickIntegration } from '../hooks/useTickTick';
+import { useQueryClient } from '@tanstack/react-query';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -67,6 +68,7 @@ export default function SettingsPage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
 
   // Export data
@@ -193,15 +195,30 @@ export default function SettingsPage() {
               <div>
                 <p className="font-medium">TickTick</p>
                 <p className="text-sm text-muted-foreground">
-                  {ticktickConnected ? 'Connected. Import tasks or sync from LifeOS.' : 'Import and sync tasks with TickTick.'}
+                  {ticktickConnected ? '2-way sync: changes in LifeOS or TickTick stay in sync. Sync now to pull latest from TickTick.' : 'Import and sync tasks with TickTick.'}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               {ticktickLoading ? (
                 <span className="text-sm text-muted-foreground">Checking…</span>
-              ) : ticktickConnected ? (
+              ) :               ticktickConnected ? (
                 <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      setTicktickStatus(null);
+                      const result = await syncNowFromTickTick();
+                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
+                      else setTicktickStatus(`Synced: ${result.inserted} new, ${result.updated} updated, ${result.deleted} removed`);
+                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                      refetchTickTick();
+                      setTimeout(() => setTicktickStatus(null), 5000);
+                    }}
+                  >
+                    Sync now
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
