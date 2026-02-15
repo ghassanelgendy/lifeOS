@@ -73,13 +73,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: 'Failed to exchange code', details: errText });
     }
 
-    const data = (await tokenRes.json()) as {
-      access_token: string;
-      refresh_token: string;
-      expires_in: number;
-    };
+    const raw = (await tokenRes.json()) as Record<string, unknown>;
+    // TickTick may return snake_case or camelCase
+    const accessToken =
+      typeof raw.access_token === 'string'
+        ? raw.access_token
+        : typeof (raw as { accessToken?: string }).accessToken === 'string'
+          ? (raw as { accessToken: string }).accessToken
+          : null;
+    const refreshToken =
+      typeof raw.refresh_token === 'string'
+        ? raw.refresh_token
+        : typeof (raw as { refreshToken?: string }).refreshToken === 'string'
+          ? (raw as { refreshToken: string }).refreshToken
+          : null;
+    const expiresIn =
+      typeof raw.expires_in === 'number'
+        ? raw.expires_in
+        : typeof (raw as { expiresIn?: number }).expiresIn === 'number'
+          ? (raw as { expiresIn: number }).expiresIn
+          : 0;
 
-    const expiresAt = new Date(Date.now() + (data.expires_in || 0) * 1000).toISOString();
+    if (!accessToken) {
+      console.error('[ticktick/token] No access_token in response:', Object.keys(raw));
+      return res.status(400).json({ error: 'Invalid token response: no access_token' });
+    }
+    if (!refreshToken) {
+      console.error('[ticktick/token] No refresh_token in response:', Object.keys(raw));
+      return res.status(400).json({
+        error: 'TickTick did not return a refresh token. Re-authorize the app or check TickTick app permissions.',
+      });
+    }
+
+    const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
     const supabase = getSupabaseService();
     if (!supabase) {
@@ -89,8 +115,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const { error: dbError } = await supabase.from('ticktick_tokens').upsert(
       {
         user_id: userId,
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
+        access_token: accessToken,
+        refresh_token: refreshToken,
         expires_at: expiresAt,
         updated_at: new Date().toISOString(),
       },
@@ -99,7 +125,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (dbError) {
       console.error('[ticktick/token] DB error:', dbError);
-      return res.status(500).json({ error: 'Failed to store tokens' });
+      return res.status(500).json({
+        error: 'Failed to store tokens',
+        details: dbError.message,
+        code: dbError.code,
+      });
     }
 
     return res.status(200).json({ success: true });
