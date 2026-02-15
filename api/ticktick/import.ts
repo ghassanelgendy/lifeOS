@@ -28,7 +28,19 @@ async function getUserIdFromRequest(req: { headers: { authorization?: string } }
   return user.id;
 }
 
-type TickTickTask = { id: string; title: string; content?: string; status?: number; dueDate?: string; priority?: number; [key: string]: unknown };
+type TickTickTask = {
+  id: string;
+  title: string;
+  content?: string;
+  desc?: string;
+  status?: number | boolean;
+  dueDate?: string;
+  due_date?: string;
+  priority?: number;
+  [key: string]: unknown;
+};
+type TickTickProject = { id: string; [key: string]: unknown };
+type TickTickProjectData = { tasks?: TickTickTask[]; [key: string]: unknown };
 
 async function refreshTickTickAccessToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
   const clientId = process.env.VITE_TICKTICK_CLIENT_ID || process.env.TICKTICK_CLIENT_ID;
@@ -79,18 +91,19 @@ function mapTickTickTaskToLifeOS(t: TickTickTask): {
   priority: string;
   ticktick_id: string;
 } {
-  const isCompleted = t.status === 1;
+  const isCompleted = t.status === 1 || t.status === true;
+  const dueStr = t.dueDate ?? t.due_date;
   let due_date: string | undefined;
   let due_time: string | undefined;
-  if (t.dueDate) {
-    const d = new Date(t.dueDate);
+  if (dueStr) {
+    const d = new Date(dueStr);
     due_date = d.toISOString().slice(0, 10);
     due_time = d.toTimeString().slice(0, 5);
   }
   const priority = t.priority === 5 ? 'high' : t.priority === 3 ? 'medium' : t.priority === 1 ? 'low' : 'none';
   return {
     title: t.title || 'Untitled',
-    description: t.content || undefined,
+    description: (t.content ?? t.desc) || undefined,
     is_completed: isCompleted,
     due_date,
     due_time,
@@ -145,11 +158,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       updateTokens
     );
 
-    const tasks = await ticktickFetch<TickTickTask[]>('/task', accessToken);
-
-    if (!Array.isArray(tasks)) {
-      return res.status(500).json({ error: 'Unexpected TickTick response' });
+    // Open API: GET /project lists projects; GET /project/{id}/data returns project with tasks (no GET /task).
+    const projects = await ticktickFetch<TickTickProject[]>('/project', accessToken);
+    if (!Array.isArray(projects)) {
+      return res.status(500).json({ error: 'Unexpected TickTick projects response' });
     }
+
+    const allTasks: TickTickTask[] = [];
+    for (const project of projects) {
+      const projectId = project?.id;
+      if (!projectId) continue;
+      const projectData = await ticktickFetch<TickTickProjectData>(`/project/${projectId}/data`, accessToken);
+      const projectTasks = projectData?.tasks;
+      if (Array.isArray(projectTasks)) allTasks.push(...projectTasks);
+    }
+    const tasks = allTasks;
 
     const existing = await supabase
       .from('tasks')
