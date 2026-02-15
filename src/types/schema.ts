@@ -189,6 +189,8 @@ export interface Task {
   // Subtasks
   parent_id?: string; // FK to parent Task (for subtasks)
   subtask_order?: number;
+  // Integrations
+  ticktick_id?: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;

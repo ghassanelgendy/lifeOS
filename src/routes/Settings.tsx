@@ -17,6 +17,7 @@ import {
   GripVertical,
   LogOut,
   User,
+  Link2,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_WIDGET_IDS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
@@ -27,6 +28,7 @@ import { resetDatabase } from '../db/seed';
 import { Button } from '../components/ui';
 import { NAV_ITEMS } from '../components/AppShell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { useTickTickStatus, connectTickTick, importTickTickTasks, disconnectTickTickIntegration } from '../hooks/useTickTick';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -64,6 +66,8 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
+  const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
 
   // Export data
   const handleExport = () => {
@@ -173,6 +177,72 @@ export default function SettingsPage() {
             <LogOut size={18} />
             Sign out
           </Button>
+        </div>
+      </section>
+
+      {/* Integrations - TickTick */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Integrations</h2>
+          <p className="text-sm text-muted-foreground mt-1">Connect task apps and sync tasks</p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Link2 size={20} className="text-muted-foreground" />
+              <div>
+                <p className="font-medium">TickTick</p>
+                <p className="text-sm text-muted-foreground">
+                  {ticktickConnected ? 'Connected. Import tasks or sync from LifeOS.' : 'Import and sync tasks with TickTick.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {ticktickLoading ? (
+                <span className="text-sm text-muted-foreground">Checking…</span>
+              ) : ticktickConnected ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      setTicktickStatus(null);
+                      const result = await importTickTickTasks();
+                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
+                      else setTicktickStatus(`Imported ${result.imported} of ${result.total} tasks`);
+                      refetchTickTick();
+                      setTimeout(() => setTicktickStatus(null), 5000);
+                    }}
+                  >
+                    Import tasks
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      const result = await disconnectTickTickIntegration();
+                      if (result.success) refetchTickTick();
+                      else setTicktickStatus(result.error ?? 'Failed to disconnect');
+                    }}
+                  >
+                    Disconnect
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => connectTickTick()}
+                >
+                  Connect TickTick
+                </Button>
+              )}
+            </div>
+          </div>
+          {ticktickStatus && (
+            <p className={cn('text-sm', ticktickStatus.startsWith('Error') ? 'text-destructive' : 'text-muted-foreground')}>
+              {ticktickStatus}
+            </p>
+          )}
         </div>
       </section>
 

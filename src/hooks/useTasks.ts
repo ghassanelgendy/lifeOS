@@ -11,6 +11,7 @@ import {
   idbSaveTags,
   idbGetTasks,
 } from '../db/indexedDb';
+import { syncTaskToTickTick } from '../lib/ticktick';
 
 const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
@@ -302,6 +303,15 @@ export function useCreateTask() {
       const existing = await idbGetTasks();
       await idbSaveTasks([...existing, created]);
 
+      if (isOnline()) {
+        void syncTaskToTickTick('create', created.id, {
+          title: created.title,
+          description: created.description,
+          due_date: created.due_date,
+          due_time: created.due_time,
+          priority: created.priority,
+        }).then(() => queryClient.invalidateQueries({ queryKey: TASKS_KEY }));
+      }
       return created;
     },
   });
@@ -357,8 +367,11 @@ export function useUpdateTask() {
       if (error) throw error;
       return updated as Task;
     },
-    onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    onSuccess: (_data, variables) => {
+      if (isOnline()) {
+        queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+        void syncTaskToTickTick('update', variables.id, variables.data);
+      }
     },
   });
 }
@@ -397,8 +410,11 @@ export function useToggleTask() {
       if (error) throw error;
       return updated as Task;
     },
-    onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    onSuccess: (updated) => {
+      if (isOnline()) {
+        queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+        if (updated) void syncTaskToTickTick('complete', updated.id, { completed: updated.is_completed });
+      }
     },
   });
 }
@@ -417,8 +433,11 @@ export function useDeleteTask() {
       if (error) throw error;
       return true;
     },
-    onSuccess: () => {
-      if (isOnline()) queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    onSuccess: (_data, id) => {
+      if (isOnline()) {
+        queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+        void syncTaskToTickTick('delete', id);
+      }
     },
   });
 }

@@ -23,6 +23,7 @@ import Screentime from './routes/Screentime';
 import SettingsPage from './routes/Settings';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
+import AuthTickTickCallback from './routes/AuthTickTickCallback';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -131,6 +132,7 @@ function AppInner() {
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
         <Route path="*" element={<ProtectedRoute />}>
+          <Route path="auth/ticktick/callback" element={<AuthTickTickCallback />} />
           <Route element={<AppShell />}>
             <Route index element={<DefaultLanding />} />
             <Route path="tasks" element={<Tasks />} />
