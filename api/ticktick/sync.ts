@@ -5,13 +5,91 @@
  * Headers: Authorization: Bearer <Supabase access_token>
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getUserIdFromRequest, getSupabaseService } from '../lib/supabaseServer';
-import {
-  ticktickFetch,
-  getValidAccessToken,
-  mapLifeOSTaskToTickTick,
-  type TickTickTask,
-} from '../lib/ticktick';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const TICKTICK_API_BASE = 'https://api.ticktick.com/open/v1';
+
+function getSupabaseService() {
+  if (!supabaseUrl || !supabaseServiceKey) return null;
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+async function getUserIdFromRequest(req: { headers: { authorization?: string } }): Promise<string | null> {
+  const auth = req.headers.authorization;
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return null;
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+  const client = createClient(supabaseUrl, supabaseAnonKey);
+  const { data: { user }, error } = await client.auth.getUser(token);
+  if (error || !user) return null;
+  return user.id;
+}
+
+type TickTickTask = { id?: string; [key: string]: unknown };
+
+async function refreshTickTickAccessToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
+  const clientId = process.env.VITE_TICKTICK_CLIENT_ID || process.env.TICKTICK_CLIENT_ID;
+  const clientSecret = process.env.TICKTICK_CLIENT_SECRET;
+  if (!clientId || !clientSecret) throw new Error('Missing TickTick client config');
+  const res = await fetch('https://ticktick.com/oauth/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: 'refresh_token' }),
+  });
+  if (!res.ok) throw new Error(`TickTick refresh failed: ${await res.text()}`);
+  return res.json();
+}
+
+async function getValidAccessToken(
+  accessToken: string,
+  refreshToken: string,
+  expiresAt: string,
+  updateTokens: (access: string, refresh: string, expiresAt: string) => Promise<void>
+): Promise<string> {
+  const expires = new Date(expiresAt).getTime();
+  if (expires - Date.now() > 60 * 1000) return accessToken;
+  const data = await refreshTickTickAccessToken(refreshToken);
+  await updateTokens(data.access_token, data.refresh_token, new Date(Date.now() + data.expires_in * 1000).toISOString());
+  return data.access_token;
+}
+
+async function ticktickFetch<T>(path: string, accessToken: string, options?: RequestInit): Promise<T> {
+  const url = path.startsWith('http') ? path : `${TICKTICK_API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
+  const res = await fetch(url, {
+    ...options,
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', ...options?.headers },
+  });
+  if (!res.ok) throw new Error(`TickTick API ${res.status}: ${await res.text()}`);
+  if (res.status === 204) return undefined as T;
+  return res.json();
+}
+
+function mapLifeOSTaskToTickTick(task: {
+  title: string;
+  description?: string;
+  is_completed?: boolean;
+  due_date?: string;
+  due_time?: string;
+  priority?: string;
+}): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    title: task.title,
+    content: task.description ?? '',
+    status: task.is_completed ? 1 : 0,
+  };
+  if (task.due_date) {
+    let dueDate = task.due_date;
+    if (task.due_time) dueDate += `T${task.due_time}:00.000Z`;
+    else dueDate += 'T12:00:00.000Z';
+    payload.dueDate = dueDate;
+  }
+  const p = task.priority === 'high' ? 5 : task.priority === 'medium' ? 3 : task.priority === 'low' ? 1 : 0;
+  payload.priority = p;
+  return payload;
+}
 
 type SyncOp = 'create' | 'update' | 'complete' | 'delete';
 
