@@ -27,7 +27,10 @@ export default function AuthTickTickCallback() {
       return;
     }
 
-    exchangeTickTickCode(code, state)
+    const codeVerifier = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('ticktick_oauth_code_verifier') : null;
+    if (typeof sessionStorage !== 'undefined') sessionStorage.removeItem('ticktick_oauth_code_verifier');
+
+    exchangeTickTickCode(code, state, codeVerifier)
       .then((result) => {
         if (result.success) {
           setStatus('success');

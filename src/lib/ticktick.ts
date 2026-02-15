@@ -6,7 +6,23 @@
 /** Same origin for Vercel (SPA and API on same host). */
 const API_BASE = typeof window !== 'undefined' ? '' : '';
 
-export function getTickTickAuthorizeUrl(state: string): string {
+function base64UrlEncode(bytes: ArrayBuffer): string {
+  const b = new Uint8Array(bytes);
+  let binary = '';
+  for (let i = 0; i < b.length; i++) binary += String.fromCharCode(b[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** Generate PKCE code_verifier and code_challenge for TickTick OAuth (required for refresh_token). */
+export async function generateTickTickPKCE(): Promise<{ codeVerifier: string; codeChallenge: string }> {
+  const verifierBytes = crypto.getRandomValues(new Uint8Array(32));
+  const codeVerifier = base64UrlEncode(verifierBytes.buffer);
+  const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(codeVerifier));
+  const codeChallenge = base64UrlEncode(hash);
+  return { codeVerifier, codeChallenge };
+}
+
+export function getTickTickAuthorizeUrl(state: string, codeChallenge: string): string {
   const clientId = import.meta.env.VITE_TICKTICK_CLIENT_ID;
   const redirectUri = import.meta.env.VITE_TICKTICK_REDIRECT_URI || `${window.location.origin}/auth/ticktick/callback`;
   if (!clientId) return '';
@@ -16,11 +32,17 @@ export function getTickTickAuthorizeUrl(state: string): string {
     response_type: 'code',
     scope: 'tasks:read tasks:write',
     state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
   });
   return `https://ticktick.com/oauth/authorize?${params.toString()}`;
 }
 
-export async function exchangeTickTickCode(code: string, state: string): Promise<{ success: boolean; error?: string }> {
+export async function exchangeTickTickCode(
+  code: string,
+  state: string,
+  codeVerifier: string | null
+): Promise<{ success: boolean; error?: string }> {
   const { supabase } = await import('./supabase');
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -29,7 +51,7 @@ export async function exchangeTickTickCode(code: string, state: string): Promise
   const res = await fetch(`${API_BASE}/api/auth/ticktick/token`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ code, state }),
+    body: JSON.stringify({ code, state, code_verifier: codeVerifier ?? undefined }),
   });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) return { success: false, error: json.error || res.statusText };

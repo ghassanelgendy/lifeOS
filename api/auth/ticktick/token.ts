@@ -40,7 +40,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { code, state } = req.body as { code?: string; state?: string };
+  const { code, state, code_verifier: codeVerifier } = req.body as {
+    code?: string;
+    state?: string;
+    code_verifier?: string;
+  };
   if (!code || typeof code !== 'string') {
     return res.status(400).json({ error: 'Missing or invalid code' });
   }
@@ -54,17 +58,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: 'Server configuration error' });
   }
 
+  const tokenParams: Record<string, string> = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    code,
+    grant_type: 'authorization_code',
+    redirect_uri: redirectUri,
+  };
+  if (codeVerifier && typeof codeVerifier === 'string') {
+    tokenParams.code_verifier = codeVerifier;
+  }
+
   try {
     const tokenRes = await fetch(TICKTICK_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        code,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-      }),
+      body: new URLSearchParams(tokenParams),
     });
 
     if (!tokenRes.ok) {
