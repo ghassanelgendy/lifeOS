@@ -45,12 +45,15 @@ async function refreshTickTickAccessToken(refreshToken: string): Promise<{ acces
 
 async function getValidAccessToken(
   accessToken: string,
-  refreshToken: string,
+  refreshToken: string | null,
   expiresAt: string,
   updateTokens: (access: string, refresh: string, expiresAt: string) => Promise<void>
 ): Promise<string> {
   const expires = new Date(expiresAt).getTime();
   if (expires - Date.now() > 60 * 1000) return accessToken;
+  if (!refreshToken) {
+    throw new Error('TickTick session expired. Please reconnect in Settings.');
+  }
   const data = await refreshTickTickAccessToken(refreshToken);
   await updateTokens(data.access_token, data.refresh_token, new Date(Date.now() + data.expires_in * 1000).toISOString());
   return data.access_token;

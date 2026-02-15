@@ -107,12 +107,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error('[ticktick/token] No access_token in response:', Object.keys(raw));
       return res.status(400).json({ error: 'Invalid token response: no access_token' });
     }
-    if (!refreshToken) {
-      console.error('[ticktick/token] No refresh_token in response:', Object.keys(raw));
-      return res.status(400).json({
-        error: 'TickTick did not return a refresh token. Re-authorize the app or check TickTick app permissions.',
-      });
-    }
 
     const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
 
@@ -125,7 +119,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       {
         user_id: userId,
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: refreshToken ?? null,
         expires_at: expiresAt,
         updated_at: new Date().toISOString(),
       },
