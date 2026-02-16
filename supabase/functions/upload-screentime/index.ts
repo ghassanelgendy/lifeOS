@@ -44,9 +44,60 @@ interface DayData {
 
 /** One entry per day for screentime_daily_summary (sent by tracker at root level). */
 interface DailySummaryItem {
-  date: string; // "YYYY-MM-DD"
+  date: string; // YYYY-MM-DD
   total_switches: number;
   total_apps: number;
+}
+
+interface FlatUsageItem {
+  date?: string;
+  name?: string;
+  app_name?: string;
+  app?: string;
+  domain?: string;
+  site?: string;
+  url?: string;
+  category?: string;
+  process_path?: string;
+  processPath?: string;
+  favicon_url?: string;
+  faviconUrl?: string;
+  total_time_seconds?: number | string;
+  duration_seconds?: number | string;
+  seconds?: number | string;
+  total_time?: number | string;
+  totalTime?: number | string;
+  duration?: number | string;
+  time?: string;
+  duration_minutes?: number | string;
+  minutes?: number | string;
+  total_minutes?: number | string;
+  totalMinutes?: number | string;
+  session_count?: number | string;
+  sessions?: number | string;
+  sessionCount?: number | string;
+  first_seen_at?: string;
+  firstSeenAt?: string;
+  FirstSeen?: string;
+  last_seen_at?: string;
+  lastSeenAt?: string;
+  LastSeen?: string;
+  last_active_at?: string;
+  lastActiveAt?: string;
+  LastActiveTime?: string;
+  kind?: string;
+  type?: string;
+}
+
+interface FlatSnapshot {
+  date?: string;
+  apps?: FlatUsageItem[];
+  websites?: FlatUsageItem[];
+  items?: FlatUsageItem[];
+  total_switches?: number | string;
+  totalSwitches?: number | string;
+  total_apps?: number | string;
+  totalApps?: number | string;
 }
 
 interface ScreentimePayload {
@@ -54,7 +105,9 @@ interface ScreentimePayload {
   device_id?: string;
   platform: string;
   source: string;
-  /** Per-day app/website usage (nested year → month → week → day). */
+  is_cumulative?: boolean;
+  cumulative?: boolean;
+  /** Per-day app/website usage (nested year -> month -> week -> day). */
   data?: {
     Years: Record<string, {
       Months: Record<string, {
@@ -64,18 +117,77 @@ interface ScreentimePayload {
       }>;
     }>;
   };
-  /** Per-day summary for screentime_daily_summary (preferred over inferring from data.Years). */
+  /** Per-day summary for screentime_daily_summary. */
   daily_summaries?: DailySummaryItem[];
+
+  /** Flat snapshots, convenient for iOS Shortcut uploads/backfills. */
+  snapshots?: FlatSnapshot[];
+
+  /** Optional root-level single-date upload if snapshots is omitted. */
+  date?: string;
+  apps?: FlatUsageItem[];
+  websites?: FlatUsageItem[];
+  items?: FlatUsageItem[];
+  total_switches?: number | string;
+  totalSwitches?: number | string;
+  total_apps?: number | string;
+  totalApps?: number | string;
+  /** Plain-text summary from iOS Activity block (name + duration per line). */
+  activity_summary?: string;
 }
 
 function parseTimeToSeconds(timeStr: string): number {
-  const parts = timeStr.split(':');
-  if (parts.length !== 3) return 0;
-  const hours = parseInt(parts[0], 10) || 0;
-  const minutes = parseInt(parts[1], 10) || 0;
-  const secondsParts = parts[2].split('.');
-  const seconds = parseInt(secondsParts[0], 10) || 0;
-  return hours * 3600 + minutes * 60 + seconds;
+  const trimmed = String(timeStr || '').trim();
+  if (!trimmed) return 0;
+
+  const parts = trimmed.split(':');
+  if (parts.length === 3) {
+    const hours = parseInt(parts[0], 10) || 0;
+    const minutes = parseInt(parts[1], 10) || 0;
+    const secondsParts = parts[2].split('.');
+    const seconds = parseInt(secondsParts[0], 10) || 0;
+    return Math.max(0, hours * 3600 + minutes * 60 + seconds);
+  }
+
+  if (parts.length === 2) {
+    const minutes = parseInt(parts[0], 10) || 0;
+    const secondsParts = parts[1].split('.');
+    const seconds = parseInt(secondsParts[0], 10) || 0;
+    return Math.max(0, minutes * 60 + seconds);
+  }
+
+  return 0;
+}
+
+function parseDurationToSeconds(value: unknown): number {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+
+  if (typeof value !== 'string') return 0;
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+
+  if (/^\d+(\.\d+)?$/.test(trimmed)) {
+    return Math.max(0, Math.round(parseFloat(trimmed)));
+  }
+
+  if (trimmed.includes(':')) {
+    return parseTimeToSeconds(trimmed);
+  }
+
+  const hoursMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*h/i);
+  const minutesMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*m(?:in)?/i);
+  const secondsMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*s(?:ec)?/i);
+
+  if (hoursMatch || minutesMatch || secondsMatch) {
+    const hours = hoursMatch ? parseFloat(hoursMatch[1]) : 0;
+    const minutes = minutesMatch ? parseFloat(minutesMatch[1]) : 0;
+    const seconds = secondsMatch ? parseFloat(secondsMatch[1]) : 0;
+    return Math.max(0, Math.round(hours * 3600 + minutes * 60 + seconds));
+  }
+
+  return 0;
 }
 
 function parseDateToDateString(dateStr: string): string {
@@ -100,6 +212,131 @@ function parseTimestamp(tsStr: string): string | null {
   }
 }
 
+function toRecord(value: unknown): Record<string, unknown> {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : {};
+}
+
+function firstString(obj: Record<string, unknown>, keys: string[]): string | null {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return null;
+}
+
+function firstNumber(obj: Record<string, unknown>, keys: string[]): number | null {
+  for (const key of keys) {
+    const value = obj[key];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.round(value);
+    }
+    if (typeof value === 'string' && value.trim() && !Number.isNaN(Number(value))) {
+      return Math.round(Number(value));
+    }
+  }
+  return null;
+}
+
+function getItemDurationSeconds(item: Record<string, unknown>): number {
+  const secondsDirect = firstNumber(item, [
+    'total_time_seconds',
+    'duration_seconds',
+    'seconds',
+    'totalSeconds',
+  ]);
+  if (secondsDirect !== null) return Math.max(0, secondsDirect);
+
+  const minutesDirect = firstNumber(item, [
+    'duration_minutes',
+    'minutes',
+    'total_minutes',
+    'totalMinutes',
+  ]);
+  if (minutesDirect !== null) return Math.max(0, minutesDirect * 60);
+
+  const durationRaw = item.total_time ?? item.totalTime ?? item.duration ?? item.time;
+  return parseDurationToSeconds(durationRaw);
+}
+
+function getItemSessionCount(item: Record<string, unknown>): number {
+  const count = firstNumber(item, ['session_count', 'sessions', 'sessionCount', 'SessionCount']);
+  return Math.max(0, count ?? 0);
+}
+
+function minIso(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a < b ? a : b;
+}
+
+function maxIso(a: string | null, b: string | null): string | null {
+  if (!a) return b;
+  if (!b) return a;
+  return a > b ? a : b;
+}
+
+function extractDomain(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  const normalizeHost = (host: string) => host.replace(/^www\./i, '').toLowerCase();
+
+  try {
+    const asUrl = new URL(trimmed);
+    return normalizeHost(asUrl.hostname);
+  } catch {
+    // Not a full URL. Try adding protocol.
+  }
+
+  try {
+    const asUrl = new URL(`https://${trimmed}`);
+    return normalizeHost(asUrl.hostname);
+  } catch {
+    return normalizeHost(trimmed.split('/')[0]);
+  }
+}
+
+function isWebsiteItem(item: Record<string, unknown>): boolean {
+  const explicitKind = firstString(item, ['kind', 'type'])?.toLowerCase();
+  if (explicitKind) {
+    if (['website', 'web', 'site', 'domain', 'url'].includes(explicitKind)) return true;
+    if (['app', 'application'].includes(explicitKind)) return false;
+  }
+
+  return firstString(item, ['domain', 'site', 'url']) !== null;
+}
+
+function parseActivitySummary(text: string): FlatUsageItem[] {
+  if (!text) return [];
+  return text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .map((line) => {
+      const match = line.match(/^(.+?)\s*\(([^)]+)\)$/);
+      if (!match) return null;
+      const name = match[1].trim();
+      const durationLabel = match[2].trim();
+      const durationSeconds = parseDurationToSeconds(durationLabel);
+      if (durationSeconds <= 0) return null;
+      const isWebsite = /\./.test(name);
+      const entry: FlatUsageItem = {
+        total_time_seconds: durationSeconds,
+        duration: durationLabel,
+        duration_minutes: Math.round(durationSeconds / 60),
+      };
+      if (isWebsite) {
+        entry.domain = name;
+      } else {
+        entry.app_name = name;
+      }
+      return entry;
+    })
+    .filter((item): item is FlatUsageItem => item !== null);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -115,11 +352,35 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const normalizedSnapshots = Array.isArray(payload.snapshots) ? [...payload.snapshots] : [];
+    if (payload.activity_summary) {
+      const activityItems = parseActivitySummary(payload.activity_summary);
+      if (activityItems.length > 0) {
+        const activityDate = parseDateToDateString(payload.date || new Date().toISOString());
+        normalizedSnapshots.push({
+          date: activityDate,
+          items: activityItems,
+        });
+      }
+    }
+
     const hasYears = payload.data && typeof payload.data.Years === 'object' && Object.keys(payload.data.Years).length > 0;
     const hasDailySummaries = Array.isArray(payload.daily_summaries) && payload.daily_summaries.length > 0;
-    if (!hasYears && !hasDailySummaries) {
+    const hasSnapshots = normalizedSnapshots.length > 0;
+    const hasRootItems =
+      (Array.isArray(payload.apps) && payload.apps.length > 0) ||
+      (Array.isArray(payload.websites) && payload.websites.length > 0) ||
+      (Array.isArray(payload.items) && payload.items.length > 0);
+    const payloadRecord = toRecord(payload);
+    const hasRootSummary =
+      firstNumber(payloadRecord, ['total_switches', 'totalSwitches']) !== null ||
+      firstNumber(payloadRecord, ['total_apps', 'totalApps']) !== null;
+
+    if (!hasYears && !hasDailySummaries && !hasSnapshots && !hasRootItems && !hasRootSummary) {
       return new Response(
-        JSON.stringify({ error: 'Either data.Years or daily_summaries is required' }),
+        JSON.stringify({
+          error: 'Provide one of: data.Years, daily_summaries, snapshots, or root-level apps/websites/items',
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -135,28 +396,101 @@ Deno.serve(async (req: Request) => {
     const source = payload.source || 'pc';
     const platform = payload.platform || 'windows';
     const deviceId = payload.device_id || '';
+    const isCumulative = payload.is_cumulative === true || payload.cumulative === true;
+    const todayDate = new Date().toISOString().split('T')[0];
 
     const appRows: any[] = [];
     const websiteRows: any[] = [];
     const summaryRows: any[] = [];
 
-    // Build daily summary rows from root-level daily_summaries (preferred)
-    // Deduplicate by date so one row per (user_id, date, source, device_id, platform); last occurrence wins
+    const pushAppRow = (dateStr: string, raw: unknown) => {
+      const item = toRecord(raw);
+      const appName = firstString(item, ['app_name', 'app', 'name', 'AppName']);
+      if (!appName) return;
+
+      const firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
+      const lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
+      const lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
+
+      appRows.push({
+        user_id: payload.user_id,
+        date: dateStr,
+        source,
+        device_id: deviceId,
+        platform,
+        app_name: appName,
+        category: firstString(item, ['category', 'Category']) || 'Uncategorized',
+        process_path: firstString(item, ['process_path', 'processPath', 'ProcessPath']),
+        total_time_seconds: getItemDurationSeconds(item),
+        session_count: getItemSessionCount(item),
+        first_seen_at: firstSeen ? parseTimestamp(firstSeen) : null,
+        last_seen_at: lastSeen ? parseTimestamp(lastSeen) : null,
+        last_active_at: lastActive ? parseTimestamp(lastActive) : null,
+      });
+    };
+
+    const pushWebsiteRow = (dateStr: string, raw: unknown) => {
+      const item = toRecord(raw);
+      const rawDomain = firstString(item, ['domain', 'site', 'url', 'name', 'Domain']);
+      if (!rawDomain) return;
+      const domain = extractDomain(rawDomain);
+      if (!domain) return;
+
+      const firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
+      const lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
+      const lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
+
+      websiteRows.push({
+        user_id: payload.user_id,
+        date: dateStr,
+        source,
+        device_id: deviceId,
+        platform,
+        domain,
+        favicon_url: firstString(item, ['favicon_url', 'faviconUrl', 'FaviconUrl']),
+        total_time_seconds: getItemDurationSeconds(item),
+        session_count: getItemSessionCount(item),
+        first_seen_at: firstSeen ? parseTimestamp(firstSeen) : null,
+        last_seen_at: lastSeen ? parseTimestamp(lastSeen) : null,
+        last_active_at: lastActive ? parseTimestamp(lastActive) : null,
+      });
+    };
+
+    // Build daily summary rows from root-level daily_summaries.
     if (hasDailySummaries && payload.daily_summaries) {
-      const byKey = new Map<string, { user_id: string; date: string; source: string; device_id: string; platform: string; total_switches: number; total_apps: number }>();
+      const byKey = new Map<string, {
+        user_id: string;
+        date: string;
+        source: string;
+        device_id: string;
+        platform: string;
+        total_switches: number;
+        total_apps: number;
+      }>();
+
       for (const item of payload.daily_summaries) {
         const dateStr = parseDateToDateString(item.date);
         const key = `${dateStr}|${source}|${deviceId}|${platform}`;
-        byKey.set(key, {
-          user_id: payload.user_id,
-          date: dateStr,
-          source,
-          device_id: deviceId,
-          platform,
-          total_switches: typeof item.total_switches === 'number' ? item.total_switches : 0,
-          total_apps: typeof item.total_apps === 'number' ? item.total_apps : 0,
-        });
+        const nextSwitches = typeof item.total_switches === 'number' ? Math.max(0, Math.round(item.total_switches)) : 0;
+        const nextApps = typeof item.total_apps === 'number' ? Math.max(0, Math.round(item.total_apps)) : 0;
+        const existing = byKey.get(key);
+
+        if (existing) {
+          existing.total_switches = isCumulative ? Math.max(existing.total_switches, nextSwitches) : nextSwitches;
+          existing.total_apps = isCumulative ? Math.max(existing.total_apps, nextApps) : nextApps;
+        } else {
+          byKey.set(key, {
+            user_id: payload.user_id,
+            date: dateStr,
+            source,
+            device_id: deviceId,
+            platform,
+            total_switches: nextSwitches,
+            total_apps: nextApps,
+          });
+        }
       }
+
       summaryRows.push(...byKey.values());
     }
 
@@ -219,7 +553,7 @@ Deno.serve(async (req: Request) => {
                 }
               }
 
-              // Fallback: if no daily_summaries was sent, derive summary from day (legacy)
+              // Fallback for legacy payloads without daily_summaries.
               if (!hasDailySummaries) {
                 summaryRows.push({
                   user_id: payload.user_id,
@@ -237,39 +571,268 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Merge duplicate app rows (same user/date/source/device/platform/app_name) so one row per key
+    // Build rows from iOS-friendly snapshots.
+    if (hasSnapshots) {
+      for (const snapshotRaw of normalizedSnapshots) {
+        const snapshot = toRecord(snapshotRaw);
+        const snapshotDateInput = firstString(snapshot, ['date']) || payload.date || todayDate;
+        const dateStr = parseDateToDateString(snapshotDateInput);
+
+        const snapshotApps = Array.isArray(snapshot.apps) ? snapshot.apps : [];
+        const snapshotWebsites = Array.isArray(snapshot.websites) ? snapshot.websites : [];
+        const snapshotItems = Array.isArray(snapshot.items) ? snapshot.items : [];
+
+        for (const appItem of snapshotApps) {
+          const itemDate = firstString(toRecord(appItem), ['date']) || dateStr;
+          pushAppRow(parseDateToDateString(itemDate), appItem);
+        }
+
+        for (const websiteItem of snapshotWebsites) {
+          const itemDate = firstString(toRecord(websiteItem), ['date']) || dateStr;
+          pushWebsiteRow(parseDateToDateString(itemDate), websiteItem);
+        }
+
+        for (const genericItem of snapshotItems) {
+          const itemRecord = toRecord(genericItem);
+          const itemDate = parseDateToDateString(firstString(itemRecord, ['date']) || dateStr);
+          if (isWebsiteItem(itemRecord)) {
+            pushWebsiteRow(itemDate, itemRecord);
+          } else {
+            pushAppRow(itemDate, itemRecord);
+          }
+        }
+
+        const summarySwitches = firstNumber(snapshot, ['total_switches', 'totalSwitches']);
+        const summaryApps = firstNumber(snapshot, ['total_apps', 'totalApps']);
+        if (summarySwitches !== null || summaryApps !== null) {
+          summaryRows.push({
+            user_id: payload.user_id,
+            date: dateStr,
+            source,
+            device_id: deviceId,
+            platform,
+            total_switches: Math.max(0, summarySwitches ?? 0),
+            total_apps: Math.max(0, summaryApps ?? 0),
+          });
+        }
+      }
+    }
+
+    // Build rows from root-level apps/websites/items.
+    if (hasRootItems || hasRootSummary) {
+      const baseDate = parseDateToDateString(payload.date || todayDate);
+      const rootApps = Array.isArray(payload.apps) ? payload.apps : [];
+      const rootWebsites = Array.isArray(payload.websites) ? payload.websites : [];
+      const rootItems = Array.isArray(payload.items) ? payload.items : [];
+
+      for (const appItem of rootApps) {
+        const itemDate = firstString(toRecord(appItem), ['date']) || baseDate;
+        pushAppRow(parseDateToDateString(itemDate), appItem);
+      }
+
+      for (const websiteItem of rootWebsites) {
+        const itemDate = firstString(toRecord(websiteItem), ['date']) || baseDate;
+        pushWebsiteRow(parseDateToDateString(itemDate), websiteItem);
+      }
+
+      for (const genericItem of rootItems) {
+        const itemRecord = toRecord(genericItem);
+        const itemDate = parseDateToDateString(firstString(itemRecord, ['date']) || baseDate);
+        if (isWebsiteItem(itemRecord)) {
+          pushWebsiteRow(itemDate, itemRecord);
+        } else {
+          pushAppRow(itemDate, itemRecord);
+        }
+      }
+
+      const summarySwitches = firstNumber(payloadRecord, ['total_switches', 'totalSwitches']);
+      const summaryApps = firstNumber(payloadRecord, ['total_apps', 'totalApps']);
+      if (summarySwitches !== null || summaryApps !== null) {
+        summaryRows.push({
+          user_id: payload.user_id,
+          date: baseDate,
+          source,
+          device_id: deviceId,
+          platform,
+          total_switches: Math.max(0, summarySwitches ?? 0),
+          total_apps: Math.max(0, summaryApps ?? 0),
+        });
+      }
+    }
+
+    // Merge duplicate app rows (same user/date/source/device/platform/app_name).
     const appRowsByKey = new Map<string, typeof appRows[0]>();
     for (const row of appRows) {
       const key = `${row.date}|${row.source}|${row.device_id}|${row.platform}|${row.app_name}`;
       const existing = appRowsByKey.get(key);
       if (existing) {
-        existing.total_time_seconds += row.total_time_seconds;
-        existing.session_count += row.session_count;
-        if (row.last_active_at && (!existing.last_active_at || row.last_active_at > existing.last_active_at)) existing.last_active_at = row.last_active_at;
-        if (row.first_seen_at && (!existing.first_seen_at || row.first_seen_at < existing.first_seen_at)) existing.first_seen_at = row.first_seen_at;
-        if (row.last_seen_at && (!existing.last_seen_at || row.last_seen_at > existing.last_seen_at)) existing.last_seen_at = row.last_seen_at;
+        if (isCumulative) {
+          existing.total_time_seconds = Math.max(existing.total_time_seconds, row.total_time_seconds);
+          existing.session_count = Math.max(existing.session_count, row.session_count);
+        } else {
+          existing.total_time_seconds += row.total_time_seconds;
+          existing.session_count += row.session_count;
+        }
+        existing.last_active_at = maxIso(existing.last_active_at, row.last_active_at);
+        existing.first_seen_at = minIso(existing.first_seen_at, row.first_seen_at);
+        existing.last_seen_at = maxIso(existing.last_seen_at, row.last_seen_at);
+        if ((!existing.category || existing.category === 'Uncategorized') && row.category) existing.category = row.category;
+        if (!existing.process_path && row.process_path) existing.process_path = row.process_path;
       } else {
         appRowsByKey.set(key, { ...row });
       }
     }
     const mergedAppRows = Array.from(appRowsByKey.values());
 
-    // Merge duplicate website rows (same user/date/source/device/platform/domain)
+    // Merge duplicate website rows (same user/date/source/device/platform/domain).
     const websiteRowsByKey = new Map<string, typeof websiteRows[0]>();
     for (const row of websiteRows) {
       const key = `${row.date}|${row.source}|${row.device_id}|${row.platform}|${row.domain}`;
       const existing = websiteRowsByKey.get(key);
       if (existing) {
-        existing.total_time_seconds += row.total_time_seconds;
-        existing.session_count += row.session_count;
-        if (row.last_active_at && (!existing.last_active_at || row.last_active_at > existing.last_active_at)) existing.last_active_at = row.last_active_at;
-        if (row.first_seen_at && (!existing.first_seen_at || row.first_seen_at < existing.first_seen_at)) existing.first_seen_at = row.first_seen_at;
-        if (row.last_seen_at && (!existing.last_seen_at || row.last_seen_at > existing.last_seen_at)) existing.last_seen_at = row.last_seen_at;
+        if (isCumulative) {
+          existing.total_time_seconds = Math.max(existing.total_time_seconds, row.total_time_seconds);
+          existing.session_count = Math.max(existing.session_count, row.session_count);
+        } else {
+          existing.total_time_seconds += row.total_time_seconds;
+          existing.session_count += row.session_count;
+        }
+        existing.last_active_at = maxIso(existing.last_active_at, row.last_active_at);
+        existing.first_seen_at = minIso(existing.first_seen_at, row.first_seen_at);
+        existing.last_seen_at = maxIso(existing.last_seen_at, row.last_seen_at);
+        if (!existing.favicon_url && row.favicon_url) existing.favicon_url = row.favicon_url;
       } else {
         websiteRowsByKey.set(key, { ...row });
       }
     }
     const mergedWebsiteRows = Array.from(websiteRowsByKey.values());
+
+    // Merge duplicate summary rows (same user/date/source/device/platform).
+    const summaryRowsByKey = new Map<string, typeof summaryRows[0]>();
+    for (const row of summaryRows) {
+      const key = `${row.date}|${row.source}|${row.device_id}|${row.platform}`;
+      const existing = summaryRowsByKey.get(key);
+      if (existing) {
+        existing.total_switches = isCumulative
+          ? Math.max(existing.total_switches, row.total_switches)
+          : row.total_switches;
+        existing.total_apps = isCumulative
+          ? Math.max(existing.total_apps, row.total_apps)
+          : row.total_apps;
+      } else {
+        summaryRowsByKey.set(key, { ...row });
+      }
+    }
+    const mergedSummaryRows = Array.from(summaryRowsByKey.values());
+
+    // For cumulative uploads, keep monotonic max against existing rows to survive out-of-order uploads.
+    if (isCumulative && mergedAppRows.length > 0) {
+      const appDates = mergedAppRows.map((r) => r.date).sort();
+      const minDate = appDates[0];
+      const maxDate = appDates[appDates.length - 1];
+      const { data: existingApps, error: existingAppsError } = await supabase
+        .from('screentime_daily_app_stats')
+        .select('date, app_name, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
+        .eq('user_id', payload.user_id)
+        .eq('source', source)
+        .eq('device_id', deviceId)
+        .eq('platform', platform)
+        .gte('date', minDate)
+        .lte('date', maxDate) as { data: any[] | null; error: { message: string } | null };
+
+      if (existingAppsError) {
+        return new Response(
+          JSON.stringify({ error: `Failed reading existing app rows for cumulative merge: ${existingAppsError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const existingAppsByKey = new Map<string, any>();
+      for (const existing of existingApps || []) {
+        existingAppsByKey.set(`${existing.date}|${existing.app_name}`, existing);
+      }
+
+      for (const row of mergedAppRows) {
+        const existing = existingAppsByKey.get(`${row.date}|${row.app_name}`);
+        if (!existing) continue;
+        row.total_time_seconds = Math.max(row.total_time_seconds, existing.total_time_seconds || 0);
+        row.session_count = Math.max(row.session_count, existing.session_count || 0);
+        row.first_seen_at = minIso(row.first_seen_at, existing.first_seen_at || null);
+        row.last_seen_at = maxIso(row.last_seen_at, existing.last_seen_at || null);
+        row.last_active_at = maxIso(row.last_active_at, existing.last_active_at || null);
+      }
+    }
+
+    if (isCumulative && mergedWebsiteRows.length > 0) {
+      const websiteDates = mergedWebsiteRows.map((r) => r.date).sort();
+      const minDate = websiteDates[0];
+      const maxDate = websiteDates[websiteDates.length - 1];
+      const { data: existingWebsites, error: existingWebsitesError } = await supabase
+        .from('screentime_daily_website_stats')
+        .select('date, domain, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
+        .eq('user_id', payload.user_id)
+        .eq('source', source)
+        .eq('device_id', deviceId)
+        .eq('platform', platform)
+        .gte('date', minDate)
+        .lte('date', maxDate) as { data: any[] | null; error: { message: string } | null };
+
+      if (existingWebsitesError) {
+        return new Response(
+          JSON.stringify({ error: `Failed reading existing website rows for cumulative merge: ${existingWebsitesError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const existingWebsitesByKey = new Map<string, any>();
+      for (const existing of existingWebsites || []) {
+        existingWebsitesByKey.set(`${existing.date}|${existing.domain}`, existing);
+      }
+
+      for (const row of mergedWebsiteRows) {
+        const existing = existingWebsitesByKey.get(`${row.date}|${row.domain}`);
+        if (!existing) continue;
+        row.total_time_seconds = Math.max(row.total_time_seconds, existing.total_time_seconds || 0);
+        row.session_count = Math.max(row.session_count, existing.session_count || 0);
+        row.first_seen_at = minIso(row.first_seen_at, existing.first_seen_at || null);
+        row.last_seen_at = maxIso(row.last_seen_at, existing.last_seen_at || null);
+        row.last_active_at = maxIso(row.last_active_at, existing.last_active_at || null);
+      }
+    }
+
+    if (isCumulative && mergedSummaryRows.length > 0) {
+      const summaryDates = mergedSummaryRows.map((r) => r.date).sort();
+      const minDate = summaryDates[0];
+      const maxDate = summaryDates[summaryDates.length - 1];
+      const { data: existingSummaries, error: existingSummariesError } = await supabase
+        .from('screentime_daily_summary')
+        .select('date, total_switches, total_apps')
+        .eq('user_id', payload.user_id)
+        .eq('source', source)
+        .eq('device_id', deviceId)
+        .eq('platform', platform)
+        .gte('date', minDate)
+        .lte('date', maxDate) as { data: any[] | null; error: { message: string } | null };
+
+      if (existingSummariesError) {
+        return new Response(
+          JSON.stringify({ error: `Failed reading existing summary rows for cumulative merge: ${existingSummariesError.message}` }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const existingSummaryByDate = new Map<string, any>();
+      for (const existing of existingSummaries || []) {
+        existingSummaryByDate.set(existing.date, existing);
+      }
+
+      for (const row of mergedSummaryRows) {
+        const existing = existingSummaryByDate.get(row.date);
+        if (!existing) continue;
+        row.total_switches = Math.max(row.total_switches, existing.total_switches || 0);
+        row.total_apps = Math.max(row.total_apps, existing.total_apps || 0);
+      }
+    }
 
     let appInserted = 0;
     let websiteInserted = 0;
@@ -286,7 +849,7 @@ Deno.serve(async (req: Request) => {
           .from('screentime_daily_app_stats')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' })
           .select() as { data: any[] | null; error: { message: string } | null };
-        
+
         if (error) {
           console.error(`Error inserting app stats batch ${Math.floor(i / batchSize) + 1}:`, error);
           appErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
@@ -304,7 +867,7 @@ Deno.serve(async (req: Request) => {
           .from('screentime_daily_website_stats')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' })
           .select() as { data: any[] | null; error: { message: string } | null };
-        
+
         if (error) {
           console.error(`Error inserting website stats batch ${Math.floor(i / batchSize) + 1}:`, error);
           websiteErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
@@ -314,11 +877,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Insert daily summaries (switches) into screentime_daily_summary
-    if (summaryRows.length > 0) {
+    if (mergedSummaryRows.length > 0) {
       const batchSize = 500;
-      for (let i = 0; i < summaryRows.length; i += batchSize) {
-        const batch = summaryRows.slice(i, i + batchSize);
+      for (let i = 0; i < mergedSummaryRows.length; i += batchSize) {
+        const batch = mergedSummaryRows.slice(i, i + batchSize);
         const { data, error } = await supabase
           .from('screentime_daily_summary')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' })
@@ -346,7 +908,7 @@ Deno.serve(async (req: Request) => {
           total: {
             apps: mergedAppRows.length,
             websites: mergedWebsiteRows.length,
-            summaries: summaryRows.length,
+            summaries: mergedSummaryRows.length,
           },
           errors: {
             apps: appErrors,
@@ -369,7 +931,7 @@ Deno.serve(async (req: Request) => {
         total: {
           apps: mergedAppRows.length,
           websites: mergedWebsiteRows.length,
-          summaries: summaryRows.length,
+          summaries: mergedSummaryRows.length,
         },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -1,12 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
-import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO } from 'date-fns';
+import { format, subDays, subMonths, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO } from 'date-fns';
 import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, AreaChart, Area } from 'recharts';
 import { cn } from '../lib/utils';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
 
-type ViewPeriod = 'today' | 'week' | 'month' | '30days';
+type ViewPeriod = 'today' | 'week' | 'month' | 'lastMonth' | '30days';
 
 export default function Screentime() {
   const { privacyMode, accentTheme } = useUIStore();
@@ -29,6 +29,13 @@ export default function Screentime() {
           start: format(startOfMonth(today), 'yyyy-MM-dd'),
           end: format(endOfMonth(today), 'yyyy-MM-dd'),
         };
+      case 'lastMonth': {
+        const lastMonthDate = subMonths(today, 1);
+        return {
+          start: format(startOfMonth(lastMonthDate), 'yyyy-MM-dd'),
+          end: format(endOfMonth(lastMonthDate), 'yyyy-MM-dd'),
+        };
+      }
       case '30days':
         return {
           start: format(subDays(today, 30), 'yyyy-MM-dd'),
@@ -107,13 +114,47 @@ export default function Screentime() {
   const totalHours = Math.floor(totalMinutes / 60);
   const remainingMinutes = totalMinutes % 60;
 
-  // Prepare chart data (Top app vs Other apps — meaningful; no apps vs websites)
-  const chartData = history.map(d => ({
-    date: format(new Date(d.date), 'MMM d'),
-    minutes: d.minutes,
-    topApp: d.topAppMinutes,
-    other: d.otherMinutes,
-  }));
+  // Prepare chart data by source so desktop + phone are aggregated in one timeline.
+  const chartData = useMemo(() => {
+    const byDate = new Map<string, { desktop: number; phone: number; other: number }>();
+
+    const getSourceBucket = (sourceValue: string, platformValue: string) => {
+      const sourceNorm = (sourceValue || '').toLowerCase();
+      const platformNorm = (platformValue || '').toLowerCase();
+
+      if (sourceNorm === 'mobile' || sourceNorm === 'phone' || platformNorm === 'ios' || platformNorm === 'android') {
+        return 'phone' as const;
+      }
+      if (sourceNorm === 'pc' || sourceNorm === 'desktop' || ['windows', 'macos', 'linux'].includes(platformNorm)) {
+        return 'desktop' as const;
+      }
+      return 'other' as const;
+    };
+
+    appStats.forEach((stat) => {
+      const existing = byDate.get(stat.date) || { desktop: 0, phone: 0, other: 0 };
+      const bucket = getSourceBucket(stat.source, stat.platform);
+      existing[bucket] += stat.total_time_seconds;
+      byDate.set(stat.date, existing);
+    });
+
+    summaries.forEach((summary) => {
+      if (!byDate.has(summary.date)) {
+        byDate.set(summary.date, { desktop: 0, phone: 0, other: 0 });
+      }
+    });
+
+    return Array.from(byDate.entries())
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .map(([date, values]) => ({
+        date,
+        dateLabel: format(parseISO(date), 'MMM d'),
+        desktop: Math.round(values.desktop / 60),
+        phone: Math.round(values.phone / 60),
+        other: Math.round(values.other / 60),
+        minutes: Math.round((values.desktop + values.phone + values.other) / 60),
+      }));
+  }, [appStats, summaries]);
 
   // Weekly pattern: aggregate by day of week (in hours)
   const weeklyPattern = useMemo(() => {
@@ -272,7 +313,7 @@ export default function Screentime() {
 
       {/* Period Selector */}
       <div className="flex gap-2">
-        {(['today', 'week', 'month', '30days'] as ViewPeriod[]).map((p) => (
+        {(['today', 'week', 'month', 'lastMonth', '30days'] as ViewPeriod[]).map((p) => (
           <button
             key={p}
             onClick={() => setPeriod(p)}
@@ -283,7 +324,15 @@ export default function Screentime() {
                 : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
             )}
           >
-            {p === 'today' ? 'Today' : p === 'week' ? 'This Week' : p === 'month' ? 'This Month' : '30 Days'}
+            {p === 'today'
+              ? 'Today'
+              : p === 'week'
+                ? 'This Week'
+                : p === 'month'
+                  ? 'This Month'
+                  : p === 'lastMonth'
+                    ? 'Last Month'
+                    : '30 Days'}
           </button>
         ))}
       </div>
@@ -333,7 +382,15 @@ export default function Screentime() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            {period === 'today' ? 'Today' : period === 'week' ? 'This week' : period === 'month' ? 'This month' : 'Last 30 days'}
+            {period === 'today'
+              ? 'Today'
+              : period === 'week'
+                ? 'This week'
+                : period === 'month'
+                  ? 'This month'
+                  : period === 'lastMonth'
+                    ? 'Last month'
+                    : 'Last 30 days'}
           </p>
         </div>
 
@@ -426,10 +483,10 @@ export default function Screentime() {
         {/* Daily Usage Bar Chart */}
         {chartData.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold mb-4">Daily Usage</h2>
+            <h2 className="text-lg font-semibold mb-4">Daily Usage by Source</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
-                <XAxis dataKey="date" />
+                <XAxis dataKey="dateLabel" />
                 <YAxis />
                 <Tooltip 
                   contentStyle={{ 
@@ -439,12 +496,17 @@ export default function Screentime() {
                     boxShadow: 'none'
                   }}
                   cursor={false}
+                  formatter={(value, name) => {
+                    const label = name === 'desktop' ? 'Desktop' : name === 'phone' ? 'Phone' : 'Other';
+                    return [`${typeof value === 'number' ? value : 0}m`, label];
+                  }}
                   itemStyle={{ color: 'var(--color-foreground)' }}
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
                 <Legend />
-                <Bar dataKey="topApp" fill={accentShades.base} name="Top app" isAnimationActive={false} />
-                <Bar dataKey="other" fill={accentShades.light} name="Other apps" isAnimationActive={false} />
+                <Bar dataKey="desktop" fill={accentShades.base} name="Desktop" stackId="usage" isAnimationActive={false} />
+                <Bar dataKey="phone" fill={accentShades.light} name="Phone" stackId="usage" isAnimationActive={false} />
+                <Bar dataKey="other" fill={accentShades.lighter} name="Other" stackId="usage" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -453,20 +515,24 @@ export default function Screentime() {
         {/* Usage Trend Line Chart */}
         {chartData.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold mb-4">Usage Trend</h2>
+            <h2 className="text-lg font-semibold mb-4">Usage Trend by Source</h2>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={chartData}>
                 <defs>
-                  <linearGradient id="colorTopApp" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorDesktop" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={accentShades.base} stopOpacity={0.35}/>
                     <stop offset="95%" stopColor={accentShades.base} stopOpacity={0}/>
                   </linearGradient>
-                  <linearGradient id="colorOtherApps" x1="0" y1="0" x2="0" y2="1">
+                  <linearGradient id="colorPhone" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={accentShades.light} stopOpacity={0.35}/>
                     <stop offset="95%" stopColor={accentShades.light} stopOpacity={0}/>
                   </linearGradient>
+                  <linearGradient id="colorOtherSource" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={accentShades.lighter} stopOpacity={0.35}/>
+                    <stop offset="95%" stopColor={accentShades.lighter} stopOpacity={0}/>
+                  </linearGradient>
                 </defs>
-                <XAxis dataKey="date" />
+                <XAxis dataKey="dateLabel" />
                 <YAxis />
                 <Tooltip 
                   contentStyle={{ 
@@ -476,12 +542,17 @@ export default function Screentime() {
                     boxShadow: 'none'
                   }}
                   cursor={false}
+                  formatter={(value, name) => {
+                    const label = name === 'desktop' ? 'Desktop' : name === 'phone' ? 'Phone' : 'Other';
+                    return [`${typeof value === 'number' ? value : 0}m`, label];
+                  }}
                   itemStyle={{ color: 'var(--color-foreground)' }}
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="topApp" stroke={accentShades.base} fillOpacity={1} fill="url(#colorTopApp)" name="Top app" />
-                <Area type="monotone" dataKey="other" stroke={accentShades.light} fillOpacity={1} fill="url(#colorOtherApps)" name="Other apps" />
+                <Area type="monotone" dataKey="desktop" stroke={accentShades.base} fillOpacity={1} fill="url(#colorDesktop)" name="Desktop" />
+                <Area type="monotone" dataKey="phone" stroke={accentShades.light} fillOpacity={1} fill="url(#colorPhone)" name="Phone" />
+                <Area type="monotone" dataKey="other" stroke={accentShades.lighter} fillOpacity={1} fill="url(#colorOtherSource)" name="Other" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
