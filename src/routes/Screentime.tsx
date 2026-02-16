@@ -477,49 +477,51 @@
         </div>
 
         {/* Period selector + day filter */}
-        <div className="flex flex-wrap items-center gap-2">
-          {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p) => (
-            <button
-              key={p}
-            onClick={() => {
-              setPeriod(p);
-              if (p === 'week') setWeekStart(format(startOfWeek(today), 'yyyy-MM-dd'));
-            }}
-              className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                period === p ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-              )}
-            >
-              {p === 'today'
-                ? 'Today'
-                : p === 'yesterday'
-                  ? 'Yesterday'
-                  : p === 'week'
-                    ? 'This Week'
-                    : p === 'month'
-                      ? 'This Month'
-                      : p === 'lastMonth'
-                        ? 'Last Month'
-                        : p === '30days'
-                          ? 'Last 30 Days'
-                          : 'Pick a day'}
-            </button>
-          ))}
-          {period === 'custom' && (
-            <div className="flex items-center gap-2 ml-2">
-              <Calendar className="text-muted-foreground" size={18} />
-              <input
-                type="date"
-                value={customDate}
-                max={todayStr}
-                onChange={(e) => {
-                  setCustomDate(e.target.value);
-                  setPeriod('custom');
+        <div className="overflow-x-auto -mx-4 px-4">
+          <div className="flex items-center gap-2 min-w-max">
+            {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setPeriod(p);
+                  if (p === 'week') setWeekStart(format(startOfWeek(today), 'yyyy-MM-dd'));
                 }}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-            </div>
-          )}
+                className={cn(
+                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0',
+                  period === p ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                )}
+              >
+                {p === 'today'
+                  ? 'Today'
+                  : p === 'yesterday'
+                    ? 'Yesterday'
+                    : p === 'week'
+                      ? 'This Week'
+                      : p === 'month'
+                        ? 'This Month'
+                        : p === 'lastMonth'
+                          ? 'Last Month'
+                          : p === '30days'
+                            ? 'Last 30 Days'
+                            : 'Pick a day'}
+              </button>
+            ))}
+            {period === 'custom' && (
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Calendar className="text-muted-foreground" size={18} />
+                <input
+                  type="date"
+                  value={customDate}
+                  max={todayStr}
+                  onChange={(e) => {
+                    setCustomDate(e.target.value);
+                    setPeriod('custom');
+                  }}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Tiny indicator: which devices pushed and when (date + time) */}
@@ -825,9 +827,7 @@
                       
                       if (useHours) {
                         // Convert hours back to minutes for display
-                        const hours = numValue;
                         const minutes = name === 'IOS' ? payload?.iosMinutes : payload?.windowsMinutes || 0;
-                        const remainingMinutes = minutes % 60;
                         return [`${formatDurationMinutes(minutes)}`, platformLabel(String(name ?? ''))];
                       } else {
                         return [`${formatDurationMinutes(numValue)}`, platformLabel(String(name ?? ''))];
