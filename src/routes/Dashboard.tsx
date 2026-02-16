@@ -10,7 +10,8 @@ import {
   Target,
   ArrowRight,
   Monitor,
-  RefreshCw
+  RefreshCw,
+  Moon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
@@ -27,6 +28,7 @@ import { useUIStore } from '../stores/useUIStore';
 import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
 import { PrayerWidget } from '../components/PrayerWidget';
 import { useScreentimeMetrics, useTodayScreentime } from '../hooks/useScreentime';
+import { useSleepMetrics } from '../hooks/useSleep';
 
 export default function Dashboard() {
   const { metrics, hasData: hasHealthData } = useHealthMetrics();
@@ -39,6 +41,7 @@ export default function Dashboard() {
   const { privacyMode, dashboardWidgetOrder, dashboardWidgetVisible } = useUIStore();
   const { avg7Days: screentimeAvg, trend: screentimeTrend, history: screentimeHistory } = useScreentimeMetrics(7);
   const todayScreentime = useTodayScreentime();
+  const { avgSleepMinutes, nightsCount } = useSleepMetrics(7);
 
   const order = dashboardWidgetOrder?.length ? dashboardWidgetOrder : [...DASHBOARD_WIDGET_IDS];
   const isVisible = (id: string) => dashboardWidgetVisible?.[id] !== false;
@@ -74,7 +77,7 @@ export default function Dashboard() {
               key="stats"
               className={cn(
                 'grid gap-4',
-                isAlone ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-5'
+                isAlone ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-6'
               )}
             >
         {/* Weight */}
@@ -200,6 +203,26 @@ export default function Dashboard() {
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {format(today, 'MMMM')}
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Sleep — 7-day avg */}
+        <Link to="/sleep" className="group">
+          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+            <div>
+              <div className="flex items-center gap-2">
+                <Moon size={14} className="text-muted-foreground" />
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sleep</h3>
+              </div>
+              <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                {nightsCount > 0
+                  ? `${Math.floor(avgSleepMinutes / 60)}h ${avgSleepMinutes % 60}m`
+                  : '-'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {nightsCount > 0 ? `7-night avg` : 'No data yet'}
               </p>
             </div>
           </div>
