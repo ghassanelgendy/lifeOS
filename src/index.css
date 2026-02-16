@@ -387,6 +387,15 @@ html.light[data-accent="amber"] {
   -webkit-user-select: none;
 }
 
+/* Sleep chart: no hover cursor or bar highlight */
+.sleep-chart .recharts-tooltip-cursor,
+.sleep-chart .recharts-active-shape {
+  display: none !important;
+}
+.sleep-chart .recharts-bar-rectangle:hover {
+  opacity: 1 !important;
+}
+
 /* Loading screen indeterminate bar */
 @keyframes loading-bar {
   0% { transform: translateX(-100%); }

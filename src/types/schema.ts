@@ -78,6 +78,21 @@ export interface ScreentimeDailySummary {
 }
 
 // ========================
+// Sleep Analysis (iOS Health stages)
+// ========================
+export type SleepStageType = 'Core' | 'Deep' | 'REM' | 'Awake';
+
+export interface SleepStage {
+  id: string;
+  user_id?: string | null;
+  started_at: string;
+  ended_at: string;
+  duration_minutes: number;
+  stage: SleepStageType;
+  created_at: string;
+}
+
+// ========================
 // Academic & Career (Deep Work Engine)
 // ========================
 export type ProjectType = 'Thesis' | 'Certification' | 'Coding';

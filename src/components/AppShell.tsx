@@ -9,7 +9,8 @@ import {
   Wallet,
   Target,
   CheckSquare,
-  Monitor
+  Monitor,
+  Moon
 } from 'lucide-react';
 import { useRef, useCallback, useMemo } from 'react';
 import { cn } from '../lib/utils';
@@ -34,6 +35,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Calendar', icon: Calendar, href: '/calendar' },
   { label: 'Bio-Metrics', icon: Dumbbell, href: '/health' },
   { label: 'Screen Time', icon: Monitor, href: '/screentime' },
+  { label: 'Sleep', icon: Moon, href: '/sleep' },
   { label: 'Academic', icon: GraduationCap, href: '/academics' },
   { label: 'Finance', icon: Wallet, href: '/finance' },
   { label: 'Settings', icon: Settings, href: '/settings' },

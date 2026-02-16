@@ -1,6 +1,6 @@
   import { useState, useMemo, useEffect } from 'react';
   import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO } from 'date-fns';
-  import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+  import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
   import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
   import { cn } from '../lib/utils';
   import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
@@ -35,6 +35,7 @@
   const [showAllApps, setShowAllApps] = useState(false);
   const [weekStart, setWeekStart] = useState<string>(() => format(startOfWeek(today), 'yyyy-MM-dd'));
   const [platformFilter, setPlatformFilter] = useState<'all' | 'ios' | 'windows'>('all');
+  const [appSearchQuery, setAppSearchQuery] = useState('');
 
   const getDateRange = (): { start: string; end: string } => {
     switch (period) {
@@ -125,9 +126,20 @@
         remainingMinutes: Math.round((app.total_time_seconds % 3600) / 60),
         platformLabel: platformLabel(app.platform),
       }));
+    
+    // Filter by search (app name + category)
+    const appSearchLower = appSearchQuery.trim().toLowerCase();
+    const appsFilteredBySearch = appSearchLower
+      ? allAppsSorted.filter(
+          (app) =>
+            (app.app_name || '').toLowerCase().includes(appSearchLower) ||
+            (app.category || '').toLowerCase().includes(appSearchLower)
+        )
+      : allAppsSorted;
+    
     const INITIAL_APPS_SHOWN = 15;
-    const topApps = allAppsSorted.slice(0, INITIAL_APPS_SHOWN);
-    const appsToShow = showAllApps ? allAppsSorted : topApps;
+    const topApps = appsFilteredBySearch.slice(0, INITIAL_APPS_SHOWN);
+    const appsToShow = showAllApps ? appsFilteredBySearch : topApps;
 
     // Category breakdown: aggregate by category
     const categoryBreakdown = useMemo(() => {
@@ -921,43 +933,69 @@
         {/* Apps (with source/platform) — See more shows all */}
         {allAppsSorted.length > 0 && (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="p-6 border-b border-border flex items-center justify-between flex-wrap gap-2">
-              <div>
-                <h2 className="text-lg font-semibold">Apps</h2>
-                <p className="text-sm text-muted-foreground">Source (IOS, windows) shown per app</p>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Platform filter */}
-                <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
-                  {(['all', 'ios', 'windows'] as const).map((pf) => (
-                    <button
-                      key={pf}
-                      type="button"
-                      onClick={() => setPlatformFilter(pf)}
-                      className={cn(
-                        'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                        platformFilter === pf
-                          ? 'bg-primary text-primary-foreground'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
-                      )}
-                    >
-                      {pf === 'all' ? 'All' : pf === 'ios' ? 'IOS' : 'Windows'}
-                    </button>
-                  ))}
+            <div className="p-6 border-b border-border space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h2 className="text-lg font-semibold">Apps</h2>
+                  <p className="text-sm text-muted-foreground">Source (IOS, windows) shown per app</p>
                 </div>
-                {allAppsSorted.length > INITIAL_APPS_SHOWN && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* Platform filter */}
+                  <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
+                    {(['all', 'ios', 'windows'] as const).map((pf) => (
+                      <button
+                        key={pf}
+                        type="button"
+                        onClick={() => setPlatformFilter(pf)}
+                        className={cn(
+                          'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                          platformFilter === pf
+                            ? 'bg-primary text-primary-foreground'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                        )}
+                      >
+                        {pf === 'all' ? 'All' : pf === 'ios' ? 'IOS' : 'Windows'}
+                      </button>
+                    ))}
+                  </div>
+                  {appsFilteredBySearch.length > INITIAL_APPS_SHOWN && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllApps((v) => !v)}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      {showAllApps ? 'Show less' : `See all apps (${appsFilteredBySearch.length})`}
+                    </button>
+                  )}
+                </div>
+              </div>
+              {/* App search */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" size={18} />
+                <input
+                  type="search"
+                  placeholder="Search apps or category..."
+                  value={appSearchQuery}
+                  onChange={(e) => setAppSearchQuery(e.target.value)}
+                  className={cn(
+                    'w-full pl-9 py-2 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary',
+                    appSearchQuery ? 'pr-9' : 'pr-4'
+                  )}
+                />
+                {appSearchQuery && (
                   <button
                     type="button"
-                    onClick={() => setShowAllApps((v) => !v)}
-                    className="text-sm font-medium text-primary hover:underline"
+                    onClick={() => setAppSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground rounded"
+                    aria-label="Clear search"
                   >
-                    {showAllApps ? 'Show less' : `See all apps (${allAppsSorted.length})`}
+                    ×
                   </button>
                 )}
               </div>
             </div>
             <div className="divide-y divide-border">
-              {appsToShow.map((app, idx) => (
+              {appsToShow.length > 0 ? appsToShow.map((app, idx) => (
                 <div key={idx} className="p-4 hover:bg-secondary/30 transition-colors">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -986,7 +1024,11 @@
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="p-8 text-center text-muted-foreground text-sm">
+                  No apps match &quot;{appSearchQuery}&quot;. Try another search or clear the filter.
+                </div>
+              )}
             </div>
           </div>
         )}
