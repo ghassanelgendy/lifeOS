@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
+import { idbGetInBodyScans, idbSaveInBodyScans } from '../db/indexedDb';
 import type { InBodyScan, CreateInput, UpdateInput } from '../types/schema';
 import { round1 } from '../lib/utils';
 
@@ -10,9 +12,19 @@ export function useInBodyScans() {
   return useQuery({
     queryKey: QUERY_KEY,
     queryFn: async () => {
-      const { data, error } = await supabase.from('inbody_scans').select('*').order('date', { ascending: false });
-      if (error) throw error;
-      return data as InBodyScan[];
+      try {
+        const { data, error } = await supabase.from('inbody_scans').select('*').order('date', { ascending: false });
+        if (error) throw error;
+        const list = (data ?? []) as InBodyScan[];
+        void idbSaveInBodyScans(list);
+        return list;
+      } catch {
+        const local = await idbGetInBodyScans();
+        const sorted = (local as InBodyScan[]).sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        return sorted;
+      }
     },
   });
 }
@@ -34,12 +46,38 @@ export function useCreateInBodyScan() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<InBodyScan>) => {
+      const nowIso = new Date().toISOString();
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'inbody_scans', op: 'create', payload: input as Record<string, unknown> });
+        const optimistic: InBodyScan = {
+          ...input,
+          id: `offline-inbody-${Date.now()}`,
+          weight: round1(input.weight),
+          skeletal_muscle_mass: round1(input.skeletal_muscle_mass),
+          body_fat_percent: round1(input.body_fat_percent),
+          visceral_fat_level: input.visceral_fat_level ?? 0,
+          bmr_kcal: input.bmr_kcal ?? 0,
+          bmi: input.bmi ?? 0,
+          created_at: nowIso,
+          updated_at: nowIso,
+        };
+        const prev = (queryClient.getQueryData(QUERY_KEY) as InBodyScan[] | undefined) ?? [];
+        const next = [optimistic, ...prev];
+        queryClient.setQueryData(QUERY_KEY, next);
+        void idbSaveInBodyScans(next);
+        return optimistic;
+      }
       const { data, error } = await supabase.from('inbody_scans').insert(input).select().single();
       if (error) throw error;
-      return data as InBodyScan;
+      const created = data as InBodyScan;
+      const prev = (queryClient.getQueryData(QUERY_KEY) as InBodyScan[] | undefined) ?? [];
+      const next = [created, ...prev];
+      queryClient.setQueryData(QUERY_KEY, next);
+      void idbSaveInBodyScans(next);
+      return created;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }
@@ -49,12 +87,37 @@ export function useUpdateInBodyScan() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<InBodyScan> }) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'inbody_scans', op: 'update', id, payload: data as Record<string, unknown> });
+        const prev = (queryClient.getQueryData(QUERY_KEY) as InBodyScan[] | undefined) ?? [];
+        const next = prev.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                ...data,
+                weight: data.weight !== undefined ? round1(data.weight) : s.weight,
+                skeletal_muscle_mass: data.skeletal_muscle_mass !== undefined ? round1(data.skeletal_muscle_mass) : s.skeletal_muscle_mass,
+                body_fat_percent: data.body_fat_percent !== undefined ? round1(data.body_fat_percent) : s.body_fat_percent,
+                updated_at: new Date().toISOString(),
+              }
+            : s
+        );
+        queryClient.setQueryData(QUERY_KEY, next);
+        void idbSaveInBodyScans(next);
+        const updated = next.find((s) => s.id === id);
+        return updated as InBodyScan;
+      }
       const { data: updated, error } = await supabase.from('inbody_scans').update(data).eq('id', id).select().single();
       if (error) throw error;
-      return updated as InBodyScan;
+      const result = updated as InBodyScan;
+      const prev = (queryClient.getQueryData(QUERY_KEY) as InBodyScan[] | undefined) ?? [];
+      const next = prev.map((s) => (s.id === id ? result : s));
+      queryClient.setQueryData(QUERY_KEY, next);
+      void idbSaveInBodyScans(next);
+      return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }
@@ -64,12 +127,24 @@ export function useDeleteInBodyScan() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'inbody_scans', op: 'delete', id });
+        const prev = (queryClient.getQueryData(QUERY_KEY) as InBodyScan[] | undefined) ?? [];
+        const next = prev.filter((s) => s.id !== id);
+        queryClient.setQueryData(QUERY_KEY, next);
+        void idbSaveInBodyScans(next);
+        return true;
+      }
       const { error } = await supabase.from('inbody_scans').delete().eq('id', id);
       if (error) throw error;
+      const prev = (queryClient.getQueryData(QUERY_KEY) as InBodyScan[] | undefined) ?? [];
+      const next = prev.filter((s) => s.id !== id);
+      queryClient.setQueryData(QUERY_KEY, next);
+      void idbSaveInBodyScans(next);
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }

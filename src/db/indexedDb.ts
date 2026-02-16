@@ -5,7 +5,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORES = {
   tasks: 'tasks',
@@ -13,6 +13,8 @@ const STORES = {
   tags: 'tags',
   transactions: 'transactions',
   budgets: 'budgets',
+  sleepStages: 'sleep_stages',
+  inbodyScans: 'inbody_scans',
   offlineQueue: 'offline_queue',
 } as const;
 
@@ -50,6 +52,12 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.budgets)) {
         db.createObjectStore(STORES.budgets, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.sleepStages)) {
+        db.createObjectStore(STORES.sleepStages, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.inbodyScans)) {
+        db.createObjectStore(STORES.inbodyScans, { keyPath: 'id' });
       }
       if (!db.objectStoreNames.contains(STORES.offlineQueue)) {
         db.createObjectStore(STORES.offlineQueue, { keyPath: 'id' });
@@ -170,6 +178,29 @@ export async function idbSaveTransactions(transactions: any[]): Promise<void> {
 
 export async function idbGetTransactions(): Promise<any[]> {
   return idbGetAll(STORES.transactions);
+}
+
+// Sleep stages (merge by id so multiple range fetches accumulate)
+export async function idbSaveSleepStages(stages: { id: string }[]): Promise<void> {
+  const existing = await idbGetAll<{ id: string }>(STORES.sleepStages);
+  const byId = new Map(existing.map((s) => [s.id, s]));
+  stages.forEach((s) => byId.set(s.id, s));
+  await idbClear(STORES.sleepStages);
+  await idbPutMany(STORES.sleepStages, Array.from(byId.values()));
+}
+
+export async function idbGetSleepStages(): Promise<any[]> {
+  return idbGetAll(STORES.sleepStages);
+}
+
+// InBody scans
+export async function idbSaveInBodyScans(scans: { id: string }[]): Promise<void> {
+  await idbClear(STORES.inbodyScans);
+  await idbPutMany(STORES.inbodyScans, scans);
+}
+
+export async function idbGetInBodyScans(): Promise<any[]> {
+  return idbGetAll(STORES.inbodyScans);
 }
 
 // Budgets

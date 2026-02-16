@@ -328,7 +328,7 @@ export default function Sleep() {
                       border: '1px solid var(--color-border)',
                       borderRadius: '0.5rem',
                     }}
-                    formatter={(value: number) => [value + ' min', '']}
+                    formatter={(value: number | undefined) => [(value ?? 0) + ' min', '']}
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.date}
                   />
                   <Legend />

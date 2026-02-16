@@ -44,7 +44,10 @@ export type QueuedOp =
   | { entity: 'budgets'; op: 'upsert'; payload: Record<string, unknown> }
   | { entity: 'investment_transactions'; op: 'create'; payload: Record<string, unknown> }
   | { entity: 'investment_transactions'; op: 'update'; id: string; payload: Record<string, unknown> }
-  | { entity: 'investment_transactions'; op: 'delete'; id: string };
+  | { entity: 'investment_transactions'; op: 'delete'; id: string }
+  | { entity: 'inbody_scans'; op: 'create'; payload: Record<string, unknown> }
+  | { entity: 'inbody_scans'; op: 'update'; id: string; payload: Record<string, unknown> }
+  | { entity: 'inbody_scans'; op: 'delete'; id: string };
 
 export function addToOfflineQueue(op: QueuedOp): void {
   // Fire-and-forget; best-effort persistence.
