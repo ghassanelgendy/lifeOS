@@ -394,7 +394,9 @@ Deno.serve(async (req: Request) => {
     }
 
     const source = payload.source || 'pc';
-    const platform = payload.platform || 'windows';
+    const rawPlatform = (payload.platform || 'windows') as string;
+    const platformLower = rawPlatform.toLowerCase();
+    const platform = platformLower === 'ios' ? 'IOS' : 'windows';
     const deviceId = payload.device_id || '';
     const isCumulative = payload.is_cumulative === true || payload.cumulative === true;
     const todayDate = new Date().toISOString().split('T')[0];
@@ -730,15 +732,15 @@ Deno.serve(async (req: Request) => {
       const appDates = mergedAppRows.map((r) => r.date).sort();
       const minDate = appDates[0];
       const maxDate = appDates[appDates.length - 1];
-      const { data: existingApps, error: existingAppsError } = await supabase
+      const appQuery = supabase
         .from('screentime_daily_app_stats')
         .select('date, app_name, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
         .eq('user_id', payload.user_id)
         .eq('source', source)
         .eq('device_id', deviceId)
         .eq('platform', platform)
-        .gte('date', minDate)
-        .lte('date', maxDate) as { data: any[] | null; error: { message: string } | null };
+        .gte('date', minDate);
+      const { data: existingApps, error: existingAppsError } = await (appQuery as any).lte('date', maxDate);
 
       if (existingAppsError) {
         return new Response(
@@ -767,15 +769,15 @@ Deno.serve(async (req: Request) => {
       const websiteDates = mergedWebsiteRows.map((r) => r.date).sort();
       const minDate = websiteDates[0];
       const maxDate = websiteDates[websiteDates.length - 1];
-      const { data: existingWebsites, error: existingWebsitesError } = await supabase
+      const websiteQuery = supabase
         .from('screentime_daily_website_stats')
         .select('date, domain, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
         .eq('user_id', payload.user_id)
         .eq('source', source)
         .eq('device_id', deviceId)
         .eq('platform', platform)
-        .gte('date', minDate)
-        .lte('date', maxDate) as { data: any[] | null; error: { message: string } | null };
+        .gte('date', minDate);
+      const { data: existingWebsites, error: existingWebsitesError } = await (websiteQuery as any).lte('date', maxDate);
 
       if (existingWebsitesError) {
         return new Response(
@@ -804,15 +806,15 @@ Deno.serve(async (req: Request) => {
       const summaryDates = mergedSummaryRows.map((r) => r.date).sort();
       const minDate = summaryDates[0];
       const maxDate = summaryDates[summaryDates.length - 1];
-      const { data: existingSummaries, error: existingSummariesError } = await supabase
+      const summaryQuery = supabase
         .from('screentime_daily_summary')
         .select('date, total_switches, total_apps')
         .eq('user_id', payload.user_id)
         .eq('source', source)
         .eq('device_id', deviceId)
         .eq('platform', platform)
-        .gte('date', minDate)
-        .lte('date', maxDate) as { data: any[] | null; error: { message: string } | null };
+        .gte('date', minDate);
+      const { data: existingSummaries, error: existingSummariesError } = await (summaryQuery as any).lte('date', maxDate);
 
       if (existingSummariesError) {
         return new Response(
