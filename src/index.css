@@ -387,13 +387,9 @@ html.light[data-accent="amber"] {
   -webkit-user-select: none;
 }
 
-/* Sleep chart: no hover cursor or bar highlight */
-.sleep-chart .recharts-tooltip-cursor,
-.sleep-chart .recharts-active-shape {
+/* Sleep chart: no hover cursor line */
+.sleep-chart .recharts-tooltip-cursor {
   display: none !important;
-}
-.sleep-chart .recharts-bar-rectangle:hover {
-  opacity: 1 !important;
 }
 
 /* Loading screen indeterminate bar */

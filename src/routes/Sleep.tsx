@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { format, subDays, parseISO } from 'date-fns';
-import { Moon, Zap, Brain, Eye, TrendingUp, Clock, Activity } from 'lucide-react';
+import { Moon, Zap, Brain, Eye, Clock, Activity, Star } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { useSleepStages } from '../hooks/useSleep';
 import { useUIStore } from '../stores/useUIStore';
@@ -23,6 +23,18 @@ function formatDuration(minutes: number): string {
 /** Match stage case-insensitively (DB may store 'REM' or 'Rem' etc.) */
 function stageIs(seg: SleepStage, stage: string): boolean {
   return (seg.stage ?? '').toLowerCase() === stage.toLowerCase();
+}
+
+/**
+ * Sleep quality score 0-100 based on stage balance (longer is not better).
+ * Targets from research: Core ~60%, Deep 10-20%, REM 20-25%, Awake minimal.
+ */
+function computeQualityScore(corePct: number, deepPct: number, remPct: number, awakePct: number): number {
+  const coreScore = Math.max(0, 100 - Math.abs(corePct - 60) * 2);   // target 60%
+  const deepScore = Math.max(0, 100 - Math.abs(deepPct - 15) * 4);   // target 10-20%, mid 15%
+  const remScore = Math.max(0, 100 - Math.abs(remPct - 22.5) * 4);   // target 20-25%, mid 22.5%
+  const awakeScore = Math.max(0, 100 - awakePct * 3);                // lower awake = better
+  return Math.round((coreScore + deepScore + remScore + awakeScore) / 4);
 }
 
 export default function Sleep() {
@@ -86,6 +98,13 @@ export default function Sleep() {
         const rem = segs.filter((s) => stageIs(s, 'REM')).reduce((s, x) => s + x.duration_minutes, 0);
         const core = segs.filter((s) => stageIs(s, 'Core')).reduce((s, x) => s + x.duration_minutes, 0);
         const awake = segs.filter((s) => stageIs(s, 'Awake')).reduce((s, x) => s + x.duration_minutes, 0);
+        const firstStart = new Date(segs[0].started_at);
+        const lastEnd = new Date(segs[segs.length - 1].ended_at);
+        const sleepTime = total - awake;
+        const corePct = sleepTime > 0 ? (core / sleepTime) * 100 : 0;
+        const deepPct = sleepTime > 0 ? (deep / sleepTime) * 100 : 0;
+        const remPct = sleepTime > 0 ? (rem / sleepTime) * 100 : 0;
+        const awakePct = total > 0 ? (awake / total) * 100 : 0;
         return {
           date,
           dateLabel: format(parseISO(date), 'EEE, MMM d'),
@@ -95,8 +114,15 @@ export default function Sleep() {
           rem,
           core,
           awake,
-          deepPct: total > 0 ? Math.round((deep / total) * 100) : 0,
-          remPct: total > 0 ? Math.round((rem / total) * 100) : 0,
+          deepPct: Math.round(deepPct),
+          remPct: Math.round(remPct),
+          corePct: Math.round(corePct),
+          awakePct: Math.round(awakePct),
+          bedtime: firstStart,
+          waketime: lastEnd,
+          bedtimeStr: format(firstStart, 'h:mm a'),
+          waketimeStr: format(lastEnd, 'h:mm a'),
+          qualityScore: computeQualityScore(corePct, deepPct, remPct, awakePct),
         };
       })
       .sort((a, b) => b.date.localeCompare(a.date));
@@ -108,7 +134,9 @@ export default function Sleep() {
     let rem = 0;
     let core = 0;
     let awake = 0;
-    const sleepDurations: number[] = [];
+    let qualitySum = 0;
+    const bedtimesMinutes: number[] = [];
+    const waketimesMinutes: number[] = [];
     
     nights.forEach((n) => {
       total += n.totalMinutes;
@@ -116,37 +144,54 @@ export default function Sleep() {
       rem += n.rem;
       core += n.core;
       awake += n.awake;
-      sleepDurations.push(n.totalMinutes);
+      qualitySum += n.qualityScore ?? 0;
+      const bt = n.bedtime as Date;
+      const wt = n.waketime as Date;
+      if (bt) {
+        let mins = bt.getHours() * 60 + bt.getMinutes();
+        if (bt.getHours() < 12) mins += 24 * 60;
+        bedtimesMinutes.push(mins);
+      }
+      if (wt) {
+        let mins = wt.getHours() * 60 + wt.getMinutes();
+        waketimesMinutes.push(mins);
+      }
     });
     
     const count = nights.length;
-    const sleepTime = total - awake; // Total sleep excluding awake time
-    const efficiency = total > 0 ? Math.round((sleepTime / total) * 100) : 0;
-    
-    // Calculate consistency (standard deviation of sleep durations)
-    const avg = count > 0 ? total / count : 0;
-    const variance = sleepDurations.reduce((acc, d) => acc + Math.pow(d - avg, 2), 0) / count;
-    const stdDev = Math.sqrt(variance);
-    const consistency = avg > 0 ? Math.round(100 - (stdDev / avg) * 100) : 100;
-    
-    // Best and worst nights
-    const bestNight = nights.length > 0 ? nights.reduce((best, n) => n.totalMinutes > best.totalMinutes ? n : best, nights[0]) : null;
-    const worstNight = nights.length > 0 ? nights.reduce((worst, n) => n.totalMinutes < worst.totalMinutes ? n : worst, nights[0]) : null;
+    const sleepTime = total - awake;
+    const avgBedtime =
+      bedtimesMinutes.length > 0
+        ? (() => {
+            const avg = bedtimesMinutes.reduce((a, b) => a + b, 0) / bedtimesMinutes.length;
+            const wrapped = avg >= 24 * 60 ? avg - 24 * 60 : avg;
+            const h = Math.floor(wrapped / 60);
+            const m = Math.round(wrapped % 60);
+            return format(new Date(2000, 0, 1, h, m), 'h:mm a');
+          })()
+        : null;
+    const avgWaketime =
+      waketimesMinutes.length > 0
+        ? (() => {
+            const avg = waketimesMinutes.reduce((a, b) => a + b, 0) / waketimesMinutes.length;
+            const h = Math.floor(avg / 60);
+            const m = Math.round(avg % 60);
+            return format(new Date(2000, 0, 1, h, m), 'h:mm a');
+          })()
+        : null;
     
     return {
       totalMinutes: total,
-      sleepMinutes: sleepTime,
       avgMinutes: count > 0 ? Math.round(total / count) : 0,
       deepPct: sleepTime > 0 ? Math.round((deep / sleepTime) * 100) : 0,
       remPct: sleepTime > 0 ? Math.round((rem / sleepTime) * 100) : 0,
       corePct: sleepTime > 0 ? Math.round((core / sleepTime) * 100) : 0,
       awakeMinutes: awake,
       awakePct: total > 0 ? Math.round((awake / total) * 100) : 0,
-      efficiency,
-      consistency: Math.max(0, Math.min(100, consistency)),
       nightsCount: count,
-      bestNight,
-      worstNight,
+      avgBedtime,
+      avgWaketime,
+      qualityScore: count > 0 ? Math.round(qualitySum / count) : 0,
     };
   }, [nights]);
 
@@ -200,12 +245,32 @@ export default function Sleep() {
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
                 <Clock size={18} />
-                <span className="text-sm">Total sleep</span>
+                <span className="text-sm">Avg bedtime</span>
               </div>
               <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {formatDuration(totals.sleepMinutes)}
+                {totals.avgBedtime ?? '—'}
               </p>
-              <p className="text-xs text-muted-foreground">in {totals.nightsCount} nights</p>
+              <p className="text-xs text-muted-foreground">when you go to sleep</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Clock size={18} />
+                <span className="text-sm">Avg wake</span>
+              </div>
+              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
+                {totals.avgWaketime ?? '—'}
+              </p>
+              <p className="text-xs text-muted-foreground">when you wake up</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <Star size={18} />
+                <span className="text-sm">Quality</span>
+              </div>
+              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
+                {totals.qualityScore}/100
+              </p>
+              <p className="text-xs text-muted-foreground">stage balance (Core 60%, Deep 10–20%, REM 20–25%)</p>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 text-muted-foreground mb-1">
@@ -247,52 +312,7 @@ export default function Sleep() {
               </p>
               <p className="text-xs text-muted-foreground">{totals.awakePct}% of time</p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <TrendingUp size={18} />
-                <span className="text-sm">Efficiency</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.efficiency}%
-              </p>
-              <p className="text-xs text-muted-foreground">sleep / total time</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Activity size={18} />
-                <span className="text-sm">Consistency</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.consistency}%
-              </p>
-              <p className="text-xs text-muted-foreground">sleep regularity</p>
-            </div>
           </div>
-          
-          {totals.bestNight && totals.worstNight && (
-            <div className="grid grid-cols-2 gap-4">
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <TrendingUp size={18} />
-                  <span className="text-sm">Best night</span>
-                </div>
-                <p className={cn('text-xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                  {formatDuration(totals.bestNight.totalMinutes)}
-                </p>
-                <p className="text-xs text-muted-foreground">{totals.bestNight.dateLabel}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                  <TrendingUp size={18} className="rotate-180" />
-                  <span className="text-sm">Worst night</span>
-                </div>
-                <p className={cn('text-xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                  {formatDuration(totals.worstNight.totalMinutes)}
-                </p>
-                <p className="text-xs text-muted-foreground">{totals.worstNight.dateLabel}</p>
-              </div>
-            </div>
-          )}
 
           {chartData.length > 0 && (
             <div className="sleep-chart rounded-xl border border-border bg-card p-6">
@@ -312,10 +332,10 @@ export default function Sleep() {
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.date}
                   />
                   <Legend />
-                  <Bar dataKey="Deep" name="Deep" stackId="sleep" fill={STAGE_COLORS.Deep} isAnimationActive={false} activeBar={{ fill: 'transparent', stroke: 'none' }} />
-                  <Bar dataKey="REM" name="REM" stackId="sleep" fill={STAGE_COLORS.REM} isAnimationActive={false} activeBar={{ fill: 'transparent', stroke: 'none' }} />
-                  <Bar dataKey="Core" name="Core" stackId="sleep" fill={STAGE_COLORS.Core} isAnimationActive={false} activeBar={{ fill: 'transparent', stroke: 'none' }} />
-                  <Bar dataKey="Awake" name="Awake" stackId="sleep" fill={STAGE_COLORS.Awake} isAnimationActive={false} activeBar={{ fill: 'transparent', stroke: 'none' }} />
+                  <Bar dataKey="Deep" name="Deep" stackId="sleep" fill={STAGE_COLORS.Deep} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.Deep }} />
+                  <Bar dataKey="REM" name="REM" stackId="sleep" fill={STAGE_COLORS.REM} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.REM }} />
+                  <Bar dataKey="Core" name="Core" stackId="sleep" fill={STAGE_COLORS.Core} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.Core }} />
+                  <Bar dataKey="Awake" name="Awake" stackId="sleep" fill={STAGE_COLORS.Awake} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.Awake }} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
