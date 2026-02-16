@@ -81,7 +81,7 @@ export default function Dashboard() {
               )}
             >
         {/* Weight */}
-        <Link to="/health" className="group">
+        <Link to="/health" className="group min-w-0">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
             <div className="flex justify-between items-start">
               <div>
@@ -122,7 +122,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Muscle Mass */}
-        <Link to="/health" className="group">
+        <Link to="/health" className="group min-w-0">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
             <div className="flex justify-between items-start">
               <div>
@@ -163,7 +163,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Weekly Adherence */}
-        <Link to="/habits" className="group">
+        <Link to="/habits" className="group min-w-0">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
             <div>
               <div className="flex items-center gap-2">
@@ -187,7 +187,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Monthly Balance */}
-        <Link to="/finance" className="group">
+        <Link to="/finance" className="group min-w-0">
           <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
             <div>
               <div className="flex items-center gap-2">
@@ -208,75 +208,75 @@ export default function Dashboard() {
           </div>
         </Link>
 
-        {/* Sleep — 7-day avg */}
-        <Link to="/sleep" className="group">
-          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
-            <div>
-              <div className="flex items-center gap-2">
-                <Moon size={14} className="text-muted-foreground" />
-                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sleep</h3>
-              </div>
-              <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                {nightsCount > 0
-                  ? `${Math.floor(avgSleepMinutes / 60)}h ${avgSleepMinutes % 60}m`
-                  : '-'}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                {nightsCount > 0 ? `7-night avg` : 'No data yet'}
-              </p>
-            </div>
-          </div>
-        </Link>
-
-        {/* Screen Time — same height as other stats cards */}
-        <Link to="/screentime" className="group col-span-2 md:col-span-1">
-          <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full min-h-0">
-            <div className="flex justify-between items-start gap-2 min-h-0">
-              <div className="min-w-0">
+        {/* Sleep + Screen Time — always side by side in a 2-col sub-grid */}
+        <div className="col-span-2 grid grid-cols-2 gap-4 min-w-0">
+          <Link to="/sleep" className="group min-w-0">
+            <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
+              <div>
                 <div className="flex items-center gap-2">
-                  <Monitor size={14} className="text-muted-foreground flex-shrink-0" />
-                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Screen Time</h3>
+                  <Moon size={14} className="text-muted-foreground" />
+                  <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Sleep</h3>
                 </div>
                 <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                  {screentimeAvg > 0 ? `${Math.floor(screentimeAvg / 60)}h ${screentimeAvg % 60}m` : '-'}
+                  {nightsCount > 0
+                    ? `${Math.floor(avgSleepMinutes / 60)}h ${avgSleepMinutes % 60}m`
+                    : '-'}
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                  <span>7-day avg</span>
-                  {todayScreentime.totalSwitches > 0 && (
-                    <span className="flex items-center gap-1">
-                      <RefreshCw size={10} />
-                      <span className={cn(privacyMode && "blur-sm")}>{todayScreentime.totalSwitches.toLocaleString()}</span>
-                    </span>
-                  )}
-                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {nightsCount > 0 ? `7-night avg` : 'No data yet'}
+                </p>
               </div>
-              {screentimeTrend !== 0 && (
-                <div className={cn("text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1",
-                  screentimeTrend < 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
-                )}>
-                  {screentimeTrend < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
-                  {Math.abs(screentimeTrend)}%
+            </div>
+          </Link>
+          <Link to="/screentime" className="group min-w-0">
+            <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full min-h-0">
+              <div className="flex justify-between items-start gap-2 min-h-0">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <Monitor size={14} className="text-muted-foreground flex-shrink-0" />
+                    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Screen Time</h3>
+                  </div>
+                  <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                    {screentimeAvg > 0 ? `${Math.floor(screentimeAvg / 60)}h ${screentimeAvg % 60}m` : '-'}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                    <span>7-day avg</span>
+                    {todayScreentime.totalSwitches > 0 && (
+                      <span className="flex items-center gap-1">
+                        <RefreshCw size={10} />
+                        <span className={cn(privacyMode && "blur-sm")}>{todayScreentime.totalSwitches.toLocaleString()}</span>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {screentimeTrend !== 0 && (
+                  <div className={cn("text-xs font-medium px-2 py-1 rounded-full flex items-center gap-1 flex-shrink-0",
+                    screentimeTrend < 0 ? "bg-green-500/10 text-green-500" : "bg-red-500/10 text-red-500"
+                  )}>
+                    {screentimeTrend < 0 ? <TrendingDown size={12} /> : <TrendingUp size={12} />}
+                    {Math.abs(screentimeTrend)}%
+                  </div>
+                )}
+              </div>
+              {screentimeHistory.length > 0 && (
+                <div className="h-8 w-full mt-2 opacity-50 flex-shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={screentimeHistory.map((d, i) => ({ i, val: d.minutes }))}>
+                      <Line
+                        type="monotone"
+                        dataKey="val"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        dot={false}
+                        className={screentimeTrend < 0 ? "text-green-500" : "text-red-500"}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </div>
               )}
             </div>
-            {screentimeHistory.length > 0 && (
-              <div className="h-8 w-full mt-2 opacity-50 flex-shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={screentimeHistory.map((d, i) => ({ i, val: d.minutes }))}>
-                    <Line
-                      type="monotone"
-                      dataKey="val"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                      dot={false}
-                      className={screentimeTrend < 0 ? "text-green-500" : "text-red-500"}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </div>
-        </Link>
+          </Link>
+        </div>
       </div>
           );
         if (widgetId === 'overdue')
