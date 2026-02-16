@@ -308,6 +308,201 @@ function isWebsiteItem(item: Record<string, unknown>): boolean {
   return firstString(item, ['domain', 'site', 'url']) !== null;
 }
 
+/**
+ * Categorize app by name. Returns category string or 'Uncategorized' if no match.
+ */
+function categorizeApp(appName: string): string {
+  if (!appName) return 'Uncategorized';
+  const normalized = appName.toLowerCase().trim();
+  
+  // App name to category mapping (case-insensitive, normalized)
+  const appCategoryMap: Record<string, string> = {
+    // Development Tools
+    'code': 'Development',
+    'cursor': 'Development',
+    'windowsterminal': 'Development',
+    'notepad': 'Development',
+    'jetbrains-toolbox': 'Development',
+    'githubdesktop': 'Development',
+    'powershell': 'Development',
+    'visual studio code': 'Development',
+    'vscode': 'Development',
+    
+    // Productivity
+    'ticktick': 'Productivity',
+    'icloudpasswords': 'Productivity',
+    'icloudpasswordsextensionhelper': 'Productivity',
+    'excel': 'Productivity',
+    'powerpnt': 'Productivity',
+    'powerpoint': 'Productivity',
+    'word': 'Productivity',
+    'onenote': 'Productivity',
+    'outlook': 'Productivity',
+    'notes': 'Productivity',
+    'reminders': 'Productivity',
+    'calendar': 'Productivity',
+    'google calendar': 'Productivity',
+    'shortcuts': 'Productivity',
+    'zoho desk': 'Productivity',
+    'gemini': 'Productivity',
+    'chatgpt': 'Productivity',
+    
+    // Utilities
+    'snippingtool': 'Utilities',
+    'winrar': 'Utilities',
+    'calculator': 'Utilities',
+    'cleanmgr': 'Utilities',
+    'disk cleanup': 'Utilities',
+    
+    // Entertainment
+    'vlc': 'Entertainment',
+    'applemusic': 'Entertainment',
+    'itunes': 'Entertainment',
+    'music': 'Entertainment',
+    'youtube': 'Entertainment',
+    'tiktok': 'Entertainment',
+    'instagram': 'Entertainment',
+    'netflix': 'Entertainment',
+    'spotify': 'Entertainment',
+    
+    // Communication
+    'whatsapp.root': 'Communication',
+    'whatsapp': 'Communication',
+    'wa business': 'Communication',
+    'messages': 'Communication',
+    'mail': 'Communication',
+    'facetime': 'Communication',
+    'telegram': 'Communication',
+    'signal': 'Communication',
+    'discord': 'Communication',
+    'slack': 'Communication',
+    'phone': 'Communication',
+    'incallservice': 'Communication',
+    
+    // Web Browsing
+    'safari': 'Web Browsing',
+    'msedge': 'Web Browsing',
+    'chrome': 'Web Browsing',
+    'firefox': 'Web Browsing',
+    'explorer': 'Web Browsing',
+    'shellexperiencehost': 'Web Browsing',
+    'msiexec': 'Web Browsing',
+    'startmenuexperiencehost': 'Web Browsing',
+    'web': 'Web Browsing',
+    
+    // Social Media
+    'facebook': 'Social',
+    'twitter': 'Social',
+    'x': 'Social',
+    'linkedin': 'Social',
+    'reddit': 'Social',
+    'snapchat': 'Social',
+    
+    // Photo & Video Editing
+    'photoshop': 'Media',
+    'capcut': 'Media',
+    'snapseed': 'Media',
+    'picsart': 'Media',
+    'photos': 'Media',
+    'vn': 'Media',
+    'edits': 'Media',
+    'premiere': 'Media',
+    'after effects': 'Media',
+    'lightroom': 'Media',
+    
+    // Finance & Banking
+    'qnb bebasata': 'Finance',
+    'myfawry': 'Finance',
+    'thndr': 'Finance',
+    'instapay': 'Finance',
+    'noon': 'Finance',
+    
+    // Health & Fitness
+    'health': 'Health',
+    'huawei health': 'Health',
+    'apple health': 'Health',
+    'fitness': 'Health',
+    'strava': 'Health',
+    
+    // System & Settings (Windows/iOS system components)
+    'settings': 'System',
+    'clock': 'System',
+    'app store': 'System',
+    'softwareupdate': 'System',
+    'applicationframehost': 'System',
+    'shellhost': 'System',
+    'searchhost': 'System',
+    'pickerhost': 'System',
+    'credentialuibroker': 'System',
+    'lockapp': 'System',
+    'user authentication': 'System',
+    'authkituiservice': 'System',
+    'ctnotifyuiservice': 'System',
+    'synetpenh': 'System',
+    'keyboarddrv': 'System',
+    'vedetector': 'System',
+    'rdcfg': 'System',
+    'mmc': 'System',
+    'compil32': 'System',
+    'mspcmanager': 'System',
+    'screentimeunlock': 'System',
+    'chronos-screentime': 'System',
+    'lifeos': 'System',
+    'appledevices': 'System',
+    'olk': 'System',
+    'openwith': 'System',
+    
+    // Cloud & Storage
+    'icloudhome': 'Cloud',
+    'drive': 'Cloud',
+    'dropbox': 'Cloud',
+    'onedrive': 'Cloud',
+    'google drive': 'Cloud',
+    
+    // Maps & Navigation
+    'google maps': 'Navigation',
+    'maps': 'Navigation',
+    'waze': 'Navigation',
+    'apple maps': 'Navigation',
+    
+    // Gaming
+    'ld': 'Gaming',
+    'steam': 'Gaming',
+    'epic games': 'Gaming',
+  };
+  
+  // Direct match
+  if (appCategoryMap[normalized]) {
+    return appCategoryMap[normalized];
+  }
+  
+  // Pattern matching for variations (fallback when exact match not found)
+  if (/code|editor|ide|studio|dev/i.test(normalized)) return 'Development'
+  ;
+  if (/terminal|cmd|powershell|bash|shell|console/i.test(normalized)) return 'Development';
+  if (/git|github|gitlab|bitbucket|version control/i.test(normalized)) return 'Development';
+  if (/browser|chrome|edge|firefox|safari|web|explorer/i.test(normalized)) return 'Browsing';
+  if (/photo|image|picture|gallery|camera|snap/i.test(normalized)) return 'Media';
+  if (/video|movie|film|player|vlc|media player/i.test(normalized)) return 'Media';
+  if (/music|audio|sound|spotify|apple music|itunes|streaming/i.test(normalized)) return 'Entertainment';
+  if (/message|chat|whatsapp|telegram|signal|messenger|sms/i.test(normalized)) return 'Communication';
+  if (/mail|email|outlook|gmail|post/i.test(normalized)) return 'Communication';
+  if (/social|facebook|twitter|instagram|linkedin|snapchat|tiktok/i.test(normalized)) return 'Social';
+  if (/note|memo|notepad|text|document|write/i.test(normalized)) return 'Productivity';
+  if (/calendar|schedule|reminder|todo|task|ticktick/i.test(normalized)) return 'Productivity';
+  if (/bank|finance|payment|wallet|money|fawry|thndr|instapay/i.test(normalized)) return 'Finance';
+  if (/health|fitness|workout|exercise|wellness/i.test(normalized)) return 'Health';
+  if (/map|navigation|gps|location|directions/i.test(normalized)) return 'Navigation';
+  if (/game|gaming|play|steam|epic/i.test(normalized)) return 'Gaming';
+  if (/setting|config|preference|control panel|options/i.test(normalized)) return 'System';
+  if (/system|windows|host|service|driver|process|exec|manager/i.test(normalized)) return 'System';
+  if (/cloud|sync|backup|storage|icloud|drive|dropbox/i.test(normalized)) return 'Cloud';
+  if (/utility|tool|helper|manager|clean|snipping|calculator/i.test(normalized)) return 'Utilities';
+  if (/ai|assistant|chatgpt|gemini|claude/i.test(normalized)) return 'Productivity';
+  
+  return 'Uncategorized';
+}
+
 function parseActivitySummary(text: string): FlatUsageItem[] {
   if (!text) return [];
   return text
@@ -413,6 +608,12 @@ Deno.serve(async (req: Request) => {
       const firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
       const lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
       const lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
+      
+      // Use provided category if available, otherwise categorize by app name
+      const providedCategory = firstString(item, ['category', 'Category']);
+      const category = providedCategory && providedCategory !== 'Uncategorized' 
+        ? providedCategory 
+        : categorizeApp(appName);
 
       appRows.push({
         user_id: payload.user_id,
@@ -421,7 +622,7 @@ Deno.serve(async (req: Request) => {
         device_id: deviceId,
         platform,
         app_name: appName,
-        category: firstString(item, ['category', 'Category']) || 'Uncategorized',
+        category,
         process_path: firstString(item, ['process_path', 'processPath', 'ProcessPath']),
         total_time_seconds: getItemDurationSeconds(item),
         session_count: getItemSessionCount(item),
@@ -517,14 +718,19 @@ Deno.serve(async (req: Request) => {
               if (day.Apps) {
                 for (const appKey in day.Apps) {
                   const app = day.Apps[appKey];
+                  const appName = app.AppName || appKey;
+                  const providedCategory = app.Category;
+                  const category = providedCategory && providedCategory !== 'Uncategorized'
+                    ? providedCategory
+                    : categorizeApp(appName);
                   appRows.push({
                     user_id: payload.user_id,
                     date: dateStr,
                     source,
                     device_id: deviceId,
                     platform,
-                    app_name: app.AppName || appKey,
-                    category: app.Category || 'Uncategorized',
+                    app_name: appName,
+                    category,
                     process_path: app.ProcessPath || null,
                     total_time_seconds: parseTimeToSeconds(app.TotalTime),
                     session_count: app.SessionCount || 0,

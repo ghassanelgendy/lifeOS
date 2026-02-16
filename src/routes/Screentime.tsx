@@ -34,6 +34,7 @@
   const [customDate, setCustomDate] = useState(todayStr);
   const [showAllApps, setShowAllApps] = useState(false);
   const [weekStart, setWeekStart] = useState<string>(() => format(startOfWeek(today), 'yyyy-MM-dd'));
+  const [platformFilter, setPlatformFilter] = useState<'all' | 'ios' | 'windows'>('all');
 
   const getDateRange = (): { start: string; end: string } => {
     switch (period) {
@@ -79,7 +80,7 @@
     const { data: websiteStats = [], isLoading: websitesLoading } = useScreentimeWebsiteStats(start, end);
     const { data: summaries = [], isLoading: summariesLoading } = useScreentimeDailySummaries(start, end);
     const todayData = useTodayScreentime();
-    const { history, avg7Days, trend, avgSwitches7Days } = useScreentimeMetrics(30);
+    const { avg7Days, trend, avgSwitches7Days } = useScreentimeMetrics(30);
 
     const isLoading = appsLoading || websitesLoading || summariesLoading;
 
@@ -111,6 +112,11 @@
     }, {} as Record<string, { app_name: string; category: string; total_time_seconds: number; session_count: number; platform: string; source: string }>);
 
     const allAppsSorted = Object.values(aggregatedApps)
+      .filter((app) => {
+        if (platformFilter === 'all') return true;
+        const platformNorm = (app.platform || '').toLowerCase();
+        return platformFilter === 'ios' ? platformNorm === 'ios' : platformNorm === 'windows';
+      })
       .sort((a, b) => b.total_time_seconds - a.total_time_seconds)
       .map((app) => ({
         ...app,
@@ -122,6 +128,65 @@
     const INITIAL_APPS_SHOWN = 15;
     const topApps = allAppsSorted.slice(0, INITIAL_APPS_SHOWN);
     const appsToShow = showAllApps ? allAppsSorted : topApps;
+
+    // Category breakdown: aggregate by category
+    const categoryBreakdown = useMemo(() => {
+      const byCategory = new Map<string, { ios: number; windows: number }>();
+      
+      // Normalize category names (merge variations like "WebBrowsing" and "Web Browsing")
+      const normalizeCategory = (cat: string): string => {
+        const normalized = (cat || 'Uncategorized').trim();
+        // Merge WebBrowsing variations
+        if (/^web\s*browsing$/i.test(normalized)) return 'Web Browsing';
+        return normalized;
+      };
+      
+      statsForDisplay.forEach((stat) => {
+        if (!isIosOrWindows(stat.platform)) return;
+        const category = normalizeCategory(stat.category || 'Uncategorized');
+        const platformNorm = (stat.platform || '').toLowerCase();
+        const existing = byCategory.get(category) || { ios: 0, windows: 0 };
+        if (platformNorm === 'ios') existing.ios += stat.total_time_seconds;
+        else if (platformNorm === 'windows') existing.windows += stat.total_time_seconds;
+        byCategory.set(category, existing);
+      });
+      const total = Array.from(byCategory.values()).reduce((sum, times) => sum + times.ios + times.windows, 0);
+      const allUseHours = Array.from(byCategory.values()).some(times => {
+        const iosMin = Math.round(times.ios / 60);
+        const winMin = Math.round(times.windows / 60);
+        return iosMin >= 60 || winMin >= 60;
+      });
+      
+      return Array.from(byCategory.entries())
+        .map(([category, times]) => {
+          const iosMinutes = Math.round(times.ios / 60);
+          const windowsMinutes = Math.round(times.windows / 60);
+          const totalMinutes = iosMinutes + windowsMinutes;
+          const totalSeconds = times.ios + times.windows;
+          const percentage = total > 0 ? Math.round((totalSeconds / total) * 100) : 0;
+          
+          // Convert all to the same unit for chart (hours if any category >= 60min, else minutes)
+          // This ensures correct ratios
+          const iosForChart = allUseHours ? Math.round((times.ios / 3600) * 10) / 10 : iosMinutes;
+          const windowsForChart = allUseHours ? Math.round((times.windows / 3600) * 10) / 10 : windowsMinutes;
+          
+          return {
+            category,
+            ios: iosForChart, // For chart dataKey (all in same unit)
+            windows: windowsForChart, // For chart dataKey (all in same unit)
+            iosMinutes,
+            windowsMinutes,
+            totalMinutes,
+            iosHours: Math.round((times.ios / 3600) * 10) / 10,
+            windowsHours: Math.round((times.windows / 3600) * 10) / 10,
+            totalHours: Math.round((totalSeconds / 3600) * 10) / 10,
+            percentage,
+            useHours: allUseHours, // Flag for display
+          };
+        })
+        .sort((a, b) => b.totalMinutes - a.totalMinutes)
+        .filter(cat => cat.totalMinutes > 0); // Only show categories with time
+    }, [statsForDisplay]);
 
     // Only iOS and Windows — use websitesForDisplay for cards
     const aggregatedWebsites = websitesForDisplay.reduce((acc, stat) => {
@@ -241,24 +306,39 @@
       return { windowsLast, iosLast };
     }, [appStats]);
 
-    // Weekly pattern: aggregate by day of week (in hours)
+    // Weekly pattern: aggregate by day of week (in hours) - separate iOS and Windows
     const weeklyPattern = useMemo(() => {
-      const dayTotals: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      const dayTotalsIOS: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      const dayTotalsWindows: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       const dayCounts: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       
-      history.forEach(d => {
-        const dayOfWeek = getDay(parseISO(d.date));
-        dayTotals[dayOfWeek] += d.minutes;
+      // Use appStats instead of history to get platform breakdown
+      appStats.forEach(stat => {
+        if (!isIosOrWindows(stat.platform)) return;
+        const dayOfWeek = getDay(parseISO(stat.date));
+        const platformNorm = (stat.platform || '').toLowerCase();
+        const minutes = Math.round(stat.total_time_seconds / 60);
+        if (platformNorm === 'ios') {
+          dayTotalsIOS[dayOfWeek] += minutes;
+        } else if (platformNorm === 'windows') {
+          dayTotalsWindows[dayOfWeek] += minutes;
+        }
         dayCounts[dayOfWeek] += 1;
       });
 
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return dayNames.map((name, idx) => ({
-        day: name,
-        hours: dayCounts[idx] > 0 ? Math.round((dayTotals[idx] / dayCounts[idx]) / 60 * 10) / 10 : 0, // Round to 1 decimal place
-        total: dayTotals[idx],
-      }));
-    }, [history]);
+      return dayNames.map((name, idx) => {
+        const iosHours = dayCounts[idx] > 0 ? Math.round((dayTotalsIOS[idx] / 60) * 10) / 10 : 0;
+        const windowsHours = dayCounts[idx] > 0 ? Math.round((dayTotalsWindows[idx] / 60) * 10) / 10 : 0;
+        return {
+          day: name,
+          ios: iosHours,
+          windows: windowsHours,
+          hours: iosHours + windowsHours, // Total for backward compatibility
+          total: dayTotalsIOS[idx] + dayTotalsWindows[idx],
+        };
+      });
+    }, [appStats]);
 
 
     // Peak hours estimation using timestamps (if available)
@@ -699,11 +779,83 @@
             </div>
           )}
 
+          {/* Category Breakdown */}
+          {categoryBreakdown.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
+              <h2 className="text-lg font-semibold mb-4">Time by Category</h2>
+              <p className="text-sm text-muted-foreground mb-4">
+                Breakdown of screen time by app category ({formatDurationMinutes(categoryBreakdown.reduce((sum, c) => sum + c.totalMinutes, 0))} total)
+              </p>
+              <ResponsiveContainer width="100%" height={Math.max(300, categoryBreakdown.length * 50)}>
+                <BarChart 
+                  data={categoryBreakdown} 
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
+                >
+                  <XAxis 
+                    type="number" 
+                    label={{ 
+                      value: categoryBreakdown.length > 0 && categoryBreakdown[0].useHours ? 'Hours' : 'Minutes', 
+                      position: 'insideBottom', 
+                      offset: -5 
+                    }}
+                    tickFormatter={(value) => {
+                      const useHours = categoryBreakdown.length > 0 && categoryBreakdown[0].useHours;
+                      return useHours ? `${value}h` : `${value}m`;
+                    }}
+                  />
+                  <YAxis 
+                    type="category" 
+                    dataKey="category" 
+                    width={110}
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: 'var(--color-card)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '0.5rem',
+                      boxShadow: 'none',
+                    }}
+                    cursor={false}
+                    formatter={(value: any, name: any, item: any) => {
+                      const numValue = Number(value) ?? 0;
+                      const payload = item?.payload;
+                      const useHours = payload?.useHours;
+                      
+                      if (useHours) {
+                        // Convert hours back to minutes for display
+                        const hours = numValue;
+                        const minutes = name === 'IOS' ? payload?.iosMinutes : payload?.windowsMinutes || 0;
+                        const remainingMinutes = minutes % 60;
+                        return [`${formatDurationMinutes(minutes)}`, platformLabel(String(name ?? ''))];
+                      } else {
+                        return [`${formatDurationMinutes(numValue)}`, platformLabel(String(name ?? ''))];
+                      }
+                    }}
+                    labelFormatter={(label, payload) => {
+                      const data = payload?.[0]?.payload;
+                      if (data) {
+                        return `${data.category} (${data.percentage}%)`;
+                      }
+                      return label;
+                    }}
+                    itemStyle={{ color: 'var(--color-foreground)' }}
+                    labelStyle={{ color: 'var(--color-muted-foreground)' }}
+                  />
+                  <Legend formatter={(value) => platformLabel(value)} />
+                  <Bar dataKey="ios" name="IOS" stackId="category" fill={accentShades.light} isAnimationActive={false} />
+                  <Bar dataKey="windows" name="windows" stackId="category" fill={accentShades.base} isAnimationActive={false} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           {/* Weekly Pattern */}
           {weeklyPattern.some(d => d.hours > 0) && (
             <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
               <h2 className="text-lg font-semibold mb-4">Weekly Pattern</h2>
-              <p className="text-sm text-muted-foreground mb-4">Average hours per day of week</p>
+              <p className="text-sm text-muted-foreground mb-4">Average hours per day of week (iOS vs Windows)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={weeklyPattern}>
                   <XAxis dataKey="day" />
@@ -716,11 +868,13 @@
                       boxShadow: 'none'
                     }}
                     cursor={false}
-                    formatter={(value) => [`${typeof value === 'number' ? value.toFixed(1) : 0}h`, 'Avg Hours']}
+                    formatter={(value, name) => [`${typeof value === 'number' ? value.toFixed(1) : 0}h`, platformLabel(String(name ?? ''))]}
                     itemStyle={{ color: 'var(--color-foreground)' }}
                     labelStyle={{ color: 'var(--color-muted-foreground)' }}
                   />
-                  <Bar dataKey="hours" fill={accentShades.base} isAnimationActive={false} />
+                  <Legend formatter={(value) => platformLabel(value)} />
+                  <Bar dataKey="ios" name="IOS" fill={accentShades.light} isAnimationActive={false} />
+                  <Bar dataKey="windows" name="windows" fill={accentShades.base} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -772,15 +926,35 @@
                 <h2 className="text-lg font-semibold">Apps</h2>
                 <p className="text-sm text-muted-foreground">Source (IOS, windows) shown per app</p>
               </div>
-              {allAppsSorted.length > INITIAL_APPS_SHOWN && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllApps((v) => !v)}
-                  className="text-sm font-medium text-primary hover:underline"
-                >
-                  {showAllApps ? 'Show less' : `See all apps (${allAppsSorted.length})`}
-                </button>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Platform filter */}
+                <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
+                  {(['all', 'ios', 'windows'] as const).map((pf) => (
+                    <button
+                      key={pf}
+                      type="button"
+                      onClick={() => setPlatformFilter(pf)}
+                      className={cn(
+                        'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
+                        platformFilter === pf
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                      )}
+                    >
+                      {pf === 'all' ? 'All' : pf === 'ios' ? 'IOS' : 'Windows'}
+                    </button>
+                  ))}
+                </div>
+                {allAppsSorted.length > INITIAL_APPS_SHOWN && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllApps((v) => !v)}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    {showAllApps ? 'Show less' : `See all apps (${allAppsSorted.length})`}
+                  </button>
+                )}
+              </div>
             </div>
             <div className="divide-y divide-border">
               {appsToShow.map((app, idx) => (
@@ -799,7 +973,10 @@
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{app.category} · {app.session_count} sessions</p>
+                        <p className="text-sm text-muted-foreground">
+                          {app.category}
+                          {app.platform.toLowerCase() !== 'ios' && ` · ${app.session_count} sessions`}
+                        </p>
                       </div>
                     </div>
                     <div className="text-right flex-shrink-0 ml-4">
