@@ -8,6 +8,9 @@ Use `supabase/functions/upload-screentime` with:
 - `platform: "ios"`
 - `device_id`: a stable phone identifier (for example `iphone-15-pro`)
 - `is_cumulative: true` for repeated uploads during the day
+- **`upload_date`** (recommended): date the Shortcut ran / captured the data (YYYY-MM-DD)
+- **`upload_time`** (optional): time the Shortcut ran (HH, HH:mm, or HH:mm:ss)
+  - The function echoes `upload_date`, `upload_time`, and also computes `uploaded_at` (UTC) + adds `received_at` (server time) so you can track uploads hourly and debug why past days’ data might change.
 
 ### Supported payload styles
 
@@ -28,6 +31,8 @@ Send current cumulative totals for today. The function now uses monotonic max me
   "platform": "ios",
   "source": "mobile",
   "is_cumulative": true,
+  "upload_date": "2026-02-17",
+  "upload_time": "14:30",
   "snapshots": [
     {
       "date": "2026-02-16",
@@ -90,7 +95,7 @@ You can send many days in one request by adding multiple `snapshots` entries.
 ## 5) Rollout Checklist
 
 1. Deploy the updated edge function.
-2. Update iOS Shortcut to send `is_cumulative: true` and `snapshots`.
+2. Update iOS Shortcut to send `is_cumulative: true`, `snapshots`, plus `upload_date` and optional `upload_time`.
 3. Run one test upload for today.
 4. Run backfill upload for last month.
 5. Open Screen Time page and verify:

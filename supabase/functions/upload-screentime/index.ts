@@ -105,6 +105,19 @@ interface ScreentimePayload {
   device_id?: string;
   platform: string;
   source: string;
+  /**
+   * iOS Shortcut: add upload timestamp fields at root level (NOT per app item).
+   * - upload_date: YYYY-MM-DD (recommended)
+   * - upload_time: optional HH, HH:mm, or HH:mm:ss
+   *
+   * These are only used for debugging/hourly tracking; they do not affect how screentime rows are aggregated.
+   */
+  upload_date?: string;
+  upload_time?: string;
+  uploadDate?: string;
+  uploadTime?: string;
+  /** If true, include extra debug info + read-back counts in response. */
+  debug?: boolean;
   is_cumulative?: boolean;
   cumulative?: boolean;
   /** Per-day app/website usage (nested year -> month -> week -> day). */
@@ -191,14 +204,52 @@ function parseDurationToSeconds(value: unknown): number {
 }
 
 function parseDateToDateString(dateStr: string): string {
+  const raw = String(dateStr || '').trim();
+  if (!raw) return raw;
+
+  // iOS Shortcuts commonly sends dates like "2/17/26" (M/D/YY) or "2/17/2026".
+  // Parse explicitly to avoid environment-dependent Date parsing.
+  const slashMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:\s+.*)?$/);
+  if (slashMatch) {
+    let a = parseInt(slashMatch[1], 10);
+    let b = parseInt(slashMatch[2], 10);
+    const yRaw = slashMatch[3];
+    let year = parseInt(yRaw, 10);
+    if (yRaw.length === 2) year = 2000 + year;
+
+    // Default M/D, but if it looks like D/M (e.g., 17/2/26) then swap.
+    let month = a;
+    let day = b;
+    if (a > 12 && b <= 12) {
+      month = b;
+      day = a;
+    }
+
+    if (
+      Number.isFinite(year) &&
+      Number.isFinite(month) &&
+      Number.isFinite(day) &&
+      year >= 2000 &&
+      year <= 2100 &&
+      month >= 1 &&
+      month <= 12 &&
+      day >= 1 &&
+      day <= 31
+    ) {
+      const mm = String(month).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      return `${year}-${mm}-${dd}`;
+    }
+  }
+
   try {
-    const date = new Date(dateStr);
+    const date = new Date(raw);
     if (isNaN(date.getTime())) {
-      return dateStr.split('T')[0];
+      return raw.split('T')[0];
     }
     return date.toISOString().split('T')[0];
   } catch {
-    return dateStr.split('T')[0];
+    return raw.split('T')[0];
   }
 }
 
@@ -210,6 +261,27 @@ function parseTimestamp(tsStr: string): string | null {
   } catch {
     return null;
   }
+}
+
+function buildUploadedAt(uploadDateRaw: string, uploadTimeRaw?: string | null): string | null {
+  const datePart = parseDateToDateString(uploadDateRaw);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return null;
+
+  const timeTrimmed = (uploadTimeRaw || '').trim();
+  if (!timeTrimmed) {
+    return `${datePart}T00:00:00.000Z`;
+  }
+
+  // Accept HH, HH:mm, or HH:mm:ss. Treat as UTC.
+  const m = timeTrimmed.match(/^(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/);
+  if (!m) return null;
+  const hh = Math.max(0, Math.min(23, parseInt(m[1], 10) || 0));
+  const mm = Math.max(0, Math.min(59, parseInt(m[2] ?? '0', 10) || 0));
+  const ss = Math.max(0, Math.min(59, parseInt(m[3] ?? '0', 10) || 0));
+  const hhStr = String(hh).padStart(2, '0');
+  const mmStr = String(mm).padStart(2, '0');
+  const ssStr = String(ss).padStart(2, '0');
+  return `${datePart}T${hhStr}:${mmStr}:${ssStr}.000Z`;
 }
 
 function toRecord(value: unknown): Record<string, unknown> {
@@ -538,6 +610,8 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const FUNCTION_VERSION = 'upload-screentime@2026-02-17';
+    const received_at = new Date().toISOString();
     const payload = (await req.json()) as ScreentimePayload;
 
     if (!payload.user_id) {
@@ -547,15 +621,48 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Root-level upload timestamp for iOS Shortcut (do not affect aggregation)
+    const payloadRecord = toRecord(payload);
+    const uploadDateRaw = firstString(payloadRecord, ['upload_date', 'uploadDate']);
+    const uploadTimeRaw = firstString(payloadRecord, ['upload_time', 'uploadTime']);
+    const upload_date = uploadDateRaw ? parseDateToDateString(uploadDateRaw) : null;
+    const upload_time = uploadTimeRaw ? uploadTimeRaw.trim() : null;
+    const uploaded_at = uploadDateRaw ? buildUploadedAt(uploadDateRaw, uploadTimeRaw) : null;
+    const debugEnabled = payload.debug === true;
+
     const normalizedSnapshots = Array.isArray(payload.snapshots) ? [...payload.snapshots] : [];
+    let activitySummaryDateUsed: string | null = null;
+    let parsedActivityItemsCount = 0;
     if (payload.activity_summary) {
       const activityItems = parseActivitySummary(payload.activity_summary);
+      parsedActivityItemsCount = activityItems.length;
       if (activityItems.length > 0) {
         const activityDate = parseDateToDateString(payload.date || new Date().toISOString());
+        activitySummaryDateUsed = activityDate;
         normalizedSnapshots.push({
           date: activityDate,
           items: activityItems,
         });
+      } else {
+        const hasOtherPayload =
+          (payload.data && typeof payload.data.Years === 'object' && Object.keys(payload.data.Years).length > 0) ||
+          (Array.isArray(payload.daily_summaries) && payload.daily_summaries.length > 0) ||
+          (Array.isArray(payload.snapshots) && payload.snapshots.length > 0) ||
+          (Array.isArray(payload.apps) && payload.apps.length > 0) ||
+          (Array.isArray(payload.websites) && payload.websites.length > 0) ||
+          (Array.isArray(payload.items) && payload.items.length > 0);
+
+        if (!hasOtherPayload) {
+          return new Response(
+            JSON.stringify({
+              error: 'activity_summary was provided but no valid rows could be parsed.',
+              hint:
+                'Each line must look like: "Instagram (42m)" or "YouTube (1h 12m)" or "x.com (11m)". ' +
+                'Also send root-level "date" (YYYY-MM-DD) for the screentime day you are uploading.',
+            }),
+            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
       }
     }
 
@@ -566,7 +673,6 @@ Deno.serve(async (req: Request) => {
       (Array.isArray(payload.apps) && payload.apps.length > 0) ||
       (Array.isArray(payload.websites) && payload.websites.length > 0) ||
       (Array.isArray(payload.items) && payload.items.length > 0);
-    const payloadRecord = toRecord(payload);
     const hasRootSummary =
       firstNumber(payloadRecord, ['total_switches', 'totalSwitches']) !== null ||
       firstNumber(payloadRecord, ['total_apps', 'totalApps']) !== null;
@@ -591,7 +697,7 @@ Deno.serve(async (req: Request) => {
     const source = payload.source || 'pc';
     const rawPlatform = (payload.platform || 'windows') as string;
     const platformLower = rawPlatform.toLowerCase();
-    const platform = platformLower === 'ios' ? 'IOS' : 'windows';
+    const platform = platformLower || 'windows';
     const deviceId = payload.device_id || '';
     const isCumulative = payload.is_cumulative === true || payload.cumulative === true;
     const todayDate = new Date().toISOString().split('T')[0];
@@ -1103,6 +1209,81 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    // Optional read-back verification for iOS Shortcut uploads (helps debug “success but nothing inserted”).
+    // Only runs when explicitly enabled, or when using activity_summary and nothing was written.
+    const shouldVerify =
+      debugEnabled ||
+      (payload.activity_summary && appInserted + websiteInserted + summaryInserted === 0);
+
+    let verify: null | {
+      app_rows_found: number;
+      website_rows_found: number;
+      summary_rows_found: number;
+      activity_date_used?: string;
+      parsed_activity_items?: number;
+      keys: { user_id: string; date: string | null; source: string; device_id: string; platform: string };
+      function_version: string;
+    } = null;
+
+    if (shouldVerify) {
+      const checkDate = activitySummaryDateUsed || (payload.date ? parseDateToDateString(payload.date) : null);
+
+      const baseKeys = {
+        user_id: payload.user_id,
+        date: checkDate,
+        source,
+        device_id: deviceId,
+        platform,
+      };
+
+      // If we don't know which date was targeted, skip DB checks but still return keys/version.
+      if (checkDate) {
+        const [{ count: appCount }, { count: webCount }, { count: sumCount }] = await Promise.all([
+          (supabase.from('screentime_daily_app_stats') as any)
+            .select('id', { count: 'exact', head: true } as any)
+            .eq('user_id', payload.user_id)
+            .eq('date', checkDate)
+            .eq('source', source)
+            .eq('device_id', deviceId)
+            .eq('platform', platform),
+          (supabase.from('screentime_daily_website_stats') as any)
+            .select('id', { count: 'exact', head: true } as any)
+            .eq('user_id', payload.user_id)
+            .eq('date', checkDate)
+            .eq('source', source)
+            .eq('device_id', deviceId)
+            .eq('platform', platform),
+          (supabase.from('screentime_daily_summary') as any)
+            .select('id', { count: 'exact', head: true } as any)
+            .eq('user_id', payload.user_id)
+            .eq('date', checkDate)
+            .eq('source', source)
+            .eq('device_id', deviceId)
+            .eq('platform', platform),
+        ]);
+
+        verify = {
+          app_rows_found: appCount ?? 0,
+          website_rows_found: webCount ?? 0,
+          summary_rows_found: sumCount ?? 0,
+          activity_date_used: activitySummaryDateUsed ?? undefined,
+          parsed_activity_items: payload.activity_summary ? parsedActivityItemsCount : undefined,
+          keys: baseKeys,
+          function_version: FUNCTION_VERSION,
+        };
+      } else {
+        verify = {
+          app_rows_found: 0,
+          website_rows_found: 0,
+          summary_rows_found: 0,
+          activity_date_used: activitySummaryDateUsed ?? undefined,
+          parsed_activity_items: payload.activity_summary ? parsedActivityItemsCount : undefined,
+          keys: baseKeys,
+          function_version: FUNCTION_VERSION,
+        };
+      }
+    }
+
     if (appErrors.length > 0 || websiteErrors.length > 0 || summaryErrors.length > 0) {
       return new Response(
         JSON.stringify({
@@ -1118,6 +1299,11 @@ Deno.serve(async (req: Request) => {
             websites: mergedWebsiteRows.length,
             summaries: mergedSummaryRows.length,
           },
+          upload_date: upload_date ?? undefined,
+          upload_time: upload_time ?? undefined,
+          uploaded_at: uploaded_at ?? undefined,
+          received_at,
+          verify: verify ?? undefined,
           errors: {
             apps: appErrors,
             websites: websiteErrors,
@@ -1141,6 +1327,11 @@ Deno.serve(async (req: Request) => {
           websites: mergedWebsiteRows.length,
           summaries: mergedSummaryRows.length,
         },
+        upload_date: upload_date ?? undefined,
+        upload_time: upload_time ?? undefined,
+        uploaded_at: uploaded_at ?? undefined,
+        received_at,
+        verify: verify ?? undefined,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
