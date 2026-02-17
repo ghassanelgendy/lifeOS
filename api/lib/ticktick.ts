@@ -84,8 +84,10 @@ export function mapTickTickTaskToLifeOS(t: TickTickTask): {
   const isCompleted = t.status === 1;
   let due_date: string | undefined;
   let due_time: string | undefined;
-  if (t.dueDate) {
-    const d = new Date(t.dueDate);
+  // Prefer TickTick dueDate; fall back to startDate so date-only tasks still map a due date into LifeOS.
+  const dueStr = t.dueDate ?? t.startDate;
+  if (dueStr) {
+    const d = new Date(dueStr);
     due_date = d.toISOString().slice(0, 10);
     due_time = d.toTimeString().slice(0, 5);
   }
