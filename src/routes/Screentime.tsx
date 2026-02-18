@@ -304,16 +304,30 @@
     const deviceLastPush = useMemo(() => {
       let windowsLast: string | null = null;
       let iosLast: string | null = null;
-      const toTime = (s: { date: string; last_active_at?: string | null; last_seen_at?: string | null; updated_at?: string }) => {
-        const ts = s.last_active_at || s.last_seen_at || s.updated_at;
+      const toTime = (s: {
+        date: string;
+        last_active_at?: string | null;
+        last_seen_at?: string | null;
+        updated_at?: string;
+        created_at?: string;
+      }) => {
+        const ts = s.last_active_at || s.last_seen_at || s.updated_at || s.created_at;
         return ts ? new Date(ts).getTime() : new Date(s.date + 'T23:59:59').getTime();
       };
+      const pickLatest = (stat: {
+        last_active_at?: string | null;
+        last_seen_at?: string | null;
+        updated_at?: string;
+        created_at?: string;
+        date: string;
+      }) =>
+        stat.last_active_at || stat.last_seen_at || stat.updated_at || stat.created_at || stat.date + 'T23:59:59';
       appStats.forEach((stat) => {
         if (!isIosOrWindows(stat.platform)) return;
         const n = (stat.platform || '').toLowerCase();
         const t = toTime(stat);
-        if (n === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = stat.last_active_at || stat.last_seen_at || stat.updated_at || stat.date + 'T23:59:59';
-        if (n === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = stat.last_active_at || stat.last_seen_at || stat.updated_at || stat.date + 'T23:59:59';
+        if (n === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = pickLatest(stat);
+        if (n === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = pickLatest(stat);
       });
       return { windowsLast, iosLast };
     }, [appStats]);
@@ -536,19 +550,19 @@
           </div>
         </div>
 
-        {/* Tiny indicator: which devices pushed and when (date + time) */}
+        {/* Tiny indicator: which devices pushed and when (date + time, 12h AM/PM) */}
         {(deviceLastPush.windowsLast || deviceLastPush.iosLast) && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
             {deviceLastPush.windowsLast && (
-              <span title="windows last had usage at this time">
-                <span className="font-medium text-foreground/80">windows</span>
-                <span className="opacity-70"> · {format(parseISO(deviceLastPush.windowsLast), 'd MMM, HH:mm')}</span>
+              <span title="Windows last had usage at this time">
+                <span className="font-medium text-foreground/80">Windows</span>
+                <span className="opacity-70"> · {format(parseISO(deviceLastPush.windowsLast), 'd MMM, h:mm a')}</span>
               </span>
             )}
             {deviceLastPush.iosLast && (
-              <span title="IOS last had usage at this time">
-                <span className="font-medium text-foreground/80">IOS</span>
-                <span className="opacity-70"> · {format(parseISO(deviceLastPush.iosLast), 'd MMM, HH:mm')}</span>
+              <span title="iOS last had usage at this time">
+                <span className="font-medium text-foreground/80">iOS</span>
+                <span className="opacity-70"> · {format(parseISO(deviceLastPush.iosLast), 'd MMM, h:mm a')}</span>
               </span>
             )}
           </div>

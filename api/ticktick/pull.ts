@@ -187,12 +187,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (r.ticktick_id) lifeosByTicktickId.set(r.ticktick_id, { id: r.id });
     }
 
-    // Fast lookup set of TickTick task IDs currently returned by API (used for deletions).
-    const currentTicktickIds = new Set(allTasks.map((t) => t.id));
-
     let inserted = 0;
     let updated = 0;
-    let deleted = 0;
     for (const t of allTasks) {
       const mapped = mapTickTickTaskToLifeOS(t);
       const existing = lifeosByTicktickId.get(t.id);
@@ -233,18 +229,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Delete LifeOS tasks that used to be linked to TickTick but whose ticktick_id
-    // is no longer present in the latest TickTick API response (deleted in TickTick).
-    for (const r of (existingRows ?? []) as { id: string; ticktick_id: string }[]) {
-      if (!r.ticktick_id) continue;
-      if (currentTicktickIds.has(r.ticktick_id)) continue;
-      const { error: delErr } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', r.id)
-        .eq('user_id', userId);
-      if (!delErr) deleted++;
-    }
+    // Do not delete LifeOS tasks when their ticktick_id is missing from the API response.
+    // TickTick often omits completed or past-due tasks from project data, so we would
+    // wrongly remove tasks that still exist in TickTick. LifeOS stays a mirror: only
+    // insert new and update existing; never delete based on pull.
+    const deleted = 0;
 
     return res.status(200).json({ success: true, inserted, updated, deleted, total: allTasks.length });
   } catch (e) {
