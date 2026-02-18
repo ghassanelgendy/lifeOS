@@ -1,9 +1,8 @@
 /**
  * POST /api/ticktick/pull
- * Two-way sync: pull from TickTick into LifeOS (merge + remove deleted).
- * - Inserts new TickTick tasks into LifeOS.
- * - Updates existing LifeOS tasks (by ticktick_id) with TickTick data.
- * - Deletes from LifeOS any task whose ticktick_id no longer exists in TickTick (deleted there).
+ * Mirror TickTick → LifeOS: sync projects as lists, tags by name, and all tasks.
+ * - Never deletes LifeOS tasks (TickTick API may omit completed/past-due tasks).
+ * - Upserts task_lists from TickTick projects; upserts tags by name; inserts/updates tasks with list_id and tag_ids.
  * Headers: Authorization: Bearer <Supabase access_token>
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -14,6 +13,9 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABA
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TICKTICK_TOKEN_URL = 'https://ticktick.com/oauth/token';
 const TICKTICK_API_BASE = 'https://api.ticktick.com/open/v1';
+
+const DEFAULT_LIST_COLOR = '#3b82f6';
+const DEFAULT_TAG_COLOR = '#6b7280';
 
 function getSupabaseService() {
   if (!supabaseUrl || !supabaseServiceKey) return null;
@@ -39,10 +41,13 @@ type TickTickTask = {
   status?: number | boolean;
   dueDate?: string;
   due_date?: string;
+  startDate?: string;
   priority?: number;
+  projectId?: string;
+  tags?: string[];
   [key: string]: unknown;
 };
-type TickTickProject = { id: string; [key: string]: unknown };
+type TickTickProject = { id: string; name?: string; [key: string]: unknown };
 type TickTickProjectData = { tasks?: TickTickTask[]; [key: string]: unknown };
 
 async function refreshTickTickAccessToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
@@ -95,7 +100,7 @@ function mapTickTickTaskToLifeOS(t: TickTickTask): {
   ticktick_id: string;
 } {
   const isCompleted = t.status === 1 || t.status === true;
-  const dueStr = t.dueDate ?? t.due_date;
+  const dueStr = t.dueDate ?? t.due_date ?? t.startDate;
   let due_date: string | undefined;
   let due_time: string | undefined;
   if (dueStr) {
@@ -172,10 +177,80 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (!projectId) continue;
       const projectData = await ticktickFetch<TickTickProjectData>(`/project/${projectId}/data`, accessToken);
       const projectTasks = projectData?.tasks;
-      if (Array.isArray(projectTasks)) allTasks.push(...projectTasks);
+      if (Array.isArray(projectTasks)) {
+        projectTasks.forEach((task) => {
+          allTasks.push({ ...task, projectId: task.projectId ?? projectId });
+        });
+      }
     }
 
     const now = new Date().toISOString();
+
+    // 1) Mirror TickTick projects → LifeOS task_lists (create list if not exists)
+    const projectIdToListId = new Map<string, string>();
+    for (const project of projects) {
+      const projectId = project?.id;
+      const name = (project?.name as string) || projectId || 'Unnamed';
+      if (!projectId) continue;
+      const { data: existingList } = await supabase
+        .from('task_lists')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('ticktick_project_id', projectId)
+        .maybeSingle();
+      let listId: string;
+      if (existingList?.id) {
+        listId = existingList.id;
+        await supabase
+          .from('task_lists')
+          .update({ name, updated_at: now })
+          .eq('id', listId)
+          .eq('user_id', userId);
+      } else {
+        const { data: inserted, error: insErr } = await supabase
+          .from('task_lists')
+          .insert({
+            user_id: userId,
+            name,
+            color: DEFAULT_LIST_COLOR,
+            sort_order: 0,
+            is_default: false,
+            ticktick_project_id: projectId,
+          })
+          .select('id')
+          .single();
+        if (insErr || !inserted?.id) continue;
+        listId = inserted.id;
+      }
+      projectIdToListId.set(projectId, listId);
+    }
+
+    // 2) Collect all tag names from tasks; ensure each exists in LifeOS tags (create by name if missing)
+    const tagNames = new Set<string>();
+    allTasks.forEach((t) => {
+      const tags = t.tags;
+      if (Array.isArray(tags)) tags.forEach((name: string) => { const n = String(name).trim(); if (n) tagNames.add(n); });
+    });
+    const tagNameToId = new Map<string, string>();
+    for (const tagName of tagNames) {
+      if (!tagName) continue;
+      const { data: existingTag } = await supabase
+        .from('tags')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('name', tagName)
+        .maybeSingle();
+      if (existingTag?.id) {
+        tagNameToId.set(tagName, existingTag.id);
+      } else {
+        const { data: inserted, error: insErr } = await supabase
+          .from('tags')
+          .insert({ user_id: userId, name: tagName, color: DEFAULT_TAG_COLOR })
+          .select('id')
+          .single();
+        if (!insErr && inserted?.id) tagNameToId.set(tagName, inserted.id);
+      }
+    }
 
     const { data: existingRows } = await supabase
       .from('tasks')
@@ -191,6 +266,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let updated = 0;
     for (const t of allTasks) {
       const mapped = mapTickTickTaskToLifeOS(t);
+      const listId = t.projectId ? projectIdToListId.get(t.projectId) ?? null : null;
+      const tagIds = Array.isArray(t.tags)
+        ? (t.tags as string[]).map((name) => tagNameToId.get(String(name).trim())).filter(Boolean) as string[]
+        : [];
       const existing = lifeosByTicktickId.get(t.id);
       if (existing) {
         const { error: upErr } = await supabase
@@ -203,6 +282,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             due_date: mapped.due_date ?? null,
             due_time: mapped.due_time ?? null,
             priority: mapped.priority,
+            list_id: listId || null,
+            tag_ids: tagIds,
             updated_at: now,
           })
           .eq('id', existing.id)
@@ -218,9 +299,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           due_date: mapped.due_date ?? null,
           due_time: mapped.due_time ?? null,
           priority: mapped.priority,
-          list_id: null,
+          list_id: listId,
           project_id: null,
-          tag_ids: [],
+          tag_ids: tagIds,
           recurrence: 'none',
           parent_id: null,
           ticktick_id: mapped.ticktick_id,
@@ -229,12 +310,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    // Do not delete LifeOS tasks when their ticktick_id is missing from the API response.
-    // TickTick often omits completed or past-due tasks from project data, so we would
-    // wrongly remove tasks that still exist in TickTick. LifeOS stays a mirror: only
-    // insert new and update existing; never delete based on pull.
     const deleted = 0;
-
     return res.status(200).json({ success: true, inserted, updated, deleted, total: allTasks.length });
   } catch (e) {
     console.error('[ticktick/pull]', e);
