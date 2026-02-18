@@ -7,12 +7,16 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import {
+  TickTickTask,
+  ticktickFetch,
+  getValidAccessToken,
+  mapTickTickTaskToLifeOS,
+} from '../lib/ticktick';
 
 const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TICKTICK_TOKEN_URL = 'https://ticktick.com/oauth/token';
-const TICKTICK_API_BASE = 'https://api.ticktick.com/open/v1';
 
 const DEFAULT_LIST_COLOR = '#3b82f6';
 const DEFAULT_TAG_COLOR = '#6b7280';
@@ -33,98 +37,20 @@ async function getUserIdFromRequest(req: { headers: { authorization?: string } }
   return user.id;
 }
 
-type TickTickTask = {
-  id: string;
-  title: string;
-  content?: string;
-  desc?: string;
-  status?: number | boolean;
-  dueDate?: string;
-  due_date?: string;
-  startDate?: string;
-  priority?: number;
-  projectId?: string;
-  tags?: string[];
-  [key: string]: unknown;
-};
 type TickTickProject = { id: string; name?: string; [key: string]: unknown };
 type TickTickProjectData = { tasks?: TickTickTask[]; [key: string]: unknown };
-
-async function refreshTickTickAccessToken(refreshToken: string): Promise<{ access_token: string; refresh_token: string; expires_in: number }> {
-  const clientId = process.env.VITE_TICKTICK_CLIENT_ID || process.env.TICKTICK_CLIENT_ID;
-  const clientSecret = process.env.TICKTICK_CLIENT_SECRET;
-  if (!clientId || !clientSecret) throw new Error('Missing TickTick client config');
-  const res = await fetch(TICKTICK_TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ client_id: clientId, client_secret: clientSecret, refresh_token: refreshToken, grant_type: 'refresh_token' }),
-  });
-  if (!res.ok) throw new Error(`TickTick refresh failed: ${await res.text()}`);
-  return res.json();
-}
-
-async function getValidAccessToken(
-  accessToken: string,
-  refreshToken: string | null,
-  expiresAt: string,
-  updateTokens: (access: string, refresh: string, expiresAt: string) => Promise<void>
-): Promise<string> {
-  const expires = new Date(expiresAt).getTime();
-  if (expires - Date.now() > 60 * 1000) return accessToken;
-  if (!refreshToken) {
-    throw new Error('TickTick session expired. Please reconnect in Settings.');
-  }
-  const data = await refreshTickTickAccessToken(refreshToken);
-  await updateTokens(data.access_token, data.refresh_token, new Date(Date.now() + data.expires_in * 1000).toISOString());
-  return data.access_token;
-}
-
-async function ticktickFetch<T>(path: string, accessToken: string, options?: RequestInit): Promise<T> {
-  const url = path.startsWith('http') ? path : `${TICKTICK_API_BASE}${path.startsWith('/') ? '' : '/'}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', ...options?.headers },
-  });
-  if (!res.ok) throw new Error(`TickTick API ${res.status}: ${await res.text()}`);
-  if (res.status === 204) return undefined as T;
-  return res.json();
-}
-
-function mapTickTickTaskToLifeOS(t: TickTickTask): {
-  title: string;
-  description?: string;
-  is_completed: boolean;
-  due_date?: string;
-  due_time?: string;
-  priority: string;
-  ticktick_id: string;
-} {
-  const isCompleted = t.status === 1 || t.status === true;
-  const dueStr = t.dueDate ?? t.due_date ?? t.startDate;
-  let due_date: string | undefined;
-  let due_time: string | undefined;
-  if (dueStr) {
-    const d = new Date(dueStr);
-    due_date = d.toISOString().slice(0, 10);
-    due_time = d.toTimeString().slice(0, 5);
-  }
-  const priority = t.priority === 5 ? 'high' : t.priority === 3 ? 'medium' : t.priority === 1 ? 'low' : 'none';
-  return {
-    title: t.title || 'Untitled',
-    description: (t.content ?? t.desc) || undefined,
-    is_completed: isCompleted,
-    due_date,
-    due_time,
-    priority,
-    ticktick_id: t.id,
-  };
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
+
+  const rawDeleteMissing = Array.isArray(req.query?.deleteMissing)
+    ? req.query?.deleteMissing?.[0]
+    : (req.query as { deleteMissing?: string | string[] })?.deleteMissing;
+  const deleteMissing =
+    typeof rawDeleteMissing === 'string' && ['1', 'true', 'yes'].includes(rawDeleteMissing.toLowerCase());
 
   const userId = await getUserIdFromRequest(req);
   if (!userId) {
@@ -261,10 +187,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const r of (existingRows ?? []) as { id: string; ticktick_id: string }[]) {
       if (r.ticktick_id) lifeosByTicktickId.set(r.ticktick_id, { id: r.id });
     }
+    const existingTickIds = Array.from(lifeosByTicktickId.keys());
 
     let inserted = 0;
     let updated = 0;
+    const seenTickTickIds = new Set<string>();
     for (const t of allTasks) {
+      seenTickTickIds.add(t.id);
       const mapped = mapTickTickTaskToLifeOS(t);
       const listId = t.projectId ? projectIdToListId.get(t.projectId) ?? null : null;
       const tagIds = Array.isArray(t.tags)
@@ -278,7 +207,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             title: mapped.title,
             description: mapped.description ?? null,
             is_completed: mapped.is_completed,
-            completed_at: mapped.is_completed ? now : null,
+            completed_at: mapped.completed_at ?? (mapped.is_completed ? now : null),
             due_date: mapped.due_date ?? null,
             due_time: mapped.due_time ?? null,
             priority: mapped.priority,
@@ -295,7 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           title: mapped.title,
           description: mapped.description ?? null,
           is_completed: mapped.is_completed,
-          completed_at: mapped.is_completed ? now : null,
+          completed_at: mapped.completed_at ?? (mapped.is_completed ? now : null),
           due_date: mapped.due_date ?? null,
           due_time: mapped.due_time ?? null,
           priority: mapped.priority,
@@ -310,7 +239,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
     }
 
-    const deleted = 0;
+    let deleted = 0;
+    if (deleteMissing && existingTickIds.length) {
+      const missingTickIds = existingTickIds.filter((id) => !seenTickTickIds.has(id));
+      if (missingTickIds.length) {
+        const { error: delErr } = await supabase
+          .from('tasks')
+          .delete()
+          .in('ticktick_id', missingTickIds)
+          .eq('user_id', userId);
+        if (!delErr) deleted = missingTickIds.length;
+      }
+    }
     return res.status(200).json({ success: true, inserted, updated, deleted, total: allTasks.length });
   } catch (e) {
     console.error('[ticktick/pull]', e);

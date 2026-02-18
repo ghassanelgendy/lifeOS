@@ -10,11 +10,14 @@ export type TickTickTask = {
   id: string;
   title: string;
   content?: string;
-  status?: number; // 0 active, 1 completed, etc.
-  dueDate?: string; // ISO or TickTick format
+  desc?: string;
+  status?: number | boolean; // TickTick uses 0/1/2 or booleans in some responses
+  dueDate?: string; // ISO or TickTick format (often ends with +0000)
   startDate?: string;
+  completedTime?: string;
   projectId?: string;
   priority?: number;
+  tags?: string[];
   [key: string]: unknown;
 };
 
@@ -41,13 +44,16 @@ export async function refreshTickTickAccessToken(
 
 export async function getValidAccessToken(
   accessToken: string,
-  refreshToken: string,
+  refreshToken: string | null,
   expiresAt: string,
   updateTokens: (access: string, refresh: string, expiresAt: string) => Promise<void>
 ): Promise<string> {
   const expires = new Date(expiresAt).getTime();
   const now = Date.now();
   if (expires - now > 60 * 1000) return accessToken; // more than 1 min left
+  if (!refreshToken) {
+    throw new Error('TickTick session expired. Please reconnect in Settings.');
+  }
   const data = await refreshTickTickAccessToken(refreshToken);
   await updateTokens(data.access_token, data.refresh_token, new Date(Date.now() + data.expires_in * 1000).toISOString());
   return data.access_token;
@@ -72,6 +78,15 @@ export async function ticktickFetch<T>(
   return res.json();
 }
 
+function normalizeTickTickDate(dueStr?: string): Date | null {
+  if (!dueStr) return null;
+  // TickTick often returns timezone as +0000 (no colon). Insert colon for reliable parsing.
+  const normalized = dueStr.replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+  const d = new Date(normalized);
+  if (Number.isNaN(d.getTime())) return null;
+  return d;
+}
+
 export function mapTickTickTaskToLifeOS(t: TickTickTask): {
   title: string;
   description?: string;
@@ -80,26 +95,28 @@ export function mapTickTickTaskToLifeOS(t: TickTickTask): {
   due_time?: string;
   priority: string;
   ticktick_id: string;
+  completed_at?: string | null;
 } {
-  const isCompleted = t.status === 1;
-  let due_date: string | undefined;
-  let due_time: string | undefined;
-  // Prefer TickTick dueDate; fall back to startDate so date-only tasks still map a due date into LifeOS.
-  const dueStr = t.dueDate ?? t.startDate;
-  if (dueStr) {
-    const d = new Date(dueStr);
-    due_date = d.toISOString().slice(0, 10);
-    due_time = d.toTimeString().slice(0, 5);
-  }
-  const priority = t.priority === 5 ? 'high' : t.priority === 3 ? 'medium' : t.priority === 1 ? 'low' : 'none';
+  const isCompleted = t.status === true || (typeof t.status === 'number' && t.status !== 0);
+
+  const dueSource = t.dueDate ?? t.startDate;
+  const dueDateObj = normalizeTickTickDate(dueSource);
+  const completedObj = normalizeTickTickDate(t.completedTime);
+
+  const due_date = dueDateObj ? dueDateObj.toISOString().slice(0, 10) : undefined;
+  const due_time = dueDateObj ? dueDateObj.toISOString().slice(11, 16) : undefined;
+
+  const priority =
+    t.priority === 5 ? 'high' : t.priority === 3 ? 'medium' : t.priority === 1 ? 'low' : 'none';
   return {
     title: t.title || 'Untitled',
-    description: t.content || undefined,
+    description: (t.content ?? t.desc) || undefined,
     is_completed: isCompleted,
     due_date,
     due_time,
     priority,
     ticktick_id: t.id,
+    completed_at: completedObj ? completedObj.toISOString() : isCompleted ? new Date().toISOString() : null,
   };
 }
 
@@ -117,10 +134,10 @@ export function mapLifeOSTaskToTickTick(task: {
     status: task.is_completed ? 1 : 0,
   };
   if (task.due_date) {
-    let dueDate = task.due_date;
-    if (task.due_time) dueDate += `T${task.due_time}:00.000Z`;
-    else dueDate += 'T12:00:00.000Z';
-    payload.dueDate = dueDate;
+    const time = task.due_time && /^\d{1,2}:\d{2}$/.test(task.due_time)
+      ? `${task.due_time.padStart(5, '0').slice(0, 5)}:00.000Z`
+      : '12:00:00.000Z';
+    payload.dueDate = `${task.due_date}T${time}`;
   }
   const p = task.priority === 'high' ? 5 : task.priority === 'medium' ? 3 : task.priority === 'low' ? 1 : 0;
   payload.priority = p;
