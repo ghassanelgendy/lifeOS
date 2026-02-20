@@ -576,6 +576,7 @@ export default function Tasks() {
   const displayTasks = getDisplayTasks();
   const incompleteTasks = displayTasks.filter(t => !t.is_completed);
   const completedDisplayTasks = displayTasks.filter(t => t.is_completed);
+  const mainTasksToRender = activeView === 'completed' ? completedDisplayTasks : incompleteTasks;
 
   // Handle task toggle - check if it's a habit task
   const handleTaskToggle = (task: Task) => {
@@ -1449,7 +1450,7 @@ export default function Tasks() {
 
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
           <div className="space-y-1">
-            {incompleteTasks.map((task) => {
+            {mainTasksToRender.map((task) => {
               const isHabitTask = task.id.startsWith('habit-');
               return (
                 <SwipeableRow
@@ -1518,10 +1519,10 @@ export default function Tasks() {
           )}
 
           {/* Empty state */}
-          {incompleteTasks.length === 0 && (
+          {mainTasksToRender.length === 0 && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <CheckCircle2 size={48} className="opacity-20 mb-4" />
-              <p className="text-lg font-medium">All done!</p>
+              <p className="text-lg font-medium">{activeView === 'completed' ? 'No completed tasks' : 'All done!'}</p>
               <p className="text-sm">No tasks to show</p>
             </div>
           )}
@@ -1997,9 +1998,6 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
           )}
         </div>
 
-        {task.description && (
-          <p className="text-sm text-muted-foreground truncate mt-0.5">{task.description}</p>
-        )}
 
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {dueInfo.text && (

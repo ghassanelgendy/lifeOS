@@ -117,7 +117,7 @@ export default function CalendarPage() {
   const { data: allTasks = [] } = useTasks();
   // Hide tasks that are already linked to calendar events to avoid duplicate items.
   const tasksWithDates = showTasksInCalendar
-    ? allTasks.filter((t) => t.due_date && !t.is_completed && !t.calendar_event_id)
+    ? allTasks.filter((t) => t.due_date && !t.is_completed && !t.calendar_event_id && !t.calendar_source_key)
     : [];
 
   const [formData, setFormData] = useState<Partial<CreateInput<CalendarEvent>>>({
@@ -220,6 +220,7 @@ export default function CalendarPage() {
           due_time: eventTime,
           tag_ids: mergedTagIds,
           calendar_event_id: eventRecord.id,
+          calendar_source_key: `event:${eventRecord.id}`,
         },
       });
       await supabase
@@ -247,6 +248,7 @@ export default function CalendarPage() {
       recurrence_interval: 1,
       recurrence_end_type: 'never',
       calendar_event_id: eventRecord.id,
+      calendar_source_key: `event:${eventRecord.id}`,
     });
 
     await supabase
@@ -334,7 +336,7 @@ export default function CalendarPage() {
         const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
         if (task.calendar_event_id === eventId) return true;
       }
-      return (task.description || '').includes(`[calendar_source:${sourceKey}]`);
+      return task.calendar_source_key === sourceKey || (task.description || '').includes(`[calendar_source:${sourceKey}]`);
     });
   };
 
@@ -345,15 +347,15 @@ export default function CalendarPage() {
       return;
     }
     const calendarTagId = await ensureCalendarTagId();
-    const eventDate = event.start_time.split('T')[0];
-    const eventTime = event.all_day ? undefined : event.start_time.slice(11, 16);
+    const localStart = new Date(event.start_time);
+    const eventDate = format(localStart, 'yyyy-MM-dd');
+    const eventTime = event.all_day ? undefined : format(localStart, 'HH:mm');
     const sourceKey = getEventSourceKey(event);
     const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
-    const sourceLine = `[calendar_source:${sourceKey}]`;
 
     const createdTask = await createTask.mutateAsync({
       title: event.title,
-      description: `${event.description ? `${event.description}\n\n` : ''}${sourceLine}`,
+      description: event.description || undefined,
       is_completed: false,
       priority: 'none',
       due_date: eventDate,
@@ -364,8 +366,15 @@ export default function CalendarPage() {
       recurrence_interval: 1,
       recurrence_end_type: 'never',
       calendar_event_id: ('isIcal' in event && event.isIcal) ? null : eventId,
+      calendar_source_key: sourceKey,
     });
     handleOpenTaskModal(createdTask);
+  };
+
+  const removeEventFromTasks = async (event: ExtendedCalendarEvent) => {
+    const linkedTask = getTaskByEvent(event);
+    if (!linkedTask) return;
+    await deleteTask.mutateAsync(linkedTask.id);
   };
 
   // Navigation
@@ -829,16 +838,26 @@ export default function CalendarPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => void addEventToTasks(event as ExtendedCalendarEvent)}
-                          className={cn(
-                            "p-1 rounded transition-colors",
-                            linkedTask ? "text-purple-400 hover:bg-purple-500/20" : "hover:bg-secondary"
-                          )}
-                          title={linkedTask ? 'Open linked task' : 'Show in Tasks'}
-                        >
-                          <CheckSquare size={12} />
-                        </button>
+                        {!linkedTask?.is_completed && (
+                          <label
+                            className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none"
+                            title={linkedTask ? 'Remove from Tasks' : 'Add to Tasks'}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={!!linkedTask}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  void addEventToTasks(event as ExtendedCalendarEvent);
+                                  return;
+                                }
+                                void removeEventFromTasks(event as ExtendedCalendarEvent);
+                              }}
+                              className="rounded border-border"
+                            />
+                            Task
+                          </label>
+                        )}
                       {!isIcal && (
                         <>
                           <button

@@ -266,6 +266,7 @@ export interface Task {
   // Integrations
   ticktick_id?: string | null;
   calendar_event_id?: string | null;
+  calendar_source_key?: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;
