@@ -45,7 +45,7 @@ export function CompactPrayerHabit() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4 h-full flex flex-col">
       {/* Compact View */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -73,45 +73,47 @@ export function CompactPrayerHabit() {
 
       {/* Expanded View */}
       {isExpanded && (
-        <div className="mt-4 space-y-3 pt-4 border-t border-border">
-          {tracker.map((item) => {
-            const prayerTime = times.find((t) => t.name === item.prayerName)?.time;
-            const Icon = getIcon(item.prayerName);
-            return (
-              <div key={item.prayerName} className="rounded-lg border border-border p-3 bg-secondary/20">
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Icon size={16} className="text-primary" />
-                    <p className="font-medium text-sm">{item.prayerName}</p>
-                    {item.status === 'Prayed' && <CheckCircle2 size={14} className="text-green-500" />}
-                    {item.status === 'Missed' && <XCircle size={14} className="text-red-500" />}
-                    {item.status === 'Skipped' && <Minus size={14} className="text-blue-500" />}
+        <div className="mt-4 pt-4 border-t border-border flex-1 min-h-0">
+          <div className="grid grid-rows-5 gap-3 h-full">
+            {tracker.map((item) => {
+              const prayerTime = times.find((t) => t.name === item.prayerName)?.time;
+              const Icon = getIcon(item.prayerName);
+              return (
+                <div key={item.prayerName} className="rounded-lg border border-border p-3 bg-secondary/20 h-full flex flex-col justify-between">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Icon size={16} className="text-primary" />
+                      <p className="font-medium text-sm">{item.prayerName}</p>
+                      {item.status === 'Prayed' && <CheckCircle2 size={14} className="text-green-500" />}
+                      {item.status === 'Missed' && <XCircle size={14} className="text-red-500" />}
+                      {item.status === 'Skipped' && <Minus size={14} className="text-blue-500" />}
+                    </div>
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {prayerTime ? format(prayerTime, 'h:mm a') : '--:--'}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {prayerTime ? format(prayerTime, 'h:mm a') : '--:--'}
-                  </span>
+                  <div className="grid grid-cols-3 gap-2">
+                    {STATUS_BUTTONS.map((s) => (
+                      <button
+                        key={s.status}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePrayerStatus(item, s.status);
+                        }}
+                        className={cn(
+                          "text-xs px-2 py-1.5 rounded border transition-colors",
+                          item.status === s.status ? s.className : "border-border text-muted-foreground hover:bg-secondary"
+                        )}
+                      >
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {STATUS_BUTTONS.map((s) => (
-                    <button
-                      key={s.status}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        togglePrayerStatus(item, s.status);
-                      }}
-                      className={cn(
-                        "text-xs px-2 py-1.5 rounded border transition-colors",
-                        item.status === s.status ? s.className : "border-border text-muted-foreground hover:bg-secondary"
-                      )}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       )}
     </div>
