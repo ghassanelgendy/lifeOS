@@ -20,6 +20,7 @@ export function useHabits() {
   return useQuery({
     queryKey: [...HABITS_KEY, user?.id],
     queryFn: async () => {
+      // Get all habits
       const q = supabase
         .from('habits')
         .select('*')
@@ -28,7 +29,34 @@ export function useHabits() {
       if (user?.id) q.eq('user_id', user.id);
       const { data, error } = await q;
       if (error) throw error;
-      return data as Habit[];
+
+      // Get prayer habit IDs to exclude
+      const { data: prayerHabits } = await supabase
+        .from('prayer_habits')
+        .select('habit_id')
+        .eq('user_id', user!.id)
+        .eq('is_active', true);
+
+      const prayerHabitIds = new Set((prayerHabits || []).map((ph) => ph.habit_id));
+
+      // Heuristic to also hide any legacy prayer habits that might not be linked correctly
+      const PRAYER_PREFIXES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+      // Filter out prayer habits so they don't appear in the general habits UI
+      return (data || []).filter((h) => {
+        if (prayerHabitIds.has(h.id)) return false;
+
+        const title = (h.title ?? '').trim();
+        const desc = (h.description ?? '').toLowerCase();
+
+        const isPrayerTitle = PRAYER_PREFIXES.some(
+          (name) => title === name || title.startsWith(`${name} (`),
+        );
+        const isPrayerDescription =
+          desc.includes('daily') && desc.includes('prayer');
+
+        return !(isPrayerTitle || isPrayerDescription);
+      }) as Habit[];
     },
     enabled: !!user?.id,
   });

@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
 import { usePrayerTracker } from '../hooks/usePrayerHabits';
 import type { PrayerStatus } from '../types/schema';
+import { useState } from 'react';
 
 const STATUS_BUTTONS: { status: PrayerStatus; label: string; className: string }[] = [
   { status: 'Prayed', label: 'Prayed', className: 'bg-green-500/15 text-green-500 border-green-500/30' },
@@ -14,6 +15,7 @@ const STATUS_BUTTONS: { status: PrayerStatus; label: string; className: string }
 export function PrayerWidget() {
   const { times, location, nextPrayer, timeToNext } = usePrayerTimes();
   const { isLoading, tracker, completionRate, weeklyCompletion, settings, togglePrayerStatus, setPrayerNotifications } = usePrayerTracker();
+  const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null);
 
   const getIcon = (name: string) => {
     switch (name) {
@@ -25,11 +27,6 @@ export function PrayerWidget() {
       case 'Isha': return Moon;
       default: return Clock3;
     }
-  };
-
-  const isNotificationEnabled = (prayerHabitId: string): boolean => {
-    const s = settings.find((x) => x.prayer_habit_id === prayerHabitId);
-    return s?.enabled ?? false;
   };
 
   return (
@@ -64,7 +61,13 @@ export function PrayerWidget() {
           {tracker.map((item) => {
             const prayerTime = times.find((t) => t.name === item.prayerName)?.time;
             const Icon = getIcon(item.prayerName);
-            const enabled = isNotificationEnabled(item.prayerHabitId);
+            const currentSetting = settings.find((x) => x.prayer_habit_id === item.prayerHabitId);
+            const enabled = currentSetting?.enabled ?? false;
+            const timezone = currentSetting?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+            const offset = Number(currentSetting?.offset_minutes ?? 0);
+            const quietStart = currentSetting?.quiet_hours_start?.slice(0, 5) ?? '';
+            const quietEnd = currentSetting?.quiet_hours_end?.slice(0, 5) ?? '';
+            const isExpanded = expandedNotificationId === item.prayerHabitId;
             return (
               <div key={item.prayerName} className="rounded-lg border border-border p-3 bg-secondary/20">
                 <div className="flex items-center justify-between gap-2 mb-2">
@@ -80,7 +83,12 @@ export function PrayerWidget() {
                     </span>
                     <button
                       type="button"
-                      onClick={() => setPrayerNotifications(item.prayerHabitId, !enabled)}
+                      onClick={() => setPrayerNotifications(item.prayerHabitId, !enabled, {
+                        offsetMinutes: offset,
+                        timezone,
+                        quietHoursStart: quietStart || null,
+                        quietHoursEnd: quietEnd || null,
+                      })}
                       className={cn(
                         "p-1 rounded border transition-colors",
                         enabled ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-secondary"
@@ -89,8 +97,79 @@ export function PrayerWidget() {
                     >
                       {enabled ? <Bell size={14} /> : <BellOff size={14} />}
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedNotificationId(isExpanded ? null : item.prayerHabitId)}
+                      className="text-[11px] px-2 py-1 rounded border border-border text-muted-foreground hover:bg-secondary"
+                    >
+                      Alerts
+                    </button>
                   </div>
                 </div>
+                {isExpanded && (
+                  <div className="mb-2 rounded border border-border p-2 bg-background/60 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-xs text-muted-foreground">
+                        Offset (min)
+                        <input
+                          type="number"
+                          value={offset}
+                          onChange={(e) => setPrayerNotifications(item.prayerHabitId, enabled, {
+                            offsetMinutes: Number(e.target.value || 0),
+                            timezone,
+                            quietHoursStart: quietStart || null,
+                            quietHoursEnd: quietEnd || null,
+                          })}
+                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                        />
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Timezone
+                        <input
+                          type="text"
+                          value={timezone}
+                          onChange={(e) => setPrayerNotifications(item.prayerHabitId, enabled, {
+                            offsetMinutes: offset,
+                            timezone: e.target.value || 'UTC',
+                            quietHoursStart: quietStart || null,
+                            quietHoursEnd: quietEnd || null,
+                          })}
+                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                        />
+                      </label>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="text-xs text-muted-foreground">
+                        Quiet from
+                        <input
+                          type="time"
+                          value={quietStart}
+                          onChange={(e) => setPrayerNotifications(item.prayerHabitId, enabled, {
+                            offsetMinutes: offset,
+                            timezone,
+                            quietHoursStart: e.target.value || null,
+                            quietHoursEnd: quietEnd || null,
+                          })}
+                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                        />
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Quiet to
+                        <input
+                          type="time"
+                          value={quietEnd}
+                          onChange={(e) => setPrayerNotifications(item.prayerHabitId, enabled, {
+                            offsetMinutes: offset,
+                            timezone,
+                            quietHoursStart: quietStart || null,
+                            quietHoursEnd: e.target.value || null,
+                          })}
+                          className="mt-1 w-full rounded border border-border bg-background px-2 py-1 text-sm"
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-3 gap-2">
                   {STATUS_BUTTONS.map((s) => (
                     <button

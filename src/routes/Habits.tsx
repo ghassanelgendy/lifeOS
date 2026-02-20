@@ -28,8 +28,9 @@ import {
   useWeeklyAdherence,
   useHabitStreaks,
 } from '../hooks/useHabits';
-import { Modal, Button, Input, Select } from '../components/ui';
-import { PrayerWidget } from '../components/PrayerWidget';
+import { Modal, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
+import { PrayerBacklog } from '../components/PrayerBacklog';
 import type { Habit, CreateInput, HabitFrequency } from '../types/schema';
 
 const DEFAULT_COLORS = [
@@ -55,6 +56,7 @@ export default function Habits() {
   const logHabit = useLogHabit();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [formData, setFormData] = useState<Partial<CreateInput<Habit>>>({
     title: '',
@@ -146,9 +148,7 @@ export default function Habits() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Archive this habit? You can restore it later from Archived Habits.')) {
-      deleteHabit.mutate(id);
-    }
+    setArchiveHabitId(id);
   };
 
   if (isLoading) {
@@ -213,8 +213,11 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Prayer tracking lives in Habits only */}
-      <PrayerWidget />
+      {/* Compact Prayer Habit */}
+      <CompactPrayerHabit />
+
+      {/* Prayer Backlog Dashboard */}
+      <PrayerBacklog />
 
       {/* Weekly Overview */}
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
@@ -492,6 +495,19 @@ export default function Habits() {
           </div>
         </form>
       </Modal>
+      <ConfirmSheet
+        isOpen={!!archiveHabitId}
+        title="Archive Habit"
+        message="Archive this habit? You can restore it later from Archived Habits."
+        confirmLabel="Archive"
+        onCancel={() => setArchiveHabitId(null)}
+        onConfirm={() => {
+          if (!archiveHabitId) return;
+          deleteHabit.mutate(archiveHabitId);
+          setArchiveHabitId(null);
+        }}
+        isLoading={deleteHabit.isPending}
+      />
     </div>
   );
 }

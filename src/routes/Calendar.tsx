@@ -39,7 +39,7 @@ import {
   useCalendarEvents,
   useIcalSubscriptionEvents,
 } from '../hooks/useCalendar';
-import { Modal, Button, Input, Select, TextArea } from '../components/ui';
+import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, RecurrencePattern } from '../types/schema';
 import { useCreateTask, useTasks, useUpdateTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
@@ -68,6 +68,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [view, setView] = useState<'month' | 'week'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
   const [enableAsTask, setEnableAsTask] = useState(false);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
@@ -362,10 +363,7 @@ export default function CalendarPage() {
 
   const handleDelete = (event: ExtendedCalendarEvent) => {
     if ('isIcal' in event && event.isIcal) return;
-    if (confirm('Delete this event?')) {
-      const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
-      deleteEvent.mutate(eventId);
-    }
+    setDeleteEventTarget(event);
   };
 
   // Selected day events
@@ -847,6 +845,20 @@ export default function CalendarPage() {
           </div>
         </form>
       </Modal>
+      <ConfirmSheet
+        isOpen={!!deleteEventTarget}
+        title="Delete Event"
+        message="Delete this event?"
+        confirmLabel="Delete"
+        onCancel={() => setDeleteEventTarget(null)}
+        onConfirm={() => {
+          if (!deleteEventTarget) return;
+          const eventId = ('originalId' in deleteEventTarget ? deleteEventTarget.originalId : undefined) || deleteEventTarget.id;
+          deleteEvent.mutate(eventId);
+          setDeleteEventTarget(null);
+        }}
+        isLoading={deleteEvent.isPending}
+      />
     </div>
   );
 }

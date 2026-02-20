@@ -214,8 +214,34 @@ export function usePrayerTracker(date: Date = new Date()) {
   const upsertPrayer = useMutation({
     mutationFn: async (input: { prayer: PrayerTrackerItem; status: PrayerStatus }) => {
       const nowIso = new Date().toISOString();
+      const existing = (logsQuery.data ?? []).find(
+        (l) => l.prayer_habit_id === input.prayer.prayerHabitId
+      );
+
+      // If user clicks the same status again, treat it as "undo":
+      // remove the prayer_log entry and reset the linked habit_log.
+      if (existing && existing.status === input.status) {
+        const { error: deleteLogErr } = await supabase
+          .from('prayer_logs')
+          .delete()
+          .eq('id', existing.id);
+        if (deleteLogErr) throw deleteLogErr;
+
+        if (existing.habit_log_id) {
+          const { error: resetHabitErr } = await supabase
+            .from('habit_logs')
+            .update({
+              completed: false,
+              source: 'prayer',
+            })
+            .eq('id', existing.habit_log_id);
+          if (resetHabitErr) throw resetHabitErr;
+        }
+
+        return;
+      }
+
       const prayedAt = input.status === 'Prayed' ? nowIso : null;
-      const existing = (logsQuery.data ?? []).find((l) => l.prayer_habit_id === input.prayer.prayerHabitId);
 
       let prayerLog: PrayerLog;
       if (existing) {
@@ -297,7 +323,14 @@ export function usePrayerTracker(date: Date = new Date()) {
   });
 
   const upsertNotificationSetting = useMutation({
-    mutationFn: async (input: { prayerHabitId: string; enabled: boolean; offsetMinutes?: number; timezone?: string }) => {
+    mutationFn: async (input: {
+      prayerHabitId: string;
+      enabled: boolean;
+      offsetMinutes?: number;
+      timezone?: string;
+      quietHoursStart?: string | null;
+      quietHoursEnd?: string | null;
+    }) => {
       const existing = (settingsQuery.data ?? []).find((s) => s.prayer_habit_id === input.prayerHabitId);
       const timezone = input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       if (existing) {
@@ -307,6 +340,8 @@ export function usePrayerTracker(date: Date = new Date()) {
             enabled: input.enabled,
             offset_minutes: input.offsetMinutes ?? existing.offset_minutes,
             timezone,
+            quiet_hours_start: input.quietHoursStart ?? existing.quiet_hours_start ?? null,
+            quiet_hours_end: input.quietHoursEnd ?? existing.quiet_hours_end ?? null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id);
@@ -320,6 +355,8 @@ export function usePrayerTracker(date: Date = new Date()) {
           enabled: input.enabled,
           offset_minutes: input.offsetMinutes ?? 0,
           timezone,
+          quiet_hours_start: input.quietHoursStart ?? null,
+          quiet_hours_end: input.quietHoursEnd ?? null,
         });
       if (error) throw error;
     },
@@ -336,7 +373,17 @@ export function usePrayerTracker(date: Date = new Date()) {
     settings: settingsQuery.data ?? [],
     togglePrayerStatus: (prayer: PrayerTrackerItem, status: PrayerStatus) =>
       upsertPrayer.mutate({ prayer, status }),
-    setPrayerNotifications: (prayerHabitId: string, enabled: boolean, offsetMinutes = 0) =>
-      upsertNotificationSetting.mutate({ prayerHabitId, enabled, offsetMinutes }),
+    setPrayerNotifications: (
+      prayerHabitId: string,
+      enabled: boolean,
+      options?: { offsetMinutes?: number; timezone?: string; quietHoursStart?: string | null; quietHoursEnd?: string | null }
+    ) => upsertNotificationSetting.mutate({
+      prayerHabitId,
+      enabled,
+      offsetMinutes: options?.offsetMinutes,
+      timezone: options?.timezone,
+      quietHoursStart: options?.quietHoursStart,
+      quietHoursEnd: options?.quietHoursEnd,
+    }),
   };
 }

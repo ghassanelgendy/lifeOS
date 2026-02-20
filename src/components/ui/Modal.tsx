@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -8,11 +8,14 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  swipeToClose?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className, swipeToClose = true }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
+  const touchStartYRef = useRef<number | null>(null);
+  const [dragY, setDragY] = useState(0);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -97,8 +100,34 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
           "min-h-0",
           className
         )}
+        style={{
+          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          transition: dragY > 0 ? 'none' : undefined,
+          marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+        }}
+        onTouchStart={(e) => {
+          if (!swipeToClose || window.innerWidth >= 640) return;
+          touchStartYRef.current = e.touches[0].clientY;
+        }}
+        onTouchMove={(e) => {
+          if (!swipeToClose || window.innerWidth >= 640 || touchStartYRef.current == null) return;
+          const delta = e.touches[0].clientY - touchStartYRef.current;
+          setDragY(Math.max(0, delta));
+        }}
+        onTouchEnd={() => {
+          if (!swipeToClose || window.innerWidth >= 640) return;
+          const shouldClose = dragY > 90;
+          setDragY(0);
+          touchStartYRef.current = null;
+          if (shouldClose) onClose();
+        }}
+        onTouchCancel={() => {
+          setDragY(0);
+          touchStartYRef.current = null;
+        }}
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
         <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
           <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
           <button

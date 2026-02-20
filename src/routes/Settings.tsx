@@ -26,7 +26,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTaskLists } from '../hooks/useTasks';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
-import { Button } from '../components/ui';
+import { Button, ConfirmSheet } from '../components/ui';
 import { NAV_ITEMS } from '../components/AppShell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { useTickTickStatus, connectTickTick, importTickTickTasks, syncNowFromTickTick, disconnectTickTickIntegration } from '../hooks/useTickTick';
@@ -82,6 +82,7 @@ export default function SettingsPage() {
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
   const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const queryClient = useQueryClient();
   const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
 
@@ -137,22 +138,12 @@ export default function SettingsPage() {
 
   // Reset data
   const handleReset = async () => {
-    if (confirm('This will delete ALL your data and restore default sample data. Are you sure?')) {
-      if (confirm('This action cannot be undone. Continue?')) {
-        await resetDatabase();
-        window.location.reload();
-      }
-    }
+    setConfirmAction('reset');
   };
 
   // Clear all data
   const handleClearAll = () => {
-    if (confirm('This will permanently delete ALL your data. Are you sure?')) {
-      if (confirm('This action cannot be undone. Your data will be lost forever. Continue?')) {
-        dbUtils.clearAll();
-        window.location.reload();
-      }
-    }
+    setConfirmAction('clear');
   };
 
   // Toggle nav item in mobile bar
@@ -737,6 +728,28 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+      <ConfirmSheet
+        isOpen={confirmAction === 'reset'}
+        title="Reset to Demo Data"
+        message="This will delete ALL your data and restore default sample data. This action cannot be undone."
+        confirmLabel="Reset"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={async () => {
+          await resetDatabase();
+          window.location.reload();
+        }}
+      />
+      <ConfirmSheet
+        isOpen={confirmAction === 'clear'}
+        title="Delete All Data"
+        message="This will permanently delete ALL your data. This action cannot be undone."
+        confirmLabel="Delete"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          dbUtils.clearAll();
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

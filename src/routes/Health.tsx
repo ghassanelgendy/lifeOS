@@ -19,7 +19,7 @@ import {
   useUpdateInBodyScan,
   useDeleteInBodyScan
 } from '../hooks/useHealthData';
-import { Modal, Button, Input } from '../components/ui';
+import { Modal, Button, Input, ConfirmSheet } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
 import type { InBodyScan, CreateInput } from '../types/schema';
 
@@ -32,6 +32,7 @@ export default function Health() {
   const { privacyMode } = useUIStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteScanId, setDeleteScanId] = useState<string | null>(null);
   const [editingScan, setEditingScan] = useState<InBodyScan | null>(null);
   const [formData, setFormData] = useState<Partial<CreateInput<InBodyScan>>>({
     date: new Date().toISOString().split('T')[0],
@@ -97,9 +98,7 @@ export default function Health() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this scan?')) {
-      deleteMutation.mutate(id);
-    }
+    setDeleteScanId(id);
   };
 
   const TrendIndicator = ({ value }: { value: number }) => {
@@ -367,6 +366,19 @@ export default function Health() {
           </div>
         </form>
       </Modal>
+      <ConfirmSheet
+        isOpen={!!deleteScanId}
+        title="Delete Scan"
+        message="Are you sure you want to delete this scan?"
+        confirmLabel="Delete"
+        onCancel={() => setDeleteScanId(null)}
+        onConfirm={() => {
+          if (!deleteScanId) return;
+          deleteMutation.mutate(deleteScanId);
+          setDeleteScanId(null);
+        }}
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

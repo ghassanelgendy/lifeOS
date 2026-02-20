@@ -40,7 +40,7 @@ import {
 } from '../hooks/useInvestments';
 import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../stores/useUIStore';
-import { Modal, Button, Input, Select } from '../components/ui';
+import { Modal, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
@@ -220,6 +220,8 @@ export default function Finance() {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [isInvestmentModalOpen, setIsInvestmentModalOpen] = useState(false);
   const [editingInvestmentTransaction, setEditingInvestmentTransaction] = useState<InvestmentTransaction | null>(null);
+  const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
+  const [deleteInvestmentId, setDeleteInvestmentId] = useState<string | null>(null);
   const [investmentFormData, setInvestmentFormData] = useState<Partial<CreateInput<InvestmentTransaction>>>({
     type: 'income',
     category: 'investment',
@@ -436,9 +438,7 @@ export default function Finance() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this transaction?')) {
-      deleteTransaction.mutate(id);
-    }
+    setDeleteTransactionId(id);
   };
 
   if (isLoading) {
@@ -510,7 +510,7 @@ export default function Finance() {
   };
 
   const handleDeleteInvestment = (id: string) => {
-    if (confirm('Delete this investment transaction?')) deleteInvestmentTransaction.mutate(id);
+    setDeleteInvestmentId(id);
   };
 
   return (
@@ -1460,6 +1460,32 @@ export default function Finance() {
           )}
         </>
       )}
+      <ConfirmSheet
+        isOpen={!!deleteTransactionId}
+        title="Delete Transaction"
+        message="Delete this transaction?"
+        confirmLabel="Delete"
+        onCancel={() => setDeleteTransactionId(null)}
+        onConfirm={() => {
+          if (!deleteTransactionId) return;
+          deleteTransaction.mutate(deleteTransactionId);
+          setDeleteTransactionId(null);
+        }}
+        isLoading={deleteTransaction.isPending}
+      />
+      <ConfirmSheet
+        isOpen={!!deleteInvestmentId}
+        title="Delete Investment Transaction"
+        message="Delete this investment transaction?"
+        confirmLabel="Delete"
+        onCancel={() => setDeleteInvestmentId(null)}
+        onConfirm={() => {
+          if (!deleteInvestmentId) return;
+          deleteInvestmentTransaction.mutate(deleteInvestmentId);
+          setDeleteInvestmentId(null);
+        }}
+        isLoading={deleteInvestmentTransaction.isPending}
+      />
     </div>
   );
 }

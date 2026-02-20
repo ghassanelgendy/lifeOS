@@ -25,7 +25,7 @@ import {
   useUpdatePaper,
   useDeletePaper
 } from '../hooks/useProjects';
-import { Modal, Button, Input, Select, TextArea } from '../components/ui';
+import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
 import type { Project, AcademicPaper, CreateInput, ProjectType, ProjectStatus, PaperMethodology, PaperStatus } from '../types/schema';
 
 const PROJECT_TYPE_ICONS: Record<ProjectType, React.ElementType> = {
@@ -63,6 +63,8 @@ export default function Academics() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [editingPaper, setEditingPaper] = useState<AcademicPaper | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null);
+  const [deletePaperId, setDeletePaperId] = useState<string | null>(null);
 
   const [projectForm, setProjectForm] = useState<Partial<CreateInput<Project>>>({
     title: '',
@@ -124,9 +126,7 @@ export default function Academics() {
   };
 
   const handleDeleteProject = (id: string) => {
-    if (confirm('Delete this project and all its papers?')) {
-      deleteProject.mutate(id);
-    }
+    setDeleteProjectId(id);
   };
 
   // Paper Modal Handlers
@@ -178,9 +178,7 @@ export default function Academics() {
   };
 
   const handleDeletePaper = (id: string) => {
-    if (confirm('Delete this paper?')) {
-      deletePaper.mutate(id);
-    }
+    setDeletePaperId(id);
   };
 
   // Get papers for a specific project
@@ -532,6 +530,32 @@ export default function Academics() {
           </div>
         </form>
       </Modal>
+      <ConfirmSheet
+        isOpen={!!deleteProjectId}
+        title="Delete Project"
+        message="Delete this project and all its papers?"
+        confirmLabel="Delete"
+        onCancel={() => setDeleteProjectId(null)}
+        onConfirm={() => {
+          if (!deleteProjectId) return;
+          deleteProject.mutate(deleteProjectId);
+          setDeleteProjectId(null);
+        }}
+        isLoading={deleteProject.isPending}
+      />
+      <ConfirmSheet
+        isOpen={!!deletePaperId}
+        title="Delete Paper"
+        message="Delete this paper?"
+        confirmLabel="Delete"
+        onCancel={() => setDeletePaperId(null)}
+        onConfirm={() => {
+          if (!deletePaperId) return;
+          deletePaper.mutate(deletePaperId);
+          setDeletePaperId(null);
+        }}
+        isLoading={deletePaper.isPending}
+      />
     </div>
   );
 }
