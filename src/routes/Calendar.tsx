@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import {
   format,
+  addDays,
   startOfMonth,
   endOfMonth,
   startOfWeek,
@@ -283,6 +284,17 @@ export default function CalendarPage() {
     });
   };
 
+  // Includes events that cross midnight so day view can render overnight spans.
+  const getEventsOverlappingDay = (day: Date) => {
+    const dayStart = startOfDay(day);
+    const dayEndExclusive = addDays(dayStart, 1);
+    return allMergedEvents.filter((event) => {
+      const eventStart = parseISO(event.start_time);
+      const eventEnd = parseISO(event.end_time);
+      return eventStart < dayEndExclusive && eventEnd > dayStart;
+    });
+  };
+
   const handleAddIcalUrl = () => {
     const url = newIcalUrl.trim().replace(/^webcal:\/\//i, 'https://');
     if (!url || !url.startsWith('http')) return;
@@ -488,9 +500,11 @@ export default function CalendarPage() {
 
   // Selected day events
   const activeDay = selectedDate || currentDate;
-  const selectedDayEvents = activeDay ? getEventsForDay(activeDay) : [];
+  const selectedDayEvents = activeDay ? getEventsOverlappingDay(activeDay) : [];
   const selectedDayTasks = activeDay ? getTasksForDay(activeDay) : [];
   const dayAllDayEvents = selectedDayEvents.filter((e) => e.all_day);
+  const activeDayStart = startOfDay(activeDay);
+  const activeDayEndExclusive = addDays(activeDayStart, 1);
   const dayTimedItems = [
     ...selectedDayEvents.filter((e) => !e.all_day).map((e) => ({
       id: `event-${e.id}`,
@@ -653,8 +667,11 @@ export default function CalendarPage() {
                     </div>
                   )}
                   {dayTimedItems.map((item) => {
-                    const startMin = item.start.getHours() * 60 + item.start.getMinutes();
-                    const endMin = item.end.getHours() * 60 + item.end.getMinutes();
+                    const renderStart = item.start < activeDayStart ? activeDayStart : item.start;
+                    const renderEnd = item.end > activeDayEndExclusive ? activeDayEndExclusive : item.end;
+                    const startMin = Math.max(0, Math.floor((renderStart.getTime() - activeDayStart.getTime()) / 60000));
+                    const endMin = Math.min(1440, Math.ceil((renderEnd.getTime() - activeDayStart.getTime()) / 60000));
+                    if (endMin <= startMin) return null;
                     const top = Math.max(0, startMin);
                     const height = Math.max(28, endMin - startMin);
                     return (
@@ -673,7 +690,7 @@ export default function CalendarPage() {
                           <span className="font-medium truncate">{item.title}</span>
                         </div>
                         <div className="text-[10px] opacity-80 mt-0.5">
-                          {format(item.start, 'h:mm a')} - {format(item.end, 'h:mm a')}
+                          {format(renderStart, 'h:mm a')} - {format(renderEnd, 'h:mm a')}
                         </div>
                       </button>
                     );
