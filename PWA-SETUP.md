@@ -104,7 +104,7 @@ supabase secrets set VAPID_PRIVATE_KEY=your_private_key
 
 The function must run every minute so tasks fire at the right time.
 
-**Vercel Hobby (free):** Only daily crons are allowed—use an external cron (see below). **Vercel Pro:** You can add a cron in the dashboard for `/api/cron/send-task-reminders` with schedule `* * * * *`.
+Use an external cron (for example, cron-job.org) to call the Supabase Edge Function directly every minute.
 
 **Environment variables** (Vercel → Settings → Environment Variables) — add for **Production**:
 1. **Environment variables** (Project → Settings → Environment Variables) — add for **Production** (and Preview if you want):
@@ -113,9 +113,9 @@ The function must run every minute so tasks fire at the right time.
    - `VITE_VAPID_PUBLIC_KEY` — same public key as in step 2 (so “Task reminders” works in the app)
    - `SUPABASE_SERVICE_ROLE_KEY` — from Supabase Dashboard → Project Settings → API → `service_role` (secret). Used by the cron API to call the Edge Function.
 
-2. **External cron:** Use [cron-job.org](https://cron-job.org): create a job every minute, URL `https://your-app.vercel.app/api/cron/send-task-reminders`, POST, header `Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY`.
+2. **External cron:** Use [cron-job.org](https://cron-job.org): create a job every minute, URL `https://<your-project-ref>.supabase.co/functions/v1/send-task-reminders`, POST, header `Authorization: Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY`.
 
-3. **(Optional)** Add `CRON_SECRET` (e.g. a long random string) in Vercel; then in the same project add it as a secret so only Vercel’s cron can call the endpoint.
+3. **(Optional)** Add `CRON_SECRET` as a function secret and send it from cron in `x-cron-secret`.
 
 **If you don’t use Vercel:**
 
