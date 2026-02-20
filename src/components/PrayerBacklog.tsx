@@ -124,7 +124,7 @@ export function PrayerBacklog() {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6">
+      <div className="rounded-xl border border-border bg-card p-6 h-full flex flex-col">
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
         </div>
@@ -133,7 +133,7 @@ export function PrayerBacklog() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 md:p-6 space-y-4">
+    <div className="rounded-xl border border-border bg-card p-4 md:p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold">Prayer Backlog</h2>
@@ -164,7 +164,7 @@ export function PrayerBacklog() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3 mt-4">
         <div className="rounded-lg border border-border bg-secondary/20 p-3">
           <div className="text-xs text-muted-foreground mb-1">Total</div>
           <div className="text-xl font-bold">{stats.total}</div>
@@ -184,8 +184,8 @@ export function PrayerBacklog() {
       </div>
 
       {/* Calendar Grid */}
-      <div className="overflow-x-auto">
-        <div className="min-w-full">
+      <div className="overflow-x-auto mt-4 flex-1 min-h-0">
+        <div className="min-w-full h-full flex flex-col">
           {/* Header row with prayer names */}
           <div className="grid grid-cols-6 gap-2 mb-2">
             <div className="text-xs font-medium text-muted-foreground p-2">Date</div>
@@ -197,7 +197,10 @@ export function PrayerBacklog() {
           </div>
 
           {/* Date rows */}
-          <div className="space-y-1">
+          <div className={cn(
+            "flex-1 min-h-0",
+            view === 'weekly' ? "grid grid-rows-7 gap-1" : "space-y-1 overflow-y-auto"
+          )}>
             {dateRange.days.map((day) => {
               const dayStr = toDateOnly(day);
               const dayLogs = logsByDate.get(dayStr) || new Map();
