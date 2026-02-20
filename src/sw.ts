@@ -11,14 +11,16 @@ self.skipWaiting();
 clientsClaim();
 
 // Precaching (manifest injected by vite-plugin-pwa)
-precacheAndRoute(self.__WB_MANIFEST);
+// Store manifest in variable - Workbox injectManifest expects exactly ONE occurrence of self.__WB_MANIFEST
+const manifest = self.__WB_MANIFEST;
+precacheAndRoute(manifest);
 cleanupOutdatedCaches();
 
 // App-shell style navigation: serve cached index.html for all navigations, so the SPA loads offline.
 // Exclude API routes so they can still go to network when online.
 // In dev, the manifest may be empty and '/index.html' won't be precached, which would make
 // createHandlerBoundToURL throw. Guard on presence of index.html before registering.
-const hasIndexHtml = self.__WB_MANIFEST.some(
+const hasIndexHtml = manifest.some(
   (entry) => entry.url === 'index.html' || entry.url === '/index.html'
 );
 
