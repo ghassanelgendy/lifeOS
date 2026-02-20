@@ -44,6 +44,16 @@ const DEFAULT_COLORS = [
   '#06b6d4', // Cyan
 ];
 
+const WEEKDAY_OPTIONS = [
+  { value: 0, label: 'Sun' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
+];
+
 export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, todayLogs, weekLogs } = useWeeklyAdherence();
@@ -64,6 +74,7 @@ export default function Habits() {
     color: DEFAULT_COLORS[0],
     time: undefined,
     show_in_tasks: false,
+    week_days: [],
   });
 
   // Get week days
@@ -119,6 +130,7 @@ export default function Habits() {
         color: habit.color,
         time: habit.time || undefined,
         show_in_tasks: habit.show_in_tasks ?? false,
+        week_days: habit.week_days ?? [],
       });
     } else {
       setEditingHabit(null);
@@ -130,6 +142,7 @@ export default function Habits() {
         color: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)],
         time: undefined,
         show_in_tasks: false,
+        week_days: [],
       });
     }
     setIsModalOpen(true);
@@ -390,6 +403,17 @@ export default function Habits() {
                     )}>
                       {habit.title}
                     </h3>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenModal(habit);
+                      }}
+                      className="p-1 rounded hover:bg-secondary transition-colors"
+                      title="Edit habit"
+                    >
+                      <Edit2 size={12} />
+                    </button>
                     {stats.streak >= 3 && (
                       <span className="flex items-center gap-0.5 text-xs text-amber-500">
                         <Flame size={12} />
@@ -460,6 +484,37 @@ export default function Habits() {
               onChange={(e) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
             />
           </div>
+
+          {formData.frequency === 'Weekly' && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-muted-foreground">Weekly Days</label>
+              <div className="flex flex-wrap gap-2">
+                {WEEKDAY_OPTIONS.map((day) => {
+                  const selected = (formData.week_days ?? []).includes(day.value);
+                  return (
+                    <button
+                      key={day.value}
+                      type="button"
+                      onClick={() => {
+                        const current = formData.week_days ?? [];
+                        const next = selected
+                          ? current.filter((d) => d !== day.value)
+                          : [...current, day.value].sort((a, b) => a - b);
+                        setFormData({ ...formData, week_days: next });
+                      }}
+                      className={cn(
+                        "px-2.5 py-1.5 rounded-full border text-xs transition-colors",
+                        selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"
+                      )}
+                    >
+                      {day.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">Select which days this weekly habit should appear in Tasks.</p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <Input

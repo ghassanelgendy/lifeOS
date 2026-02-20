@@ -500,7 +500,14 @@ export default function Tasks() {
 
   // Convert habits with show_in_tasks=true to task-like objects
   const habitTasks = useMemo(() => {
-    const habitsToShow = allHabits.filter(h => h.show_in_tasks);
+    const todayDow = new Date().getDay();
+    const habitsToShow = allHabits.filter((h) => {
+      if (!h.show_in_tasks) return false;
+      if (h.frequency !== 'Weekly') return true;
+      const weeklyDays = h.week_days ?? [];
+      if (!weeklyDays.length) return true; // Backward-compatible: no explicit days means any day.
+      return weeklyDays.includes(todayDow);
+    });
     return habitsToShow.map(habit => {
       const habitLog = todayHabitLogs.find(log => log.habit_id === habit.id);
       const isCompleted = habitLog?.completed ?? false;

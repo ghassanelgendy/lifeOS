@@ -600,13 +600,6 @@ export default function Finance() {
             />
           </>
         )}
-        <Input
-          type="search"
-          placeholder="Search transactions..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="ml-auto max-w-[200px]"
-        />
       </div>
 
       {/* Summary Cards */}
@@ -952,6 +945,13 @@ export default function Finance() {
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 />
               )}
+              <Input
+                type="search"
+                placeholder="Search transactions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full sm:w-auto sm:min-w-[220px]"
+              />
               <span className="text-sm text-muted-foreground">
                 {displayedTransactions.length} transaction{displayedTransactions.length !== 1 ? 's' : ''}
               </span>

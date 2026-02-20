@@ -216,7 +216,9 @@ export function PrayerBacklog() {
                     <Calendar size={14} className="text-muted-foreground" />
                     <div>
                       <div className="text-sm font-medium">{format(day, 'EEE')}</div>
-                      <div className="text-xs text-muted-foreground">{format(day, 'MMM d')}</div>
+                      {view !== 'weekly' && (
+                        <div className="text-xs text-muted-foreground">{format(day, 'MMM d')}</div>
+                      )}
                     </div>
                   </div>
                   {PRAYER_NAMES.map((prayerName) => {
