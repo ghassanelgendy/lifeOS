@@ -225,3 +225,20 @@ export async function idbSetOfflineQueue(entries: IdbQueueEntry[]): Promise<void
   await idbPutMany(STORES.offlineQueue, entries);
 }
 
+// Clear ALL IndexedDB stores (used on logout to prevent data leakage between users)
+export async function idbClearAll(): Promise<void> {
+  const stores: StoreName[] = [
+    STORES.tasks,
+    STORES.taskLists,
+    STORES.tags,
+    STORES.transactions,
+    STORES.budgets,
+    STORES.sleepStages,
+    STORES.inbodyScans,
+    STORES.offlineQueue,
+  ];
+  
+  // Clear all stores in parallel
+  await Promise.all(stores.map((store) => idbClear(store)));
+}
+

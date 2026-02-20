@@ -2,14 +2,23 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
+import { idbClearAll } from '../db/indexedDb';
 
 const PERSISTED_CACHE_KEY = 'lifeos_query_cache';
 
-function clearAllUserDataCache() {
+async function clearAllUserDataCache() {
+  // Clear React Query cache
   queryClient.clear();
+  
+  // Clear localStorage items
   if (typeof window !== 'undefined') {
     window.localStorage.removeItem(PERSISTED_CACHE_KEY);
+    // Clear offline sync timestamp
+    window.localStorage.removeItem('lifeos_last_sync_at');
   }
+  
+  // Clear ALL IndexedDB stores (critical for preventing data leakage between users)
+  await idbClearAll();
 }
 
 interface AuthState {
@@ -62,7 +71,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Clear cache only when the logged-in user actually changes (switch account or logout)
       if (prevUserId !== nextUserId) {
         previousUserIdRef.current = nextUserId;
-        clearAllUserDataCache();
+        // Clear all caches including IndexedDB to prevent data leakage
+        void clearAllUserDataCache();
       }
     });
 
@@ -91,7 +101,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    clearAllUserDataCache();
+    // Clear all caches including IndexedDB to prevent data leakage between users
+    await clearAllUserDataCache();
   };
 
   const value: AuthState = {

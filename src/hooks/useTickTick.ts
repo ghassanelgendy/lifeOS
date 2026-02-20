@@ -5,7 +5,7 @@ import { getTickTickStatus, getTickTickAuthorizeUrl, generateTickTickPKCE, impor
 const TICKTICK_STATUS_KEY = ['ticktick', 'status'] as const;
 const TASKS_QUERY_KEY = ['tasks'];
 
-const PULL_INTERVAL_MS = 2 * 60 * 1000; // 2 min
+const PULL_INTERVAL_MS = 30 * 1000; // 30s for near-real-time mirroring
 
 export function useTickTickStatus() {
   const queryClient = useQueryClient();
@@ -35,7 +35,18 @@ export function useTickTickPullSync() {
 
     const runPull = async () => {
       const result = await pullFromTickTick();
-      if (!result.error && (result.inserted > 0 || result.updated > 0 || result.deleted > 0)) {
+      if (result.error) {
+        console.error('[ticktick] pull error', result.error);
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem('ticktick_last_error', String(result.error));
+        }
+        return;
+      }
+      if (typeof sessionStorage !== 'undefined') {
+        sessionStorage.setItem('ticktick_last_pull', new Date().toISOString());
+        sessionStorage.removeItem('ticktick_last_error');
+      }
+      if (result.inserted > 0 || result.updated > 0 || result.deleted > 0) {
         queryClient.invalidateQueries({ queryKey: TASKS_QUERY_KEY });
       }
     };
