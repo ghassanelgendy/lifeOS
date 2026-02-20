@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
+import { Flame } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import {
@@ -40,6 +41,7 @@ import {
   useCreateTag,
   useConvertTaskToHabit,
 } from '../hooks/useTasks';
+import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { taskDB } from '../db/database';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import { SwipeableRow } from '../components/SwipeableRow';
@@ -108,6 +110,13 @@ export default function Tasks() {
   const { data: weekTasks = [] } = useWeekTasks();
   const { data: completedTasks = [] } = useCompletedTasks();
   const { data: overdueTasks = [] } = useOverdueTasks();
+
+  // Get habits that should be shown in tasks
+  const { data: allHabits = [] } = useHabits();
+  const { data: todayHabitLogs = [] } = useTodayHabitLogs();
+  const logHabit = useLogHabit();
+  const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
@@ -444,15 +453,53 @@ export default function Tasks() {
     return items.map((d) => format(d, recurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
   }, [editForm.recurrence, editForm.due_date, editForm.due_time, editForm.recurrence_interval, editForm.recurrence_days]);
 
+  // Convert habits with show_in_tasks=true to task-like objects
+  const habitTasks = useMemo(() => {
+    const habitsToShow = allHabits.filter(h => h.show_in_tasks);
+    return habitsToShow.map(habit => {
+      const habitLog = todayHabitLogs.find(log => log.habit_id === habit.id);
+      const isCompleted = habitLog?.completed ?? false;
+      
+      // Create a pseudo-task object for the habit
+      const habitTask: Task = {
+        id: `habit-${habit.id}`,
+        title: habit.title,
+        description: habit.description || undefined,
+        is_completed: isCompleted,
+        completed_at: isCompleted ? habitLog?.created_at : undefined,
+        priority: 'none' as TaskPriority,
+        due_date: todayStr,
+        due_time: habit.time || undefined,
+        reminder: undefined,
+        list_id: undefined,
+        project_id: undefined,
+        tag_ids: [],
+        recurrence: 'daily' as TaskRecurrence,
+        recurrence_interval: undefined,
+        recurrence_days: undefined,
+        recurrence_end: undefined,
+        parent_id: undefined,
+        subtask_order: undefined,
+        created_at: habit.created_at,
+        updated_at: habit.updated_at,
+      };
+      return habitTask;
+    });
+  }, [allHabits, todayHabitLogs, todayStr]);
+
   // Get tasks based on current view
   const getDisplayTasks = (): Task[] => {
     let tasks: Task[] = [];
     switch (activeView) {
       case 'today':
         tasks = [...overdueTasks, ...todayTasks];
+        // Add habit tasks only for today view
+        tasks = [...tasks, ...habitTasks];
         break;
       case 'week':
         tasks = [...overdueTasks, ...weekTasks];
+        // Add habit tasks for week view too
+        tasks = [...tasks, ...habitTasks];
         break;
       case 'upcoming':
         tasks = upcomingTasks;
@@ -477,6 +524,26 @@ export default function Tasks() {
   const displayTasks = getDisplayTasks();
   const incompleteTasks = displayTasks.filter(t => !t.is_completed);
   const completedDisplayTasks = displayTasks.filter(t => t.is_completed);
+
+  // Handle task toggle - check if it's a habit task
+  const handleTaskToggle = (task: Task) => {
+    if (task.id.startsWith('habit-')) {
+      // Extract habit ID from pseudo-task ID
+      const habitId = task.id.replace('habit-', '');
+      const habit = allHabits.find(h => h.id === habitId);
+      if (habit) {
+        const habitLog = todayHabitLogs.find(log => log.habit_id === habitId);
+        const isCompleted = habitLog?.completed ?? false;
+        logHabit.mutate({
+          habitId,
+          date: todayStr,
+          completed: !isCompleted,
+        });
+      }
+    } else {
+      toggleTask.mutate(task.id);
+    }
+  };
 
   // Get view title
   const getViewTitle = (): string => {
@@ -1158,24 +1225,31 @@ export default function Tasks() {
 
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
           <div className="space-y-1">
-            {incompleteTasks.map((task) => (
-              <SwipeableRow
-                key={task.id}
-                onDone={() => toggleTask.mutate(task.id)}
-                onPostpone={() => handlePostponeTask(task)}
-                onDelete={() => deleteTask.mutate(task.id)}
-                showPostpone={!!(task.due_date || task.due_time)}
-              >
-                <TaskItem
-                  task={task}
-                  tags={tags}
-                  onToggle={() => toggleTask.mutate(task.id)}
-                  onEdit={() => handleEditTask(task)}
-                  onDelete={() => deleteTask.mutate(task.id)}
-                  formatDueDate={formatDueDate}
-                />
-              </SwipeableRow>
-            ))}
+            {incompleteTasks.map((task) => {
+              const isHabitTask = task.id.startsWith('habit-');
+              return (
+                <SwipeableRow
+                  key={task.id}
+                  onDone={() => handleTaskToggle(task)}
+                  onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
+                  onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                  showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
+                >
+                  <TaskItem
+                    task={task}
+                    tags={tags}
+                    onToggle={() => handleTaskToggle(task)}
+                    onEdit={() => {
+                      if (!isHabitTask) handleEditTask(task);
+                    }}
+                    onDelete={() => {
+                      if (!isHabitTask) deleteTask.mutate(task.id);
+                    }}
+                    formatDueDate={formatDueDate}
+                  />
+                </SwipeableRow>
+              );
+            })}
           </div>
 
           {/* Completed section */}
@@ -1190,23 +1264,30 @@ export default function Tasks() {
               </button>
               {showCompleted && (
                 <div className="mt-2 space-y-1 opacity-60">
-                  {completedDisplayTasks.slice(0, 10).map((task) => (
-                    <SwipeableRow
-                      key={task.id}
-                      onDone={() => toggleTask.mutate(task.id)}
-                      onDelete={() => deleteTask.mutate(task.id)}
-                      showPostpone={false}
-                    >
-                      <TaskItem
-                        task={task}
-                        tags={tags}
-                        onToggle={() => toggleTask.mutate(task.id)}
-                        onEdit={() => handleEditTask(task)}
-                        onDelete={() => deleteTask.mutate(task.id)}
-                        formatDueDate={formatDueDate}
-                      />
-                    </SwipeableRow>
-                  ))}
+                  {completedDisplayTasks.slice(0, 10).map((task) => {
+                    const isHabitTask = task.id.startsWith('habit-');
+                    return (
+                      <SwipeableRow
+                        key={task.id}
+                        onDone={() => handleTaskToggle(task)}
+                        onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                        showPostpone={false}
+                      >
+                        <TaskItem
+                          task={task}
+                          tags={tags}
+                          onToggle={() => handleTaskToggle(task)}
+                          onEdit={() => {
+                            if (!isHabitTask) handleEditTask(task);
+                          }}
+                          onDelete={() => {
+                            if (!isHabitTask) deleteTask.mutate(task.id);
+                          }}
+                          formatDueDate={formatDueDate}
+                        />
+                      </SwipeableRow>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1564,7 +1645,11 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
         "task-item group flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all duration-150 ease-out cursor-pointer",
         task.is_completed && "opacity-50"
       )}
-      onClick={onEdit}
+      onClick={() => {
+        if (!task.id.startsWith('habit-')) {
+          onEdit();
+        }
+      }}
     >
       <button
         onClick={(e) => {
@@ -1605,10 +1690,13 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
           )}>
             {task.title}
           </span>
+          {task.id.startsWith('habit-') && (
+            <Flame size={14} className="text-purple-500" />
+          )}
           {task.priority !== 'none' && (
             <priorityConfig.icon size={14} className={priorityConfig.color} />
           )}
-          {task.recurrence !== 'none' && (
+          {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
             <Repeat size={14} className="text-muted-foreground" />
           )}
         </div>
@@ -1637,15 +1725,17 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
         </div>
       </div>
 
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
-      >
-        <Trash2 size={14} />
-      </button>
+      {!task.id.startsWith('habit-') && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
+        >
+          <Trash2 size={14} />
+        </button>
+      )}
     </div>
   );
 }

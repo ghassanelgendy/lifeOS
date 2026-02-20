@@ -6,7 +6,9 @@ import {
   Edit2,
   Trash2,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Clock,
+  ListTodo
 } from 'lucide-react';
 import {
   format,
@@ -64,6 +66,8 @@ export default function Habits() {
     frequency: 'Daily',
     target_count: 1,
     color: DEFAULT_COLORS[0],
+    time: undefined,
+    show_in_tasks: false,
   });
 
   // Get week days
@@ -117,6 +121,8 @@ export default function Habits() {
         frequency: habit.frequency,
         target_count: habit.target_count,
         color: habit.color,
+        time: habit.time || undefined,
+        show_in_tasks: habit.show_in_tasks ?? false,
       });
     } else {
       setEditingHabit(null);
@@ -126,6 +132,8 @@ export default function Habits() {
         frequency: 'Daily',
         target_count: 1,
         color: DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)],
+        time: undefined,
+        show_in_tasks: false,
       });
     }
     setIsModalOpen(true);
@@ -272,8 +280,14 @@ export default function Habits() {
                           />
                           <div className="min-w-0">
                             <div className="font-medium truncate">{habit.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {habit.frequency} · {habit.target_count}x
+                            <div className="text-xs text-muted-foreground flex items-center gap-2">
+                              <span>{habit.frequency} · {habit.target_count}x</span>
+                              {habit.time && (
+                                <span className="flex items-center gap-1">
+                                  <Clock size={12} />
+                                  {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
+                                </span>
+                              )}
                             </div>
                           </div>
                           <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
@@ -387,9 +401,17 @@ export default function Habits() {
                       </span>
                     )}
                   </div>
-                  {habit.description && (
-                    <p className="text-sm text-muted-foreground truncate">{habit.description}</p>
-                  )}
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {habit.description && (
+                      <span className="truncate">{habit.description}</span>
+                    )}
+                    {habit.time && (
+                      <span className="flex items-center gap-1 flex-shrink-0">
+                        <Clock size={12} />
+                        {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="text-sm font-medium">{stats.completionRate}%</div>
@@ -465,6 +487,29 @@ export default function Habits() {
               value={formData.target_count === 0 ? '' : formData.target_count}
               onChange={(e) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Time (optional)"
+              type="time"
+              value={formData.time || ''}
+              onChange={(e) => setFormData({ ...formData, time: e.target.value || undefined })}
+            />
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.show_in_tasks ?? false}
+                  onChange={(e) => setFormData({ ...formData, show_in_tasks: e.target.checked })}
+                  className="w-4 h-4 rounded border-border"
+                />
+                <div className="flex items-center gap-2">
+                  <ListTodo size={16} className="text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">Show in Tasks</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           <div className="space-y-2">

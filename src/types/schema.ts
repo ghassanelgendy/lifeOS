@@ -289,6 +289,8 @@ export interface Habit {
   target_count: number; // e.g., 1 (once a day), 4 (4 times a week)
   color: string; // Hex code
   icon?: string; // Lucide icon name
+  time?: string | null; // Optional time of day (HH:mm format)
+  show_in_tasks?: boolean; // If true, appears in tasks list
   is_archived: boolean;
   created_at: string;
   updated_at: string;
