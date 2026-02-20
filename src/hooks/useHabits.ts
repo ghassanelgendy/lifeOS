@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Habit, CreateInput, UpdateInput, HabitLog } from '../types/schema';
 import { round1 } from '../lib/utils';
@@ -12,30 +13,36 @@ const HABIT_LOGS_KEY = ['habit-logs'];
 // Habits
 // ========================
 export function useHabits() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: HABITS_KEY,
+    queryKey: [...HABITS_KEY, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const q = supabase
         .from('habits')
         .select('*')
         .eq('is_archived', false)
         .order('created_at', { ascending: true });
-
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
       if (error) throw error;
       return data as Habit[];
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useHabit(id: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...HABITS_KEY, id],
+    queryKey: [...HABITS_KEY, id, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('habits').select('*').eq('id', id).single();
+      const q = supabase.from('habits').select('*').eq('id', id);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q.single();
       if (error) throw error;
       return data as Habit;
     },
-    enabled: !!id,
+    enabled: !!id && !!user?.id,
   });
 }
 
@@ -107,9 +114,21 @@ export function useDeleteHabit() {
 // Habit Logs
 // ========================
 export function useHabitLogs(habitId: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...HABIT_LOGS_KEY, habitId],
+    queryKey: [...HABIT_LOGS_KEY, habitId, user?.id],
     queryFn: async () => {
+      // First verify the habit belongs to the user
+      const { data: habit, error: habitError } = await supabase
+        .from('habits')
+        .select('id, user_id')
+        .eq('id', habitId)
+        .single();
+      if (habitError) throw habitError;
+      if (habit?.user_id !== user?.id) {
+        throw new Error('Habit not found or access denied');
+      }
+      
       const { data, error } = await supabase
         .from('habit_logs')
         .select('*')
@@ -118,22 +137,35 @@ export function useHabitLogs(habitId: string) {
       if (error) throw error;
       return data as HabitLog[];
     },
-    enabled: !!habitId,
+    enabled: !!habitId && !!user?.id,
   });
 }
 
 export function useTodayHabitLogs() {
+  const { user } = useAuth();
   const today = new Date().toISOString().split('T')[0];
   return useQuery({
-    queryKey: [...HABIT_LOGS_KEY, 'today', today],
+    queryKey: [...HABIT_LOGS_KEY, 'today', today, user?.id],
     queryFn: async () => {
+      // Filter by habits owned by the user
+      const { data: habits, error: habitsError } = await supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', user?.id || '');
+      if (habitsError) throw habitsError;
+      const habitIds = habits?.map(h => h.id) || [];
+      
+      if (habitIds.length === 0) return [];
+      
       const { data, error } = await supabase
         .from('habit_logs')
         .select('*')
-        .eq('date', today);
+        .eq('date', today)
+        .in('habit_id', habitIds);
       if (error) throw error;
       return data as HabitLog[];
     },
+    enabled: !!user?.id,
   });
 }
 
@@ -178,9 +210,21 @@ export function useLogHabit() {
 }
 
 export function useHabitStreak(habitId: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...HABIT_LOGS_KEY, habitId, 'streak'],
+    queryKey: [...HABIT_LOGS_KEY, habitId, 'streak', user?.id],
     queryFn: async () => {
+      // First verify the habit belongs to the user
+      const { data: habit, error: habitError } = await supabase
+        .from('habits')
+        .select('id, user_id')
+        .eq('id', habitId)
+        .single();
+      if (habitError) throw habitError;
+      if (habit?.user_id !== user?.id) {
+        throw new Error('Habit not found or access denied');
+      }
+      
       const { data: logs, error } = await supabase
         .from('habit_logs')
         .select('*')
@@ -222,12 +266,13 @@ export function useHabitStreak(habitId: string) {
       }
       return streak;
     },
-    enabled: !!habitId,
+    enabled: !!habitId && !!user?.id,
   });
 }
 
 // Calculate weekly adherence
 export function useWeeklyAdherence() {
+  const { user } = useAuth();
   const { data: habits = [] } = useHabits();
 
   // Need to fetch logs via hook or inline logic?
@@ -244,16 +289,22 @@ export function useWeeklyAdherence() {
   const weekAgoStr = weekAgo.toISOString().split('T')[0];
 
   const { data: logs = [] } = useQuery({
-    queryKey: [...HABIT_LOGS_KEY, 'range', weekAgoStr, todayStr],
+    queryKey: [...HABIT_LOGS_KEY, 'range', weekAgoStr, todayStr, user?.id],
     queryFn: async () => {
+      // Filter by habits owned by the user
+      const habitIds = habits.map(h => h.id);
+      if (habitIds.length === 0) return [];
+      
       const { data, error } = await supabase
         .from('habit_logs')
         .select('*')
         .gte('date', weekAgoStr)
-        .lte('date', todayStr);
+        .lte('date', todayStr)
+        .in('habit_id', habitIds);
       if (error) throw error;
       return data as HabitLog[];
-    }
+    },
+    enabled: !!user?.id && habits.length > 0,
   });
 
   let totalExpected = 0;

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import type { WellnessLog, CreateInput } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { format, subDays } from 'date-fns';
@@ -8,32 +9,39 @@ import { format, subDays } from 'date-fns';
 const QUERY_KEY = ['wellness-logs'];
 
 export function useWellnessLogs() {
+    const { user } = useAuth();
     return useQuery({
-        queryKey: QUERY_KEY,
+        queryKey: [...QUERY_KEY, user?.id],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const q = supabase
                 .from('wellness_logs')
                 .select('*')
                 .order('date', { ascending: false });
+            if (user?.id) q.eq('user_id', user.id);
+            const { data, error } = await q;
             if (error) throw error;
             return data as WellnessLog[];
         },
+        enabled: !!user?.id,
     });
 }
 
 export function useWellnessLog(date: string) {
+    const { user } = useAuth();
     return useQuery({
-        queryKey: [...QUERY_KEY, date],
+        queryKey: [...QUERY_KEY, date, user?.id],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const q = supabase
                 .from('wellness_logs')
                 .select('*')
-                .eq('date', date)
-                .single();
+                .eq('date', date);
+            if (user?.id) q.eq('user_id', user.id);
+            const { data, error } = await q.single();
 
             if (error && error.code !== 'PGRST116') throw error; // Ignore not found
             return data as WellnessLog | null;
         },
+        enabled: !!date && !!user?.id,
     });
 }
 

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { idbGetInBodyScans, idbSaveInBodyScans } from '../db/indexedDb';
 import type { InBodyScan, CreateInput, UpdateInput } from '../types/schema';
@@ -9,11 +10,14 @@ import { round1 } from '../lib/utils';
 const QUERY_KEY = ['inbody-scans'];
 
 export function useInBodyScans() {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: QUERY_KEY,
+    queryKey: [...QUERY_KEY, user?.id],
     queryFn: async () => {
       try {
-        const { data, error } = await supabase.from('inbody_scans').select('*').order('date', { ascending: false });
+        const q = supabase.from('inbody_scans').select('*').order('date', { ascending: false });
+        if (user?.id) q.eq('user_id', user.id);
+        const { data, error } = await q;
         if (error) throw error;
         const list = (data ?? []) as InBodyScan[];
         void idbSaveInBodyScans(list);
@@ -23,21 +27,26 @@ export function useInBodyScans() {
         const sorted = (local as InBodyScan[]).sort(
           (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
         );
-        return sorted;
+        // Filter by user_id in offline mode too
+        return user?.id ? sorted.filter((s: any) => s.user_id === user.id) : sorted;
       }
     },
+    enabled: !!user?.id,
   });
 }
 
 export function useInBodyScan(id: string) {
+  const { user } = useAuth();
   return useQuery({
-    queryKey: [...QUERY_KEY, id],
+    queryKey: [...QUERY_KEY, id, user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from('inbody_scans').select('*').eq('id', id).single();
+      const q = supabase.from('inbody_scans').select('*').eq('id', id);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q.single();
       if (error) throw error;
       return data as InBodyScan;
     },
-    enabled: !!id,
+    enabled: !!id && !!user?.id,
   });
 }
 
