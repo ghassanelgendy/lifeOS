@@ -141,6 +141,12 @@ export default function CalendarPage() {
     priority: 'none',
   });
 
+  const getEventSourceKey = (event: ExtendedCalendarEvent): string => {
+    if ('isIcal' in event && event.isIcal) return `ical:${event.id}`;
+    const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
+    return `event:${eventId}`;
+  };
+
   const ensureCalendarTagId = async (): Promise<string> => {
     const { data: existing, error: findError } = await supabase
       .from('tags')
@@ -172,8 +178,10 @@ export default function CalendarPage() {
   };
 
   const syncEventTaskLink = async (eventRecord: CalendarEvent) => {
-    const eventDate = eventRecord.start_time.split('T')[0];
-    const eventTime = eventRecord.all_day ? undefined : eventRecord.start_time.slice(11, 16);
+    // Use local date/time so "Today" in Tasks matches user timezone (not UTC date slice).
+    const localStart = new Date(eventRecord.start_time);
+    const eventDate = format(localStart, 'yyyy-MM-dd');
+    const eventTime = eventRecord.all_day ? undefined : format(localStart, 'HH:mm');
 
     if (!enableAsTask) {
       if (linkedTaskId) {
@@ -317,6 +325,47 @@ export default function CalendarPage() {
     });
     setIsTaskModalOpen(false);
     setEditingTask(null);
+  };
+
+  const getTaskByEvent = (event: ExtendedCalendarEvent): Task | undefined => {
+    const sourceKey = getEventSourceKey(event);
+    return allTasks.find((task) => {
+      if (!('isIcal' in event && event.isIcal) && task.calendar_event_id) {
+        const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
+        if (task.calendar_event_id === eventId) return true;
+      }
+      return (task.description || '').includes(`[calendar_source:${sourceKey}]`);
+    });
+  };
+
+  const addEventToTasks = async (event: ExtendedCalendarEvent) => {
+    const existing = getTaskByEvent(event);
+    if (existing) {
+      handleOpenTaskModal(existing);
+      return;
+    }
+    const calendarTagId = await ensureCalendarTagId();
+    const eventDate = event.start_time.split('T')[0];
+    const eventTime = event.all_day ? undefined : event.start_time.slice(11, 16);
+    const sourceKey = getEventSourceKey(event);
+    const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
+    const sourceLine = `[calendar_source:${sourceKey}]`;
+
+    const createdTask = await createTask.mutateAsync({
+      title: event.title,
+      description: `${event.description ? `${event.description}\n\n` : ''}${sourceLine}`,
+      is_completed: false,
+      priority: 'none',
+      due_date: eventDate,
+      due_time: eventTime,
+      reminders_enabled: false,
+      tag_ids: [calendarTagId],
+      recurrence: 'none',
+      recurrence_interval: 1,
+      recurrence_end_type: 'never',
+      calendar_event_id: ('isIcal' in event && event.isIcal) ? null : eventId,
+    });
+    handleOpenTaskModal(createdTask);
   };
 
   // Navigation
@@ -742,6 +791,7 @@ export default function CalendarPage() {
                 selectedDayEvents.map((event) => {
                   const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
                   const isIcal = 'isIcal' in event && event.isIcal;
+                  const linkedTask = getTaskByEvent(event as ExtendedCalendarEvent);
                   return (
                   <div
                     key={event.id}
@@ -778,8 +828,19 @@ export default function CalendarPage() {
                           </div>
                         )}
                       </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => void addEventToTasks(event as ExtendedCalendarEvent)}
+                          className={cn(
+                            "p-1 rounded transition-colors",
+                            linkedTask ? "text-purple-400 hover:bg-purple-500/20" : "hover:bg-secondary"
+                          )}
+                          title={linkedTask ? 'Open linked task' : 'Show in Tasks'}
+                        >
+                          <CheckSquare size={12} />
+                        </button>
                       {!isIcal && (
-                        <div className="flex items-center gap-1">
+                        <>
                           <button
                             onClick={() => void handleOpenModal(event as ExtendedCalendarEvent)}
                             className="p-1 rounded hover:bg-secondary transition-colors"
@@ -792,8 +853,9 @@ export default function CalendarPage() {
                           >
                             <Trash2 size={12} />
                           </button>
-                        </div>
+                        </>
                       )}
+                        </div>
                     </div>
                   </div>
                   );
