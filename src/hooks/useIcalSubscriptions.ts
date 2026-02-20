@@ -5,21 +5,38 @@ import { useAuth } from '../contexts/AuthContext';
 const QUERY_KEY = 'ical-subscriptions';
 const DEFAULT_COLOR = '#3b82f6';
 
-export type IcalSubscription = { url: string; color: string };
+export type IcalSubscription = { url: string; color: string; name: string };
+
+function deriveNameFromUrl(url: string): string {
+  try {
+    const normalized = url.trim().replace(/^webcal:\/\//i, 'https://');
+    const host = new URL(normalized).hostname.replace(/^www\./i, '');
+    return host || 'Calendar';
+  } catch {
+    return 'Calendar';
+  }
+}
 
 function parseSubscriptions(data: { urls?: unknown; subscriptions?: unknown } | null): IcalSubscription[] {
   if (!data) return [];
   const subs = data.subscriptions;
   if (Array.isArray(subs) && subs.length > 0) {
     return subs
-      .filter((s): s is IcalSubscription => s && typeof s === 'object' && typeof (s as IcalSubscription).url === 'string')
-      .map((s) => ({ url: (s as IcalSubscription).url, color: (s as IcalSubscription).color || DEFAULT_COLOR }));
+      .filter((s): s is { url: string; color?: string; name?: string } => s && typeof s === 'object' && typeof (s as { url?: string }).url === 'string')
+      .map((s) => {
+        const url = s.url;
+        return {
+          url,
+          color: s.color || DEFAULT_COLOR,
+          name: s.name?.trim() || deriveNameFromUrl(url),
+        };
+      });
   }
   const urls = data.urls;
   if (Array.isArray(urls)) {
     return urls
       .filter((u): u is string => typeof u === 'string')
-      .map((url) => ({ url, color: DEFAULT_COLOR }));
+      .map((url) => ({ url, color: DEFAULT_COLOR, name: deriveNameFromUrl(url) }));
   }
   return [];
 }
@@ -63,11 +80,11 @@ export function useIcalSubscriptions() {
 
   const urls = subscriptionList.map((s) => s.url);
 
-  const addUrl = (url: string, color: string = DEFAULT_COLOR) => {
+  const addUrl = (url: string, color: string = DEFAULT_COLOR, name?: string) => {
     if (!user?.id) return;
     const normalized = url.trim().replace(/^webcal:\/\//i, 'https://');
     if (!normalized || urls.includes(normalized)) return;
-    mutation.mutate([...subscriptionList, { url: normalized, color }]);
+    mutation.mutate([...subscriptionList, { url: normalized, color, name: name?.trim() || deriveNameFromUrl(normalized) }]);
   };
 
   const removeUrl = (url: string) => {
@@ -82,12 +99,20 @@ export function useIcalSubscriptions() {
     );
   };
 
+  const setName = (url: string, name: string) => {
+    if (!user?.id) return;
+    mutation.mutate(
+      subscriptionList.map((s) => (s.url === url ? { ...s, name: name.trim() || deriveNameFromUrl(url) } : s))
+    );
+  };
+
   return {
     subscriptionList,
     urls,
     addUrl,
     removeUrl,
     setColor,
+    setName,
     isLoading: query.isLoading,
   };
 }

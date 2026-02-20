@@ -3,6 +3,7 @@ import {
   Plus,
   Calendar as CalendarIcon,
   Check,
+  Edit2,
   ChevronRight,
   ChevronDown,
   Star,
@@ -38,12 +39,16 @@ import {
   useToggleTask,
   useDeleteTask,
   useCreateTaskList,
+  useUpdateTaskList,
+  useDeleteTaskList,
   useCreateTag,
+  useUpdateTag,
+  useDeleteTag,
   useConvertTaskToHabit,
 } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { taskDB } from '../db/database';
-import { Modal, Button, Input, Select, TextArea } from '../components/ui';
+import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
@@ -133,7 +138,11 @@ export default function Tasks() {
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
   const createTaskList = useCreateTaskList();
+  const updateTaskList = useUpdateTaskList();
+  const deleteTaskList = useDeleteTaskList();
   const createTag = useCreateTag();
+  const updateTag = useUpdateTag();
+  const deleteTag = useDeleteTag();
   const convertToHabit = useConvertTaskToHabit();
 
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
@@ -164,7 +173,15 @@ export default function Tasks() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [isTagModalOpen, setIsTagModalOpen] = useState(false);
+  const [activeListActionsId, setActiveListActionsId] = useState<string | null>(null);
+  const [activeTagActionsId, setActiveTagActionsId] = useState<string | null>(null);
+  const [editingListId, setEditingListId] = useState<string | null>(null);
+  const [editingTagId, setEditingTagId] = useState<string | null>(null);
+  const [listToDeleteId, setListToDeleteId] = useState<string | null>(null);
+  const [tagToDeleteId, setTagToDeleteId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const listLongPressTimer = useRef<number | null>(null);
+  const tagLongPressTimer = useRef<number | null>(null);
 
   // New state for displaying highlighted date/time
   const [highlightedDate, setHighlightedDate] = useState<string | undefined>(undefined);
@@ -181,6 +198,7 @@ export default function Tasks() {
   const taskListRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const notificationHandled = useRef<string | null>(null);
+  const isTouchDevice = typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0);
 
   // Apply default Tasks view when opening the page (and after persist rehydration on mobile)
   const effectiveDefaultView = defaultTaskView ?? defaultTaskListId ?? null;
@@ -427,6 +445,13 @@ export default function Tasks() {
       list.removeEventListener('touchend', onTouchEnd);
     };
   }, [activeView]);
+
+  useEffect(() => {
+    return () => {
+      if (listLongPressTimer.current != null) window.clearTimeout(listLongPressTimer.current);
+      if (tagLongPressTimer.current != null) window.clearTimeout(tagLongPressTimer.current);
+    };
+  }, []);
 
   // Form state for editing
   const [editForm, setEditForm] = useState<Partial<CreateInput<Task>>>({});
@@ -704,31 +729,83 @@ export default function Tasks() {
   // Create new list
   const handleCreateList = () => {
     if (!newListName.trim()) return;
-    createTaskList.mutate({
-      name: newListName.trim(),
-      color: newListColor,
-      sort_order: taskLists.length,
-      is_default: false,
-    }, {
-      onSuccess: () => {
-        setNewListName('');
-        setIsListModalOpen(false);
+    const name = newListName.trim();
+    if (editingListId) {
+      updateTaskList.mutate({
+        id: editingListId,
+        data: { name, color: newListColor },
+      }, {
+        onSuccess: () => {
+          setNewListName('');
+          setEditingListId(null);
+          setIsListModalOpen(false);
+        },
+      });
+      return;
+    }
+    createTaskList.mutate(
+      {
+        name,
+        color: newListColor,
+        sort_order: taskLists.length,
+        is_default: false,
       },
-    });
+      {
+        onSuccess: () => {
+          setNewListName('');
+          setIsListModalOpen(false);
+        },
+      }
+    );
   };
 
   // Create new tag
   const handleCreateTag = () => {
     if (!newTagName.trim()) return;
-    createTag.mutate({
-      name: newTagName.trim(),
-      color: newTagColor,
-    }, {
-      onSuccess: () => {
-        setNewTagName('');
-        setIsTagModalOpen(false);
+    const name = newTagName.trim();
+    if (editingTagId) {
+      updateTag.mutate({
+        id: editingTagId,
+        data: { name, color: newTagColor },
+      }, {
+        onSuccess: () => {
+          setNewTagName('');
+          setEditingTagId(null);
+          setIsTagModalOpen(false);
+        },
+      });
+      return;
+    }
+    createTag.mutate(
+      {
+        name,
+        color: newTagColor,
       },
-    });
+      {
+        onSuccess: () => {
+          setNewTagName('');
+          setIsTagModalOpen(false);
+        },
+      }
+    );
+  };
+
+  const openEditListModal = (listId: string) => {
+    const list = taskLists.find((l) => l.id === listId);
+    if (!list) return;
+    setEditingListId(list.id);
+    setNewListName(list.name);
+    setNewListColor(list.color);
+    setIsListModalOpen(true);
+  };
+
+  const openEditTagModal = (tagId: string) => {
+    const tag = tags.find((t) => t.id === tagId);
+    if (!tag) return;
+    setEditingTagId(tag.id);
+    setNewTagName(tag.name);
+    setNewTagColor(tag.color);
+    setIsTagModalOpen(true);
   };
 
 
@@ -818,7 +895,12 @@ export default function Tasks() {
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lists</span>
             <button
-              onClick={() => setIsListModalOpen(true)}
+              onClick={() => {
+                setEditingListId(null);
+                setNewListName('');
+                setNewListColor('#3b82f6');
+                setIsListModalOpen(true);
+              }}
               className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
               aria-label="Add list"
             >
@@ -827,27 +909,88 @@ export default function Tasks() {
           </div>
           <div className="space-y-0.5">
             {taskLists.map((list) => (
-              <button
+              <div
                 key={list.id}
-                onClick={() => { setActiveView('list'); setActiveListId(list.id); setActiveTagId(null); }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-                  activeView === 'list' && activeListId === list.id
-                    ? "bg-secondary text-foreground"
-                    : "hover:bg-secondary text-muted-foreground"
+                  "w-full flex items-center gap-1 rounded-xl pr-1 transition-colors",
+                  activeView === 'list' && activeListId === list.id ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
                 )}
+                onTouchStart={() => {
+                  if (!isTouchDevice) return;
+                  if (listLongPressTimer.current != null) window.clearTimeout(listLongPressTimer.current);
+                  listLongPressTimer.current = window.setTimeout(() => {
+                    setActiveListActionsId(list.id);
+                  }, 450);
+                }}
+                onTouchEnd={() => {
+                  if (listLongPressTimer.current != null) {
+                    window.clearTimeout(listLongPressTimer.current);
+                    listLongPressTimer.current = null;
+                  }
+                }}
+                onTouchCancel={() => {
+                  if (listLongPressTimer.current != null) {
+                    window.clearTimeout(listLongPressTimer.current);
+                    listLongPressTimer.current = null;
+                  }
+                }}
               >
-                <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
-                <span className="flex-1 min-w-0 text-left break-words">{list.name}</span>
-                <span className="text-sm md:text-xs shrink-0">{taskDB.getByList(list.id).filter(t => !t.is_completed).length}</span>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveView('list');
+                    setActiveListId(list.id);
+                    setActiveTagId(null);
+                    if (!isTouchDevice) {
+                      setActiveListActionsId((prev) => (prev === list.id ? null : list.id));
+                    }
+                  }}
+                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3 text-base md:text-sm font-medium"
+                >
+                  <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
+                  <span className="flex-1 min-w-0 text-left break-words">{list.name}</span>
+                  <span className="text-sm md:text-xs shrink-0">{taskDB.getByList(list.id).filter(t => !t.is_completed).length}</span>
+                </button>
+                {activeListActionsId === list.id && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditListModal(list.id);
+                      }}
+                      className="p-1.5 rounded hover:bg-background/70"
+                      aria-label={`Edit list ${list.name}`}
+                      title="Edit list"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setListToDeleteId(list.id);
+                      }}
+                      className="p-1.5 rounded hover:bg-destructive/20 text-destructive"
+                      aria-label={`Delete list ${list.name}`}
+                      title="Delete list"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
             ))}
           </div>
 
           <div className="flex items-center justify-between mt-4 mb-2">
             <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
             <button
-              onClick={() => setIsTagModalOpen(true)}
+              onClick={() => {
+                setEditingTagId(null);
+                setNewTagName('');
+                setNewTagColor('#3b82f6');
+                setIsTagModalOpen(true);
+              }}
               className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
               aria-label="Add tag"
             >
@@ -856,20 +999,76 @@ export default function Tasks() {
           </div>
           <div className="space-y-0.5">
             {tagsToShow.map((tag) => (
-              <button
+              <div
                 key={tag.id}
-                onClick={() => { setActiveView('tag'); setActiveTagId(tag.id); setActiveListId(null); }}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-                  activeView === 'tag' && activeTagId === tag.id
-                    ? "bg-secondary text-foreground"
-                    : "hover:bg-secondary text-muted-foreground"
+                  "w-full flex items-center gap-1 rounded-xl pr-1 transition-colors",
+                  activeView === 'tag' && activeTagId === tag.id ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
                 )}
+                onTouchStart={() => {
+                  if (!isTouchDevice) return;
+                  if (tagLongPressTimer.current != null) window.clearTimeout(tagLongPressTimer.current);
+                  tagLongPressTimer.current = window.setTimeout(() => {
+                    setActiveTagActionsId(tag.id);
+                  }, 450);
+                }}
+                onTouchEnd={() => {
+                  if (tagLongPressTimer.current != null) {
+                    window.clearTimeout(tagLongPressTimer.current);
+                    tagLongPressTimer.current = null;
+                  }
+                }}
+                onTouchCancel={() => {
+                  if (tagLongPressTimer.current != null) {
+                    window.clearTimeout(tagLongPressTimer.current);
+                    tagLongPressTimer.current = null;
+                  }
+                }}
               >
-                <TagIcon size={18} className="shrink-0 md:w-[14px] md:h-[14px]" style={{ color: tag.color }} />
-                <span className="flex-1 min-w-0 text-left break-words">{tag.name}</span>
-                <span className="text-sm md:text-xs shrink-0">{taskDB.getByTag(tag.id).filter(t => !t.is_completed).length}</span>
-              </button>
+                <button
+                  onClick={() => {
+                    setActiveView('tag');
+                    setActiveTagId(tag.id);
+                    setActiveListId(null);
+                    if (!isTouchDevice) {
+                      setActiveTagActionsId((prev) => (prev === tag.id ? null : tag.id));
+                    }
+                  }}
+                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3 text-base md:text-sm font-medium"
+                >
+                  <TagIcon size={18} className="shrink-0 md:w-[14px] md:h-[14px]" style={{ color: tag.color }} />
+                  <span className="flex-1 min-w-0 text-left break-words">{tag.name}</span>
+                  <span className="text-sm md:text-xs shrink-0">{taskDB.getByTag(tag.id).filter(t => !t.is_completed).length}</span>
+                </button>
+                {activeTagActionsId === tag.id && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditTagModal(tag.id);
+                      }}
+                      className="p-1.5 rounded hover:bg-background/70"
+                      aria-label={`Edit tag ${tag.name}`}
+                      title="Edit tag"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setTagToDeleteId(tag.id);
+                      }}
+                      className="p-1.5 rounded hover:bg-destructive/20 text-destructive"
+                      aria-label={`Delete tag ${tag.name}`}
+                      title="Delete tag"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </>
+                )}
+              </div>
             ))}
             {hiddenTagsCount > 0 && (
               <button
@@ -1568,8 +1767,11 @@ export default function Tasks() {
       {/* New List Modal */}
       <Modal
         isOpen={isListModalOpen}
-        onClose={() => setIsListModalOpen(false)}
-        title="New List"
+        onClose={() => {
+          setIsListModalOpen(false);
+          setEditingListId(null);
+        }}
+        title={editingListId ? 'Edit List' : 'New List'}
       >
         <div className="space-y-4">
           <Input
@@ -1596,8 +1798,21 @@ export default function Tasks() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setIsListModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateList} disabled={!newListName.trim()}>Create</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsListModalOpen(false);
+                setEditingListId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateList}
+              disabled={!newListName.trim() || createTaskList.isPending || updateTaskList.isPending}
+            >
+              {editingListId ? 'Save' : 'Create'}
+            </Button>
           </div>
         </div>
       </Modal>
@@ -1605,8 +1820,11 @@ export default function Tasks() {
       {/* New Tag Modal */}
       <Modal
         isOpen={isTagModalOpen}
-        onClose={() => setIsTagModalOpen(false)}
-        title="New Tag"
+        onClose={() => {
+          setIsTagModalOpen(false);
+          setEditingTagId(null);
+        }}
+        title={editingTagId ? 'Edit Tag' : 'New Tag'}
       >
         <div className="space-y-4">
           <Input
@@ -1633,11 +1851,64 @@ export default function Tasks() {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setIsTagModalOpen(false)}>Cancel</Button>
-            <Button onClick={handleCreateTag} disabled={!newTagName.trim()}>Create</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsTagModalOpen(false);
+                setEditingTagId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateTag}
+              disabled={!newTagName.trim() || createTag.isPending || updateTag.isPending}
+            >
+              {editingTagId ? 'Save' : 'Create'}
+            </Button>
           </div>
         </div>
       </Modal>
+      <ConfirmSheet
+        isOpen={!!listToDeleteId}
+        title="Delete List"
+        message="Delete this list? Tasks will be kept and moved out of the list."
+        confirmLabel="Delete"
+        onCancel={() => setListToDeleteId(null)}
+        onConfirm={() => {
+          if (!listToDeleteId) return;
+          deleteTaskList.mutate(listToDeleteId, {
+            onSuccess: () => {
+              if (activeView === 'list' && activeListId === listToDeleteId) {
+                setActiveView('today');
+                setActiveListId(null);
+              }
+              setListToDeleteId(null);
+            },
+          });
+        }}
+        isLoading={deleteTaskList.isPending}
+      />
+      <ConfirmSheet
+        isOpen={!!tagToDeleteId}
+        title="Delete Tag"
+        message="Delete this tag? It will be removed from all tasks."
+        confirmLabel="Delete"
+        onCancel={() => setTagToDeleteId(null)}
+        onConfirm={() => {
+          if (!tagToDeleteId) return;
+          deleteTag.mutate(tagToDeleteId, {
+            onSuccess: () => {
+              if (activeView === 'tag' && activeTagId === tagToDeleteId) {
+                setActiveView('today');
+                setActiveTagId(null);
+              }
+              setTagToDeleteId(null);
+            },
+          });
+        }}
+        isLoading={deleteTag.isPending}
+      />
     </div>
   );
 }

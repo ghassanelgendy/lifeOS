@@ -299,7 +299,7 @@ export default function Sleep() {
               day: format(parseISO(s.date), 'EEE'), 
               sleep: Math.round(s.sleepMinutes / 60 * 10) / 10 
             }));
-            const axisColor = 'hsl(var(--muted-foreground))';
+            const axisColor = '#ffffff';
             const gridColor = 'hsl(var(--border))';
 
             return (
@@ -325,6 +325,7 @@ export default function Sleep() {
                         stroke={axisColor}
                       />
                       <Tooltip 
+                        cursor={false}
                         formatter={(v: number | undefined) => `${v ?? 0} h`}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',

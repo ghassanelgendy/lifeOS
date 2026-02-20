@@ -86,10 +86,11 @@ export default function CalendarPage() {
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
   const { data: allEvents = [] } = useCalendarEvents();
-  const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, setColor: setIcalColor } = useIcalSubscriptions();
+  const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, setColor: setIcalColor, setName: setIcalName } = useIcalSubscriptions();
   const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, subscriptionList);
   const [newIcalUrl, setNewIcalUrl] = useState('');
   const [newIcalColor, setNewIcalColor] = useState('#3b82f6');
+  const [newIcalName, setNewIcalName] = useState('');
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
@@ -252,8 +253,9 @@ export default function CalendarPage() {
   const handleAddIcalUrl = () => {
     const url = newIcalUrl.trim().replace(/^webcal:\/\//i, 'https://');
     if (!url || !url.startsWith('http')) return;
-    addIcalUrl(url, newIcalColor);
+    addIcalUrl(url, newIcalColor, newIcalName);
     setNewIcalUrl('');
+    setNewIcalName('');
   };
 
   // Get tasks for a specific day
@@ -636,26 +638,35 @@ export default function CalendarPage() {
               <p className="text-xs text-muted-foreground mb-2">
                 Add a calendar URL to show its events here (e.g. Google Calendar, Apple Calendar).
               </p>
-              <div className="flex gap-2 mb-2">
+              <div className="space-y-2 mb-2">
                 <input
-                  type="url"
-                  value={newIcalUrl}
-                  onChange={(e) => setNewIcalUrl(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddIcalUrl()}
-                  placeholder="https:// or webcal://..."
-                  className="flex-1 min-w-0 rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
+                  type="text"
+                  value={newIcalName}
+                  onChange={(e) => setNewIcalName(e.target.value)}
+                  placeholder="Calendar name (optional)"
+                  className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex gap-2">
                   <input
-                    type="color"
-                    value={newIcalColor}
-                    onChange={(e) => setNewIcalColor(e.target.value)}
-                    className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
-                    title="Color for this calendar"
+                    type="url"
+                    value={newIcalUrl}
+                    onChange={(e) => setNewIcalUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddIcalUrl()}
+                    placeholder="https:// or webcal://..."
+                    className="flex-1 min-w-0 rounded-lg border border-border bg-background px-2 py-1.5 text-sm"
                   />
-                  <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()}>
-                    Add
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={newIcalColor}
+                      onChange={(e) => setNewIcalColor(e.target.value)}
+                      className="w-8 h-8 rounded border border-border cursor-pointer bg-transparent"
+                      title="Color for this calendar"
+                    />
+                    <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()}>
+                      Add
+                    </Button>
+                  </div>
                 </div>
               </div>
               {subscriptionList.length > 0 && (
@@ -669,9 +680,16 @@ export default function CalendarPage() {
                         className="w-5 h-5 rounded border border-border cursor-pointer bg-transparent shrink-0"
                         title="Change color"
                       />
+                      <input
+                        type="text"
+                        value={sub.name}
+                        onChange={(e) => setIcalName(sub.url, e.target.value)}
+                        className="w-28 sm:w-36 rounded border border-border bg-background px-1.5 py-1 text-xs"
+                        title="Calendar name"
+                      />
                       <span className="flex-1 truncate text-muted-foreground" title={sub.url}>
-                        {sub.url.replace(/^https?:\/\//, '').slice(0, 36)}
-                        {(sub.url.replace(/^https?:\/\//, '').length > 36) ? '…' : ''}
+                        {sub.url.replace(/^https?:\/\//, '').slice(0, 28)}
+                        {(sub.url.replace(/^https?:\/\//, '').length > 28) ? '...' : ''}
                       </span>
                       <button
                         type="button"

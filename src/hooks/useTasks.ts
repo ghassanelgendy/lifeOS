@@ -640,6 +640,50 @@ export function useCreateTaskList() {
   });
 }
 
+export function useUpdateTaskList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateInput<TaskList> }) => {
+      const { data: updated, error } = await supabase
+        .from('task_lists')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return updated as TaskList;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LISTS_KEY });
+      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    },
+  });
+}
+
+export function useDeleteTaskList() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      // Detach tasks first so deleting a list never cascades into task loss.
+      const { error: detachErr } = await supabase
+        .from('tasks')
+        .update({ list_id: null })
+        .eq('list_id', id);
+      if (detachErr) throw detachErr;
+
+      const { error } = await supabase.from('task_lists').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: LISTS_KEY });
+      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    },
+  });
+}
+
 export function useCreateTag() {
   const queryClient = useQueryClient();
 
@@ -651,6 +695,58 @@ export function useCreateTag() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TAGS_KEY });
+    },
+  });
+}
+
+export function useUpdateTag() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Tag> }) => {
+      const { data: updated, error } = await supabase
+        .from('tags')
+        .update(data)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return updated as Tag;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TAGS_KEY });
+      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    },
+  });
+}
+
+export function useDeleteTag() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data: tasks, error: taskFetchErr } = await supabase
+        .from('tasks')
+        .select('id, tag_ids')
+        .contains('tag_ids', [id]);
+      if (taskFetchErr) throw taskFetchErr;
+
+      for (const task of (tasks ?? []) as Array<{ id: string; tag_ids?: string[] }>) {
+        const nextTagIds = (task.tag_ids ?? []).filter((tagId) => tagId !== id);
+        const { error: updateErr } = await supabase
+          .from('tasks')
+          .update({ tag_ids: nextTagIds })
+          .eq('id', task.id);
+        if (updateErr) throw updateErr;
+      }
+
+      const { error } = await supabase.from('tags').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: TAGS_KEY });
+      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
     },
   });
 }
