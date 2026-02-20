@@ -14,6 +14,38 @@ export interface IcalEvent {
   icalUrl: string;
 }
 
+const ICAL_CACHE_TTL_MS = 1000 * 60 * 15;
+const ICAL_CACHE_PREFIX = 'lifeos:ical-cache:v1:';
+
+function getCacheKey(url: string): string {
+  return `${ICAL_CACHE_PREFIX}${encodeURIComponent(url)}`;
+}
+
+function readIcalCache(url: string): { fetchedAt: number; events: IcalEvent[] } | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(getCacheKey(url));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { fetchedAt?: number; events?: IcalEvent[] };
+    if (!parsed || typeof parsed.fetchedAt !== 'number' || !Array.isArray(parsed.events)) return null;
+    return { fetchedAt: parsed.fetchedAt, events: parsed.events };
+  } catch {
+    return null;
+  }
+}
+
+function writeIcalCache(url: string, events: IcalEvent[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(
+      getCacheKey(url),
+      JSON.stringify({ fetchedAt: Date.now(), events })
+    );
+  } catch {
+    // Ignore quota/serialization errors.
+  }
+}
+
 function unfold(ical: string): string {
   return ical.replace(/\r?\n[ \t]/g, '');
 }
@@ -138,13 +170,39 @@ export async function fetchIcalEvents(
   const fetchUrl = isBrowser
     ? `${window.location.origin}/api/proxy?url=${encodeURIComponent(href)}`
     : href;
+  const cached = readIcalCache(href);
+  const isCacheFresh = !!cached && Date.now() - cached.fetchedAt < ICAL_CACHE_TTL_MS;
 
-  const res = await fetch(fetchUrl, { cache: 'no-store' });
-  if (!res.ok) return [];
-  const text = await res.text();
-  const events = parseIcalToEvents(text, url);
-  return events.filter((e) => {
-    const start = new Date(e.start_time);
-    return start >= startDate && start <= endDate;
-  });
+  if (isCacheFresh) {
+    return cached.events.filter((e) => {
+      const start = new Date(e.start_time);
+      const rawEnd = new Date(e.end_time);
+      const end = rawEnd <= start ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000) : rawEnd;
+      return start < endDate && end > startDate;
+    });
+  }
+
+  try {
+    const res = await fetch(fetchUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`iCal fetch failed: ${res.status}`);
+    const text = await res.text();
+    const events = parseIcalToEvents(text, url);
+    writeIcalCache(href, events);
+    return events.filter((e) => {
+      const start = new Date(e.start_time);
+      const rawEnd = new Date(e.end_time);
+      const end = rawEnd <= start ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000) : rawEnd;
+      return start < endDate && end > startDate;
+    });
+  } catch {
+    if (cached) {
+      return cached.events.filter((e) => {
+        const start = new Date(e.start_time);
+        const rawEnd = new Date(e.end_time);
+        const end = rawEnd <= start ? new Date(rawEnd.getTime() + 24 * 60 * 60 * 1000) : rawEnd;
+        return start < endDate && end > startDate;
+      });
+    }
+    return [];
+  }
 }

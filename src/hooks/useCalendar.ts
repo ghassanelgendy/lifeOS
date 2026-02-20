@@ -119,12 +119,16 @@ export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
 
   events.forEach((event) => {
     const eventStart = parseISO(event.start_time);
-    const eventEnd = parseISO(event.end_time);
+    let eventEnd = parseISO(event.end_time);
+    if (eventEnd <= eventStart) {
+      // Guard against malformed overnight events saved with same-day end time.
+      eventEnd = addDays(eventEnd, 1);
+    }
     const duration = eventEnd.getTime() - eventStart.getTime();
 
     if (event.recurrence === 'none') {
-      // Non-recurring event
-      if (eventStart >= startDate && eventStart <= endDate) {
+      // Non-recurring event: include any overlap with the visible range.
+      if (eventStart < endDate && eventEnd > startDate) {
         expandedEvents.push(event);
       }
     } else {
@@ -133,12 +137,13 @@ export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
       let currentDate = eventStart;
 
       while (isBefore(currentDate, endDate) && isBefore(currentDate, recurrenceEnd)) {
-        if (currentDate >= startDate) {
+        const currentEnd = new Date(currentDate.getTime() + duration);
+        if (currentDate < endDate && currentEnd > startDate) {
           expandedEvents.push({
             ...event,
             id: `${event.id}-${format(currentDate, 'yyyy-MM-dd')}`,
             start_time: currentDate.toISOString(),
-            end_time: new Date(currentDate.getTime() + duration).toISOString(),
+            end_time: currentEnd.toISOString(),
             isRecurringInstance: true,
             originalId: event.id,
           });
@@ -199,13 +204,11 @@ export function useIcalSubscriptionEvents(
 export function useUpcomingEvents(days: number = 7) {
   const today = new Date();
   const futureDate = addDays(today, days);
-
-  const { data: events = [] } = useCalendarEventsByRange(
-    today.toISOString(),
-    futureDate.toISOString()
-  );
-
-  return events;
+  const events = useExpandedCalendarEvents(today, futureDate);
+  return events.filter((event) => {
+    const start = new Date(event.start_time);
+    return start >= today && start <= futureDate;
+  });
 }
 
 // Get shift events specifically

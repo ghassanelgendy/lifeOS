@@ -148,6 +148,16 @@ export default function CalendarPage() {
     return `event:${eventId}`;
   };
 
+  const getNormalizedEventBounds = (event: ExtendedCalendarEvent) => {
+    const start = parseISO(event.start_time);
+    let end = parseISO(event.end_time);
+    if (end <= start) {
+      // Treat same-day early-morning end times as overnight into next day.
+      end = addDays(end, 1);
+    }
+    return { start, end };
+  };
+
   const ensureCalendarTagId = async (): Promise<string> => {
     const { data: existing, error: findError } = await supabase
       .from('tags')
@@ -289,8 +299,7 @@ export default function CalendarPage() {
     const dayStart = startOfDay(day);
     const dayEndExclusive = addDays(dayStart, 1);
     return allMergedEvents.filter((event) => {
-      const eventStart = parseISO(event.start_time);
-      const eventEnd = parseISO(event.end_time);
+      const { start: eventStart, end: eventEnd } = getNormalizedEventBounds(event);
       return eventStart < dayEndExclusive && eventEnd > dayStart;
     });
   };
@@ -472,6 +481,14 @@ export default function CalendarPage() {
       ...formData,
       color: EVENT_TYPE_COLORS[formData.type as EventType],
     } as CreateInput<CalendarEvent>;
+    if (!eventData.all_day && eventData.start_time && eventData.end_time) {
+      const start = new Date(eventData.start_time);
+      const end = new Date(eventData.end_time);
+      if (end <= start) {
+        end.setDate(end.getDate() + 1);
+        eventData.end_time = format(end, "yyyy-MM-dd'T'HH:mm");
+      }
+    }
 
     try {
       let savedEvent: CalendarEvent;
@@ -510,8 +527,8 @@ export default function CalendarPage() {
       id: `event-${e.id}`,
       type: 'event' as const,
       title: e.title,
-      start: parseISO(e.start_time),
-      end: parseISO(e.end_time),
+      start: getNormalizedEventBounds(e).start,
+      end: getNormalizedEventBounds(e).end,
       color: e.color ?? ('type' in e && e.type ? EVENT_TYPE_COLORS[e.type as EventType] : '#64748b'),
       isIcal: 'isIcal' in e && e.isIcal,
       event: e as ExtendedCalendarEvent,
@@ -838,7 +855,7 @@ export default function CalendarPage() {
                           {event.all_day ? (
                             'All day'
                           ) : (
-                            `${format(parseISO(event.start_time), 'h:mm a')} - ${format(parseISO(event.end_time), 'h:mm a')}`
+                            `${format(getNormalizedEventBounds(event as ExtendedCalendarEvent).start, 'h:mm a')} - ${format(getNormalizedEventBounds(event as ExtendedCalendarEvent).end, 'h:mm a')}`
                           )}
                         </div>
                         {event.location && (

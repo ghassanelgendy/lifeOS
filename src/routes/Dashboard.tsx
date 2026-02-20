@@ -14,11 +14,12 @@ import {
   Moon
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, addDays } from 'date-fns';
+import { useMemo } from 'react';
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { cn, formatCurrency } from '../lib/utils';
 import { useHealthMetrics } from '../hooks/useHealthData';
-import { useOverdueTasks } from '../hooks/useTasks';
+import { useOverdueTasks, useUpcomingTasks } from '../hooks/useTasks';
 import { useWeeklyAdherence, useHabits } from '../hooks/useHabits';
 import { useCategoryBreakdown } from '../hooks/useFinance';
 import { useUpcomingEvents } from '../hooks/useCalendar';
@@ -35,6 +36,7 @@ export default function Dashboard() {
   const { adherence, todayLogs } = useWeeklyAdherence();
   const { totalExpenses, balance } = useCategoryBreakdown();
   const upcomingEvents = useUpcomingEvents(7);
+  const { data: upcomingTasks = [] } = useUpcomingTasks(7);
   const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
   const { privacyMode, pageWidgetOrder, pageWidgetVisible } = useUIStore();
@@ -51,6 +53,82 @@ export default function Dashboard() {
 
   // Active projects count
   const activeProjects = projects.filter(p => p.status === 'Active').length;
+
+  type UpcomingItem = {
+    id: string;
+    title: string;
+    start_time: string;
+    color: string;
+    kind: 'event' | 'task' | 'habit';
+    type?: string;
+  };
+
+  const upcomingItems = useMemo<UpcomingItem[]>(() => {
+    const now = new Date();
+    const end = addDays(now, 7);
+    const items = new Map<string, UpcomingItem>();
+
+    for (const event of upcomingEvents) {
+      const eventKey = `event:${event.id}`;
+      const hasLinkedTask = upcomingTasks.some((task) =>
+        task.calendar_event_id === event.id || task.calendar_source_key === eventKey
+      );
+      if (hasLinkedTask) continue;
+      items.set(eventKey, {
+        id: `event-${event.id}`,
+        title: event.title,
+        start_time: event.start_time,
+        color: event.color ?? '#3b82f6',
+        kind: 'event',
+        type: event.type,
+      });
+    }
+
+    for (const task of upcomingTasks) {
+      if (!task.due_date) continue;
+      const timePart = task.due_time && task.due_time.length >= 5 ? task.due_time.slice(0, 5) : '00:00';
+      const parsed = new Date(`${task.due_date}T${timePart}`);
+      const startTime = Number.isNaN(parsed.getTime()) ? `${task.due_date}T00:00:00` : parsed.toISOString();
+      const dedupeKey = task.calendar_event_id
+        ? `event:${task.calendar_event_id}`
+        : (task.calendar_source_key || `task:${task.id}`);
+      items.set(dedupeKey, {
+        id: `task-${task.id}`,
+        title: task.title,
+        start_time: startTime,
+        color: '#a855f7',
+        kind: 'task',
+      });
+    }
+
+    const rangeDays = Array.from({ length: 8 }, (_, i) => addDays(now, i));
+    for (const habit of allHabits) {
+      if (habit.show_in_tasks) continue;
+      for (const day of rangeDays) {
+        const matchesDay = habit.frequency === 'Weekly'
+          ? ((habit.week_days ?? []).length ? (habit.week_days ?? []).includes(day.getDay()) : true)
+          : true;
+        if (!matchesDay) continue;
+        const datePart = format(day, 'yyyy-MM-dd');
+        const timePart = habit.time && habit.time.length >= 5 ? habit.time.slice(0, 5) : '09:00';
+        const start = new Date(`${datePart}T${timePart}`);
+        if (start < now || start > end) continue;
+        const key = `habit:${habit.id}:${datePart}`;
+        if (items.has(key)) continue;
+        items.set(key, {
+          id: key,
+          title: habit.title,
+          start_time: start.toISOString(),
+          color: habit.color || '#22c55e',
+          kind: 'habit',
+        });
+      }
+    }
+
+    return Array.from(items.values()).sort(
+      (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
+    );
+  }, [upcomingEvents, upcomingTasks, allHabits]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -325,29 +403,39 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="p-4">
-            {upcomingEvents.length === 0 ? (
+            {upcomingItems.length === 0 ? (
               <div className="text-center py-6 text-muted-foreground">
                 <Calendar className="mx-auto mb-2 opacity-50" size={24} />
                 <p className="text-sm">No upcoming events</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {upcomingEvents.slice(0, 5).map(event => (
-                  <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                {upcomingItems.slice(0, 5).map(item => (
+                  <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
                     <div
                       className="w-2 h-8 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: event.color }}
+                      style={{ backgroundColor: item.color }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{event.title}</p>
+                      <p className="font-medium text-sm truncate">{item.title}</p>
                       <p className="text-xs text-muted-foreground">
-                        {isToday(parseISO(event.start_time))
-                          ? `Today, ${format(parseISO(event.start_time), 'h:mm a')}`
-                          : format(parseISO(event.start_time), 'EEE, MMM d · h:mm a')
+                        {isToday(parseISO(item.start_time))
+                          ? `Today, ${format(parseISO(item.start_time), 'h:mm a')}`
+                          : format(parseISO(item.start_time), 'EEE, MMM d · h:mm a')
                         }
                       </p>
                     </div>
-                    {event.type === 'Shift' && (
+                    {item.kind === 'task' && (
+                      <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded">
+                        Task
+                      </span>
+                    )}
+                    {item.kind === 'habit' && (
+                      <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded">
+                        Habit
+                      </span>
+                    )}
+                    {item.kind === 'event' && item.type === 'Shift' && (
                       <span className="text-xs bg-orange-500/20 text-orange-400 px-2 py-0.5 rounded">
                         Shift
                       </span>
