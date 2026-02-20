@@ -1,4 +1,4 @@
-// Send Web Push prayer reminders based on prayer_notification_settings.
+// Send Web Push prayer remsainders based on prayer_notification_settings.
 // Trigger from external cron website or pg_cron.
 /// <reference path="../deno.d.ts" />
 
@@ -9,11 +9,10 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY');
 const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
-const cronSecret = Deno.env.get('CRON_SECRET') || Deno.env.get('PRAYER_CRON_SECRET');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 if (!vapidPublic || !vapidPrivate) {
@@ -58,14 +57,6 @@ function isInQuietHours(minuteOfDay: number, quietStart?: string | null, quietEn
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
-  }
-
-  const suppliedSecret = req.headers.get('x-cron-secret') || req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
-  if (cronSecret && suppliedSecret !== cronSecret) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
   }
 
   try {
@@ -141,8 +132,8 @@ Deno.serve(async (req: Request) => {
       }
 
       const payload = JSON.stringify({
-        title: `${ph.prayer_name} reminder`,
-        body: `It's time for ${ph.prayer_name}.`,
+        title: `Time to pray ${ph.prayer_name}`,
+        body: '',
         prayerName: ph.prayer_name,
       });
 

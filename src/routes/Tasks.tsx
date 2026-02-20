@@ -80,6 +80,16 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: 'Sat' },
 ];
 
+// Build a Date from due_date + due_time (DB may return due_time as "14:30:00"; avoid "T14:30:00:00")
+function parseDueDateTime(dateStr: string | undefined, timeStr: string | undefined): Date {
+  const datePart = dateStr?.split('T')[0] ?? '';
+  const timePart = timeStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(timeStr)
+    ? (timeStr.length === 5 ? `${timeStr}:00` : timeStr)
+    : '00:00:00';
+  const d = datePart ? new Date(`${datePart}T${timePart}`) : new Date();
+  return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
 type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'list' | 'tag';
 
 interface SmartListConfig {
@@ -232,7 +242,10 @@ export default function Tasks() {
 
   const recurrencePreview = useMemo(() => {
     if (newTaskRecurrence === 'none') return [] as string[];
-    const baseDate = newTaskDate ? new Date(`${newTaskDate}T${newTaskTime || '00:00'}:00`) : new Date();
+    const rawTime = newTaskTime || '00:00';
+    const timePart = /^\d{1,2}:\d{2}(:\d{2})?$/.test(rawTime) ? (rawTime.length === 5 ? `${rawTime}:00` : rawTime) : '00:00:00';
+    const baseDate = newTaskDate ? new Date(`${newTaskDate}T${timePart}`) : new Date();
+    if (Number.isNaN(baseDate.getTime())) return [] as string[];
     const interval = Math.max(1, newTaskRecurrenceInterval || 1);
     const items: Date[] = [];
     let cursor = new Date(baseDate);
@@ -277,7 +290,9 @@ export default function Tasks() {
       }
     }
 
-    return items.map((d) => format(d, newTaskRecurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
+    return items
+      .filter((d) => !Number.isNaN(d.getTime()))
+      .map((d) => format(d, newTaskRecurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
   }, [
     newTaskRecurrence,
     newTaskDate,
@@ -315,11 +330,8 @@ export default function Tasks() {
         clearParams();
         return;
       }
-      const dueDate = task.due_date ? new Date(task.due_date) : new Date();
-      const next = addHours(
-        task.due_time ? new Date(`${task.due_date?.split('T')[0]}T${task.due_time}:00`) : dueDate,
-        1
-      );
+      const dueDate = parseDueDateTime(task.due_date, task.due_time);
+      const next = addHours(dueDate, 1);
       updateTask.mutate(
         {
           id: taskId,
@@ -426,9 +438,15 @@ export default function Tasks() {
   const editRecurrencePreview = useMemo(() => {
     const recurrence = (editForm.recurrence || 'none') as TaskRecurrence;
     if (recurrence === 'none') return [] as string[];
+    // Normalize due_time: DB may return "14:30:00"; avoid "YYYY-MM-DDT14:30:00:00" (invalid)
+    const rawTime = editForm.due_time || '00:00';
+    const timePart = /^\d{1,2}:\d{2}(:\d{2})?$/.test(rawTime)
+      ? (rawTime.length === 5 ? `${rawTime}:00` : rawTime)
+      : '00:00:00';
     const baseDate = editForm.due_date
-      ? new Date(`${editForm.due_date}T${editForm.due_time || '00:00'}:00`)
+      ? new Date(`${editForm.due_date}T${timePart}`)
       : new Date();
+    if (Number.isNaN(baseDate.getTime())) return [] as string[];
     const interval = Math.max(1, Number(editForm.recurrence_interval || 1));
     const weeklyDays = (editForm.recurrence_days || []).slice().sort((a, b) => a - b);
     let cursor = new Date(baseDate);
@@ -450,7 +468,9 @@ export default function Tasks() {
       else if (recurrence === 'yearly') cursor = addYears(cursor, interval);
       items.push(new Date(cursor));
     }
-    return items.map((d) => format(d, recurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
+    return items
+      .filter((d) => !Number.isNaN(d.getTime()))
+      .map((d) => format(d, recurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
   }, [editForm.recurrence, editForm.due_date, editForm.due_time, editForm.recurrence_interval, editForm.recurrence_days]);
 
   // Convert habits with show_in_tasks=true to task-like objects
@@ -623,7 +643,7 @@ export default function Tasks() {
       description: task.description,
       priority: task.priority,
       due_date: task.due_date?.split('T')[0],
-      due_time: task.due_time,
+      due_time: task.due_time?.slice(0, 5) || undefined, // "14:30:00" -> "14:30" for time input
       list_id: task.list_id,
       project_id: task.project_id,
       tag_ids: task.tag_ids,
@@ -714,11 +734,8 @@ export default function Tasks() {
 
   // Postpone task by 1 hour (for swipe action)
   const handlePostponeTask = (task: Task) => {
-    const dueDate = task.due_date ? new Date(task.due_date) : new Date();
-    const next = addHours(
-      task.due_time ? new Date(`${task.due_date?.split('T')[0]}T${task.due_time}:00`) : dueDate,
-      1
-    );
+    const dueDate = parseDueDateTime(task.due_date, task.due_time);
+    const next = addHours(dueDate, 1);
     updateTask.mutate({
       id: task.id,
       data: {
@@ -732,7 +749,8 @@ export default function Tasks() {
   const formatDueDate = (task: Task): { text: string; className: string } => {
     if (!task.due_date) return { text: '', className: '' };
 
-    const dueDate = new Date(task.due_date);
+    const dueDate = new Date(task.due_date.split('T')[0]);
+    if (Number.isNaN(dueDate.getTime())) return { text: '', className: '' };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 

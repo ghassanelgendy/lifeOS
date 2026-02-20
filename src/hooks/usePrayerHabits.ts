@@ -387,3 +387,80 @@ export function usePrayerTracker(date: Date = new Date()) {
     }),
   };
 }
+
+/**
+ * Lightweight hook for Settings: get prayer notification state and enable/disable all at once.
+ */
+export function usePrayerNotificationSettings() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const timezone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
+
+  const { data: prayerHabits = [], isLoading: habitsLoading } = useQuery({
+    queryKey: [...QUERY_KEY, user?.id, 'habits'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_habits')
+        .select('id')
+        .eq('user_id', user!.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return (data ?? []) as { id: string }[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: settings = [], isLoading: settingsLoading } = useQuery({
+    queryKey: [...QUERY_KEY, user?.id, 'settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_notification_settings')
+        .select('*')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return (data ?? []) as PrayerNotificationSetting[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const setAllMutation = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      for (const ph of prayerHabits) {
+        const existing = settings.find((s) => s.prayer_habit_id === ph.id);
+        const tz = existing?.timezone ?? timezone;
+        if (existing) {
+          await supabase
+            .from('prayer_notification_settings')
+            .update({
+              enabled,
+              timezone: tz,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', existing.id);
+        } else {
+          await supabase.from('prayer_notification_settings').insert({
+            prayer_habit_id: ph.id,
+            enabled,
+            offset_minutes: 0,
+            timezone: tz,
+          });
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'settings'] });
+    },
+  });
+
+  const allEnabled =
+    prayerHabits.length > 0 &&
+    prayerHabits.every((ph) => settings.find((s) => s.prayer_habit_id === ph.id)?.enabled === true);
+
+  return {
+    isLoading: habitsLoading || settingsLoading,
+    prayerHabitsCount: prayerHabits.length,
+    allEnabled: !!allEnabled,
+    setAllEnabled: (enabled: boolean) => setAllMutation.mutate(enabled),
+    isUpdating: setAllMutation.isPending,
+  };
+}

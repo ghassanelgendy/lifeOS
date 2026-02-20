@@ -29,8 +29,10 @@ import { resetDatabase } from '../db/seed';
 import { Button, ConfirmSheet } from '../components/ui';
 import { NAV_ITEMS } from '../components/AppShell';
 import { usePushNotifications } from '../hooks/usePushNotifications';
+import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
 import { useTickTickStatus, connectTickTick, importTickTickTasks, syncNowFromTickTick, disconnectTickTickIntegration } from '../hooks/useTickTick';
 import { useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -77,6 +79,7 @@ export default function SettingsPage() {
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const push = usePushNotifications();
+  const prayerNotif = usePrayerNotificationSettings();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
@@ -538,6 +541,49 @@ export default function SettingsPage() {
               {pushStatus}
             </p>
           )}
+
+          {/* Prayer reminders */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Bell size={20} />
+              <div>
+                <p className="font-medium">Prayer reminders</p>
+                <p className="text-sm text-muted-foreground">
+                  Get notified at each prayer time (Fajr, Dhuhr, Asr, Maghrib, Isha). Enable push above first, then turn on here. You can choose which prayers and quiet hours in <Link to="/habits" className="text-primary underline">Habits</Link>.
+                </p>
+              </div>
+            </div>
+            {push.supported && push.vapidConfigured && push.isEnabled ? (
+              prayerNotif.isLoading ? (
+                <span className="text-sm text-muted-foreground">Loading…</span>
+              ) : prayerNotif.prayerHabitsCount === 0 ? (
+                <Link to="/habits">
+                  <Button variant="outline">Set up in Habits</Button>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {prayerNotif.allEnabled ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => prayerNotif.setAllEnabled(false)}
+                      disabled={prayerNotif.isUpdating}
+                    >
+                      {prayerNotif.isUpdating ? '…' : 'Turn off'}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => prayerNotif.setAllEnabled(true)}
+                      disabled={prayerNotif.isUpdating}
+                    >
+                      {prayerNotif.isUpdating ? '…' : 'Turn on'}
+                    </Button>
+                  )}
+                </div>
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">Enable push above first.</p>
+            )}
+          </div>
         </div>
       </section>
 

@@ -1,6 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  "rewrites": [{"source": "/((?!api/).*)", "destination": "/index.html"}],
+  "crons": [
+    {
+      "path": "/api/cron/send-prayer-reminders",
+      "schedule": "*/10 * * * *"
+    }
   ]
 }

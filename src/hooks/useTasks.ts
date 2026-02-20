@@ -19,6 +19,64 @@ const TAGS_KEY = ['tags'];
 
 type RecurrenceEndType = 'never' | 'on_date' | 'after_count';
 
+// Columns that exist on public.tasks (must match DB exactly; unknown keys cause PostgREST 400).
+// DB has: sort_order (not subtask_order), no reminder, no recurrence_days; due_date/due_time/recurrence_end as date/time.
+const TASK_INSERT_KEYS = [
+  'title', 'description', 'is_completed', 'completed_at', 'priority', 'due_date', 'due_time',
+  'list_id', 'project_id', 'tag_ids', 'recurrence', 'recurrence_interval', 'recurrence_end',
+  'reminders_enabled', 'recurrence_end_type', 'recurrence_count', 'calendar_event_id',
+  'parent_id', 'sort_order',
+] as const;
+
+function taskInsertPayload(input: CreateInput<Task>): Record<string, unknown> {
+  const raw = input as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of TASK_INSERT_KEYS) {
+    let v = key === 'sort_order' ? (raw.sort_order ?? raw.subtask_order) : raw[key];
+    if (v === undefined) continue;
+    // Don't send empty string for time/date – DB expects proper value or omit (null)
+    if (key === 'due_time' && (v === '' || v === null)) continue;
+    // DB expects date for due_date/recurrence_end (YYYY-MM-DD); time for due_time (HH:mm or HH:mm:ss)
+    if (key === 'due_date' && typeof v === 'string') {
+      out[key] = v.includes('T') ? v.split('T')[0] : v;
+    } else if (key === 'due_time' && typeof v === 'string') {
+      // Normalize to HH:mm or HH:mm:00 for Postgres time type (used for reminders + due time)
+      out[key] = /^\d{1,2}:\d{2}(:\d{2})?$/.test(v) ? (v.length === 5 ? `${v}:00` : v) : v;
+    } else if (key === 'recurrence_end' && typeof v === 'string') {
+      out[key] = v.includes('T') ? v.split('T')[0] : v;
+    } else if (key === 'tag_ids' && Array.isArray(v)) {
+      out[key] = v; // DB: uuid[]; client sends string[] – PostgREST accepts string UUIDs
+    } else {
+      out[key] = v;
+    }
+  }
+  return out;
+}
+
+// Same column set for updates – omit unknown columns (reminder, recurrence_days, subtask_order → sort_order).
+function taskUpdatePayload(data: UpdateInput<Task>): Record<string, unknown> {
+  const raw = data as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
+  for (const key of TASK_INSERT_KEYS) {
+    const v = key === 'sort_order' ? (raw.sort_order ?? raw.subtask_order) : raw[key];
+    if (v === undefined) continue;
+    if (key === 'due_time' && (v === '' || v === null)) {
+      out[key] = null; // clear time when user clears the field
+      continue;
+    }
+    if (key === 'due_date' && typeof v === 'string') {
+      out[key] = v.includes('T') ? v.split('T')[0] : v;
+    } else if (key === 'due_time' && typeof v === 'string') {
+      out[key] = /^\d{1,2}:\d{2}(:\d{2})?$/.test(v) ? (v.length === 5 ? `${v}:00` : v) : v;
+    } else if (key === 'recurrence_end' && typeof v === 'string') {
+      out[key] = v.includes('T') ? v.split('T')[0] : v;
+    } else {
+      out[key] = v;
+    }
+  }
+  return out;
+}
+
 const toDateOnly = (input: Date | string): string => {
   const d = typeof input === 'string' ? new Date(input) : input;
   return d.toISOString().split('T')[0];
@@ -382,7 +440,8 @@ export function useCreateTask() {
       }
 
       // Online: go through Supabase, then mirror into IndexedDB.
-      const { data, error } = await supabase.from('tasks').insert(input).select().single();
+      const payload = taskInsertPayload(input);
+      const { data, error } = await supabase.from('tasks').insert(payload).select().single();
       if (error) throw error;
       const created = data as Task;
 
@@ -444,9 +503,10 @@ export function useUpdateTask() {
         const prev = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined)?.find((t) => t.id === id);
         return { ...prev, ...data, id, updated_at: new Date().toISOString() } as Task;
       }
+      const payload = taskUpdatePayload(data);
       const { data: updated, error } = await supabase
         .from('tasks')
-        .update(data)
+        .update(payload)
         .eq('id', id)
         .select()
         .single();
@@ -527,7 +587,7 @@ export function useToggleTask() {
             ticktick_id: null,
             calendar_event_id: updatedTask.calendar_event_id ?? null,
           };
-          const { error: insertErr } = await supabase.from('tasks').insert(nextInput);
+          const { error: insertErr } = await supabase.from('tasks').insert(taskInsertPayload(nextInput));
           if (insertErr) throw insertErr;
         }
       }
@@ -607,7 +667,7 @@ export function useTaskWithSubtasks(id: string) {
         .from('tasks')
         .select('*')
         .eq('parent_id', id)
-        .order('subtask_order');
+        .order('sort_order');
 
       if (subError) throw subError;
 

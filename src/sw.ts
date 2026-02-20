@@ -57,7 +57,7 @@ const NOTIFICATION_ACTIONS = [
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
 
-  let payload: { taskId?: string; title?: string } = {};
+  let payload: { taskId?: string; title?: string; body?: string; prayerName?: string } = {};
   try {
     payload = event.data.json();
   } catch {
@@ -65,18 +65,19 @@ self.addEventListener('push', (event: PushEvent) => {
   }
 
   const taskId = payload.taskId ?? '';
-  const title = payload.title ?? 'Task';
-  const notificationTitle = 'lifeOS';
-  const body = `Ready to "${title}"`;
+  const isPrayer = !!payload.prayerName;
+
+  const notificationTitle = isPrayer ? (payload.title ?? `Time to pray ${payload.prayerName}`) : 'lifeOS';
+  const body = isPrayer ? (payload.body ?? '') : `Ready to "${payload.title ?? 'Task'}"`;
 
   event.waitUntil(
     self.registration.showNotification(notificationTitle, {
-      body,
-      tag: taskId || `task-${Date.now()}`,
+      body: body || undefined,
+      tag: isPrayer ? `prayer-${payload.prayerName}-${Date.now()}` : (taskId || `task-${Date.now()}`),
       renotify: true,
       requireInteraction: false,
-      data: { taskId, title: payload.title },
-      actions: [...NOTIFICATION_ACTIONS],
+      data: { taskId, title: payload.title, prayerName: payload.prayerName },
+      actions: isPrayer ? [] : [...NOTIFICATION_ACTIONS],
       icon: '/web-app-manifest-192x192.png',
     })
   );
