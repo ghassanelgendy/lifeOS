@@ -29,6 +29,93 @@ type PrayerTrackerItem = {
   logId?: string;
 };
 
+async function upsertPrayerLogWithHabitSync(input: {
+  prayerHabitId: string;
+  habitId: string;
+  date: string;
+  status: PrayerStatus;
+}) {
+  const nowIso = new Date().toISOString();
+  const prayedAt = input.status === 'Prayed' ? nowIso : null;
+
+  const { data: existingPrayerLog } = await supabase
+    .from('prayer_logs')
+    .select('id')
+    .eq('prayer_habit_id', input.prayerHabitId)
+    .eq('date', input.date)
+    .maybeSingle();
+
+  let prayerLogId: string;
+  if (existingPrayerLog?.id) {
+    const { data, error } = await supabase
+      .from('prayer_logs')
+      .update({
+        status: input.status,
+        prayed_at: prayedAt,
+        updated_at: nowIso,
+      })
+      .eq('id', existingPrayerLog.id)
+      .select('id')
+      .single();
+    if (error) throw error;
+    prayerLogId = data.id as string;
+  } else {
+    const { data, error } = await supabase
+      .from('prayer_logs')
+      .insert({
+        prayer_habit_id: input.prayerHabitId,
+        date: input.date,
+        status: input.status,
+        prayed_at: prayedAt,
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    prayerLogId = data.id as string;
+  }
+
+  const { data: existingHabitLog } = await supabase
+    .from('habit_logs')
+    .select('id')
+    .eq('habit_id', input.habitId)
+    .eq('date', input.date)
+    .maybeSingle();
+
+  const completed = input.status === 'Prayed';
+  let habitLogId: string;
+  if (existingHabitLog?.id) {
+    const { data, error } = await supabase
+      .from('habit_logs')
+      .update({
+        completed,
+        source: 'prayer',
+      })
+      .eq('id', existingHabitLog.id)
+      .select('id')
+      .single();
+    if (error) throw error;
+    habitLogId = data.id as string;
+  } else {
+    const { data, error } = await supabase
+      .from('habit_logs')
+      .insert({
+        habit_id: input.habitId,
+        date: input.date,
+        completed,
+        source: 'prayer',
+      })
+      .select('id')
+      .single();
+    if (error) throw error;
+    habitLogId = data.id as string;
+  }
+
+  await supabase
+    .from('prayer_logs')
+    .update({ habit_log_id: habitLogId })
+    .eq('id', prayerLogId);
+}
+
 async function ensurePrayerRows(
   userId: string,
   times: { name: string; time: Date }[]
@@ -213,7 +300,6 @@ export function usePrayerTracker(date: Date = new Date()) {
 
   const upsertPrayer = useMutation({
     mutationFn: async (input: { prayer: PrayerTrackerItem; status: PrayerStatus }) => {
-      const nowIso = new Date().toISOString();
       const existing = (logsQuery.data ?? []).find(
         (l) => l.prayer_habit_id === input.prayer.prayerHabitId
       );
@@ -241,78 +327,12 @@ export function usePrayerTracker(date: Date = new Date()) {
         return;
       }
 
-      const prayedAt = input.status === 'Prayed' ? nowIso : null;
-
-      let prayerLog: PrayerLog;
-      if (existing) {
-        const { data, error } = await supabase
-          .from('prayer_logs')
-          .update({
-            status: input.status,
-            prayed_at: prayedAt,
-            updated_at: nowIso,
-          })
-          .eq('id', existing.id)
-          .select()
-          .single();
-        if (error) throw error;
-        prayerLog = data as PrayerLog;
-      } else {
-        const { data, error } = await supabase
-          .from('prayer_logs')
-          .insert({
-            prayer_habit_id: input.prayer.prayerHabitId,
-            date: dateStr,
-            status: input.status,
-            prayed_at: prayedAt,
-          })
-          .select()
-          .single();
-        if (error) throw error;
-        prayerLog = data as PrayerLog;
-      }
-
-      // Keep habits tracker in sync for the same day.
-      const { data: habitLogExisting } = await supabase
-        .from('habit_logs')
-        .select('id')
-        .eq('habit_id', input.prayer.habitId)
-        .eq('date', dateStr)
-        .maybeSingle();
-
-      const completed = input.status === 'Prayed';
-      let habitLogId: string | null = null;
-      if (habitLogExisting?.id) {
-        const { data: updatedHabitLog, error: updateHabitLogErr } = await supabase
-          .from('habit_logs')
-          .update({
-            completed,
-            source: 'prayer',
-          })
-          .eq('id', habitLogExisting.id)
-          .select('id')
-          .single();
-        if (updateHabitLogErr) throw updateHabitLogErr;
-        habitLogId = updatedHabitLog.id as string;
-      } else {
-        const { data: createdHabitLog, error: createHabitLogErr } = await supabase
-          .from('habit_logs')
-          .insert({
-            habit_id: input.prayer.habitId,
-            date: dateStr,
-            completed,
-            source: 'prayer',
-          })
-          .select('id')
-          .single();
-        if (createHabitLogErr) throw createHabitLogErr;
-        habitLogId = createdHabitLog.id as string;
-      }
-
-      await supabase
-        .from('prayer_logs')
-        .update({ habit_log_id: habitLogId })
-        .eq('id', prayerLog.id);
+      await upsertPrayerLogWithHabitSync({
+        prayerHabitId: input.prayer.prayerHabitId,
+        habitId: input.prayer.habitId,
+        date: dateStr,
+        status: input.status,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'today', dateStr] });
@@ -385,6 +405,26 @@ export function usePrayerTracker(date: Date = new Date()) {
       quietHoursStart: options?.quietHoursStart,
       quietHoursEnd: options?.quietHoursEnd,
     }),
+  };
+}
+
+export function useSetPrayerStatusAtDate() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const mutation = useMutation({
+    mutationFn: async (input: { prayerHabitId: string; habitId: string; date: string; status: PrayerStatus }) =>
+      upsertPrayerLogWithHabitSync(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+
+  return {
+    setPrayerStatusAtDate: mutation.mutate,
+    isUpdating: mutation.isPending,
   };
 }
 

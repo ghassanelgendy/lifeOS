@@ -12,14 +12,18 @@ import {
   CheckSquare,
   CalendarPlus,
   Link2,
-  X
+  X,
+  Circle,
+  CheckCircle2
 } from 'lucide-react';
 import {
   format,
   startOfMonth,
   endOfMonth,
   startOfWeek,
+  startOfDay,
   endOfWeek,
+  endOfDay,
   eachDayOfInterval,
   isSameMonth,
   isSameDay,
@@ -40,8 +44,8 @@ import {
   useIcalSubscriptionEvents,
 } from '../hooks/useCalendar';
 import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
-import type { CalendarEvent, CreateInput, EventType, RecurrencePattern } from '../types/schema';
-import { useCreateTask, useTasks, useUpdateTask } from '../hooks/useTasks';
+import type { CalendarEvent, CreateInput, EventType, RecurrencePattern, Task, TaskPriority } from '../types/schema';
+import { useCreateTask, useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
 import { downloadCalendarIcs } from '../lib/calendarExport';
 import type { IcalEvent } from '../lib/icalSubscribe';
@@ -66,10 +70,13 @@ export default function CalendarPage() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [view, setView] = useState<'month' | 'week'>('month');
+  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
   const [enableAsTask, setEnableAsTask] = useState(false);
   const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
   const showTasksInCalendar = useUIStore((s) => s.calendarShowTasks);
@@ -79,9 +86,17 @@ export default function CalendarPage() {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const calendarStart =
-    view === 'week' ? startOfWeek(currentDate) : startOfWeek(monthStart);
+    view === 'week'
+      ? startOfWeek(currentDate)
+      : view === 'day'
+        ? startOfDay(currentDate)
+        : startOfWeek(monthStart);
   const calendarEnd =
-    view === 'week' ? endOfWeek(currentDate) : endOfWeek(monthEnd);
+    view === 'week'
+      ? endOfWeek(currentDate)
+      : view === 'day'
+        ? endOfDay(currentDate)
+        : endOfWeek(monthEnd);
 
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
@@ -96,6 +111,7 @@ export default function CalendarPage() {
   const deleteEvent = useDeleteCalendarEvent();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
 
   // Get tasks with due dates
   const { data: allTasks = [] } = useTasks();
@@ -116,6 +132,13 @@ export default function CalendarPage() {
     recurrence: 'none',
     recurrence_end: '',
     shift_person: '',
+  });
+  const [taskForm, setTaskForm] = useState<Partial<CreateInput<Task>>>({
+    title: '',
+    description: '',
+    due_date: '',
+    due_time: '',
+    priority: 'none',
   });
 
   const ensureCalendarTagId = async (): Promise<string> => {
@@ -267,12 +290,49 @@ export default function CalendarPage() {
     });
   };
 
+  const handleOpenTaskModal = (task: Task) => {
+    setEditingTask(task);
+    setTaskForm({
+      title: task.title,
+      description: task.description || '',
+      due_date: task.due_date || '',
+      due_time: task.due_time || '',
+      priority: task.priority || 'none',
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  const handleSubmitTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTask) return;
+    await updateTask.mutateAsync({
+      id: editingTask.id,
+      data: {
+        title: taskForm.title || editingTask.title,
+        description: taskForm.description || undefined,
+        due_date: taskForm.due_date || undefined,
+        due_time: taskForm.due_time || undefined,
+        priority: (taskForm.priority || 'none') as TaskPriority,
+      },
+    });
+    setIsTaskModalOpen(false);
+    setEditingTask(null);
+  };
+
   // Navigation
   const goToPrevious = () => {
+    if (view === 'day') {
+      setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1));
+      return;
+    }
     setCurrentDate(view === 'week' ? subWeeks(currentDate, 1) : subMonths(currentDate, 1));
   };
 
   const goToNext = () => {
+    if (view === 'day') {
+      setCurrentDate((d) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1));
+      return;
+    }
     setCurrentDate(view === 'week' ? addWeeks(currentDate, 1) : addMonths(currentDate, 1));
   };
 
@@ -369,7 +429,40 @@ export default function CalendarPage() {
   };
 
   // Selected day events
-  const selectedDayEvents = selectedDate ? getEventsForDay(selectedDate) : [];
+  const activeDay = selectedDate || currentDate;
+  const selectedDayEvents = activeDay ? getEventsForDay(activeDay) : [];
+  const selectedDayTasks = activeDay ? getTasksForDay(activeDay) : [];
+  const dayAllDayEvents = selectedDayEvents.filter((e) => e.all_day);
+  const dayTimedItems = [
+    ...selectedDayEvents.filter((e) => !e.all_day).map((e) => ({
+      id: `event-${e.id}`,
+      type: 'event' as const,
+      title: e.title,
+      start: parseISO(e.start_time),
+      end: parseISO(e.end_time),
+      color: e.color ?? ('type' in e && e.type ? EVENT_TYPE_COLORS[e.type as EventType] : '#64748b'),
+      isIcal: 'isIcal' in e && e.isIcal,
+      event: e as ExtendedCalendarEvent,
+    })),
+    ...selectedDayTasks
+      .filter((t) => !!t.due_time)
+      .map((t) => {
+        const start = parseISO(`${t.due_date}T${t.due_time}:00`);
+        const end = new Date(start.getTime() + 45 * 60000);
+        return {
+          id: `task-${t.id}`,
+          type: 'task' as const,
+          title: t.title,
+          start,
+          end,
+          color: '#a855f7',
+          isIcal: false,
+          task: t,
+        };
+      }),
+  ].sort((a, b) => a.start.getTime() - b.start.getTime());
+  const isActiveDayToday = isToday(activeDay);
+  const currentMinute = new Date().getHours() * 60 + new Date().getMinutes();
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -409,7 +502,9 @@ export default function CalendarPage() {
             <ChevronLeft size={20} />
           </button>
           <h2 className="text-xl font-semibold min-w-[180px] text-center">
-            {view === 'week'
+            {view === 'day'
+              ? format(currentDate, 'EEE, MMM d, yyyy')
+              : view === 'week'
               ? `${format(calendarStart, 'MMM d')} – ${format(calendarEnd, 'MMM d, yyyy')}`
               : format(currentDate, 'MMMM yyyy')}
           </h2>
@@ -449,12 +544,86 @@ export default function CalendarPage() {
           >
             Week
           </button>
+          <button
+            onClick={() => setView('day')}
+            className={cn(
+              "px-3 py-1 rounded text-sm font-medium transition-colors",
+              view === 'day' ? "bg-background" : "hover:bg-background/50"
+            )}
+          >
+            Day
+          </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Calendar Grid */}
         <div className="lg:col-span-3">
+          {view === 'day' ? (
+            <div className="rounded-xl border border-border bg-card p-3 md:p-4">
+              {dayAllDayEvents.length > 0 && (
+                <div className="mb-4 rounded-lg border border-border bg-secondary/20 p-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase mb-2">All Day</p>
+                  <div className="space-y-1.5">
+                    {dayAllDayEvents.map((event) => {
+                      const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
+                      return (
+                        <div key={`all-${event.id}`} className="flex items-center gap-2 rounded px-2 py-1" style={{ backgroundColor: `${color}25` }}>
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                          <span className="text-sm truncate">{event.title}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="relative h-[72vh] overflow-y-auto rounded-lg border border-border">
+                <div className="relative min-h-[1440px]">
+                  {Array.from({ length: 24 }).map((_, hour) => (
+                    <div key={hour} className="absolute left-0 right-0 border-t border-border/60" style={{ top: `${hour * 60}px` }}>
+                      <span className="absolute -top-2 left-2 bg-card px-1 text-[10px] text-muted-foreground">
+                        {format(new Date(2026, 0, 1, hour, 0), 'h a')}
+                      </span>
+                    </div>
+                  ))}
+                  {isActiveDayToday && (
+                    <div
+                      className="absolute left-14 right-2 z-20 border-t border-red-500"
+                      style={{ top: `${currentMinute}px` }}
+                    >
+                      <span className="absolute -top-2 -left-12 text-[10px] text-red-500">Now</span>
+                    </div>
+                  )}
+                  {dayTimedItems.map((item) => {
+                    const startMin = item.start.getHours() * 60 + item.start.getMinutes();
+                    const endMin = item.end.getHours() * 60 + item.end.getMinutes();
+                    const top = Math.max(0, startMin);
+                    const height = Math.max(28, endMin - startMin);
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          if (item.type === 'task' && item.task) handleOpenTaskModal(item.task);
+                          if (item.type === 'event' && item.event && !item.isIcal) void handleOpenModal(item.event);
+                        }}
+                        className="absolute left-14 right-2 rounded-md border px-2 py-1 text-left text-xs shadow-sm"
+                        style={{ top: `${top}px`, height: `${height}px`, borderColor: `${item.color}80`, backgroundColor: `${item.color}22`, color: item.color }}
+                      >
+                        <div className="flex items-center gap-1">
+                          {item.type === 'task' ? <CheckSquare size={11} /> : <Circle size={10} />}
+                          <span className="font-medium truncate">{item.title}</span>
+                        </div>
+                        <div className="text-[10px] opacity-80 mt-0.5">
+                          {format(item.start, 'h:mm a')} - {format(item.end, 'h:mm a')}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 border-b border-border">
@@ -523,7 +692,11 @@ export default function CalendarPage() {
                       {dayTasks.slice(0, dayEvents.length >= 2 ? 1 : 2).map((task) => (
                         <div
                           key={task.id}
-                          className="text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-purple-500/20 text-purple-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenTaskModal(task);
+                          }}
+                          className="text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-purple-500/20 text-purple-400 cursor-pointer hover:opacity-80"
                         >
                           <CheckSquare size={8} />
                           {task.title}
@@ -540,26 +713,25 @@ export default function CalendarPage() {
               })}
             </div>
           </div>
+          )}
         </div>
 
         {/* Sidebar - Selected Day Events */}
         <div className="lg:col-span-1">
           <div className="rounded-xl border border-border bg-card p-4 sticky top-4">
             <h3 className="font-semibold mb-4">
-              {selectedDate ? format(selectedDate, 'EEEE, MMM d') : 'Select a day'}
+              {format(activeDay, 'EEEE, MMM d')}
             </h3>
 
-            {selectedDate && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="w-full mb-4"
-                onClick={() => void handleOpenModal(undefined, selectedDate)}
-              >
-                <Plus size={14} />
-                Add Event
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full mb-4"
+              onClick={() => void handleOpenModal(undefined, activeDay)}
+            >
+              <Plus size={14} />
+              Add Event
+            </Button>
 
             <div className="space-y-3">
               {selectedDayEvents.length === 0 ? (
@@ -628,6 +800,37 @@ export default function CalendarPage() {
                 })
               )}
             </div>
+            {selectedDayTasks.length > 0 && (
+              <div className="space-y-3 mt-4">
+                <h4 className="text-xs font-medium text-muted-foreground uppercase">Tasks</h4>
+                {selectedDayTasks.map((task) => (
+                  <div
+                    key={task.id}
+                    className="p-3 rounded-lg border border-border hover:bg-secondary/20 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          {task.is_completed ? <CheckCircle2 size={12} className="text-green-500" /> : <CheckSquare size={12} className="text-purple-400" />}
+                          <p className="text-sm font-medium truncate">{task.title}</p>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {task.due_time ? format(parseISO(`${task.due_date}T${task.due_time}:00`), 'h:mm a') : 'All day'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenTaskModal(task)}
+                        className="p-1 rounded hover:bg-secondary transition-colors"
+                        title="Edit task"
+                      >
+                        <Edit2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Subscribed iCal calendars */}
             <div className="mt-6 pt-4 border-t border-border">
@@ -863,6 +1066,69 @@ export default function CalendarPage() {
           </div>
         </form>
       </Modal>
+      <Modal
+        isOpen={isTaskModalOpen}
+        onClose={() => setIsTaskModalOpen(false)}
+        title="Edit Task"
+      >
+        <form onSubmit={(e) => void handleSubmitTask(e)} className="space-y-4">
+          <Input
+            label="Title"
+            value={taskForm.title || ''}
+            onChange={(e) => setTaskForm({ ...taskForm, title: e.target.value })}
+            required
+          />
+          <TextArea
+            label="Description"
+            value={taskForm.description || ''}
+            onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+            placeholder="Task details"
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Date"
+              type="date"
+              value={taskForm.due_date || ''}
+              onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+            />
+            <Input
+              label="Time"
+              type="time"
+              value={taskForm.due_time || ''}
+              onChange={(e) => setTaskForm({ ...taskForm, due_time: e.target.value })}
+            />
+          </div>
+          <Select
+            label="Priority"
+            value={(taskForm.priority as string) || 'none'}
+            onChange={(e) => setTaskForm({ ...taskForm, priority: e.target.value as TaskPriority })}
+            options={[
+              { value: 'none', label: 'None' },
+              { value: 'low', label: 'Low' },
+              { value: 'medium', label: 'Medium' },
+              { value: 'high', label: 'High' },
+            ]}
+          />
+          <div className="flex justify-between gap-2 pt-4">
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                if (!editingTask) return;
+                setDeleteTaskId(editingTask.id);
+              }}
+            >
+              Delete
+            </Button>
+            <div className="flex gap-2">
+              <Button type="button" variant="ghost" onClick={() => setIsTaskModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateTask.isPending}>Save</Button>
+            </div>
+          </div>
+        </form>
+      </Modal>
       <ConfirmSheet
         isOpen={!!deleteEventTarget}
         title="Delete Event"
@@ -876,6 +1142,24 @@ export default function CalendarPage() {
           setDeleteEventTarget(null);
         }}
         isLoading={deleteEvent.isPending}
+      />
+      <ConfirmSheet
+        isOpen={!!deleteTaskId}
+        title="Delete Task"
+        message="Delete this task?"
+        confirmLabel="Delete"
+        onCancel={() => setDeleteTaskId(null)}
+        onConfirm={() => {
+          if (!deleteTaskId) return;
+          deleteTask.mutate(deleteTaskId, {
+            onSuccess: () => {
+              setDeleteTaskId(null);
+              setIsTaskModalOpen(false);
+              setEditingTask(null);
+            },
+          });
+        }}
+        isLoading={deleteTask.isPending}
       />
     </div>
   );

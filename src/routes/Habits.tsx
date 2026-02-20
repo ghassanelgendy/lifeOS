@@ -21,11 +21,9 @@ import {
 import { cn } from '../lib/utils';
 import {
   useHabits,
-  useArchivedHabits,
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
-  useUnarchiveHabit,
   useLogHabit,
   useWeeklyAdherence,
   useHabitStreaks,
@@ -48,13 +46,11 @@ const DEFAULT_COLORS = [
 
 export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
-  const { data: archivedHabits = [] } = useArchivedHabits();
   const { adherence, todayLogs, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h) => h.id));
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
-  const unarchiveHabit = useUnarchiveHabit();
   const logHabit = useLogHabit();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,11 +217,11 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Compact Prayer Habit */}
-      <CompactPrayerHabit />
-
-      {/* Prayer Backlog Dashboard */}
-      <PrayerBacklog />
+      {/* Prayer modules */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <CompactPrayerHabit />
+        <PrayerBacklog />
+      </div>
 
       {/* Weekly Overview */}
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
@@ -422,30 +418,6 @@ export default function Habits() {
           })}
         </div>
       </div>
-
-      {/* Archived Habits (restore flow) */}
-      {archivedHabits.length > 0 && (
-        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
-          <h2 className="text-lg font-semibold mb-4">Archived Habits</h2>
-          <div className="space-y-2">
-            {archivedHabits.map((habit) => (
-              <div key={habit.id} className="flex items-center justify-between p-3 rounded-lg border border-border/70 bg-secondary/20">
-                <div className="min-w-0">
-                  <p className="font-medium truncate">{habit.title}</p>
-                  <p className="text-xs text-muted-foreground">{habit.frequency} · {habit.target_count}x</p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => unarchiveHabit.mutate(habit.id)}
-                >
-                  Restore
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* Habit Modal */}
       <Modal

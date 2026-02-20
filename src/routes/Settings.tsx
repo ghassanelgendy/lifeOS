@@ -24,6 +24,7 @@ import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_WIDGET_IDS, SLEEP_WIDGET_IDS, PAGE_WIDGET_DEFAULTS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useTaskLists } from '../hooks/useTasks';
+import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button, ConfirmSheet } from '../components/ui';
@@ -78,6 +79,8 @@ export default function SettingsPage() {
     resetPageWidgets,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
+  const { data: archivedHabits = [] } = useArchivedHabits();
+  const unarchiveHabit = useUnarchiveHabit();
   const push = usePushNotifications();
   const prayerNotif = usePrayerNotificationSettings();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
@@ -584,6 +587,36 @@ export default function SettingsPage() {
               <p className="text-sm text-muted-foreground">Enable push above first.</p>
             )}
           </div>
+        </div>
+      </section>
+
+      {/* Archived habits management */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Archived Habits</h2>
+          <p className="text-sm text-muted-foreground mt-1">Restore habits hidden from the Habits page.</p>
+        </div>
+        <div className="p-4 space-y-2">
+          {archivedHabits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No archived habits.</p>
+          ) : (
+            archivedHabits.map((habit) => (
+              <div key={habit.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{habit.title}</p>
+                  <p className="text-xs text-muted-foreground">{habit.frequency} · {habit.target_count}x</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => unarchiveHabit.mutate(habit.id)}
+                  disabled={unarchiveHabit.isPending}
+                >
+                  Restore
+                </Button>
+              </div>
+            ))
+          )}
         </div>
       </section>
 

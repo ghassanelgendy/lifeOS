@@ -16,7 +16,7 @@ export function CompactPrayerHabit() {
   const { times } = usePrayerTimes();
   const today = new Date();
   const { isLoading, tracker, togglePrayerStatus } = usePrayerTracker(today);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const getIcon = (name: string) => {
     switch (name) {

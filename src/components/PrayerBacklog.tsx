@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Calendar, CheckCircle2, XCircle, Minus } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns';
 import { cn } from '../lib/utils';
+import { useSetPrayerStatusAtDate } from '../hooks/usePrayerHabits';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +16,7 @@ function toDateOnly(d: Date): string {
 
 export function PrayerBacklog() {
   const { user } = useAuth();
+  const { setPrayerStatusAtDate } = useSetPrayerStatusAtDate();
   const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
   const today = new Date();
 
@@ -37,6 +39,14 @@ export function PrayerBacklog() {
     const map = new Map<string, string>();
     prayerHabits.forEach((ph: any) => {
       map.set(ph.id, ph.prayer_name);
+    });
+    return map;
+  }, [prayerHabits]);
+
+  const prayerHabitByName = useMemo(() => {
+    const map = new Map<string, { prayerHabitId: string; habitId: string }>();
+    prayerHabits.forEach((ph: any) => {
+      map.set(ph.prayer_name, { prayerHabitId: ph.id, habitId: ph.habit_id });
     });
     return map;
   }, [prayerHabits]);
@@ -217,21 +227,45 @@ export function PrayerBacklog() {
                     } else if (isPast) {
                       status = 'missed';
                     }
+                    const link = prayerHabitByName.get(prayerName);
+                    const canToggleStatus = !!link && (isPast || isToday(day));
+                    const nextStatus = status === 'prayed' ? 'Missed' : 'Prayed';
 
                     return (
                       <div key={prayerName} className="flex items-center justify-center">
-                        {status === 'prayed' && (
-                          <CheckCircle2 size={18} className="text-green-500" />
-                        )}
-                        {status === 'missed' && (
-                          <XCircle size={18} className="text-red-500" />
-                        )}
-                        {status === 'skipped' && (
-                          <Minus size={18} className="text-blue-500" />
-                        )}
-                        {status === 'none' && (
-                          <div className="w-4 h-4 rounded-full border border-border" />
-                        )}
+                        <button
+                          type="button"
+                          disabled={!canToggleStatus}
+                          title={canToggleStatus ? `Set ${nextStatus}` : undefined}
+                          onClick={() => {
+                            if (!link) return;
+                            setPrayerStatusAtDate({
+                              prayerHabitId: link.prayerHabitId,
+                              habitId: link.habitId,
+                              date: dayStr,
+                              status: nextStatus,
+                            });
+                          }}
+                          className={cn(
+                            "rounded p-0.5 transition-colors",
+                            canToggleStatus
+                              ? (nextStatus === 'Prayed' ? "hover:bg-green-500/10 cursor-pointer" : "hover:bg-red-500/10 cursor-pointer")
+                              : "cursor-default"
+                          )}
+                        >
+                          {status === 'prayed' && (
+                            <CheckCircle2 size={18} className="text-green-500" />
+                          )}
+                          {status === 'missed' && (
+                            <XCircle size={18} className="text-red-500" />
+                          )}
+                          {status === 'skipped' && (
+                            <Minus size={18} className="text-blue-500" />
+                          )}
+                          {status === 'none' && (
+                            <div className="w-4 h-4 rounded-full border border-border" />
+                          )}
+                        </button>
                       </div>
                     );
                   })}

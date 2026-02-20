@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
-import type { Habit, CreateInput, UpdateInput, HabitLog } from '../types/schema';
+import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { format, subDays } from 'date-fns';
 
@@ -435,6 +435,39 @@ export function useWeeklyAdherence() {
     enabled: !!user?.id && habits.length > 0,
   });
 
+  const { data: prayerHabits = [] } = useQuery({
+    queryKey: ['prayer-habits', 'active', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_habits')
+        .select('id')
+        .eq('user_id', user?.id || '')
+        .eq('is_active', true);
+      if (error) throw error;
+      return (data ?? []) as Array<{ id: string }>;
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: prayerLogs = [] } = useQuery({
+    queryKey: ['prayer-logs', 'range', weekAgoStr, todayStr, user?.id, prayerHabits.length],
+    queryFn: async () => {
+      const prayerHabitIds = prayerHabits.map((p) => p.id);
+      if (prayerHabitIds.length === 0) return [];
+
+      const { data, error } = await supabase
+        .from('prayer_logs')
+        .select('prayer_habit_id,date,status')
+        .eq('user_id', user?.id || '')
+        .gte('date', weekAgoStr)
+        .lte('date', todayStr)
+        .in('prayer_habit_id', prayerHabitIds);
+      if (error) throw error;
+      return (data ?? []) as Pick<PrayerLog, 'prayer_habit_id' | 'date' | 'status'>[];
+    },
+    enabled: !!user?.id && prayerHabits.length > 0,
+  });
+
   let totalExpected = 0;
   let totalCompleted = 0;
 
@@ -449,6 +482,12 @@ export function useWeeklyAdherence() {
     const habitLogs = logs.filter(l => l.habit_id === habit.id && l.completed);
     totalCompleted += habitLogs.length;
   });
+
+  // Include active prayers in weekly adherence.
+  if (prayerHabits.length > 0) {
+    totalExpected += prayerHabits.length * 7;
+    totalCompleted += prayerLogs.filter((l) => l.status === 'Prayed').length;
+  }
 
   const adherence = totalExpected > 0 ? round1((totalCompleted / totalExpected) * 100) : 0;
 

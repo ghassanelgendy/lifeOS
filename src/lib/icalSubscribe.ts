@@ -21,6 +21,9 @@ function unfold(ical: string): string {
 function parseVevent(block: string, icalUrl: string): IcalEvent | null {
   const lines = block.split(/\r?\n/);
   let summary = '';
+  let description = '';
+  let location = '';
+  let status = '';
   let dtStart = '';
   let dtStartAllDay = false;
   let dtEnd = '';
@@ -33,6 +36,9 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
     const keyUpper = (key || '').split(';')[0].toUpperCase();
 
     if (keyUpper === 'SUMMARY') summary = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+    else if (keyUpper === 'DESCRIPTION') description = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+    else if (keyUpper === 'LOCATION') location = value.replace(/\\n/g, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
+    else if (keyUpper === 'STATUS') status = value;
     else if (keyUpper === 'UID') uid = value;
     else if (keyUpper === 'DTSTART') {
       if ((key || '').toUpperCase().includes('VALUE=DATE')) {
@@ -51,6 +57,13 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
     }
   }
 
+  // Some calendar feeds expose availability status as title ("Busy").
+  // Prefer description's first line when summary looks like status.
+  const genericStatusTitle = /^(busy|free|tentative|confirmed|cancelled|out of office)$/i.test(summary.trim());
+  if ((summary.trim() === '' || genericStatusTitle) && description.trim()) {
+    summary = description.split('\n')[0].trim();
+  }
+  if (!summary && status && !/^(busy|free)$/i.test(status)) summary = status;
   if (!summary && !uid) summary = 'Untitled';
   if (!dtStart) return null;
 
@@ -69,6 +82,8 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
     start_time: dtStart,
     end_time: dtEnd,
     all_day: allDay,
+    description: description || undefined,
+    location: location || undefined,
     isIcal: true,
     icalUrl,
   };
