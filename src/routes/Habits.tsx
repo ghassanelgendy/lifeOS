@@ -14,19 +14,22 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isToday,
-  subDays
+  subDays,
 } from 'date-fns';
 import { cn } from '../lib/utils';
 import {
   useHabits,
+  useArchivedHabits,
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
+  useUnarchiveHabit,
   useLogHabit,
-  useWeeklyAdherence
+  useWeeklyAdherence,
+  useHabitStreaks,
 } from '../hooks/useHabits';
-import { habitLogDB } from '../db/database';
 import { Modal, Button, Input, Select } from '../components/ui';
+import { PrayerWidget } from '../components/PrayerWidget';
 import type { Habit, CreateInput, HabitFrequency } from '../types/schema';
 
 const DEFAULT_COLORS = [
@@ -42,10 +45,13 @@ const DEFAULT_COLORS = [
 
 export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
-  const { adherence, todayLogs } = useWeeklyAdherence();
+  const { data: archivedHabits = [] } = useArchivedHabits();
+  const { adherence, todayLogs, weekLogs } = useWeeklyAdherence();
+  const { data: streaks = {} } = useHabitStreaks(habits.map((h) => h.id));
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
+  const unarchiveHabit = useUnarchiveHabit();
   const logHabit = useLogHabit();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -63,18 +69,17 @@ export default function Habits() {
   const weekStart = startOfWeek(today);
   const weekEnd = endOfWeek(today);
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
+  const todayStr = format(today, 'yyyy-MM-dd');
 
   // Check if a habit is completed for a specific day
   const isHabitCompletedForDay = (habitId: string, date: Date): boolean => {
-    // Use format() for consistent date-only comparison (avoids timezone issues)
     const dateStr = format(date, 'yyyy-MM-dd');
-    const logs = habitLogDB.getByDate(dateStr);
-    return logs.some(l => l.habit_id === habitId && l.completed);
+    return weekLogs.some((l) => l.habit_id === habitId && l.date === dateStr && l.completed);
   };
 
   // Get streak for a habit
   const getStreak = (habitId: string): number => {
-    return habitLogDB.getStreak(habitId);
+    return streaks[habitId] ?? 0;
   };
 
   // Calculate completion stats for a habit
@@ -92,8 +97,6 @@ export default function Habits() {
 
   // Toggle habit completion for today
   const handleToggleHabit = (habitId: string) => {
-    // Use format() for consistent date formatting
-    const todayStr = format(today, 'yyyy-MM-dd');
     const isCompleted = isHabitCompletedForDay(habitId, today);
     logHabit.mutate({
       habitId,
@@ -143,7 +146,7 @@ export default function Habits() {
   };
 
   const handleDelete = (id: string) => {
-    if (confirm('Delete this habit?')) {
+    if (confirm('Archive this habit? You can restore it later from Archived Habits.')) {
       deleteHabit.mutate(id);
     }
   };
@@ -209,6 +212,9 @@ export default function Habits() {
           <p className="text-xs text-muted-foreground">habits</p>
         </div>
       </div>
+
+      {/* Prayer tracking lives in Habits only */}
+      <PrayerWidget />
 
       {/* Weekly Overview */}
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
@@ -391,6 +397,30 @@ export default function Habits() {
           })}
         </div>
       </div>
+
+      {/* Archived Habits (restore flow) */}
+      {archivedHabits.length > 0 && (
+        <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+          <h2 className="text-lg font-semibold mb-4">Archived Habits</h2>
+          <div className="space-y-2">
+            {archivedHabits.map((habit) => (
+              <div key={habit.id} className="flex items-center justify-between p-3 rounded-lg border border-border/70 bg-secondary/20">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{habit.title}</p>
+                  <p className="text-xs text-muted-foreground">{habit.frequency} · {habit.target_count}x</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => unarchiveHabit.mutate(habit.id)}
+                >
+                  Restore
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Habit Modal */}
       <Modal

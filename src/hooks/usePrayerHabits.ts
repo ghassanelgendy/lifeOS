@@ -1,54 +1,342 @@
-import { useEffect } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import { usePrayerTimes } from './usePrayerTimes';
-import { habitDB } from '../db/database';
+import type { PrayerHabit, PrayerLog, PrayerName, PrayerNotificationSetting, PrayerStatus } from '../types/schema';
 
-export function usePrayerHabits() {
-    const { times, location } = usePrayerTimes();
+const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+const QUERY_KEY = ['prayer-tracker'];
 
-    useEffect(() => {
-        // specific prayer names to track
-        const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+const toDateOnly = (d: Date) => format(d, 'yyyy-MM-dd');
+const toTimeOnly = (d: Date) => format(d, 'HH:mm:ss');
 
-        if (!location || times.length === 0) return;
+type JoinedPrayerHabit = PrayerHabit & {
+  habit?: { id: string; title: string; color: string } | null;
+};
 
-        // Get all current active habits
-        const habits = habitDB.getAll();
+type PrayerTrackerItem = {
+  prayerName: PrayerName;
+  prayerHabitId: string;
+  habitId: string;
+  habitTitle: string;
+  color: string;
+  defaultTime?: string | null;
+  status: PrayerStatus | null;
+  prayedAt?: string | null;
+  logId?: string;
+};
 
-        times.forEach((prayer) => {
-            if (!PRAYER_NAMES.includes(prayer.name)) return;
+async function ensurePrayerRows(
+  userId: string,
+  times: { name: string; time: Date }[]
+): Promise<void> {
+  const { data: existingHabits, error: prayerHabitsErr } = await supabase
+    .from('prayer_habits')
+    .select('*')
+    .eq('user_id', userId);
+  if (prayerHabitsErr) throw prayerHabitsErr;
 
-            const timeString = format(prayer.time, 'h:mm a');
-            const desiredTitle = `${prayer.name} (${timeString})`;
+  const byName = new Map<PrayerName, PrayerHabit>();
+  ((existingHabits || []) as PrayerHabit[]).forEach((row) => byName.set(row.prayer_name, row));
 
-            // Find existing habit for this prayer
-            // We look for a habit that starts with the prayer name
-            const existingHabit = habits.find((h) =>
-                h.title.startsWith(prayer.name)
-            );
+  for (const prayerName of PRAYER_NAMES) {
+    const prayerTime = times.find((t) => t.name === prayerName)?.time;
+    const timeOnly = prayerTime ? toTimeOnly(prayerTime) : null;
+    const displayTime = prayerTime ? format(prayerTime, 'h:mm a') : 'time';
+    const desiredTitle = `${prayerName} (${displayTime})`;
+    const existing = byName.get(prayerName);
 
-            if (existingHabit) {
-                // Update title if it changed (time changed)
-                if (existingHabit.title !== desiredTitle) {
-                    habitDB.update(existingHabit.id, {
-                        title: desiredTitle,
-                        description: `Daily ${prayer.name} prayer at ${timeString}`,
-                    });
-                    console.log(`Updated habit: ${desiredTitle}`);
-                }
-            } else {
-                // Create new habit
-                habitDB.create({
-                    title: desiredTitle,
-                    description: `Daily ${prayer.name} prayer at ${timeString}`,
-                    frequency: 'Daily',
-                    target_count: 1,
-                    color: '#8b5cf6', // Violet color for spiritual habits
-                    is_archived: false,
-                });
-                console.log(`Created habit: ${desiredTitle}`);
-            }
+    if (!existing) {
+      const { data: createdHabit, error: createHabitErr } = await supabase
+        .from('habits')
+        .insert({
+          title: desiredTitle,
+          description: `Daily ${prayerName} prayer`,
+          frequency: 'Daily',
+          target_count: 1,
+          color: '#8b5cf6',
+          is_archived: false,
+        })
+        .select('id')
+        .single();
+      if (createHabitErr) throw createHabitErr;
+
+      const { data: prayerHabit, error: createPrayerHabitErr } = await supabase
+        .from('prayer_habits')
+        .insert({
+          prayer_name: prayerName,
+          habit_id: createdHabit.id,
+          default_time: timeOnly,
+          is_active: true,
+        })
+        .select('*')
+        .single();
+      if (createPrayerHabitErr) throw createPrayerHabitErr;
+      byName.set(prayerName, prayerHabit as PrayerHabit);
+      continue;
+    }
+
+    const updates: Record<string, unknown> = {};
+    if (timeOnly && existing.default_time !== timeOnly) updates.default_time = timeOnly;
+    if (Object.keys(updates).length > 0) {
+      await supabase.from('prayer_habits').update(updates).eq('id', existing.id);
+    }
+
+    await supabase.from('habits').update({
+      title: desiredTitle,
+      description: `Daily ${prayerName} prayer at ${displayTime}`,
+      color: '#8b5cf6',
+    }).eq('id', existing.habit_id);
+  }
+}
+
+export function usePrayerTracker(date: Date = new Date()) {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { times } = usePrayerTimes();
+  const dateStr = toDateOnly(date);
+  const timesSignature = useMemo(
+    () => times.filter((t) => PRAYER_NAMES.includes(t.name as PrayerName)).map((t) => `${t.name}:${toTimeOnly(t.time)}`).join('|'),
+    [times]
+  );
+
+  useEffect(() => {
+    if (!user?.id || !timesSignature) return;
+    void ensurePrayerRows(user.id, times).then(() => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
+    }).catch((e) => console.error('Prayer habit sync failed', e));
+  }, [user?.id, timesSignature, times, queryClient, dateStr]);
+
+  const habitsQuery = useQuery({
+    queryKey: [...QUERY_KEY, user?.id, 'habits'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_habits')
+        .select('*, habit:habits(id,title,color)')
+        .eq('user_id', user!.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return (data ?? []) as JoinedPrayerHabit[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const logsQuery = useQuery({
+    queryKey: [...QUERY_KEY, user?.id, 'today', dateStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_logs')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('date', dateStr);
+      if (error) throw error;
+      return (data ?? []) as PrayerLog[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const weeklyQuery = useQuery({
+    queryKey: [...QUERY_KEY, user?.id, 'weekly', dateStr],
+    queryFn: async () => {
+      const start = new Date(date);
+      start.setDate(start.getDate() - 6);
+      const startStr = toDateOnly(start);
+      const { data, error } = await supabase
+        .from('prayer_logs')
+        .select('*')
+        .eq('user_id', user!.id)
+        .gte('date', startStr)
+        .lte('date', dateStr);
+      if (error) throw error;
+      return (data ?? []) as PrayerLog[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const settingsQuery = useQuery({
+    queryKey: [...QUERY_KEY, user?.id, 'settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_notification_settings')
+        .select('*')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return (data ?? []) as PrayerNotificationSetting[];
+    },
+    enabled: !!user?.id,
+  });
+
+  const tracker = useMemo<PrayerTrackerItem[]>(() => {
+    const habits = habitsQuery.data ?? [];
+    const logs = logsQuery.data ?? [];
+    const byPrayer = new Map<PrayerName, PrayerTrackerItem>();
+
+    habits.forEach((ph) => {
+      const log = logs.find((l) => l.prayer_habit_id === ph.id);
+      byPrayer.set(ph.prayer_name, {
+        prayerName: ph.prayer_name,
+        prayerHabitId: ph.id,
+        habitId: ph.habit_id,
+        habitTitle: ph.habit?.title ?? ph.prayer_name,
+        color: ph.habit?.color ?? '#8b5cf6',
+        defaultTime: ph.default_time,
+        status: log?.status ?? null,
+        prayedAt: log?.prayed_at ?? null,
+        logId: log?.id,
+      });
+    });
+
+    return PRAYER_NAMES.map((p) => byPrayer.get(p)).filter(Boolean) as PrayerTrackerItem[];
+  }, [habitsQuery.data, logsQuery.data]);
+
+  const completionRate = useMemo(() => {
+    if (tracker.length === 0) return 0;
+    const done = tracker.filter((t) => t.status === 'Prayed').length;
+    return Math.round((done / tracker.length) * 100);
+  }, [tracker]);
+
+  const weeklyCompletion = useMemo(() => {
+    const logs = weeklyQuery.data ?? [];
+    const map = new Map<string, number>();
+    logs.forEach((l) => {
+      if (l.status !== 'Prayed') return;
+      map.set(l.date, (map.get(l.date) ?? 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([date, prayed]) => ({ date, prayed, percent: Math.round((prayed / PRAYER_NAMES.length) * 100) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [weeklyQuery.data]);
+
+  const upsertPrayer = useMutation({
+    mutationFn: async (input: { prayer: PrayerTrackerItem; status: PrayerStatus }) => {
+      const nowIso = new Date().toISOString();
+      const prayedAt = input.status === 'Prayed' ? nowIso : null;
+      const existing = (logsQuery.data ?? []).find((l) => l.prayer_habit_id === input.prayer.prayerHabitId);
+
+      let prayerLog: PrayerLog;
+      if (existing) {
+        const { data, error } = await supabase
+          .from('prayer_logs')
+          .update({
+            status: input.status,
+            prayed_at: prayedAt,
+            updated_at: nowIso,
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        prayerLog = data as PrayerLog;
+      } else {
+        const { data, error } = await supabase
+          .from('prayer_logs')
+          .insert({
+            prayer_habit_id: input.prayer.prayerHabitId,
+            date: dateStr,
+            status: input.status,
+            prayed_at: prayedAt,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        prayerLog = data as PrayerLog;
+      }
+
+      // Keep habits tracker in sync for the same day.
+      const { data: habitLogExisting } = await supabase
+        .from('habit_logs')
+        .select('id')
+        .eq('habit_id', input.prayer.habitId)
+        .eq('date', dateStr)
+        .maybeSingle();
+
+      const completed = input.status === 'Prayed';
+      let habitLogId: string | null = null;
+      if (habitLogExisting?.id) {
+        const { data: updatedHabitLog, error: updateHabitLogErr } = await supabase
+          .from('habit_logs')
+          .update({
+            completed,
+            source: 'prayer',
+          })
+          .eq('id', habitLogExisting.id)
+          .select('id')
+          .single();
+        if (updateHabitLogErr) throw updateHabitLogErr;
+        habitLogId = updatedHabitLog.id as string;
+      } else {
+        const { data: createdHabitLog, error: createHabitLogErr } = await supabase
+          .from('habit_logs')
+          .insert({
+            habit_id: input.prayer.habitId,
+            date: dateStr,
+            completed,
+            source: 'prayer',
+          })
+          .select('id')
+          .single();
+        if (createHabitLogErr) throw createHabitLogErr;
+        habitLogId = createdHabitLog.id as string;
+      }
+
+      await supabase
+        .from('prayer_logs')
+        .update({ habit_log_id: habitLogId })
+        .eq('id', prayerLog.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'today', dateStr] });
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'weekly', dateStr] });
+      queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+
+  const upsertNotificationSetting = useMutation({
+    mutationFn: async (input: { prayerHabitId: string; enabled: boolean; offsetMinutes?: number; timezone?: string }) => {
+      const existing = (settingsQuery.data ?? []).find((s) => s.prayer_habit_id === input.prayerHabitId);
+      const timezone = input.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      if (existing) {
+        const { error } = await supabase
+          .from('prayer_notification_settings')
+          .update({
+            enabled: input.enabled,
+            offset_minutes: input.offsetMinutes ?? existing.offset_minutes,
+            timezone,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', existing.id);
+        if (error) throw error;
+        return;
+      }
+      const { error } = await supabase
+        .from('prayer_notification_settings')
+        .insert({
+          prayer_habit_id: input.prayerHabitId,
+          enabled: input.enabled,
+          offset_minutes: input.offsetMinutes ?? 0,
+          timezone,
         });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'settings'] });
+    },
+  });
 
-    }, [times, location]); // Dependencies: times will change if location changes or day changes
+  return {
+    isLoading: habitsQuery.isLoading || logsQuery.isLoading,
+    tracker,
+    completionRate,
+    weeklyCompletion,
+    settings: settingsQuery.data ?? [],
+    togglePrayerStatus: (prayer: PrayerTrackerItem, status: PrayerStatus) =>
+      upsertPrayer.mutate({ prayer, status }),
+    setPrayerNotifications: (prayerHabitId: string, enabled: boolean, offsetMinutes = 0) =>
+      upsertNotificationSetting.mutate({ prayerHabitId, enabled, offsetMinutes }),
+  };
 }

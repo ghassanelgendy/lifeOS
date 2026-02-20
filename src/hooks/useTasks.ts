@@ -17,6 +17,88 @@ const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
 const TAGS_KEY = ['tags'];
 
+type RecurrenceEndType = 'never' | 'on_date' | 'after_count';
+
+const toDateOnly = (input: Date | string): string => {
+  const d = typeof input === 'string' ? new Date(input) : input;
+  return d.toISOString().split('T')[0];
+};
+
+const parseDueDateTime = (task: Task): Date | null => {
+  if (!task.due_date) return null;
+  const datePart = task.due_date.split('T')[0];
+  const timePart = task.due_time && /^\d{2}:\d{2}$/.test(task.due_time) ? `${task.due_time}:00` : '00:00:00';
+  const parsed = new Date(`${datePart}T${timePart}`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed;
+};
+
+const computeNextRecurrence = (
+  task: Task
+): { due_date: string; due_time?: string; recurrence_count?: number } | null => {
+  const recurrence = task.recurrence ?? 'none';
+  if (recurrence === 'none') return null;
+  const anchor = parseDueDateTime(task);
+  if (!anchor) return null;
+
+  const interval = Math.max(1, Number(task.recurrence_interval ?? 1));
+  const next = new Date(anchor);
+  const endType = (task.recurrence_end_type ?? (task.recurrence_end ? 'on_date' : 'never')) as RecurrenceEndType;
+  const remainingCount = task.recurrence_count;
+
+  if (endType === 'after_count' && typeof remainingCount === 'number' && remainingCount <= 1) {
+    return null;
+  }
+
+  switch (recurrence) {
+    case 'hourly':
+      next.setHours(next.getHours() + interval);
+      break;
+    case 'daily':
+      next.setDate(next.getDate() + interval);
+      break;
+    case 'weekly': {
+      const selected = (task.recurrence_days ?? []).filter((d) => d >= 0 && d <= 6).sort((a, b) => a - b);
+      if (!selected.length) {
+        next.setDate(next.getDate() + (7 * interval));
+      } else {
+        const currentDow = next.getDay();
+        const sameOrLater = selected.find((d) => d > currentDow);
+        if (sameOrLater != null) {
+          next.setDate(next.getDate() + (sameOrLater - currentDow));
+        } else {
+          const firstDow = selected[0];
+          next.setDate(next.getDate() + ((7 * interval) - (currentDow - firstDow)));
+        }
+      }
+      break;
+    }
+    case 'monthly':
+      next.setMonth(next.getMonth() + interval);
+      break;
+    case 'yearly':
+      next.setFullYear(next.getFullYear() + interval);
+      break;
+    default:
+      return null;
+  }
+
+  if (endType === 'on_date' && task.recurrence_end) {
+    const endDate = new Date(`${task.recurrence_end.split('T')[0]}T23:59:59`);
+    if (next > endDate) return null;
+  }
+
+  const nextCount = endType === 'after_count' && typeof remainingCount === 'number'
+    ? Math.max(remainingCount - 1, 0)
+    : task.recurrence_count;
+
+  return {
+    due_date: toDateOnly(next),
+    due_time: recurrence === 'hourly' ? next.toTimeString().slice(0, 5) : task.due_time,
+    recurrence_count: nextCount,
+  };
+};
+
 // ========================
 // Task Lists
 // ========================
@@ -165,8 +247,7 @@ export function useTodayTasks() {
       const q = supabase
         .from('tasks')
         .select('*')
-        .gte('due_date', `${today}T00:00:00`)
-        .lte('due_date', `${today}T23:59:59`)
+        .eq('due_date', today)
         .eq('is_completed', false)
         .is('parent_id', null);
       if (user?.id) q.eq('user_id', user.id);
@@ -186,11 +267,13 @@ export function useUpcomingTasks(days: number = 7) {
       const today = new Date();
       const future = new Date(today);
       future.setDate(future.getDate() + days);
+      const start = toDateOnly(today);
+      const end = toDateOnly(future);
       const q = supabase
         .from('tasks')
         .select('*')
-        .gte('due_date', today.toISOString())
-        .lte('due_date', future.toISOString())
+        .gte('due_date', start)
+        .lte('due_date', end)
         .eq('is_completed', false)
         .is('parent_id', null);
       if (user?.id) q.eq('user_id', user.id);
@@ -219,8 +302,8 @@ export function useWeekTasks() {
       const q = supabase
         .from('tasks')
         .select('*')
-        .gte('due_date', monday.toISOString())
-        .lte('due_date', sunday.toISOString())
+        .gte('due_date', toDateOnly(monday))
+        .lte('due_date', toDateOnly(sunday))
         .eq('is_completed', false)
         .is('parent_id', null);
       if (user?.id) q.eq('user_id', user.id);
@@ -280,7 +363,11 @@ export function useCreateTask() {
           priority: input.priority ?? 'none',
           recurrence: input.recurrence ?? 'none',
           recurrence_interval: input.recurrence_interval ?? 1,
+          recurrence_end_type: input.recurrence_end_type ?? 'never',
+          recurrence_count: input.recurrence_count ?? undefined,
           recurrence_end: input.recurrence_end ?? null,
+          reminders_enabled: input.reminders_enabled ?? false,
+          calendar_event_id: input.calendar_event_id ?? null,
           completed_at: undefined,
           created_at: nowIso,
           updated_at: nowIso,
@@ -395,7 +482,11 @@ export function useToggleTask() {
         );
         return { ...task, ...payload } as Task;
       }
-      const { data: task } = await supabase.from('tasks').select('is_completed').eq('id', id).single();
+      const { data: task } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', id)
+        .single();
       if (!task) throw new Error('Task not found');
       const newCompleted = !task.is_completed;
       const { data: updated, error } = await supabase
@@ -408,7 +499,39 @@ export function useToggleTask() {
         .select()
         .single();
       if (error) throw error;
-      return updated as Task;
+
+      const updatedTask = updated as Task;
+      if (newCompleted && updatedTask.recurrence !== 'none') {
+        const next = computeNextRecurrence(updatedTask);
+        if (next) {
+          const nextInput: CreateInput<Task> = {
+            title: updatedTask.title,
+            description: updatedTask.description,
+            is_completed: false,
+            priority: updatedTask.priority,
+            due_date: next.due_date,
+            due_time: next.due_time,
+            reminders_enabled: updatedTask.reminders_enabled ?? false,
+            reminder: updatedTask.reminder,
+            list_id: updatedTask.list_id,
+            project_id: updatedTask.project_id,
+            tag_ids: updatedTask.tag_ids ?? [],
+            recurrence: updatedTask.recurrence,
+            recurrence_interval: updatedTask.recurrence_interval ?? 1,
+            recurrence_days: updatedTask.recurrence_days,
+            recurrence_end: updatedTask.recurrence_end,
+            recurrence_end_type: updatedTask.recurrence_end_type ?? 'never',
+            recurrence_count: next.recurrence_count,
+            parent_id: undefined,
+            subtask_order: undefined,
+            ticktick_id: null,
+            calendar_event_id: updatedTask.calendar_event_id ?? null,
+          };
+          const { error: insertErr } = await supabase.from('tasks').insert(nextInput);
+          if (insertErr) throw insertErr;
+        }
+      }
+      return updatedTask;
     },
     onSuccess: (updated) => {
       if (isOnline()) {

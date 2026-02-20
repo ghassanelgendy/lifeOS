@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Plus,
   Calendar as CalendarIcon,
@@ -17,10 +17,10 @@ import {
   Clock, // Add Clock icon import
   Sun,
   ArrowRight,
+  Bell,
 } from 'lucide-react';
-import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { format, isToday, isTomorrow, isPast, addDays, addHours } from 'date-fns';
+import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import {
@@ -44,7 +44,7 @@ import { taskDB } from '../db/database';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
-import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence } from '../types/schema';
+import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -55,10 +55,27 @@ const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; 
 
 const RECURRENCE_OPTIONS: { value: TaskRecurrence; label: string }[] = [
   { value: 'none', label: 'No repeat' },
+  { value: 'hourly', label: 'Hourly' },
   { value: 'daily', label: 'Daily' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'yearly', label: 'Yearly' },
+];
+
+const RECURRENCE_END_OPTIONS: { value: TaskRecurrenceEndType; label: string }[] = [
+  { value: 'never', label: 'Never' },
+  { value: 'on_date', label: 'On date' },
+  { value: 'after_count', label: 'After occurrences' },
+];
+
+const WEEKDAY_OPTIONS = [
+  { value: 0, label: 'Sun' },
+  { value: 1, label: 'Mon' },
+  { value: 2, label: 'Tue' },
+  { value: 3, label: 'Wed' },
+  { value: 4, label: 'Thu' },
+  { value: 5, label: 'Fri' },
+  { value: 6, label: 'Sat' },
 ];
 
 type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'list' | 'tag';
@@ -113,6 +130,14 @@ export default function Tasks() {
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('none');
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([]);
   const [newTaskListId, setNewTaskListId] = useState<string | null>(null); // from ~ list suggestion
+  const [newTaskRecurrence, setNewTaskRecurrence] = useState<TaskRecurrence>('none');
+  const [newTaskRecurrenceInterval, setNewTaskRecurrenceInterval] = useState(1);
+  const [newTaskRecurrenceEndType, setNewTaskRecurrenceEndType] = useState<TaskRecurrenceEndType>('never');
+  const [newTaskRecurrenceEnd, setNewTaskRecurrenceEnd] = useState('');
+  const [newTaskRecurrenceCount, setNewTaskRecurrenceCount] = useState(5);
+  const [newTaskRecurrenceDays, setNewTaskRecurrenceDays] = useState<number[]>([]);
+  const [newTaskRemindersEnabled, setNewTaskRemindersEnabled] = useState(false);
+  const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
   const [suggestionTrigger, setSuggestionTrigger] = useState<SuggestionTrigger>(null);
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
   const [showListsSidebar, setShowListsSidebar] = useState(() => window.innerWidth >= 768);
@@ -195,6 +220,62 @@ export default function Tasks() {
     setNewTaskTitle((t) => t.replace(/\s*(~|!|#)\s*[^\s]*$/, '').trim());
     setSuggestionTrigger(null);
   };
+
+  const recurrencePreview = useMemo(() => {
+    if (newTaskRecurrence === 'none') return [] as string[];
+    const baseDate = newTaskDate ? new Date(`${newTaskDate}T${newTaskTime || '00:00'}:00`) : new Date();
+    const interval = Math.max(1, newTaskRecurrenceInterval || 1);
+    const items: Date[] = [];
+    let cursor = new Date(baseDate);
+    const maxItems = 3;
+
+    for (let i = 0; i < maxItems * 4 && items.length < maxItems; i++) {
+      if (newTaskRecurrence === 'hourly') {
+        cursor = addHours(cursor, interval);
+        items.push(new Date(cursor));
+        continue;
+      }
+      if (newTaskRecurrence === 'daily') {
+        cursor = addDays(cursor, interval);
+        items.push(new Date(cursor));
+        continue;
+      }
+      if (newTaskRecurrence === 'weekly') {
+        if (newTaskRecurrenceDays.length === 0) {
+          cursor = addWeeks(cursor, interval);
+          items.push(new Date(cursor));
+          continue;
+        }
+        const sorted = [...newTaskRecurrenceDays].sort((a, b) => a - b);
+        const currentDow = cursor.getDay();
+        const nextSameWeek = sorted.find((d) => d > currentDow);
+        if (nextSameWeek != null) {
+          cursor = addDays(cursor, nextSameWeek - currentDow);
+        } else {
+          cursor = addDays(cursor, (7 * interval) - (currentDow - sorted[0]));
+        }
+        items.push(new Date(cursor));
+        continue;
+      }
+      if (newTaskRecurrence === 'monthly') {
+        cursor = addMonths(cursor, interval);
+        items.push(new Date(cursor));
+        continue;
+      }
+      if (newTaskRecurrence === 'yearly') {
+        cursor = addYears(cursor, interval);
+        items.push(new Date(cursor));
+      }
+    }
+
+    return items.map((d) => format(d, newTaskRecurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
+  }, [
+    newTaskRecurrence,
+    newTaskDate,
+    newTaskTime,
+    newTaskRecurrenceInterval,
+    newTaskRecurrenceDays,
+  ]);
 
   // Handle notification quick actions (Mark as done / Postpone 1 Hour)
   useEffect(() => {
@@ -333,6 +414,36 @@ export default function Tasks() {
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
 
+  const editRecurrencePreview = useMemo(() => {
+    const recurrence = (editForm.recurrence || 'none') as TaskRecurrence;
+    if (recurrence === 'none') return [] as string[];
+    const baseDate = editForm.due_date
+      ? new Date(`${editForm.due_date}T${editForm.due_time || '00:00'}:00`)
+      : new Date();
+    const interval = Math.max(1, Number(editForm.recurrence_interval || 1));
+    const weeklyDays = (editForm.recurrence_days || []).slice().sort((a, b) => a - b);
+    let cursor = new Date(baseDate);
+    const items: Date[] = [];
+
+    for (let i = 0; i < 12 && items.length < 3; i++) {
+      if (recurrence === 'hourly') cursor = addHours(cursor, interval);
+      else if (recurrence === 'daily') cursor = addDays(cursor, interval);
+      else if (recurrence === 'weekly') {
+        if (!weeklyDays.length) cursor = addWeeks(cursor, interval);
+        else {
+          const currentDow = cursor.getDay();
+          const nextDow = weeklyDays.find((d) => d > currentDow);
+          cursor = nextDow != null
+            ? addDays(cursor, nextDow - currentDow)
+            : addDays(cursor, (7 * interval) - (currentDow - weeklyDays[0]));
+        }
+      } else if (recurrence === 'monthly') cursor = addMonths(cursor, interval);
+      else if (recurrence === 'yearly') cursor = addYears(cursor, interval);
+      items.push(new Date(cursor));
+    }
+    return items.map((d) => format(d, recurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
+  }, [editForm.recurrence, editForm.due_date, editForm.due_time, editForm.recurrence_interval, editForm.recurrence_days]);
+
   // Get tasks based on current view
   const getDisplayTasks = (): Task[] => {
     let tasks: Task[] = [];
@@ -398,7 +509,13 @@ export default function Tasks() {
       is_completed: false,
       priority: newTaskPriority,
       tag_ids: newTaskTagIds,
-      recurrence: 'none',
+      recurrence: newTaskRecurrence,
+      recurrence_interval: newTaskRecurrence === 'none' ? undefined : Math.max(1, newTaskRecurrenceInterval),
+      recurrence_days: newTaskRecurrence === 'weekly' ? (newTaskRecurrenceDays.length ? newTaskRecurrenceDays : [new Date().getDay()]) : [],
+      recurrence_end_type: newTaskRecurrence === 'none' ? 'never' : newTaskRecurrenceEndType,
+      recurrence_end: newTaskRecurrence !== 'none' && newTaskRecurrenceEndType === 'on_date' ? newTaskRecurrenceEnd : undefined,
+      recurrence_count: newTaskRecurrence !== 'none' && newTaskRecurrenceEndType === 'after_count' ? Math.max(1, newTaskRecurrenceCount) : undefined,
+      reminders_enabled: newTaskRemindersEnabled,
       list_id: newTaskListId ?? (activeView === 'list' && activeListId ? activeListId : defaultListId),
       due_date: newTaskDate || (
         activeView === 'today' ? toDateString(new Date()) :
@@ -414,6 +531,14 @@ export default function Tasks() {
         setNewTaskPriority('none');
         setNewTaskTagIds([]);
         setNewTaskListId(null);
+        setNewTaskRecurrence('none');
+        setNewTaskRecurrenceInterval(1);
+        setNewTaskRecurrenceEndType('never');
+        setNewTaskRecurrenceEnd('');
+        setNewTaskRecurrenceCount(5);
+        setNewTaskRecurrenceDays([]);
+        setNewTaskRemindersEnabled(false);
+        setShowAdvancedCreate(false);
         setSuggestionTrigger(null);
         setIsTagSelectorOpen(false);
         setIsAddingTask(false);
@@ -437,7 +562,11 @@ export default function Tasks() {
       tag_ids: task.tag_ids,
       recurrence: task.recurrence,
       recurrence_interval: task.recurrence_interval,
+      recurrence_days: task.recurrence_days,
       recurrence_end: task.recurrence_end?.split('T')[0],
+      recurrence_end_type: task.recurrence_end_type || (task.recurrence_end ? 'on_date' : 'never'),
+      recurrence_count: task.recurrence_count,
+      reminders_enabled: task.reminders_enabled ?? false,
     });
     setIsEditModalOpen(true);
   };
@@ -445,9 +574,38 @@ export default function Tasks() {
   // Save task edits
   const handleSaveTask = () => {
     if (!selectedTask) return;
+    const recurrence = (editForm.recurrence || 'none') as TaskRecurrence;
+    const recurrenceEndType = (editForm.recurrence_end_type || 'never') as TaskRecurrenceEndType;
+    const payload: Partial<CreateInput<Task>> = {
+      ...editForm,
+      recurrence,
+      reminders_enabled: !!editForm.reminders_enabled,
+      recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
+    };
+
+    if (recurrence !== 'weekly') {
+      payload.recurrence_days = [];
+    } else if (!Array.isArray(editForm.recurrence_days) || editForm.recurrence_days.length === 0) {
+      payload.recurrence_days = [new Date().getDay()];
+    }
+
+    if (recurrence === 'none') {
+      payload.recurrence_end = undefined;
+      payload.recurrence_end_type = 'never';
+      payload.recurrence_count = undefined;
+      payload.recurrence_days = [];
+    } else {
+      payload.recurrence_end_type = recurrenceEndType;
+      if (recurrenceEndType !== 'on_date') payload.recurrence_end = undefined;
+      if (recurrenceEndType !== 'after_count') payload.recurrence_count = undefined;
+      if (recurrenceEndType === 'after_count') {
+        payload.recurrence_count = Math.max(1, Number(editForm.recurrence_count || 1));
+      }
+    }
+
     updateTask.mutate({
       id: selectedTask.id,
-      data: editForm,
+      data: payload,
     }, {
       onSuccess: () => {
         setIsEditModalOpen(false);
@@ -686,6 +844,14 @@ export default function Tasks() {
                     setNewTaskPriority('none');
                     setNewTaskTagIds([]);
                     setNewTaskListId(null);
+                    setNewTaskRecurrence('none');
+                    setNewTaskRecurrenceInterval(1);
+                    setNewTaskRecurrenceEndType('never');
+                    setNewTaskRecurrenceEnd('');
+                    setNewTaskRecurrenceCount(5);
+                    setNewTaskRecurrenceDays([]);
+                    setNewTaskRemindersEnabled(false);
+                    setShowAdvancedCreate(false);
                     setIsTagSelectorOpen(false);
                     setHighlightedDate(undefined); // Clear highlights
                     setHighlightedTime(undefined); // Clear highlights
@@ -804,6 +970,114 @@ export default function Tasks() {
                     className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedCreate((v) => !v)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {showAdvancedCreate ? 'Hide advanced options' : 'Set recurrence and reminders'}
+                  </button>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <span>Reminders</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewTaskRemindersEnabled((v) => !v)}
+                      className={cn(
+                        "px-2 py-1 rounded border",
+                        newTaskRemindersEnabled ? "bg-primary/10 text-primary border-primary/40" : "border-border"
+                      )}
+                    >
+                      {newTaskRemindersEnabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+                </div>
+                {showAdvancedCreate && (
+                  <div className="space-y-2 p-2 rounded-lg border border-border/70 bg-secondary/20">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Select
+                        label="Repeat"
+                        value={newTaskRecurrence}
+                        onChange={(e) => setNewTaskRecurrence(e.target.value as TaskRecurrence)}
+                        options={RECURRENCE_OPTIONS}
+                      />
+                      {newTaskRecurrence !== 'none' ? (
+                        <Input
+                          label="Every"
+                          type="number"
+                          min={1}
+                          value={newTaskRecurrenceInterval}
+                          onChange={(e) => setNewTaskRecurrenceInterval(Math.max(1, Number(e.target.value || 1)))}
+                        />
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+                    {newTaskRecurrence !== 'none' && (
+                      <>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select
+                            label="Ends"
+                            value={newTaskRecurrenceEndType}
+                            onChange={(e) => setNewTaskRecurrenceEndType(e.target.value as TaskRecurrenceEndType)}
+                            options={RECURRENCE_END_OPTIONS}
+                          />
+                          {newTaskRecurrenceEndType === 'on_date' && (
+                            <Input
+                              label="Until"
+                              type="date"
+                              value={newTaskRecurrenceEnd}
+                              onChange={(e) => setNewTaskRecurrenceEnd(e.target.value)}
+                            />
+                          )}
+                          {newTaskRecurrenceEndType === 'after_count' && (
+                            <Input
+                              label="Occurrences"
+                              type="number"
+                              min={1}
+                              value={newTaskRecurrenceCount}
+                              onChange={(e) => setNewTaskRecurrenceCount(Math.max(1, Number(e.target.value || 1)))}
+                            />
+                          )}
+                        </div>
+                        {newTaskRecurrence === 'weekly' && (
+                          <div>
+                            <label className="text-xs text-muted-foreground">Repeat on</label>
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {WEEKDAY_OPTIONS.map((d) => {
+                                const selected = newTaskRecurrenceDays.includes(d.value);
+                                return (
+                                  <button
+                                    key={d.value}
+                                    type="button"
+                                    onClick={() => {
+                                      setNewTaskRecurrenceDays((prev) =>
+                                        prev.includes(d.value)
+                                          ? prev.filter((x) => x !== d.value)
+                                          : [...prev, d.value].sort((a, b) => a - b)
+                                      );
+                                    }}
+                                    className={cn(
+                                      "px-2 py-1 text-xs rounded border",
+                                      selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"
+                                    )}
+                                  >
+                                    {d.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {recurrencePreview.length > 0 && (
+                          <div className="text-xs text-muted-foreground">
+                            <span className="font-medium">Next:</span> {recurrencePreview.join(' · ')}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-between mt-3">
                 <div className="flex items-center gap-2 relative">
@@ -1015,16 +1289,114 @@ export default function Tasks() {
             <Select
               label="Repeat"
               value={editForm.recurrence || 'none'}
-              onChange={(e) => setEditForm({ ...editForm, recurrence: e.target.value as TaskRecurrence })}
+              onChange={(e) => setEditForm({
+                ...editForm,
+                recurrence: e.target.value as TaskRecurrence,
+                recurrence_interval: e.target.value === 'none' ? undefined : (editForm.recurrence_interval || 1),
+              })}
               options={RECURRENCE_OPTIONS}
             />
-            {editForm.recurrence && editForm.recurrence !== 'none' && (
+            {editForm.recurrence && editForm.recurrence !== 'none' ? (
               <Input
-                label="Until"
-                type="date"
-                value={editForm.recurrence_end || ''}
-                onChange={(e) => setEditForm({ ...editForm, recurrence_end: e.target.value })}
+                label="Every"
+                type="number"
+                min={1}
+                value={Number(editForm.recurrence_interval || 1)}
+                onChange={(e) => setEditForm({ ...editForm, recurrence_interval: Math.max(1, Number(e.target.value || 1)) })}
               />
+            ) : (
+              <div />
+            )}
+          </div>
+
+          {editForm.recurrence && editForm.recurrence !== 'none' && (
+            <div className="grid grid-cols-2 gap-4">
+              <Select
+                label="Ends"
+                value={(editForm.recurrence_end_type || 'never') as string}
+                onChange={(e) => setEditForm({ ...editForm, recurrence_end_type: e.target.value as TaskRecurrenceEndType })}
+                options={RECURRENCE_END_OPTIONS}
+              />
+              {(editForm.recurrence_end_type || 'never') === 'on_date' && (
+                <Input
+                  label="Until"
+                  type="date"
+                  value={editForm.recurrence_end || ''}
+                  onChange={(e) => setEditForm({ ...editForm, recurrence_end: e.target.value })}
+                />
+              )}
+              {(editForm.recurrence_end_type || 'never') === 'after_count' && (
+                <Input
+                  label="Occurrences"
+                  type="number"
+                  min={1}
+                  value={Number(editForm.recurrence_count || 1)}
+                  onChange={(e) => setEditForm({ ...editForm, recurrence_count: Math.max(1, Number(e.target.value || 1)) })}
+                />
+              )}
+            </div>
+          )}
+
+          {editForm.recurrence === 'weekly' && (
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Repeat on</label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {WEEKDAY_OPTIONS.map((d) => {
+                  const currentDays = editForm.recurrence_days || [];
+                  const selected = currentDays.includes(d.value);
+                  return (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => {
+                        const nextDays = selected
+                          ? currentDays.filter((day) => day !== d.value)
+                          : [...currentDays, d.value].sort((a, b) => a - b);
+                        setEditForm({ ...editForm, recurrence_days: nextDays });
+                      }}
+                      className={cn(
+                        "px-2 py-1 rounded-full text-xs border transition-colors",
+                        selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"
+                      )}
+                    >
+                      {d.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {editRecurrencePreview.length > 0 && (
+            <div className="text-xs text-muted-foreground">
+              <span className="font-medium">Next:</span> {editRecurrencePreview.join(' · ')}
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Reminders"
+              value={editForm.reminders_enabled ? 'enabled' : 'disabled'}
+              onChange={(e) => setEditForm({ ...editForm, reminders_enabled: e.target.value === 'enabled' })}
+              options={[
+                { value: 'disabled', label: 'Disabled' },
+                { value: 'enabled', label: 'Enabled' },
+              ]}
+            />
+            {editForm.reminders_enabled ? (
+              <Input
+                label="Reminder Time"
+                type="time"
+                value={editForm.due_time || ''}
+                onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
+              />
+            ) : (
+              <div className="flex items-end text-xs text-muted-foreground pb-2">
+                <div className="flex items-center gap-1">
+                  <Bell size={13} />
+                  No notification will be sent.
+                </div>
+              </div>
             )}
           </div>
 

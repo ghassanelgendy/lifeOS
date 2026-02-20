@@ -85,11 +85,66 @@ export type SleepStageType = 'Core' | 'Deep' | 'REM' | 'Awake';
 export interface SleepStage {
   id: string;
   user_id?: string | null;
+  session_id?: string | null;
   started_at: string;
   ended_at: string;
   duration_minutes: number;
   stage: SleepStageType;
   created_at: string;
+}
+
+export interface SleepSession {
+  id: string;
+  user_id?: string | null;
+  started_at: string;
+  ended_at: string;
+  duration_minutes: number;
+  sleep_score?: number | null;
+  rating?: number | null;
+  percentile?: number | null;
+  wake_count?: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
+export type PrayerStatus = 'Prayed' | 'Missed' | 'Skipped';
+
+export interface PrayerHabit {
+  id: string;
+  user_id?: string | null;
+  prayer_name: PrayerName;
+  habit_id: string;
+  default_time?: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrayerLog {
+  id: string;
+  user_id?: string | null;
+  prayer_habit_id: string;
+  date: string;
+  status: PrayerStatus;
+  prayed_at?: string | null;
+  habit_log_id?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PrayerNotificationSetting {
+  id: string;
+  user_id?: string | null;
+  prayer_habit_id: string;
+  enabled: boolean;
+  offset_minutes: number;
+  timezone: string;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 // ========================
@@ -180,7 +235,8 @@ export interface Tag {
 // Tasks
 // ========================
 export type TaskPriority = 'none' | 'low' | 'medium' | 'high';
-export type TaskRecurrence = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+export type TaskRecurrence = 'none' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+export type TaskRecurrenceEndType = 'never' | 'on_date' | 'after_count';
 
 export interface Task {
   id: string;
@@ -191,6 +247,7 @@ export interface Task {
   priority: TaskPriority;
   due_date?: string; // ISO-8601
   due_time?: string; // HH:mm format
+  reminders_enabled?: boolean;
   reminder?: string; // ISO-8601
   // Organization
   list_id?: string; // FK to TaskList
@@ -201,11 +258,14 @@ export interface Task {
   recurrence_interval?: number; // e.g., every 2 weeks
   recurrence_days?: number[]; // 0-6 for weekly (Sun-Sat)
   recurrence_end?: string; // ISO-8601
+  recurrence_end_type?: TaskRecurrenceEndType;
+  recurrence_count?: number;
   // Subtasks
   parent_id?: string; // FK to parent Task (for subtasks)
   subtask_order?: number;
   // Integrations
   ticktick_id?: string | null;
+  calendar_event_id?: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;

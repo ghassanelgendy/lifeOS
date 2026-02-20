@@ -1,96 +1,134 @@
-import { Moon, Sun, Sunrise, Sunset, MapPin, Loader2, MoonStar } from 'lucide-react';
-import { usePrayerTimes } from '../hooks/usePrayerTimes';
-import { cn } from '../lib/utils';
+import { Bell, BellOff, CheckCircle2, Clock3, Loader2, MapPin, Moon, MoonStar, Sunrise, Sun, Sunset, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
+import { cn } from '../lib/utils';
+import { usePrayerTimes } from '../hooks/usePrayerTimes';
+import { usePrayerTracker } from '../hooks/usePrayerHabits';
+import type { PrayerStatus } from '../types/schema';
+
+const STATUS_BUTTONS: { status: PrayerStatus; label: string; className: string }[] = [
+  { status: 'Prayed', label: 'Prayed', className: 'bg-green-500/15 text-green-500 border-green-500/30' },
+  { status: 'Missed', label: 'Missed', className: 'bg-red-500/15 text-red-500 border-red-500/30' },
+  { status: 'Skipped', label: 'Skip', className: 'bg-blue-500/15 text-blue-500 border-blue-500/30' },
+];
 
 export function PrayerWidget() {
-    const { times, location, error, nextPrayer, timeToNext } = usePrayerTimes();
+  const { times, location, nextPrayer, timeToNext } = usePrayerTimes();
+  const { isLoading, tracker, completionRate, weeklyCompletion, settings, togglePrayerStatus, setPrayerNotifications } = usePrayerTracker();
 
-    if (error) {
-        return (
-            <div className="bg-card border border-border rounded-xl p-4 flex items-center justify-center text-muted-foreground text-sm min-h-[150px]">
-                <span>{error}</span>
-            </div>
-        );
+  const getIcon = (name: string) => {
+    switch (name) {
+      case 'Fajr': return MoonStar;
+      case 'Sunrise': return Sunrise;
+      case 'Dhuhr': return Sun;
+      case 'Asr': return Sun;
+      case 'Maghrib': return Sunset;
+      case 'Isha': return Moon;
+      default: return Clock3;
     }
+  };
 
-    if (!location || times.length === 0) {
-        return (
-            <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center justify-center text-muted-foreground text-sm min-h-[150px] gap-2">
-                <Loader2 className="animate-spin" size={24} />
-                <span>Locating...</span>
+  const isNotificationEnabled = (prayerHabitId: string): boolean => {
+    const s = settings.find((x) => x.prayer_habit_id === prayerHabitId);
+    return s?.enabled ?? false;
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="font-semibold text-lg">Prayer Tracker</h3>
+          {location && (
+            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <MapPin size={10} />
+              <span>{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</span>
             </div>
-        );
-    }
-
-    const getIcon = (name: string) => {
-        switch (name) {
-            case 'Fajr': return MoonStar;
-            case 'Sunrise': return Sunrise;
-            case 'Dhuhr': return Sun;
-            case 'Asr': return Sun;
-            case 'Maghrib': return Sunset;
-            case 'Isha': return Moon;
-            default: return Sun;
-        }
-    };
-
-    return (
-        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-            {/* Header */}
-            <div className="flex items-start justify-between">
-                <div>
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                        Prayer Times
-                    </h3>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <MapPin size={10} />
-                        <span>{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</span>
-                    </div>
-                </div>
-
-                {nextPrayer && (
-                    <div className="text-right ml-4">
-                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Next: {nextPrayer}</div>
-                        <div className="text-xl font-bold font-mono text-primary animate-in fade-in">
-                            {timeToNext}
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {/* Grid */}
-            <div className="grid grid-cols-3 gap-2">
-                {times.map((prayer) => {
-                    const Icon = getIcon(prayer.name);
-                    return (
-                        <div
-                            key={prayer.name}
-                            className={cn(
-                                "flex flex-col items-center justify-center p-2 rounded-lg border transition-all duration-300",
-                                prayer.isNext
-                                    ? "bg-primary/10 border-primary shadow-sm scale-105"
-                                    : "bg-secondary/30 border-transparent hover:bg-secondary/50"
-                            )}
-                        >
-                            <Icon size={18} className={cn(
-                                "mb-1",
-                                prayer.isNext ? "text-primary" : "text-muted-foreground"
-                            )} />
-                            <span className={cn(
-                                "text-xs font-medium",
-                                prayer.isNext ? "text-foreground" : "text-muted-foreground"
-                            )}>{prayer.name}</span>
-                            <span className={cn(
-                                "text-sm font-bold mt-0.5",
-                                prayer.isNext ? "text-primary" : "text-foreground"
-                            )}>
-                                {format(prayer.time, 'h:mm a')}
-                            </span>
-                        </div>
-                    );
-                })}
-            </div>
+          )}
         </div>
-    );
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Today</p>
+          <p className="text-xl font-bold tabular-nums">{completionRate}%</p>
+          {nextPrayer && (
+            <p className="text-xs text-primary">
+              Next {nextPrayer} in {timeToNext}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {isLoading ? (
+        <div className="min-h-[120px] flex items-center justify-center text-muted-foreground">
+          <Loader2 className="animate-spin" size={22} />
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {tracker.map((item) => {
+            const prayerTime = times.find((t) => t.name === item.prayerName)?.time;
+            const Icon = getIcon(item.prayerName);
+            const enabled = isNotificationEnabled(item.prayerHabitId);
+            return (
+              <div key={item.prayerName} className="rounded-lg border border-border p-3 bg-secondary/20">
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Icon size={16} className="text-primary" />
+                    <p className="font-medium text-sm">{item.prayerName}</p>
+                    {item.status === 'Prayed' && <CheckCircle2 size={14} className="text-green-500" />}
+                    {item.status === 'Missed' && <XCircle size={14} className="text-red-500" />}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {prayerTime ? format(prayerTime, 'h:mm a') : '--:--'}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPrayerNotifications(item.prayerHabitId, !enabled)}
+                      className={cn(
+                        "p-1 rounded border transition-colors",
+                        enabled ? "border-primary text-primary bg-primary/10" : "border-border text-muted-foreground hover:bg-secondary"
+                      )}
+                      title={enabled ? 'Disable prayer notification' : 'Enable prayer notification'}
+                    >
+                      {enabled ? <Bell size={14} /> : <BellOff size={14} />}
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {STATUS_BUTTONS.map((s) => (
+                    <button
+                      key={s.status}
+                      type="button"
+                      onClick={() => togglePrayerStatus(item, s.status)}
+                      className={cn(
+                        "text-xs px-2 py-1.5 rounded border transition-colors",
+                        item.status === s.status ? s.className : "border-border text-muted-foreground hover:bg-secondary"
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="rounded-lg border border-border p-3 bg-secondary/20">
+        <p className="text-xs text-muted-foreground mb-2">Weekly completion</p>
+        <div className="grid grid-cols-7 gap-1">
+          {weeklyCompletion.slice(-7).map((d) => (
+            <div key={d.date} className="text-center">
+              <div className="h-10 rounded bg-secondary overflow-hidden flex items-end">
+                <div
+                  className="w-full bg-primary transition-all"
+                  style={{ height: `${Math.max(8, d.percent)}%` }}
+                  title={`${d.percent}%`}
+                />
+              </div>
+              <span className="text-[10px] text-muted-foreground">{d.date.slice(5)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 }

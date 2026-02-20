@@ -7,6 +7,12 @@ const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/habits', '/calendar', '/settings'];
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
+export const SLEEP_WIDGET_IDS = ['score', 'timeline', 'metrics', 'weekly', 'sessions'] as const;
+export type SleepWidgetId = (typeof SLEEP_WIDGET_IDS)[number];
+export const PAGE_WIDGET_DEFAULTS: Record<string, string[]> = {
+  dashboard: [...DASHBOARD_WIDGET_IDS],
+  sleep: [...SLEEP_WIDGET_IDS],
+};
 
 // Accent color themes (used for primary, ring, accents)
 export const ACCENT_THEMES = ['zinc', 'blue', 'green', 'violet', 'rose', 'amber'] as const;
@@ -65,6 +71,17 @@ interface UIState {
   setDefaultTaskView: (id: string | null) => void;
   defaultTaskListId: string | null;
   setDefaultTaskListId: (id: string | null) => void;
+  calendarShowTasks: boolean;
+  setCalendarShowTasks: (show: boolean) => void;
+
+  // Page widgets (all pages customization foundation)
+  pageWidgetOrder: Record<string, string[]>;
+  pageWidgetVisible: Record<string, Record<string, boolean>>;
+  setPageWidgetOrder: (page: string, order: string[]) => void;
+  setPageWidgetVisible: (page: string, visible: Record<string, boolean>) => void;
+  togglePageWidget: (page: string, id: string) => void;
+  movePageWidget: (page: string, id: string, direction: 'up' | 'down') => void;
+  resetPageWidgets: (page: string) => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -108,6 +125,13 @@ export const useUIStore = create<UIState>()(
             ...state.dashboardWidgetVisible,
             [id]: !state.dashboardWidgetVisible[id],
           },
+          pageWidgetVisible: {
+            ...state.pageWidgetVisible,
+            dashboard: {
+              ...(state.pageWidgetVisible.dashboard ?? {}),
+              [id]: !(state.pageWidgetVisible.dashboard ?? state.dashboardWidgetVisible)[id],
+            },
+          },
         })),
       moveDashboardWidget: (id, direction) =>
         set((state) => {
@@ -117,7 +141,13 @@ export const useUIStore = create<UIState>()(
           const j = direction === 'up' ? i - 1 : i + 1;
           if (j < 0 || j >= order.length) return state;
           [order[i], order[j]] = [order[j], order[i]];
-          return { dashboardWidgetOrder: order };
+          return {
+            dashboardWidgetOrder: order,
+            pageWidgetOrder: {
+              ...state.pageWidgetOrder,
+              dashboard: order,
+            },
+          };
         }),
 
       // Default pages
@@ -127,6 +157,63 @@ export const useUIStore = create<UIState>()(
       setDefaultTaskView: (defaultTaskView) => set({ defaultTaskView }),
       defaultTaskListId: null,
       setDefaultTaskListId: (defaultTaskListId) => set({ defaultTaskListId }),
+      calendarShowTasks: true,
+      setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
+
+      pageWidgetOrder: {
+        dashboard: [...DASHBOARD_WIDGET_IDS],
+        sleep: [...SLEEP_WIDGET_IDS],
+      },
+      pageWidgetVisible: {
+        dashboard: DASHBOARD_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
+        sleep: SLEEP_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
+      },
+      setPageWidgetOrder: (page, order) =>
+        set((state) => ({
+          pageWidgetOrder: { ...state.pageWidgetOrder, [page]: order },
+          ...(page === 'dashboard' ? { dashboardWidgetOrder: order } : {}),
+        })),
+      setPageWidgetVisible: (page, visible) =>
+        set((state) => ({
+          pageWidgetVisible: { ...state.pageWidgetVisible, [page]: visible },
+          ...(page === 'dashboard' ? { dashboardWidgetVisible: visible } : {}),
+        })),
+      togglePageWidget: (page, id) =>
+        set((state) => {
+          const currentVisible = {
+            ...(state.pageWidgetVisible[page] ?? PAGE_WIDGET_DEFAULTS[page]?.reduce((acc, key) => ({ ...acc, [key]: true }), {} as Record<string, boolean>) ?? {}),
+          };
+          const nextVisible = { ...currentVisible, [id]: !currentVisible[id] };
+          return {
+            pageWidgetVisible: { ...state.pageWidgetVisible, [page]: nextVisible },
+            ...(page === 'dashboard' ? { dashboardWidgetVisible: nextVisible } : {}),
+          };
+        }),
+      movePageWidget: (page, id, direction) =>
+        set((state) => {
+          const current = [...(state.pageWidgetOrder[page] ?? PAGE_WIDGET_DEFAULTS[page] ?? [])];
+          const i = current.indexOf(id);
+          if (i === -1) return state;
+          const j = direction === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= current.length) return state;
+          [current[i], current[j]] = [current[j], current[i]];
+          return {
+            pageWidgetOrder: { ...state.pageWidgetOrder, [page]: current },
+            ...(page === 'dashboard' ? { dashboardWidgetOrder: current } : {}),
+          };
+        }),
+      resetPageWidgets: (page) =>
+        set((state) => {
+          const defaults = [...(PAGE_WIDGET_DEFAULTS[page] ?? [])];
+          const visibleDefaults = defaults.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>);
+          return {
+            pageWidgetOrder: { ...state.pageWidgetOrder, [page]: defaults },
+            pageWidgetVisible: { ...state.pageWidgetVisible, [page]: visibleDefaults },
+            ...(page === 'dashboard'
+              ? { dashboardWidgetOrder: defaults, dashboardWidgetVisible: visibleDefaults }
+              : {}),
+          };
+        }),
     }),
     {
       name: 'lifeos-ui-store',
@@ -141,6 +228,9 @@ export const useUIStore = create<UIState>()(
         defaultTab: state.defaultTab,
         defaultTaskView: state.defaultTaskView,
         defaultTaskListId: state.defaultTaskListId,
+        calendarShowTasks: state.calendarShowTasks,
+        pageWidgetOrder: state.pageWidgetOrder,
+        pageWidgetVisible: state.pageWidgetVisible,
       }),
     }
   )

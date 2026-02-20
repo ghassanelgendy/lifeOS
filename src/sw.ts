@@ -16,11 +16,19 @@ cleanupOutdatedCaches();
 
 // App-shell style navigation: serve cached index.html for all navigations, so the SPA loads offline.
 // Exclude API routes so they can still go to network when online.
-const appShellHandler = createHandlerBoundToURL('/index.html');
-const navigationRoute = new NavigationRoute(appShellHandler, {
-  denylist: [/^\/api\//],
-});
-registerRoute(navigationRoute);
+// In dev, the manifest may be empty and '/index.html' won't be precached, which would make
+// createHandlerBoundToURL throw. Guard on presence of index.html before registering.
+const hasIndexHtml = self.__WB_MANIFEST.some(
+  (entry) => entry.url === 'index.html' || entry.url === '/index.html'
+);
+
+if (hasIndexHtml) {
+  const appShellHandler = createHandlerBoundToURL('/index.html');
+  const navigationRoute = new NavigationRoute(appShellHandler, {
+    denylist: [/^\/api\//],
+  });
+  registerRoute(navigationRoute);
+}
 
 // Background sync stub: when supported, we can register a sync from the app
 // and react here. For now, we just listen for a named sync event and nudge

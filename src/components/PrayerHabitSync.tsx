@@ -1,6 +1,6 @@
-import { usePrayerHabits } from '../hooks/usePrayerHabits';
+import { usePrayerTracker } from '../hooks/usePrayerHabits';
 
 export function PrayerHabitSync() {
-    usePrayerHabits();
+    usePrayerTracker();
     return null;
 }

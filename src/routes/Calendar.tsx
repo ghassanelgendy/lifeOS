@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   ChevronLeft,
@@ -40,10 +41,12 @@ import {
 } from '../hooks/useCalendar';
 import { Modal, Button, Input, Select, TextArea } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, RecurrencePattern } from '../types/schema';
-import { useTasks } from '../hooks/useTasks';
+import { useCreateTask, useTasks, useUpdateTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
 import { downloadCalendarIcs } from '../lib/calendarExport';
 import type { IcalEvent } from '../lib/icalSubscribe';
+import { supabase } from '../lib/supabase';
+import { useUIStore } from '../stores/useUIStore';
 
 type ExtendedCalendarEvent = (CalendarEvent & {
   isRecurringInstance?: boolean;
@@ -60,11 +63,16 @@ const EVENT_TYPE_COLORS: Record<EventType, string> = {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarPage() {
+  const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [view, setView] = useState<'month' | 'week'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
+  const [enableAsTask, setEnableAsTask] = useState(false);
+  const [linkedTaskId, setLinkedTaskId] = useState<string | null>(null);
+  const showTasksInCalendar = useUIStore((s) => s.calendarShowTasks);
+  const setShowTasksInCalendar = useUIStore((s) => s.setCalendarShowTasks);
 
   // Get calendar range based on view
   const monthStart = startOfMonth(currentDate);
@@ -84,10 +92,15 @@ export default function CalendarPage() {
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
+  const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
 
   // Get tasks with due dates
   const { data: allTasks = [] } = useTasks();
-  const tasksWithDates = allTasks.filter(t => t.due_date && !t.is_completed);
+  // Hide tasks that are already linked to calendar events to avoid duplicate items.
+  const tasksWithDates = showTasksInCalendar
+    ? allTasks.filter((t) => t.due_date && !t.is_completed && !t.calendar_event_id)
+    : [];
 
   const [formData, setFormData] = useState<Partial<CreateInput<CalendarEvent>>>({
     title: '',
@@ -102,6 +115,117 @@ export default function CalendarPage() {
     recurrence_end: '',
     shift_person: '',
   });
+
+  const ensureCalendarTagId = async (): Promise<string> => {
+    const { data: existing, error: findError } = await supabase
+      .from('tags')
+      .select('id,name')
+      .ilike('name', 'calendar')
+      .limit(1);
+    if (findError) throw findError;
+    if (existing && existing.length > 0) return existing[0].id as string;
+
+    const { data: created, error: createError } = await supabase
+      .from('tags')
+      .insert({ name: 'calendar', color: '#8b5cf6' })
+      .select('id')
+      .single();
+    if (createError) throw createError;
+    return created.id as string;
+  };
+
+  const getEventTaskLink = async (eventId: string): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('calendar_task_links')
+      .select('task_id')
+      .eq('calendar_event_id', eventId)
+      .eq('is_active', true)
+      .limit(1);
+    if (error) throw error;
+    if (!data || data.length === 0) return null;
+    return (data[0] as { task_id: string }).task_id;
+  };
+
+  const syncEventTaskLink = async (eventRecord: CalendarEvent) => {
+    const eventDate = eventRecord.start_time.split('T')[0];
+    const eventTime = eventRecord.all_day ? undefined : eventRecord.start_time.slice(11, 16);
+
+    if (!enableAsTask) {
+      if (linkedTaskId) {
+        await supabase
+          .from('calendar_task_links')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('calendar_event_id', eventRecord.id)
+          .eq('task_id', linkedTaskId);
+
+        await updateTask.mutateAsync({
+          id: linkedTaskId,
+          data: { calendar_event_id: null },
+        });
+      }
+      return;
+    }
+
+    const calendarTagId = await ensureCalendarTagId();
+
+    if (linkedTaskId) {
+      const { data: linkedTask } = await supabase
+        .from('tasks')
+        .select('tag_ids')
+        .eq('id', linkedTaskId)
+        .single();
+      const existingTagIds = ((linkedTask as { tag_ids?: string[] } | null)?.tag_ids ?? []);
+      const mergedTagIds = existingTagIds.includes(calendarTagId)
+        ? existingTagIds
+        : [...existingTagIds, calendarTagId];
+      await updateTask.mutateAsync({
+        id: linkedTaskId,
+        data: {
+          title: eventRecord.title,
+          description: eventRecord.description || undefined,
+          due_date: eventDate,
+          due_time: eventTime,
+          tag_ids: mergedTagIds,
+          calendar_event_id: eventRecord.id,
+        },
+      });
+      await supabase
+        .from('calendar_task_links')
+        .upsert({
+          calendar_event_id: eventRecord.id,
+          task_id: linkedTaskId,
+          sync_mode: 'event_to_task',
+          is_active: true,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'calendar_event_id,task_id' });
+      return;
+    }
+
+    const createdTask = await createTask.mutateAsync({
+      title: eventRecord.title,
+      description: eventRecord.description || undefined,
+      is_completed: false,
+      priority: 'none',
+      due_date: eventDate,
+      due_time: eventTime,
+      reminders_enabled: false,
+      tag_ids: [calendarTagId],
+      recurrence: 'none',
+      recurrence_interval: 1,
+      recurrence_end_type: 'never',
+      calendar_event_id: eventRecord.id,
+    });
+
+    await supabase
+      .from('calendar_task_links')
+      .insert({
+        calendar_event_id: eventRecord.id,
+        task_id: createdTask.id,
+        sync_mode: 'event_to_task',
+        is_active: true,
+      });
+    setLinkedTaskId(createdTask.id);
+  };
 
   // Merge app events with subscribed iCal events (each subscription has its own color)
   const allMergedEvents = useMemo(() => {
@@ -154,7 +278,7 @@ export default function CalendarPage() {
   };
 
   // Modal handlers
-  const handleOpenModal = (event?: ExtendedCalendarEvent, date?: Date) => {
+  const handleOpenModal = async (event?: ExtendedCalendarEvent, date?: Date) => {
     if (event) {
       if ('isIcal' in event && event.isIcal) return;
       const calEvent = event as CalendarEvent & { isRecurringInstance?: boolean; originalId?: string };
@@ -172,8 +296,19 @@ export default function CalendarPage() {
         recurrence_end: calEvent.recurrence_end?.split('T')[0] || '',
         shift_person: calEvent.shift_person,
       });
+      try {
+        const sourceEventId = calEvent.originalId || calEvent.id;
+        const existingTaskId = await getEventTaskLink(sourceEventId);
+        setLinkedTaskId(existingTaskId);
+        setEnableAsTask(!!existingTaskId);
+      } catch {
+        setLinkedTaskId(null);
+        setEnableAsTask(false);
+      }
     } else {
       setEditingEvent(null);
+      setLinkedTaskId(null);
+      setEnableAsTask(false);
       const defaultDate = date || new Date();
       const startTime = new Date(defaultDate);
       startTime.setHours(9, 0, 0, 0);
@@ -197,7 +332,7 @@ export default function CalendarPage() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const eventData = {
@@ -205,19 +340,23 @@ export default function CalendarPage() {
       color: EVENT_TYPE_COLORS[formData.type as EventType],
     } as CreateInput<CalendarEvent>;
 
-    if (editingEvent) {
-      // If editing a recurring instance, edit the original (editingEvent is always app event, not ical)
-      const eventId = ('originalId' in editingEvent && editingEvent.originalId) || editingEvent.id;
-      updateEvent.mutate({
-        id: eventId,
-        data: eventData,
-      }, {
-        onSuccess: () => setIsModalOpen(false),
-      });
-    } else {
-      createEvent.mutate(eventData, {
-        onSuccess: () => setIsModalOpen(false),
-      });
+    try {
+      let savedEvent: CalendarEvent;
+      if (editingEvent) {
+        const eventId = ('originalId' in editingEvent && editingEvent.originalId) || editingEvent.id;
+        savedEvent = await updateEvent.mutateAsync({
+          id: eventId,
+          data: eventData,
+        });
+      } else {
+        savedEvent = await createEvent.mutateAsync(eventData);
+      }
+      await syncEventTaskLink(savedEvent);
+      await queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setIsModalOpen(false);
+      setEditingEvent(null);
+    } catch (err) {
+      console.error('Failed to save event/task link', err);
     }
   };
 
@@ -253,7 +392,7 @@ export default function CalendarPage() {
             <CalendarPlus size={18} />
             Add to Calendar
           </Button>
-          <Button onClick={() => handleOpenModal()}>
+          <Button onClick={() => void handleOpenModal()}>
             <Plus size={18} />
             Add Event
           </Button>
@@ -282,6 +421,16 @@ export default function CalendarPage() {
           </button>
         </div>
         <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+          <button
+            onClick={() => setShowTasksInCalendar(!showTasksInCalendar)}
+            className={cn(
+              "px-3 py-1 rounded text-sm font-medium transition-colors",
+              showTasksInCalendar ? "bg-background" : "hover:bg-background/50"
+            )}
+            title="Toggle task chips on calendar"
+          >
+            Tasks
+          </button>
           <button
             onClick={() => setView('month')}
             className={cn(
@@ -356,7 +505,7 @@ export default function CalendarPage() {
                             key={event.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (!isIcal) handleOpenModal(event as ExtendedCalendarEvent);
+                              if (!isIcal) void handleOpenModal(event as ExtendedCalendarEvent);
                             }}
                             className={cn(
                               "text-[10px] px-1 py-0.5 rounded truncate hover:opacity-80",
@@ -405,7 +554,7 @@ export default function CalendarPage() {
                 variant="outline"
                 size="sm"
                 className="w-full mb-4"
-                onClick={() => handleOpenModal(undefined, selectedDate)}
+                onClick={() => void handleOpenModal(undefined, selectedDate)}
               >
                 <Plus size={14} />
                 Add Event
@@ -460,7 +609,7 @@ export default function CalendarPage() {
                       {!isIcal && (
                         <div className="flex items-center gap-1">
                           <button
-                            onClick={() => handleOpenModal(event as ExtendedCalendarEvent)}
+                            onClick={() => void handleOpenModal(event as ExtendedCalendarEvent)}
                             className="p-1 rounded hover:bg-secondary transition-colors"
                           >
                             <Edit2 size={12} />
@@ -672,6 +821,21 @@ export default function CalendarPage() {
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Add description..."
           />
+
+          <div className="rounded-lg border border-border bg-secondary/20 p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={enableAsTask}
+                onChange={(e) => setEnableAsTask(e.target.checked)}
+                className="rounded border-border"
+              />
+              Enable as task
+            </label>
+            <p className="text-xs text-muted-foreground mt-1">
+              Linked events appear in Tasks with the <span className="font-medium">calendar</span> tag.
+            </p>
+          </div>
 
           <div className="flex justify-end gap-2 pt-4">
             <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>

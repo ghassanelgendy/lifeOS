@@ -5,9 +5,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Habit, CreateInput, UpdateInput, HabitLog } from '../types/schema';
 import { round1 } from '../lib/utils';
+import { format, subDays } from 'date-fns';
 
 const HABITS_KEY = ['habits'];
 const HABIT_LOGS_KEY = ['habit-logs'];
+
+const toDateOnly = (d: Date): string => format(d, 'yyyy-MM-dd');
 
 // ========================
 // Habits
@@ -110,6 +113,23 @@ export function useDeleteHabit() {
   });
 }
 
+export function useUnarchiveHabit() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('habits')
+        .update({ is_archived: false, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: HABITS_KEY });
+    },
+  });
+}
+
 // ========================
 // Habit Logs
 // ========================
@@ -143,7 +163,7 @@ export function useHabitLogs(habitId: string) {
 
 export function useTodayHabitLogs() {
   const { user } = useAuth();
-  const today = new Date().toISOString().split('T')[0];
+  const today = toDateOnly(new Date());
   return useQuery({
     queryKey: [...HABIT_LOGS_KEY, 'today', today, user?.id],
     queryFn: async () => {
@@ -183,10 +203,12 @@ export function useLogHabit() {
         .single();
 
       let result;
+      const dateOnly = (date || '').split('T')[0];
+
       if (existing) {
         const { data, error } = await supabase
           .from('habit_logs')
-          .update({ completed, note })
+          .update({ completed, note, date: dateOnly })
           .eq('id', existing.id)
           .select()
           .single();
@@ -195,7 +217,7 @@ export function useLogHabit() {
       } else {
         const { data, error } = await supabase
           .from('habit_logs')
-          .insert({ habit_id: habitId, date, completed, note })
+          .insert({ habit_id: habitId, date: dateOnly, completed, note })
           .select()
           .single();
         if (error) throw error;
@@ -238,10 +260,8 @@ export function useHabitStreak(habitId: string) {
       let streak = 0;
       if (!logs || logs.length === 0) return 0;
 
-      const today = new Date().toISOString().split('T')[0];
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const today = toDateOnly(new Date());
+      const yesterdayStr = toDateOnly(subDays(new Date(), 1));
 
       // Check if most recent is today or yesterday
       const mostRecent = logs[0].date;
@@ -270,6 +290,87 @@ export function useHabitStreak(habitId: string) {
   });
 }
 
+export function useArchivedHabits() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...HABITS_KEY, 'archived', user?.id],
+    queryFn: async () => {
+      const q = supabase
+        .from('habits')
+        .select('*')
+        .eq('is_archived', true)
+        .order('updated_at', { ascending: false });
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data as Habit[];
+    },
+    enabled: !!user?.id,
+  });
+}
+
+export function useHabitStreaks(habitIds: string[]) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: [...HABIT_LOGS_KEY, 'streaks', [...habitIds].sort().join(','), user?.id],
+    queryFn: async () => {
+      if (!habitIds.length) return {} as Record<string, number>;
+
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id,date,completed')
+        .in('habit_id', habitIds)
+        .eq('completed', true)
+        .order('date', { ascending: false });
+      if (error) throw error;
+
+      const byHabit = new Map<string, string[]>();
+      (data as Pick<HabitLog, 'habit_id' | 'date'>[]).forEach((log) => {
+        const arr = byHabit.get(log.habit_id) ?? [];
+        arr.push(log.date);
+        byHabit.set(log.habit_id, arr);
+      });
+
+      const today = new Date();
+      const todayStr = toDateOnly(today);
+      const yesterdayStr = toDateOnly(subDays(today, 1));
+      const streaks: Record<string, number> = {};
+
+      habitIds.forEach((habitId) => {
+        const logs = byHabit.get(habitId) ?? [];
+        if (!logs.length) {
+          streaks[habitId] = 0;
+          return;
+        }
+        const mostRecent = logs[0];
+        if (mostRecent !== todayStr && mostRecent !== yesterdayStr) {
+          streaks[habitId] = 0;
+          return;
+        }
+
+        let streak = 1;
+        let currentDate = new Date(mostRecent);
+        for (let i = 1; i < logs.length; i++) {
+          const logDate = new Date(logs[i]);
+          const diffTime = Math.abs(currentDate.getTime() - logDate.getTime());
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays === 1) {
+            streak++;
+            currentDate = logDate;
+          } else {
+            break;
+          }
+        }
+        streaks[habitId] = streak;
+      });
+
+      return streaks;
+    },
+    enabled: !!user?.id && habitIds.length > 0,
+  });
+}
+
 // Calculate weekly adherence
 export function useWeeklyAdherence() {
   const { user } = useAuth();
@@ -283,10 +384,9 @@ export function useWeeklyAdherence() {
 
   // BETTER APPROACH: Fetch range of logs for all habits.
   const today = new Date();
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const todayStr = today.toISOString().split('T')[0];
-  const weekAgoStr = weekAgo.toISOString().split('T')[0];
+  const weekAgo = subDays(today, 6);
+  const todayStr = toDateOnly(today);
+  const weekAgoStr = toDateOnly(weekAgo);
 
   const { data: logs = [] } = useQuery({
     queryKey: [...HABIT_LOGS_KEY, 'range', weekAgoStr, todayStr, user?.id],
@@ -331,6 +431,7 @@ export function useWeeklyAdherence() {
     adherence: Math.min(adherence, 100),
     totalExpected,
     totalCompleted,
+    weekLogs: logs,
     todayLogs,
     habits,
   };

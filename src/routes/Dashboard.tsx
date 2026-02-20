@@ -23,33 +23,30 @@ import { useWeeklyAdherence, useHabits } from '../hooks/useHabits';
 import { useCategoryBreakdown } from '../hooks/useFinance';
 import { useUpcomingEvents } from '../hooks/useCalendar';
 import { useProjects } from '../hooks/useProjects';
-import { habitLogDB } from '../db/database';
 import { useUIStore } from '../stores/useUIStore';
 import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
-import { PrayerWidget } from '../components/PrayerWidget';
+import { PrayerTimesWidget } from '../components/PrayerTimesWidget';
 import { useScreentimeMetrics, useTodayScreentime } from '../hooks/useScreentime';
 import { useSleepMetrics } from '../hooks/useSleep';
 
 export default function Dashboard() {
   const { metrics, hasData: hasHealthData } = useHealthMetrics();
   const { data: overdueTasks = [] } = useOverdueTasks();
-  const { adherence } = useWeeklyAdherence();
+  const { adherence, todayLogs } = useWeeklyAdherence();
   const { totalExpenses, balance } = useCategoryBreakdown();
   const upcomingEvents = useUpcomingEvents(7);
   const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
-  const { privacyMode, dashboardWidgetOrder, dashboardWidgetVisible } = useUIStore();
+  const { privacyMode, pageWidgetOrder, pageWidgetVisible } = useUIStore();
   const { avg7Days: screentimeAvg, trend: screentimeTrend, history: screentimeHistory } = useScreentimeMetrics(7);
   const todayScreentime = useTodayScreentime();
   const { avgSleepMinutes, nightsCount } = useSleepMetrics(7);
 
-  const order = dashboardWidgetOrder?.length ? dashboardWidgetOrder : [...DASHBOARD_WIDGET_IDS];
-  const isVisible = (id: string) => dashboardWidgetVisible?.[id] !== false;
+  const order = pageWidgetOrder?.dashboard?.length ? pageWidgetOrder.dashboard : [...DASHBOARD_WIDGET_IDS];
+  const isVisible = (id: string) => pageWidgetVisible?.dashboard?.[id] !== false;
 
   // Get today's habit completion
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  const todayLogs = habitLogDB.getByDate(todayStr);
   const completedToday = todayLogs.filter(l => l.completed).length;
 
   // Active projects count
@@ -70,7 +67,7 @@ export default function Dashboard() {
         const visibleIds = order.filter(isVisible);
         const isAlone = visibleIds.length === 1;
         return visibleIds.map((widgetId) => {
-        if (widgetId === 'prayer') return <PrayerWidget key="prayer" />;
+        if (widgetId === 'prayer') return <PrayerTimesWidget key="prayer" />;
         if (widgetId === 'stats')
           return (
             <div

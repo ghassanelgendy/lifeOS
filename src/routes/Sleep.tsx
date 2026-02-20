@@ -1,392 +1,472 @@
-import { useMemo, useState } from 'react';
-import { format, subDays, parseISO } from 'date-fns';
-import { Moon, Zap, Brain, Eye, Clock, Activity, Star } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { useSleepStages } from '../hooks/useSleep';
-import { useUIStore } from '../stores/useUIStore';
+import { useMemo } from 'react';
+import { useState } from 'react';
+import { format, parseISO, subDays } from 'date-fns';
+import { Moon, Clock, Activity } from 'lucide-react';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../lib/utils';
+import { useUIStore, PAGE_WIDGET_DEFAULTS } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
 const STAGE_COLORS: Record<string, string> = {
-  Deep: 'hsl(var(--color-primary))',
-  REM: '#a78bfa',
-  Core: '#6366f1',
-  Awake: '#94a3b8',
+  Deep: '#4c1d95',
+  Core: '#8b5cf6',
+  REM: '#ef4444',
+  Awake: '#facc15',
 };
 
-function formatDuration(minutes: number): string {
+type NightSession = {
+  key: string;
+  date: string;
+  bedtime: Date;
+  waketime: Date;
+  totalMinutes: number;
+  sleepMinutes: number;
+  deepMinutes: number;
+  coreMinutes: number;
+  remMinutes: number;
+  awakeMinutes: number;
+  wakeCount: number;
+  deepContinuity: number;
+  segments: SleepStage[];
+};
+
+const formatDuration = (minutes: number): string => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  return `${h}h ${m}m`;
+};
+
+const pct = (num: number, den: number): number => (den > 0 ? Math.round((num / den) * 100) : 0);
+
+const stageIs = (seg: SleepStage, stage: string) => (seg.stage ?? '').toLowerCase() === stage.toLowerCase();
+
+function buildSessions(segments: SleepStage[]): NightSession[] {
+  if (!segments.length) return [];
+  const sorted = [...segments].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
+  const groups: SleepStage[][] = [];
+  let current: SleepStage[] = [];
+  for (const seg of sorted) {
+    if (!current.length) {
+      current.push(seg);
+      continue;
+    }
+    const last = current[current.length - 1];
+    const gapMinutes = (new Date(seg.started_at).getTime() - new Date(last.ended_at).getTime()) / 60000;
+    if (gapMinutes <= 120) current.push(seg);
+    else {
+      groups.push(current);
+      current = [seg];
+    }
+  }
+  if (current.length) groups.push(current);
+
+  return groups.map((g) => {
+    const first = g[0];
+    const last = g[g.length - 1];
+    const totalMinutes = g.reduce((s, x) => s + x.duration_minutes, 0);
+    const deepMinutes = g.filter((s) => stageIs(s, 'Deep')).reduce((s, x) => s + x.duration_minutes, 0);
+    const coreMinutes = g.filter((s) => stageIs(s, 'Core')).reduce((s, x) => s + x.duration_minutes, 0);
+    const remMinutes = g.filter((s) => stageIs(s, 'REM')).reduce((s, x) => s + x.duration_minutes, 0);
+    const awakeSegments = g.filter((s) => stageIs(s, 'Awake'));
+    const awakeMinutes = awakeSegments.reduce((s, x) => s + x.duration_minutes, 0);
+    const sleepMinutes = Math.max(totalMinutes - awakeMinutes, 0);
+    const wakeCount = awakeSegments.filter((x) => x.duration_minutes >= 5).length;
+    const deepContinuity = Math.min(100, Math.max(0, 100 - wakeCount * 8));
+    const session: NightSession = {
+      key: `${first.started_at}-${last.ended_at}`,
+      date: last.ended_at.slice(0, 10),
+      bedtime: new Date(first.started_at),
+      waketime: new Date(last.ended_at),
+      totalMinutes,
+      sleepMinutes,
+      deepMinutes,
+      coreMinutes,
+      remMinutes,
+      awakeMinutes,
+      wakeCount,
+      deepContinuity,
+      segments: g,
+    };
+    return session;
+  }).sort((a, b) => b.date.localeCompare(a.date));
 }
 
-/** Match stage case-insensitively (DB may store 'REM' or 'Rem' etc.) */
-function stageIs(seg: SleepStage, stage: string): boolean {
-  return (seg.stage ?? '').toLowerCase() === stage.toLowerCase();
-}
-
-/**
- * Sleep quality score 0-100 based on stage balance (longer is not better).
- * Targets from research: Core ~60%, Deep 10-20%, REM 20-25%, Awake minimal.
- */
-function computeQualityScore(corePct: number, deepPct: number, remPct: number, awakePct: number): number {
-  const coreScore = Math.max(0, 100 - Math.abs(corePct - 60) * 2);   // target 60%
-  const deepScore = Math.max(0, 100 - Math.abs(deepPct - 15) * 4);   // target 10-20%, mid 15%
-  const remScore = Math.max(0, 100 - Math.abs(remPct - 22.5) * 4);   // target 20-25%, mid 22.5%
-  const awakeScore = Math.max(0, 100 - awakePct * 3);                // lower awake = better
-  return Math.round((coreScore + deepScore + remScore + awakeScore) / 4);
+function MetricCard({ label, value, reference, status, tone }: { label: string; value: string; reference: string; status: string; tone: 'normal' | 'within' }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+        <span className={cn('text-xs px-2 py-0.5 rounded-full', tone === 'normal' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20')}>
+          {status}
+        </span>
+      </div>
+      <p className="text-xl font-bold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1">Reference: {reference}</p>
+    </div>
+  );
 }
 
 export default function Sleep() {
-  const { privacyMode } = useUIStore();
-  const [days] = useState(14);
-  const end = useMemo(() => new Date(), []);
-  const endStr = format(end, 'yyyy-MM-dd');
-  const startStr = format(subDays(end, days), 'yyyy-MM-dd');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const periodDays = 180;
+  const end = selectedDate;
+  const start = subDays(end, periodDays);
+  const startStr = `${format(start, 'yyyy-MM-dd')}T00:00:00.000Z`;
+  const endStr = `${format(end, 'yyyy-MM-dd')}T23:59:59.999Z`;
 
-  const { data: segments = [], isLoading } = useSleepStages(startStr + 'T00:00:00.000Z', endStr + 'T23:59:59.999Z');
+  const { data: stages = [], isLoading } = useSleepStages(startStr, endStr);
+  const { avgSleepMinutes, nightsCount } = useSleepMetrics(7);
+  const sessions = useMemo(() => buildSessions(stages), [stages]);
+  const active = useMemo(() => sessions[0], [sessions]);
+  const weekly = useMemo(() => sessions.slice(0, 7).reverse(), [sessions]);
 
-  // Group segments by night (group continuous segments and assign to date when sleep ended)
-  const nights = useMemo(() => {
-    if (segments.length === 0) return [];
-    
-    // Sort all segments by start time
-    const sorted = [...segments].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
-    
-    // Group continuous segments (gap < 2 hours = same sleep session)
-    const groups: SleepStage[][] = [];
-    let currentGroup: SleepStage[] = [];
-    
-    for (let i = 0; i < sorted.length; i++) {
-      const seg = sorted[i];
-      if (currentGroup.length === 0) {
-        currentGroup.push(seg);
-      } else {
-        const lastSeg = currentGroup[currentGroup.length - 1];
-        const gapMinutes = (new Date(seg.started_at).getTime() - new Date(lastSeg.ended_at).getTime()) / (1000 * 60);
-        // If gap is less than 2 hours, it's the same sleep session
-        if (gapMinutes < 120) {
-          currentGroup.push(seg);
-        } else {
-          // Start a new group
-          groups.push(currentGroup);
-          currentGroup = [seg];
-        }
-      }
+  const weeklyAvgWindow = useMemo(() => {
+    if (!weekly.length) {
+      return { avgBedtime: null as Date | null, avgWake: null as Date | null };
     }
-    if (currentGroup.length > 0) {
-      groups.push(currentGroup);
-    }
-    
-    // Map each group to the date when sleep ended (date of last segment's ended_at)
-    const byDate = new Map<string, SleepStage[]>();
-    for (const group of groups) {
-      const lastSeg = group[group.length - 1];
-      const endDate = lastSeg.ended_at.slice(0, 10); // YYYY-MM-DD
-      if (!byDate.has(endDate)) {
-        byDate.set(endDate, []);
-      }
-      byDate.get(endDate)!.push(...group);
-    }
-    
-    return Array.from(byDate.entries())
-      .map(([date, segs]) => {
-        // Sort segments within the night by start time
-        segs.sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
-        const total = segs.reduce((s, x) => s + x.duration_minutes, 0);
-        const deep = segs.filter((s) => stageIs(s, 'Deep')).reduce((s, x) => s + x.duration_minutes, 0);
-        const rem = segs.filter((s) => stageIs(s, 'REM')).reduce((s, x) => s + x.duration_minutes, 0);
-        const core = segs.filter((s) => stageIs(s, 'Core')).reduce((s, x) => s + x.duration_minutes, 0);
-        const awake = segs.filter((s) => stageIs(s, 'Awake')).reduce((s, x) => s + x.duration_minutes, 0);
-        const firstStart = new Date(segs[0].started_at);
-        const lastEnd = new Date(segs[segs.length - 1].ended_at);
-        const sleepTime = total - awake;
-        const corePct = sleepTime > 0 ? (core / sleepTime) * 100 : 0;
-        const deepPct = sleepTime > 0 ? (deep / sleepTime) * 100 : 0;
-        const remPct = sleepTime > 0 ? (rem / sleepTime) * 100 : 0;
-        const awakePct = total > 0 ? (awake / total) * 100 : 0;
-        return {
-          date,
-          dateLabel: format(parseISO(date), 'EEE, MMM d'),
-          segments: segs,
-          totalMinutes: total,
-          deep,
-          rem,
-          core,
-          awake,
-          deepPct: Math.round(deepPct),
-          remPct: Math.round(remPct),
-          corePct: Math.round(corePct),
-          awakePct: Math.round(awakePct),
-          bedtime: firstStart,
-          waketime: lastEnd,
-          bedtimeStr: format(firstStart, 'h:mm a'),
-          waketimeStr: format(lastEnd, 'h:mm a'),
-          qualityScore: computeQualityScore(corePct, deepPct, remPct, awakePct),
-        };
-      })
-      .sort((a, b) => b.date.localeCompare(a.date));
-  }, [segments]);
-
-  const totals = useMemo(() => {
-    let total = 0;
-    let deep = 0;
-    let rem = 0;
-    let core = 0;
-    let awake = 0;
-    let qualitySum = 0;
-    const bedtimesMinutes: number[] = [];
-    const waketimesMinutes: number[] = [];
-    
-    nights.forEach((n) => {
-      total += n.totalMinutes;
-      deep += n.deep;
-      rem += n.rem;
-      core += n.core;
-      awake += n.awake;
-      qualitySum += n.qualityScore ?? 0;
-      const bt = n.bedtime as Date;
-      const wt = n.waketime as Date;
-      if (bt) {
-        let mins = bt.getHours() * 60 + bt.getMinutes();
-        if (bt.getHours() < 12) mins += 24 * 60;
-        bedtimesMinutes.push(mins);
-      }
-      if (wt) {
-        let mins = wt.getHours() * 60 + wt.getMinutes();
-        waketimesMinutes.push(mins);
-      }
-    });
-    
-    const count = nights.length;
-    const sleepTime = total - awake;
-    const avgBedtime =
-      bedtimesMinutes.length > 0
-        ? (() => {
-            const avg = bedtimesMinutes.reduce((a, b) => a + b, 0) / bedtimesMinutes.length;
-            const wrapped = avg >= 24 * 60 ? avg - 24 * 60 : avg;
-            const h = Math.floor(wrapped / 60);
-            const m = Math.round(wrapped % 60);
-            return format(new Date(2000, 0, 1, h, m), 'h:mm a');
-          })()
-        : null;
-    const avgWaketime =
-      waketimesMinutes.length > 0
-        ? (() => {
-            const avg = waketimesMinutes.reduce((a, b) => a + b, 0) / waketimesMinutes.length;
-            const h = Math.floor(avg / 60);
-            const m = Math.round(avg % 60);
-            return format(new Date(2000, 0, 1, h, m), 'h:mm a');
-          })()
-        : null;
-    
-    return {
-      totalMinutes: total,
-      avgMinutes: count > 0 ? Math.round(total / count) : 0,
-      deepPct: sleepTime > 0 ? Math.round((deep / sleepTime) * 100) : 0,
-      remPct: sleepTime > 0 ? Math.round((rem / sleepTime) * 100) : 0,
-      corePct: sleepTime > 0 ? Math.round((core / sleepTime) * 100) : 0,
-      awakeMinutes: awake,
-      awakePct: total > 0 ? Math.round((awake / total) * 100) : 0,
-      nightsCount: count,
-      avgBedtime,
-      avgWaketime,
-      qualityScore: count > 0 ? Math.round(qualitySum / count) : 0,
+    const avgDate = (dates: Date[]) => {
+      const sum = dates.reduce((acc, d) => acc + d.getTime(), 0);
+      return new Date(sum / dates.length);
     };
-  }, [nights]);
+    return {
+      avgBedtime: avgDate(weekly.map((s) => s.bedtime)),
+      avgWake: avgDate(weekly.map((s) => s.waketime)),
+    };
+  }, [weekly]);
 
-  const chartData = useMemo(
-    () =>
-      nights.map((n) => ({
-        date: n.dateLabel,
-        Deep: n.deep,
-        REM: n.rem,
-        Core: n.core,
-        Awake: n.awake,
-        total: n.totalMinutes,
-      })),
-    [nights]
-  );
+  const { pageWidgetOrder, pageWidgetVisible, privacyMode } = useUIStore();
+  const sleepOrder = pageWidgetOrder.sleep?.length ? pageWidgetOrder.sleep : (PAGE_WIDGET_DEFAULTS.sleep ?? []);
+  const sleepVisible = pageWidgetVisible.sleep ?? {};
+  const visible = (id: string) => sleepVisible[id] !== false;
+
+  const donutData = active ? [
+    { name: 'Deep', value: active.deepMinutes, fill: STAGE_COLORS.Deep },
+    { name: 'Core', value: active.coreMinutes, fill: STAGE_COLORS.Core },
+    { name: 'REM', value: active.remMinutes, fill: STAGE_COLORS.REM },
+    { name: 'Awake', value: active.awakeMinutes, fill: STAGE_COLORS.Awake },
+  ] : [];
+
+  const metrics = active ? {
+    deepPct: pct(active.deepMinutes, active.sleepMinutes),
+    corePct: pct(active.coreMinutes, active.sleepMinutes),
+    remPct: pct(active.remMinutes, active.sleepMinutes),
+  } : { deepPct: 0, corePct: 0, remPct: 0 };
 
   return (
-    <div className="space-y-6 p-4 pb-24">
-      <div>
-        <h1 className="text-2xl font-bold">Sleep Analysis</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Quality and stages from iOS Health. Upload via Shortcut to sync.
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Sleep</h1>
+          <p className="text-muted-foreground">Track your sleep quality and patterns</p>
+        </div>
+      </div>
+
+      {/* Basic Stats Section - Always visible at top */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock size={18} className="text-muted-foreground" />
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg Sleep (7d)</p>
+          </div>
+          <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+            {formatDuration(avgSleepMinutes)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">{nightsCount} nights</p>
+        </div>
+        
+        {active && (
+          <>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Activity size={18} className="text-muted-foreground" />
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Last Night</p>
+              </div>
+              <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                {formatDuration(active.sleepMinutes)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Moon size={18} className="text-muted-foreground" />
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Wake Count</p>
+              </div>
+              <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
+                {active.wakeCount}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {active.wakeCount <= 1 ? 'Good' : 'Needs improvement'}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={18} className="text-muted-foreground" />
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg Sleep Window (7d)</p>
+              </div>
+              {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Bed: <span className="font-semibold text-foreground">
+                      {format(weeklyAvgWindow.avgBedtime, 'h:mm a')}
+                    </span>
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Wake: <span className="font-semibold text-foreground">
+                      {format(weeklyAvgWindow.avgWake, 'h:mm a')}
+                    </span>
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Not enough data yet</p>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Current day label */}
+      <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between">
+        <p className="text-sm font-medium text-foreground">
+          Today · {format(selectedDate, 'EEE, MMM d')}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Showing last 6 months of sleep
         </p>
       </div>
 
       {isLoading ? (
         <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
-          Loading sleep data…
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
+          Loading sleep data...
         </div>
-      ) : nights.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center">
-          <Moon className="mx-auto text-muted-foreground mb-4" size={48} />
-          <p className="text-muted-foreground">No sleep data yet.</p>
-          <p className="text-sm text-muted-foreground mt-2">
-            Use the iOS Shortcut to export Health sleep stages and POST to the upload-sleep function.
-          </p>
+      ) : !active ? (
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+          <Moon className="mx-auto mb-2" size={28} />
+          <p className="text-sm">No sleep sessions yet.</p>
+          <p className="text-xs mt-1">Start tracking your sleep to see insights here.</p>
         </div>
       ) : (
-        <>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Moon size={18} />
-                <span className="text-sm">Avg sleep</span>
+        sleepOrder.filter(visible).map((sectionId) => {
+          if (sectionId === 'score') {
+            return (
+              <div key="score" className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold mb-4">Last Night Summary</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Duration</p>
+                    <p className={cn("text-4xl font-black text-foreground leading-none mt-2", privacyMode && "blur-sm")}>
+                      {formatDuration(active.sleepMinutes)}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-3">
+                      Efficiency: {pct(active.sleepMinutes, active.totalMinutes)}% · Wakes: {active.wakeCount}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Avg sleep (last 7): {formatDuration(Math.round(weekly.reduce((s, n) => s + n.sleepMinutes, 0) / Math.max(weekly.length, 1)))}
+                    </p>
+                  </div>
+                  <div className="h-48 flex items-center justify-center">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie 
+                          data={donutData} 
+                          dataKey="value" 
+                          nameKey="name" 
+                          innerRadius={50} 
+                          outerRadius={80} 
+                          strokeWidth={0}
+                          label={({ name, percent }) => `${name} ${(((percent ?? 0) * 100)).toFixed(0)}%`}
+                        />
+                        <Tooltip formatter={(v: number | undefined) => `${v ?? 0} min`} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {formatDuration(totals.avgMinutes)}
-              </p>
-              <p className="text-xs text-muted-foreground">{totals.nightsCount} nights</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Clock size={18} />
-                <span className="text-sm">Avg bedtime</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.avgBedtime ?? '—'}
-              </p>
-              <p className="text-xs text-muted-foreground">when you go to sleep</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Clock size={18} />
-                <span className="text-sm">Avg wake</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.avgWaketime ?? '—'}
-              </p>
-              <p className="text-xs text-muted-foreground">when you wake up</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Star size={18} />
-                <span className="text-sm">Quality</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.qualityScore}/100
-              </p>
-              <p className="text-xs text-muted-foreground">stage balance (Core 60%, Deep 10–20%, REM 20–25%)</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Zap size={18} />
-                <span className="text-sm">Deep %</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.deepPct}%
-              </p>
-              <p className="text-xs text-muted-foreground">of sleep time</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Brain size={18} />
-                <span className="text-sm">REM %</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.remPct}%
-              </p>
-              <p className="text-xs text-muted-foreground">of sleep time</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Activity size={18} />
-                <span className="text-sm">Core %</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {totals.corePct}%
-              </p>
-              <p className="text-xs text-muted-foreground">of sleep time</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                <Eye size={18} />
-                <span className="text-sm">Awake</span>
-              </div>
-              <p className={cn('text-2xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                {formatDuration(totals.awakeMinutes)}
-              </p>
-              <p className="text-xs text-muted-foreground">{totals.awakePct}% of time</p>
-            </div>
-          </div>
+            );
+          }
 
-          {chartData.length > 0 && (
-            <div className="sleep-chart rounded-xl border border-border bg-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Sleep by night (minutes)</h2>
-              <ResponsiveContainer width="100%" height={280}>
-                <BarChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis />
-                  <Tooltip
-                    cursor={false}
-                    contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                    }}
-                    formatter={(value: number | undefined) => [(value ?? 0) + ' min', '']}
-                    labelFormatter={(_, payload) => payload?.[0]?.payload?.date}
+          if (sectionId === 'weekly') {
+            const bars = weekly.map((s) => ({ 
+              day: format(parseISO(s.date), 'EEE'), 
+              sleep: Math.round(s.sleepMinutes / 60 * 10) / 10 
+            }));
+            const axisColor = 'hsl(var(--muted-foreground))';
+            const gridColor = 'hsl(var(--border))';
+
+            return (
+              <div key="weekly" className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold mb-4">Weekly Overview</h2>
+                <div className="h-48 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
+                  <style>{`
+                    .recharts-bar-rectangle:hover {
+                      fill: hsl(var(--primary)) !important;
+                      opacity: 1 !important;
+                    }
+                  `}</style>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={bars}>
+                      <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="day"
+                        tick={{ fontSize: 12, fill: axisColor }}
+                        stroke={axisColor}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 12, fill: axisColor }}
+                        stroke={axisColor}
+                      />
+                      <Tooltip 
+                        formatter={(v: number | undefined) => `${v ?? 0} h`}
+                        contentStyle={{
+                          backgroundColor: 'hsl(var(--card))',
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px',
+                          color: 'hsl(var(--foreground))',
+                        }}
+                      />
+                      <Bar
+                        dataKey="sleep"
+                        radius={[8, 8, 0, 0]}
+                        className="fill-primary"
+                        onMouseEnter={() => {}}
+                        onMouseLeave={() => {}}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            );
+          }
+
+          if (sectionId === 'timeline') {
+            return (
+              <div key="timeline" className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold mb-4">Sleep Stages Timeline</h2>
+                <div className="h-16 rounded-lg overflow-hidden flex bg-secondary/50">
+                  {active.segments.map((seg, idx) => (
+                    <div
+                      key={`${seg.started_at}-${idx}`}
+                      style={{
+                        width: `${Math.max(1, (seg.duration_minutes / Math.max(active.totalMinutes, 1)) * 100)}%`,
+                        background: STAGE_COLORS[seg.stage] ?? '#a1a1aa',
+                      }}
+                      title={`${seg.stage} ${seg.duration_minutes}m`}
+                      className="transition-opacity hover:opacity-80"
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mt-3">
+                  <span>{format(active.bedtime, 'h:mm a')}</span>
+                  <span>{format(active.waketime, 'h:mm a')}</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                  {Object.entries(STAGE_COLORS).map(([name, color]) => (
+                    <div key={name} className="flex items-center gap-2 text-sm">
+                      <span className="w-3 h-3 rounded-full" style={{ background: color }} />
+                      <span className="text-muted-foreground">{name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          if (sectionId === 'metrics') {
+            return (
+              <div key="metrics" className="space-y-3">
+                <h2 className="text-lg font-semibold mb-2">Sleep Metrics</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <MetricCard 
+                    label="Night sleep" 
+                    value={formatDuration(active.sleepMinutes)} 
+                    reference="6-10 h" 
+                    status="Normal" 
+                    tone="normal" 
                   />
-                  <Legend />
-                  <Bar dataKey="Deep" name="Deep" stackId="sleep" fill={STAGE_COLORS.Deep} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.Deep }} />
-                  <Bar dataKey="REM" name="REM" stackId="sleep" fill={STAGE_COLORS.REM} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.REM }} />
-                  <Bar dataKey="Core" name="Core" stackId="sleep" fill={STAGE_COLORS.Core} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.Core }} />
-                  <Bar dataKey="Awake" name="Awake" stackId="sleep" fill={STAGE_COLORS.Awake} isAnimationActive={false} activeBar={{ fill: STAGE_COLORS.Awake }} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            <h2 className="text-lg font-semibold">Nights</h2>
-            {nights.map((night) => (
-              <div
-                key={night.date}
-                className="rounded-xl border border-border bg-card p-4"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-medium">{night.dateLabel}</span>
-                  <span className={cn('tabular-nums font-bold', privacyMode && 'blur-sm')}>
-                    {formatDuration(night.totalMinutes)}
-                  </span>
+                  <MetricCard 
+                    label="Deep sleep" 
+                    value={`${metrics.deepPct}%`} 
+                    reference="20-60%" 
+                    status={metrics.deepPct >= 20 && metrics.deepPct <= 60 ? "Normal" : "Check"} 
+                    tone={metrics.deepPct >= 20 && metrics.deepPct <= 60 ? "normal" : "within"} 
+                  />
+                  <MetricCard 
+                    label="Light/Core sleep" 
+                    value={`${metrics.corePct}%`} 
+                    reference="<55%" 
+                    status={metrics.corePct < 55 ? "Normal" : "High"} 
+                    tone={metrics.corePct < 55 ? "normal" : "within"} 
+                  />
+                  <MetricCard 
+                    label="REM sleep" 
+                    value={`${metrics.remPct}%`} 
+                    reference="10-30%" 
+                    status={metrics.remPct >= 10 && metrics.remPct <= 30 ? "Normal" : "Check"} 
+                    tone={metrics.remPct >= 10 && metrics.remPct <= 30 ? "normal" : "within"} 
+                  />
+                  <MetricCard 
+                    label="Deep continuity" 
+                    value={`${active.deepContinuity} points`} 
+                    reference="70-100 points" 
+                    status={active.deepContinuity >= 70 ? "Normal" : "Low"} 
+                    tone={active.deepContinuity >= 70 ? "normal" : "within"} 
+                  />
+                  <MetricCard 
+                    label="Times woke up" 
+                    value={`${active.wakeCount} times`} 
+                    reference="0-1 time" 
+                    status={active.wakeCount <= 1 ? 'Normal' : 'High'} 
+                    tone={active.wakeCount <= 1 ? 'normal' : 'within'} 
+                  />
                 </div>
-                <div className="flex h-6 rounded overflow-hidden bg-secondary/50">
-                  {night.deep > 0 && (
-                    <div
-                      style={{ width: (night.deep / night.totalMinutes) * 100 + '%', background: STAGE_COLORS.Deep }}
-                      title={`Deep ${night.deep} min`}
-                    />
-                  )}
-                  {night.rem > 0 && (
-                    <div
-                      style={{ width: (night.rem / night.totalMinutes) * 100 + '%', background: STAGE_COLORS.REM }}
-                      title={`REM ${night.rem} min`}
-                    />
-                  )}
-                  {night.core > 0 && (
-                    <div
-                      style={{ width: (night.core / night.totalMinutes) * 100 + '%', background: STAGE_COLORS.Core }}
-                      title={`Core ${night.core} min`}
-                    />
-                  )}
-                  {night.awake > 0 && (
-                    <div
-                      style={{ width: (night.awake / night.totalMinutes) * 100 + '%', background: STAGE_COLORS.Awake }}
-                      title={`Awake ${night.awake} min`}
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Deep {night.deepPct}% · REM {night.remPct}%
-                </p>
               </div>
-            ))}
-          </div>
-        </>
+            );
+          }
+
+          if (sectionId === 'sessions') {
+            return (
+              <div key="sessions" className="rounded-xl border border-border bg-card p-6">
+                <h2 className="text-lg font-semibold mb-4">Recent Sessions</h2>
+                <div className="space-y-2">
+                  {sessions.slice(0, 7).map((s) => (
+                    <button
+                      key={s.key}
+                      onClick={() => setSelectedDate(parseISO(s.date))}
+                      className={cn(
+                        "w-full text-left rounded-lg border border-border bg-card p-4 hover:bg-secondary/50 transition-colors",
+                        s.date === active.date && "ring-2 ring-primary"
+                      )}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{format(parseISO(s.date), 'EEE, MMM d')}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {format(s.bedtime, 'h:mm a')} → {format(s.waketime, 'h:mm a')}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-foreground">{formatDuration(s.sleepMinutes)}</p>
+                          <p className="text-xs text-muted-foreground">Efficiency: {pct(s.sleepMinutes, s.totalMinutes)}%</p>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          }
+
+          return null;
+        })
       )}
     </div>
   );

@@ -66,8 +66,9 @@ Deno.serve(async (req: Request) => {
         // Get tasks due at this local time
         const { data: tasks, error: tasksError } = await supabase
           .from('tasks')
-          .select('id, title, due_date, due_time')
+          .select('id, title, due_date, due_time, reminders_enabled')
           .eq('is_completed', false)
+          .eq('reminders_enabled', true)
           .eq('due_date', localDate)
           .eq('due_time', localTime)
           .is('parent_id', null);

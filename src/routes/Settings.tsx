@@ -18,9 +18,10 @@ import {
   LogOut,
   User,
   Link2,
+  RotateCcw,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useUIStore, DASHBOARD_WIDGET_IDS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
+import { useUIStore, DASHBOARD_WIDGET_IDS, SLEEP_WIDGET_IDS, PAGE_WIDGET_DEFAULTS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useTaskLists } from '../hooks/useTasks';
 import { dbUtils } from '../db/database';
@@ -40,6 +41,17 @@ const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   habits: "Today's habits",
 };
 
+const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
+  dashboard: DASHBOARD_WIDGET_LABELS,
+  sleep: {
+    score: 'Score summary',
+    timeline: 'Sleep timeline',
+    metrics: 'Metrics cards',
+    weekly: 'Weekly bars',
+    sessions: 'Sessions list',
+  },
+};
+
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const {
@@ -51,22 +63,24 @@ export default function SettingsPage() {
     setAccentTheme,
     mobileNavItems,
     setMobileNavItems,
-    dashboardWidgetOrder,
-    dashboardWidgetVisible,
-    toggleDashboardWidget,
-    moveDashboardWidget,
     defaultTab,
     setDefaultTab,
     defaultTaskView,
     setDefaultTaskView,
     defaultTaskListId,
     setDefaultTaskListId,
+    pageWidgetOrder,
+    pageWidgetVisible,
+    togglePageWidget,
+    movePageWidget,
+    resetPageWidgets,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const push = usePushNotifications();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
   const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
@@ -392,17 +406,34 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Dashboard */}
+      {/* Page Widgets */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Dashboard</h2>
+          <h2 className="font-semibold">Page Widgets</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Choose which sections to show and in what order.
+            Choose which sections to show and in what order per page.
           </p>
         </div>
         <div className="p-4 space-y-2">
-          {(dashboardWidgetOrder?.length ? dashboardWidgetOrder : DASHBOARD_WIDGET_IDS).map((id, index) => {
-            const visible = dashboardWidgetVisible[id] !== false;
+          <div className="flex items-center justify-between pb-2">
+            <select
+              value={selectedWidgetPage}
+              onChange={(e) => setSelectedWidgetPage(e.target.value as 'dashboard' | 'sleep')}
+              className="px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="dashboard">Dashboard</option>
+              <option value="sleep">Sleep</option>
+            </select>
+            <Button variant="outline" size="sm" onClick={() => resetPageWidgets(selectedWidgetPage)}>
+              <RotateCcw size={14} />
+              Reset
+            </Button>
+          </div>
+
+          {(pageWidgetOrder?.[selectedWidgetPage]?.length ? pageWidgetOrder[selectedWidgetPage] : (PAGE_WIDGET_DEFAULTS[selectedWidgetPage] ?? (selectedWidgetPage === 'dashboard' ? DASHBOARD_WIDGET_IDS : SLEEP_WIDGET_IDS))).map((id, index) => {
+            const visible = pageWidgetVisible?.[selectedWidgetPage]?.[id] !== false;
+            const label = PAGE_WIDGET_LABELS[selectedWidgetPage]?.[id] ?? id;
+            const currentLen = (pageWidgetOrder?.[selectedWidgetPage]?.length ?? PAGE_WIDGET_DEFAULTS[selectedWidgetPage]?.length ?? 0);
             return (
               <div
                 key={id}
@@ -416,15 +447,15 @@ export default function SettingsPage() {
                   <input
                     type="checkbox"
                     checked={visible}
-                    onChange={() => toggleDashboardWidget(id)}
+                    onChange={() => togglePageWidget(selectedWidgetPage, id)}
                     className="rounded border-border"
                   />
-                  <span className="font-medium">{DASHBOARD_WIDGET_LABELS[id] ?? id}</span>
+                  <span className="font-medium">{label}</span>
                 </label>
                 <div className="flex flex-col gap-0.5">
                   <button
                     type="button"
-                    onClick={() => moveDashboardWidget(id, 'up')}
+                    onClick={() => movePageWidget(selectedWidgetPage, id, 'up')}
                     disabled={index === 0}
                     className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
                     title="Move up"
@@ -433,8 +464,8 @@ export default function SettingsPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => moveDashboardWidget(id, 'down')}
-                    disabled={index === (dashboardWidgetOrder?.length ?? DASHBOARD_WIDGET_IDS.length) - 1}
+                    onClick={() => movePageWidget(selectedWidgetPage, id, 'down')}
+                    disabled={index === currentLen - 1}
                     className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
                     title="Move down"
                   >
