@@ -158,6 +158,14 @@ export default function CalendarPage() {
     return { start, end };
   };
 
+  const getTaskStartDateTime = (task: Task): Date | null => {
+    if (!task.due_date) return null;
+    const normalizedTime = task.due_time ? task.due_time.slice(0, 5) : '00:00';
+    const parsed = parseISO(`${task.due_date}T${normalizedTime}:00`);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return parsed;
+  };
+
   const ensureCalendarTagId = async (): Promise<string> => {
     const { data: existing, error: findError } = await supabase
       .from('tags')
@@ -536,7 +544,8 @@ export default function CalendarPage() {
     ...selectedDayTasks
       .filter((t) => !!t.due_time)
       .map((t) => {
-        const start = parseISO(`${t.due_date}T${t.due_time}:00`);
+        const start = getTaskStartDateTime(t);
+        if (!start) return null;
         const end = new Date(start.getTime() + 45 * 60000);
         return {
           id: `task-${t.id}`,
@@ -549,7 +558,7 @@ export default function CalendarPage() {
           task: t,
         };
       }),
-  ].sort((a, b) => a.start.getTime() - b.start.getTime());
+  ].filter((item): item is NonNullable<typeof item> => !!item).sort((a, b) => a.start.getTime() - b.start.getTime());
   const isActiveDayToday = isToday(activeDay);
   const currentMinute = new Date().getHours() * 60 + new Date().getMinutes();
 
@@ -582,29 +591,8 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar Navigation */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={goToPrevious}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <h2 className="text-xl font-semibold min-w-[180px] text-center">
-            {view === 'day'
-              ? format(currentDate, 'EEE, MMM d, yyyy')
-              : view === 'week'
-              ? `${format(calendarStart, 'MMM d')} – ${format(calendarEnd, 'MMM d, yyyy')}`
-              : format(currentDate, 'MMMM yyyy')}
-          </h2>
-          <button
-            onClick={goToNext}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </div>
-        <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+      <div className="space-y-3">
+        <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg w-fit">
           <button
             onClick={() => setShowTasksInCalendar(!showTasksInCalendar)}
             className={cn(
@@ -641,6 +629,27 @@ export default function CalendarPage() {
             )}
           >
             Day
+          </button>
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={goToPrevious}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <h2 className="text-base sm:text-xl font-semibold text-center">
+            {view === 'day'
+              ? format(currentDate, 'EEE, MMM d, yyyy')
+              : view === 'week'
+              ? `${format(calendarStart, 'MMM d')} - ${format(calendarEnd, 'MMM d, yyyy')}`
+              : format(currentDate, 'MMMM yyyy')}
+          </h2>
+          <button
+            onClick={goToNext}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors"
+          >
+            <ChevronRight size={20} />
           </button>
         </div>
       </div>
@@ -930,7 +939,12 @@ export default function CalendarPage() {
                           <p className="text-sm font-medium truncate">{task.title}</p>
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {task.due_time ? format(parseISO(`${task.due_date}T${task.due_time}:00`), 'h:mm a') : 'All day'}
+                          {task.due_time
+                            ? (() => {
+                                const start = getTaskStartDateTime(task);
+                                return start ? format(start, 'h:mm a') : 'All day';
+                              })()
+                            : 'All day'}
                         </p>
                       </div>
                       <button

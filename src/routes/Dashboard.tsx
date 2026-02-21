@@ -53,6 +53,11 @@ export default function Dashboard() {
 
   // Active projects count
   const activeProjects = projects.filter(p => p.status === 'Active').length;
+  const screenHours = Math.floor(screentimeAvg / 60);
+  const screenMinutes = screentimeAvg % 60;
+  const screentimeLabel = screentimeAvg > 0
+    ? (screenHours >= 9 ? `~${screenHours}h` : `${screenHours}h ${screenMinutes}m`)
+    : '-';
 
   type UpcomingItem = {
     id: string;
@@ -312,7 +317,7 @@ export default function Dashboard() {
                     <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Screen Time</h3>
                   </div>
                   <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                    {screentimeAvg > 0 ? `${Math.floor(screentimeAvg / 60)}h ${screentimeAvg % 60}m` : '-'}
+                    {screentimeLabel}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
                     <span>7-day avg</span>
