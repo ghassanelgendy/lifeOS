@@ -247,6 +247,7 @@ export interface Task {
   priority: TaskPriority;
   due_date?: string; // ISO-8601
   due_time?: string; // HH:mm format
+  duration_minutes?: number | null;
   reminders_enabled?: boolean;
   reminder?: string; // ISO-8601
   // Organization

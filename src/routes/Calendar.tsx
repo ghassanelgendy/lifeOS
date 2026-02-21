@@ -118,7 +118,7 @@ export default function CalendarPage() {
   const { data: allTasks = [] } = useTasks();
   // Hide tasks that are already linked to calendar events to avoid duplicate items.
   const tasksWithDates = showTasksInCalendar
-    ? allTasks.filter((t) => t.due_date && !t.is_completed && !t.calendar_event_id && !t.calendar_source_key)
+    ? allTasks.filter((t) => t.due_date && !t.is_completed && !t.calendar_event_id && !t.calendar_source_key && !(t.description || '').includes('[calendar_source:'))
     : [];
 
   const [formData, setFormData] = useState<Partial<CreateInput<CalendarEvent>>>({
@@ -139,6 +139,7 @@ export default function CalendarPage() {
     description: '',
     due_date: '',
     due_time: '',
+    duration_minutes: 45,
     priority: 'none',
   });
 
@@ -201,6 +202,10 @@ export default function CalendarPage() {
     const localStart = new Date(eventRecord.start_time);
     const eventDate = format(localStart, 'yyyy-MM-dd');
     const eventTime = eventRecord.all_day ? undefined : format(localStart, 'HH:mm');
+    const eventDurationMinutes = Math.max(
+      15,
+      Math.round((new Date(eventRecord.end_time).getTime() - new Date(eventRecord.start_time).getTime()) / 60000)
+    );
 
     if (!enableAsTask) {
       if (linkedTaskId) {
@@ -237,6 +242,7 @@ export default function CalendarPage() {
           description: eventRecord.description || undefined,
           due_date: eventDate,
           due_time: eventTime,
+          duration_minutes: eventRecord.all_day ? undefined : eventDurationMinutes,
           tag_ids: mergedTagIds,
           calendar_event_id: eventRecord.id,
           calendar_source_key: `event:${eventRecord.id}`,
@@ -261,6 +267,7 @@ export default function CalendarPage() {
       priority: 'none',
       due_date: eventDate,
       due_time: eventTime,
+      duration_minutes: eventRecord.all_day ? undefined : eventDurationMinutes,
       reminders_enabled: false,
       tag_ids: [calendarTagId],
       recurrence: 'none',
@@ -336,6 +343,7 @@ export default function CalendarPage() {
       description: task.description || '',
       due_date: task.due_date || '',
       due_time: task.due_time || '',
+      duration_minutes: task.duration_minutes ?? 45,
       priority: task.priority || 'none',
     });
     setIsTaskModalOpen(true);
@@ -351,6 +359,7 @@ export default function CalendarPage() {
         description: taskForm.description || undefined,
         due_date: taskForm.due_date || undefined,
         due_time: taskForm.due_time || undefined,
+        duration_minutes: taskForm.duration_minutes ? Math.max(1, Number(taskForm.duration_minutes)) : undefined,
         priority: (taskForm.priority || 'none') as TaskPriority,
       },
     });
@@ -379,6 +388,10 @@ export default function CalendarPage() {
     const localStart = new Date(event.start_time);
     const eventDate = format(localStart, 'yyyy-MM-dd');
     const eventTime = event.all_day ? undefined : format(localStart, 'HH:mm');
+    const eventDurationMinutes = Math.max(
+      15,
+      Math.round((new Date(event.end_time).getTime() - new Date(event.start_time).getTime()) / 60000)
+    );
     const sourceKey = getEventSourceKey(event);
     const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
 
@@ -389,6 +402,7 @@ export default function CalendarPage() {
       priority: 'none',
       due_date: eventDate,
       due_time: eventTime,
+      duration_minutes: event.all_day ? undefined : eventDurationMinutes,
       reminders_enabled: false,
       tag_ids: [calendarTagId],
       recurrence: 'none',
@@ -546,7 +560,7 @@ export default function CalendarPage() {
       .map((t) => {
         const start = getTaskStartDateTime(t);
         if (!start) return null;
-        const end = new Date(start.getTime() + 45 * 60000);
+        const end = new Date(start.getTime() + Math.max(1, Number(t.duration_minutes || 45)) * 60000);
         return {
           id: `task-${t.id}`,
           type: 'task' as const,
@@ -1227,6 +1241,13 @@ export default function CalendarPage() {
               onChange={(e) => setTaskForm({ ...taskForm, due_time: e.target.value })}
             />
           </div>
+          <Input
+            label="Duration (minutes)"
+            type="number"
+            min={1}
+            value={Number(taskForm.duration_minutes || 45)}
+            onChange={(e) => setTaskForm({ ...taskForm, duration_minutes: Math.max(1, Number(e.target.value || 1)) })}
+          />
           <Select
             label="Priority"
             value={(taskForm.priority as string) || 'none'}

@@ -155,6 +155,7 @@ export default function Tasks() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDate, setNewTaskDate] = useState('');
   const [newTaskTime, setNewTaskTime] = useState('');
+  const [newTaskDurationMinutes, setNewTaskDurationMinutes] = useState(45);
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('none');
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([]);
   const [newTaskListId, setNewTaskListId] = useState<string | null>(null); // from ~ list suggestion
@@ -643,11 +644,13 @@ export default function Tasks() {
         undefined
       ),
       due_time: newTaskTime || undefined,
+      duration_minutes: newTaskDurationMinutes > 0 ? newTaskDurationMinutes : undefined,
     }, {
       onSuccess: () => {
         setNewTaskTitle('');
         setNewTaskDate('');
         setNewTaskTime('');
+        setNewTaskDurationMinutes(45);
         setNewTaskPriority('none');
         setNewTaskTagIds([]);
         setNewTaskListId(null);
@@ -677,6 +680,7 @@ export default function Tasks() {
       priority: task.priority,
       due_date: task.due_date?.split('T')[0],
       due_time: task.due_time?.slice(0, 5) || undefined, // "14:30:00" -> "14:30" for time input
+      duration_minutes: task.duration_minutes ?? 45,
       list_id: task.list_id,
       project_id: task.project_id,
       tag_ids: task.tag_ids,
@@ -701,6 +705,7 @@ export default function Tasks() {
       recurrence,
       reminders_enabled: !!editForm.reminders_enabled,
       recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
+      duration_minutes: editForm.duration_minutes ? Math.max(1, Number(editForm.duration_minutes)) : undefined,
     };
 
     if (recurrence !== 'weekly') {
@@ -1261,6 +1266,15 @@ export default function Tasks() {
                     onChange={(e) => setNewTaskTime(e.target.value)}
                     className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
+                  <input
+                    type="number"
+                    min={1}
+                    value={newTaskDurationMinutes}
+                    onChange={(e) => setNewTaskDurationMinutes(Math.max(1, Number(e.target.value || 1)))}
+                    className="w-24 bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
+                    placeholder="Duration"
+                    title="Duration in minutes"
+                  />
                 </div>
                 <div className="flex items-center justify-between">
                   <button
@@ -1549,7 +1563,7 @@ export default function Tasks() {
             placeholder="Add details..."
           />
 
-          <div className="grid grid-cols-2 gap-4 min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 min-w-0">
             <div className="min-w-0">
               <Input
                 label="Due Date"
@@ -1564,6 +1578,15 @@ export default function Tasks() {
                 type="time"
                 value={editForm.due_time || ''}
                 onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
+              />
+            </div>
+            <div className="min-w-0">
+              <Input
+                label="Duration (min)"
+                type="number"
+                min={1}
+                value={Number(editForm.duration_minutes || 45)}
+                onChange={(e) => setEditForm({ ...editForm, duration_minutes: e.target.value ? Math.max(1, Number(e.target.value)) : undefined })}
               />
             </div>
           </div>
