@@ -28,8 +28,8 @@ export function FaviconSync() {
   useEffect(() => {
     const folder = getFaviconFolder(pathname);
     const iconHref = folder ? `/${folder}/favicon.svg` : DEFAULT_FAVICON_SVG;
-    // iOS web app (Add to Home Screen) uses apple-touch-icon; route folders only have .svg so use that when present
-    const appleHref = folder ? `/${folder}/favicon.svg` : DEFAULT_APPLE_TOUCH_ICON;
+    // iOS Add to Home Screen prefers a 180x180 PNG; use route-specific apple-touch-icon.png when in a route folder
+    const appleHref = folder ? `/${folder}/apple-touch-icon.png` : DEFAULT_APPLE_TOUCH_ICON;
 
     const iconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
     if (iconLink && iconLink.getAttribute('href') !== iconHref) {
