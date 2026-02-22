@@ -27,13 +27,23 @@ Use [cron-job.org](https://cron-job.org) to call the Supabase Edge Function so p
 4. **Schedule:**  
    Run every **10 minutes** so prayer times are not missed (e.g. `*/10 * * * *` or use the “Every 10 minutes” preset if available).
 5. **Request method:** **POST** (or GET; the function accepts both).
-6. **Request headers:**  
-   Add one of these so the Edge Function accepts the request:
-   - **Option A – Header name:** `x-cron-secret`  
-     **Header value:** the same value you set for `CRON_SECRET` in Supabase.
-   - **Option B – Header name:** `Authorization`  
-     **Header value:** `Bearer YOUR_CRON_SECRET`  
-     (replace `YOUR_CRON_SECRET` with the same value as in Supabase).
+6. **Request headers** (you need at least one of these):
+
+   **Option A – Use only your cron secret (recommended)**  
+   - Deploy the function with JWT verification off so the cron doesn’t need the Supabase API key:
+     ```bash
+     supabase functions deploy prayer-notifications-dispatch --no-verify-jwt
+     ```
+   - In cron-job.org add:
+     - **Header name:** `x-cron-secret`  
+     - **Header value:** the exact same value as `CRON_SECRET` in Supabase Edge Function secrets.
+
+   **Option B – Use Supabase API key**  
+   - **Header name:** `Authorization`  
+   - **Header value:** `Bearer YOUR_SUPABASE_SERVICE_ROLE_KEY`  
+   (from Supabase Dashboard → Project Settings → API → **service_role** key, keep it secret).  
+   You can also send `x-cron-secret` as above if you set `CRON_SECRET` in secrets.
+
 7. Save the cron job.
 
 ## 3. Supabase Edge Function secrets
@@ -48,4 +58,6 @@ In Supabase → **Edge Functions** → **Secrets**, ensure you have:
 - In cron-job.org, use **“Execute now”** (or wait for the next run).
 - Check Supabase → **Edge Functions** → **prayer-notifications-dispatch** → **Logs** for responses and errors.
 
-If you get **401 Unauthorized**, the header name/value or `CRON_SECRET` in Supabase doesn’t match what cron-job.org sends.
+**401 Unauthorized:**  
+- If you use **Option A**: redeploy with `--no-verify-jwt` and ensure `x-cron-secret` matches `CRON_SECRET` in Supabase (no extra spaces, same case).  
+- If you use **Option B**: ensure the `Authorization: Bearer <service_role_key>` header uses the real **service_role** key from Project Settings → API (not the anon key).

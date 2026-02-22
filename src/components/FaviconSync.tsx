@@ -29,8 +29,8 @@ export function FaviconSync() {
   useEffect(() => {
     const folder = getFaviconFolder(pathname);
     const iconHref = folder ? `/${folder}/favicon.svg` : DEFAULT_FAVICON_SVG;
-    // iOS Add to Home Screen: use shared manifest icon (192×192) for all routes
-    const appleHref = DEFAULT_APPLE_TOUCH_ICON;
+    // iOS web app: use each route's web-app-manifest-192x192.png from its public folder
+    const appleHref = folder ? `/${folder}/web-app-manifest-192x192.png` : DEFAULT_APPLE_TOUCH_ICON;
 
     const iconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
     if (iconLink && iconLink.getAttribute('href') !== iconHref) {

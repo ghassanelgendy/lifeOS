@@ -100,6 +100,8 @@ interface DetectedToken {
 export interface TaskInputParseResult {
   /** The original title for display, with highlights to be applied on it */
   textToDisplay: string;
+  /** Title with date/time shortcut text removed (use for task title so "wed" / "12" etc. are not in the name) */
+  titleWithoutShortcuts: string;
   /** Suggested date YYYY-MM-DD */
   date?: string;
   /** Suggested time HH:mm */
@@ -297,7 +299,28 @@ export function parseTaskInput(title: string): TaskInputParseResult {
     }
   }
 
-  return { textToDisplay: title, date, time, priority, trigger, triggerQuery, detectedTokens };
+  // Build title without date/time shortcuts so the input can show only the task name
+  const dateTimeRanges = detectedTokens
+    .filter((t) => t.type === 'date' || t.type === 'time')
+    .map((t) => ({ start: t.start, end: t.end }))
+    .sort((a, b) => a.start - b.start);
+  const merged: { start: number; end: number }[] = [];
+  for (const r of dateTimeRanges) {
+    const last = merged[merged.length - 1];
+    if (last && r.start <= last.end) {
+      last.end = Math.max(last.end, r.end);
+    } else {
+      merged.push({ ...r });
+    }
+  }
+  let titleWithoutShortcuts = title;
+  for (let i = merged.length - 1; i >= 0; i--) {
+    const { start, end } = merged[i];
+    titleWithoutShortcuts = titleWithoutShortcuts.slice(0, start) + titleWithoutShortcuts.slice(end);
+  }
+  titleWithoutShortcuts = titleWithoutShortcuts.replace(/\s+/g, ' ').trim();
+
+  return { textToDisplay: title, titleWithoutShortcuts, date, time, priority, trigger, triggerQuery, detectedTokens };
 }
 
 /** Format date to YYYY-MM-DD */

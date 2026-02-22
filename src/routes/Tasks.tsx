@@ -216,12 +216,11 @@ export default function Tasks() {
     }
   }, [effectiveDefaultView]);
 
-  // Smart task input: parse time (12:00), date (sunday, tmrw), ~ lists, ! priority, # tags
+  // Smart task input: parse time (12:00), date (wed, tmrw, 15 June), ~ lists, ! priority, # tags.
+  // Date/time are applied while typing; shortcut text is stripped only when adding the task.
   const handleQuickAddTitleChange = (rawTitle: string) => {
-    // Always update the input field with the raw title initially
-    setNewTaskTitle(rawTitle);
-
     const parsed = parseTaskInput(rawTitle);
+    setNewTaskTitle(rawTitle);
 
     // Set the actual date/time for task creation
     setNewTaskDate(parsed.date || '');
@@ -619,14 +618,16 @@ export default function Tasks() {
     }
   };
 
-  // Quick add task
+  // Quick add task (strip date/time shortcut text from title right before adding)
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newTaskTitle.trim()) return;
+    const parsed = parseTaskInput(newTaskTitle);
+    const titleToUse = parsed.titleWithoutShortcuts.trim();
+    if (!titleToUse) return;
 
     const defaultListId = taskLists.find(l => l.is_default)?.id;
     createTask.mutate({
-      title: newTaskTitle.trim(),
+      title: titleToUse,
       is_completed: false,
       priority: newTaskPriority,
       tag_ids: newTaskTagIds,
@@ -1543,7 +1544,7 @@ export default function Tasks() {
         </div>
       </main>
 
-      {/* Edit Task Modal */}
+      {/* Edit Task Modal - extra bottom padding so Save stays visible above bottom bar on mobile */}
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
@@ -1563,30 +1564,33 @@ export default function Tasks() {
             placeholder="Add details..."
           />
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 min-w-0">
-            <div className="min-w-0">
+          <div className="flex flex-col sm:flex-row gap-4 min-w-0">
+            <div className="min-w-0 flex-1 basis-0">
               <Input
                 label="Due Date"
                 type="date"
                 value={editForm.due_date || ''}
                 onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+                className="min-w-0 w-full"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 basis-0">
               <Input
                 label="Due Time"
                 type="time"
                 value={editForm.due_time || ''}
                 onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
+                className="min-w-0 w-full"
               />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1 basis-0 sm:max-w-[6rem]">
               <Input
                 label="Duration (min)"
                 type="number"
                 min={1}
                 value={Number(editForm.duration_minutes || 45)}
                 onChange={(e) => setEditForm({ ...editForm, duration_minutes: e.target.value ? Math.max(1, Number(e.target.value)) : undefined })}
+                className="min-w-0 w-full"
               />
             </div>
           </div>
@@ -1762,8 +1766,11 @@ export default function Tasks() {
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
+          {/* Actions - extra bottom padding so Save stays visible above bottom bar on mobile */}
+          <div
+            className="flex items-center justify-between pt-4 border-t border-border"
+            style={{ paddingBottom: 'max(9rem, env(safe-area-inset-bottom) + 6rem)' }}
+          >
             <div className="flex items-center gap-2">
               {selectedTask?.recurrence !== 'none' && (
                 <Button

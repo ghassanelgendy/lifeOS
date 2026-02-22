@@ -80,6 +80,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
   return (
     <div
       ref={overlayRef}
+      data-lifeos-modal
       className={cn(
         "fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop-ios",
         "min-h-[100dvh] sm:min-h-0",
@@ -139,8 +140,8 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
         </div>
         <div
           className="p-4 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain overscroll-y-auto min-w-0"
-          style={{ 
-            WebkitOverflowScrolling: 'touch', 
+          style={{
+            WebkitOverflowScrolling: 'touch',
             paddingBottom: 'calc(1rem + max(env(safe-area-inset-bottom), 0px))',
             touchAction: 'pan-y'
           }}

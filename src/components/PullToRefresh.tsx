@@ -26,6 +26,11 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
         if (!container) return;
 
         const handleTouchStart = (e: TouchEvent) => {
+            // Don't trigger when touching a dialog/modal (e.g. pulling dialog down to close)
+            const target = e.target as Node;
+            if (target && document.body.contains(target) && (target as Element).closest?.('[data-lifeos-modal]')) {
+                return;
+            }
             // Only enable pull if at the top of the container
             if (container.scrollTop <= 0) {
                 setStartY(e.touches[0].clientY);

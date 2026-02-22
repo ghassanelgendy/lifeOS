@@ -65,6 +65,18 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Require x-cron-secret to match CRON_SECRET when set (so cron can call without Supabase API key)
+  const cronSecret = Deno.env.get('CRON_SECRET') ?? Deno.env.get('PRAYER_CRON_SECRET');
+  if (cronSecret) {
+    const headerSecret = req.headers.get('x-cron-secret') ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
+    if (headerSecret !== cronSecret) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
   if (!vapidPublic || !vapidPrivate) {
     return new Response(
       JSON.stringify({ error: 'Server Misconfiguration: Missing VAPID Keys in Supabase Secrets' }),

@@ -62,8 +62,8 @@ export function SwipeableRow({
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* Background actions */}
-      <div className="absolute inset-y-0 right-0 flex items-stretch">
+      {/* Background actions - no outline so they don't show through */}
+      <div className="absolute inset-y-0 right-0 flex items-stretch rounded-r-xl overflow-hidden">
         {onDone && (
           <button
             type="button"
@@ -72,7 +72,7 @@ export function SwipeableRow({
               setOffset(0);
               onDone();
             }}
-            className="flex items-center justify-center gap-1.5 px-4 bg-green-600 text-white font-medium text-sm min-w-[80px] active:opacity-80"
+            className="flex items-center justify-center gap-1.5 px-4 bg-green-600 text-white font-medium text-sm min-w-[80px] active:opacity-80 outline-none border-0"
           >
             <Check size={18} />
             Done
@@ -86,7 +86,7 @@ export function SwipeableRow({
               setOffset(0);
               onPostpone();
             }}
-            className="flex items-center justify-center gap-1.5 px-3 bg-amber-600 text-white font-medium text-sm min-w-[70px] active:opacity-80"
+            className="flex items-center justify-center gap-1.5 px-3 bg-amber-600 text-white font-medium text-sm min-w-[70px] active:opacity-80 outline-none border-0"
           >
             <Clock size={16} />
             +1h
@@ -100,7 +100,7 @@ export function SwipeableRow({
               setOffset(0);
               onDelete();
             }}
-            className="flex items-center justify-center gap-1.5 px-4 bg-red-600 text-white font-medium text-sm min-w-[80px] active:opacity-80"
+            className="flex items-center justify-center gap-1.5 px-4 bg-red-600 text-white font-medium text-sm min-w-[80px] active:opacity-80 outline-none border-0"
           >
             <Trash2 size={16} />
             Delete
@@ -108,9 +108,9 @@ export function SwipeableRow({
         )}
       </div>
 
-      {/* Foreground (main content) */}
+      {/* Foreground (main content) - solid bg, border, overflow-hidden so no outline bleeds through */}
       <div
-        className="relative z-10 bg-background transition-transform duration-150 ease-out"
+        className="relative z-10 bg-card border border-border rounded-xl transition-transform duration-150 ease-out shadow-sm overflow-hidden"
         style={{ transform: `translateX(-${offset}px)` }}
       >
         {children}
