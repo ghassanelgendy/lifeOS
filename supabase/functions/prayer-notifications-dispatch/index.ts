@@ -13,7 +13,7 @@ const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret, x-cronsecret',
 };
 
 if (!vapidPublic || !vapidPrivate) {
@@ -65,12 +65,45 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Require x-cron-secret to match CRON_SECRET when set (so cron can call without Supabase API key)
-  const cronSecret = Deno.env.get('CRON_SECRET') ?? Deno.env.get('PRAYER_CRON_SECRET');
-  if (cronSecret) {
-    const headerSecret = req.headers.get('x-cron-secret') ?? req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
-    if (headerSecret !== cronSecret) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+  // Require cron secret when configured.
+  // Supports:
+  // - x-cron-secret header (preferred)
+  // - x-cronsecret header (provider variant)
+  // - Authorization: Bearer <CRON_SECRET>
+  // - ?cron_secret=<CRON_SECRET> query param (fallback for providers with limited header support)
+  // - Authorization/apikey using SUPABASE_SERVICE_ROLE_KEY (fallback)
+  const configuredSecrets = [
+    Deno.env.get('CRON_SECRET')?.trim(),
+    Deno.env.get('PRAYER_CRON_SECRET')?.trim(),
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim(),
+  ].filter((s): s is string => Boolean(s && s.length > 0));
+
+  if (configuredSecrets.length > 0) {
+    const headerSecret = req.headers.get('x-cron-secret')?.trim();
+    const headerSecretAlt = req.headers.get('x-cronsecret')?.trim();
+    const bearerSecret = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
+    const apiKeySecret = req.headers.get('apikey')?.trim();
+    const url = new URL(req.url);
+    const urlSecret =
+      (url.searchParams.get('cron_secret')
+        ?? url.searchParams.get('cronSecret')
+        ?? url.searchParams.get('token'))?.trim();
+    const providedSecret = headerSecret ?? headerSecretAlt ?? bearerSecret ?? apiKeySecret ?? urlSecret;
+    const isAuthorized = !!providedSecret && configuredSecrets.some((s) => s === providedSecret);
+
+    if (!isAuthorized) {
+      console.error('Unauthorized cron invocation', {
+        hasXCronSecret: Boolean(headerSecret),
+        hasXCronSecretAlt: Boolean(headerSecretAlt),
+        hasAuthorization: Boolean(req.headers.get('authorization')),
+        hasApiKey: Boolean(apiKeySecret),
+        hasQuerySecret: Boolean(urlSecret),
+        configuredSecretsCount: configuredSecrets.length,
+      });
+      return new Response(JSON.stringify({
+        error: 'Unauthorized',
+        hint: 'Provide x-cron-secret, Authorization Bearer token, apikey, or cron_secret query param matching configured secrets.',
+      }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
