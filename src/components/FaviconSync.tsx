@@ -14,7 +14,8 @@ const ROUTE_FAVICON_MAP: Record<string, string> = {
 };
 
 const DEFAULT_FAVICON_SVG = '/favicon.svg';
-const DEFAULT_APPLE_TOUCH_ICON = '/apple-touch-icon.png';
+// Use manifest icon for iOS Add to Home Screen (192×192 is closest to Apple’s 180pt recommendation)
+const DEFAULT_APPLE_TOUCH_ICON = '/web-app-manifest-192x192.png';
 
 function getFaviconFolder(pathname: string): string | null {
   const base = pathname.split('/').filter(Boolean)[0];
@@ -28,8 +29,8 @@ export function FaviconSync() {
   useEffect(() => {
     const folder = getFaviconFolder(pathname);
     const iconHref = folder ? `/${folder}/favicon.svg` : DEFAULT_FAVICON_SVG;
-    // iOS Add to Home Screen prefers a 180x180 PNG; use route-specific apple-touch-icon.png when in a route folder
-    const appleHref = folder ? `/${folder}/apple-touch-icon.png` : DEFAULT_APPLE_TOUCH_ICON;
+    // iOS Add to Home Screen: use shared manifest icon (192×192) for all routes
+    const appleHref = DEFAULT_APPLE_TOUCH_ICON;
 
     const iconLink = document.querySelector<HTMLLinkElement>('link[rel="icon"][type="image/svg+xml"]');
     if (iconLink && iconLink.getAttribute('href') !== iconHref) {
