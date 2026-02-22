@@ -33,10 +33,18 @@ export function usePushNotifications() {
       const sub = await subscribePush();
       if (!sub) throw new Error('Failed to subscribe');
       const { endpoint, p256dh, auth } = subscriptionToJson(sub);
-      const { error } = await supabase.from('push_subscriptions').upsert(
-        { endpoint, p256dh: p256dh, auth, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone },
-        { onConflict: 'endpoint' }
-      );
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const { data: { user } } = await supabase.auth.getUser();
+      const payload: Record<string, unknown> = {
+        endpoint,
+        p256dh: p256dh,
+        auth,
+        timezone,
+      };
+      if (user?.id) payload.user_id = user.id;
+      const { error } = await supabase.from('push_subscriptions').upsert(payload, {
+        onConflict: 'endpoint',
+      });
       if (error) throw error;
       return true;
     },

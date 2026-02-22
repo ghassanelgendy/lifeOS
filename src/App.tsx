@@ -12,6 +12,7 @@ import { useTransactionsRealtime } from './hooks/useFinance';
 import { useTickTickPullSync } from './hooks/useTickTick';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppShell } from './components/AppShell';
+import { FaviconSync } from './components/FaviconSync';
 import { LoadingScreen } from './components/LoadingScreen';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
@@ -131,6 +132,7 @@ function AppInner() {
       <ThemeSync />
       <Analytics />
       <BrowserRouter>
+        <FaviconSync />
         <Routes>
         <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
         <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />

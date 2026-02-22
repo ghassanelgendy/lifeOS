@@ -23,6 +23,7 @@ interface SupabaseQueryBuilder<T = unknown> {
   eq(column: string, value: unknown): this;
   not(column: string, op: string, value: unknown): this;
   is(column: string, value: null): this;
+  in(column: string, values: unknown[]): this;
   order(column: string, opts?: { ascending?: boolean }): this;
   gte(column: string, value: string): this;
   insert(data: Record<string, unknown> | Record<string, unknown>[]): this;
@@ -30,6 +31,7 @@ interface SupabaseQueryBuilder<T = unknown> {
   update(data: Record<string, unknown>): this;
   delete(): this;
   single(): this;
+  maybeSingle(): this;
   then<TResult>(onfulfilled?: (value: { data: T | null; error: { message: string } | null } | { data: T[] | null; error: { message: string } | null }) => TResult | PromiseLike<TResult>): PromiseLike<TResult>;
 }
 
