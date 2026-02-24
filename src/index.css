@@ -11,6 +11,18 @@ body {
   overflow: hidden;
 }
 
+/* Windows 11 native window (Tauri with system title bar) */
+.native-window {
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+/* In Tauri: hide the in-app custom title bar so only the native Windows title bar is visible */
+html.tauri #root > div > div > header,
+html.tauri #root > div > div > div > header,
+html.tauri #root > div > header {
+  display: none !important;
+}
+
 /* Dark theme (default) */
 @theme {
   --color-background: hsl(240 10% 3.9%);

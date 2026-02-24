@@ -157,7 +157,7 @@ export default function Dashboard() {
               key="stats"
               className={cn(
                 'grid gap-4',
-                isAlone ? 'grid-cols-1' : 'grid-cols-2 md:grid-cols-6'
+                isAlone ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6'
               )}
             >
         {/* Weight */}
@@ -289,7 +289,7 @@ export default function Dashboard() {
         </Link>
 
         {/* Sleep + Screen Time — always side by side in a 2-col sub-grid */}
-        <div className="col-span-2 grid grid-cols-2 gap-4 min-w-0">
+        <div className="col-span-1 sm:col-span-2 2xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 min-w-0">
           <Link to="/sleep" className="group min-w-0">
             <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700 h-full">
               <div>

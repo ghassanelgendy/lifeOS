@@ -255,7 +255,7 @@ export function AppShell() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Mobile Header — safe area top for iOS standalone (notch/status bar) */}
         <header
           className="md:hidden flex h-14 items-center justify-between border-b border-border px-4 bg-background shrink-0"
@@ -318,4 +318,3 @@ export function AppShell() {
     </div>
   );
 }
-
