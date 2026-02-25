@@ -40,7 +40,7 @@ import {
 } from '../hooks/useInvestments';
 import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../stores/useUIStore';
-import { Modal, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
@@ -420,6 +420,8 @@ export default function Finance() {
     return out as CreateInput<Transaction>;
   };
 
+  const transactionFormRef = useRef<HTMLFormElement>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = sanitizePayload(formData as Partial<CreateInput<Transaction>>);
@@ -437,19 +439,15 @@ export default function Finance() {
     }
   };
 
+  const handleConfirmTransaction = () => {
+    transactionFormRef.current?.requestSubmit();
+  };
+
   const handleDelete = (id: string) => {
     setDeleteTransactionId(id);
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-      </div>
-    );
-  }
-
-  // Investment modal handlers
+  // Investment modal handlers (must be before any early return to keep hook order stable)
   const handleOpenInvestmentModal = (tx?: InvestmentTransaction) => {
     if (tx) {
       setEditingInvestmentTransaction(tx);
@@ -491,6 +489,8 @@ export default function Finance() {
     return out as CreateInput<InvestmentTransaction>;
   };
 
+  const investmentFormRef = useRef<HTMLFormElement>(null);
+
   const handleSubmitInvestment = (e: React.FormEvent) => {
     e.preventDefault();
     const accountId = investmentFormData.account_id || investmentAccounts[0]?.id;
@@ -509,9 +509,21 @@ export default function Finance() {
     }
   };
 
+  const handleConfirmInvestment = () => {
+    investmentFormRef.current?.requestSubmit();
+  };
+
   const handleDeleteInvestment = (id: string) => {
     setDeleteInvestmentId(id);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -1101,17 +1113,19 @@ export default function Finance() {
         </div>
       </div>
 
-      {/* Transaction Modal */}
-      <Modal
+      {/* Transaction sheet (same style as task Details) */}
+      <DetailsSheet
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onConfirm={handleConfirmTransaction}
         title={editingTransaction ? 'Edit Transaction' : 'New Transaction'}
+        confirmDisabled={createTransaction.isPending || updateTransaction.isPending}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form id="transaction-form" ref={transactionFormRef} onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2 p-1 bg-secondary rounded-lg">
             <button
               type="button"
-              onClick={() => setFormData({ ...formData, type: 'expense', category: 'food', direction: 'Out' })}
+              onClick={() => setFormData((prev) => ({ ...prev, type: 'expense', category: 'food', direction: 'Out' }))}
               className={cn(
                 "flex-1 py-2 rounded text-sm font-medium transition-colors",
                 formData.type === 'expense' ? "bg-red-500 text-white" : "hover:bg-background/50"
@@ -1121,7 +1135,7 @@ export default function Finance() {
             </button>
             <button
               type="button"
-              onClick={() => setFormData({ ...formData, type: 'income', category: 'salary', direction: 'In' })}
+              onClick={() => setFormData((prev) => ({ ...prev, type: 'income', category: 'salary', direction: 'In' }))}
               className={cn(
                 "flex-1 py-2 rounded text-sm font-medium transition-colors",
                 formData.type === 'income' ? "bg-green-500 text-white" : "hover:bg-background/50"
@@ -1137,14 +1151,14 @@ export default function Finance() {
             step="0.01"
             min={0}
             value={formData.amount === 0 ? '' : formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
             required
           />
 
           <Select
             label="Category"
             value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value as TransactionCategory })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, category: e.target.value as TransactionCategory }))}
             options={formData.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES}
           />
 
@@ -1153,14 +1167,14 @@ export default function Finance() {
               label="Date"
               type="date"
               value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
               required
             />
             <Input
               label="Time"
               type="time"
               value={formData.time ?? ''}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value || undefined })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, time: e.target.value || undefined }))}
             />
           </div>
 
@@ -1168,7 +1182,7 @@ export default function Finance() {
             <Select
               label="Bank"
               value={formData.bank ?? ''}
-              onChange={(e) => setFormData({ ...formData, bank: e.target.value || undefined })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, bank: e.target.value || undefined }))}
               options={[
                 { value: '', label: '—' },
                 ...bankOptions.map((name) => ({ value: name, label: name })),
@@ -1177,7 +1191,7 @@ export default function Finance() {
             <Select
               label="Direction"
               value={formData.direction ?? 'Out'}
-              onChange={(e) => setFormData({ ...formData, direction: e.target.value as 'In' | 'Out' })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, direction: e.target.value as 'In' | 'Out' }))}
               options={[
                 { value: 'In', label: 'In' },
                 { value: 'Out', label: 'Out' },
@@ -1188,7 +1202,7 @@ export default function Finance() {
           <Input
             label="Type"
             value={formData.transaction_type ?? ''}
-            onChange={(e) => setFormData({ ...formData, transaction_type: e.target.value || undefined })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, transaction_type: e.target.value || undefined }))}
             placeholder="e.g. IPN Transfer"
           />
 
@@ -1196,13 +1210,13 @@ export default function Finance() {
             <Input
               label="Entity"
               value={formData.entity ?? ''}
-              onChange={(e) => setFormData({ ...formData, entity: e.target.value || undefined })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, entity: e.target.value || undefined }))}
               placeholder="Counterparty"
             />
             <Input
               label="Account"
               value={formData.account ?? ''}
-              onChange={(e) => setFormData({ ...formData, account: e.target.value || undefined })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, account: e.target.value || undefined }))}
               placeholder="e.g. ***50"
             />
           </div>
@@ -1210,7 +1224,7 @@ export default function Finance() {
           <Input
             label="Details"
             value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
             placeholder="What was this for?"
           />
 
@@ -1219,22 +1233,13 @@ export default function Finance() {
               type="checkbox"
               id="is_recurring"
               checked={formData.is_recurring}
-              onChange={(e) => setFormData({ ...formData, is_recurring: e.target.checked })}
+              onChange={(e) => setFormData((prev) => ({ ...prev, is_recurring: e.target.checked }))}
               className="rounded border-border"
             />
             <label htmlFor="is_recurring" className="text-sm">Recurring transaction</label>
           </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createTransaction.isPending || updateTransaction.isPending}>
-              {editingTransaction ? 'Update' : 'Add'}
-            </Button>
-          </div>
         </form>
-      </Modal>
+      </DetailsSheet>
         </>
       )}
 
@@ -1377,16 +1382,18 @@ export default function Finance() {
                   )}
                 </div>
               </div>
-              <Modal
+              <DetailsSheet
                 isOpen={isInvestmentModalOpen}
                 onClose={() => setIsInvestmentModalOpen(false)}
+                onConfirm={handleConfirmInvestment}
                 title={editingInvestmentTransaction ? 'Edit Investment' : 'New Investment'}
+                confirmDisabled={createInvestmentTransaction.isPending || updateInvestmentTransaction.isPending}
               >
-                <form onSubmit={handleSubmitInvestment} className="space-y-4">
+                <form id="investment-form" ref={investmentFormRef} onSubmit={handleSubmitInvestment} className="space-y-4">
                   <div className="flex gap-2 p-1 bg-secondary rounded-lg">
                     <button
                       type="button"
-                      onClick={() => setInvestmentFormData({ ...investmentFormData, type: 'expense', category: 'other_expense', direction: 'Out' })}
+                      onClick={() => setInvestmentFormData((prev) => ({ ...prev, type: 'expense', category: 'other_expense', direction: 'Out' }))}
                       className={cn(
                         "flex-1 py-2 rounded text-sm font-medium transition-colors",
                         investmentFormData.type === 'expense' ? "bg-red-500 text-white" : "hover:bg-background/50"
@@ -1396,7 +1403,7 @@ export default function Finance() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setInvestmentFormData({ ...investmentFormData, type: 'income', category: 'investment', direction: 'In' })}
+                      onClick={() => setInvestmentFormData((prev) => ({ ...prev, type: 'income', category: 'investment', direction: 'In' }))}
                       className={cn(
                         "flex-1 py-2 rounded text-sm font-medium transition-colors",
                         investmentFormData.type === 'income' ? "bg-green-500 text-white" : "hover:bg-background/50"
@@ -1408,7 +1415,7 @@ export default function Finance() {
                   <Select
                     label="Account"
                     value={investmentFormData.account_id ?? ''}
-                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, account_id: e.target.value })}
+                    onChange={(e) => setInvestmentFormData((prev) => ({ ...prev, account_id: e.target.value }))}
                     options={investmentAccounts.map((a) => ({ value: a.id, label: a.name }))}
                     required
                   />
@@ -1418,13 +1425,13 @@ export default function Finance() {
                     step="0.01"
                     min={0}
                     value={investmentFormData.amount === 0 ? '' : investmentFormData.amount}
-                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setInvestmentFormData((prev) => ({ ...prev, amount: e.target.value === '' ? 0 : parseFloat(e.target.value) || 0 }))}
                     required
                   />
                   <Select
                     label="Category"
                     value={investmentFormData.category}
-                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, category: e.target.value as TransactionCategory })}
+                    onChange={(e) => setInvestmentFormData((prev) => ({ ...prev, category: e.target.value as TransactionCategory }))}
                     options={investmentFormData.type === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES}
                   />
                   <div className="grid grid-cols-2 gap-3">
@@ -1432,30 +1439,24 @@ export default function Finance() {
                       label="Date"
                       type="date"
                       value={investmentFormData.date ?? ''}
-                      onChange={(e) => setInvestmentFormData({ ...investmentFormData, date: e.target.value })}
+                      onChange={(e) => setInvestmentFormData((prev) => ({ ...prev, date: e.target.value }))}
                       required
                     />
                     <Input
                       label="Time"
                       type="time"
                       value={investmentFormData.time ?? ''}
-                      onChange={(e) => setInvestmentFormData({ ...investmentFormData, time: e.target.value || undefined })}
+                      onChange={(e) => setInvestmentFormData((prev) => ({ ...prev, time: e.target.value || undefined }))}
                     />
                   </div>
                   <Input
                     label="Details"
                     value={investmentFormData.description || ''}
-                    onChange={(e) => setInvestmentFormData({ ...investmentFormData, description: e.target.value })}
+                    onChange={(e) => setInvestmentFormData((prev) => ({ ...prev, description: e.target.value }))}
                     placeholder="What was this for?"
                   />
-                  <div className="flex justify-end gap-2 pt-4">
-                    <Button type="button" variant="ghost" onClick={() => setIsInvestmentModalOpen(false)}>Cancel</Button>
-                    <Button type="submit" disabled={createInvestmentTransaction.isPending || updateInvestmentTransaction.isPending}>
-                      {editingInvestmentTransaction ? 'Update' : 'Add'}
-                    </Button>
-                  </div>
                 </form>
-              </Modal>
+              </DetailsSheet>
             </>
           )}
         </>

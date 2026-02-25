@@ -250,6 +250,18 @@ export interface Task {
   duration_minutes?: number | null;
   reminders_enabled?: boolean;
   reminder?: string; // ISO-8601
+  /** Optional link/URL for the task */
+  url?: string | null;
+  /** Mark as urgent (e.g. for alarm) */
+  is_urgent?: boolean;
+  /** Starred/flagged */
+  is_flagged?: boolean;
+  /** Early reminder offset in minutes before due time */
+  early_reminder_minutes?: number | null;
+  /** Location for the task */
+  location?: string | null;
+  /** Remind when messaging (contextual) */
+  when_messaging?: boolean;
   // Organization
   list_id?: string; // FK to TaskList
   project_id?: string; // FK to Project

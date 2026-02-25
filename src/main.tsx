@@ -3,12 +3,28 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// When running in Tauri, add a class so CSS can hide the custom title bar and use native only
+const UI_STORAGE_KEY = 'lifeos-ui-store'
+
+// When running in Tauri, add a class, center window, and optionally start minimized
 async function detectTauri() {
   try {
     const { getCurrentWindow } = await import('@tauri-apps/api/window')
-    await getCurrentWindow()
+    const win = getCurrentWindow()
     document.documentElement.classList.add('tauri')
+
+    // Always center the window on startup
+    await win.center()
+
+    // Start minimized if user preference is set (read from persisted store)
+    try {
+      const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(UI_STORAGE_KEY) : null
+      const parsed = raw ? (JSON.parse(raw) as { state?: { tauriStartMinimized?: boolean } }) : null
+      if (parsed?.state?.tauriStartMinimized) {
+        await win.minimize()
+      }
+    } catch {
+      // ignore
+    }
   } catch {
     // not in Tauri
   }

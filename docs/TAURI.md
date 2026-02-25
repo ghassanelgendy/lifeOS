@@ -26,8 +26,13 @@ lifeOS can be packaged as a **Windows desktop app** using [Tauri 2](https://v2.t
 - **Supabase** requests (auth, tasks, etc.) will fail when offline; the app can show cached data from React Query persistence and handle offline queues as it does in the PWA.
 - For a **fully offline** experience, use the app while signed in so data is cached, and rely on the existing offline/queue behavior for writes when the network is back.
 
+## Window behavior
+
+- **Center on startup** – The app calls the Tauri window API to center the window when it loads.
+- **Start minimized** – In **Settings → Desktop app**, you can enable “Start minimized when opening the app”. The next time you launch the app, it will center then minimize to the taskbar. Ensure the Tauri capability `window:allow-minimize` is enabled so the frontend can call `minimize()`.
+
 ## Project layout
 
 - `src-tauri/` – Tauri (Rust) app: config, window, and build.
-- `src-tauri/tauri.conf.json` – App ID, window size, and paths to the built frontend (`../dist`).
-- `src-tauri/capabilities/default.json` – Permissions for the main window (e.g. shell to open links).
+- `src-tauri/tauri.conf.json` – App ID, window size, and paths to the built frontend (`../dist`). To have the window centered by the system before the frontend loads, you can set `"center": true` on the main window config.
+- `src-tauri/capabilities/default.json` – Permissions for the main window (e.g. shell to open links, `window:allow-center`, `window:allow-minimize`).

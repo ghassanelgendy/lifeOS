@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Shield,
   Download,
@@ -72,6 +72,8 @@ export default function SettingsPage() {
     setDefaultTaskView,
     defaultTaskListId,
     setDefaultTaskListId,
+    tauriStartMinimized,
+    setTauriStartMinimized,
     pageWidgetOrder,
     pageWidgetVisible,
     togglePageWidget,
@@ -89,7 +91,14 @@ export default function SettingsPage() {
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
   const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
+  const [isTauri, setIsTauri] = useState(false);
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    import('@tauri-apps/api/window')
+      .then(() => setIsTauri(true))
+      .catch(() => {});
+  }, []);
   const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
 
   // Export data
@@ -402,6 +411,29 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+
+      {/* Desktop app (Tauri) */}
+      {isTauri && (
+        <section className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="p-4 border-b border-border">
+            <h2 className="font-semibold">Desktop app</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Options when running as the Windows desktop app.
+            </p>
+          </div>
+          <div className="p-4 space-y-4">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={tauriStartMinimized}
+                onChange={(e) => setTauriStartMinimized(e.target.checked)}
+                className="rounded border-border"
+              />
+              <span className="text-sm">Start minimized when opening the app</span>
+            </label>
+          </div>
+        </section>
+      )}
 
       {/* Page Widgets */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">

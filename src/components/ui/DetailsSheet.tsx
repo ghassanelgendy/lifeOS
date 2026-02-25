@@ -1,47 +1,46 @@
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { Button } from './Button';
 
-interface ConfirmSheetProps {
+interface DetailsSheetProps {
   isOpen: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  cancelLabel?: string;
-  confirmVariant?: 'default' | 'destructive' | 'outline' | 'ghost' | 'secondary';
+  onClose: () => void;
   onConfirm: () => void;
-  onCancel: () => void;
-  isLoading?: boolean;
+  title?: string;
+  children: React.ReactNode;
+  confirmDisabled?: boolean;
+  /** Optional: show divider under header when content has scrolled */
+  stickyHeaderDivider?: boolean;
 }
 
-export function ConfirmSheet({
+export function DetailsSheet({
   isOpen,
-  title,
-  message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
-  confirmVariant = 'destructive',
+  onClose,
   onConfirm,
-  onCancel,
-  isLoading = false,
-}: ConfirmSheetProps) {
+  title = 'Details',
+  children,
+  confirmDisabled = false,
+  stickyHeaderDivider = true,
+}: DetailsSheetProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const [dragY, setDragY] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') onClose();
     };
 
     if (isOpen) {
       setSheetVisible(false);
       document.addEventListener('keydown', handleEscape);
 
+      // Lock the main content scroll (PullToRefresh container) so opening from deep in the list doesn't jump
       const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
       if (scrollRoot) {
         scrollPositionRef.current = scrollRoot.scrollTop;
@@ -50,6 +49,7 @@ export function ConfirmSheet({
         scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
         const body = document.body;
         const html = document.documentElement;
+        const orig = { overflow: body.style.overflow, htmlOverflow: html.style.overflow };
         body.style.overflow = 'hidden';
         html.style.overflow = 'hidden';
       }
@@ -75,32 +75,50 @@ export function ConfirmSheet({
     }
     setSheetVisible(false);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onCancel]);
+  }, [isOpen, onClose]);
+
+  const handleScroll = () => {
+    const el = contentRef.current;
+    setScrolled(!!el && el.scrollTop > 2);
+  };
+
+  // Reset content scroll when sheet opens so header and top content are visible
+  useEffect(() => {
+    if (isOpen && sheetVisible) {
+      const t = requestAnimationFrame(() => {
+        contentRef.current && (contentRef.current.scrollTop = 0);
+      });
+      return () => cancelAnimationFrame(t);
+    }
+  }, [isOpen, sheetVisible]);
 
   if (!isOpen) return null;
 
   const sheetContent = (
     <div
       ref={overlayRef}
+      data-lifeos-details-sheet
       data-lifeos-modal
-      data-lifeos-confirm-sheet
       className={cn(
         'fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm transition-opacity duration-300 font-sans text-foreground',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{ height: '100dvh', overscrollBehavior: 'contain' }}
-      onClick={(e) => e.target === overlayRef.current && !isLoading && onCancel()}
+      onClick={(e) => e.target === overlayRef.current && onClose()}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="confirm-sheet-title"
+      aria-labelledby="details-sheet-title"
     >
+      {/* Sheet anchored to bottom of viewport — same position whether opened from top or deep in list */}
       <div
         className={cn(
           'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto bg-card shadow-2xl flex flex-col min-h-0',
-          'rounded-t-[24px] border-t border-x border-border'
+          'rounded-t-[24px]',
+          'border-t border-x border-border'
         )}
         style={{
-          maxHeight: '92dvh',
+          height: '92dvh',
+          maxHeight: 'calc(100dvh - env(safe-area-inset-top))',
           paddingBottom: 'env(safe-area-inset-bottom)',
           transform: dragY > 0
             ? `translateY(${dragY}px)`
@@ -123,7 +141,7 @@ export function ConfirmSheet({
           const shouldClose = dragY > 90;
           setDragY(0);
           touchStartYRef.current = null;
-          if (shouldClose && !isLoading) onCancel();
+          if (shouldClose) onClose();
         }}
         onTouchCancel={() => {
           setDragY(0);
@@ -131,31 +149,47 @@ export function ConfirmSheet({
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 bg-card border-b border-border">
+        {/* Sticky header: close (left), title (center), confirm (right) */}
+        <header
+          className={cn(
+            'sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 bg-card',
+            stickyHeaderDivider && scrolled && 'border-b border-border'
+          )}
+        >
           <button
             type="button"
-            onClick={() => !isLoading && onCancel()}
+            onClick={onClose}
             className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation -ml-1"
             aria-label="Close"
           >
             <X size={22} className="text-foreground" />
           </button>
-          <h2 id="confirm-sheet-title" className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12">
+          <h1 id="details-sheet-title" className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12">
             {title}
-          </h2>
-          <div className="min-w-[44px]" />
+          </h1>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={confirmDisabled}
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors touch-manipulation"
+            aria-label="Save"
+          >
+            <Check size={22} />
+          </button>
         </header>
 
-        <div className="p-4 space-y-4">
-          <p className="text-sm text-muted-foreground">{message}</p>
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="ghost" onClick={onCancel} disabled={isLoading}>
-              {cancelLabel}
-            </Button>
-            <Button type="button" variant={confirmVariant} onClick={onConfirm} disabled={isLoading}>
-              {confirmLabel}
-            </Button>
-          </div>
+        {/* Scrollable content */}
+        <div
+          ref={contentRef}
+          onScroll={handleScroll}
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain min-h-0 min-w-0"
+          style={{
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            paddingBottom: 'calc(3rem + env(safe-area-inset-bottom))',
+          }}
+        >
+          <div className="px-4 pt-2 pb-8 min-w-0">{children}</div>
         </div>
       </div>
     </div>

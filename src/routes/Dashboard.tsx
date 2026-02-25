@@ -93,6 +93,7 @@ export default function Dashboard() {
       if (!task.due_date) continue;
       const timePart = task.due_time && task.due_time.length >= 5 ? task.due_time.slice(0, 5) : '00:00';
       const parsed = new Date(`${task.due_date}T${timePart}`);
+      if (parsed <= now) continue; // exclude past due tasks from upcoming
       const startTime = Number.isNaN(parsed.getTime()) ? `${task.due_date}T00:00:00` : parsed.toISOString();
       const dedupeKey = task.calendar_event_id
         ? `event:${task.calendar_event_id}`

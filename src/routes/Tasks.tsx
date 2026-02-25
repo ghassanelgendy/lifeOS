@@ -48,7 +48,8 @@ import {
 } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { taskDB } from '../db/database';
-import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
+import { Modal, DetailsSheet, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
+import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
@@ -672,7 +673,51 @@ export default function Tasks() {
     });
   };
 
-  // Open edit modal
+  const defaultListId = taskLists.find((l) => l.is_default)?.id ?? null;
+
+  function getDefaultEditFormForNewTask(): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null } {
+    const defaultDueDate =
+      activeView === 'today'
+        ? toDateString(new Date())
+        : activeView === 'week' || activeView === 'upcoming'
+          ? toDateString(addDays(new Date(), 1))
+          : undefined;
+    return {
+      title: '',
+      description: '',
+      priority: 'none',
+      due_date: defaultDueDate?.split('T')[0],
+      due_time: undefined,
+      date_enabled: !!defaultDueDate,
+      time_enabled: false,
+      duration_minutes: 45,
+      list_id: defaultListId ?? (activeView === 'list' && activeListId ? activeListId : null),
+      project_id: undefined,
+      tag_ids: [],
+      recurrence: 'none',
+      recurrence_interval: 1,
+      recurrence_days: [],
+      recurrence_end: undefined,
+      recurrence_end_type: 'never',
+      recurrence_count: 5,
+      reminders_enabled: false,
+      url: undefined,
+      is_urgent: false,
+      is_flagged: false,
+      location: undefined,
+      location_enabled: false,
+      when_messaging: false,
+      early_reminder_minutes: null,
+    };
+  }
+
+  const handleOpenNewTaskSheet = () => {
+    setSelectedTask(null);
+    setEditForm(getDefaultEditFormForNewTask());
+    setIsEditModalOpen(true);
+  };
+
+  // Open Details sheet (full-height bottom sheet)
   const handleEditTask = (task: Task) => {
     setSelectedTask(task);
     setEditForm({
@@ -680,7 +725,9 @@ export default function Tasks() {
       description: task.description,
       priority: task.priority,
       due_date: task.due_date?.split('T')[0],
-      due_time: task.due_time?.slice(0, 5) || undefined, // "14:30:00" -> "14:30" for time input
+      due_time: task.due_time?.slice(0, 5) || undefined,
+      date_enabled: !!task.due_date,
+      time_enabled: !!task.due_time,
       duration_minutes: task.duration_minutes ?? 45,
       list_id: task.list_id,
       project_id: task.project_id,
@@ -692,17 +739,30 @@ export default function Tasks() {
       recurrence_end_type: task.recurrence_end_type || (task.recurrence_end ? 'on_date' : 'never'),
       recurrence_count: task.recurrence_count,
       reminders_enabled: task.reminders_enabled ?? false,
+      url: task.url ?? undefined,
+      is_urgent: task.is_urgent ?? false,
+      is_flagged: task.is_flagged ?? false,
+      location: task.location ?? undefined,
+      location_enabled: !!task.location,
+      when_messaging: task.when_messaging ?? false,
+      early_reminder_minutes: task.early_reminder_minutes ?? null,
     });
     setIsEditModalOpen(true);
   };
 
-  // Save task edits
+  // Save task edits (date_enabled/time_enabled control whether due_date/due_time are sent)
   const handleSaveTask = () => {
     if (!selectedTask) return;
     const recurrence = (editForm.recurrence || 'none') as TaskRecurrence;
     const recurrenceEndType = (editForm.recurrence_end_type || 'never') as TaskRecurrenceEndType;
+    const dateEnabled = editForm.date_enabled ?? !!editForm.due_date;
+    const timeEnabled = editForm.time_enabled ?? !!editForm.due_time;
+    const titleToSave = parseTaskInput(editForm.title ?? '').titleWithoutShortcuts.trim() || editForm.title?.trim();
     const payload: Partial<CreateInput<Task>> = {
       ...editForm,
+      title: titleToSave,
+      due_date: dateEnabled ? editForm.due_date : undefined,
+      due_time: timeEnabled ? editForm.due_time : undefined,
       recurrence,
       reminders_enabled: !!editForm.reminders_enabled,
       recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
@@ -738,6 +798,69 @@ export default function Tasks() {
         setSelectedTask(null);
       },
     });
+  };
+
+  const handleCreateFromDetails = () => {
+    const recurrence = (editForm.recurrence || 'none') as TaskRecurrence;
+    const recurrenceEndType = (editForm.recurrence_end_type || 'never') as TaskRecurrenceEndType;
+    const dateEnabled = editForm.date_enabled ?? !!editForm.due_date;
+    const timeEnabled = editForm.time_enabled ?? !!editForm.due_time;
+    const titleToSave = parseTaskInput(editForm.title ?? '').titleWithoutShortcuts.trim() || (editForm.title ?? '').trim();
+    const payload: CreateInput<Task> = {
+      title: titleToSave,
+      description: editForm.description ?? undefined,
+      is_completed: false,
+      priority: (editForm.priority ?? 'none') as TaskPriority,
+      due_date: dateEnabled ? editForm.due_date : undefined,
+      due_time: timeEnabled ? editForm.due_time : undefined,
+      recurrence,
+      reminders_enabled: !!editForm.reminders_enabled,
+      recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
+      duration_minutes: editForm.duration_minutes ? Math.max(1, Number(editForm.duration_minutes)) : undefined,
+      list_id: editForm.list_id ?? defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
+      project_id: editForm.project_id,
+      tag_ids: editForm.tag_ids ?? [],
+      url: editForm.url ?? undefined,
+      is_urgent: editForm.is_urgent ?? false,
+      is_flagged: editForm.is_flagged ?? false,
+      location: editForm.location ?? undefined,
+      when_messaging: editForm.when_messaging ?? false,
+      early_reminder_minutes: editForm.early_reminder_minutes ?? undefined,
+    };
+    if (recurrence !== 'weekly') {
+      payload.recurrence_days = [];
+    } else if (!Array.isArray(editForm.recurrence_days) || editForm.recurrence_days.length === 0) {
+      payload.recurrence_days = [new Date().getDay()];
+    }
+    if (recurrence === 'none') {
+      payload.recurrence_end = undefined;
+      payload.recurrence_end_type = 'never';
+      payload.recurrence_count = undefined;
+      payload.recurrence_days = [];
+    } else {
+      payload.recurrence_end_type = recurrenceEndType;
+      if (recurrenceEndType !== 'on_date') payload.recurrence_end = undefined;
+      if (recurrenceEndType !== 'after_count') payload.recurrence_count = undefined;
+      if (recurrenceEndType === 'after_count') {
+        payload.recurrence_count = Math.max(1, Number(editForm.recurrence_count || 1));
+      }
+    }
+    createTask.mutate(payload, {
+      onSuccess: () => {
+        setIsEditModalOpen(false);
+        setSelectedTask(null);
+        setEditForm(getDefaultEditFormForNewTask());
+      },
+    });
+  };
+
+  const handleDetailsSave = () => {
+    if (selectedTask) {
+      handleSaveTask();
+    } else {
+      if (!editForm.title?.trim()) return;
+      handleCreateFromDetails();
+    }
   };
 
   // Create new list
@@ -1114,7 +1237,7 @@ export default function Tasks() {
               </span>
             )}
           </div>
-          <Button onClick={() => setIsAddingTask(true)} className="p-2" aria-label="Add task">
+          <Button onClick={handleOpenNewTaskSheet} className="p-2" aria-label="Add task">
             <Plus size={22} />
           </Button>
         </header>
@@ -1544,263 +1667,28 @@ export default function Tasks() {
         </div>
       </main>
 
-      {/* Edit Task Modal - extra bottom padding so Save stays visible above bottom bar on mobile */}
-      <Modal
+      {/* Task Details — full-height bottom sheet (edit existing or new task) */}
+      <DetailsSheet
         isOpen={isEditModalOpen}
-        onClose={() => setIsEditModalOpen(false)}
-        title="Edit Task"
-        className="max-w-xl"
+        onClose={() => {
+          setIsEditModalOpen(false);
+          if (!selectedTask) setSelectedTask(null);
+        }}
+        onConfirm={handleDetailsSave}
+        title="Details"
+        confirmDisabled={!editForm.title?.trim()}
       >
-        <div className="space-y-4">
-          <Input
-            label="Title"
-            value={editForm.title || ''}
-            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-          />
-          <TextArea
-            label="Description"
-            value={editForm.description || ''}
-            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-            placeholder="Add details..."
-          />
-
-          <div className="flex flex-col sm:flex-row gap-4 min-w-0">
-            <div className="min-w-0 flex-1 basis-0">
-              <Input
-                label="Due Date"
-                type="date"
-                value={editForm.due_date || ''}
-                onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-                className="min-w-0 w-full"
-              />
-            </div>
-            <div className="min-w-0 flex-1 basis-0">
-              <Input
-                label="Due Time"
-                type="time"
-                value={editForm.due_time || ''}
-                onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
-                className="min-w-0 w-full"
-              />
-            </div>
-            <div className="min-w-0 flex-1 basis-0 sm:max-w-[6rem]">
-              <Input
-                label="Duration (min)"
-                type="number"
-                min={1}
-                value={Number(editForm.duration_minutes || 45)}
-                onChange={(e) => setEditForm({ ...editForm, duration_minutes: e.target.value ? Math.max(1, Number(e.target.value)) : undefined })}
-                className="min-w-0 w-full"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Priority"
-              value={editForm.priority || 'none'}
-              onChange={(e) => setEditForm({ ...editForm, priority: e.target.value as TaskPriority })}
-              options={[
-                { value: 'none', label: 'None' },
-                { value: 'low', label: 'Low' },
-                { value: 'medium', label: 'Medium' },
-                { value: 'high', label: 'High' },
-              ]}
-            />
-            <Select
-              label="List"
-              value={editForm.list_id || ''}
-              onChange={(e) => setEditForm({ ...editForm, list_id: e.target.value })}
-              options={[
-                { value: '', label: 'No list' },
-                ...taskLists.map(l => ({ value: l.id, label: l.name })),
-              ]}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Repeat"
-              value={editForm.recurrence || 'none'}
-              onChange={(e) => setEditForm({
-                ...editForm,
-                recurrence: e.target.value as TaskRecurrence,
-                recurrence_interval: e.target.value === 'none' ? undefined : (editForm.recurrence_interval || 1),
-              })}
-              options={RECURRENCE_OPTIONS}
-            />
-            {editForm.recurrence && editForm.recurrence !== 'none' ? (
-              <Input
-                label="Every"
-                type="number"
-                min={1}
-                value={Number(editForm.recurrence_interval || 1)}
-                onChange={(e) => setEditForm({ ...editForm, recurrence_interval: Math.max(1, Number(e.target.value || 1)) })}
-              />
-            ) : (
-              <div />
-            )}
-          </div>
-
-          {editForm.recurrence && editForm.recurrence !== 'none' && (
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Ends"
-                value={(editForm.recurrence_end_type || 'never') as string}
-                onChange={(e) => setEditForm({ ...editForm, recurrence_end_type: e.target.value as TaskRecurrenceEndType })}
-                options={RECURRENCE_END_OPTIONS}
-              />
-              {(editForm.recurrence_end_type || 'never') === 'on_date' && (
-                <Input
-                  label="Until"
-                  type="date"
-                  value={editForm.recurrence_end || ''}
-                  onChange={(e) => setEditForm({ ...editForm, recurrence_end: e.target.value })}
-                />
-              )}
-              {(editForm.recurrence_end_type || 'never') === 'after_count' && (
-                <Input
-                  label="Occurrences"
-                  type="number"
-                  min={1}
-                  value={Number(editForm.recurrence_count || 1)}
-                  onChange={(e) => setEditForm({ ...editForm, recurrence_count: Math.max(1, Number(e.target.value || 1)) })}
-                />
-              )}
-            </div>
-          )}
-
-          {editForm.recurrence === 'weekly' && (
-            <div>
-              <label className="text-sm font-medium text-muted-foreground">Repeat on</label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {WEEKDAY_OPTIONS.map((d) => {
-                  const currentDays = editForm.recurrence_days || [];
-                  const selected = currentDays.includes(d.value);
-                  return (
-                    <button
-                      key={d.value}
-                      type="button"
-                      onClick={() => {
-                        const nextDays = selected
-                          ? currentDays.filter((day) => day !== d.value)
-                          : [...currentDays, d.value].sort((a, b) => a - b);
-                        setEditForm({ ...editForm, recurrence_days: nextDays });
-                      }}
-                      className={cn(
-                        "px-2 py-1 rounded-full text-xs border transition-colors",
-                        selected ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-secondary"
-                      )}
-                    >
-                      {d.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {editRecurrencePreview.length > 0 && (
-            <div className="text-xs text-muted-foreground">
-              <span className="font-medium">Next:</span> {editRecurrencePreview.join(' · ')}
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4">
-            <Select
-              label="Reminders"
-              value={editForm.reminders_enabled ? 'enabled' : 'disabled'}
-              onChange={(e) => setEditForm({ ...editForm, reminders_enabled: e.target.value === 'enabled' })}
-              options={[
-                { value: 'disabled', label: 'Disabled' },
-                { value: 'enabled', label: 'Enabled' },
-              ]}
-            />
-            {editForm.reminders_enabled ? (
-              <Input
-                label="Reminder Time"
-                type="time"
-                value={editForm.due_time || ''}
-                onChange={(e) => setEditForm({ ...editForm, due_time: e.target.value })}
-              />
-            ) : (
-              <div className="flex items-end text-xs text-muted-foreground pb-2">
-                <div className="flex items-center gap-1">
-                  <Bell size={13} />
-                  No notification will be sent.
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Tags */}
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Tags</label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => {
-                    const currentTags = editForm.tag_ids || [];
-                    if (currentTags.includes(tag.id)) {
-                      setEditForm({ ...editForm, tag_ids: currentTags.filter(id => id !== tag.id) });
-                    } else {
-                      setEditForm({ ...editForm, tag_ids: [...currentTags, tag.id] });
-                    }
-                  }}
-                  className={cn(
-                    "px-2 py-1 rounded-full text-xs font-medium transition-colors",
-                    editForm.tag_ids?.includes(tag.id)
-                      ? "ring-2 ring-offset-2 ring-offset-background"
-                      : "opacity-50 hover:opacity-100"
-                  )}
-                  style={{
-                    backgroundColor: `${tag.color}20`,
-                    color: tag.color
-                  }}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Actions - extra bottom padding so Save stays visible above bottom bar on mobile */}
-          <div
-            className="flex items-center justify-between pt-4 border-t border-border"
-            style={{ paddingBottom: 'max(9rem, env(safe-area-inset-bottom) + 6rem)' }}
-          >
-            <div className="flex items-center gap-2">
-              {selectedTask?.recurrence !== 'none' && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    if (selectedTask) {
-                      convertToHabit.mutate(selectedTask.id, {
-                        onSuccess: () => setIsEditModalOpen(false),
-                      });
-                    }
-                  }}
-                >
-                  <Sparkles size={14} />
-                  Convert to Habit
-                </Button>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveTask}>
-                Save
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Modal>
+        <TaskDetailsContent
+          form={editForm as TaskDetailsFormState}
+          setForm={setEditForm}
+          taskLists={taskLists}
+          tags={tags}
+          subtaskCount={selectedTask ? allTasks.filter((t) => t.parent_id === selectedTask.id).length : 0}
+          recurrenceOptions={RECURRENCE_OPTIONS}
+          recurrenceEndOptions={RECURRENCE_END_OPTIONS}
+          weekdayOptions={WEEKDAY_OPTIONS}
+        />
+      </DetailsSheet>
 
       {/* New List Modal */}
       <Modal

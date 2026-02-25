@@ -1,6 +1,6 @@
-// Send Web Push task reminders for tasks due this minute (UTC).
-// Call this every minute via cron (e.g. cron-job.org) or Supabase pg_cron.
-// Requires: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY in Supabase secrets.
+// Send Web Push task reminders for tasks whose reminder time is this minute (in each user TZ).
+// Reminder time = due_date + due_time - early_reminder_minutes (so "5 min before" fires 5 min before due).
+// Call this every minute via cron. Requires: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY in Supabase secrets.
 /// <reference path="../deno.d.ts" />
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
@@ -16,6 +16,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Early reminder offsets we support (minutes before due time). 0 = at due time.
+const EARLY_OFFSETS = [0, 5, 10, 15, 30, 60];
+
+function formatInTz(date: Date, tz: string, dateStyle: 'date' | 'time'): string {
+  if (dateStyle === 'date') {
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(date); // YYYY-MM-DD
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date); // HH:mm
+}
+
 if (!vapidPublic || !vapidPrivate) {
   console.error('Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY');
 }
@@ -30,7 +50,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    // 1. Get all unique timezones from subscriptions
     const { data: timezones, error: tzError } = await supabase
       .from('push_subscriptions')
       .select('timezone')
@@ -38,50 +57,53 @@ Deno.serve(async (req: Request) => {
 
     if (tzError) throw tzError;
 
-    // Get unique timezones (e.g. ['America/New_York', 'Europe/London'])
     const uniqueTimezones = [...new Set((timezones as any[]).map((t: any) => t.timezone))];
     const results: any[] = [];
 
-    // 2. Process each timezone
     for (const tz of uniqueTimezones) {
       if (typeof tz !== 'string') continue;
 
       try {
-        // Calculate current local time in this timezone
         const now = new Date();
-        const localDate = new Intl.DateTimeFormat('en-CA', {
-          timeZone: tz,
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).format(now); // "YYYY-MM-DD"
+        let taskList: any[] = [];
 
-        const localTime = new Intl.DateTimeFormat('en-GB', {
-          timeZone: tz,
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false
-        }).format(now); // "HH:mm"
+        // For each early offset E: reminder fires when (due - E) = now in TZ, i.e. due = now + E in TZ.
+        // So we compute (targetDate, targetTime) = now + E minutes formatted in tz, and query tasks with that due and early_reminder_minutes = E.
+        for (const E of EARLY_OFFSETS) {
+          const target = new Date(now.getTime() + E * 60 * 1000);
+          const targetDate = formatInTz(target, tz, 'date');
+          const targetTime = formatInTz(target, tz, 'time');
 
-        // Get tasks due at this local time
-        const { data: tasks, error: tasksError } = await supabase
-          .from('tasks')
-          .select('id, title, due_date, due_time, reminders_enabled')
-          .eq('is_completed', false)
-          .eq('reminders_enabled', true)
-          .eq('due_date', localDate)
-          .eq('due_time', localTime)
-          .is('parent_id', null);
+          let q = supabase
+            .from('tasks')
+            .select('id, title, due_date, due_time, reminders_enabled, early_reminder_minutes')
+            .eq('is_completed', false)
+            .eq('reminders_enabled', true)
+            .eq('due_date', targetDate)
+            .eq('due_time', targetTime)
+            .is('parent_id', null);
 
-        if (tasksError) {
-          console.error(`Error querying tasks for ${tz}:`, tasksError);
-          continue;
+          if (E !== 0) {
+            q = q.eq('early_reminder_minutes', E);
+          }
+
+          const { data: tasks, error: tasksError } = await q;
+
+          if (tasksError) {
+            console.error(`Error querying tasks for ${tz} E=${E}:`, tasksError);
+            continue;
+          }
+          const raw = (tasks as any[]) || [];
+          const toAdd = E === 0
+            ? raw.filter((t: any) => t.early_reminder_minutes == null || t.early_reminder_minutes === 0)
+            : raw;
+          for (const t of toAdd) {
+            if (!taskList.find((x) => x.id === t.id)) taskList.push(t);
+          }
         }
 
-        const taskList = tasks as any[];
-        if (!taskList || taskList.length === 0) continue;
+        if (taskList.length === 0) continue;
 
-        // Get subscriptions in this timezone
         const { data: subs, error: subsError } = await supabase
           .from('push_subscriptions')
           .select('endpoint, p256dh, auth')
@@ -105,7 +127,6 @@ Deno.serve(async (req: Request) => {
               sent++;
             } catch (e) {
               console.error('Push failed', sub.endpoint.slice(0, 50), e);
-              // Clean up dead subscriptions
               if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
                 await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
               }

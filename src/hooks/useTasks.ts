@@ -24,6 +24,7 @@ type RecurrenceEndType = 'never' | 'on_date' | 'after_count';
 const TASK_INSERT_KEYS = [
   'title', 'description', 'is_completed', 'completed_at', 'priority', 'due_date', 'due_time',
   'duration_minutes',
+  'url', 'is_urgent', 'is_flagged', 'early_reminder_minutes', 'location', 'when_messaging',
   'list_id', 'project_id', 'tag_ids', 'recurrence', 'recurrence_interval', 'recurrence_end',
   'reminders_enabled', 'recurrence_end_type', 'recurrence_count', 'calendar_event_id', 'calendar_source_key',
   'parent_id', 'sort_order',

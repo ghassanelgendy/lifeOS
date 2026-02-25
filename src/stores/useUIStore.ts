@@ -74,6 +74,10 @@ interface UIState {
   calendarShowTasks: boolean;
   setCalendarShowTasks: (show: boolean) => void;
 
+  /** When true, Tauri desktop app starts minimized to taskbar */
+  tauriStartMinimized: boolean;
+  setTauriStartMinimized: (value: boolean) => void;
+
   // Page widgets (all pages customization foundation)
   pageWidgetOrder: Record<string, string[]>;
   pageWidgetVisible: Record<string, Record<string, boolean>>;
@@ -160,6 +164,9 @@ export const useUIStore = create<UIState>()(
       calendarShowTasks: true,
       setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
 
+      tauriStartMinimized: false,
+      setTauriStartMinimized: (tauriStartMinimized) => set({ tauriStartMinimized }),
+
       pageWidgetOrder: {
         dashboard: [...DASHBOARD_WIDGET_IDS],
         sleep: [...SLEEP_WIDGET_IDS],
@@ -229,6 +236,7 @@ export const useUIStore = create<UIState>()(
         defaultTaskView: state.defaultTaskView,
         defaultTaskListId: state.defaultTaskListId,
         calendarShowTasks: state.calendarShowTasks,
+        tauriStartMinimized: state.tauriStartMinimized,
         pageWidgetOrder: state.pageWidgetOrder,
         pageWidgetVisible: state.pageWidgetVisible,
       }),

@@ -200,14 +200,14 @@ export function useIcalSubscriptionEvents(
   });
 }
 
-// Get upcoming events for dashboard
+// Get upcoming events for dashboard (only future events, no past)
 export function useUpcomingEvents(days: number = 7) {
-  const today = new Date();
-  const futureDate = addDays(today, days);
-  const events = useExpandedCalendarEvents(today, futureDate);
+  const now = new Date();
+  const futureDate = addDays(now, days);
+  const events = useExpandedCalendarEvents(now, futureDate);
   return events.filter((event) => {
     const start = new Date(event.start_time);
-    return start >= today && start <= futureDate;
+    return start > now && start <= futureDate;
   });
 }
 

@@ -5,6 +5,7 @@ html,
 body {
   overflow: hidden;
   height: 100%;
+  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 }
 #root {
   height: 100%;
