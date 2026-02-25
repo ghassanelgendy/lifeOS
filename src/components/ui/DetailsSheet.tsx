@@ -27,13 +27,15 @@ export function DetailsSheet({
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   const [dragY, setDragY] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
 
     if (isOpen) {
@@ -74,7 +76,7 @@ export function DetailsSheet({
     }
     setSheetVisible(false);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const handleScroll = () => {
     const el = contentRef.current;
