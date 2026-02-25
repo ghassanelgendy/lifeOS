@@ -70,6 +70,7 @@ export interface TaskDetailsFormState {
   recurrence_end_type?: TaskRecurrenceEndType;
   recurrence_count?: number;
   list_id?: string | null;
+  project_id?: string;
   tag_ids?: string[];
   priority?: TaskPriority;
   is_flagged?: boolean;
@@ -159,7 +160,7 @@ export function TaskDetailsContent({
   subtaskCount,
   recurrenceOptions,
   recurrenceEndOptions,
-  weekdayOptions,
+  weekdayOptions: _weekdayOptions,
 }: TaskDetailsContentProps) {
   const dateEnabled = form.date_enabled ?? !!form.due_date;
   const timeEnabled = form.time_enabled ?? !!form.due_time;
@@ -595,7 +596,6 @@ export function TaskDetailsContent({
                   key={tag.id}
                   type="button"
                   onClick={() => {
-                    const current = form.tag_ids ?? [];
                     setForm((prev) => {
                       const current = prev.tag_ids ?? [];
                       return {

@@ -49,7 +49,6 @@ export function DetailsSheet({
         scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
         const body = document.body;
         const html = document.documentElement;
-        const orig = { overflow: body.style.overflow, htmlOverflow: html.style.overflow };
         body.style.overflow = 'hidden';
         html.style.overflow = 'hidden';
       }

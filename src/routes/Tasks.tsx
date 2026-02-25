@@ -14,11 +14,9 @@ import {
   Repeat,
   ListTodo,
   Trash2,
-  Sparkles,
-  Clock, // Add Clock icon import
+  Clock,
   Sun,
   ArrowRight,
-  Bell,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
@@ -48,7 +46,7 @@ import {
 } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { taskDB } from '../db/database';
-import { Modal, DetailsSheet, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
+import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
@@ -144,7 +142,7 @@ export default function Tasks() {
   const createTag = useCreateTag();
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
-  const convertToHabit = useConvertTaskToHabit();
+  useConvertTaskToHabit(); // available for future use
 
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
@@ -455,49 +453,11 @@ export default function Tasks() {
   }, []);
 
   // Form state for editing
-  const [editForm, setEditForm] = useState<Partial<CreateInput<Task>>>({});
+  const [editForm, setEditForm] = useState<Partial<TaskDetailsFormState>>({});
   const [newListName, setNewListName] = useState('');
   const [newListColor, setNewListColor] = useState('#3b82f6');
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
-
-  const editRecurrencePreview = useMemo(() => {
-    const recurrence = (editForm.recurrence || 'none') as TaskRecurrence;
-    if (recurrence === 'none') return [] as string[];
-    // Normalize due_time: DB may return "14:30:00"; avoid "YYYY-MM-DDT14:30:00:00" (invalid)
-    const rawTime = editForm.due_time || '00:00';
-    const timePart = /^\d{1,2}:\d{2}(:\d{2})?$/.test(rawTime)
-      ? (rawTime.length === 5 ? `${rawTime}:00` : rawTime)
-      : '00:00:00';
-    const baseDate = editForm.due_date
-      ? new Date(`${editForm.due_date}T${timePart}`)
-      : new Date();
-    if (Number.isNaN(baseDate.getTime())) return [] as string[];
-    const interval = Math.max(1, Number(editForm.recurrence_interval || 1));
-    const weeklyDays = (editForm.recurrence_days || []).slice().sort((a, b) => a - b);
-    let cursor = new Date(baseDate);
-    const items: Date[] = [];
-
-    for (let i = 0; i < 12 && items.length < 3; i++) {
-      if (recurrence === 'hourly') cursor = addHours(cursor, interval);
-      else if (recurrence === 'daily') cursor = addDays(cursor, interval);
-      else if (recurrence === 'weekly') {
-        if (!weeklyDays.length) cursor = addWeeks(cursor, interval);
-        else {
-          const currentDow = cursor.getDay();
-          const nextDow = weeklyDays.find((d) => d > currentDow);
-          cursor = nextDow != null
-            ? addDays(cursor, nextDow - currentDow)
-            : addDays(cursor, (7 * interval) - (currentDow - weeklyDays[0]));
-        }
-      } else if (recurrence === 'monthly') cursor = addMonths(cursor, interval);
-      else if (recurrence === 'yearly') cursor = addYears(cursor, interval);
-      items.push(new Date(cursor));
-    }
-    return items
-      .filter((d) => !Number.isNaN(d.getTime()))
-      .map((d) => format(d, recurrence === 'hourly' ? 'MMM d, h:mm a' : 'EEE, MMM d'));
-  }, [editForm.recurrence, editForm.due_date, editForm.due_time, editForm.recurrence_interval, editForm.recurrence_days]);
 
   // Convert habits with show_in_tasks=true to task-like objects
   const habitTasks = useMemo(() => {
@@ -691,7 +651,7 @@ export default function Tasks() {
       date_enabled: !!defaultDueDate,
       time_enabled: false,
       duration_minutes: 45,
-      list_id: defaultListId ?? (activeView === 'list' && activeListId ? activeListId : null),
+      list_id: defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
       project_id: undefined,
       tag_ids: [],
       recurrence: 'none',
@@ -758,9 +718,11 @@ export default function Tasks() {
     const dateEnabled = editForm.date_enabled ?? !!editForm.due_date;
     const timeEnabled = editForm.time_enabled ?? !!editForm.due_time;
     const titleToSave = parseTaskInput(editForm.title ?? '').titleWithoutShortcuts.trim() || editForm.title?.trim();
+    const { date_enabled: _d, time_enabled: _t, ...formRest } = editForm;
     const payload: Partial<CreateInput<Task>> = {
-      ...editForm,
+      ...formRest,
       title: titleToSave,
+      list_id: editForm.list_id ?? undefined,
       due_date: dateEnabled ? editForm.due_date : undefined,
       due_time: timeEnabled ? editForm.due_time : undefined,
       recurrence,
@@ -818,7 +780,7 @@ export default function Tasks() {
       recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
       duration_minutes: editForm.duration_minutes ? Math.max(1, Number(editForm.duration_minutes)) : undefined,
       list_id: editForm.list_id ?? defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
-      project_id: editForm.project_id,
+      project_id: editForm.project_id as string | undefined,
       tag_ids: editForm.tag_ids ?? [],
       url: editForm.url ?? undefined,
       is_urgent: editForm.is_urgent ?? false,
@@ -1679,7 +1641,7 @@ export default function Tasks() {
         confirmDisabled={!editForm.title?.trim()}
       >
         <TaskDetailsContent
-          form={editForm as TaskDetailsFormState}
+          form={editForm}
           setForm={setEditForm}
           taskLists={taskLists}
           tags={tags}
