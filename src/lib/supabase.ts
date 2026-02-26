@@ -13,4 +13,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // Initialize Supabase client
 // You can pass a generic <Database> type here if you have generated types
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+const storage = typeof window !== 'undefined' ? window.localStorage : undefined;
+
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    ...(storage ? { storage } : {}),
+  },
+});

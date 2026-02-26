@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   Flame,
@@ -31,7 +31,7 @@ import {
 import { Modal, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
-import type { Habit, CreateInput, HabitFrequency } from '../types/schema';
+import type { Habit, HabitLog, CreateInput, HabitFrequency } from '../types/schema';
 
 const DEFAULT_COLORS = [
   '#22c55e', // Green
@@ -57,7 +57,7 @@ const WEEKDAY_OPTIONS = [
 export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, todayLogs, weekLogs } = useWeeklyAdherence();
-  const { data: streaks = {} } = useHabitStreaks(habits.map((h) => h.id));
+  const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
@@ -87,7 +87,7 @@ export default function Habits() {
   // Check if a habit is completed for a specific day
   const isHabitCompletedForDay = (habitId: string, date: Date): boolean => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    return weekLogs.some((l) => l.habit_id === habitId && l.date === dateStr && l.completed);
+    return weekLogs.some((l: HabitLog) => l.habit_id === habitId && l.date === dateStr && l.completed);
   };
 
   // Get streak for a habit
@@ -198,7 +198,7 @@ export default function Habits() {
             <span className="text-sm">Today</span>
           </div>
           <p className="text-2xl font-bold mt-1">
-            {todayLogs.filter(l => l.completed).length}/{habits.length}
+            {todayLogs.filter((l: HabitLog) => l.completed).length}/{habits.length}
           </p>
           <p className="text-xs text-muted-foreground">completed</p>
         </div>
@@ -216,7 +216,7 @@ export default function Habits() {
             <span className="text-sm">Best Streak</span>
           </div>
           <p className="text-2xl font-bold mt-1">
-            {Math.max(...habits.map(h => getStreak(h.id)), 0)}
+            {Math.max(...habits.map((h: Habit) => getStreak(h.id)), 0)}
           </p>
           <p className="text-xs text-muted-foreground">days</p>
         </div>
@@ -230,8 +230,8 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Prayer modules */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-stretch">
+      {/* Prayer + Prayer Backlog in same row when there's room */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
         <CompactPrayerHabit />
         <PrayerBacklog />
       </div>
@@ -247,119 +247,198 @@ export default function Habits() {
             <p className="text-muted-foreground">Create your first habit to start building streaks</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr>
-                  <th className="text-left p-2 min-w-[150px]">Habit</th>
-                  {weekDays.map((day) => (
-                    <th
-                      key={day.toISOString()}
-                      className={cn(
-                        "p-2 text-center min-w-[60px]",
-                        isToday(day) && "bg-secondary rounded-t-lg"
-                      )}
-                    >
-                      <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>
-                      <div className={cn(
-                        "text-sm font-medium",
-                        isToday(day) && "text-primary"
-                      )}>
-                        {format(day, 'd')}
+          <>
+            {/* Mobile: one card per habit, days in a compact scrollable row — no full-width scroll */}
+            <div className="md:hidden space-y-3">
+              {habits.map((habit: Habit) => {
+                const stats = getHabitStats(habit);
+                return (
+                  <div
+                    key={habit.id}
+                    className="rounded-lg border border-border p-3"
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className="w-3 h-3 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: habit.color }}
+                        />
+                        <span className="font-medium truncate">{habit.title}</span>
                       </div>
-                    </th>
-                  ))}
-                  <th className="p-2 text-center min-w-[60px]">
-                    <div className="flex items-center justify-center gap-1 text-amber-500">
-                      <Flame size={14} />
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={() => handleOpenModal(habit)}
+                          className="p-1.5 rounded hover:bg-secondary transition-colors"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(habit.id)}
+                          className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                        <span className="flex items-center gap-0.5 text-amber-500 font-bold ml-0.5">
+                          <Flame size={14} />
+                          {stats.streak}
+                        </span>
+                      </div>
                     </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {habits.map((habit) => {
-                  const stats = getHabitStats(habit);
-                  return (
-                    <tr key={habit.id} className="group">
-                      <td className="p-2">
-                        <div className="flex items-center gap-3">
-                          <div
-                            className="w-3 h-3 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: habit.color }}
-                          />
-                          <div className="min-w-0">
-                            <div className="font-medium truncate">{habit.title}</div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-2">
-                              <span>{habit.frequency} · {habit.target_count}x</span>
-                              {habit.time && (
-                                <span className="flex items-center gap-1">
-                                  <Clock size={12} />
-                                  {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-                            <button
-                              onClick={() => handleOpenModal(habit)}
-                              className="p-1 rounded hover:bg-secondary transition-colors"
-                            >
-                              <Edit2 size={12} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(habit.id)}
-                              className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                      {weekDays.map((day) => {
+                    <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
+                      {weekDays.map((day: Date) => {
                         const isCompleted = isHabitCompletedForDay(habit.id, day);
                         const canToggle = isToday(day) || day < today;
-
                         return (
-                          <td
-                            key={day.toISOString()}
-                            className={cn(
-                              "p-2 text-center",
-                              isToday(day) && "bg-secondary"
-                            )}
-                          >
+                          <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
+                            <span className={cn(
+                              "text-[10px] text-muted-foreground",
+                              isToday(day) && "text-primary font-medium"
+                            )}>
+                              {format(day, 'EEE')}
+                            </span>
                             <button
                               onClick={() => canToggle && isToday(day) && handleToggleHabit(habit.id)}
                               disabled={!isToday(day)}
                               className={cn(
-                                "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
+                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                 isCompleted
                                   ? "text-white"
-                                  : "border border-border hover:border-muted-foreground",
-                                isToday(day) && !isCompleted && "hover:scale-110",
-                                !canToggle && "opacity-30"
+                                  : "border border-border",
+                                isToday(day) && !isCompleted && "hover:scale-105 active:scale-95",
+                                !canToggle && "opacity-40"
                               )}
                               style={isCompleted ? { backgroundColor: habit.color } : undefined}
                             >
                               {isCompleted ? (
-                                <Check size={16} />
+                                <Check size={14} />
                               ) : day > today ? (
-                                <span className="text-xs text-muted-foreground">-</span>
+                                <span className="text-[10px] text-muted-foreground">-</span>
                               ) : null}
                             </button>
-                          </td>
+                          </div>
                         );
                       })}
-                      <td className="p-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <span className="font-bold text-amber-500">{stats.streak}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop: full table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr>
+                    <th className="text-left p-2 min-w-[150px]">Habit</th>
+                    {weekDays.map((day: Date) => (
+                      <th
+                        key={day.toISOString()}
+                        className={cn(
+                          "p-2 text-center min-w-[60px]",
+                          isToday(day) && "bg-secondary rounded-t-lg"
+                        )}
+                      >
+                        <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>
+                        <div className={cn(
+                          "text-sm font-medium",
+                          isToday(day) && "text-primary"
+                        )}>
+                          {format(day, 'd')}
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </th>
+                    ))}
+                    <th className="p-2 text-center min-w-[60px]">
+                      <div className="flex items-center justify-center gap-1 text-amber-500">
+                        <Flame size={14} />
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {habits.map((habit: Habit) => {
+                    const stats = getHabitStats(habit);
+                    return (
+                      <tr key={habit.id} className="group">
+                        <td className="p-2">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{ backgroundColor: habit.color }}
+                            />
+                            <div className="min-w-0">
+                              <div className="font-medium truncate">{habit.title}</div>
+                              <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                <span>{habit.frequency} · {habit.target_count}x</span>
+                                {habit.time && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock size={12} />
+                                    {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
+                              <button
+                                onClick={() => handleOpenModal(habit)}
+                                className="p-1 rounded hover:bg-secondary transition-colors"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(habit.id)}
+                                className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                        {weekDays.map((day: Date) => {
+                          const isCompleted = isHabitCompletedForDay(habit.id, day);
+                          const canToggle = isToday(day) || day < today;
+
+                          return (
+                            <td
+                              key={day.toISOString()}
+                              className={cn(
+                                "p-2 text-center",
+                                isToday(day) && "bg-secondary"
+                              )}
+                            >
+                              <button
+                                onClick={() => canToggle && isToday(day) && handleToggleHabit(habit.id)}
+                                disabled={!isToday(day)}
+                                className={cn(
+                                  "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
+                                  isCompleted
+                                    ? "text-white"
+                                    : "border border-border hover:border-muted-foreground",
+                                  isToday(day) && !isCompleted && "hover:scale-110",
+                                  !canToggle && "opacity-30"
+                                )}
+                                style={isCompleted ? { backgroundColor: habit.color } : undefined}
+                              >
+                                {isCompleted ? (
+                                  <Check size={16} />
+                                ) : day > today ? (
+                                  <span className="text-xs text-muted-foreground">-</span>
+                                ) : null}
+                              </button>
+                            </td>
+                          );
+                        })}
+                        <td className="p-2 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="font-bold text-amber-500">{stats.streak}</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
@@ -367,7 +446,7 @@ export default function Habits() {
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4">Today's Habits</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {habits.map((habit) => {
+          {habits.map((habit: Habit) => {
             const isCompleted = isHabitCompletedForDay(habit.id, today);
             const stats = getHabitStats(habit);
 
@@ -405,7 +484,7 @@ export default function Habits() {
                     </h3>
                     <button
                       type="button"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation();
                         handleOpenModal(habit);
                       }}
@@ -453,7 +532,7 @@ export default function Habits() {
           <Input
             label="Habit Name"
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
             placeholder="e.g., Morning Run"
             required
           />
@@ -461,7 +540,7 @@ export default function Habits() {
           <Input
             label="Description"
             value={formData.description || ''}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, description: e.target.value })}
             placeholder="Optional description"
           />
 
@@ -469,7 +548,7 @@ export default function Habits() {
             <Select
               label="Frequency"
               value={formData.frequency}
-              onChange={(e) => setFormData({ ...formData, frequency: e.target.value as HabitFrequency })}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, frequency: e.target.value as HabitFrequency })}
               options={[
                 { value: 'Daily', label: 'Daily' },
                 { value: 'Weekly', label: 'Weekly' },
@@ -481,7 +560,7 @@ export default function Habits() {
               min={1}
               max={7}
               value={formData.target_count === 0 ? '' : formData.target_count}
-              onChange={(e) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
             />
           </div>
 
@@ -498,7 +577,7 @@ export default function Habits() {
                       onClick={() => {
                         const current = formData.week_days ?? [];
                         const next = selected
-                          ? current.filter((d) => d !== day.value)
+                          ? current.filter((d: number) => d !== day.value)
                           : [...current, day.value].sort((a, b) => a - b);
                         setFormData({ ...formData, week_days: next });
                       }}
@@ -521,14 +600,14 @@ export default function Habits() {
               label="Time (optional)"
               type="time"
               value={formData.time || ''}
-              onChange={(e) => setFormData({ ...formData, time: e.target.value || undefined })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, time: e.target.value || undefined })}
             />
             <div className="flex items-end">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={formData.show_in_tasks ?? false}
-                  onChange={(e) => setFormData({ ...formData, show_in_tasks: e.target.checked })}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, show_in_tasks: e.target.checked })}
                   className="w-4 h-4 rounded border-border"
                 />
                 <div className="flex items-center gap-2">
