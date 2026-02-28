@@ -32,6 +32,12 @@ interface ReminderInput {
   created_at?: string | null;
 }
 
+function normalizeReminderId(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const v = value.trim().toLowerCase();
+  return v.length > 0 ? v : null;
+}
+
 function normalizeName(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
@@ -67,16 +73,17 @@ function parseRemindersInput(input: unknown): ReminderInput[] {
 function dedupeRemindersById(reminders: ReminderInput[]): ReminderInput[] {
   const byId = new Map<string, ReminderInput>();
   for (const r of reminders) {
-    if (!r || typeof r.id !== 'string' || !r.id) continue;
-    const prev = byId.get(r.id);
+    const rid = normalizeReminderId(r?.id);
+    if (!r || !rid) continue;
+    const prev = byId.get(rid);
     if (!prev) {
-      byId.set(r.id, r);
+      byId.set(rid, { ...r, id: rid });
       continue;
     }
     const prevTime = parseIso(prev.updated_at) ?? parseIso(prev.completed_at) ?? parseIso(prev.created_at) ?? '1970-01-01T00:00:00.000Z';
     const nextTime = parseIso(r.updated_at) ?? parseIso(r.completed_at) ?? parseIso(r.created_at) ?? '1970-01-01T00:00:00.000Z';
     if (new Date(nextTime) >= new Date(prevTime)) {
-      byId.set(r.id, r);
+      byId.set(rid, { ...r, id: rid });
     }
   }
   return Array.from(byId.values());
@@ -310,12 +317,11 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ success: true, upserted: 0, skipped: 0, invalid: 0, received: 0, deleted: deletedIds.length });
     }
 
-    // Ensure reminder lists exist as both task lists and tags, per user.
+    // Ensure reminder lists exist as task lists, per user.
     const reminderListNames = Array.from(new Set(reminders
       .map((r) => normalizeName(r?.list))
       .filter((n): n is string => !!n)));
     const listIdByName = new Map<string, string>();
-    const tagIdByName = new Map<string, string>();
 
     if (reminderListNames.length > 0) {
       const { data: existingLists, error: listsError } = await supabase
@@ -350,59 +356,31 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      const { data: existingTags, error: tagsError } = await supabase
-        .from('tags')
-        .select('id,name')
-        .eq('user_id', userId);
-      if (tagsError) return jsonResponse({ error: tagsError.message }, 500);
-
-      for (const row of (existingTags ?? []) as Array<{ id: string; name: string }>) {
-        const key = row.name.trim().toLowerCase();
-        if (!tagIdByName.has(key)) tagIdByName.set(key, row.id);
-      }
-
-      const missingTagRows: Array<{ user_id: string; name: string }> = [];
-      for (const name of reminderListNames) {
-        const key = name.toLowerCase();
-        if (tagIdByName.has(key)) continue;
-        missingTagRows.push({ user_id: userId, name });
-      }
-
-      if (missingTagRows.length > 0) {
-        const { data: insertedTags, error: insertTagsError } = await supabase
-          .from('tags')
-          .insert(missingTagRows)
-          .select('id,name');
-        if (insertTagsError) return jsonResponse({ error: insertTagsError.message }, 500);
-        for (const row of (insertedTags ?? []) as Array<{ id: string; name: string }>) {
-          tagIdByName.set(row.name.trim().toLowerCase(), row.id);
-        }
-      }
     }
 
-    const reminderIds = reminders.map((r) => r?.id).filter((id): id is string => typeof id === 'string' && id.length > 0);
-    let existingById = new Map<string, { updated_at?: string | null; ios_reminder_updated_at?: string | null }>();
+    const reminderIds = reminders.map((r) => normalizeReminderId(r?.id)).filter((id): id is string => !!id);
+    type ExistingTaskRow = { id: string; ios_reminder_id: string; updated_at?: string | null; ios_reminder_updated_at?: string | null };
+    const existingByReminderId = new Map<string, ExistingTaskRow[]>();
 
     if (reminderIds.length > 0) {
       const { data, error } = await supabase
         .from('tasks')
-        .select('ios_reminder_id,updated_at,ios_reminder_updated_at')
+        .select('id,ios_reminder_id,updated_at,ios_reminder_updated_at')
         .eq('user_id', userId)
         .in('ios_reminder_id', reminderIds);
 
       if (error) return jsonResponse({ error: error.message }, 500);
 
-      for (const row of data ?? []) {
+      for (const row of (data ?? []) as ExistingTaskRow[]) {
         if (row.ios_reminder_id) {
-          existingById.set(row.ios_reminder_id, {
-            updated_at: row.updated_at ?? null,
-            ios_reminder_updated_at: row.ios_reminder_updated_at ?? null,
-          });
+          const list = existingByReminderId.get(row.ios_reminder_id) ?? [];
+          list.push(row);
+          existingByReminderId.set(row.ios_reminder_id, list);
         }
       }
     }
-
-    const writes: Array<{ reminderId: string; row: Record<string, unknown>; exists: boolean }> = [];
+    const cleanupDuplicateTaskIds = new Set<string>();
+    const writes: Array<{ reminderId: string; row: Record<string, unknown>; targetTaskId: string | null }> = [];
     let skipped = 0;
     let invalid = 0;
 
@@ -417,9 +395,25 @@ Deno.serve(async (req: Request) => {
         ?? parseIso(reminder.created_at)
         ?? nowIso;
 
-      const existing = existingById.get(reminder.id);
-      if (existing) {
-        const existingTime = parseIso(existing.ios_reminder_updated_at) ?? parseIso(existing.updated_at) ?? null;
+      const reminderId = normalizeReminderId(reminder.id);
+      if (!reminderId) {
+        invalid += 1;
+        continue;
+      }
+      const existingRows = existingByReminderId.get(reminderId) ?? [];
+      const canonical = existingRows
+        .slice()
+        .sort((a, b) => {
+          const aTime = parseIso(a.ios_reminder_updated_at) ?? parseIso(a.updated_at) ?? '1970-01-01T00:00:00.000Z';
+          const bTime = parseIso(b.ios_reminder_updated_at) ?? parseIso(b.updated_at) ?? '1970-01-01T00:00:00.000Z';
+          return new Date(bTime).getTime() - new Date(aTime).getTime();
+        })[0];
+      for (const row of existingRows) {
+        if (canonical && row.id !== canonical.id) cleanupDuplicateTaskIds.add(row.id);
+      }
+
+      if (canonical) {
+        const existingTime = parseIso(canonical.ios_reminder_updated_at) ?? parseIso(canonical.updated_at) ?? null;
         // Skip if incoming is older OR same timestamp as stored row.
         if (existingTime && new Date(incomingUpdatedAt) <= new Date(existingTime)) {
           skipped += 1;
@@ -434,7 +428,6 @@ Deno.serve(async (req: Request) => {
       const reminderListName = normalizeName(reminder.list);
       const reminderListKey = reminderListName?.toLowerCase() ?? null;
       const mappedListId = reminderListKey ? (listIdByName.get(reminderListKey) ?? null) : null;
-      const mappedTagId = reminderListKey ? (tagIdByName.get(reminderListKey) ?? null) : null;
 
       const row: Record<string, unknown> = {
         user_id: userId,
@@ -448,7 +441,7 @@ Deno.serve(async (req: Request) => {
         url: reminder.url ?? null,
         reminders_enabled: !!(dueDate || dueTime),
         ios_reminders_enabled: true,
-        ios_reminder_id: reminder.id,
+        ios_reminder_id: reminderId,
         ios_reminder_list: reminder.list ?? null,
         ios_reminder_updated_at: incomingUpdatedAt,
         updated_at: nowIso,
@@ -457,56 +450,111 @@ Deno.serve(async (req: Request) => {
       if (mappedListId) {
         row.list_id = mappedListId;
       }
-      if (mappedTagId) {
-        row.tag_ids = [mappedTagId];
-      }
 
-      if (!existing) {
-        if (!mappedTagId) row.tag_ids = [];
+      if (!canonical) {
+        row.tag_ids = [];
         row.recurrence = 'none';
       }
 
-      writes.push({ reminderId: reminder.id, row, exists: !!existing });
+      writes.push({ reminderId, row, targetTaskId: canonical?.id ?? null });
     }
 
     let upserted = 0;
     if (writes.length > 0) {
       for (const write of writes) {
-        if (write.exists) {
+        if (write.targetTaskId) {
           const { error } = await supabase
             .from('tasks')
             .update(write.row)
-            .eq('user_id', userId)
-            .eq('ios_reminder_id', write.reminderId);
+            .eq('id', write.targetTaskId)
+            .eq('user_id', userId);
           if (error) return jsonResponse({ error: error.message }, 500);
           upserted += 1;
           continue;
         }
 
-        // Final duplicate guard (handles stale lookup or concurrent pushes).
+        // Final duplicate guard (handles stale lookup/concurrent pushes without DB unique index).
         const { data: alreadyExists, error: existsErr } = await supabase
           .from('tasks')
-          .select('id')
+          .select('id,ios_reminder_updated_at,updated_at')
           .eq('user_id', userId)
-          .eq('ios_reminder_id', write.reminderId)
-          .limit(1);
+          .eq('ios_reminder_id', write.reminderId);
         if (existsErr) return jsonResponse({ error: existsErr.message }, 500);
 
         if ((alreadyExists ?? []).length > 0) {
+          const canonical = (alreadyExists as Array<{ id: string; ios_reminder_updated_at?: string | null; updated_at?: string | null }>)
+            .slice()
+            .sort((a, b) => {
+              const aTime = parseIso(a.ios_reminder_updated_at) ?? parseIso(a.updated_at) ?? '1970-01-01T00:00:00.000Z';
+              const bTime = parseIso(b.ios_reminder_updated_at) ?? parseIso(b.updated_at) ?? '1970-01-01T00:00:00.000Z';
+              return new Date(bTime).getTime() - new Date(aTime).getTime();
+            })[0];
+          if (!canonical) continue;
+          for (const row of (alreadyExists as Array<{ id: string }>)) {
+            if (canonical && row.id !== canonical.id) cleanupDuplicateTaskIds.add(row.id);
+          }
           const { error } = await supabase
             .from('tasks')
             .update(write.row)
             .eq('user_id', userId)
-            .eq('ios_reminder_id', write.reminderId);
+            .eq('id', canonical.id);
           if (error) return jsonResponse({ error: error.message }, 500);
           upserted += 1;
           continue;
+        }
+
+        // Secondary dedupe: if iOS identifier changed, match by stable task content.
+        const { data: contentMatches, error: contentErr } = await (() => {
+          let q = supabase
+            .from('tasks')
+            .select('id,updated_at')
+            .eq('user_id', userId)
+            .eq('ios_reminders_enabled', true)
+            .eq('title', String(write.row.title ?? ''))
+            .eq('is_completed', Boolean(write.row.is_completed));
+          const listVal = write.row.ios_reminder_list as string | null | undefined;
+          const dueDateVal = write.row.due_date as string | null | undefined;
+          const dueTimeVal = write.row.due_time as string | null | undefined;
+          q = listVal ? q.eq('ios_reminder_list', listVal) : q.is('ios_reminder_list', null);
+          q = dueDateVal ? q.eq('due_date', dueDateVal) : q.is('due_date', null);
+          q = dueTimeVal ? q.eq('due_time', dueTimeVal) : q.is('due_time', null);
+          return q.limit(5);
+        })();
+        if (contentErr) return jsonResponse({ error: contentErr.message }, 500);
+        if ((contentMatches ?? []).length > 0) {
+          const canonical = (contentMatches as Array<{ id: string; updated_at?: string | null }>)
+            .slice()
+            .sort((a, b) => {
+              const aTime = parseIso(a.updated_at) ?? '1970-01-01T00:00:00.000Z';
+              const bTime = parseIso(b.updated_at) ?? '1970-01-01T00:00:00.000Z';
+              return new Date(bTime).getTime() - new Date(aTime).getTime();
+            })[0];
+          if (canonical) {
+            const { error } = await supabase
+              .from('tasks')
+              .update(write.row)
+              .eq('user_id', userId)
+              .eq('id', canonical.id);
+            if (error) return jsonResponse({ error: error.message }, 500);
+            upserted += 1;
+            continue;
+          }
         }
 
         const { error } = await supabase.from('tasks').insert(write.row);
         if (error) return jsonResponse({ error: error.message }, 500);
         upserted += 1;
       }
+    }
+
+    if (cleanupDuplicateTaskIds.size > 0) {
+      const duplicateIds = Array.from(cleanupDuplicateTaskIds);
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('user_id', userId)
+        .in('id', duplicateIds);
+      if (error) return jsonResponse({ error: error.message }, 500);
     }
 
     return jsonResponse({
@@ -516,6 +564,7 @@ Deno.serve(async (req: Request) => {
       invalid,
       received: reminders.length,
       deleted: deletedIds.length,
+      cleaned_duplicates: cleanupDuplicateTaskIds.size,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

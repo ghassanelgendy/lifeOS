@@ -1,8 +1,9 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const host = process.env.TAURI_DEV_HOST
+const isTauriBuild = !!process.env.TAURI_ENV_PLATFORM
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -25,10 +26,8 @@ export default defineConfig({
       input: 'index.html',
     },
   },
-  plugins: [
-    react(),
-    // Exclude api/* (Vercel serverless) from Vite so esbuild never sees it (avoids "Invalid loader: ics")
-    {
+  plugins: (() => {
+    const ignoreApiPlugin: PluginOption = {
       name: 'ignore-api',
       enforce: 'pre',
       resolveId(id) {
@@ -52,22 +51,35 @@ export default defineConfig({
         }
         return null;
       },
-    },
-    VitePWA({
-      strategies: 'injectManifest',
-      srcDir: 'src',
-      filename: 'sw.ts',
-      registerType: 'autoUpdate',
-      manifest: false,
-      injectManifest: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        globIgnores: ['**/favicon.svg', '**/sw.ts'],
-        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
-      },
-      devOptions: {
-        enabled: true,
-        type: 'module',
-      },
-    }),
-  ],
+    };
+
+    const basePlugins: PluginOption[] = [
+      react(),
+      // Exclude api/* (Vercel serverless) from Vite so esbuild never sees it (avoids "Invalid loader: ics")
+      ignoreApiPlugin,
+    ];
+
+    // Desktop (Tauri) should not register/build a service worker to avoid stale cached UI after packaging.
+    if (isTauriBuild) return basePlugins;
+
+    return [
+      ...basePlugins,
+      VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'sw.ts',
+        registerType: 'autoUpdate',
+        manifest: false,
+        injectManifest: {
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          globIgnores: ['**/favicon.svg', '**/sw.ts'],
+          maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        },
+        devOptions: {
+          enabled: true,
+          type: 'module',
+        },
+      }),
+    ];
+  })(),
 })
