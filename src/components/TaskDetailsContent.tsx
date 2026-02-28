@@ -79,6 +79,7 @@ export interface TaskDetailsFormState {
   when_messaging?: boolean;
   reminders_enabled?: boolean;
   duration_minutes?: number | null;
+  ios_reminders_enabled?: boolean;
   [key: string]: unknown;
 }
 
@@ -630,7 +631,37 @@ export function TaskDetailsContent({
         </div>
       </Card>
 
-      {/* Section 5 — Flags & Priority */}
+      {/* Section 5 — Integrations */}
+      <SectionLabel>Integrations</SectionLabel>
+      <Card>
+        <Row
+          icon={LinkIcon}
+          label="Sync to iOS Reminders"
+          right={
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!form.ios_reminders_enabled}
+              aria-label="Sync to iOS Reminders"
+              className={cn(
+                'w-11 h-6 rounded-full transition-colors relative',
+                form.ios_reminders_enabled ? 'bg-primary' : 'bg-muted'
+              )}
+              onClick={() => setForm((prev) => ({ ...prev, ios_reminders_enabled: !prev.ios_reminders_enabled }))}
+            >
+              <span
+                className={cn(
+                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
+                  form.ios_reminders_enabled ? 'left-6' : 'left-1'
+                )}
+              />
+            </button>
+          }
+          helperText="Keeps this task in sync with iOS Reminders via Shortcuts."
+        />
+      </Card>
+
+      {/* Section 6 — Flags & Priority */}
       <Card>
         <Row
           icon={Flag}
@@ -692,7 +723,7 @@ export function TaskDetailsContent({
         )}
       </Card>
 
-      {/* Section 6 — Places & People */}
+      {/* Section 7 — Places & People */}
       <SectionLabel>Places &amp; People</SectionLabel>
       <Card>
         <Row

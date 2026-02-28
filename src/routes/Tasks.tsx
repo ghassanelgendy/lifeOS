@@ -45,7 +45,6 @@ import {
   useConvertTaskToHabit,
 } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
-import { taskDB } from '../db/database';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
@@ -538,6 +537,24 @@ export default function Tasks() {
   const incompleteTasks = displayTasks.filter(t => !t.is_completed);
   const completedDisplayTasks = displayTasks.filter(t => t.is_completed);
   const mainTasksToRender = activeView === 'completed' ? completedDisplayTasks : incompleteTasks;
+  const activeListCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const task of allTasks) {
+      if (task.is_completed || !task.list_id) continue;
+      counts.set(task.list_id, (counts.get(task.list_id) ?? 0) + 1);
+    }
+    return counts;
+  }, [allTasks]);
+  const activeTagCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const task of allTasks) {
+      if (task.is_completed || !Array.isArray(task.tag_ids)) continue;
+      for (const tagId of task.tag_ids) {
+        counts.set(tagId, (counts.get(tagId) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [allTasks]);
 
   // Handle task toggle - check if it's a habit task
   const handleTaskToggle = (task: Task) => {
@@ -635,7 +652,7 @@ export default function Tasks() {
 
   const defaultListId = taskLists.find((l) => l.is_default)?.id ?? null;
 
-  function getDefaultEditFormForNewTask(): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null } {
+  function getDefaultEditFormForNewTask(): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null; ios_reminders_enabled?: boolean } {
     const defaultDueDate =
       activeView === 'today'
         ? toDateString(new Date())
@@ -668,6 +685,7 @@ export default function Tasks() {
       location_enabled: false,
       when_messaging: false,
       early_reminder_minutes: null,
+      ios_reminders_enabled: false,
     };
   }
 
@@ -706,6 +724,7 @@ export default function Tasks() {
       location_enabled: !!task.location,
       when_messaging: task.when_messaging ?? false,
       early_reminder_minutes: task.early_reminder_minutes ?? null,
+      ios_reminders_enabled: task.ios_reminders_enabled ?? false,
     });
     setIsEditModalOpen(true);
   };
@@ -727,6 +746,7 @@ export default function Tasks() {
       due_time: timeEnabled ? editForm.due_time : undefined,
       recurrence,
       reminders_enabled: !!editForm.reminders_enabled,
+      ios_reminders_enabled: !!editForm.ios_reminders_enabled,
       recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
       duration_minutes: editForm.duration_minutes ? Math.max(1, Number(editForm.duration_minutes)) : undefined,
     };
@@ -777,6 +797,7 @@ export default function Tasks() {
       due_time: timeEnabled ? editForm.due_time : undefined,
       recurrence,
       reminders_enabled: !!editForm.reminders_enabled,
+      ios_reminders_enabled: !!editForm.ios_reminders_enabled,
       recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
       duration_minutes: editForm.duration_minutes ? Math.max(1, Number(editForm.duration_minutes)) : undefined,
       list_id: editForm.list_id ?? defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
@@ -1047,7 +1068,7 @@ export default function Tasks() {
                 >
                   <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
                   <span className="flex-1 min-w-0 text-left break-words">{list.name}</span>
-                  <span className="text-sm md:text-xs shrink-0">{taskDB.getByList(list.id).filter(t => !t.is_completed).length}</span>
+                  <span className="text-sm md:text-xs shrink-0">{activeListCounts.get(list.id) ?? 0}</span>
                 </button>
                 {activeListActionsId === list.id && (
                   <>
@@ -1137,7 +1158,7 @@ export default function Tasks() {
                 >
                   <TagIcon size={18} className="shrink-0 md:w-[14px] md:h-[14px]" style={{ color: tag.color }} />
                   <span className="flex-1 min-w-0 text-left break-words">{tag.name}</span>
-                  <span className="text-sm md:text-xs shrink-0">{taskDB.getByTag(tag.id).filter(t => !t.is_completed).length}</span>
+                  <span className="text-sm md:text-xs shrink-0">{activeTagCounts.get(tag.id) ?? 0}</span>
                 </button>
                 {activeTagActionsId === tag.id && (
                   <>

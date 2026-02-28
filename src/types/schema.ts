@@ -280,6 +280,10 @@ export interface Task {
   ticktick_id?: string | null;
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;
+  ios_reminders_enabled?: boolean;
+  ios_reminder_id?: string | null;
+  ios_reminder_list?: string | null;
+  ios_reminder_updated_at?: string | null;
   // Timestamps
   created_at: string;
   updated_at: string;
