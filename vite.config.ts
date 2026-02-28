@@ -27,6 +27,67 @@ export default defineConfig({
     },
   },
   plugins: (() => {
+    const devApiProxyPlugin: PluginOption = {
+      name: 'dev-api-proxy',
+      apply: 'serve',
+      configureServer(server) {
+        server.middlewares.use(async (req, res, next) => {
+          const requestUrl = req.url || '';
+          const parsed = new URL(requestUrl, 'http://localhost');
+
+          if (parsed.pathname !== '/api/proxy') {
+            next();
+            return;
+          }
+
+          if (req.method !== 'GET') {
+            res.statusCode = 405;
+            res.setHeader('Allow', 'GET');
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ error: 'Method not allowed' }));
+            return;
+          }
+
+          const rawUrl = parsed.searchParams.get('url') || '';
+          const normalizedUrl = rawUrl.trim().replace(/^webcal:\/\//i, 'https://');
+          if (!normalizedUrl || (!normalizedUrl.startsWith('https://') && !normalizedUrl.startsWith('http://'))) {
+            res.statusCode = 400;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ error: 'Missing or invalid url' }));
+            return;
+          }
+
+          try {
+            const response = await fetch(normalizedUrl, {
+              headers: {
+                'User-Agent': 'lifeOS/1.0',
+                Accept: 'text/calendar, text/plain, */*',
+              },
+              cache: 'no-store',
+            });
+
+            if (!response.ok) {
+              res.statusCode = response.status;
+              res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              res.end(JSON.stringify({ error: 'Upstream error' }));
+              return;
+            }
+
+            const text = await response.text();
+            res.statusCode = 200;
+            res.setHeader('Content-Type', response.headers.get('Content-Type') || 'text/calendar; charset=utf-8');
+            res.setHeader('Cache-Control', 'public, max-age=300');
+            res.end(text);
+          } catch (err) {
+            console.error('[dev-api-proxy]', err);
+            res.statusCode = 502;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify({ error: 'Failed to fetch' }));
+          }
+        });
+      },
+    };
+
     const ignoreApiPlugin: PluginOption = {
       name: 'ignore-api',
       enforce: 'pre',
@@ -54,6 +115,7 @@ export default defineConfig({
     };
 
     const basePlugins: PluginOption[] = [
+      devApiProxyPlugin,
       react(),
       // Exclude api/* (Vercel serverless) from Vite so esbuild never sees it (avoids "Invalid loader: ics")
       ignoreApiPlugin,
