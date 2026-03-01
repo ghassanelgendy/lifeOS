@@ -18,8 +18,11 @@ interface FocusSessionState {
   isRunning: boolean;
   selectedTask: SelectedTaskInfo | null;
   pipOpen: boolean;
+  pipMiniMode: boolean;
   lastRecordedLabel: string | null;
   setPhase: (phase: FocusPhase) => void;
+  setPipMiniMode: (value: boolean) => void;
+  togglePipMiniMode: () => void;
   setSecondsLeft: (seconds: number | ((prev: number) => number)) => void;
   setDurations: (params: { focus: number; shortBreak: number; longBreak: number }) => void;
   setSelectedTask: (task: SelectedTaskInfo | null) => void;
@@ -45,7 +48,10 @@ export const useFocusSessionStore = create<FocusSessionState>()((set) => ({
   isRunning: false,
   selectedTask: null,
   pipOpen: false,
+  pipMiniMode: false,
   lastRecordedLabel: null,
+  setPipMiniMode: (value) => set({ pipMiniMode: value }),
+  togglePipMiniMode: () => set((state) => ({ pipMiniMode: !state.pipMiniMode })),
   setPhase: (phase) =>
     set((state) => ({
       currentPhase: phase,
@@ -84,6 +90,7 @@ export const useFocusSessionStore = create<FocusSessionState>()((set) => ({
   setIsRunning: (value) => set({ isRunning: value }),
   start: () => set({ isRunning: true }),
   pause: () => set({ isRunning: false }),
-  togglePiP: () => set((state) => ({ pipOpen: !state.pipOpen })),
+  togglePiP: () =>
+    set((state) => ({ pipOpen: !state.pipOpen })),
   setLastRecordedLabel: (label) => set({ lastRecordedLabel: label }),
 }));
