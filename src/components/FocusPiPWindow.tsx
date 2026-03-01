@@ -74,7 +74,6 @@ export function FocusPiPWindow() {
     return getComputedStyle(document.documentElement).getPropertyValue(prop)?.trim() || fallback;
   };
   const accentRingColor = getAccentValue('--color-ring', '#0ea5e9');
-  const accentForegroundColor = getAccentValue('--color-accent-foreground', '#ffffff');
   const accentCardColor = getAccentValue('--color-card', '#05060c');
 
   const phaseLabel = useMemo(() => {
