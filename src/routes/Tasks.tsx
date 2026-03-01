@@ -686,6 +686,7 @@ export default function Tasks() {
       when_messaging: false,
       early_reminder_minutes: null,
       ios_reminders_enabled: false,
+      focus_time_seconds: 0,
     };
   }
 
@@ -725,6 +726,7 @@ export default function Tasks() {
       when_messaging: task.when_messaging ?? false,
       early_reminder_minutes: task.early_reminder_minutes ?? null,
       ios_reminders_enabled: task.ios_reminders_enabled ?? false,
+      focus_time_seconds: task.focus_time_seconds ?? 0,
     });
     setIsEditModalOpen(true);
   };

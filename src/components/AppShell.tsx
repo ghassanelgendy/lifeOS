@@ -10,7 +10,8 @@ import {
   Target,
   CheckSquare,
   Monitor,
-  Moon
+  Moon,
+  Focus as FocusIcon
 } from 'lucide-react';
 import { useRef, useCallback, useMemo } from 'react';
 import { cn } from '../lib/utils';
@@ -20,6 +21,8 @@ import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
 import { OfflineBanner } from './OfflineBanner';
 import { AppFooter } from './AppFooter';
+import { FocusSessionManager } from './FocusSessionManager';
+import { FocusPiPWindow } from './FocusPiPWindow';
 
 export interface NavItem {
   label: string;
@@ -31,6 +34,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
   { label: 'Tasks', icon: CheckSquare, href: '/tasks' },
+  { label: 'Focus', icon: FocusIcon, href: '/focus' },
   { label: 'Habits', icon: Target, href: '/habits' },
   { label: 'Calendar', icon: Calendar, href: '/calendar' },
   { label: 'Bio-Metrics', icon: Dumbbell, href: '/health' },
@@ -282,24 +286,26 @@ export function AppShell() {
           onTouchEnd={handleTouchEnd}
         >
           <PullToRefresh>
-            <div
-              key={location.pathname}
-              className={cn(
-                "flex flex-col p-4 md:p-6 section-slide-in",
-                "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
-                isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full"
-              )}
-              style={
-                {
-                  '--section-dx': slideDirection === 1 ? '25%' : slideDirection === -1 ? '-25%' : '0',
-                } as React.CSSProperties
-              }
-            >
-              <Outlet />
-            </div>
-          </PullToRefresh>
-          <AppFooter />
-        </div>
+          <div
+            key={location.pathname}
+            className={cn(
+              "flex flex-col p-4 md:p-6 section-slide-in",
+              "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
+              isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full"
+            )}
+            style={
+              {
+                '--section-dx': slideDirection === 1 ? '25%' : slideDirection === -1 ? '-25%' : '0',
+              } as React.CSSProperties
+            }
+          >
+            <Outlet />
+          </div>
+        </PullToRefresh>
+        <AppFooter />
+        <FocusSessionManager />
+        <FocusPiPWindow />
+      </div>
 
         {/* Mobile Bottom Tab Bar */}
         <nav 

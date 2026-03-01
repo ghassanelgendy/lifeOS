@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
-const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/habits', '/calendar', '/settings'];
+const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/calendar'];
 
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;

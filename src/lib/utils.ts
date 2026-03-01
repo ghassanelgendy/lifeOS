@@ -33,3 +33,13 @@ export function formatTime12h(time?: string | null): string {
   const d = set(base, { hours, minutes, seconds: 0, milliseconds: 0 });
   return formatDateFn(d, 'h:mm a');
 }
+
+export function formatDuration(seconds: number): string {
+  const total = Math.max(0, Math.floor(seconds));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const secs = total % 60;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${secs}s`;
+  return `${secs}s`;
+}

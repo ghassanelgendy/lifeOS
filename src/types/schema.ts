@@ -248,6 +248,7 @@ export interface Task {
   due_date?: string; // ISO-8601
   due_time?: string; // HH:mm format
   duration_minutes?: number | null;
+  focus_time_seconds?: number;
   reminders_enabled?: boolean;
   reminder?: string; // ISO-8601
   /** Optional link/URL for the task */
