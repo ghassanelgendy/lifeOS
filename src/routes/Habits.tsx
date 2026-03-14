@@ -146,7 +146,7 @@ function computeDetoxTarget(detox: DetoxConfig, createdAt: string): number {
 
 export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
-  const { adherence, todayLogs, weekLogs } = useWeeklyAdherence();
+  const { adherence, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
