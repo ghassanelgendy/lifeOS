@@ -13,9 +13,29 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, children, className, swipeToClose = true }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = window.setTimeout(() => {
+      const root = panelRef.current;
+      if (!root) return;
+      const preferred = root.querySelector<HTMLElement>('[data-autofocus="true"], input[autofocus], textarea[autofocus]');
+      const firstField = root.querySelector<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), select:not([disabled])'
+      );
+      const target = preferred ?? firstField;
+      target?.focus();
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+        target.select?.();
+      }
+    }, 120);
+
+    return () => window.clearTimeout(timer);
+  }, [isOpen]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -93,9 +113,10 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
       <div
+        ref={panelRef}
         className={cn(
           "relative w-full max-w-lg bg-card border border-border shadow-2xl modal-sheet-ios",
-          "rounded-t-2xl sm:rounded-xl",
+          "rounded-t-[24px] sm:rounded-2xl",
           "flex flex-col border-b-0 sm:border-b border-border",
           "max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
           "min-h-0",

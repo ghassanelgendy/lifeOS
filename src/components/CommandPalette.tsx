@@ -24,7 +24,8 @@ export function CommandPalette() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      const key = e.key.toLowerCase();
+      if ((key === 'k' && (e.metaKey || e.ctrlKey)) || ((key === 'p' || key === '/') && (e.metaKey || e.ctrlKey))) {
         e.preventDefault();
         setOpen((open) => !open);
       }
@@ -166,7 +167,7 @@ export function CommandPalette() {
       
       <div className="border-t border-border pt-2 px-2 flex items-center justify-between text-xs text-muted-foreground">
         <span>Press <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px]">ESC</kbd> to close</span>
-        <span><kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px]">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px]">K</kbd></span>
+        <span><kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px]">Ctrl</kbd> + <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px]">K</kbd> / <kbd className="px-1.5 py-0.5 bg-secondary rounded text-[10px]">P</kbd></span>
       </div>
     </Command.Dialog>
   );

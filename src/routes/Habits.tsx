@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Plus,
   Flame,
@@ -31,7 +32,8 @@ import {
 import { Modal, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
-import type { Habit, HabitLog, CreateInput, HabitFrequency } from '../types/schema';
+import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
+import { supabase } from '../lib/supabase';
 
 const DEFAULT_COLORS = [
   '#22c55e', // Green
@@ -54,6 +56,94 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: 'Sat' },
 ];
 
+interface DetoxConfig {
+  mode: DetoxMode;
+  startTarget: number;
+  step: number;
+}
+
+const DETOX_META_REGEX_V2 = /\[DETOX\|mode=(linear|exponential|incremental)\|start=(\d+)\|step=(\d+)\]/;
+const DETOX_META_REGEX_V1 = /\[DETOX\|mode=(linear|exponential|incremental)\|start=(\d+)\|min=(\d+)\|step=(\d+)\]/;
+
+function parseLegacyDetoxDescription(description?: string): { cleanDescription: string; detox: DetoxConfig | null } {
+  const source = (description || '').trim();
+  const matchV2 = source.match(DETOX_META_REGEX_V2);
+  if (matchV2) {
+    const cleanDescription = source.replace(DETOX_META_REGEX_V2, '').trim();
+    return {
+      cleanDescription,
+      detox: {
+        mode: matchV2[1] as DetoxMode,
+        startTarget: Math.max(1, Number(matchV2[2]) || 1),
+        step: Math.max(1, Number(matchV2[3]) || 1),
+      },
+    };
+  }
+
+  // Backward compatibility with previous metadata format.
+  const matchV1 = source.match(DETOX_META_REGEX_V1);
+  if (!matchV1) {
+    return { cleanDescription: source, detox: null };
+  }
+  const cleanDescription = source.replace(DETOX_META_REGEX_V1, '').trim();
+  return {
+    cleanDescription,
+    detox: {
+      mode: matchV1[1] as DetoxMode,
+      startTarget: Math.max(1, Number(matchV1[2]) || 1),
+      step: Math.max(1, Number(matchV1[4]) || 1),
+    },
+  };
+}
+
+function getDetoxConfig(habit: Habit): DetoxConfig | null {
+  if (habit.habit_type === 'detox') {
+    return {
+      mode: (habit.detox_mode ?? 'linear') as DetoxMode,
+      startTarget: Math.max(1, Number(habit.detox_start_target ?? habit.target_count ?? 1)),
+      step: Math.max(1, Number(habit.detox_step ?? 1)),
+    };
+  }
+
+  // Legacy fallback for rows not migrated yet.
+  return parseLegacyDetoxDescription(habit.description).detox;
+}
+
+function getHabitType(habit: Habit): HabitType {
+  return getDetoxConfig(habit) ? 'detox' : 'standard';
+}
+
+function getVisibleDescription(habit: Habit): string | undefined {
+  const base = (habit.description || '').trim();
+  if (!base) return undefined;
+  if (habit.habit_type === 'detox') return base;
+  const cleaned = parseLegacyDetoxDescription(base).cleanDescription;
+  return cleaned || undefined;
+}
+
+function weeksSince(dateLike: string): number {
+  const createdAt = new Date(dateLike);
+  if (Number.isNaN(createdAt.getTime())) return 0;
+  const diffMs = Date.now() - createdAt.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 7)));
+}
+
+function computeDetoxTarget(detox: DetoxConfig, createdAt: string): number {
+  const weeks = weeksSince(createdAt);
+  const start = Math.max(1, detox.startTarget);
+  const step = Math.max(1, detox.step);
+
+  if (detox.mode === 'linear') {
+    return start + (weeks * step);
+  }
+  if (detox.mode === 'exponential') {
+    // step is interpreted as growth percent per week in exponential mode.
+    return Math.max(1, Math.round(start * Math.pow(1 + step / 100, weeks)));
+  }
+  const cumulativeGrowth = Math.floor((weeks * (weeks + 1)) / 2) * step;
+  return start + cumulativeGrowth;
+}
+
 export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, todayLogs, weekLogs } = useWeeklyAdherence();
@@ -66,6 +156,10 @@ export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [habitType, setHabitType] = useState<HabitType>('standard');
+  const [detoxMode, setDetoxMode] = useState<DetoxMode>('linear');
+  const [detoxStartTarget, setDetoxStartTarget] = useState(3);
+  const [detoxStep, setDetoxStep] = useState(1);
   const [formData, setFormData] = useState<Partial<CreateInput<Habit>>>({
     title: '',
     description: '',
@@ -83,6 +177,44 @@ export default function Habits() {
   const weekEnd = endOfWeek(today);
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const todayStr = format(today, 'yyyy-MM-dd');
+  const todayStart = new Date(`${todayStr}T00:00:00`);
+
+  const detoxHabitIds = useMemo(
+    () => habits.filter((h: Habit) => getHabitType(h) === 'detox').map((h: Habit) => h.id),
+    [habits]
+  );
+
+  const { data: relapseLogs = [] } = useQuery({
+    queryKey: ['habit-relapses', detoxHabitIds.join('|')],
+    queryFn: async () => {
+      if (detoxHabitIds.length === 0) return [] as Array<Pick<HabitLog, 'habit_id' | 'date'>>;
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id,date')
+        .in('habit_id', detoxHabitIds)
+        .eq('completed', true)
+        .order('date', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Array<Pick<HabitLog, 'habit_id' | 'date'>>;
+    },
+    enabled: detoxHabitIds.length > 0,
+  });
+
+  const latestRelapseByHabit = useMemo(() => {
+    const out: Record<string, string> = {};
+    for (const log of relapseLogs) {
+      if (!out[log.habit_id]) out[log.habit_id] = log.date;
+    }
+    return out;
+  }, [relapseLogs]);
+
+  const getSoberDays = (habit: Habit) => {
+    const lastRelapse = latestRelapseByHabit[habit.id];
+    const baseline = lastRelapse ? new Date(`${lastRelapse}T00:00:00`) : new Date(habit.created_at);
+    if (Number.isNaN(baseline.getTime())) return 0;
+    const diffDays = Math.floor((todayStart.getTime() - baseline.getTime()) / (1000 * 60 * 60 * 24));
+    return Math.max(0, diffDays);
+  };
 
   // Check if a habit is completed for a specific day
   const isHabitCompletedForDay = (habitId: string, date: Date): boolean => {
@@ -97,6 +229,23 @@ export default function Habits() {
 
   // Calculate completion stats for a habit
   const getHabitStats = (habit: Habit) => {
+    const detox = getDetoxConfig(habit);
+    if (detox) {
+      const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
+      const relapseDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
+      const soberDays = getSoberDays(habit);
+      const target = computeDetoxTarget(detox, habit.created_at);
+
+      return {
+        completedDays: Math.max(0, 7 - relapseDays),
+        streak: soberDays,
+        completionRate: Math.round((Math.max(0, 7 - relapseDays) / 7) * 100),
+        relapseDays,
+        soberDays,
+        target,
+      };
+    }
+
     const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
     const completedDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
     const streak = getStreak(habit.id);
@@ -108,23 +257,26 @@ export default function Habits() {
     };
   };
 
-  // Toggle habit completion for today
-  const handleToggleHabit = (habitId: string) => {
-    const isCompleted = isHabitCompletedForDay(habitId, today);
+  // Toggle for standard habits; for detox habits this logs relapse events only.
+  const handleToggleHabit = (habit: Habit) => {
+    const isDetox = getHabitType(habit) === 'detox';
+    const isCompleted = isHabitCompletedForDay(habit.id, today);
     logHabit.mutate({
-      habitId,
+      habitId: habit.id,
       date: todayStr,
       completed: !isCompleted,
+      note: isDetox ? (!isCompleted ? 'relapse' : 'relapse-removed') : undefined,
     });
   };
 
   // Modal handlers
   const handleOpenModal = (habit?: Habit) => {
     if (habit) {
+      const detox = getDetoxConfig(habit);
       setEditingHabit(habit);
       setFormData({
         title: habit.title,
-        description: habit.description,
+        description: getVisibleDescription(habit) ?? '',
         frequency: habit.frequency,
         target_count: habit.target_count,
         color: habit.color,
@@ -132,6 +284,10 @@ export default function Habits() {
         show_in_tasks: habit.show_in_tasks ?? false,
         week_days: habit.week_days ?? [],
       });
+      setHabitType(getHabitType(habit));
+      setDetoxMode(detox?.mode ?? 'linear');
+      setDetoxStartTarget(detox?.startTarget ?? Math.max(1, habit.detox_start_target ?? (habit.target_count || 1)));
+      setDetoxStep(detox?.step ?? Math.max(1, habit.detox_step ?? 1));
     } else {
       setEditingHabit(null);
       setFormData({
@@ -144,21 +300,44 @@ export default function Habits() {
         show_in_tasks: false,
         week_days: [],
       });
+      setHabitType('standard');
+      setDetoxMode('linear');
+      setDetoxStartTarget(3);
+      setDetoxStep(1);
     }
     setIsModalOpen(true);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const detoxConfig: DetoxConfig | null = habitType === 'detox'
+      ? {
+        mode: detoxMode,
+        startTarget: Math.max(1, detoxStartTarget || 1),
+        step: Math.max(1, detoxStep || 1),
+      }
+      : null;
+
+    const payload: Partial<CreateInput<Habit>> = {
+      ...formData,
+      habit_type: habitType,
+      frequency: habitType === 'detox' ? 'Daily' : formData.frequency,
+      description: formData.description,
+      detox_mode: habitType === 'detox' ? detoxConfig?.mode : null,
+      detox_start_target: habitType === 'detox' ? detoxConfig?.startTarget : null,
+      detox_step: habitType === 'detox' ? detoxConfig?.step : null,
+      target_count: habitType === 'detox' ? 1 : formData.target_count,
+    };
+
     if (editingHabit) {
       updateHabit.mutate({
         id: editingHabit.id,
-        data: formData,
+        data: payload,
       }, {
         onSuccess: () => setIsModalOpen(false),
       });
     } else {
-      createHabit.mutate(formData as CreateInput<Habit>, {
+      createHabit.mutate(payload as CreateInput<Habit>, {
         onSuccess: () => setIsModalOpen(false),
       });
     }
@@ -182,7 +361,7 @@ export default function Habits() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
-          <p className="text-muted-foreground">Build consistency with daily habits</p>
+          <p className="text-muted-foreground">Build good habits and detox bad ones</p>
         </div>
         <Button onClick={() => handleOpenModal()}>
           <Plus size={18} />
@@ -198,9 +377,13 @@ export default function Habits() {
             <span className="text-sm">Today</span>
           </div>
           <p className="text-2xl font-bold mt-1">
-            {todayLogs.filter((l: HabitLog) => l.completed).length}/{habits.length}
+            {habits.filter((h: Habit) => {
+              const isDetox = getHabitType(h) === 'detox';
+              const relapsedToday = isHabitCompletedForDay(h.id, today);
+              return isDetox ? !relapsedToday : relapsedToday;
+            }).length}/{habits.length}
           </p>
-          <p className="text-xs text-muted-foreground">completed</p>
+          <p className="text-xs text-muted-foreground">on track</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -252,6 +435,8 @@ export default function Habits() {
             <div className="md:hidden space-y-3">
               {habits.map((habit: Habit) => {
                 const stats = getHabitStats(habit);
+                const detoxConfig = getDetoxConfig(habit);
+                const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
                 return (
                   <div
                     key={habit.id}
@@ -284,10 +469,16 @@ export default function Habits() {
                         </span>
                       </div>
                     </div>
+                    <div className="text-[11px] text-muted-foreground mb-2">
+                      {detoxConfig
+                        ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
+                        : `${habit.frequency} · ${habit.target_count}x`}
+                    </div>
                     <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
                       {weekDays.map((day: Date) => {
                         const isCompleted = isHabitCompletedForDay(habit.id, day);
                         const canToggle = isToday(day) || day < today;
+                        const isDetox = !!detoxConfig;
                         return (
                           <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
                             <span className={cn(
@@ -297,20 +488,20 @@ export default function Habits() {
                               {format(day, 'EEE')}
                             </span>
                             <button
-                              onClick={() => canToggle && isToday(day) && handleToggleHabit(habit.id)}
+                              onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
                               disabled={!isToday(day)}
                               className={cn(
                                 "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                 isCompleted
-                                  ? "text-white"
+                                  ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                   : "border border-border",
-                                isToday(day) && !isCompleted && "hover:scale-105 active:scale-95",
+                                isToday(day) && "hover:scale-105 active:scale-95",
                                 !canToggle && "opacity-40"
                               )}
-                              style={isCompleted ? { backgroundColor: habit.color } : undefined}
+                              style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                             >
                               {isCompleted ? (
-                                <Check size={14} />
+                                isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
                               ) : day > today ? (
                                 <span className="text-[10px] text-muted-foreground">-</span>
                               ) : null}
@@ -357,6 +548,8 @@ export default function Habits() {
                 <tbody>
                   {habits.map((habit: Habit) => {
                     const stats = getHabitStats(habit);
+                    const detoxConfig = getDetoxConfig(habit);
+                    const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
                     return (
                       <tr key={habit.id} className="group">
                         <td className="p-2">
@@ -368,7 +561,11 @@ export default function Habits() {
                             <div className="min-w-0">
                               <div className="font-medium truncate">{habit.title}</div>
                               <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                <span>{habit.frequency} · {habit.target_count}x</span>
+                                <span>
+                                  {detoxConfig
+                                    ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
+                                    : `${habit.frequency} · ${habit.target_count}x`}
+                                </span>
                                 {habit.time && (
                                   <span className="flex items-center gap-1">
                                     <Clock size={12} />
@@ -396,6 +593,7 @@ export default function Habits() {
                         {weekDays.map((day: Date) => {
                           const isCompleted = isHabitCompletedForDay(habit.id, day);
                           const canToggle = isToday(day) || day < today;
+                          const isDetox = !!detoxConfig;
 
                           return (
                             <td
@@ -406,20 +604,20 @@ export default function Habits() {
                               )}
                             >
                               <button
-                                onClick={() => canToggle && isToday(day) && handleToggleHabit(habit.id)}
+                                onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
                                 disabled={!isToday(day)}
                                 className={cn(
                                   "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
                                   isCompleted
-                                    ? "text-white"
+                                    ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                     : "border border-border hover:border-muted-foreground",
-                                  isToday(day) && !isCompleted && "hover:scale-110",
+                                  isToday(day) && "hover:scale-110",
                                   !canToggle && "opacity-30"
                                 )}
-                                style={isCompleted ? { backgroundColor: habit.color } : undefined}
+                                style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                               >
                                 {isCompleted ? (
-                                  <Check size={16} />
+                                  isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={16} />
                                 ) : day > today ? (
                                   <span className="text-xs text-muted-foreground">-</span>
                                 ) : null}
@@ -449,16 +647,23 @@ export default function Habits() {
           {habits.map((habit: Habit) => {
             const isCompleted = isHabitCompletedForDay(habit.id, today);
             const stats = getHabitStats(habit);
+            const detoxConfig = getDetoxConfig(habit);
+            const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
+            const isDetox = !!detoxConfig;
 
             return (
               <div
                 key={habit.id}
-                onClick={() => handleToggleHabit(habit.id)}
+                onClick={() => handleToggleHabit(habit)}
                 className={cn(
                   "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all",
-                  isCompleted
-                    ? "border-green-500/50 bg-green-500/10"
-                    : "border-border hover:border-muted-foreground hover:bg-secondary/20"
+                  isDetox
+                    ? (isCompleted
+                      ? "border-red-500/50 bg-red-500/10"
+                      : "border-emerald-500/50 bg-emerald-500/10")
+                    : (isCompleted
+                      ? "border-green-500/50 bg-green-500/10"
+                      : "border-border hover:border-muted-foreground hover:bg-secondary/20")
                 )}
               >
                 <div
@@ -466,10 +671,10 @@ export default function Habits() {
                     "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
                     isCompleted ? "text-white" : "border border-border"
                   )}
-                  style={isCompleted ? { backgroundColor: habit.color } : undefined}
+                  style={isCompleted ? { backgroundColor: isDetox ? '#ef4444' : habit.color } : undefined}
                 >
                   {isCompleted ? (
-                    <Check size={24} />
+                    isDetox ? <span className="text-xs font-bold">R</span> : <Check size={24} />
                   ) : (
                     <div className="w-6 h-6 rounded-full border-2 border-muted-foreground" />
                   )}
@@ -478,7 +683,7 @@ export default function Habits() {
                   <div className="flex items-center gap-2">
                     <h3 className={cn(
                       "font-medium",
-                      isCompleted && "line-through text-muted-foreground"
+                      isCompleted && !isDetox && "line-through text-muted-foreground"
                     )}>
                       {habit.title}
                     </h3>
@@ -501,8 +706,13 @@ export default function Habits() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {habit.description && (
-                      <span className="truncate">{habit.description}</span>
+                    {getVisibleDescription(habit) && (
+                      <span className="truncate">{getVisibleDescription(habit)}</span>
+                    )}
+                    {detoxConfig && (
+                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
+                        Detox {detoxConfig.mode}: {stats.soberDays}d sober / target {detoxTarget}d
+                      </span>
                     )}
                     {habit.time && (
                       <span className="flex items-center gap-1 flex-shrink-0">
@@ -513,8 +723,8 @@ export default function Habits() {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-sm font-medium">{stats.completionRate}%</div>
-                  <div className="text-xs text-muted-foreground">this week</div>
+                  <div className="text-sm font-medium">{isDetox ? `${stats.soberDays}d` : `${stats.completionRate}%`}</div>
+                  <div className="text-xs text-muted-foreground">{isDetox ? 'sober' : 'this week'}</div>
                 </div>
               </div>
             );
@@ -534,6 +744,7 @@ export default function Habits() {
             value={formData.title}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, title: e.target.value })}
             placeholder="e.g., Morning Run"
+            autoFocus
             required
           />
 
@@ -546,25 +757,77 @@ export default function Habits() {
 
           <div className="grid grid-cols-2 gap-4">
             <Select
-              label="Frequency"
-              value={formData.frequency}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, frequency: e.target.value as HabitFrequency })}
+              label="Habit Type"
+              value={habitType}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setHabitType(e.target.value as HabitType)}
               options={[
-                { value: 'Daily', label: 'Daily' },
-                { value: 'Weekly', label: 'Weekly' },
+                { value: 'standard', label: 'Standard' },
+                { value: 'detox', label: 'Detox (Relapse Tracking)' },
               ]}
             />
-            <Input
-              label="Target"
-              type="number"
-              min={1}
-              max={7}
-              value={formData.target_count === 0 ? '' : formData.target_count}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
-            />
+            {habitType === 'standard' ? (
+              <Select
+                label="Frequency"
+                value={formData.frequency}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setFormData({ ...formData, frequency: e.target.value as HabitFrequency })}
+                options={[
+                  { value: 'Daily', label: 'Daily' },
+                  { value: 'Weekly', label: 'Weekly' },
+                ]}
+              />
+            ) : (
+              <Input
+                label="Start Target (days sober)"
+                type="number"
+                min={1}
+                value={detoxStartTarget}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetoxStartTarget(Math.max(1, parseInt(e.target.value || '1', 10) || 1))}
+              />
+            )}
           </div>
 
-          {formData.frequency === 'Weekly' && (
+          {habitType === 'standard' && (
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Target"
+                type="number"
+                min={1}
+                max={7}
+                value={formData.target_count === 0 ? '' : formData.target_count}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, target_count: e.target.value === '' ? 1 : parseInt(e.target.value, 10) || 1 })}
+              />
+            </div>
+          )}
+
+          {habitType === 'detox' && (
+            <div className="space-y-3 rounded-lg border border-border/70 bg-secondary/20 p-3">
+              <p className="text-sm font-medium">Detox Progress Strategy</p>
+              <div className="grid grid-cols-2 gap-3">
+                <Select
+                  label="Growth"
+                  value={detoxMode}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setDetoxMode(e.target.value as DetoxMode)}
+                  options={[
+                    { value: 'linear', label: 'Linear' },
+                    { value: 'exponential', label: 'Exponential' },
+                    { value: 'incremental', label: 'Incremental' },
+                  ]}
+                />
+                <Input
+                  label={detoxMode === 'exponential' ? 'Growth % / week' : 'Step / week'}
+                  type="number"
+                  min={1}
+                  value={detoxStep}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDetoxStep(Math.max(1, parseInt(e.target.value || '1', 10) || 1))}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Log only when you relapse. Current target: {computeDetoxTarget({ mode: detoxMode, startTarget: detoxStartTarget, step: detoxStep }, editingHabit?.created_at || new Date().toISOString())} sober days.
+              </p>
+            </div>
+          )}
+
+          {habitType === 'standard' && formData.frequency === 'Weekly' && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-muted-foreground">Weekly Days</label>
               <div className="flex flex-wrap gap-2">

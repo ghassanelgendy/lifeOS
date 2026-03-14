@@ -116,6 +116,15 @@ export interface TaskInputParseResult {
   detectedTokens: DetectedToken[];
 }
 
+function mapPriorityShortcut(value: string): 'high' | 'medium' | 'low' | 'none' | null {
+  const normalized = value.trim().toLowerCase();
+  if (normalized === 'high' || normalized === '1') return 'high';
+  if (normalized === 'medium' || normalized === '2') return 'medium';
+  if (normalized === 'low' || normalized === '3') return 'low';
+  if (normalized === 'none' || normalized === '4') return 'none';
+  return null;
+}
+
 export function parseTaskInput(title: string): TaskInputParseResult {
   let date: string | undefined;
   let time: string | undefined;
@@ -214,11 +223,12 @@ export function parseTaskInput(title: string): TaskInputParseResult {
     re.lastIndex = 0;
   }
 
-  // Priority shortcuts: !high, !medium, !low
-  const priorityRegex = /\b!(high|medium|low)\b/gi;
+  // Priority shortcuts: !high, !medium, !low, !none, !1, !2, !3, !4 (TickTick style)
+  const priorityRegex = /\b!(high|medium|low|none|[1-4])\b/gi;
   const priorityMatch = priorityRegex.exec(currentTitle);
   if (priorityMatch && !priority) {
-    priority = priorityMatch[1].toLowerCase() as 'high' | 'medium' | 'low';
+    const mapped = mapPriorityShortcut(priorityMatch[1]);
+    if (mapped) priority = mapped;
     detectedTokens.push({
       text: priorityMatch[0],
       type: 'priority',

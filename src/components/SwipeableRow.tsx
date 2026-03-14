@@ -1,13 +1,16 @@
 import { useRef, useState } from 'react';
-import { Check, Clock, Trash2 } from 'lucide-react';
+import { Check, Clock, CircleSlash2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const SWIPE_THRESHOLD = 80;
-const MAX_SWIPE = 280; // Increased to accommodate all 3 buttons (Done ~100px + +1h ~90px + Delete ~100px)
+const DONE_WIDTH = 84;
+const WONT_DO_WIDTH = 96;
+const POSTPONE_WIDTH = 76;
 
 interface SwipeableRowProps {
   children: React.ReactNode;
   onDone?: () => void;
+  onWontDo?: () => void;
   onPostpone?: () => void;
   onDelete?: () => void;
   showPostpone?: boolean;
@@ -17,8 +20,8 @@ interface SwipeableRowProps {
 export function SwipeableRow({
   children,
   onDone,
+  onWontDo,
   onPostpone,
-  onDelete,
   showPostpone = true,
   className,
 }: SwipeableRowProps) {
@@ -31,23 +34,30 @@ export function SwipeableRow({
     currentX.current = e.touches[0].clientX;
   };
 
+  const visibleActionsWidth =
+    (onDone ? DONE_WIDTH : 0)
+    + (onWontDo ? WONT_DO_WIDTH : 0)
+    + (showPostpone && onPostpone ? POSTPONE_WIDTH : 0);
+
+  const maxSwipe = Math.max(visibleActionsWidth, SWIPE_THRESHOLD);
+
   const handleTouchMove = (e: React.TouchEvent) => {
     currentX.current = e.touches[0].clientX;
     const diff = startX.current - currentX.current;
     // Only allow swipe left (positive diff)
-    const value = Math.max(0, Math.min(diff, MAX_SWIPE));
+    const value = Math.max(0, Math.min(diff, maxSwipe));
     setOffset(value);
   };
 
   const handleTouchEnd = () => {
     if (offset >= SWIPE_THRESHOLD) {
-      setOffset(MAX_SWIPE);
+      setOffset(maxSwipe);
     } else {
       setOffset(0);
     }
   };
 
-  const hasActions = onDone || onPostpone || onDelete;
+  const hasActions = visibleActionsWidth > 0;
 
   if (!hasActions) {
     return <div className={className}>{children}</div>;
@@ -72,10 +82,24 @@ export function SwipeableRow({
               setOffset(0);
               onDone();
             }}
-            className="flex items-center justify-center gap-1.5 px-4 bg-green-600 text-white font-medium text-sm min-w-[80px] active:opacity-80 outline-none border-0"
+            className="flex items-center justify-center gap-1.5 px-3 bg-green-600 text-white font-medium text-sm min-w-[84px] active:opacity-80 outline-none border-0"
           >
-            <Check size={18} />
+            <Check size={16} />
             Done
+          </button>
+        )}
+        {onWontDo && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOffset(0);
+              onWontDo();
+            }}
+            className="flex items-center justify-center gap-1.5 px-3 bg-zinc-600 text-white font-medium text-sm min-w-[84px] active:opacity-80 outline-none border-0"
+          >
+            <CircleSlash2 size={16} />
+            Won't do
           </button>
         )}
         {showPostpone && onPostpone && (
@@ -90,20 +114,6 @@ export function SwipeableRow({
           >
             <Clock size={16} />
             +1h
-          </button>
-        )}
-        {onDelete && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setOffset(0);
-              onDelete();
-            }}
-            className="flex items-center justify-center gap-1.5 px-4 bg-red-600 text-white font-medium text-sm min-w-[80px] active:opacity-80 outline-none border-0"
-          >
-            <Trash2 size={16} />
-            Delete
           </button>
         )}
       </div>

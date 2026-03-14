@@ -17,6 +17,8 @@ import {
   Clock,
   Sun,
   ArrowRight,
+  CircleSlash2,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
@@ -93,7 +95,7 @@ function parseDueDateTime(dateStr: string | undefined, timeStr: string | undefin
   return Number.isNaN(d.getTime()) ? new Date() : d;
 }
 
-type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'list' | 'tag';
+type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'wontdo' | 'list' | 'tag';
 
 interface SmartListConfig {
   id: string;
@@ -110,9 +112,21 @@ const SMART_LISTS: SmartListConfig[] = [
   { id: 'week', label: 'This Week', icon: CalendarIcon, viewType: 'week', getCount: (weekTasks: Task[]) => weekTasks.length, colorClass: "bg-purple-500/20 text-purple-500" },
   { id: 'upcoming', label: 'Upcoming', icon: CalendarDays, viewType: 'upcoming', getCount: (upcomingTasks: Task[]) => upcomingTasks.length, colorClass: "bg-secondary text-foreground" },
   { id: 'all', label: 'All Tasks', icon: ListTodo, viewType: 'all', getCount: (allTasks: Task[]) => allTasks.filter(t => !t.is_completed).length, colorClass: "bg-secondary text-foreground" },
-  { id: 'completed', label: 'Completed', icon: CheckCircle2, viewType: 'completed', getCount: (completedTasks: Task[]) => completedTasks.length, colorClass: "bg-secondary text-foreground" },
+  { id: 'completed', label: 'Completed', icon: CheckCircle2, viewType: 'completed', getCount: (allTasks: Task[]) => allTasks.filter((task) => task.is_completed && !(task.is_wont_do ?? ((task.description || '').includes(WONT_DO_MARKER)))).length, colorClass: "bg-secondary text-foreground" },
+  { id: 'wontdo', label: "Won't Do", icon: CircleSlash2, viewType: 'wontdo', getCount: (allTasks: Task[]) => allTasks.filter((task) => task.is_completed && (task.is_wont_do ?? ((task.description || '').includes(WONT_DO_MARKER)))).length, colorClass: "bg-zinc-500/20 text-zinc-300" },
 ];
 const SMART_LIST_IDS = new Set(SMART_LISTS.map((l) => l.id));
+const WONT_DO_MARKER = '[WONT_DO]';
+
+type TaskSortMode = 'smart' | 'due' | 'priority' | 'alpha' | 'created';
+
+const TASK_SORT_OPTIONS: { value: TaskSortMode; label: string }[] = [
+  { value: 'smart', label: 'Smart' },
+  { value: 'due', label: 'Due date' },
+  { value: 'priority', label: 'Priority' },
+  { value: 'alpha', label: 'A-Z' },
+  { value: 'created', label: 'Newest' },
+];
 
 export default function Tasks() {
   const { data: allTasks = [] } = useTasks();
@@ -146,6 +160,7 @@ export default function Tasks() {
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
   const [activeView, setActiveView] = useState<ViewType>('today');
+  const [taskSort, setTaskSort] = useState<TaskSortMode>('smart');
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -166,6 +181,7 @@ export default function Tasks() {
   const [newTaskRemindersEnabled, setNewTaskRemindersEnabled] = useState(false);
   const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
   const [suggestionTrigger, setSuggestionTrigger] = useState<SuggestionTrigger>(null);
+  const [suggestionQuery, setSuggestionQuery] = useState('');
   const [isTagSelectorOpen, setIsTagSelectorOpen] = useState(false);
   const [showListsSidebar, setShowListsSidebar] = useState(() => window.innerWidth >= 768);
   const [tagsExpanded, setTagsExpanded] = useState(false);
@@ -179,6 +195,7 @@ export default function Tasks() {
   const [listToDeleteId, setListToDeleteId] = useState<string | null>(null);
   const [tagToDeleteId, setTagToDeleteId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [showWontDo, setShowWontDo] = useState(false);
   const listLongPressTimer = useRef<number | null>(null);
   const tagLongPressTimer = useRef<number | null>(null);
 
@@ -214,6 +231,49 @@ export default function Tasks() {
     }
   }, [effectiveDefaultView]);
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isTyping = !!target && (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable
+      );
+      if (isTyping) return;
+
+      if (e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        handleOpenNewTaskSheet();
+        return;
+      }
+
+      if (e.key.toLowerCase() === 'q') {
+        e.preventDefault();
+        setIsAddingTask((v) => !v);
+        return;
+      }
+
+      if (e.key === '/') {
+        e.preventDefault();
+        setIsAddingTask(true);
+        requestAnimationFrame(() => quickAddRef.current?.focus());
+        return;
+      }
+
+      if (e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        setTaskSort((prev) => {
+          const idx = TASK_SORT_OPTIONS.findIndex((o) => o.value === prev);
+          return TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
+        });
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   // Smart task input: parse time (12:00), date (wed, tmrw, 15 June), ~ lists, ! priority, # tags.
   // Date/time are applied while typing; shortcut text is stripped only when adding the task.
   const handleQuickAddTitleChange = (rawTitle: string) => {
@@ -243,17 +303,24 @@ export default function Tasks() {
     setHighlightedTime(parsed.time);
 
 
-    // Adjust suggestion trigger: do not show priority suggestion if auto-assigned
-    if (parsed.trigger !== null && parsed.trigger !== 'priority') { // Only set trigger if not priority
-      setSuggestionTrigger(parsed.trigger);
-    } else {
-      setSuggestionTrigger(null);
+    // Keep picker trigger active so users can choose via TickTick-like gestures (~, !, #).
+    setSuggestionTrigger(parsed.trigger);
+    setSuggestionQuery((parsed.triggerQuery || '').trim());
+
+    // TickTick-style inline priority query (!1, !2, !3, !4, !high, ...)
+    if (parsed.trigger === 'priority' && parsed.triggerQuery) {
+      const q = parsed.triggerQuery.toLowerCase();
+      if (q === '1' || q.startsWith('h')) setNewTaskPriority('high');
+      else if (q === '2' || q.startsWith('m')) setNewTaskPriority('medium');
+      else if (q === '3' || q.startsWith('l')) setNewTaskPriority('low');
+      else if (q === '4' || q.startsWith('n')) setNewTaskPriority('none');
     }
   };
 
   const stripTriggerFromTitle = () => {
     setNewTaskTitle((t) => t.replace(/\s*(~|!|#)\s*[^\s]*$/, '').trim());
     setSuggestionTrigger(null);
+    setSuggestionQuery('');
   };
 
   const recurrencePreview = useMemo(() => {
@@ -519,6 +586,9 @@ export default function Tasks() {
       case 'completed':
         tasks = completedTasks.slice(0, 50);
         break;
+      case 'wontdo':
+        tasks = allTasks.filter((task) => task.is_completed && isWontDoTask(task));
+        break;
       case 'list':
         tasks = activeListId ? (allTasks.filter(t => t.list_id === activeListId)) : [];
         break;
@@ -533,10 +603,68 @@ export default function Tasks() {
     return Array.from(new Map(tasks.map(task => [task.id, task])).values());
   };
 
+  const hasWontDoMarker = (task: Task) => (task.description || '').includes(WONT_DO_MARKER);
+  const isWontDoTask = (task: Task) => task.is_wont_do ?? hasWontDoMarker(task);
+
   const displayTasks = getDisplayTasks();
   const incompleteTasks = displayTasks.filter(t => !t.is_completed);
-  const completedDisplayTasks = displayTasks.filter(t => t.is_completed);
-  const mainTasksToRender = activeView === 'completed' ? completedDisplayTasks : incompleteTasks;
+  const completedDisplayTasks = displayTasks.filter((t) => t.is_completed && !isWontDoTask(t));
+  const wontDoDisplayTasks = displayTasks.filter((t) => t.is_completed && isWontDoTask(t));
+
+  const stripWontDoMarker = (text?: string) => {
+    if (!text) return undefined;
+    const cleaned = text.replace(WONT_DO_MARKER, '').replace(/\n{3,}/g, '\n\n').trim();
+    return cleaned || undefined;
+  };
+
+  const sortTasks = (tasks: Task[]) => {
+    const priorityRank: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2, none: 3 };
+    const byDueAsc = (a: Task, b: Task) => {
+      const ad = a.due_date ? parseDueDateTime(a.due_date, a.due_time) : null;
+      const bd = b.due_date ? parseDueDateTime(b.due_date, b.due_time) : null;
+      if (!ad && !bd) return 0;
+      if (!ad) return 1;
+      if (!bd) return -1;
+      return ad.getTime() - bd.getTime();
+    };
+
+    const list = [...tasks];
+    switch (taskSort) {
+      case 'due':
+        return list.sort((a, b) => byDueAsc(a, b) || (priorityRank[a.priority] - priorityRank[b.priority]));
+      case 'priority':
+        return list.sort((a, b) => (priorityRank[a.priority] - priorityRank[b.priority]) || byDueAsc(a, b));
+      case 'alpha':
+        return list.sort((a, b) => a.title.localeCompare(b.title));
+      case 'created':
+        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case 'smart':
+      default:
+        return list.sort((a, b) => {
+          const overdueA = !!a.due_date && isPast(new Date(a.due_date.split('T')[0]));
+          const overdueB = !!b.due_date && isPast(new Date(b.due_date.split('T')[0]));
+          if (overdueA !== overdueB) return overdueA ? -1 : 1;
+          return byDueAsc(a, b) || (priorityRank[a.priority] - priorityRank[b.priority]);
+        });
+    }
+  };
+
+  const mainTasksToRender = sortTasks(
+    activeView === 'completed'
+      ? completedDisplayTasks
+      : activeView === 'wontdo'
+        ? wontDoDisplayTasks
+        : incompleteTasks
+  );
+  const completedTasksToRender = sortTasks(completedDisplayTasks);
+  const wontDoTasksToRender = sortTasks(wontDoDisplayTasks);
+  const currentSortOption = TASK_SORT_OPTIONS.find((o) => o.value === taskSort) ?? TASK_SORT_OPTIONS[0];
+  const cycleSortMode = () => {
+    setTaskSort((prev) => {
+      const idx = TASK_SORT_OPTIONS.findIndex((o) => o.value === prev);
+      return TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
+    });
+  };
   const activeListCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const task of allTasks) {
@@ -572,8 +700,54 @@ export default function Tasks() {
         });
       }
     } else {
+      // If this task was previously marked "won't do", a reopen should remove that marker.
+      if (task.is_completed && isWontDoTask(task)) {
+        updateTask.mutate({
+          id: task.id,
+          data: {
+            is_completed: false,
+            is_wont_do: false,
+            description: stripWontDoMarker(task.description),
+          },
+        });
+        return;
+      }
       toggleTask.mutate(task.id);
     }
+  };
+
+  const handleMarkWontDo = (task: Task) => {
+    if (task.id.startsWith('habit-')) return;
+    if (isWontDoTask(task)) return;
+    const baseDescription = stripWontDoMarker(task.description);
+    const nextDescription = baseDescription;
+
+    // For recurring tasks, complete this occurrence via toggle so recurrence generation stays intact,
+    // then annotate only this completed item as "won't do".
+    if (!task.is_completed && task.recurrence !== 'none') {
+      toggleTask.mutate(task.id, {
+        onSuccess: () => {
+          updateTask.mutate({
+            id: task.id,
+            data: {
+              is_wont_do: true,
+              description: nextDescription,
+            },
+          });
+        },
+      });
+      return;
+    }
+
+    updateTask.mutate({
+      id: task.id,
+      data: {
+        is_completed: true,
+        is_wont_do: true,
+        completed_at: new Date().toISOString(),
+        description: nextDescription,
+      },
+    });
   };
 
   // Get view title
@@ -587,6 +761,8 @@ export default function Tasks() {
         return 'Upcoming';
       case 'completed':
         return 'Completed';
+      case 'wontdo':
+        return "Won't Do";
       case 'list':
         return taskLists.find(l => l.id === activeListId)?.name || 'Tasks';
       case 'tag':
@@ -642,6 +818,7 @@ export default function Tasks() {
         setNewTaskRemindersEnabled(false);
         setShowAdvancedCreate(false);
         setSuggestionTrigger(null);
+        setSuggestionQuery('');
         setIsTagSelectorOpen(false);
         setIsAddingTask(false);
         setHighlightedDate(undefined); // Clear highlights
@@ -1005,7 +1182,8 @@ export default function Tasks() {
                 {list.id === 'week' && list.getCount(weekTasks)}
                 {list.id === 'upcoming' && list.getCount(upcomingTasks)}
                 {list.id === 'all' && list.getCount(allTasks)}
-                {list.id === 'completed' && list.getCount(completedTasks)}
+                {list.id === 'completed' && list.getCount(allTasks)}
+                {list.id === 'wontdo' && list.getCount(allTasks)}
               </span>
             </button>
           ))}
@@ -1222,9 +1400,20 @@ export default function Tasks() {
               </span>
             )}
           </div>
-          <Button onClick={handleOpenNewTaskSheet} className="p-2" aria-label="Add task">
-            <Plus size={22} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={cycleSortMode}
+              className="h-9 w-9 rounded-full border border-border bg-card/70 hover:bg-secondary transition-colors flex items-center justify-center"
+              title={`Sort: ${currentSortOption.label} (press S to cycle)`}
+              aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
+            >
+              <ArrowUpDown size={16} className="text-muted-foreground" />
+            </button>
+            <Button onClick={handleOpenNewTaskSheet} className="p-2" aria-label="Add task">
+              <Plus size={22} />
+            </Button>
+          </div>
         </header>
 
         {/* Task List - swipe L/R at top to change view (Today/Week/Upcoming) on mobile */}
@@ -1259,6 +1448,7 @@ export default function Tasks() {
                     setNewTaskRemindersEnabled(false);
                     setShowAdvancedCreate(false);
                     setIsTagSelectorOpen(false);
+                    setSuggestionQuery('');
                     setHighlightedDate(undefined); // Clear highlights
                     setHighlightedTime(undefined); // Clear highlights
                   }
@@ -1284,7 +1474,9 @@ export default function Tasks() {
               {suggestionTrigger === 'list' && (
                 <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                   <p className="text-xs text-muted-foreground mb-2">Choose list</p>
-                  {taskLists.map((list) => (
+                  {taskLists
+                    .filter((list) => !suggestionQuery || list.name.toLowerCase().includes(suggestionQuery.toLowerCase()))
+                    .map((list) => (
                     <button
                       key={list.id}
                       type="button"
@@ -1303,7 +1495,17 @@ export default function Tasks() {
               {suggestionTrigger === 'priority' && (
                 <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 flex gap-2 flex-wrap">
                   <p className="text-xs text-muted-foreground w-full mb-1">Priority</p>
-                  {(['high', 'medium', 'low'] as const).map((p) => (
+                  {(['high', 'medium', 'low', 'none'] as const)
+                    .filter((p) => {
+                      if (!suggestionQuery) return true;
+                      const q = suggestionQuery.toLowerCase();
+                      if (q === '1') return p === 'high';
+                      if (q === '2') return p === 'medium';
+                      if (q === '3') return p === 'low';
+                      if (q === '4') return p === 'none';
+                      return p.startsWith(q);
+                    })
+                    .map((p) => (
                     <button
                       key={p}
                       type="button"
@@ -1322,7 +1524,9 @@ export default function Tasks() {
               {suggestionTrigger === 'tag' && (
                 <div className="absolute left-0 right-0 mt-1 p-2 bg-popover border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
                   <p className="text-xs text-muted-foreground mb-2">Add tag</p>
-                  {tags.map((tag) => (
+                  {tags
+                    .filter((tag) => !suggestionQuery || tag.name.toLowerCase().includes(suggestionQuery.toLowerCase()))
+                    .map((tag) => (
                     <button
                       key={tag.id}
                       type="button"
@@ -1579,6 +1783,7 @@ export default function Tasks() {
                 <SwipeableRow
                   key={task.id}
                   onDone={() => handleTaskToggle(task)}
+                  onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
                   onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
                   onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
                   showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
@@ -1593,6 +1798,9 @@ export default function Tasks() {
                     onDelete={() => {
                       if (!isHabitTask) deleteTask.mutate(task.id);
                     }}
+                    onWontDo={() => {
+                      if (!isHabitTask) handleMarkWontDo(task);
+                    }}
                     formatDueDate={formatDueDate}
                   />
                 </SwipeableRow>
@@ -1601,23 +1809,24 @@ export default function Tasks() {
           </div>
 
           {/* Completed section */}
-          {activeView !== 'completed' && completedDisplayTasks.length > 0 && (
+          {activeView !== 'completed' && activeView !== 'wontdo' && completedDisplayTasks.length > 0 && (
             <div className="mt-6">
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showCompleted ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                <span>Completed ({completedDisplayTasks.length})</span>
+                <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
                 <div className="mt-2 space-y-1 opacity-60">
-                  {completedDisplayTasks.slice(0, 10).map((task) => {
+                  {completedTasksToRender.slice(0, 10).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (
                       <SwipeableRow
                         key={task.id}
                         onDone={() => handleTaskToggle(task)}
+                        onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
                         onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
                         showPostpone={false}
                       >
@@ -1631,6 +1840,54 @@ export default function Tasks() {
                           onDelete={() => {
                             if (!isHabitTask) deleteTask.mutate(task.id);
                           }}
+                          onWontDo={() => {
+                            if (!isHabitTask) handleMarkWontDo(task);
+                          }}
+                          formatDueDate={formatDueDate}
+                        />
+                      </SwipeableRow>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Won't do section */}
+          {activeView !== 'wontdo' && wontDoTasksToRender.length > 0 && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowWontDo(!showWontDo)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showWontDo ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                <span>Won't do ({wontDoTasksToRender.length})</span>
+              </button>
+              {showWontDo && (
+                <div className="mt-2 space-y-1 opacity-70">
+                  {wontDoTasksToRender.slice(0, 20).map((task) => {
+                    const isHabitTask = task.id.startsWith('habit-');
+                    return (
+                      <SwipeableRow
+                        key={task.id}
+                        onDone={() => handleTaskToggle(task)}
+                        onWontDo={undefined}
+                        onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                        showPostpone={false}
+                      >
+                        <TaskItem
+                          task={task}
+                          tags={tags}
+                          onToggle={() => handleTaskToggle(task)}
+                          onEdit={() => {
+                            if (!isHabitTask) handleEditTask(task);
+                          }}
+                          onDelete={() => {
+                            if (!isHabitTask) deleteTask.mutate(task.id);
+                          }}
+                          onWontDo={() => {
+                            if (!isHabitTask) handleMarkWontDo(task);
+                          }}
                           formatDueDate={formatDueDate}
                         />
                       </SwipeableRow>
@@ -1642,10 +1899,10 @@ export default function Tasks() {
           )}
 
           {/* Empty state */}
-          {mainTasksToRender.length === 0 && (
+          {mainTasksToRender.length === 0 && (activeView !== 'completed' || wontDoTasksToRender.length === 0) && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <CheckCircle2 size={48} className="opacity-20 mb-4" />
-              <p className="text-lg font-medium">{activeView === 'completed' ? 'No completed tasks' : 'All done!'}</p>
+              <p className="text-lg font-medium">{activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}</p>
               <p className="text-sm">No tasks to show</p>
             </div>
           )}
@@ -1831,13 +2088,15 @@ interface TaskItemProps {
   onToggle: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onWontDo: () => void;
   formatDueDate: (task: Task) => { text: string; className: string };
 }
 
-function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: TaskItemProps) {
+function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate }: TaskItemProps) {
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority];
+  const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
 
   return (
     <div
@@ -1899,6 +2158,9 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
           {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
             <Repeat size={14} className="text-muted-foreground" />
           )}
+          {isWontDo && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
+          )}
         </div>
 
 
@@ -1923,15 +2185,27 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, formatDueDate }: Tas
       </div>
 
       {!task.id.startsWith('habit-') && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          className="md:opacity-0 md:group-hover:opacity-100 p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
-        >
-          <Trash2 size={14} />
-        </button>
+        <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onWontDo();
+            }}
+            className="p-1.5 rounded hover:bg-zinc-500/20 text-muted-foreground hover:text-zinc-300 transition-all"
+            title="Mark as won't do"
+          >
+            <CircleSlash2 size={14} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
       )}
     </div>
   );

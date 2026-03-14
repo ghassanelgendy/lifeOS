@@ -243,6 +243,7 @@ export interface Task {
   title: string;
   description?: string;
   is_completed: boolean;
+  is_wont_do?: boolean;
   completed_at?: string; // ISO-8601
   priority: TaskPriority;
   due_date?: string; // ISO-8601
@@ -299,13 +300,19 @@ export interface TaskWithSubtasks extends Task {
 // Habits
 // ========================
 export type HabitFrequency = 'Daily' | 'Weekly';
+export type HabitType = 'standard' | 'detox';
+export type DetoxMode = 'linear' | 'exponential' | 'incremental';
 
 export interface Habit {
   id: string;
   title: string;
   description?: string;
+  habit_type?: HabitType;
   frequency: HabitFrequency;
   target_count: number; // e.g., 1 (once a day), 4 (4 times a week)
+  detox_mode?: DetoxMode | null;
+  detox_start_target?: number | null;
+  detox_step?: number | null;
   color: string; // Hex code
   icon?: string; // Lucide icon name
   time?: string | null; // Optional time of day (HH:mm format)

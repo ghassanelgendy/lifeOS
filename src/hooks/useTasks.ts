@@ -22,7 +22,7 @@ type RecurrenceEndType = 'never' | 'on_date' | 'after_count';
 // Columns that exist on public.tasks (must match DB exactly; unknown keys cause PostgREST 400).
 // DB has: sort_order (not subtask_order), no reminder, no recurrence_days; due_date/due_time/recurrence_end as date/time.
 const TASK_INSERT_KEYS = [
-  'title', 'description', 'is_completed', 'completed_at', 'priority', 'due_date', 'due_time',
+  'title', 'description', 'is_completed', 'is_wont_do', 'completed_at', 'priority', 'due_date', 'due_time',
   'duration_minutes', 'focus_time_seconds',
   'url', 'is_urgent', 'is_flagged', 'early_reminder_minutes', 'location', 'when_messaging',
   'list_id', 'project_id', 'tag_ids', 'recurrence', 'recurrence_interval', 'recurrence_end',
@@ -421,6 +421,7 @@ export function useCreateTask() {
           project_id: input.project_id ?? null,
           tag_ids: input.tag_ids ?? [],
           is_completed: false,
+          is_wont_do: false,
           priority: input.priority ?? 'none',
           recurrence: input.recurrence ?? 'none',
           recurrence_interval: input.recurrence_interval ?? 1,
@@ -536,7 +537,7 @@ export function useToggleTask() {
         const task = tasks.find((t) => t.id === id);
         if (!task) throw new Error('Task not found');
         const newCompleted = !task.is_completed;
-        const payload = { is_completed: newCompleted, completed_at: newCompleted ? new Date().toISOString() : null };
+        const payload = { is_completed: newCompleted, is_wont_do: false, completed_at: newCompleted ? new Date().toISOString() : null };
         addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload });
         queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) =>
           (old ?? []).map((t) =>
@@ -556,6 +557,7 @@ export function useToggleTask() {
         .from('tasks')
         .update({
           is_completed: newCompleted,
+          is_wont_do: false,
           completed_at: newCompleted ? new Date().toISOString() : null,
         })
         .eq('id', id)
@@ -571,6 +573,7 @@ export function useToggleTask() {
             title: updatedTask.title,
             description: updatedTask.description,
             is_completed: false,
+            is_wont_do: false,
             priority: updatedTask.priority,
             due_date: next.due_date,
             due_time: next.due_time,
