@@ -16,5 +16,5 @@ Every role’s handoff JSON MUST include the following items in `definition_of_d
 4. **Build/CI readiness**
    - For PR-authoring roles: the PR should be expected to pass `npm run lint` and `npm run build` once the changes are applied.
 5. **Migration timing rule**
-   - Database migrations must only be applied by the **Release Manager after merge to `main`** (never from ephemeral PR branches).
+   - Database migrations must only be applied by the **Release Manager after merge to `electron`** (never from ephemeral PR branches).
 

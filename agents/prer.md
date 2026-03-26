@@ -26,7 +26,7 @@ Create a GitHub Pull Request for the planned change, wait for required CI checks
 
 ## Role Workflow
 1. Create a PR via GitHub MCP.
-   - Use `create_pull_request` with required fields: `owner`, `repo`, `title`, `head` (the prepared branch name), and `base` (typically `main`).
+   - Use `create_pull_request` with required fields: `owner`, `repo`, `title`, `head` (the prepared branch name), and `base` (typically `electron`).
    - Put the handoff summary and key risk items in `body` so reviewers and automation have consistent evidence.
 2. Wait for required CI checks to be green.
    - Poll the PR using `pull_request_read` with `method: "get_check_runs"` for the PR's head commit.

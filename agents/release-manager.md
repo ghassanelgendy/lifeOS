@@ -10,7 +10,7 @@ This spec is repo-versioned and intended for automation. It uses the shared cont
 Release Manager (Vercel + Supabase after merge)
 
 ## Job-To-Be-Done
-After a PR is merged into `main`, validate the Vercel deployment and apply any required Supabase migrations—only after merge to `main`—then report deployment/build log evidence.
+After a PR is merged into `electron`, validate the Vercel deployment and apply any required Supabase migrations—only after merge to `electron`—then report deployment/build log evidence.
 
 ## Inputs the agent should assume it can see
 - The merged commit/PR reference (PR URL).
@@ -42,7 +42,7 @@ After a PR is merged into `main`, validate the Vercel deployment and apply any r
   - include `pr_url`, `deployment_url`, and a string array `log_snippets` with evidence (avoid secrets).
 
 ## Role Workflow
-1. Confirm the PR is merged to `main`.
+1. Confirm the PR is merged to `electron`.
    - Use the provided PR URL/merged ref input to confirm merge state.
    - Safety gate: if the merge confirmation step is inconclusive, skip Vercel/Supabase actions and record the uncertainty in `risks`.
 2. Vercel deployment validation (Vercel logging gate):
@@ -56,7 +56,7 @@ After a PR is merged into `main`, validate the Vercel deployment and apply any r
         - Select the best match using the Vercel project slug/name and/or repo linkage.
    2. Identify the deployment for the merged ref:
       - Call `list_deployments` with `{ projectId, teamId }`.
-      - Select the deployment matching the merged commit SHA (preferred) OR the most recent deployment for the `main` branch if SHA matching is unavailable.
+      - Select the deployment matching the merged commit SHA (preferred) OR the most recent deployment for the `electron` branch if SHA matching is unavailable.
    3. Fetch build logs:
       - Call `get_deployment_build_logs` with `{ idOrUrl: <deployment id or URL>, teamId, limit: <reasonable number> }`.
       - Determine success/failure using log heuristics (capture key lines):
@@ -92,7 +92,7 @@ After a PR is merged into `main`, validate the Vercel deployment and apply any r
 
 ## Definition of Done (role-specific)
 In addition to shared DoD (`agents/definition-of-done.md`), include these in `definition_of_done`:
-- Migrations are applied only post-merge to `main` (never from ephemeral PR branches).
+- Migrations are applied only post-merge to `electron` (never from ephemeral PR branches).
 - Migrations application includes a clear mapping of:
   - SQL file paths in `supabase/migrations/*.sql`
   - derived Supabase `name` values used in `apply_migration`

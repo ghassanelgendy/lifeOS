@@ -29,7 +29,7 @@ Make the planned backend/data changes needed for the feature while preserving se
 4. If migrations/DDL are needed:
    - Plan migration content and impact.
    - Add it to scope as planned migrations.
-   - Emphasize the migration timing rule (only apply after merge to `main`).
+   - Emphasize the migration timing rule (only apply after merge to `electron`).
 5. Align backend changes with frontend expectations (payloads, types, validation).
 
 ## Definition of Done (role-specific)

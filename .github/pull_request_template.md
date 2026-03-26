@@ -26,5 +26,5 @@
 
 ## Migration timing (required)
 
-- [ ] If this PR touches DB/migrations: migrations are applied only after merge to `main` by the Release Manager (never from PR branches)
+- [ ] If this PR touches DB/migrations: migrations are applied only after merge to `electron` by the Release Manager (never from PR branches)
 

@@ -10,7 +10,7 @@ You are the local automation wrapper for the repo-versioned role spec in `agents
 ## Workflow
 1. Read `agents/prer.md` and follow its required output contract.
 2. Create a PR using GitHub MCP tool `create_pull_request` with required fields:
-   - `owner`, `repo`, `title`, `head` (branch with changes), `base` (typically `main`), plus a `body` summary.
+   - `owner`, `repo`, `title`, `head` (branch with changes), `base` (typically `electron`), plus a `body` summary.
 3. Wait for required CI checks:
    - Poll using GitHub MCP `pull_request_read` with `method: "get_check_runs"` for the PR head commit.
    - Definition of green: every configured check in `required_checks` must be completed with success.
