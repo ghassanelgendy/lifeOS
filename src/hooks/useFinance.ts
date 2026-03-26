@@ -126,17 +126,24 @@ export function useCreateTransaction() {
       const threeMinutesAgo = new Date(now.getTime() - 3 * 60 * 1000);
       const existingList = (queryClient.getQueryData(key) as Transaction[] | undefined) ?? [];
 
+      // Corrections are reconciliation adjustments; allow repeated application even if
+      // the amount/direction matches a recent transaction.
+      const isCorrection =
+        input.description === 'Correction Transaction' || input.transaction_type === 'Correction Transaction';
+
       // 3‑minute dedup: same amount + same direction within the last 3 minutes.
-      const isDuplicate = existingList.some((t) => {
-        if (!t.created_at) return false;
-        const createdAt = new Date(t.created_at);
-        return (
-          createdAt >= threeMinutesAgo &&
-          createdAt <= now &&
-          Number(t.amount) === Number(input.amount) &&
-          t.direction === input.direction
-        );
-      });
+      const isDuplicate = !isCorrection
+        ? existingList.some((t) => {
+            if (!t.created_at) return false;
+            const createdAt = new Date(t.created_at);
+            return (
+              createdAt >= threeMinutesAgo &&
+              createdAt <= now &&
+              Number(t.amount) === Number(input.amount) &&
+              t.direction === input.direction
+            );
+          })
+        : false;
 
       if (isDuplicate) {
         // Ignore duplicate; return a no-op result.
