@@ -679,11 +679,11 @@ export default function Finance() {
         <button
           type="button"
           onClick={() => setSelectedMonth((prev) => subMonths(prev, 1))}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.10] text-[#8899aa] transition-colors"
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft size={16} />
         </button>
-        <span className="text-sm font-semibold text-[#e6edf3] min-w-[120px] text-center">
+        <span className="text-sm font-semibold text-foreground min-w-[120px] text-center">
           {format(selectedMonth, 'MMMM yyyy')}
         </span>
         <button
@@ -693,8 +693,8 @@ export default function Finance() {
           className={cn(
             'w-8 h-8 flex items-center justify-center rounded-full transition-colors',
             isCurrentMonth
-              ? 'text-[#8899aa]/30 cursor-default'
-              : 'bg-white/[0.05] hover:bg-white/[0.10] text-[#8899aa]'
+              ? 'text-muted-foreground/30 cursor-default'
+              : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
           )}
         >
           <ChevronRight size={16} />
@@ -950,18 +950,18 @@ export default function Finance() {
       <div
         className="rounded-2xl overflow-hidden"
         style={{
-          background: 'linear-gradient(145deg, #121821 0%, #1a2230 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.35)',
+          background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.25)',
         }}
       >
         <div className="px-4 pt-4 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-base font-bold text-[#e6edf3]">
+            <h2 className="text-base font-bold text-foreground">
               {viewAllTransactions ? 'All Transactions' : 'Recent Transactions'}
             </h2>
             <button
               type="button"
-              className="text-xs text-[#8899aa] hover:text-[#e6edf3] transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               onClick={() => setViewAllTransactions(!viewAllTransactions)}
             >
               {viewAllTransactions ? 'show recent' : 'view all'}
@@ -979,9 +979,9 @@ export default function Finance() {
           </div>
         </div>
         {viewAllTransactions && (
-          <div className="px-4 pb-3 border-b border-white/[0.06] flex flex-wrap items-center gap-2">
-            <span className="text-xs text-[#8899aa]">Filter:</span>
-            <div className="flex p-0.5 bg-white/[0.05] rounded-lg">
+          <div className="px-4 pb-3 border-b border-border flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Filter:</span>
+            <div className="flex p-0.5 bg-secondary/50 rounded-lg">
               {(['all', 'month', 'day'] as const).map((mode) => (
                 <button
                   key={mode}
@@ -990,8 +990,8 @@ export default function Finance() {
                   className={cn(
                     'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
                     dateFilterMode === mode
-                      ? 'bg-white/10 text-[#e6edf3]'
-                      : 'text-[#8899aa] hover:text-[#e6edf3]'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {mode === 'all' ? 'All' : mode === 'month' ? 'Month' : 'Day'}
@@ -1003,7 +1003,7 @@ export default function Finance() {
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-[#e6edf3]"
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground"
               />
             )}
             {dateFilterMode === 'day' && (
@@ -1011,7 +1011,7 @@ export default function Finance() {
                 type="date"
                 value={filterDay}
                 onChange={(e) => setFilterDay(e.target.value)}
-                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-[#e6edf3]"
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground"
               />
             )}
             <Input
@@ -1021,7 +1021,7 @@ export default function Finance() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full sm:w-auto sm:min-w-[180px] text-xs"
             />
-            <span className="text-xs text-[#8899aa]">
+            <span className="text-xs text-muted-foreground">
               {displayedTransactions.length} tx
             </span>
           </div>
@@ -1112,7 +1112,7 @@ export default function Finance() {
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-white/[0.04]">
           {displayedTransactions.length === 0 && (
-            <p className="text-center text-[#8899aa] text-sm py-10">No transactions</p>
+            <p className="text-center text-muted-foreground text-sm py-10">No transactions</p>
           )}
           {displayedTransactions.map((transaction) => {
             const categoryLabel =
@@ -1135,8 +1135,8 @@ export default function Finance() {
 
                 {/* Title + category */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-[#e6edf3] truncate">{title}</p>
-                  <p className="text-[11px] text-[#8899aa] mt-0.5">
+                  <p className="text-sm font-semibold text-foreground truncate">{title}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     {categoryLabel}
                     {transaction.is_recurring && ' · Recurring'}
                   </p>
@@ -1153,7 +1153,7 @@ export default function Finance() {
                   >
                     {transaction.type === 'income' ? '+' : '−'}{formatCurrency(transaction.amount)}
                   </p>
-                  <p className="text-[11px] text-[#8899aa] mt-0.5">
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     {format(new Date(transaction.date), 'MMM d')}
                   </p>
                 </div>
@@ -1162,14 +1162,14 @@ export default function Finance() {
                 <div className="flex flex-col gap-1 ml-1">
                   <button
                     onClick={() => handleOpenModal(transaction)}
-                    className="p-1.5 rounded-lg hover:bg-white/[0.06] text-[#8899aa] hover:text-[#e6edf3] transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
                     title="Edit"
                   >
                     <Edit2 size={13} />
                   </button>
                   <button
                     onClick={() => handleDelete(transaction.id)}
-                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#8899aa] hover:text-red-400 transition-colors"
+                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     title="Delete"
                   >
                     <Trash2 size={13} />

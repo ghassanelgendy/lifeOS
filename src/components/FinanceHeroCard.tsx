@@ -17,8 +17,8 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
     <div
       className="rounded-3xl p-5 relative overflow-hidden"
       style={{
-        background: 'linear-gradient(145deg, #121821 0%, #1a2230 100%)',
-        boxShadow: `0 0 0 1px ${isOverspending ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.08)'}, inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 40px rgba(0,0,0,0.5)`,
+        background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
+        boxShadow: `0 0 0 1px ${isOverspending ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.08)'}, inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 40px rgba(0,0,0,0.4)`,
       }}
     >
       {/* Ambient glow */}
@@ -45,7 +45,7 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
       </span>
 
       {/* Label */}
-      <p className="text-[11px] font-medium tracking-widest text-[#8899aa] uppercase mb-1">
+      <p className="text-[11px] font-medium tracking-widest text-muted-foreground uppercase mb-1">
         Net Balance
       </p>
 
@@ -73,21 +73,21 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
 
       {/* Income / Expenses columns */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-white/[0.03] rounded-2xl p-3">
+        <div className="bg-background/40 rounded-2xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-[11px] text-[#8899aa]">Income</span>
+            <span className="text-[11px] text-muted-foreground">Income</span>
           </div>
-          <p className={cn('text-[15px] font-bold tabular-nums text-[#e6edf3]', privacyMode && 'blur-sm')}>
+          <p className={cn('text-[15px] font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
             {formatCurrency(income)}
           </p>
         </div>
-        <div className="bg-white/[0.03] rounded-2xl p-3">
+        <div className="bg-background/40 rounded-2xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
-            <span className="text-[11px] text-[#8899aa]">Expenses</span>
+            <span className="text-[11px] text-muted-foreground">Expenses</span>
           </div>
-          <p className={cn('text-[15px] font-bold tabular-nums text-[#e6edf3]', privacyMode && 'blur-sm')}>
+          <p className={cn('text-[15px] font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
             {formatCurrency(expenses)}
           </p>
         </div>
@@ -95,7 +95,7 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
 
       {/* Progress bar */}
       <div className="space-y-1.5">
-        <div className="h-2 rounded-full bg-white/[0.07] overflow-hidden">
+        <div className="h-2 rounded-full bg-border overflow-hidden">
           <div
             className="h-full rounded-full"
             style={{
@@ -105,7 +105,7 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
             }}
           />
         </div>
-        <div className="flex justify-between text-[10px] text-[#8899aa]">
+        <div className="flex justify-between text-[10px] text-muted-foreground">
           <span>{Math.round(incomeRatio)}% in</span>
           <span>{Math.round(100 - incomeRatio)}% out</span>
         </div>

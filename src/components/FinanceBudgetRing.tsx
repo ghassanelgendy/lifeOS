@@ -19,11 +19,11 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
     <div
       className="rounded-2xl p-5"
       style={{
-        background: 'linear-gradient(145deg, #121821 0%, #1a2230 100%)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.35)',
+        background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
+        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.25)',
       }}
     >
-      <p className="text-sm font-semibold text-[#e6edf3] mb-4">Budget</p>
+      <p className="text-sm font-semibold text-foreground mb-4">Budget</p>
       <div className="flex items-center gap-6">
         {/* Donut ring */}
         <div className="relative w-24 h-24 flex-shrink-0">
@@ -33,7 +33,7 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
               cy="50"
               r={radius}
               fill="none"
-              stroke="rgba(255,255,255,0.06)"
+              stroke="var(--color-border)"
               strokeWidth="10"
             />
             <circle
@@ -41,7 +41,7 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
               cy="50"
               r={radius}
               fill="none"
-              stroke={isOver ? '#f87171' : '#38bdf8'}
+              stroke={isOver ? '#f87171' : 'var(--color-primary)'}
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -50,28 +50,28 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
             />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className={cn('text-xl font-black', isOver ? 'text-red-400' : 'text-sky-400')}>
+            <span className={cn('text-xl font-black', isOver ? 'text-red-400' : 'text-primary')}>
               {Math.round(pct)}%
             </span>
-            <span className="text-[9px] text-[#8899aa]">used</span>
+            <span className="text-[9px] text-muted-foreground">used</span>
           </div>
         </div>
 
         {/* Stats */}
         <div className="flex-1 space-y-3">
           <div>
-            <p className="text-[10px] text-[#8899aa] uppercase tracking-wider mb-0.5">Spent</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Spent</p>
             <p className={cn('text-base font-bold tabular-nums text-red-400', privacyMode && 'blur-sm')}>
               {formatCurrency(totalSpent)}
             </p>
           </div>
-          <div className="h-px bg-white/[0.07]" />
+          <div className="h-px bg-border" />
           <div>
-            <p className="text-[10px] text-[#8899aa] uppercase tracking-wider mb-0.5">Remaining</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Remaining</p>
             <p
               className={cn(
                 'text-base font-bold tabular-nums',
-                remaining >= 0 ? 'text-[#e6edf3]' : 'text-red-400',
+                remaining >= 0 ? 'text-foreground' : 'text-red-400',
                 privacyMode && 'blur-sm'
               )}
             >
