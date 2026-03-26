@@ -191,8 +191,15 @@ export default function Finance() {
     let expenses = 0;
     filteredTransactions.forEach((t) => {
       if (!(t.date || '').startsWith(monthStr)) return;
-      if (t.type === 'income') income += Number(t.amount);
-      else expenses += Number(t.amount);
+      const amt = Number(t.amount) || 0;
+      const dir =
+        t.direction === 'In' || t.direction === 'Out'
+          ? t.direction
+          : t.type === 'income'
+            ? 'In'
+            : 'Out';
+      if (dir === 'In') income += amt;
+      else expenses += amt;
     });
     return {
       selectedMonthIncome: income,
@@ -207,7 +214,6 @@ export default function Finance() {
     bankName: string,
     qnbCard: 'debit' | 'credit'
   ): number => {
-    const round1Local = (n: number) => Math.round(n * 10) / 10;
     const normalizedBank = (bankName || '').trim();
     if (!normalizedBank) return 0;
 
@@ -220,13 +226,11 @@ export default function Finance() {
       return QNB_CREDIT.test(acc);
     };
 
-    let balance = 0;
-    transactions.filter(matchesIdentity).forEach((t) => {
-      if (t.type === 'income') balance += Number(t.amount);
-      else balance -= Number(t.amount);
-    });
-
-    return round1Local(balance);
+    // IMPORTANT: Keep "detected" consistent with Dashboard calculations.
+    // Dashboard uses `useCategoryBreakdown()` which uses `getBreakdownFromTransactions()` for the CURRENT month window
+    // and rounds only at the end. So we reuse that exact function here.
+    const identityTx = transactions.filter(matchesIdentity);
+    return getBreakdownFromTransactions(identityTx).balance;
   };
 
   const [isCorrectionSheetOpen, setIsCorrectionSheetOpen] = useState(false);
@@ -357,11 +361,15 @@ export default function Finance() {
     monthlyTx.forEach((t) => {
       const bank = (t.bank || '').trim() || '—';
       if (!byBank[bank]) byBank[bank] = { cashIn: 0, cashOut: 0, cashflow: 0 };
-      if (t.type === 'income') {
-        byBank[bank].cashIn += Number(t.amount);
-      } else {
-        byBank[bank].cashOut += Number(t.amount);
-      }
+      const amt = Number(t.amount) || 0;
+      const dir =
+        t.direction === 'In' || t.direction === 'Out'
+          ? t.direction
+          : t.type === 'income'
+            ? 'In'
+            : 'Out';
+      if (dir === 'In') byBank[bank].cashIn += amt;
+      else if (dir === 'Out') byBank[bank].cashOut += amt;
       byBank[bank].cashflow = byBank[bank].cashIn - byBank[bank].cashOut;
     });
     return byBank;
@@ -455,8 +463,15 @@ export default function Finance() {
         let income = 0;
         let expense = 0;
         inRange.forEach((t) => {
-          if (t.type === 'income') income += t.amount;
-          else expense += t.amount;
+          const amt = Number(t.amount) || 0;
+          const dir =
+            t.direction === 'In' || t.direction === 'Out'
+              ? t.direction
+              : t.type === 'income'
+                ? 'In'
+                : 'Out';
+          if (dir === 'In') income += amt;
+          else if (dir === 'Out') expense += amt;
         });
         points.push({
           label: format(d, 'MMM d'),
@@ -491,8 +506,15 @@ export default function Finance() {
       let income = 0;
       let expense = 0;
       inRange.forEach((t) => {
-        if (t.type === 'income') income += t.amount;
-        else expense += t.amount;
+        const amt = Number(t.amount) || 0;
+        const dir =
+          t.direction === 'In' || t.direction === 'Out'
+            ? t.direction
+            : t.type === 'income'
+              ? 'In'
+              : 'Out';
+        if (dir === 'In') income += amt;
+        else if (dir === 'Out') expense += amt;
       });
       return {
         label: format(d, 'MMM'),
@@ -510,8 +532,15 @@ export default function Finance() {
     filteredTransactions.forEach((t) => {
       const bank = (t.bank || '').trim() || '—';
       if (!byBank[bank]) byBank[bank] = { income: 0, expense: 0 };
-      if (t.type === 'income') byBank[bank].income += t.amount;
-      else byBank[bank].expense += t.amount;
+      const amt = Number(t.amount) || 0;
+      const dir =
+        t.direction === 'In' || t.direction === 'Out'
+          ? t.direction
+          : t.type === 'income'
+            ? 'In'
+            : 'Out';
+      if (dir === 'In') byBank[bank].income += amt;
+      else if (dir === 'Out') byBank[bank].expense += amt;
     });
     return Object.entries(byBank)
       .map(([name, { income, expense }]) => ({

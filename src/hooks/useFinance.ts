@@ -11,6 +11,21 @@ import { idbSaveTransactions, idbGetTransactions } from '../db/indexedDb';
 const TRANSACTIONS_KEY = ['transactions'];
 const BUDGETS_KEY = ['budgets'];
 
+function inferCashDirection(t: Pick<Transaction, 'direction' | 'type'>): 'In' | 'Out' | null {
+  if (t.direction === 'In' || t.direction === 'Out') return t.direction;
+  if (t.type === 'income') return 'In';
+  if (t.type === 'expense') return 'Out';
+  return null;
+}
+
+function isCashIn(t: Pick<Transaction, 'direction' | 'type'>): boolean {
+  return inferCashDirection(t) === 'In';
+}
+
+function isCashOut(t: Pick<Transaction, 'direction' | 'type'>): boolean {
+  return inferCashDirection(t) === 'Out';
+}
+
 function transactionsKey(userId: string | undefined) {
   return [...TRANSACTIONS_KEY, userId] as const;
 }
@@ -325,9 +340,10 @@ export function useFinancialSummary(year?: number, month?: number) {
       let totalIncome = 0;
       let totalExpenses = 0;
 
-      transactions.forEach(t => {
-        if (t.type === 'income') totalIncome += Number(t.amount);
-        if (t.type === 'expense') totalExpenses += Number(t.amount);
+      transactions.forEach((t) => {
+        const amt = Number(t.amount) || 0;
+        if (isCashIn(t)) totalIncome += amt;
+        if (isCashOut(t)) totalExpenses += amt;
       });
 
       return {
@@ -347,6 +363,8 @@ function computeBreakdownFromTransactions(transactions: Transaction[]) {
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
 
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
   const monthlyTransactions = transactions.filter((t) => {
     const date = new Date(t.date);
     return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
@@ -356,22 +374,30 @@ function computeBreakdownFromTransactions(transactions: Transaction[]) {
   const incomeByCategory: Record<string, number> = {};
 
   monthlyTransactions.forEach((t) => {
-    if (t.type === 'expense') {
-      expensesByCategory[t.category] = round1((expensesByCategory[t.category] || 0) + Number(t.amount));
-    } else {
-      incomeByCategory[t.category] = round1((incomeByCategory[t.category] || 0) + Number(t.amount));
+    const amt = Number(t.amount) || 0;
+    if (isCashOut(t)) {
+      expensesByCategory[t.category] = (expensesByCategory[t.category] || 0) + amt;
+      return;
+    }
+    if (isCashIn(t)) {
+      incomeByCategory[t.category] = (incomeByCategory[t.category] || 0) + amt;
     }
   });
 
-  const totalExpenses = round1(Object.values(expensesByCategory).reduce((a, b) => a + b, 0));
-  const totalIncome = round1(Object.values(incomeByCategory).reduce((a, b) => a + b, 0));
+  // Avoid rounding on every increment (can drift significantly over many transactions).
+  // Only round at the end for display / derived stats.
+  for (const k of Object.keys(expensesByCategory)) expensesByCategory[k] = round2(expensesByCategory[k]);
+  for (const k of Object.keys(incomeByCategory)) incomeByCategory[k] = round2(incomeByCategory[k]);
+
+  const totalExpenses = round2(Object.values(expensesByCategory).reduce((a, b) => a + b, 0));
+  const totalIncome = round2(Object.values(incomeByCategory).reduce((a, b) => a + b, 0));
 
   return {
     expensesByCategory,
     incomeByCategory,
     totalExpenses,
     totalIncome,
-    balance: round1(totalIncome - totalExpenses),
+    balance: round2(totalIncome - totalExpenses),
     transactions: monthlyTransactions,
   };
 }
