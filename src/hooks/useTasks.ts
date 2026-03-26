@@ -429,6 +429,7 @@ export function useCreateTask() {
           recurrence_count: input.recurrence_count ?? undefined,
           recurrence_end: input.recurrence_end ?? null,
           reminders_enabled: input.reminders_enabled ?? false,
+          early_reminder_minutes: input.early_reminder_minutes ?? null,
           calendar_event_id: input.calendar_event_id ?? null,
           completed_at: undefined,
           created_at: nowIso,

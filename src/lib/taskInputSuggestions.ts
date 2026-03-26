@@ -92,7 +92,7 @@ export type SuggestionTrigger = 'list' | 'priority' | 'tag' | null;
 
 interface DetectedToken {
   text: string;
-  type: 'date' | 'time' | 'priority' | 'list' | 'tag';
+  type: 'date' | 'time' | 'priority' | 'list' | 'tag' | 'reminder';
   start: number;
   end: number;
 }
@@ -114,6 +114,12 @@ export interface TaskInputParseResult {
   triggerQuery?: string;
   /** List of detected tokens for highlighting */
   detectedTokens: DetectedToken[];
+
+  /** Parsed reminder offset minutes (minutes before due time), for "remind me X minutes earlier" */
+  reminderOffsetMinutes?: number | null;
+
+  /** Non-blocking parsing hints (invalid/unsupported tokens etc.) */
+  hints?: string[];
 }
 
 function mapPriorityShortcut(value: string): 'high' | 'medium' | 'low' | 'none' | null {
@@ -135,6 +141,10 @@ export function parseTaskInput(title: string): TaskInputParseResult {
 
   let currentTitle = title; // Use a mutable copy for replacements
 
+  let reminderOffsetMinutes: number | null = null;
+  const hints: string[] = [];
+  const SUPPORTED_REMINDER_OFFSETS = new Set([0, 5, 10, 15, 30, 60]);
+
   // Trigger at end: ~ for lists, ! for priority, # for tags
   // This needs to be done on the original title to get correct indices
   const triggerMatch = title.match(/\s*(~|!|#)\s*([^\s]*)$/);
@@ -150,7 +160,125 @@ export function parseTaskInput(title: string): TaskInputParseResult {
       end: (triggerMatch.index || 0) + triggerMatch[0].length,
     });
     // Temporarily strip the trigger for further date/time parsing accuracy, but for display, we use original title
-    currentTitle = title.substring(0, triggerMatch.index).trim();
+    // Keep length/indices stable for subsequent regex matches.
+    currentTitle = title.substring(0, triggerMatch.index);
+  }
+
+  // Reminder phrases (must run before time parsing so digits like "5" aren't treated as a time).
+  // Example: "remind me 5 minutes earlier" → early_reminder_minutes = 5
+  const reminderRegex = /\bremind\s+me\s+(\d+)\s*(minutes?|mins?|minute|minutes|m|hours?|hr|h)\s+(earlier|before)\b/gi;
+  const reminderMatches = Array.from(currentTitle.matchAll(reminderRegex));
+  for (const match of reminderMatches) {
+    const matchedText = match[0];
+    const fullStart = match.index ?? 0;
+    const fullEnd = fullStart + matchedText.length;
+
+    const rawNum = Number(match[1]);
+    const unitRaw = (match[2] || '').toLowerCase();
+
+    const isHours = /^h(ours?)?$/.test(unitRaw) || unitRaw === 'hr' || unitRaw === 'h';
+    const isMinutes =
+      unitRaw === 'm' ||
+      /^min(ute)?s?$/i.test(unitRaw) ||
+      unitRaw === 'mins' ||
+      unitRaw === 'minute' ||
+      unitRaw === 'minutes' ||
+      unitRaw === 'min';
+
+    const computed = isHours ? rawNum * 60 : isMinutes ? rawNum : null;
+    if (computed == null) continue;
+
+    // Strip from currentTitle to avoid other parsers matching the digits.
+    currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
+
+    detectedTokens.push({
+      text: matchedText,
+      type: 'reminder',
+      start: fullStart,
+      end: fullEnd,
+    });
+
+    if (!SUPPORTED_REMINDER_OFFSETS.has(computed)) {
+      hints.push(`Unsupported reminder offset: ${computed} minutes before`);
+      continue;
+    }
+
+    reminderOffsetMinutes = computed;
+  }
+
+  // Support "at 6pm" → parse time and strip the leading "at" from the title.
+  const atTimeRegex = /\bat\s+(\d{1,2}(?::\d{2})?\s*(?:am|pm)?)\b/gi;
+  const atTimeMatches = Array.from(currentTitle.matchAll(atTimeRegex));
+  for (const match of atTimeMatches) {
+    const matchedText = match[0];
+    const fullStart = match.index ?? 0;
+    const fullEnd = fullStart + matchedText.length;
+    const timePart = match[1];
+
+    // Only set if we didn't already get a time.
+    if (time) continue;
+
+    const parsedTimeResult = parseTimeString(timePart);
+    if (!parsedTimeResult) continue;
+
+    time = parsedTimeResult.time;
+    detectedTokens.push({
+      text: matchedText,
+      type: 'time',
+      start: fullStart,
+      end: fullEnd,
+    });
+
+    currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
+  }
+
+  // Support "* saturday" → parse date and strip the leading "*" from the title.
+  const starDayRegex = /\*\s*(sunday|sun|monday|mon|tuesday|tue|tues|wednesday|wed|thursday|thu|thur|thurs|friday|fri|saturday|sat)\b/gi;
+  const starDayMatches = Array.from(currentTitle.matchAll(starDayRegex));
+  for (const match of starDayMatches) {
+    if (date) break;
+    const matchedText = match[0];
+    const fullStart = match.index ?? 0;
+    const fullEnd = fullStart + matchedText.length;
+    const dayName = String(match[1] || '').toLowerCase();
+    const dayNum = DAY_NAMES[dayName];
+    if (dayNum == null) continue;
+
+    const d = nextDayOfWeek(dayNum);
+    date = format(d, 'yyyy-MM-dd');
+
+    detectedTokens.push({
+      text: matchedText,
+      type: 'date',
+      start: fullStart,
+      end: fullEnd,
+    });
+
+    currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
+  }
+
+  // Priority inline tokens: !high, !medium, !low, !none, !1..4
+  // Run before time parsing to avoid "!1" being interpreted as a time.
+  const priorityInlineRegex = /!(high|medium|low|none|[1-4])\b/gi;
+  const priorityInlineMatches = Array.from(currentTitle.matchAll(priorityInlineRegex));
+  for (const match of priorityInlineMatches) {
+    if (priority != null) break;
+
+    const matchedText = match[0];
+    const fullStart = match.index ?? 0;
+    const fullEnd = fullStart + matchedText.length;
+    const mapped = mapPriorityShortcut(match[1] || '');
+    if (!mapped) continue;
+
+    priority = mapped;
+    detectedTokens.push({
+      text: matchedText,
+      type: 'priority',
+      start: fullStart,
+      end: fullEnd,
+    });
+
+    currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
   }
 
 
@@ -238,6 +366,41 @@ export function parseTaskInput(title: string): TaskInputParseResult {
     currentTitle = currentTitle.replace(priorityMatch[0], ' '.repeat(priorityMatch[0].length));
   }
   priorityRegex.lastIndex = 0;
+
+  // Inline tags/lists anywhere in the sentence:
+  // "#Productivity" → tag token
+  // "~Personal" → list token
+  // Note: we strip these from currentTitle only by replacing with spaces (length-preserving),
+  // so indices for other detected tokens remain stable.
+  const tagInlineRegex = /#([A-Za-z0-9][A-Za-z0-9_-]{0,40})\b/g;
+  const tagMatches = Array.from(currentTitle.matchAll(tagInlineRegex));
+  for (const match of tagMatches) {
+    const matchedText = match[0];
+    const fullStart = match.index ?? 0;
+    const fullEnd = fullStart + matchedText.length;
+    detectedTokens.push({
+      text: matchedText,
+      type: 'tag',
+      start: fullStart,
+      end: fullEnd,
+    });
+    currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
+  }
+
+  const listInlineRegex = /~([A-Za-z0-9][A-Za-z0-9_-]{0,40})\b/g;
+  const listMatches = Array.from(currentTitle.matchAll(listInlineRegex));
+  for (const match of listMatches) {
+    const matchedText = match[0];
+    const fullStart = match.index ?? 0;
+    const fullEnd = fullStart + matchedText.length;
+    detectedTokens.push({
+      text: matchedText,
+      type: 'list',
+      start: fullStart,
+      end: fullEnd,
+    });
+    currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
+  }
 
   // Month day formats: 15 June, June 15, 1 Jan
   const dateMonthDayRegex = /\b(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)(?:uary|ruary|ch|il|e|y|ust|tember|ober|ember)?\b/gi;
@@ -330,7 +493,18 @@ export function parseTaskInput(title: string): TaskInputParseResult {
   }
   titleWithoutShortcuts = titleWithoutShortcuts.replace(/\s+/g, ' ').trim();
 
-  return { textToDisplay: title, titleWithoutShortcuts, date, time, priority, trigger, triggerQuery, detectedTokens };
+  return {
+    textToDisplay: title,
+    titleWithoutShortcuts,
+    date,
+    time,
+    priority,
+    trigger,
+    triggerQuery,
+    detectedTokens,
+    reminderOffsetMinutes,
+    hints: hints.length ? hints : undefined,
+  };
 }
 
 /** Format date to YYYY-MM-DD */

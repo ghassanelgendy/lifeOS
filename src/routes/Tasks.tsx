@@ -179,6 +179,8 @@ export default function Tasks() {
   const [newTaskRecurrenceCount, setNewTaskRecurrenceCount] = useState(5);
   const [newTaskRecurrenceDays, setNewTaskRecurrenceDays] = useState<number[]>([]);
   const [newTaskRemindersEnabled, setNewTaskRemindersEnabled] = useState(false);
+  const [newTaskEarlyReminderMinutes, setNewTaskEarlyReminderMinutes] = useState<number | null>(null);
+  const [parseHints, setParseHints] = useState<string[]>([]);
   const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
   const [suggestionTrigger, setSuggestionTrigger] = useState<SuggestionTrigger>(null);
   const [suggestionQuery, setSuggestionQuery] = useState('');
@@ -242,6 +244,45 @@ export default function Tasks() {
       );
       if (isTyping) return;
 
+      if (e.key === '1') {
+        e.preventDefault();
+        setActiveView('today');
+        setActiveListId(null);
+        setActiveTagId(null);
+        return;
+      }
+
+      if (e.key === '2') {
+        e.preventDefault();
+        setActiveView('week');
+        setActiveListId(null);
+        setActiveTagId(null);
+        return;
+      }
+
+      if (e.key === '3') {
+        e.preventDefault();
+        setActiveView('upcoming');
+        setActiveListId(null);
+        setActiveTagId(null);
+        return;
+      }
+
+      if (e.key === '4') {
+        e.preventDefault();
+        setActiveView('all');
+        setActiveListId(null);
+        setActiveTagId(null);
+        return;
+      }
+
+      // '?' (shift + /) opens the shortcuts reference panel
+      if (e.key === '?' || (e.key === '/' && e.shiftKey)) {
+        e.preventDefault();
+        window.dispatchEvent(new CustomEvent('lifeos:openKeyboardShortcuts'));
+        return;
+      }
+
       if (e.key.toLowerCase() === 'n') {
         e.preventDefault();
         handleOpenNewTaskSheet();
@@ -267,6 +308,7 @@ export default function Tasks() {
           const idx = TASK_SORT_OPTIONS.findIndex((o) => o.value === prev);
           return TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
         });
+        return;
       }
     };
 
@@ -290,6 +332,60 @@ export default function Tasks() {
     } else {
       setNewTaskPriority('none'); // Reset if no priority detected
     }
+
+    // Inline tags/lists/reminders
+    const normalize = (s: string) => s.trim().toLowerCase();
+    const listTokenNames = parsed.detectedTokens
+      .filter((t) => t.type === 'list')
+      .map((t) => t.text.replace(/^[\s]*~\s*/, '').trim().replace(/[.,!?;:]+$/g, ''))
+      .filter(Boolean);
+    const tagTokenNames = parsed.detectedTokens
+      .filter((t) => t.type === 'tag')
+      .map((t) => t.text.replace(/^[\s]*#\s*/, '').trim().replace(/[.,!?;:]+$/g, ''))
+      .filter(Boolean);
+
+    const matchedListIds = listTokenNames
+      .map((name) => taskLists.find((l) => normalize(l.name) === normalize(name))?.id)
+      .filter((id): id is string => !!id);
+    const resolvedListId = matchedListIds.length ? matchedListIds[matchedListIds.length - 1] : null;
+
+    const matchedTagIds = Array.from(
+      new Set(
+        tagTokenNames
+          .map((name) => tags.find((t) => normalize(t.name) === normalize(name))?.id)
+          .filter((id): id is string => !!id)
+      )
+    );
+
+    const hasTagTokens = tagTokenNames.length > 0;
+    const hasListTokens = listTokenNames.length > 0;
+    if (hasListTokens) setNewTaskListId(resolvedListId);
+    if (hasTagTokens) setNewTaskTagIds(matchedTagIds);
+
+    const hasReminderToken = parsed.detectedTokens.some((t) => t.type === 'reminder');
+    if (hasReminderToken) {
+      if (parsed.reminderOffsetMinutes != null) {
+        setNewTaskRemindersEnabled(true);
+        setNewTaskEarlyReminderMinutes(parsed.reminderOffsetMinutes);
+      } else {
+        // Unsupported/ambiguous offset: don't schedule reminders.
+        setNewTaskRemindersEnabled(false);
+        setNewTaskEarlyReminderMinutes(null);
+      }
+    }
+
+    const unknownListNames = Array.from(
+      new Set(listTokenNames.filter((name) => !taskLists.some((l) => normalize(l.name) === normalize(name))))
+    );
+    const unknownTagNames = Array.from(
+      new Set(tagTokenNames.filter((name) => !tags.some((t) => normalize(t.name) === normalize(name))))
+    );
+    const nextHints: string[] = [
+      ...(parsed.hints ?? []),
+      ...unknownListNames.map((n) => `Unknown list: ${n}`),
+      ...unknownTagNames.map((n) => `Unknown tag: ${n}`),
+    ];
+    setParseHints(nextHints);
 
     // Set highlighted date/time for visual feedback
     if (parsed.date) {
@@ -321,6 +417,7 @@ export default function Tasks() {
     setNewTaskTitle((t) => t.replace(/\s*(~|!|#)\s*[^\s]*$/, '').trim());
     setSuggestionTrigger(null);
     setSuggestionQuery('');
+    setParseHints([]);
   };
 
   const recurrencePreview = useMemo(() => {
@@ -776,7 +873,45 @@ export default function Tasks() {
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseTaskInput(newTaskTitle);
-    const titleToUse = parsed.titleWithoutShortcuts.trim();
+
+    const selectedListName = newTaskListId ? taskLists.find((l) => l.id === newTaskListId)?.name : null;
+    const selectedTagNames = newTaskTagIds.map((id) => tags.find((t) => t.id === id)?.name).filter((n): n is string => !!n);
+
+    const selectedListNameLower = selectedListName?.trim().toLowerCase() ?? null;
+    const selectedTagNamesLower = new Set(selectedTagNames.map((n) => n.trim().toLowerCase()));
+
+    const tokenName = (tokenText: string) => tokenText.replace(/^[\s]*[~#]/, '').trim().replace(/[.,!?;:]+$/g, '');
+
+    const rangesToRemove = parsed.detectedTokens
+      .filter((t) => {
+        if (t.type === 'date' || t.type === 'time') return true;
+        if (t.type === 'priority') return parsed.priority != null;
+        if (t.type === 'reminder') {
+          if (!newTaskRemindersEnabled || newTaskEarlyReminderMinutes == null) return false;
+          const m = t.text.match(/\bremind\s+me\s+(\d+)\s*(minutes?|mins?|minute|m|hours?|hr|h)\s+(earlier|before)\b/i);
+          if (!m) return false;
+          const rawNum = Number(m[1]);
+          const unitRaw = (m[2] || '').toLowerCase();
+          const isHours = /^h(ours?)?$/.test(unitRaw) || unitRaw === 'hr' || unitRaw === 'h';
+          const isMinutes = unitRaw === 'm' || /^min(ute)?s?$/i.test(unitRaw) || unitRaw === 'mins' || unitRaw === 'minute' || unitRaw === 'minutes' || unitRaw === 'min';
+          const computed = isHours ? rawNum * 60 : isMinutes ? rawNum : null;
+          return computed != null && computed === newTaskEarlyReminderMinutes;
+        }
+        if (t.type === 'list') return selectedListNameLower != null && tokenName(t.text).toLowerCase() === selectedListNameLower;
+        if (t.type === 'tag') return selectedTagNamesLower.has(tokenName(t.text).toLowerCase());
+        return false;
+      })
+      .map((t) => ({ start: t.start, end: t.end }));
+
+    const uniqueRanges = Array.from(
+      new Map(rangesToRemove.map((r) => [`${r.start}:${r.end}`, r] as const)).values()
+    ).sort((a, b) => b.start - a.start);
+
+    let titleToUse = newTaskTitle;
+    for (const r of uniqueRanges) {
+      titleToUse = titleToUse.slice(0, r.start) + titleToUse.slice(r.end);
+    }
+    titleToUse = titleToUse.replace(/\s+/g, ' ').trim();
     if (!titleToUse) return;
 
     const defaultListId = taskLists.find(l => l.is_default)?.id;
@@ -792,6 +927,7 @@ export default function Tasks() {
       recurrence_end: newTaskRecurrence !== 'none' && newTaskRecurrenceEndType === 'on_date' ? newTaskRecurrenceEnd : undefined,
       recurrence_count: newTaskRecurrence !== 'none' && newTaskRecurrenceEndType === 'after_count' ? Math.max(1, newTaskRecurrenceCount) : undefined,
       reminders_enabled: newTaskRemindersEnabled,
+      early_reminder_minutes: newTaskRemindersEnabled ? (newTaskEarlyReminderMinutes ?? null) : undefined,
       list_id: newTaskListId ?? (activeView === 'list' && activeListId ? activeListId : defaultListId),
       due_date: newTaskDate || (
         activeView === 'today' ? toDateString(new Date()) :
@@ -816,6 +952,8 @@ export default function Tasks() {
         setNewTaskRecurrenceCount(5);
         setNewTaskRecurrenceDays([]);
         setNewTaskRemindersEnabled(false);
+        setNewTaskEarlyReminderMinutes(null);
+        setParseHints([]);
         setShowAdvancedCreate(false);
         setSuggestionTrigger(null);
         setSuggestionQuery('');
@@ -915,7 +1053,47 @@ export default function Tasks() {
     const recurrenceEndType = (editForm.recurrence_end_type || 'never') as TaskRecurrenceEndType;
     const dateEnabled = editForm.date_enabled ?? !!editForm.due_date;
     const timeEnabled = editForm.time_enabled ?? !!editForm.due_time;
-    const titleToSave = parseTaskInput(editForm.title ?? '').titleWithoutShortcuts.trim() || editForm.title?.trim();
+    const rawTitle = editForm.title ?? '';
+    const parsed = parseTaskInput(rawTitle);
+
+    const selectedListName = editForm.list_id ? taskLists.find((l) => l.id === editForm.list_id)?.name : null;
+    const selectedListNameLower = selectedListName?.trim().toLowerCase() ?? null;
+    const selectedTagNames = (editForm.tag_ids ?? []).map((id) => tags.find((t) => t.id === id)?.name).filter((n): n is string => !!n);
+    const selectedTagNamesLower = new Set(selectedTagNames.map((n) => n.trim().toLowerCase()));
+
+    const tokenName = (tokenText: string) => tokenText.replace(/^[\s]*[~#]/, '').trim().replace(/[.,!?;:]+$/g, '').toLowerCase();
+
+    const rangesToRemove = parsed.detectedTokens
+      .filter((t) => {
+        if (t.type === 'date' || t.type === 'time') return true;
+        if (t.type === 'priority') return parsed.priority != null;
+        if (t.type === 'reminder') {
+          if (!editForm.reminders_enabled || editForm.early_reminder_minutes == null) return false;
+          const m = t.text.match(/\bremind\s+me\s+(\d+)\s*(minutes?|mins?|minute|m|hours?|hr|h)\s+(earlier|before)\b/i);
+          if (!m) return false;
+          const rawNum = Number(m[1]);
+          const unitRaw = (m[2] || '').toLowerCase();
+          const isHours = /^h(ours?)?$/.test(unitRaw) || unitRaw === 'hr' || unitRaw === 'h';
+          const isMinutes = unitRaw === 'm' || /^min(ute)?s?$/i.test(unitRaw) || unitRaw === 'mins' || unitRaw === 'minute' || unitRaw === 'minutes' || unitRaw === 'min';
+          const computed = isHours ? rawNum * 60 : isMinutes ? rawNum : null;
+          return computed != null && computed === editForm.early_reminder_minutes;
+        }
+        if (t.type === 'list') return selectedListNameLower != null && tokenName(t.text) === selectedListNameLower;
+        if (t.type === 'tag') return selectedTagNamesLower.has(tokenName(t.text));
+        return false;
+      })
+      .map((t) => ({ start: t.start, end: t.end }));
+
+    const uniqueRanges = Array.from(
+      new Map(rangesToRemove.map((r) => [`${r.start}:${r.end}`, r] as const)).values()
+    ).sort((a, b) => b.start - a.start);
+
+    let titleToSave = rawTitle;
+    for (const r of uniqueRanges) {
+      titleToSave = titleToSave.slice(0, r.start) + titleToSave.slice(r.end);
+    }
+    titleToSave = titleToSave.replace(/\s+/g, ' ').trim();
+    if (!titleToSave) titleToSave = rawTitle.trim();
     const { date_enabled: _d, time_enabled: _t, ...formRest } = editForm;
     const payload: Partial<CreateInput<Task>> = {
       ...formRest,
@@ -966,7 +1144,47 @@ export default function Tasks() {
     const recurrenceEndType = (editForm.recurrence_end_type || 'never') as TaskRecurrenceEndType;
     const dateEnabled = editForm.date_enabled ?? !!editForm.due_date;
     const timeEnabled = editForm.time_enabled ?? !!editForm.due_time;
-    const titleToSave = parseTaskInput(editForm.title ?? '').titleWithoutShortcuts.trim() || (editForm.title ?? '').trim();
+    const rawTitle = editForm.title ?? '';
+    const parsed = parseTaskInput(rawTitle);
+
+    const selectedListName = editForm.list_id ? taskLists.find((l) => l.id === editForm.list_id)?.name : null;
+    const selectedListNameLower = selectedListName?.trim().toLowerCase() ?? null;
+    const selectedTagNames = (editForm.tag_ids ?? []).map((id) => tags.find((t) => t.id === id)?.name).filter((n): n is string => !!n);
+    const selectedTagNamesLower = new Set(selectedTagNames.map((n) => n.trim().toLowerCase()));
+
+    const tokenName = (tokenText: string) => tokenText.replace(/^[\s]*[~#]/, '').trim().replace(/[.,!?;:]+$/g, '').toLowerCase();
+
+    const rangesToRemove = parsed.detectedTokens
+      .filter((t) => {
+        if (t.type === 'date' || t.type === 'time') return true;
+        if (t.type === 'priority') return parsed.priority != null;
+        if (t.type === 'reminder') {
+          if (!editForm.reminders_enabled || editForm.early_reminder_minutes == null) return false;
+          const m = t.text.match(/\bremind\s+me\s+(\d+)\s*(minutes?|mins?|minute|m|hours?|hr|h)\s+(earlier|before)\b/i);
+          if (!m) return false;
+          const rawNum = Number(m[1]);
+          const unitRaw = (m[2] || '').toLowerCase();
+          const isHours = /^h(ours?)?$/.test(unitRaw) || unitRaw === 'hr' || unitRaw === 'h';
+          const isMinutes = unitRaw === 'm' || /^min(ute)?s?$/i.test(unitRaw) || unitRaw === 'mins' || unitRaw === 'minute' || unitRaw === 'minutes' || unitRaw === 'min';
+          const computed = isHours ? rawNum * 60 : isMinutes ? rawNum : null;
+          return computed != null && computed === editForm.early_reminder_minutes;
+        }
+        if (t.type === 'list') return selectedListNameLower != null && tokenName(t.text) === selectedListNameLower;
+        if (t.type === 'tag') return selectedTagNamesLower.has(tokenName(t.text));
+        return false;
+      })
+      .map((t) => ({ start: t.start, end: t.end }));
+
+    const uniqueRanges = Array.from(
+      new Map(rangesToRemove.map((r) => [`${r.start}:${r.end}`, r] as const)).values()
+    ).sort((a, b) => b.start - a.start);
+
+    let titleToSave = rawTitle;
+    for (const r of uniqueRanges) {
+      titleToSave = titleToSave.slice(0, r.start) + titleToSave.slice(r.end);
+    }
+    titleToSave = titleToSave.replace(/\s+/g, ' ').trim();
+    if (!titleToSave) titleToSave = rawTitle.trim();
     const payload: CreateInput<Task> = {
       title: titleToSave,
       description: editForm.description ?? undefined,
@@ -1446,6 +1664,8 @@ export default function Tasks() {
                     setNewTaskRecurrenceCount(5);
                     setNewTaskRecurrenceDays([]);
                     setNewTaskRemindersEnabled(false);
+                    setNewTaskEarlyReminderMinutes(null);
+                    setParseHints([]);
                     setShowAdvancedCreate(false);
                     setIsTagSelectorOpen(false);
                     setSuggestionQuery('');
@@ -1466,6 +1686,48 @@ export default function Tasks() {
                     <span className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                       <Clock size={12} /> {highlightedTime}
                     </span>
+                  )}
+                </div>
+              )}
+
+              {parseHints.length > 0 && (
+                <div className="mt-2 p-2 rounded-lg border border-border bg-secondary/20">
+                  <p className="text-xs text-muted-foreground">{parseHints.join(' • ')}</p>
+                </div>
+              )}
+
+              {(newTaskListId || newTaskTagIds.length > 0 || newTaskPriority !== 'none' || newTaskRemindersEnabled) && (
+                <div className="mt-2 text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+                  {newTaskPriority !== 'none' && (
+                    <span className={cn('inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary')}>
+                      Priority: {PRIORITY_CONFIG[newTaskPriority].label}
+                    </span>
+                  )}
+                  {newTaskListId && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary">
+                      List: {taskLists.find((l) => l.id === newTaskListId)?.name ?? '—'}
+                    </span>
+                  )}
+                  {newTaskTagIds.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary">
+                      Tags: {newTaskTagIds
+                        .map((id) => tags.find((t) => t.id === id)?.name)
+                        .filter((n): n is string => !!n)
+                        .join(', ')}
+                    </span>
+                  )}
+                  {newTaskRemindersEnabled && newTaskEarlyReminderMinutes != null && newTaskDate && newTaskTime && /^\d{2}:\d{2}$/.test(newTaskTime) && (
+                    (() => {
+                      const due = new Date(`${newTaskDate}T${newTaskTime}:00`);
+                      if (Number.isNaN(due.getTime())) return null;
+                      const reminder = new Date(due.getTime() - newTaskEarlyReminderMinutes * 60 * 1000);
+                      if (Number.isNaN(reminder.getTime())) return null;
+                      return (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary">
+                          Reminder: {format(reminder, 'h:mm a')}
+                        </span>
+                      );
+                    })()
                   )}
                 </div>
               )}
@@ -1764,7 +2026,35 @@ export default function Tasks() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button type="button" variant="ghost" size="sm" onClick={() => setIsAddingTask(false)}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsAddingTask(false);
+                      setNewTaskTitle('');
+                      setNewTaskDate('');
+                      setNewTaskTime('');
+                      setNewTaskPriority('none');
+                      setNewTaskTagIds([]);
+                      setNewTaskListId(null);
+                      setNewTaskRecurrence('none');
+                      setNewTaskRecurrenceInterval(1);
+                      setNewTaskRecurrenceEndType('never');
+                      setNewTaskRecurrenceEnd('');
+                      setNewTaskRecurrenceCount(5);
+                      setNewTaskRecurrenceDays([]);
+                      setNewTaskRemindersEnabled(false);
+                      setNewTaskEarlyReminderMinutes(null);
+                      setParseHints([]);
+                      setShowAdvancedCreate(false);
+                      setSuggestionTrigger(null);
+                      setSuggestionQuery('');
+                      setIsTagSelectorOpen(false);
+                      setHighlightedDate(undefined);
+                      setHighlightedTime(undefined);
+                    }}
+                  >
                     Cancel
                   </Button>
                   <Button type="submit" size="sm" disabled={!newTaskTitle.trim()} className="p-2" aria-label="Add task">
