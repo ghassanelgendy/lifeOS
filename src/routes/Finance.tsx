@@ -5,7 +5,21 @@ import {
   ArrowDownRight,
   Edit2,
   Trash2,
-  Banknote
+  ChevronLeft,
+  ChevronRight,
+  Utensils,
+  Car,
+  Zap,
+  Gamepad2,
+  Heart,
+  GraduationCap,
+  ShoppingBag,
+  ArrowLeftRight,
+  MoreHorizontal,
+  Briefcase,
+  Code2,
+  TrendingUp as TrendingUpIcon,
+  type LucideIcon,
 } from 'lucide-react';
 import {
   BarChart,
@@ -19,15 +33,18 @@ import {
   Cell,
   CartesianGrid
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
+import { format, subMonths, addMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { cn, formatCurrency, formatTime12h } from '../lib/utils';
 import {
   useTransactions,
   useCreateTransaction,
   useUpdateTransaction,
   useDeleteTransaction,
-  getBreakdownFromTransactions
+  getBreakdownFromTransactions,
+  useBudgets,
 } from '../hooks/useFinance';
+import { FinanceHeroCard } from '../components/FinanceHeroCard';
+import { FinanceBudgetRing } from '../components/FinanceBudgetRing';
 import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
 import {
   useInvestmentAccounts,
@@ -78,6 +95,22 @@ const CATEGORY_COLORS: Record<string, string> = {
   other_income: '#6b7280',
 };
 
+const CATEGORY_ICONS: Record<string, LucideIcon> = {
+  food: Utensils,
+  transport: Car,
+  utilities: Zap,
+  entertainment: Gamepad2,
+  health: Heart,
+  education: GraduationCap,
+  shopping: ShoppingBag,
+  ipn: ArrowLeftRight,
+  other_expense: MoreHorizontal,
+  salary: Briefcase,
+  freelance: Code2,
+  investment: TrendingUpIcon,
+  other_income: Plus,
+};
+
 type FinanceTab = 'transactions' | 'banks' | 'investments';
 
 export default function Finance() {
@@ -95,6 +128,7 @@ export default function Finance() {
   const updateInvestmentTransaction = useUpdateInvestmentTransaction();
   const deleteInvestmentTransaction = useDeleteInvestmentTransaction();
   const { privacyMode } = useUIStore();
+  const { data: budgets = [] } = useBudgets();
 
   const { user } = useAuth();
   const hasEnsuredDefaults = useRef(false);
@@ -146,6 +180,32 @@ export default function Finance() {
     });
   }, [bankFilteredTransactions, selectedBank, selectedQNBAccount]);
 
+  // Month selector for hero card stats
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const isCurrentMonth =
+    format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM');
+
+  const { selectedMonthIncome, selectedMonthExpenses, selectedMonthBalance } = useMemo(() => {
+    const monthStr = format(selectedMonth, 'yyyy-MM');
+    let income = 0;
+    let expenses = 0;
+    filteredTransactions.forEach((t) => {
+      if (!(t.date || '').startsWith(monthStr)) return;
+      if (t.type === 'income') income += Number(t.amount);
+      else expenses += Number(t.amount);
+    });
+    return {
+      selectedMonthIncome: income,
+      selectedMonthExpenses: expenses,
+      selectedMonthBalance: income - expenses,
+    };
+  }, [filteredTransactions, selectedMonth]);
+
+  const totalBudgetLimit = useMemo(
+    () => budgets.reduce((sum, b) => sum + Number(b.monthly_limit), 0),
+    [budgets]
+  );
+
   // View all + date filter (month or day)
   const [viewAllTransactions, setViewAllTransactions] = useState(false);
   type DateFilterMode = 'all' | 'month' | 'day';
@@ -185,7 +245,7 @@ export default function Finance() {
   const displayedTransactions = viewAllTransactions
     ? searchFilteredTransactions
     : searchFilteredTransactions.slice(0, 20);
-  const { expensesByCategory, totalExpenses, totalIncome, balance } =
+  const { expensesByCategory, totalExpenses } =
     getBreakdownFromTransactions(filteredTransactions);
 
   const bankOptions = useMemo(() => {
@@ -614,53 +674,49 @@ export default function Finance() {
         )}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Income</p>
-              <p className={cn("text-2xl font-bold text-green-500 tabular-nums", privacyMode && "blur-sm")}>
-                {formatCurrency(totalIncome)}
-              </p>
-            </div>
-            <div className="p-3 rounded-full bg-green-500/10">
-              <ArrowUpRight className="text-green-500" size={24} />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Expenses</p>
-              <p className={cn("text-2xl font-bold text-red-500 tabular-nums", privacyMode && "blur-sm")}>
-                {formatCurrency(totalExpenses)}
-              </p>
-            </div>
-            <div className="p-3 rounded-full bg-red-500/10">
-              <ArrowDownRight className="text-red-500" size={24} />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-muted-foreground">Balance</p>
-              <p className={cn(
-                "text-2xl font-bold tabular-nums",
-                balance >= 0 ? "text-green-500" : "text-red-500",
-                privacyMode && "blur-sm"
-              )}>
-                {formatCurrency(balance)}
-              </p>
-            </div>
-            <div className={cn("p-3 rounded-full", balance >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-              <Banknote className={balance >= 0 ? "text-green-500" : "text-red-500"} size={24} />
-            </div>
-          </div>
-        </div>
+      {/* Month Selector */}
+      <div className="flex items-center justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => setSelectedMonth((prev) => subMonths(prev, 1))}
+          className="w-8 h-8 flex items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.10] text-[#8899aa] transition-colors"
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <span className="text-sm font-semibold text-[#e6edf3] min-w-[120px] text-center">
+          {format(selectedMonth, 'MMMM yyyy')}
+        </span>
+        <button
+          type="button"
+          onClick={() => setSelectedMonth((prev) => addMonths(prev, 1))}
+          disabled={isCurrentMonth}
+          className={cn(
+            'w-8 h-8 flex items-center justify-center rounded-full transition-colors',
+            isCurrentMonth
+              ? 'text-[#8899aa]/30 cursor-default'
+              : 'bg-white/[0.05] hover:bg-white/[0.10] text-[#8899aa]'
+          )}
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
+
+      {/* Hero Summary Card */}
+      <FinanceHeroCard
+        income={selectedMonthIncome}
+        expenses={selectedMonthExpenses}
+        balance={selectedMonthBalance}
+        privacyMode={privacyMode}
+      />
+
+      {/* Budget Ring (only when budgets are configured) */}
+      {budgets.length > 0 && (
+        <FinanceBudgetRing
+          totalBudget={totalBudgetLimit}
+          totalSpent={selectedMonthExpenses}
+          privacyMode={privacyMode}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart card with iOS-style graph type selector */}
@@ -891,85 +947,85 @@ export default function Finance() {
       </div>
 
       {/* Recent / All Transactions */}
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{
+          background: 'linear-gradient(145deg, #121821 0%, #1a2230 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.35)',
+        }}
+      >
+        <div className="px-4 pt-4 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-base font-bold text-[#e6edf3]">
               {viewAllTransactions ? 'All Transactions' : 'Recent Transactions'}
             </h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-sm"
+            <button
+              type="button"
+              className="text-xs text-[#8899aa] hover:text-[#e6edf3] transition-colors"
               onClick={() => setViewAllTransactions(!viewAllTransactions)}
             >
-              {viewAllTransactions ? 'Show recent' : 'View all'}
-            </Button>
+              {viewAllTransactions ? 'show recent' : 'view all'}
+            </button>
           </div>
-          {viewAllTransactions && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm text-muted-foreground">Filter:</span>
-              <div className="flex p-1 bg-secondary/50 rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setDateFilterMode('all')}
-                  className={cn(
-                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                    dateFilterMode === 'all' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  All
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDateFilterMode('month')}
-                  className={cn(
-                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                    dateFilterMode === 'month' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  By month
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDateFilterMode('day')}
-                  className={cn(
-                    'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
-                    dateFilterMode === 'day' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-                  )}
-                >
-                  By day
-                </button>
-              </div>
-              {dateFilterMode === 'month' && (
-                <input
-                  type="month"
-                  value={filterMonth}
-                  onChange={(e) => setFilterMonth(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                />
-              )}
-              {dateFilterMode === 'day' && (
-                <input
-                  type="date"
-                  value={filterDay}
-                  onChange={(e) => setFilterDay(e.target.value)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                />
-              )}
-              <Input
-                type="search"
-                placeholder="Search transactions..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full sm:w-auto sm:min-w-[220px]"
-              />
-              <span className="text-sm text-muted-foreground">
-                {displayedTransactions.length} transaction{displayedTransactions.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-400 bg-sky-400/10 ring-1 ring-sky-400/20 hover:bg-sky-400/20 transition-colors"
+            >
+              <Plus size={12} />
+              Add Transaction
+            </button>
+          </div>
         </div>
+        {viewAllTransactions && (
+          <div className="px-4 pb-3 border-b border-white/[0.06] flex flex-wrap items-center gap-2">
+            <span className="text-xs text-[#8899aa]">Filter:</span>
+            <div className="flex p-0.5 bg-white/[0.05] rounded-lg">
+              {(['all', 'month', 'day'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setDateFilterMode(mode)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                    dateFilterMode === mode
+                      ? 'bg-white/10 text-[#e6edf3]'
+                      : 'text-[#8899aa] hover:text-[#e6edf3]'
+                  )}
+                >
+                  {mode === 'all' ? 'All' : mode === 'month' ? 'Month' : 'Day'}
+                </button>
+              ))}
+            </div>
+            {dateFilterMode === 'month' && (
+              <input
+                type="month"
+                value={filterMonth}
+                onChange={(e) => setFilterMonth(e.target.value)}
+                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-[#e6edf3]"
+              />
+            )}
+            {dateFilterMode === 'day' && (
+              <input
+                type="date"
+                value={filterDay}
+                onChange={(e) => setFilterDay(e.target.value)}
+                className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-[#e6edf3]"
+              />
+            )}
+            <Input
+              type="search"
+              placeholder="Search…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full sm:w-auto sm:min-w-[180px] text-xs"
+            />
+            <span className="text-xs text-[#8899aa]">
+              {displayedTransactions.length} tx
+            </span>
+          </div>
+        )}
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
@@ -1054,58 +1110,70 @@ export default function Finance() {
           </table>
         </div>
         {/* Mobile Card View */}
-        <div className="md:hidden divide-y divide-border">
+        <div className="md:hidden divide-y divide-white/[0.04]">
+          {displayedTransactions.length === 0 && (
+            <p className="text-center text-[#8899aa] text-sm py-10">No transactions</p>
+          )}
           {displayedTransactions.map((transaction) => {
-            const categoryLabel = transaction.type === 'income'
-              ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
-              : EXPENSE_CATEGORIES.find(c => c.value === transaction.category)?.label;
+            const categoryLabel =
+              transaction.type === 'income'
+                ? INCOME_CATEGORIES.find((c) => c.value === transaction.category)?.label
+                : EXPENSE_CATEGORIES.find((c) => c.value === transaction.category)?.label;
+            const catColor = CATEGORY_COLORS[transaction.category] ?? '#6b7280';
+            const CatIcon = CATEGORY_ICONS[transaction.category] ?? MoreHorizontal;
+            const title = transaction.entity || transaction.description || categoryLabel || '—';
 
             return (
-              <div key={transaction.id} className="p-3 flex items-center gap-3">
-                <div className={cn(
-                  "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                  transaction.type === 'income' ? "bg-green-500/10" : "bg-red-500/10"
-                )}>
-                  {transaction.type === 'income'
-                    ? <ArrowUpRight className="text-green-500" size={18} />
-                    : <ArrowDownRight className="text-red-500" size={18} />
-                  }
+              <div key={transaction.id} className="flex items-center gap-3 px-4 py-3">
+                {/* Category icon */}
+                <div
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: `${catColor}18` }}
+                >
+                  <CatIcon size={18} style={{ color: catColor }} />
                 </div>
+
+                {/* Title + category */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium truncate">{transaction.description || categoryLabel}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {format(new Date(transaction.date), 'MMM d')}
-                    {transaction.time && ` · ${transaction.time.slice(0, 5)}`}
-                    {transaction.bank && ` · ${transaction.bank}`}
-                    {transaction.transaction_type && ` · ${transaction.transaction_type}`}
-                    {transaction.direction && ` · ${transaction.direction}`}
+                  <p className="text-sm font-semibold text-[#e6edf3] truncate">{title}</p>
+                  <p className="text-[11px] text-[#8899aa] mt-0.5">
+                    {categoryLabel}
                     {transaction.is_recurring && ' · Recurring'}
-                  </div>
+                  </p>
                 </div>
-                <div className="text-right">
-                  <div className={cn(
-                    "font-medium tabular-nums",
-                    transaction.type === 'income' ? "text-green-500" : "text-red-500",
-                    privacyMode && "blur-sm"
-                  )}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                  </div>
-                  <div className="flex justify-end gap-1 mt-1">
-                    <button
-                      onClick={() => handleOpenModal(transaction)}
-                      className="icon-touch p-1 rounded hover:bg-secondary transition-colors"
-                      title="Edit"
-                    >
-                      <Edit2 size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(transaction.id)}
-                      className="icon-touch p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
+
+                {/* Amount + date */}
+                <div className="text-right flex-shrink-0">
+                  <p
+                    className={cn(
+                      'text-sm font-bold tabular-nums',
+                      transaction.type === 'income' ? 'text-green-400' : 'text-red-400',
+                      privacyMode && 'blur-sm'
+                    )}
+                  >
+                    {transaction.type === 'income' ? '+' : '−'}{formatCurrency(transaction.amount)}
+                  </p>
+                  <p className="text-[11px] text-[#8899aa] mt-0.5">
+                    {format(new Date(transaction.date), 'MMM d')}
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex flex-col gap-1 ml-1">
+                  <button
+                    onClick={() => handleOpenModal(transaction)}
+                    className="p-1.5 rounded-lg hover:bg-white/[0.06] text-[#8899aa] hover:text-[#e6edf3] transition-colors"
+                    title="Edit"
+                  >
+                    <Edit2 size={13} />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(transaction.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#8899aa] hover:text-red-400 transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 size={13} />
+                  </button>
                 </div>
               </div>
             );
