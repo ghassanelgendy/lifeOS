@@ -1,19 +1,5 @@
-import {
-  LayoutDashboard,
-  Dumbbell,
-  GraduationCap,
-  Calendar,
-  Menu,
-  X,
-  Settings,
-  Wallet,
-  Target,
-  CheckSquare,
-  Monitor,
-  Moon,
-  Focus as FocusIcon
-} from 'lucide-react';
-import { useRef, useCallback, useMemo } from 'react';
+import { Menu, X, Settings } from 'lucide-react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
@@ -23,27 +9,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { AppFooter } from './AppFooter';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
-
-export interface NavItem {
-  label: string;
-  icon: React.ElementType;
-  href: string;
-}
-
-// All navigation items (exported for use in Settings)
-export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
-  { label: 'Tasks', icon: CheckSquare, href: '/tasks' },
-  { label: 'Focus', icon: FocusIcon, href: '/focus' },
-  { label: 'Habits', icon: Target, href: '/habits' },
-  { label: 'Calendar', icon: Calendar, href: '/calendar' },
-  { label: 'Bio-Metrics', icon: Dumbbell, href: '/health' },
-  { label: 'Screen Time', icon: Monitor, href: '/screentime' },
-  { label: 'Sleep', icon: Moon, href: '/sleep' },
-  { label: 'Academic', icon: GraduationCap, href: '/academics' },
-  { label: 'Finance', icon: Wallet, href: '/finance' },
-  { label: 'Settings', icon: Settings, href: '/settings' },
-];
+import { NAV_ITEMS, type NavItem } from './navItems';
 
 function MobileNavLink({ item }: { item: NavItem }) {
   const match = useMatch({ path: item.href, end: item.href === '/' });
@@ -83,16 +49,15 @@ export function AppShell() {
 
   const prevPathRef = useRef<string>(location.pathname);
   const prevIndexRef = useRef<number>(currentIndex);
-  const directionRef = useRef<number>(0);
-  const slideDirection = useMemo(() => {
-    if (prevPathRef.current !== location.pathname) {
-      const dir = prevIndexRef.current >= 0 ? Math.sign(currentIndex - prevIndexRef.current) : 0;
-      prevPathRef.current = location.pathname;
-      prevIndexRef.current = currentIndex;
-      directionRef.current = dir;
-      return dir;
-    }
-    return directionRef.current;
+  const [slideDirection, setSlideDirection] = useState<number>(0);
+
+  useEffect(() => {
+    if (prevPathRef.current === location.pathname) return;
+    const prevIndex = prevIndexRef.current;
+    const dir = prevIndex >= 0 ? Math.sign(currentIndex - prevIndex) : 0;
+    prevPathRef.current = location.pathname;
+    prevIndexRef.current = currentIndex;
+    setSlideDirection(dir);
   }, [location.pathname, currentIndex]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {

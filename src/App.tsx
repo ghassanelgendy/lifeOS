@@ -92,7 +92,8 @@ function AppInner() {
     // Listen for background sync messages from the service worker
     if ('serviceWorker' in navigator) {
       const onMessage = (event: MessageEvent) => {
-        if ((event.data as any)?.type === 'LIFEOS_SYNC_OFFLINE_QUEUE') {
+        const data: unknown = event.data;
+        if (typeof data === 'object' && data !== null && 'type' in data && (data as { type?: unknown }).type === 'LIFEOS_SYNC_OFFLINE_QUEUE') {
           void handleOnline();
         }
       };

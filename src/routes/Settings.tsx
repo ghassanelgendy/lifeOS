@@ -28,7 +28,7 @@ import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button, ConfirmSheet } from '../components/ui';
-import { NAV_ITEMS } from '../components/AppShell';
+import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
 import { useTickTickStatus, connectTickTick, importTickTickTasks, syncNowFromTickTick, disconnectTickTickIntegration } from '../hooks/useTickTick';

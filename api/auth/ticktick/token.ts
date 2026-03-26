@@ -40,9 +40,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  const { code, state, code_verifier: codeVerifier } = req.body as {
+  const { code, code_verifier: codeVerifier } = req.body as {
     code?: string;
-    state?: string;
     code_verifier?: string;
   };
   if (!code || typeof code !== 'string') {

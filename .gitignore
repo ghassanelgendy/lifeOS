@@ -30,5 +30,8 @@ dist-ssr
 
 # Environment
 .env
+/.lifeos-cache
+/lifeos-agent-cli/.lifeos-cache
+/lifeos-agent-cli/.env
 /src-tauri/target
 /src-tauri
