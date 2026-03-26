@@ -127,29 +127,33 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           transition: dragY > 0 ? 'none' : undefined,
           marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
         }}
-        onTouchStart={(e) => {
-          if (!swipeToClose || window.innerWidth >= 640) return;
-          touchStartYRef.current = e.touches[0].clientY;
-        }}
-        onTouchMove={(e) => {
-          if (!swipeToClose || window.innerWidth >= 640 || touchStartYRef.current == null) return;
-          const delta = e.touches[0].clientY - touchStartYRef.current;
-          setDragY(Math.max(0, delta));
-        }}
-        onTouchEnd={() => {
-          if (!swipeToClose || window.innerWidth >= 640) return;
-          const shouldClose = dragY > 90;
-          setDragY(0);
-          touchStartYRef.current = null;
-          if (shouldClose) onClose();
-        }}
-        onTouchCancel={() => {
-          setDragY(0);
-          touchStartYRef.current = null;
-        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="shrink-0">
+        <div
+          className="shrink-0"
+          onTouchStart={(e) => {
+            if (!swipeToClose || window.innerWidth >= 640) return;
+            touchStartYRef.current = e.touches[0].clientY;
+          }}
+          onTouchMove={(e) => {
+            if (!swipeToClose || window.innerWidth >= 640 || touchStartYRef.current == null) return;
+            e.preventDefault(); // Ensure the swipe only affects the sheet when starting from the title.
+            const delta = e.touches[0].clientY - touchStartYRef.current;
+            setDragY(Math.max(0, delta));
+          }}
+          onTouchEnd={() => {
+            if (!swipeToClose || window.innerWidth >= 640) return;
+            const shouldClose = dragY > 90;
+            setDragY(0);
+            touchStartYRef.current = null;
+            if (shouldClose) onClose();
+          }}
+          onTouchCancel={() => {
+            setDragY(0);
+            touchStartYRef.current = null;
+          }}
+          style={{ touchAction: 'none' }}
+        >
           <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
