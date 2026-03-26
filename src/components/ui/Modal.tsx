@@ -116,8 +116,8 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
         ref={panelRef}
         className={cn(
           "relative w-full max-w-lg bg-card border border-border shadow-2xl modal-sheet-ios",
-          "rounded-t-[24px] sm:rounded-2xl",
-          "flex flex-col border-b-0 sm:border-b border-border",
+          "rounded-[24px]",
+          "flex flex-col border border-border overflow-hidden",
           "max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
           "min-h-0",
           className
@@ -127,30 +127,35 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           transition: dragY > 0 ? 'none' : undefined,
           marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
         }}
-        onTouchStart={(e) => {
-          if (!swipeToClose || window.innerWidth >= 640) return;
-          touchStartYRef.current = e.touches[0].clientY;
-        }}
-        onTouchMove={(e) => {
-          if (!swipeToClose || window.innerWidth >= 640 || touchStartYRef.current == null) return;
-          const delta = e.touches[0].clientY - touchStartYRef.current;
-          setDragY(Math.max(0, delta));
-        }}
-        onTouchEnd={() => {
-          if (!swipeToClose || window.innerWidth >= 640) return;
-          const shouldClose = dragY > 90;
-          setDragY(0);
-          touchStartYRef.current = null;
-          if (shouldClose) onClose();
-        }}
-        onTouchCancel={() => {
-          setDragY(0);
-          touchStartYRef.current = null;
-        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
-        <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+        <div
+          className="shrink-0"
+          onTouchStart={(e) => {
+            if (!swipeToClose || window.innerWidth >= 640) return;
+            touchStartYRef.current = e.touches[0].clientY;
+          }}
+          onTouchMove={(e) => {
+            if (!swipeToClose || window.innerWidth >= 640 || touchStartYRef.current == null) return;
+            e.preventDefault();
+            const delta = e.touches[0].clientY - touchStartYRef.current;
+            setDragY(Math.max(0, delta));
+          }}
+          onTouchEnd={() => {
+            if (!swipeToClose || window.innerWidth >= 640) return;
+            const shouldClose = dragY > 90;
+            setDragY(0);
+            touchStartYRef.current = null;
+            if (shouldClose) onClose();
+          }}
+          onTouchCancel={() => {
+            setDragY(0);
+            touchStartYRef.current = null;
+          }}
+          style={{ touchAction: 'none' }}
+        >
+          <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
+          <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
           <button
             onClick={onClose}
@@ -158,6 +163,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           >
             <X size={20} />
           </button>
+        </div>
         </div>
         <div
           className="p-4 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain overscroll-y-auto min-w-0"
