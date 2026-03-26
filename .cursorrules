@@ -1,0 +1,36 @@
+# Cursor Rules (lifeOS)
+
+## How to search (default)
+1. Identify the feature area first (route/page, UI component, state/store, hook logic, data/db, or integrations).
+2. Search only in the most relevant directories first. Prefer scoped searches over repo-wide scanning.
+3. When you edit or implement something, read the surrounding files in the same folder/module to understand the current patterns and exports.
+
+## Directory-to-meaning mapping (so you know where to look first)
+- `src/routes/*`: top-level pages and route wiring (e.g. `Dashboard`, `Tasks`, `Focus`)
+- `src/components/*`: feature components used by routes/pages
+- `src/components/ui/*`: UI primitives (buttons, inputs, sheets, modal-like components)
+- `src/stores/*`: app state (Zustand stores). Prefer updating/reading existing stores rather than inventing new state.
+- `src/hooks/*`: React hooks that implement logic, fetchers, syncing, timers, etc.
+- `src/contexts/*`: auth and cross-cutting providers
+- `src/lib/*`: shared utilities, API wrappers, sync helpers, query client helpers
+- `src/db/*`: database setup, migrations, seeds, and schema-related code
+- `src/types/*` and `src/types/schema.ts`: shared types and schemas
+- `src/index.css`, `src/App.tsx`, `src/main.tsx`: app bootstrap and global wiring
+
+## Feature-specific search hints (examples)
+- If the user asks “where is the UI for X?”: check `src/routes/*` first, then `src/components/*` (and `src/components/ui/*` for primitives).
+- If the user asks “where is state for X?”: check `src/stores/*`, then any hooks in `src/hooks/*` that read/update stores.
+- If the user asks “how does sync/fetch/persistence work?”: check `src/lib/*` and `src/hooks/*`, then `src/db/*` for offline/persistence details.
+
+## Separate scope: lifeos-agent-cli
+- If the request is about the agent CLI: scope to `lifeos-agent-cli/src/*` and `lifeos-agent-cli/prompts/*`.
+- Never mix `lifeos-agent-cli` logic with the main app unless the user explicitly asks for cross-integration.
+
+## Implementation defaults
+1. Prefer existing helper functions and established patterns in the closest related file(s).
+2. Keep changes minimal and localized to the relevant folder(s).
+3. After implementing, quickly sanity-check any relevant exports/imports (e.g. if you add a new store/hook/component, confirm it’s referenced where needed).
+
+## Auth / integration caution
+- For auth and external services (Supabase, TickTick, etc.), prefer the existing wrappers in `src/lib/*` / `src/hooks/*` rather than adding new ad-hoc network calls.
+
