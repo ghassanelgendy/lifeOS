@@ -114,8 +114,7 @@ export function DetailsSheet({
       <div
         className={cn(
           'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto bg-card shadow-2xl flex flex-col min-h-0',
-          'rounded-t-[24px]',
-          'border-t border-x border-border'
+          'rounded-[24px] border border-border overflow-hidden',
         )}
         style={{
           height: '92dvh',
