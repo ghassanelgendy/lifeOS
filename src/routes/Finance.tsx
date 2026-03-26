@@ -201,6 +201,97 @@ export default function Finance() {
     };
   }, [filteredTransactions, selectedMonth]);
 
+  // --- Correction Transaction (reconciliation) ---
+  // "Detected balance" is computed from transactions for the selected bank/card identity.
+  const computeDetectedBalanceForIdentity = (
+    bankName: string,
+    qnbCard: 'debit' | 'credit'
+  ): number => {
+    const round1Local = (n: number) => Math.round(n * 10) / 10;
+    const normalizedBank = (bankName || '').trim();
+    if (!normalizedBank) return 0;
+
+    const matchesIdentity = (t: Transaction) => {
+      const tBank = (t.bank || '').trim();
+      if (normalizedBank !== 'QNB') return tBank === normalizedBank;
+      if (tBank !== 'QNB') return false;
+      const acc = (t.account || '').replace(/\s/g, '');
+      if (qnbCard === 'debit') return QNB_DEBIT.test(acc);
+      return QNB_CREDIT.test(acc);
+    };
+
+    let balance = 0;
+    transactions.filter(matchesIdentity).forEach((t) => {
+      if (t.type === 'income') balance += Number(t.amount);
+      else balance -= Number(t.amount);
+    });
+
+    return round1Local(balance);
+  };
+
+  const [isCorrectionSheetOpen, setIsCorrectionSheetOpen] = useState(false);
+  const [correctionBank, setCorrectionBank] = useState<string>('');
+  const [correctionQNBCard, setCorrectionQNBCard] = useState<'debit' | 'credit'>('debit');
+  const [correctionRealAmount, setCorrectionRealAmount] = useState<number>(0);
+
+  const correctionDetectedBalance = useMemo(() => {
+    if (!correctionBank) return 0;
+    return computeDetectedBalanceForIdentity(correctionBank, correctionQNBCard);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [correctionBank, correctionQNBCard, transactions]);
+
+  const correctionDiff = correctionRealAmount - correctionDetectedBalance;
+  const correctionConfirmDisabled =
+    !correctionBank ||
+    !Number.isFinite(correctionRealAmount) ||
+    Math.abs(correctionDiff) < 0.01;
+
+  const handleOpenCorrectionSheet = () => {
+    const defaultBank = selectedBank !== '' ? selectedBank : banks[0]?.name || 'Orange Cash';
+    const nextCard: 'debit' | 'credit' =
+      defaultBank === 'QNB'
+        ? selectedQNBAccount === 'credit'
+          ? 'credit'
+          : 'debit'
+        : 'debit';
+
+    setCorrectionBank(defaultBank);
+    setCorrectionQNBCard(nextCard);
+    setCorrectionRealAmount(computeDetectedBalanceForIdentity(defaultBank, nextCard));
+    setIsCorrectionSheetOpen(true);
+  };
+
+  const handleConfirmCorrection = () => {
+    if (correctionConfirmDisabled) return;
+
+    const diff = correctionDiff;
+    const isPositive = diff > 0;
+    const today = new Date().toISOString().split('T')[0];
+    const absAmount = Math.abs(diff);
+
+    const payload: CreateInput<Transaction> = {
+      type: isPositive ? 'income' : 'expense',
+      category: isPositive ? 'other_income' : 'other_expense',
+      amount: Math.round(absAmount * 100) / 100,
+      description: 'Correction Transaction',
+      date: today,
+      time: undefined,
+      is_recurring: false,
+      bank: correctionBank,
+      transaction_type: 'Correction Transaction',
+      direction: isPositive ? 'In' : 'Out',
+      ...(correctionBank === 'QNB'
+        ? {
+            account: correctionQNBCard === 'debit' ? '0050/**7893' : '****1473',
+          }
+        : {}),
+    };
+
+    createTransaction.mutate(payload, {
+      onSuccess: () => setIsCorrectionSheetOpen(false),
+    });
+  };
+
   const totalBudgetLimit = useMemo(
     () => budgets.reduce((sum, b) => sum + Number(b.monthly_limit), 0),
     [budgets]
@@ -642,38 +733,6 @@ export default function Finance() {
       {/* Transactions tab */}
       {activeTab === 'transactions' && (
         <>
-      {/* Bank filter: All (consolidated) or single bank */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm text-muted-foreground">View:</span>
-        <Select
-          value={selectedBank}
-          onChange={(e) => {
-            setSelectedBank(e.target.value);
-            if (e.target.value !== 'QNB') setSelectedQNBAccount('all');
-          }}
-          options={[
-            { value: '', label: 'All (consolidated)' },
-            ...bankOptions.map((name) => ({ value: name, label: name })),
-          ]}
-          className="w-full sm:w-auto max-w-[200px]"
-        />
-        {selectedBank === 'QNB' && (
-          <>
-            <span className="text-sm text-muted-foreground">Card:</span>
-            <Select
-              value={selectedQNBAccount}
-              onChange={(e) => setSelectedQNBAccount(e.target.value as 'all' | 'debit' | 'credit')}
-              options={[
-                { value: 'all', label: 'All cards' },
-                { value: 'debit', label: 'Debit (0050/**7893)' },
-                { value: 'credit', label: 'Credit (****1473)' },
-              ]}
-              className="w-full sm:w-auto max-w-[180px]"
-            />
-          </>
-        )}
-      </div>
-
       {/* Month Selector */}
       <div className="flex items-center justify-center gap-3">
         <button
@@ -699,6 +758,34 @@ export default function Finance() {
         >
           <ChevronRight size={16} />
         </button>
+      </div>
+
+      {/* Wallet / Bank Selector */}
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Select
+          value={selectedBank}
+          onChange={(e) => {
+            setSelectedBank(e.target.value);
+            if (e.target.value !== 'QNB') setSelectedQNBAccount('all');
+          }}
+          options={[
+            { value: '', label: 'All (consolidated)' },
+            ...bankOptions.map((name) => ({ value: name, label: name })),
+          ]}
+          className="w-full sm:w-auto max-w-[200px]"
+        />
+        {selectedBank === 'QNB' && (
+          <Select
+            value={selectedQNBAccount}
+            onChange={(e) => setSelectedQNBAccount(e.target.value as 'all' | 'debit' | 'credit')}
+            options={[
+              { value: 'all', label: 'All cards' },
+              { value: 'debit', label: 'Debit (0050/**7893)' },
+              { value: 'credit', label: 'Credit (****1473)' },
+            ]}
+            className="w-full sm:w-auto max-w-[180px]"
+          />
+        )}
       </div>
 
       {/* Hero Summary Card */}
@@ -976,6 +1063,14 @@ export default function Finance() {
               <Plus size={12} />
               Add Transaction
             </button>
+            <button
+              type="button"
+              onClick={() => handleOpenCorrectionSheet()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-amber-200 bg-amber-500/10 ring-1 ring-amber-500/20 hover:bg-amber-500/20 transition-colors"
+            >
+              <Edit2 size={12} />
+              Correction
+            </button>
           </div>
         </div>
         {viewAllTransactions && (
@@ -1180,6 +1275,83 @@ export default function Finance() {
           })}
         </div>
       </div>
+
+      {/* Correction sheet */}
+      <DetailsSheet
+        isOpen={isCorrectionSheetOpen}
+        onClose={() => setIsCorrectionSheetOpen(false)}
+        onConfirm={handleConfirmCorrection}
+        title="Correction Transaction"
+        confirmDisabled={createTransaction.isPending || correctionConfirmDisabled}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Set real current amount</p>
+            <p className="text-xs text-muted-foreground">
+              A dummy adjustment transaction will be added to match your real balance.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            <Select
+              label="Bank"
+              value={correctionBank}
+              onChange={(e) => {
+                setCorrectionBank(e.target.value);
+                // If switching away from QNB, keep card selection deterministic.
+                if (e.target.value !== 'QNB') setCorrectionQNBCard('debit');
+              }}
+              options={[
+                ...(banks.map((b) => ({ value: b.name, label: b.name })) as { value: string; label: string }[]),
+              ]}
+            />
+
+            {correctionBank === 'QNB' && (
+              <Select
+                label="Card"
+                value={correctionQNBCard}
+                onChange={(e) => setCorrectionQNBCard(e.target.value as 'debit' | 'credit')}
+                options={[
+                  { value: 'debit', label: 'Debit (0050/**7893)' },
+                  { value: 'credit', label: 'Credit (****1473)' },
+                ]}
+              />
+            )}
+
+            <Input
+              label="Real amount"
+              type="number"
+              step="0.01"
+              value={correctionRealAmount === 0 ? '' : correctionRealAmount}
+              onChange={(e) => {
+                const next = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+                setCorrectionRealAmount(next);
+              }}
+            />
+          </div>
+
+          <div className="rounded-2xl bg-secondary/30 p-3 space-y-1 border border-border">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-muted-foreground">Detected balance</span>
+              <span className="text-xs font-semibold tabular-nums text-foreground">
+                {formatCurrency(correctionDetectedBalance)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-muted-foreground">Adjustment</span>
+              <span
+                className={cn(
+                  'text-xs font-semibold tabular-nums',
+                  correctionDiff >= 0 ? 'text-green-400' : 'text-red-400'
+                )}
+              >
+                {correctionDiff >= 0 ? '+' : '−'}
+                {formatCurrency(Math.abs(correctionDiff))}
+              </span>
+            </div>
+          </div>
+        </div>
+      </DetailsSheet>
 
       {/* Transaction sheet (same style as task Details) */}
       <DetailsSheet
