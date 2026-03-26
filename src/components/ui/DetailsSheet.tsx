@@ -114,8 +114,7 @@ export function DetailsSheet({
       <div
         className={cn(
           'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto bg-card shadow-2xl flex flex-col min-h-0',
-          'rounded-t-[24px]',
-          'border-t border-x border-border'
+          'rounded-[24px] border border-border overflow-hidden',
         )}
         style={{
           height: '92dvh',
@@ -130,24 +129,6 @@ export function DetailsSheet({
             ? 'none'
             : 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease-out',
         }}
-        onTouchStart={(e) => {
-          touchStartYRef.current = e.touches[0].clientY;
-        }}
-        onTouchMove={(e) => {
-          if (touchStartYRef.current == null) return;
-          const delta = e.touches[0].clientY - touchStartYRef.current;
-          setDragY(Math.max(0, delta));
-        }}
-        onTouchEnd={() => {
-          const shouldClose = dragY > 90;
-          setDragY(0);
-          touchStartYRef.current = null;
-          if (shouldClose) onClose();
-        }}
-        onTouchCancel={() => {
-          setDragY(0);
-          touchStartYRef.current = null;
-        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Sticky header: close (left), title (center), confirm (right) */}
@@ -156,6 +137,29 @@ export function DetailsSheet({
             'sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 bg-card',
             stickyHeaderDivider && scrolled && 'border-b border-border'
           )}
+          onTouchStart={(e) => {
+            if (window.innerWidth >= 640) return;
+            touchStartYRef.current = e.touches[0].clientY;
+          }}
+          onTouchMove={(e) => {
+            if (window.innerWidth >= 640) return;
+            if (touchStartYRef.current == null) return;
+            e.preventDefault();
+            const delta = e.touches[0].clientY - touchStartYRef.current;
+            setDragY(Math.max(0, delta));
+          }}
+          onTouchEnd={() => {
+            if (window.innerWidth >= 640) return;
+            const shouldClose = dragY > 90;
+            setDragY(0);
+            touchStartYRef.current = null;
+            if (shouldClose) onClose();
+          }}
+          onTouchCancel={() => {
+            setDragY(0);
+            touchStartYRef.current = null;
+          }}
+          style={{ touchAction: 'none' }}
         >
           <button
             type="button"

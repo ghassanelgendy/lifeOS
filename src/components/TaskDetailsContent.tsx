@@ -174,6 +174,21 @@ export function TaskDetailsContent({
       })()
     : null;
   const dueTimePreview = form.due_time ? formatTime12h(form.due_time) : null;
+  const reminderTimePreview = (() => {
+    if (!form.reminders_enabled) return null;
+    if (form.early_reminder_minutes == null) return null;
+    if (!form.due_date || !form.due_time) return null;
+    if (!/^\d{2}:\d{2}$/.test(form.due_time)) return null;
+
+    // Reminder time = due datetime minus early_reminder_minutes.
+    const due = new Date(`${form.due_date}T${form.due_time}:00`);
+    if (Number.isNaN(due.getTime())) return null;
+
+    const reminder = new Date(due.getTime() - form.early_reminder_minutes * 60 * 1000);
+    if (Number.isNaN(reminder.getTime())) return null;
+
+    return format(reminder, 'h:mm a');
+  })();
   const listName = form.list_id ? taskLists.find((l) => l.id === form.list_id)?.name : null;
   const recurrenceLabel = form.recurrence ? RECURRENCE_LABELS[form.recurrence] ?? form.recurrence : 'Never';
   const recurrenceEndLabel = form.recurrence_end_type
@@ -187,6 +202,7 @@ export function TaskDetailsContent({
 
   type PickerKey = 'repeat' | 'repeatEnd' | 'earlyReminder' | 'list' | 'tags' | 'priority' | null;
   const [openPicker, setOpenPicker] = useState<PickerKey>(null);
+  const [parseHints, setParseHints] = useState<string[]>([]);
 
   const closePicker = () => setOpenPicker(null);
 
@@ -202,17 +218,68 @@ export function TaskDetailsContent({
             onChange={(e) => {
               const raw = e.target.value;
               const parsed = parseTaskInput(raw);
+
+              const listTokenNames = parsed.detectedTokens
+                .filter((t) => t.type === 'list')
+                .map((t) => t.text.replace(/^[\s]*~/, '').trim().replace(/[.,!?;:]+$/g, ''))
+                .filter(Boolean);
+
+              const tagTokenNames = parsed.detectedTokens
+                .filter((t) => t.type === 'tag')
+                .map((t) => t.text.replace(/^[\s]*#/, '').trim().replace(/[.,!?;:]+$/g, ''))
+                .filter(Boolean);
+
+              const normalize = (s: string) => s.trim().toLowerCase();
+              const matchedListIds = listTokenNames
+                .map((name) => taskLists.find((l) => normalize(l.name) === normalize(name))?.id)
+                .filter((id): id is string => !!id);
+
+              const matchedTagIds = Array.from(
+                new Set(
+                  tagTokenNames
+                    .map((name) => tags.find((t) => normalize(t.name) === normalize(name))?.id)
+                    .filter((id): id is string => !!id)
+                )
+              );
+
+              const resolvedListId = matchedListIds.length ? matchedListIds[matchedListIds.length - 1] : undefined;
+
+              const unknownListNames = Array.from(
+                new Set(listTokenNames.filter((name) => !taskLists.some((l) => normalize(l.name) === normalize(name))))
+              );
+              const unknownTagNames = Array.from(
+                new Set(tagTokenNames.filter((name) => !tags.some((t) => normalize(t.name) === normalize(name))))
+              );
+
+              const nextHints: string[] = [
+                ...(parsed.hints ?? []),
+                ...unknownListNames.map((n) => `Unknown list: ${n}`),
+                ...unknownTagNames.map((n) => `Unknown tag: ${n}`),
+              ];
+
+              setParseHints(nextHints.length ? nextHints : []);
+
               setForm((prev) => ({
                 ...prev,
                 title: raw,
                 ...(parsed.date && { due_date: parsed.date, date_enabled: true }),
                 ...(parsed.time && { due_time: parsed.time, time_enabled: true }),
                 ...(parsed.priority != null && { priority: parsed.priority }),
+                ...(resolvedListId && { list_id: resolvedListId }),
+                ...(matchedTagIds.length ? { tag_ids: matchedTagIds } : {}),
+                ...(parsed.reminderOffsetMinutes != null
+                  ? { reminders_enabled: true, early_reminder_minutes: parsed.reminderOffsetMinutes }
+                  : {}),
               }));
             }}
             className="w-full bg-transparent text-lg font-bold text-foreground placeholder:text-muted-foreground border-0 outline-none focus:ring-0 min-h-[48px]"
             aria-label="Title"
           />
+          {parseHints.length > 0 && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {parseHints.join(' • ')}
+            </p>
+          )}
           <textarea
             placeholder="Notes"
             value={form.description ?? ''}
@@ -316,6 +383,11 @@ export function TaskDetailsContent({
           }
           disabled={!dateEnabled}
         />
+        {reminderTimePreview && timeEnabled && dateEnabled && (
+          <div className="px-4 -mt-1 mb-2">
+            <p className="text-xs text-muted-foreground">Reminder: {reminderTimePreview}</p>
+          </div>
+        )}
         {timeEnabled && dateEnabled && (
           <>
             <Divider />
