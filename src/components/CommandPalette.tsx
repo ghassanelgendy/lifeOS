@@ -13,7 +13,8 @@ import {
   Wallet,
   Shield,
   Moon,
-  Sun
+  Sun,
+  BarChart3
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
@@ -153,6 +154,13 @@ export function CommandPalette() {
             >
               <Wallet className="mr-2 h-4 w-4" />
               <span>Finance</span>
+            </Command.Item>
+            <Command.Item
+              onSelect={() => runCommand(() => navigate('/analytics'))}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
+            >
+              <BarChart3 className="mr-2 h-4 w-4" />
+              <span>Analytics</span>
             </Command.Item>
             <Command.Item
               onSelect={() => runCommand(() => navigate('/settings'))}

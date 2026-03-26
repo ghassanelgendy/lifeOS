@@ -129,15 +129,16 @@ export default function Health() {
       </div>
 
       {/* Metrics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         {[
-          { label: 'Weight', value: `${metrics.weight.current}`, unit: 'kg', trend: metrics.weight.trend },
-          { label: 'Muscle Mass', value: `${metrics.smm.current}`, unit: 'kg', trend: metrics.smm.trend, positive: true },
-          { label: 'Body Fat', value: `${metrics.pbf.current}`, unit: '%', trend: metrics.pbf.trend, positive: false },
-          { label: 'Visceral Fat', value: `${metrics.visceral.current}`, unit: 'lvl', trend: metrics.visceral.trend, positive: false },
-          { label: 'BMR', value: `${metrics.bmr.current}`, unit: 'kcal', trend: metrics.bmr.trend, positive: true },
+          { label: 'Weight', value: `${metrics.weight.current}`, unit: 'kg', trend: metrics.weight.trend, cardClassName: '' },
+          { label: 'Muscle Mass', value: `${metrics.smm.current}`, unit: 'kg', trend: metrics.smm.trend, positive: true, cardClassName: '' },
+          { label: 'Body Fat', value: `${metrics.pbf.current}`, unit: '%', trend: metrics.pbf.trend, positive: false, cardClassName: '' },
+          { label: 'Visceral Fat', value: `${metrics.visceral.current}`, unit: 'lvl', trend: metrics.visceral.trend, positive: false, cardClassName: '' },
+          // On wider screens, let BMR span more horizontal space (2 cols of 6).
+          { label: 'BMR', value: `${metrics.bmr.current}`, unit: 'kcal', trend: metrics.bmr.trend, positive: true, cardClassName: 'md:col-span-2' },
         ].map((metric) => (
-          <div key={metric.label} className="rounded-xl border border-border bg-card p-4">
+          <div key={metric.label} className={cn("rounded-xl border border-border bg-card p-4", metric.cardClassName)}>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">{metric.label}</p>
             <div className="flex items-end gap-1 mt-1">
               <span className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>

@@ -11,6 +11,7 @@ import {
   Monitor,
   Moon,
   Focus as FocusIcon,
+  BarChart3,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -28,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Bio-Metrics', icon: Dumbbell, href: '/health' },
   { label: 'Screen Time', icon: Monitor, href: '/screentime' },
   { label: 'Sleep', icon: Moon, href: '/sleep' },
+  { label: 'Analytics', icon: BarChart3, href: '/analytics' },
   { label: 'Academic', icon: GraduationCap, href: '/academics' },
   { label: 'Finance', icon: Wallet, href: '/finance' },
   { label: 'Settings', icon: Settings, href: '/settings' },

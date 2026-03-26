@@ -24,6 +24,7 @@ import Finance from './routes/Finance';
 import Habits from './routes/Habits';
 import Screentime from './routes/Screentime';
 import Sleep from './routes/Sleep';
+import AnalyticsPage from './routes/Analytics';
 import SettingsPage from './routes/Settings';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
@@ -151,6 +152,7 @@ function AppInner() {
             <Route path="finance" element={<Finance />} />
             <Route path="screentime" element={<Screentime />} />
             <Route path="sleep" element={<Sleep />} />
+            <Route path="analytics" element={<AnalyticsPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>

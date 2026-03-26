@@ -9,7 +9,9 @@ import {
   Calendar,
   TrendingUp,
   Clock,
-  ListTodo
+  ListTodo,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 import {
   format,
@@ -156,6 +158,7 @@ export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [isPrayerExpanded, setIsPrayerExpanded] = useState(false);
   const [habitType, setHabitType] = useState<HabitType>('standard');
   const [detoxMode, setDetoxMode] = useState<DetoxMode>('linear');
   const [detoxStartTarget, setDetoxStartTarget] = useState(3);
@@ -413,10 +416,37 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Prayer + Prayer Backlog in same row when there's room */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-        <CompactPrayerHabit />
-        <PrayerBacklog />
+      {/* Prayer (collapsed by default) */}
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setIsPrayerExpanded((v) => !v)}
+          className="w-full flex items-center gap-3 p-4 hover:bg-secondary/20 transition-colors text-left"
+          aria-expanded={isPrayerExpanded}
+        >
+          <div className="p-2 rounded-lg bg-secondary shrink-0">
+            <Flame size={18} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-semibold truncate">Prayer</h2>
+            <p className="text-sm text-muted-foreground truncate">Daily prayers and backlog</p>
+          </div>
+          {isPrayerExpanded ? (
+            <ChevronDown size={18} className="text-muted-foreground" />
+          ) : (
+            <ChevronRight size={18} className="text-muted-foreground" />
+          )}
+        </button>
+
+        {isPrayerExpanded && (
+          <div className="border-t border-border p-4 bg-secondary/10">
+            {/* Prayer + Prayer Backlog in same row when there's room */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
+              <CompactPrayerHabit />
+              <PrayerBacklog />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Weekly Overview */}
