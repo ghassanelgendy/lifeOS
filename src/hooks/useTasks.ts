@@ -695,7 +695,7 @@ export function useCreateTag() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: { name: string; color: string }) => {
+    mutationFn: async (input: { name: string; color: string; default_list_id?: string | null }) => {
       const { data, error } = await supabase.from('tags').insert(input).select().single();
       if (error) throw error;
       return data as Tag;

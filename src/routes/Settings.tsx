@@ -42,6 +42,7 @@ const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   events: 'Upcoming events',
   quickstats: 'Quick stats (Projects, Body fat, BMR, Expenses)',
   habits: "Today's habits",
+  magic_week: 'Magic Week Report',
 };
 
 const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
@@ -60,6 +61,8 @@ export default function SettingsPage() {
   const {
     privacyMode,
     togglePrivacyMode,
+    analyticsShowTips,
+    setAnalyticsShowTips,
     theme,
     setTheme,
     accentTheme,
@@ -727,6 +730,31 @@ export default function SettingsPage() {
                 className={cn(
                   "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
                   privacyMode ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
+          </div>
+
+          {/* Analytics Tips */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Info size={20} />
+              <div>
+                <p className="font-medium">Analytics tips</p>
+                <p className="text-sm text-muted-foreground">Show explanations for each Analytics section</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAnalyticsShowTips(!analyticsShowTips)}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors",
+                analyticsShowTips ? "bg-green-500" : "bg-secondary"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                  analyticsShowTips ? "translate-x-7" : "translate-x-1"
                 )}
               />
             </button>

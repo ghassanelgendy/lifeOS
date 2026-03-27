@@ -5,6 +5,8 @@ import { useTasks } from '../hooks/useTasks';
 import { formatDuration } from '../lib/utils';
 import { requestFocusManualRecord } from '../lib/focusSessionEvents';
 import { useFocusSessionStore } from '../stores/useFocusSessionStore';
+import { cn } from '../lib/utils';
+import { Clock, PictureInPicture2, Zap } from 'lucide-react';
 
 const PHASE_LABELS = {
   focus: 'Focus session',
@@ -46,9 +48,9 @@ export default function Focus() {
     return Math.min(100, ((totalPhaseSeconds - secondsLeft) / totalPhaseSeconds) * 100);
   }, [secondsLeft, totalPhaseSeconds]);
 
-  const accentRingStyle = useMemo(
+  const progressBarStyle = useMemo(
     () => ({
-      background: `conic-gradient(var(--color-ring) ${progressPercent}%, rgba(255,255,255,0.1) ${progressPercent}% 100%)`,
+      width: `${Math.max(0, Math.min(100, progressPercent))}%`,
     }),
     [progressPercent]
   );
@@ -115,85 +117,85 @@ export default function Focus() {
   };
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl border border-border bg-card p-6 text-foreground shadow-xl">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.4em] text-white/70">Focus mode</p>
-            <h1 className="text-3xl font-semibold">Get into the zone</h1>
-            <p className="text-sm text-white/70">
-              Choose a task below, set your focus/break rhythm, then let the timer guide you.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={togglePiP}
-            className="rounded-full border border-white/30 px-4 py-2 text-xs uppercase tracking-[0.3em]"
-          >
-            {pipOpen ? 'Hide PiP' : 'Show PiP'}
-          </button>
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Focus</h1>
+          <p className="text-muted-foreground">Pick a task, run a timer, and automatically log focus time.</p>
         </div>
+        <Button variant="outline" onClick={togglePiP}>
+          <PictureInPicture2 size={16} />
+          {pipOpen ? 'Hide PiP' : 'Show PiP'}
+        </Button>
+      </div>
 
-        <div className="mt-6 flex flex-col gap-6 md:flex-row">
-          <div className="relative flex flex-1 items-center justify-center">
-            <div
-              className="rounded-full border border-border bg-background/70"
-              style={{
-                width: '190px',
-                height: '190px',
-                ...accentRingStyle,
-                boxShadow: '0 0 30px rgba(15,23,42,0.7)',
-              }}
-            />
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p
-                className="font-semibold text-white/90"
-                style={{
-                  fontSize: '30px',
-                  fontFamily: "'Orbitron', 'Space Mono', monospace",
-                  letterSpacing: '0.05em',
-                }}
-              >
-                {formatDuration(secondsLeft)}
-              </p>
-              <span className="text-xs uppercase tracking-[0.3em] text-white/60">
-                {PHASE_LABELS[currentPhase]}
-              </span>
+      <section className="rounded-xl border border-border bg-card p-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          <div className="rounded-xl border border-border bg-secondary/10 p-4 h-full">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{PHASE_LABELS[currentPhase]}</p>
+                <p className="mt-1 text-5xl font-bold tabular-nums tracking-tight">
+                  {formatDuration(secondsLeft)}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Progress</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums">{Math.round(progressPercent)}%</p>
+              </div>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-secondary overflow-hidden border border-border">
+              <div className="h-full bg-primary transition-[width] duration-500" style={progressBarStyle} />
             </div>
           </div>
-          <div className="flex flex-1 flex-col justify-between gap-3">
-            <div className="space-y-1">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/60">Current cycle</p>
-              <p className="text-lg font-semibold">
-                {((cycleCount % 4) + 1)}/4 focus sessions
-              </p>
-              <p className="text-sm text-white/70">
-                {currentPhase === 'focus'
-                  ? 'Stay focused until this timer reaches zero to log the session automatically.'
-                  : 'Take a break, then the next focus period starts when you resume.'}
-              </p>
+
+          <div className="rounded-xl border border-border bg-secondary/10 p-4 h-full flex flex-col">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Current cycle</p>
+                <p className="mt-1 text-lg font-semibold">
+                  {((cycleCount % 4) + 1)}/4 focus sessions
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Task</p>
+                <p className="mt-1 text-sm font-semibold truncate max-w-[16rem]">
+                  {selectedTask?.title ?? 'No task selected'}
+                </p>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <p className="text-sm text-muted-foreground mt-2">
+              {currentPhase === 'focus'
+                ? 'Stay focused until the timer ends to auto-log the session.'
+                : 'Take a break. Resume when ready to continue your cycle.'}
+            </p>
+
+            <div className="flex flex-wrap gap-2 mt-4">
               {isRunning ? (
-                <Button size="sm" variant="secondary" onClick={pause}>
+                <Button onClick={pause}>
+                  <Clock size={16} />
                   Pause
                 </Button>
               ) : (
-                <Button size="sm" onClick={start}>
+                <Button onClick={start}>
+                  <Zap size={16} />
                   {currentPhase === 'focus' ? 'Start focus' : 'Resume break'}
                 </Button>
               )}
-              <Button size="sm" variant="ghost" onClick={requestFocusManualRecord}>
+              <Button variant="secondary" onClick={requestFocusManualRecord}>
                 Record session early
               </Button>
               {currentPhase !== 'focus' && (
-                <Button size="sm" variant="outline" onClick={handleSkipBreak}>
+                <Button variant="outline" onClick={handleSkipBreak}>
                   Skip break
                 </Button>
               )}
             </div>
+
             {lastRecordedLabel && (
-              <p className="text-xs text-white/70">{lastRecordedLabel}</p>
+              <p className={cn("text-xs mt-3", lastRecordedLabel.toLowerCase().includes('unable') ? "text-red-400" : "text-muted-foreground")}>
+                {lastRecordedLabel}
+              </p>
             )}
           </div>
         </div>

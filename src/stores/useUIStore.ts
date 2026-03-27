@@ -5,7 +5,7 @@ import { persist } from 'zustand/middleware';
 const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/calendar'];
 
 // Dashboard widget ids (default order)
-export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;
+export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits', 'magic_week'] as const;
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 export const SLEEP_WIDGET_IDS = ['score', 'timeline', 'metrics', 'weekly', 'sessions'] as const;
 export type SleepWidgetId = (typeof SLEEP_WIDGET_IDS)[number];
@@ -44,6 +44,10 @@ interface UIState {
   // Privacy Mode
   privacyMode: boolean;
   togglePrivacyMode: () => void;
+
+  // Analytics
+  analyticsShowTips: boolean;
+  setAnalyticsShowTips: (show: boolean) => void;
 
   // Theme (dark by default per PRD)
   theme: 'dark' | 'light';
@@ -107,6 +111,10 @@ export const useUIStore = create<UIState>()(
       // Privacy Mode
       privacyMode: false,
       togglePrivacyMode: () => set((state) => ({ privacyMode: !state.privacyMode })),
+
+      // Analytics
+      analyticsShowTips: true,
+      setAnalyticsShowTips: (show: boolean) => set({ analyticsShowTips: show }),
 
       // Theme
       theme: 'dark',
@@ -227,6 +235,7 @@ export const useUIStore = create<UIState>()(
       partialize: (state) => ({
         isSidebarCollapsed: state.isSidebarCollapsed,
         privacyMode: state.privacyMode,
+        analyticsShowTips: state.analyticsShowTips,
         theme: state.theme,
         accentTheme: state.accentTheme,
         mobileNavItems: state.mobileNavItems,

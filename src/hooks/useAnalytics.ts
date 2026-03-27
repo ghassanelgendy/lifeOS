@@ -188,3 +188,36 @@ export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
   return { bounds, topApps, topDomains, topExpenseCategories, topMerchants };
 }
 
+// Fetch analytics for an explicit date range (inclusive).
+// Useful for fixed windows like "Sun-Sat last week".
+export function useAnalyticsDailyRange(start: string, end: string) {
+  const bounds = { start, end };
+
+  const finance = useQuery({
+    queryKey: ['analytics', 'daily', 'finance', bounds.start, bounds.end],
+    queryFn: () => selectRange<AnalyticsDailyFinanceRow>('analytics_daily_finance', bounds.start, bounds.end),
+  });
+
+  const sleep = useQuery({
+    queryKey: ['analytics', 'daily', 'sleep', bounds.start, bounds.end],
+    queryFn: () => selectRange<AnalyticsDailySleepRow>('analytics_daily_sleep', bounds.start, bounds.end),
+  });
+
+  const tasks = useQuery({
+    queryKey: ['analytics', 'daily', 'tasks', bounds.start, bounds.end],
+    queryFn: () => selectRange<AnalyticsDailyTasksRow>('analytics_daily_tasks', bounds.start, bounds.end),
+  });
+
+  const habits = useQuery({
+    queryKey: ['analytics', 'daily', 'habits', bounds.start, bounds.end],
+    queryFn: () => selectRange<AnalyticsDailyHabitsRow>('analytics_daily_habits', bounds.start, bounds.end),
+  });
+
+  const screentime = useQuery({
+    queryKey: ['analytics', 'daily', 'screentime', bounds.start, bounds.end],
+    queryFn: () => selectRange<AnalyticsDailyScreentimeRow>('analytics_daily_screentime', bounds.start, bounds.end),
+  });
+
+  return { bounds, finance, sleep, tasks, habits, screentime };
+}
+

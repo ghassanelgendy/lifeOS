@@ -228,6 +228,7 @@ export interface Tag {
   id: string;
   name: string;
   color: string; // Hex
+  default_list_id?: string | null; // Optional mapping: when a tag is selected for a new task, auto-assign this list
   created_at: string;
 }
 

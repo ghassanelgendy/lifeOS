@@ -161,6 +161,8 @@ export default function Tasks() {
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
   const [activeView, setActiveView] = useState<ViewType>('today');
   const [taskSort, setTaskSort] = useState<TaskSortMode>('smart');
+  const [sortFeedback, setSortFeedback] = useState<string | null>(null);
+  const sortFeedbackTimeoutRef = useRef<number | null>(null);
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -306,7 +308,12 @@ export default function Tasks() {
         e.preventDefault();
         setTaskSort((prev) => {
           const idx = TASK_SORT_OPTIONS.findIndex((o) => o.value === prev);
-          return TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
+          const next = TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
+          const label = TASK_SORT_OPTIONS.find((o) => o.value === next)?.label ?? next;
+          setSortFeedback(`Sorted by: ${label}`);
+          if (sortFeedbackTimeoutRef.current != null) window.clearTimeout(sortFeedbackTimeoutRef.current);
+          sortFeedbackTimeoutRef.current = window.setTimeout(() => setSortFeedback(null), 1600);
+          return next;
         });
         return;
       }
@@ -315,6 +322,19 @@ export default function Tasks() {
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  // Clean up any pending sort feedback timeout on unmount.
+  useEffect(() => {
+    return () => {
+      if (sortFeedbackTimeoutRef.current != null) window.clearTimeout(sortFeedbackTimeoutRef.current);
+    };
+  }, []);
+
+  // When quick-add opens, force focus so Enter submits immediately.
+  useEffect(() => {
+    if (!isAddingTask) return;
+    requestAnimationFrame(() => quickAddRef.current?.focus());
+  }, [isAddingTask]);
 
   // Smart task input: parse time (12:00), date (wed, tmrw, 15 June), ~ lists, ! priority, # tags.
   // Date/time are applied while typing; shortcut text is stripped only when adding the task.
@@ -621,6 +641,7 @@ export default function Tasks() {
   const [newListColor, setNewListColor] = useState('#3b82f6');
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
+  const [newTagDefaultListId, setNewTagDefaultListId] = useState<string | null>(null);
 
   // Convert habits with show_in_tasks=true to task-like objects
   const habitTasks = useMemo(() => {
@@ -759,7 +780,12 @@ export default function Tasks() {
   const cycleSortMode = () => {
     setTaskSort((prev) => {
       const idx = TASK_SORT_OPTIONS.findIndex((o) => o.value === prev);
-      return TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
+      const next = TASK_SORT_OPTIONS[(idx + 1) % TASK_SORT_OPTIONS.length].value;
+      const label = TASK_SORT_OPTIONS.find((o) => o.value === next)?.label ?? next;
+      setSortFeedback(`Sorted by: ${label}`);
+      if (sortFeedbackTimeoutRef.current != null) window.clearTimeout(sortFeedbackTimeoutRef.current);
+      sortFeedbackTimeoutRef.current = window.setTimeout(() => setSortFeedback(null), 1600);
+      return next;
     });
   };
   const activeListCounts = useMemo(() => {
@@ -790,10 +816,13 @@ export default function Tasks() {
       if (habit) {
         const habitLog = todayHabitLogs.find(log => log.habit_id === habitId);
         const isCompleted = habitLog?.completed ?? false;
+        const isDetox = habit.habit_type === 'detox';
+        const nextCompleted = !isCompleted;
         logHabit.mutate({
           habitId,
           date: todayStr,
-          completed: !isCompleted,
+          completed: nextCompleted,
+          note: isDetox ? (nextCompleted ? 'relapse' : 'relapse-removed') : undefined,
         });
       }
     } else {
@@ -915,6 +944,13 @@ export default function Tasks() {
     if (!titleToUse) return;
 
     const defaultListId = taskLists.find(l => l.is_default)?.id;
+    const tagDefaultListId = (() => {
+      for (const tid of newTaskTagIds) {
+        const dl = tags.find((t) => t.id === tid)?.default_list_id ?? null;
+        if (dl) return dl;
+      }
+      return null;
+    })();
     createTask.mutate({
       title: titleToUse,
       is_completed: false,
@@ -928,7 +964,10 @@ export default function Tasks() {
       recurrence_count: newTaskRecurrence !== 'none' && newTaskRecurrenceEndType === 'after_count' ? Math.max(1, newTaskRecurrenceCount) : undefined,
       reminders_enabled: newTaskRemindersEnabled,
       early_reminder_minutes: newTaskRemindersEnabled ? (newTaskEarlyReminderMinutes ?? null) : undefined,
-      list_id: newTaskListId ?? (activeView === 'list' && activeListId ? activeListId : defaultListId),
+      list_id:
+        newTaskListId ??
+        tagDefaultListId ??
+        (activeView === 'list' && activeListId ? activeListId : defaultListId),
       due_date: newTaskDate || (
         activeView === 'today' ? toDateString(new Date()) :
         (activeView === 'week' || activeView === 'upcoming') ? toDateString(addDays(new Date(), 1)) : // Default to tomorrow for 'week' and 'upcoming' views
@@ -1185,6 +1224,20 @@ export default function Tasks() {
     }
     titleToSave = titleToSave.replace(/\s+/g, ' ').trim();
     if (!titleToSave) titleToSave = rawTitle.trim();
+
+    const initialListId = defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined);
+    const tagDefaultListId = (() => {
+      for (const tid of editForm.tag_ids ?? []) {
+        const dl = tags.find((t) => t.id === tid)?.default_list_id ?? null;
+        if (dl) return dl;
+      }
+      return null;
+    })();
+    const resolvedListId =
+      editForm.list_id && editForm.list_id === initialListId && tagDefaultListId
+        ? tagDefaultListId
+        : editForm.list_id ?? initialListId;
+
     const payload: CreateInput<Task> = {
       title: titleToSave,
       description: editForm.description ?? undefined,
@@ -1197,7 +1250,7 @@ export default function Tasks() {
       ios_reminders_enabled: !!editForm.ios_reminders_enabled,
       recurrence_interval: recurrence === 'none' ? undefined : Math.max(1, Number(editForm.recurrence_interval || 1)),
       duration_minutes: editForm.duration_minutes ? Math.max(1, Number(editForm.duration_minutes)) : undefined,
-      list_id: editForm.list_id ?? defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
+      list_id: resolvedListId ?? undefined,
       project_id: editForm.project_id as string | undefined,
       tag_ids: editForm.tag_ids ?? [],
       url: editForm.url ?? undefined,
@@ -1283,10 +1336,11 @@ export default function Tasks() {
     if (editingTagId) {
       updateTag.mutate({
         id: editingTagId,
-        data: { name, color: newTagColor },
+        data: { name, color: newTagColor, default_list_id: newTagDefaultListId },
       }, {
         onSuccess: () => {
           setNewTagName('');
+          setNewTagDefaultListId(null);
           setEditingTagId(null);
           setIsTagModalOpen(false);
         },
@@ -1297,10 +1351,12 @@ export default function Tasks() {
       {
         name,
         color: newTagColor,
+        default_list_id: newTagDefaultListId,
       },
       {
         onSuccess: () => {
           setNewTagName('');
+          setNewTagDefaultListId(null);
           setIsTagModalOpen(false);
         },
       }
@@ -1322,6 +1378,7 @@ export default function Tasks() {
     setEditingTagId(tag.id);
     setNewTagName(tag.name);
     setNewTagColor(tag.color);
+    setNewTagDefaultListId(tag.default_list_id ?? null);
     setIsTagModalOpen(true);
   };
 
@@ -1628,6 +1685,11 @@ export default function Tasks() {
             >
               <ArrowUpDown size={16} className="text-muted-foreground" />
             </button>
+            {sortFeedback && (
+              <span className="text-xs text-muted-foreground bg-secondary/70 border border-border px-2 py-1 rounded-lg whitespace-nowrap">
+                {sortFeedback}
+              </span>
+            )}
             <Button onClick={handleOpenNewTaskSheet} className="p-2" aria-label="Add task">
               <Plus size={22} />
             </Button>
@@ -2255,6 +2317,17 @@ export default function Tasks() {
               ))}
             </div>
           </div>
+
+          <Select
+            label="Default list"
+            value={newTagDefaultListId ?? ''}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewTagDefaultListId(e.target.value ? e.target.value : null)}
+            options={[
+              { value: '', label: 'None' },
+              ...(taskLists ?? []).map((l) => ({ value: l.id, label: l.name })),
+            ]}
+          />
+
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
@@ -2281,6 +2354,7 @@ export default function Tasks() {
         onClose={() => {
           setIsTagModalOpen(false);
           setEditingTagId(null);
+          setNewTagDefaultListId(null);
         }}
         title={editingTagId ? 'Edit Tag' : 'New Tag'}
       >

@@ -198,7 +198,7 @@ function sectionHeader(opts: {
 }
 
 export default function Analytics() {
-  const { privacyMode } = useUIStore();
+  const { privacyMode, analyticsShowTips } = useUIStore();
   const [rangeDays, setRangeDays] = useState<AnalyticsRangeDays>(30);
   const daily = useAnalyticsDaily(rangeDays);
   const top = useAnalyticsTop(rangeDays);
@@ -214,6 +214,17 @@ export default function Analytics() {
     cross: true,
     anomalies: true,
   });
+
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [selectedDaySource, setSelectedDaySource] = useState<string | null>(null);
+  const closeDayDetails = () => {
+    setSelectedDay(null);
+    setSelectedDaySource(null);
+  };
+  const openDayDetails = (date: string, source?: string) => {
+    setSelectedDay(date);
+    setSelectedDaySource(source ?? null);
+  };
 
   const toggle = (k: SectionKey) => setExpanded((prev) => ({ ...prev, [k]: !prev[k] }));
 
@@ -546,6 +557,32 @@ export default function Analytics() {
       .slice(0, 8);
   }, [daily.finance.data, daily.screentime.data, daily.sleep.data]);
 
+  const dayDetails = useMemo(() => {
+    if (!selectedDay) return null;
+    const finance = (daily.finance.data ?? []).find((r) => r.date === selectedDay) ?? null;
+    const sleep = (daily.sleep.data ?? []).find((r) => r.date === selectedDay) ?? null;
+    const tasks = (daily.tasks.data ?? []).find((r) => r.date === selectedDay) ?? null;
+    const habits = (daily.habits.data ?? []).find((r) => r.date === selectedDay) ?? null;
+
+    const screenRows = (daily.screentime.data ?? []).filter((r) => r.date === selectedDay);
+    const hasScreentime = screenRows.length > 0;
+    const screen_total_time_seconds = hasScreentime
+      ? screenRows.reduce((s, r) => s + (Number(r.total_time_seconds) || 0), 0)
+      : null;
+    const screen_total_switches = hasScreentime
+      ? screenRows.reduce((s, r) => s + (Number(r.total_switches) || 0), 0)
+      : null;
+    return {
+      finance,
+      sleep,
+      tasks,
+      habits,
+      hasScreentime,
+      screen_total_time_seconds,
+      screen_total_switches,
+    };
+  }, [selectedDay, daily.finance.data, daily.sleep.data, daily.tasks.data, daily.habits.data, daily.screentime.data]);
+
   const isLoading =
     daily.finance.isLoading ||
     daily.sleep.isLoading ||
@@ -652,47 +689,163 @@ export default function Analytics() {
 
       {/* KPI summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <DataCard
-          title={`Sleep (${rangeLabel})`}
-          value={formatMinutes(sleepAgg.avgMinutes)}
-          trend={sleepTrend}
-          data={(daily.sleep.data ?? []).map((r) => r.total_minutes)}
-        />
-        <DataCard
-          title={`Screen time (${rangeLabel})`}
-          value={formatSeconds(screentimeAgg.avgSeconds)}
-          trend={screenTrend}
-          data={(() => {
-            const byDate = new Map<string, number>();
-            for (const r of daily.screentime.data ?? []) {
-              byDate.set(r.date, (byDate.get(r.date) ?? 0) + (Number(r.total_time_seconds) || 0));
-            }
-            return Array.from(byDate.entries())
-              .sort((a, b) => a[0].localeCompare(b[0]))
-              .map((x) => Math.round((x[1] / 60) * 10) / 10);
-          })()}
-          unit="min"
-          invertTrend
-        />
-        <DataCard
-          title={`Tasks (${rangeLabel})`}
-          value={Math.round(tasksAgg.avgCompleted * 10) / 10}
-          trend={tasksTrend}
-          data={(daily.tasks.data ?? []).map((r) => r.completed_count)}
-        />
-        <DataCard
-          title={`Habits (${rangeLabel})`}
-          value={`${habitsAgg.avgAdherence}%`}
-          trend={habitsTrend}
-          data={(daily.habits.data ?? []).map((r) => r.adherence_pct)}
-        />
-        <DataCard
-          title={`Finance (${rangeLabel})`}
-          value={privacyMode ? '••••' : formatCurrency(financeAgg.avgBalance)}
-          trend={financeTrend}
-          data={(daily.finance.data ?? []).map((r) => Number(r.balance) || 0)}
-        />
+        <button
+          type="button"
+          onClick={() => openDayDetails((daily.sleep.data ?? []).slice(-1)[0]?.date ?? daily.bounds.end, 'Sleep')}
+          className="w-full text-left"
+        >
+          <DataCard
+            title={`Sleep (${rangeLabel})`}
+            value={formatMinutes(sleepAgg.avgMinutes)}
+            trend={sleepTrend}
+            data={(daily.sleep.data ?? []).map((r) => r.total_minutes)}
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            const rows = daily.screentime.data ?? [];
+            const lastDate = rows.length ? rows[rows.length - 1]?.date : null;
+            openDayDetails(lastDate ?? daily.bounds.end, 'Screen time');
+          }}
+          className="w-full text-left"
+        >
+          <DataCard
+            title={`Screen time (${rangeLabel})`}
+            value={formatSeconds(screentimeAgg.avgSeconds)}
+            trend={screenTrend}
+            data={(() => {
+              const byDate = new Map<string, number>();
+              for (const r of daily.screentime.data ?? []) {
+                byDate.set(r.date, (byDate.get(r.date) ?? 0) + (Number(r.total_time_seconds) || 0));
+              }
+              return Array.from(byDate.entries())
+                .sort((a, b) => a[0].localeCompare(b[0]))
+                .map((x) => Math.round((x[1] / 60) * 10) / 10);
+            })()}
+            unit="min"
+            invertTrend
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => openDayDetails((daily.tasks.data ?? []).slice(-1)[0]?.date ?? daily.bounds.end, 'Tasks')}
+          className="w-full text-left"
+        >
+          <DataCard
+            title={`Tasks (${rangeLabel})`}
+            value={Math.round(tasksAgg.avgCompleted * 10) / 10}
+            trend={tasksTrend}
+            data={(daily.tasks.data ?? []).map((r) => r.completed_count)}
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => openDayDetails((daily.habits.data ?? []).slice(-1)[0]?.date ?? daily.bounds.end, 'Habits')}
+          className="w-full text-left"
+        >
+          <DataCard
+            title={`Habits (${rangeLabel})`}
+            value={`${habitsAgg.avgAdherence}%`}
+            trend={habitsTrend}
+            data={(daily.habits.data ?? []).map((r) => r.adherence_pct)}
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => openDayDetails((daily.finance.data ?? []).slice(-1)[0]?.date ?? daily.bounds.end, 'Finance')}
+          className="w-full text-left"
+        >
+          <DataCard
+            title={`Finance (${rangeLabel})`}
+            value={privacyMode ? '••••' : formatCurrency(financeAgg.avgBalance)}
+            trend={financeTrend}
+            data={(daily.finance.data ?? []).map((r) => Number(r.balance) || 0)}
+          />
+        </button>
       </div>
+
+      {/* Day details drill-down */}
+      {dayDetails && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold truncate">Day details</p>
+              <p className="text-xs text-muted-foreground">
+                {selectedDay}
+                {selectedDaySource ? ` · ${selectedDaySource}` : ''}
+              </p>
+            </div>
+            <button type="button" onClick={closeDayDetails} className="text-xs text-muted-foreground hover:text-foreground underline">
+              Close
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border bg-secondary/10 p-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Finance</p>
+              <p className={cn("mt-1 text-sm font-semibold tabular-nums", privacyMode && "blur-sm")}>
+                {dayDetails.finance
+                  ? `Net ${formatCurrency(Number(dayDetails.finance.balance ?? 0))}`
+                  : '—'}
+              </p>
+              {dayDetails.finance && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Income {privacyMode ? '••••' : formatCurrency(Number(dayDetails.finance.income ?? 0))} · Expense{' '}
+                  {privacyMode ? '••••' : formatCurrency(Number(dayDetails.finance.expense ?? 0))}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border bg-secondary/10 p-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Screen time</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums">
+                {dayDetails.screen_total_time_seconds == null ? '—' : formatSeconds(dayDetails.screen_total_time_seconds)}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Switches {dayDetails.screen_total_switches == null ? '—' : dayDetails.screen_total_switches.toLocaleString()}
+              </p>
+            </div>
+
+            <div className="rounded-lg border border-border bg-secondary/10 p-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Sleep</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums">
+                {dayDetails.sleep ? `${formatMinutes(dayDetails.sleep.total_minutes)}` : '—'}
+              </p>
+              {dayDetails.sleep && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Deep {formatMinutes(dayDetails.sleep.deep_minutes)} · REM {formatMinutes(dayDetails.sleep.rem_minutes)}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border bg-secondary/10 p-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Tasks</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums">
+                {dayDetails.tasks ? `${dayDetails.tasks.completed_count} completed` : '—'}
+              </p>
+              {dayDetails.tasks && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Focus {formatSeconds(dayDetails.tasks.focus_time_seconds)} · Urgent {dayDetails.tasks.urgent_completed_count} · Flagged{' '}
+                  {dayDetails.tasks.flagged_completed_count}
+                </p>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border bg-secondary/10 p-3">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Habits</p>
+              <p className="mt-1 text-sm font-semibold tabular-nums">
+                {dayDetails.habits ? `${Math.round(dayDetails.habits.adherence_pct)}% adherence` : '—'}
+              </p>
+              {dayDetails.habits && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Completed {dayDetails.habits.completed_count}/{dayDetails.habits.logs_count} logs
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Sections */}
       <div className="space-y-4">
@@ -744,6 +897,14 @@ export default function Analytics() {
           })}
           {expanded.finance && (
             <div className="border-t border-border p-4 bg-secondary/10 space-y-4">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Finance shows <span className="font-semibold">daily income</span>, <span className="font-semibold">daily expenses</span>, and the <span className="font-semibold">net balance</span> (income − expenses).
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-border bg-card overflow-hidden">
                   <div className="p-4 border-b border-border">
@@ -800,6 +961,14 @@ export default function Analytics() {
           })}
           {expanded.screentime && (
             <div className="border-t border-border p-4 bg-secondary/10 space-y-4">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Screen time aggregates <span className="font-semibold">apps + websites</span>. “Switches” counts context switching across your sources.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="rounded-xl border border-border bg-card overflow-hidden">
                   <div className="p-4 border-b border-border">
@@ -855,6 +1024,14 @@ export default function Analytics() {
           })}
           {expanded.sleep && (
             <div className="border-t border-border p-4 bg-secondary/10 space-y-3">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Sleep insights use your sleep sessions: <span className="font-semibold">deep</span> is restorative stage time, and <span className="font-semibold">REM</span> is memory/emotion processing time.
+                  </p>
+                </div>
+              )}
               <div className="rounded-lg border border-border bg-card p-3">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Totals</p>
                 <p className="mt-1 text-sm">
@@ -884,6 +1061,14 @@ export default function Analytics() {
           })}
           {expanded.tasks && (
             <div className="border-t border-border p-4 bg-secondary/10 space-y-3">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Tasks insights track <span className="font-semibold">completed tasks</span> and <span className="font-semibold">focus time</span> (time spent in focus-related tracking).
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="rounded-lg border border-border bg-card p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Completed</p>
@@ -911,6 +1096,14 @@ export default function Analytics() {
           })}
           {expanded.habits && (
             <div className="border-t border-border p-4 bg-secondary/10 space-y-3">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Habits adherence is based on <span className="font-semibold">completed logs</span> vs <span className="font-semibold">expected logs</span> in the selected range.
+                  </p>
+                </div>
+              )}
               <div className="rounded-lg border border-border bg-card p-3">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Adherence</p>
                 <p className="mt-1 text-sm">
@@ -977,7 +1170,11 @@ export default function Analytics() {
                           <button
                             key={x.id}
                             type="button"
-                            onClick={() => setSelectedRelId(x.id)}
+                            onClick={() => {
+                              setSelectedRelId(x.id);
+                              const best = x.points.reduce((acc, p) => (Math.abs(p.y) > Math.abs(acc.y) ? p : acc), x.points[0]);
+                              if (best?.date) openDayDetails(best.date, x.label);
+                            }}
                             className={cn(
                               "w-full px-4 py-3 flex items-center justify-between gap-3 text-left hover:bg-secondary/20 transition-colors",
                               selectedRelationship?.id === x.id && "bg-secondary/30"
@@ -1040,6 +1237,11 @@ export default function Analytics() {
                                   data={selectedRelationship.points}
                                   fill="var(--color-primary)"
                                   opacity={0.85}
+                                  onClick={(point: any) => {
+                                    const date = point?.date ?? point?.payload?.date;
+                                    if (!date) return;
+                                    openDayDetails(date, selectedRelationship.label);
+                                  }}
                                 />
                                 {(() => {
                                   const xs = selectedRelationship.points.map((p) => p.x);
@@ -1105,11 +1307,13 @@ export default function Analytics() {
                   </div>
                 </>
               )}
-              <div className="rounded-lg border border-border bg-card p-3">
-                <p className="text-xs text-muted-foreground">
-                  Tip: these are correlations (not causation). Use the sample size (n) and slope for confidence/impact.
-                </p>
-              </div>
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground">
+                    Tip: these are correlations (not causation). Use the sample size (n) and slope for confidence/impact.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1125,11 +1329,24 @@ export default function Analytics() {
           })}
           {expanded.anomalies && (
             <div className="border-t border-border p-4 bg-secondary/10 space-y-2">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Anomalies are days where a metric deviated strongly from your baseline in this range (z-score based).
+                  </p>
+                </div>
+              )}
               {anomalies.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No strong anomalies detected in this range.</p>
               ) : (
                 anomalies.map((a) => (
-                  <div key={`${a.key}-${a.date}`} className="rounded-lg border border-border bg-card p-3 flex items-center justify-between gap-3">
+                  <button
+                    key={`${a.key}-${a.date}`}
+                    type="button"
+                    onClick={() => openDayDetails(a.date, `${a.key} anomaly`)}
+                    className="rounded-lg border border-border bg-card p-3 flex items-center justify-between gap-3 cursor-pointer hover:bg-secondary/20 transition-colors text-left"
+                  >
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{a.key}</p>
                       <p className="text-xs text-muted-foreground">{a.date}</p>
@@ -1144,7 +1361,7 @@ export default function Analytics() {
                       </p>
                       <p className="text-[11px] text-muted-foreground">z={Math.round(a.z * 100) / 100}</p>
                     </div>
-                  </div>
+                  </button>
                 ))
               )}
             </div>

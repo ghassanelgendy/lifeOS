@@ -27,6 +27,7 @@ import { useProjects } from '../hooks/useProjects';
 import { useUIStore } from '../stores/useUIStore';
 import { DASHBOARD_WIDGET_IDS } from '../stores/useUIStore';
 import { PrayerTimesWidget } from '../components/PrayerTimesWidget';
+import { MagicWeekReportWidget } from '../components/MagicWeekReportWidget';
 import { useScreentimeMetrics, useTodayScreentime } from '../hooks/useScreentime';
 import { useSleepMetrics } from '../hooks/useSleep';
 
@@ -107,28 +108,35 @@ export default function Dashboard() {
       });
     }
 
-    const rangeDays = Array.from({ length: 8 }, (_, i) => addDays(now, i));
     for (const habit of allHabits) {
       if (habit.show_in_tasks) continue;
-      for (const day of rangeDays) {
-        const matchesDay = habit.frequency === 'Weekly'
-          ? ((habit.week_days ?? []).length ? (habit.week_days ?? []).includes(day.getDay()) : true)
-          : true;
-        if (!matchesDay) continue;
-        const datePart = format(day, 'yyyy-MM-dd');
+      const nextOccurrence = (() => {
         const timePart = habit.time && habit.time.length >= 5 ? habit.time.slice(0, 5) : '09:00';
-        const start = new Date(`${datePart}T${timePart}`);
-        if (start < now || start > end) continue;
-        const key = `habit:${habit.id}:${datePart}`;
-        if (items.has(key)) continue;
-        items.set(key, {
-          id: key,
-          title: habit.title,
-          start_time: start.toISOString(),
-          color: habit.color || '#22c55e',
-          kind: 'habit',
-        });
-      }
+        const candidates = Array.from({ length: 14 }, (_, i) => addDays(now, i)); // enough to cover weekly schedules
+        for (const day of candidates) {
+          const matchesDay = habit.frequency === 'Weekly'
+            ? ((habit.week_days ?? []).length ? (habit.week_days ?? []).includes(day.getDay()) : true)
+            : true;
+          if (!matchesDay) continue;
+          const datePart = format(day, 'yyyy-MM-dd');
+          const start = new Date(`${datePart}T${timePart}`);
+          if (start <= now) continue;
+          if (start > end) return null;
+          return { datePart, start };
+        }
+        return null;
+      })();
+
+      if (!nextOccurrence) continue;
+      const key = `habit:${habit.id}:${nextOccurrence.datePart}`;
+      if (items.has(key)) continue;
+      items.set(key, {
+        id: key,
+        title: habit.title,
+        start_time: nextOccurrence.start.toISOString(),
+        color: habit.color || '#22c55e',
+        kind: 'habit',
+      });
     }
 
     return Array.from(items.values()).sort(
@@ -594,6 +602,12 @@ if (widgetId === 'overdue' || widgetId === 'events') {
             );
           if (widgetId === 'overdue') return <div key="overdue">{overdueSection}</div>;
           return <div key="events">{eventsSection}</div>;
+        }
+
+        if (widgetId === 'magic_week') {
+          const isSaturday = new Date().getDay() === 6;
+          if (!isSaturday) return null;
+          return <MagicWeekReportWidget key="magic_week" />;
         }
         if (widgetId === 'habits')
           return (

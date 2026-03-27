@@ -528,6 +528,13 @@ export default function Habits() {
                                 isToday(day) && "hover:scale-105 active:scale-95",
                                 !canToggle && "opacity-40"
                               )}
+                              title={
+                                isDetox && isCompleted
+                                  ? 'Relapse logged (click to remove)'
+                                  : isDetox
+                                    ? 'Log relapse (detox) for today'
+                                    : undefined
+                              }
                               style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                             >
                               {isCompleted ? (
@@ -644,6 +651,13 @@ export default function Habits() {
                                   isToday(day) && "hover:scale-110",
                                   !canToggle && "opacity-30"
                                 )}
+                                title={
+                                  isDetox && isCompleted
+                                    ? 'Relapse logged (click to remove)'
+                                    : isDetox
+                                      ? 'Log relapse (detox) for today'
+                                      : undefined
+                                }
                                 style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                               >
                                 {isCompleted ? (
@@ -685,6 +699,13 @@ export default function Habits() {
               <div
                 key={habit.id}
                 onClick={() => handleToggleHabit(habit)}
+                title={
+                  isDetox
+                    ? isCompleted
+                      ? 'Relapse logged (click to remove)'
+                      : 'Log relapse (detox) for today'
+                    : undefined
+                }
                 className={cn(
                   "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all",
                   isDetox
