@@ -4,7 +4,7 @@ import { cn } from '../lib/utils';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
 
 export function PrayerTimesWidget() {
-  const { times, location, nextPrayer, timeToNext } = usePrayerTimes();
+  const { times, location, locationLabel, nextPrayer, timeToNext } = usePrayerTimes();
 
   const getIcon = (name: string) => {
     switch (name) {
@@ -32,9 +32,9 @@ export function PrayerTimesWidget() {
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-semibold text-lg">Prayer Times</h3>
-          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-            <MapPin size={10} />
-            <span>{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</span>
+          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1 min-w-0">
+            <MapPin size={10} className="shrink-0" />
+            <span className="truncate">{locationLabel}</span>
           </div>
         </div>
         {nextPrayer && (

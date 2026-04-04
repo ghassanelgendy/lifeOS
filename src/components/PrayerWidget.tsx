@@ -13,7 +13,7 @@ const STATUS_BUTTONS: { status: PrayerStatus; label: string; className: string }
 ];
 
 export function PrayerWidget() {
-  const { times, location, nextPrayer, timeToNext } = usePrayerTimes();
+  const { times, locationLabel, nextPrayer, timeToNext } = usePrayerTimes();
   const { isLoading, tracker, completionRate, weeklyCompletion, settings, togglePrayerStatus, setPrayerNotifications } = usePrayerTracker();
   const [expandedNotificationId, setExpandedNotificationId] = useState<string | null>(null);
 
@@ -34,12 +34,12 @@ export function PrayerWidget() {
       <div className="flex items-start justify-between gap-2">
         <div>
           <h3 className="font-semibold text-lg">Prayer Tracker</h3>
-          {location && (
+          {locationLabel ? (
             <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-              <MapPin size={10} />
-              <span>{location.lat.toFixed(2)}, {location.lng.toFixed(2)}</span>
+              <MapPin size={10} className="shrink-0" />
+              <span className="truncate">{locationLabel}</span>
             </div>
-          )}
+          ) : null}
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Today</p>

@@ -19,6 +19,7 @@ import {
   Briefcase,
   Code2,
   TrendingUp as TrendingUpIcon,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -762,59 +763,66 @@ export default function Finance() {
       {/* Transactions tab */}
       {activeTab === 'transactions' && (
         <>
-      {/* Month Selector */}
-      <div className="flex items-center justify-center gap-3">
-        <button
-          type="button"
-          onClick={() => setSelectedMonth((prev) => subMonths(prev, 1))}
-          className="w-8 h-8 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <span className="text-sm font-semibold text-foreground min-w-[120px] text-center">
-          {format(selectedMonth, 'MMMM yyyy')}
-        </span>
-        <button
-          type="button"
-          onClick={() => setSelectedMonth((prev) => addMonths(prev, 1))}
-          disabled={isCurrentMonth}
-          className={cn(
-            'w-8 h-8 flex items-center justify-center rounded-full transition-colors',
-            isCurrentMonth
-              ? 'text-muted-foreground/30 cursor-default'
-              : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
-          )}
-        >
-          <ChevronRight size={16} />
-        </button>
-      </div>
-
-      {/* Wallet / Bank Selector */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <Select
-          value={selectedBank}
-          onChange={(e) => {
-            setSelectedBank(e.target.value);
-            if (e.target.value !== 'QNB') setSelectedQNBAccount('all');
-          }}
-          options={[
-            { value: '', label: 'All (consolidated)' },
-            ...bankOptions.map((name) => ({ value: name, label: name })),
-          ]}
-          className="w-full sm:w-auto max-w-[200px]"
-        />
-        {selectedBank === 'QNB' && (
+      {/* Month + account scope: one compact row */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+        <div className="flex items-center justify-center sm:justify-start gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => setSelectedMonth((prev) => subMonths(prev, 1))}
+            className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Previous month"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <span className="text-sm font-semibold text-foreground min-w-[7.5rem] sm:min-w-[8.5rem] text-center tabular-nums">
+            {format(selectedMonth, 'MMM yyyy')}
+          </span>
+          <button
+            type="button"
+            onClick={() => setSelectedMonth((prev) => addMonths(prev, 1))}
+            disabled={isCurrentMonth}
+            aria-label="Next month"
+            className={cn(
+              'w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-colors',
+              isCurrentMonth
+                ? 'text-muted-foreground/30 cursor-default'
+                : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+        <div className="flex items-center justify-center sm:justify-end gap-1.5 min-w-0">
+          <Wallet className="size-3.5 text-muted-foreground shrink-0 opacity-80" aria-hidden />
           <Select
-            value={selectedQNBAccount}
-            onChange={(e) => setSelectedQNBAccount(e.target.value as 'all' | 'debit' | 'credit')}
+            aria-label="Bank or consolidated view"
+            value={selectedBank}
+            onChange={(e) => {
+              setSelectedBank(e.target.value);
+              if (e.target.value !== 'QNB') setSelectedQNBAccount('all');
+            }}
             options={[
-              { value: 'all', label: 'All cards' },
-              { value: 'debit', label: 'Debit (0050/**7893)' },
-              { value: 'credit', label: 'Credit (****1473)' },
+              { value: '', label: 'Consolidated' },
+              ...bankOptions.map((name) => ({ value: name, label: name })),
             ]}
-            className="w-full sm:w-auto max-w-[180px]"
+            title="All banks combined"
+            className="h-8 min-h-8 py-0 text-xs leading-tight px-2 w-auto min-w-[6.5rem] max-w-[min(11rem,calc(100vw-5rem))]"
           />
-        )}
+          {selectedBank === 'QNB' && (
+            <Select
+              aria-label="QNB card"
+              value={selectedQNBAccount}
+              onChange={(e) => setSelectedQNBAccount(e.target.value as 'all' | 'debit' | 'credit')}
+              options={[
+                { value: 'all', label: 'All cards' },
+                { value: 'debit', label: 'Debit' },
+                { value: 'credit', label: 'Credit' },
+              ]}
+              title="Debit: 0050/**7893 · Credit: ****1473"
+              className="h-8 min-h-8 py-0 text-xs leading-tight px-2 w-auto min-w-[5.5rem] max-w-[min(9rem,calc(100vw-6rem))]"
+            />
+          )}
+        </div>
       </div>
 
       {/* Hero Summary Card */}
@@ -1566,16 +1574,17 @@ export default function Finance() {
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm text-muted-foreground">Account:</span>
+              <div className="flex items-center justify-end gap-1.5 mb-1 min-w-0">
+                <Wallet className="size-3.5 text-muted-foreground shrink-0 opacity-80" aria-hidden />
                 <Select
+                  aria-label="Investment account"
                   value={selectedInvestmentAccount}
                   onChange={(e) => setSelectedInvestmentAccount(e.target.value)}
                   options={[
-                    { value: '', label: 'All' },
+                    { value: '', label: 'All accounts' },
                     ...investmentAccounts.map((a) => ({ value: a.id, label: a.name })),
                   ]}
-                  className="w-full sm:w-auto max-w-[200px]"
+                  className="h-8 min-h-8 py-0 text-xs leading-tight px-2 w-auto min-w-[6rem] max-w-[min(11rem,calc(100vw-4rem))]"
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

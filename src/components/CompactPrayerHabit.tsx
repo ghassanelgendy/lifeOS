@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChevronDown, ChevronUp, MoonStar, Sunrise, Sun, Sunset, Moon, Clock3, CheckCircle2, XCircle, Minus } from 'lucide-react';
+import { ChevronDown, ChevronUp, MoonStar, Sunrise, Sun, Sunset, Moon, Clock3, CheckCircle2, XCircle, Minus, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
@@ -12,8 +12,13 @@ const STATUS_BUTTONS: { status: PrayerStatus; label: string; className: string }
   { status: 'Skipped', label: 'Skip', className: 'bg-blue-500/15 text-blue-500 border-blue-500/30' },
 ];
 
-export function CompactPrayerHabit() {
-  const { times } = usePrayerTimes();
+type CompactPrayerHabitProps = {
+  /** When true, render as a panel inside an outer card (no second card chrome). */
+  embedded?: boolean;
+};
+
+export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps) {
+  const { times, locationLabel } = usePrayerTimes();
   const today = new Date();
   const { isLoading, tracker, togglePrayerStatus } = usePrayerTracker(today);
   const [isExpanded, setIsExpanded] = useState(true);
@@ -34,9 +39,13 @@ export function CompactPrayerHabit() {
   const totalCount = tracker.length;
   const percentage = totalCount > 0 ? Math.round((prayedCount / totalCount) * 100) : 0;
 
+  const shell = embedded
+    ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
+    : 'rounded-xl border border-border bg-card p-4 h-full flex flex-col';
+
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4">
+      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-4' : 'rounded-xl border border-border bg-card p-4'}>
         <div className="flex items-center justify-center h-16">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground" />
         </div>
@@ -45,7 +54,7 @@ export function CompactPrayerHabit() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 h-full flex flex-col">
+    <div className={shell}>
       {/* Compact View */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
@@ -56,7 +65,13 @@ export function CompactPrayerHabit() {
             <MoonStar size={20} />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-medium">Prayers</div>
+            <div className="font-medium">{embedded ? 'Today' : 'Prayers'}</div>
+            {locationLabel ? (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 truncate">
+                <MapPin size={10} className="shrink-0" />
+                <span className="truncate">{locationLabel}</span>
+              </div>
+            ) : null}
             <div className="text-sm text-muted-foreground">
               {prayedCount}/{totalCount} completed today
             </div>

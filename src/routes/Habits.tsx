@@ -36,6 +36,7 @@ import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
 import { supabase } from '../lib/supabase';
+import { useUIStore } from '../stores/useUIStore';
 
 const DEFAULT_COLORS = [
   '#22c55e', // Green
@@ -147,6 +148,9 @@ function computeDetoxTarget(detox: DetoxConfig, createdAt: string): number {
 }
 
 export default function Habits() {
+  const habitsPrayerDefaultExpanded = useUIStore((s) => s.habitsPrayerDefaultExpanded);
+  const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
+
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
@@ -158,7 +162,6 @@ export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
-  const [isPrayerExpanded, setIsPrayerExpanded] = useState(false);
   const [habitType, setHabitType] = useState<HabitType>('standard');
   const [detoxMode, setDetoxMode] = useState<DetoxMode>('linear');
   const [detoxStartTarget, setDetoxStartTarget] = useState(3);
@@ -416,35 +419,24 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Prayer (collapsed by default) */}
+      {/* Prayer + Prayer Backlog — collapsible; default state from Settings */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <button
           type="button"
-          onClick={() => setIsPrayerExpanded((v) => !v)}
-          className="w-full flex items-center gap-3 p-4 hover:bg-secondary/20 transition-colors text-left"
-          aria-expanded={isPrayerExpanded}
+          onClick={() => setPrayerSectionExpanded((v) => !v)}
+          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-secondary/40 transition-colors"
         >
-          <div className="p-2 rounded-lg bg-secondary shrink-0">
-            <Flame size={18} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="font-semibold truncate">Prayer</h2>
-            <p className="text-sm text-muted-foreground truncate">Daily prayers and backlog</p>
-          </div>
-          {isPrayerExpanded ? (
-            <ChevronDown size={18} className="text-muted-foreground" />
+          <span className="font-semibold">Prayer tracking</span>
+          {prayerSectionExpanded ? (
+            <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
           ) : (
-            <ChevronRight size={18} className="text-muted-foreground" />
+            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
           )}
         </button>
-
-        {isPrayerExpanded && (
-          <div className="border-t border-border p-4 bg-secondary/10">
-            {/* Prayer + Prayer Backlog in same row when there's room */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-              <CompactPrayerHabit />
-              <PrayerBacklog />
-            </div>
+        {prayerSectionExpanded && (
+          <div className="px-4 pb-4 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-stretch border-t border-border bg-secondary/5">
+            <CompactPrayerHabit embedded />
+            <PrayerBacklog embedded />
           </div>
         )}
       </div>
@@ -528,13 +520,6 @@ export default function Habits() {
                                 isToday(day) && "hover:scale-105 active:scale-95",
                                 !canToggle && "opacity-40"
                               )}
-                              title={
-                                isDetox && isCompleted
-                                  ? 'Relapse logged (click to remove)'
-                                  : isDetox
-                                    ? 'Log relapse (detox) for today'
-                                    : undefined
-                              }
                               style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                             >
                               {isCompleted ? (
@@ -651,13 +636,6 @@ export default function Habits() {
                                   isToday(day) && "hover:scale-110",
                                   !canToggle && "opacity-30"
                                 )}
-                                title={
-                                  isDetox && isCompleted
-                                    ? 'Relapse logged (click to remove)'
-                                    : isDetox
-                                      ? 'Log relapse (detox) for today'
-                                      : undefined
-                                }
                                 style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                               >
                                 {isCompleted ? (
@@ -699,13 +677,6 @@ export default function Habits() {
               <div
                 key={habit.id}
                 onClick={() => handleToggleHabit(habit)}
-                title={
-                  isDetox
-                    ? isCompleted
-                      ? 'Relapse logged (click to remove)'
-                      : 'Log relapse (detox) for today'
-                    : undefined
-                }
                 className={cn(
                   "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all",
                   isDetox

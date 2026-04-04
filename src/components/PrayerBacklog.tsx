@@ -14,7 +14,12 @@ function toDateOnly(d: Date): string {
   return format(d, 'yyyy-MM-dd');
 }
 
-export function PrayerBacklog() {
+type PrayerBacklogProps = {
+  /** When true, render as a panel inside an outer card (no second card chrome). */
+  embedded?: boolean;
+};
+
+export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   const { user } = useAuth();
   const { setPrayerStatusAtDate } = useSetPrayerStatusAtDate();
   const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
@@ -122,9 +127,13 @@ export function PrayerBacklog() {
     return { total, missed, skipped, prayed };
   }, [dateRange.days, logsByDate, today]);
 
+  const shell = embedded
+    ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
+    : 'rounded-xl border border-border bg-card p-4 md:p-6 h-full flex flex-col';
+
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-border bg-card p-6 h-full flex flex-col">
+      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-6 h-full flex flex-col' : 'rounded-xl border border-border bg-card p-6 h-full flex flex-col'}>
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
         </div>
@@ -133,10 +142,10 @@ export function PrayerBacklog() {
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4 md:p-6 h-full flex flex-col">
+    <div className={shell}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Prayer Backlog</h2>
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <h2 className={embedded ? 'text-base font-semibold' : 'text-lg font-semibold'}>Prayer Backlog</h2>
         <div className="flex gap-2">
           <button
             onClick={() => setView('weekly')}

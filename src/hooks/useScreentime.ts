@@ -2,9 +2,76 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import type { ScreentimeAppStat, ScreentimeWebsiteStat, ScreentimeDailySummary } from '../types/schema';
 import { format, subDays } from 'date-fns';
+import { screentimeDateKey } from '../lib/screentimePlatform';
 import { useAuth } from '../contexts/AuthContext';
 
 const QUERY_KEY = ['screentime'];
+
+/** PostgREST returns at most ~1000 rows per request; paginate so totals (e.g. Windows day sum) are not truncated. */
+const PAGE_SIZE = 1000;
+
+async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
+  const all: ScreentimeAppStat[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('screentime_daily_app_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    if (!data?.length) break;
+    all.push(...(data as ScreentimeAppStat[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
+  const all: ScreentimeWebsiteStat[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('screentime_daily_website_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    if (!data?.length) break;
+    all.push(...(data as ScreentimeWebsiteStat[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+async function fetchAllDailySummaries(userId: string, startDate: string, endDate: string): Promise<ScreentimeDailySummary[]> {
+  const all: ScreentimeDailySummary[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('screentime_daily_summary')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    if (!data?.length) break;
+    all.push(...(data as ScreentimeDailySummary[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
 
 // Get app stats for a date range
 export function useScreentimeAppStats(startDate: string, endDate: string) {
@@ -12,17 +79,8 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'apps', startDate, endDate, user?.id],
     queryFn: async () => {
-      const q = supabase
-        .from('screentime_daily_app_stats')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false })
-        .order('total_time_seconds', { ascending: false });
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as ScreentimeAppStat[];
+      if (!user?.id) return [];
+      return fetchAllAppStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
   });
@@ -34,17 +92,8 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'websites', startDate, endDate, user?.id],
     queryFn: async () => {
-      const q = supabase
-        .from('screentime_daily_website_stats')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false })
-        .order('total_time_seconds', { ascending: false });
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as ScreentimeWebsiteStat[];
+      if (!user?.id) return [];
+      return fetchAllWebsiteStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
   });
@@ -56,16 +105,8 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
   return useQuery({
     queryKey: [...QUERY_KEY, 'summaries', startDate, endDate, user?.id],
     queryFn: async () => {
-      const q = supabase
-        .from('screentime_daily_summary')
-        .select('*')
-        .gte('date', startDate)
-        .lte('date', endDate)
-        .order('date', { ascending: false });
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as ScreentimeDailySummary[];
+      if (!user?.id) return [];
+      return fetchAllDailySummaries(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
   });
@@ -103,8 +144,10 @@ export function useTodayScreentime() {
     return acc;
   }, [] as ScreentimeWebsiteStat[]);
   
-  // Total = app time only. Website time is a breakdown within the browser app, so adding it would double-count.
-  const totalSeconds = aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
+  // App + domain rows (Windows tracker often attributes browser time to domains, not the browser app row).
+  const totalSeconds =
+    aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0) +
+    aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
   
   const totalMinutes = Math.round(totalSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
@@ -152,19 +195,23 @@ export function useScreentimeMetrics(days: number = 30) {
   const dailyWebsiteAggregates = new Map<string, Map<string, number>>();
   
   appStats.forEach(stat => {
-    if (!dailyAppAggregates.has(stat.date)) {
-      dailyAppAggregates.set(stat.date, new Map());
+    const dayKey = screentimeDateKey(stat.date);
+    if (!dayKey) return;
+    if (!dailyAppAggregates.has(dayKey)) {
+      dailyAppAggregates.set(dayKey, new Map());
     }
-    const appMap = dailyAppAggregates.get(stat.date)!;
+    const appMap = dailyAppAggregates.get(dayKey)!;
     const current = appMap.get(stat.app_name) || 0;
     appMap.set(stat.app_name, current + stat.total_time_seconds);
   });
   
   websiteStats.forEach(stat => {
-    if (!dailyWebsiteAggregates.has(stat.date)) {
-      dailyWebsiteAggregates.set(stat.date, new Map());
+    const dayKey = screentimeDateKey(stat.date);
+    if (!dayKey) return;
+    if (!dailyWebsiteAggregates.has(dayKey)) {
+      dailyWebsiteAggregates.set(dayKey, new Map());
     }
-    const websiteMap = dailyWebsiteAggregates.get(stat.date)!;
+    const websiteMap = dailyWebsiteAggregates.get(dayKey)!;
     const current = websiteMap.get(stat.domain) || 0;
     websiteMap.set(stat.domain, current + stat.total_time_seconds);
   });
@@ -184,15 +231,19 @@ export function useScreentimeMetrics(days: number = 30) {
 
   dailyWebsiteAggregates.forEach((websiteMap, date) => {
     const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
-    existing.websites += Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
+    const webSum = Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
+    existing.websites += webSum;
+    existing.total += webSum;
     dailyStats.set(date, existing);
   });
 
   // Add switches from summaries
   summaries.forEach(summary => {
-    const existing = dailyStats.get(summary.date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
+    const dayKey = screentimeDateKey(summary.date);
+    if (!dayKey) return;
+    const existing = dailyStats.get(dayKey) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
     existing.switches += summary.total_switches || 0;
-    dailyStats.set(summary.date, existing);
+    dailyStats.set(dayKey, existing);
   });
   
   // Convert to array and sort by date (topApp/otherApps for "Top app vs Other" charts)

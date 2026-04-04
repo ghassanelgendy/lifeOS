@@ -11,6 +11,7 @@ import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { useTickTickPullSync } from './hooks/useTickTick';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
 import { FaviconSync } from './components/FaviconSync';
 import { LoadingScreen } from './components/LoadingScreen';
@@ -56,6 +57,12 @@ function DefaultLanding() {
   const defaultTab = useUIStore((s) => s.defaultTab);
   if (defaultTab === 'dashboard' || !defaultTab) return <Dashboard />;
   return <Navigate to={`/${defaultTab}`} replace />;
+}
+
+function UserAppSettingsBridge() {
+  const { user } = useAuth();
+  useUserAppSettingsSync(user?.id);
+  return null;
 }
 
 function ThemeSync() {
@@ -132,6 +139,7 @@ function AppInner() {
 
   return (
     <>
+      <UserAppSettingsBridge />
       <ThemeSync />
       <Analytics />
       <BrowserRouter>

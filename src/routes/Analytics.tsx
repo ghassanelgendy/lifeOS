@@ -1,18 +1,22 @@
 import { useMemo, useState } from 'react';
 import {
   Activity,
+  AlertTriangle,
+  CheckSquare,
   ChevronDown,
   ChevronRight,
+  Clock,
   Flame,
   Moon,
   Monitor,
   Sparkles,
   Wallet,
-  CheckSquare,
-  AlertTriangle,
 } from 'lucide-react';
 import {
+  Bar,
+  BarChart,
   CartesianGrid,
+  Legend,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -23,6 +27,7 @@ import {
   YAxis,
 } from 'recharts';
 import { cn, formatCurrency } from '../lib/utils';
+import { screentimeDateKey, screentimeUiPlatform } from '../lib/screentimePlatform';
 import { DataCard } from '../components/DataCard';
 import { useUIStore } from '../stores/useUIStore';
 import {
@@ -129,6 +134,19 @@ function addDaysYmd(ymd: string, days: number): string | null {
   if (Number.isNaN(d.getTime())) return null;
   d.setDate(d.getDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+/** Every calendar date from start through end inclusive (YYYY-MM-DD). */
+function eachDateInclusive(start: string, end: string): string[] {
+  const out: string[] = [];
+  const d = new Date(`${start}T12:00:00`);
+  const endD = new Date(`${end}T12:00:00`);
+  if (Number.isNaN(d.getTime()) || Number.isNaN(endD.getTime())) return out;
+  while (d <= endD) {
+    out.push(d.toISOString().slice(0, 10));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
 }
 
 function quantile(xs: number[], q: number): number | null {
@@ -289,6 +307,56 @@ export default function Analytics() {
       totalMinutes: sum(mins),
     };
   }, [daily.sleep.data]);
+
+  /** Per calendar day: phone (iOS) + PC (Windows) + sleep + other = 24h; then averaged across the analytics range. */
+  const avgDay24h = useMemo(() => {
+    const screentimeRows = daily.screentime.data ?? [];
+    const sleepRows = daily.sleep.data ?? [];
+    const sleepByDate = new Map(sleepRows.map((r) => [screentimeDateKey(r.date), Number(r.total_minutes) || 0]));
+    const iosSecondsByDate = new Map<string, number>();
+    const windowsSecondsByDate = new Map<string, number>();
+    for (const r of screentimeRows) {
+      const bucket = screentimeUiPlatform(r.platform);
+      if (bucket !== 'ios' && bucket !== 'windows') continue;
+      const d = screentimeDateKey(r.date);
+      if (!d) continue;
+      const sec = Number(r.total_time_seconds) || 0;
+      if (bucket === 'ios') iosSecondsByDate.set(d, (iosSecondsByDate.get(d) ?? 0) + sec);
+      else windowsSecondsByDate.set(d, (windowsSecondsByDate.get(d) ?? 0) + sec);
+    }
+    const dates = eachDateInclusive(daily.bounds.start, daily.bounds.end);
+    if (dates.length === 0) return null;
+    const phoneH: number[] = [];
+    const pcH: number[] = [];
+    const sleepH: number[] = [];
+    const otherH: number[] = [];
+    for (const dt of dates) {
+      const ph = (iosSecondsByDate.get(dt) ?? 0) / 3600;
+      const wh = (windowsSecondsByDate.get(dt) ?? 0) / 3600;
+      const sh = (sleepByDate.get(dt) ?? 0) / 60;
+      const oh = Math.max(0, 24 - ph - wh - sh);
+      phoneH.push(ph);
+      pcH.push(wh);
+      sleepH.push(sh);
+      otherH.push(oh);
+    }
+    return {
+      phone: mean(phoneH),
+      pc: mean(pcH),
+      sleep: mean(sleepH),
+      other: mean(otherH),
+      nDays: dates.length,
+      chartRow: [
+        {
+          label: 'Typical day',
+          phone: Math.round(mean(phoneH) * 10) / 10,
+          pc: Math.round(mean(pcH) * 10) / 10,
+          sleep: Math.round(mean(sleepH) * 10) / 10,
+          other: Math.round(mean(otherH) * 10) / 10,
+        },
+      ],
+    };
+  }, [daily.bounds.start, daily.bounds.end, daily.screentime.data, daily.sleep.data]);
 
   const tasksAgg = useMemo(() => {
     const rows = daily.tasks.data ?? [];
@@ -882,6 +950,56 @@ export default function Analytics() {
                   Avg/day: Income {formatCurrency(financeAgg.avgIncome)} · Expense {formatCurrency(financeAgg.avgExpense)} · Net {formatCurrency(financeAgg.avgBalance)}
                 </p>
               </div>
+
+              {avgDay24h && (
+                <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-secondary shrink-0">
+                      <Clock size={18} className="text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold">24-hour day (average)</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        <span className="font-medium text-foreground">Phone</span> is iOS screen time,{' '}
+                        <span className="font-medium text-foreground">PC</span> is Windows screen time (apps + sites),{' '}
+                        <span className="font-medium text-foreground">Sleep</span> is logged sleep.{' '}
+                        <span className="font-medium text-foreground">Other</span> is the rest of the 24h clock. Averaged over{' '}
+                        {avgDay24h.nDays} days in this range.
+                      </p>
+                    </div>
+                  </div>
+                  <div className={cn('rounded-md border border-border/60 bg-secondary/20', privacyMode && 'blur-sm select-none')}>
+                    <ResponsiveContainer width="100%" height={112}>
+                      <BarChart layout="vertical" data={avgDay24h.chartRow} margin={{ top: 4, right: 12, left: 4, bottom: 4 }}>
+                        <XAxis type="number" domain={[0, 24]} ticks={[0, 6, 12, 18, 24]} tickFormatter={(v) => `${v}h`} className="text-xs" />
+                        <YAxis type="category" dataKey="label" width={88} tick={{ fontSize: 12 }} />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'var(--color-card)',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '0.5rem',
+                            boxShadow: 'none',
+                          }}
+                          formatter={(value, name) => {
+                            const n = typeof value === 'number' ? value : Number(value);
+                            return [`${Number.isFinite(n) ? n.toFixed(1) : '—'}h`, String(name ?? '')];
+                          }}
+                          labelStyle={{ color: 'var(--color-muted-foreground)' }}
+                        />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="phone" name="Phone (iOS)" stackId="day" fill="#a855f7" isAnimationActive={false} />
+                        <Bar dataKey="pc" name="PC (Windows)" stackId="day" fill="#0ea5e9" isAnimationActive={false} />
+                        <Bar dataKey="sleep" name="Sleep" stackId="day" fill="#6366f1" isAnimationActive={false} />
+                        <Bar dataKey="other" name="Other" stackId="day" fill="#94a3b8" isAnimationActive={false} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <p className={cn('text-xs text-muted-foreground tabular-nums', privacyMode && 'blur-sm select-none')}>
+                    Avg: {avgDay24h.phone.toFixed(1)}h phone · {avgDay24h.pc.toFixed(1)}h PC · {avgDay24h.sleep.toFixed(1)}h sleep ·{' '}
+                    {avgDay24h.other.toFixed(1)}h other
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,19 +1,11 @@
-  import { useState, useMemo, useEffect } from 'react';
-  import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO } from 'date-fns';
-  import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-  import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
-  import { cn } from '../lib/utils';
-  import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
-  import { useUIStore } from '../stores/useUIStore';
-
-  function platformLabel(p: string): string {
-    const n = (p || '').toLowerCase();
-    return n === 'ios' ? 'IOS' : n === 'windows' ? 'windows' : '';
-  }
-  function isIosOrWindows(platform: string): boolean {
-    const n = (platform || '').toLowerCase();
-    return n === 'ios' || n === 'windows';
-  }
+import { useState, useMemo, useEffect } from 'react';
+import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
+import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { cn } from '../lib/utils';
+import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
+import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
+import { useUIStore } from '../stores/useUIStore';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -31,7 +23,8 @@
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
   const [period, setPeriod] = useState<ViewPeriod>('today');
-  const [customDate, setCustomDate] = useState(todayStr);
+  const [customStartDate, setCustomStartDate] = useState(todayStr);
+  const [customEndDate, setCustomEndDate] = useState(todayStr);
   const [showAllApps, setShowAllApps] = useState(false);
   const [weekStart, setWeekStart] = useState<string>(() => format(startOfWeek(today), 'yyyy-MM-dd'));
   const [platformFilter, setPlatformFilter] = useState<'all' | 'ios' | 'windows'>('all');
@@ -69,8 +62,11 @@
             start: format(subDays(today, 30), 'yyyy-MM-dd'),
             end: todayStr,
           };
-        case 'custom':
-          return { start: customDate, end: customDate };
+        case 'custom': {
+          const lo = customStartDate <= customEndDate ? customStartDate : customEndDate;
+          const hi = customStartDate <= customEndDate ? customEndDate : customStartDate;
+          return { start: lo, end: hi };
+        }
         default:
           return { start: todayStr, end: todayStr };
       }
@@ -85,18 +81,41 @@
 
     const isLoading = appsLoading || websitesLoading || summariesLoading;
 
-    // For single-day periods (today, yesterday, custom), cards/lists show only that day; charts still use full fetched range.
-    const displayStart = period === 'today' ? todayStr : period === 'yesterday' ? format(subDays(today, 1), 'yyyy-MM-dd') : period === 'custom' ? customDate : start;
-    const displayEnd = period === 'today' ? todayStr : period === 'yesterday' ? format(subDays(today, 1), 'yyyy-MM-dd') : period === 'custom' ? customDate : end;
-    const statsForDisplay = useMemo(() => appStats.filter((s) => s.date >= displayStart && s.date <= displayEnd), [appStats, displayStart, displayEnd]);
-    const websitesForDisplay = useMemo(() => websiteStats.filter((s) => s.date >= displayStart && s.date <= displayEnd), [websiteStats, displayStart, displayEnd]);
-    const summariesForDisplay = useMemo(() => summaries.filter((s) => s.date >= displayStart && s.date <= displayEnd), [summaries, displayStart, displayEnd]);
+    // Today / yesterday: single-day cards. Other periods (incl. custom range): filter to [start, end] from getDateRange.
+    const displayStart =
+      period === 'today' ? todayStr : period === 'yesterday' ? format(subDays(today, 1), 'yyyy-MM-dd') : start;
+    const displayEnd =
+      period === 'today' ? todayStr : period === 'yesterday' ? format(subDays(today, 1), 'yyyy-MM-dd') : end;
+    const statsForDisplay = useMemo(
+      () =>
+        appStats.filter((s) => {
+          const d = screentimeDateKey(s.date);
+          return d >= displayStart && d <= displayEnd;
+        }),
+      [appStats, displayStart, displayEnd]
+    );
+    const websitesForDisplay = useMemo(
+      () =>
+        websiteStats.filter((s) => {
+          const d = screentimeDateKey(s.date);
+          return d >= displayStart && d <= displayEnd;
+        }),
+      [websiteStats, displayStart, displayEnd]
+    );
+    const summariesForDisplay = useMemo(
+      () =>
+        summaries.filter((s) => {
+          const d = screentimeDateKey(s.date);
+          return d >= displayStart && d <= displayEnd;
+        }),
+      [summaries, displayStart, displayEnd]
+    );
 
     // Only iOS and Windows; aggregate by (app_name, platform) — use statsForDisplay so cards show selected day only when Today
     const aggregatedApps = statsForDisplay.reduce((acc, stat) => {
-      const platformNorm = (stat.platform || '').toLowerCase();
-      if (!isIosOrWindows(stat.platform)) return acc;
-      const key = `${stat.app_name}|${platformNorm}`;
+      const bucket = screentimeUiPlatform(stat.platform);
+      if (!bucket) return acc;
+      const key = `${stat.app_name}|${bucket}`;
       if (!acc[key]) {
         acc[key] = {
           app_name: stat.app_name,
@@ -115,8 +134,8 @@
     const allAppsSorted = Object.values(aggregatedApps)
       .filter((app) => {
         if (platformFilter === 'all') return true;
-        const platformNorm = (app.platform || '').toLowerCase();
-        return platformFilter === 'ios' ? platformNorm === 'ios' : platformNorm === 'windows';
+        const b = screentimeUiPlatform(app.platform);
+        return platformFilter === 'ios' ? b === 'ios' : b === 'windows';
       })
       .sort((a, b) => b.total_time_seconds - a.total_time_seconds)
       .map((app) => ({
@@ -154,13 +173,23 @@
       };
       
       statsForDisplay.forEach((stat) => {
-        if (!isIosOrWindows(stat.platform)) return;
+        const bucket = screentimeUiPlatform(stat.platform);
+        if (!bucket) return;
         const category = normalizeCategory(stat.category || 'Uncategorized');
-        const platformNorm = (stat.platform || '').toLowerCase();
         const existing = byCategory.get(category) || { ios: 0, windows: 0 };
-        if (platformNorm === 'ios') existing.ios += stat.total_time_seconds;
-        else if (platformNorm === 'windows') existing.windows += stat.total_time_seconds;
+        if (bucket === 'ios') existing.ios += stat.total_time_seconds;
+        else existing.windows += stat.total_time_seconds;
         byCategory.set(category, existing);
+      });
+
+      const webCategory = 'Web domains';
+      websitesForDisplay.forEach((stat) => {
+        const bucket = screentimeUiPlatform(stat.platform);
+        if (!bucket) return;
+        const existing = byCategory.get(webCategory) || { ios: 0, windows: 0 };
+        if (bucket === 'ios') existing.ios += stat.total_time_seconds;
+        else existing.windows += stat.total_time_seconds;
+        byCategory.set(webCategory, existing);
       });
       const total = Array.from(byCategory.values()).reduce((sum, times) => sum + times.ios + times.windows, 0);
       const allUseHours = Array.from(byCategory.values()).some(times => {
@@ -198,13 +227,13 @@
         })
         .sort((a, b) => b.totalMinutes - a.totalMinutes)
         .filter(cat => cat.totalMinutes > 0); // Only show categories with time
-    }, [statsForDisplay]);
+    }, [statsForDisplay, websitesForDisplay]);
 
     // Only iOS and Windows — use websitesForDisplay for cards
     const aggregatedWebsites = websitesForDisplay.reduce((acc, stat) => {
-      if (!isIosOrWindows(stat.platform)) return acc;
-      const platformNorm = (stat.platform || '').toLowerCase();
-      const key = `${stat.domain}|${platformNorm}`;
+      const bucket = screentimeUiPlatform(stat.platform);
+      if (!bucket) return acc;
+      const key = `${stat.domain}|${bucket}`;
       if (!acc[key]) {
         acc[key] = {
           domain: stat.domain,
@@ -231,16 +260,17 @@
         platformLabel: platformLabel(site.platform),
       }));
 
-    // Total = app time only (iOS + Windows). Per-platform breakdown for Total card. Use statsForDisplay so Today shows only today.
+    // Total = app + domain (browser) time per device; Windows tracker often records sites separately from app rows.
     const { totalSeconds, totalMinutes, totalHours, remainingMinutes, iosSeconds, windowsSeconds } = useMemo(() => {
       let ios = 0;
       let win = 0;
-      statsForDisplay.forEach((stat) => {
-        if (!isIosOrWindows(stat.platform)) return;
-        const n = (stat.platform || '').toLowerCase();
-        if (n === 'ios') ios += stat.total_time_seconds;
-        else if (n === 'windows') win += stat.total_time_seconds;
-      });
+      const add = (platform: string | null | undefined, seconds: number) => {
+        const b = screentimeUiPlatform(platform);
+        if (b === 'ios') ios += seconds;
+        else if (b === 'windows') win += seconds;
+      };
+      statsForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds));
+      websitesForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds));
       const total = ios + win;
       const mins = Math.round(total / 60);
       return {
@@ -251,24 +281,29 @@
         iosSeconds: ios,
         windowsSeconds: win,
       };
-    }, [statsForDisplay]);
+    }, [statsForDisplay, websitesForDisplay]);
 
     // Chart data: only iOS and Windows. When period is 'week' use full week (start..end); else first-to-last day with data.
     const chartData = useMemo(() => {
       const byDate = new Map<string, { ios: number; windows: number }>();
 
-      appStats.forEach((stat) => {
-        if (!isIosOrWindows(stat.platform)) return;
-        const n = (stat.platform || '').toLowerCase();
-        const existing = byDate.get(stat.date) || { ios: 0, windows: 0 };
-        if (n === 'ios') existing.ios += stat.total_time_seconds;
-        else if (n === 'windows') existing.windows += stat.total_time_seconds;
-        byDate.set(stat.date, existing);
-      });
+      const bump = (dateRaw: string, platform: string | null | undefined, seconds: number) => {
+        const d = screentimeDateKey(dateRaw);
+        if (!d) return;
+        const b = screentimeUiPlatform(platform);
+        if (!b) return;
+        const existing = byDate.get(d) || { ios: 0, windows: 0 };
+        if (b === 'ios') existing.ios += seconds;
+        else existing.windows += seconds;
+        byDate.set(d, existing);
+      };
+
+      appStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds));
+      websiteStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds));
 
       let minDate: string;
       let maxDate: string;
-      if (period === 'week' || period === 'today') {
+      if (period === 'week' || period === 'today' || period === 'custom') {
         minDate = start;
         maxDate = end;
       } else {
@@ -298,7 +333,7 @@
           minutes: Math.round((row.ios + row.windows) / 60),
         };
       });
-    }, [appStats, period, start, end]);
+    }, [appStats, websiteStats, period, start, end]);
 
     // Latest date+time with usage per device (for tiny "pushed when" indicator)
     const deviceLastPush = useMemo(() => {
@@ -322,15 +357,24 @@
         date: string;
       }) =>
         stat.last_active_at || stat.last_seen_at || stat.updated_at || stat.created_at || stat.date + 'T23:59:59';
-      appStats.forEach((stat) => {
-        if (!isIosOrWindows(stat.platform)) return;
-        const n = (stat.platform || '').toLowerCase();
+      const consider = (stat: {
+        platform?: string | null;
+        last_active_at?: string | null;
+        last_seen_at?: string | null;
+        updated_at?: string;
+        created_at?: string;
+        date: string;
+      }) => {
+        const b = screentimeUiPlatform(stat.platform);
+        if (!b) return;
         const t = toTime(stat);
-        if (n === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = pickLatest(stat);
-        if (n === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = pickLatest(stat);
-      });
+        if (b === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = pickLatest(stat);
+        if (b === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = pickLatest(stat);
+      };
+      appStats.forEach(consider);
+      websiteStats.forEach(consider);
       return { windowsLast, iosLast };
-    }, [appStats]);
+    }, [appStats, websiteStats]);
 
     // Weekly pattern: aggregate by day of week (in hours) - separate iOS and Windows
     const weeklyPattern = useMemo(() => {
@@ -338,19 +382,20 @@
       const dayTotalsWindows: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       const dayCounts: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       
-      // Use appStats instead of history to get platform breakdown
-      appStats.forEach(stat => {
-        if (!isIosOrWindows(stat.platform)) return;
-        const dayOfWeek = getDay(parseISO(stat.date));
-        const platformNorm = (stat.platform || '').toLowerCase();
-        const minutes = Math.round(stat.total_time_seconds / 60);
-        if (platformNorm === 'ios') {
-          dayTotalsIOS[dayOfWeek] += minutes;
-        } else if (platformNorm === 'windows') {
-          dayTotalsWindows[dayOfWeek] += minutes;
-        }
+      const addWeekMinutes = (dateRaw: string, platform: string | null | undefined, seconds: number) => {
+        const b = screentimeUiPlatform(platform);
+        if (!b) return;
+        const key = screentimeDateKey(dateRaw);
+        if (!key) return;
+        const dayOfWeek = getDay(parseISO(key));
+        const minutes = Math.round(seconds / 60);
+        if (b === 'ios') dayTotalsIOS[dayOfWeek] += minutes;
+        else dayTotalsWindows[dayOfWeek] += minutes;
         dayCounts[dayOfWeek] += 1;
-      });
+      };
+
+      appStats.forEach((stat) => addWeekMinutes(stat.date, stat.platform, stat.total_time_seconds));
+      websiteStats.forEach((stat) => addWeekMinutes(stat.date, stat.platform, stat.total_time_seconds));
 
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       return dayNames.map((name, idx) => {
@@ -364,7 +409,7 @@
           total: dayTotalsIOS[idx] + dayTotalsWindows[idx],
         };
       });
-    }, [appStats]);
+    }, [appStats, websiteStats]);
 
 
     // Peak hours estimation using timestamps (if available)
@@ -529,22 +574,55 @@
                           ? 'Last Month'
                           : p === '30days'
                             ? 'Last 30 Days'
-                            : 'Pick a day'}
+                            : 'Date range'}
               </button>
             ))}
             {period === 'custom' && (
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Calendar className="text-muted-foreground" size={18} />
-                <input
-                  type="date"
-                  value={customDate}
-                  max={todayStr}
-                  onChange={(e) => {
-                    setCustomDate(e.target.value);
-                    setPeriod('custom');
-                  }}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                />
+              <div className="flex flex-wrap items-center gap-3 sm:gap-4 flex-shrink-0">
+                <Calendar className="text-muted-foreground shrink-0" size={18} aria-hidden />
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="screentime-custom-start" className="text-xs font-medium text-muted-foreground">
+                    Start
+                  </label>
+                  <input
+                    id="screentime-custom-start"
+                    type="date"
+                    value={customStartDate}
+                    max={todayStr}
+                    onChange={(e) => {
+                      setCustomStartDate(e.target.value);
+                      setPeriod('custom');
+                    }}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+                <span className="hidden sm:inline text-muted-foreground self-end pb-2" aria-hidden>
+                  –
+                </span>
+                <div className="flex flex-col gap-1">
+                  <label htmlFor="screentime-custom-end" className="text-xs font-medium text-muted-foreground">
+                    End
+                  </label>
+                  <input
+                    id="screentime-custom-end"
+                    type="date"
+                    value={customEndDate}
+                    max={todayStr}
+                    onChange={(e) => {
+                      setCustomEndDate(e.target.value);
+                      setPeriod('custom');
+                    }}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  {(() => {
+                    const lo = customStartDate <= customEndDate ? customStartDate : customEndDate;
+                    const hi = customStartDate <= customEndDate ? customEndDate : customStartDate;
+                    const n = differenceInCalendarDays(parseISO(hi), parseISO(lo)) + 1;
+                    return `${n} day${n === 1 ? '' : 's'}`;
+                  })()}
+                </span>
               </div>
             )}
           </div>
@@ -586,10 +664,8 @@
               <span>windows: {privacyMode ? '•••' : formatDurationMinutes(Math.round(windowsSeconds / 60))}</span>
               <span>IOS: {privacyMode ? '•••' : formatDurationMinutes(Math.round(iosSeconds / 60))}</span>
             </div>
-            <div className="flex gap-4 text-xs text-muted-foreground mt-1">
-              <span>{Object.keys(aggregatedApps).length} apps</span>
-              <span>{Object.keys(aggregatedWebsites).length} sites in browser</span>
-            </div>
+           
+          
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6">
@@ -622,7 +698,11 @@
                 : period === 'yesterday'
                   ? 'Yesterday'
                   : period === 'custom'
-                    ? format(parseISO(customDate), 'MMM d, yyyy')
+                    ? displayStart === displayEnd
+                      ? format(parseISO(displayStart), 'MMM d, yyyy')
+                      : displayStart.slice(0, 4) === displayEnd.slice(0, 4)
+                        ? `${format(parseISO(displayStart), 'MMM d')} – ${format(parseISO(displayEnd), 'MMM d, yyyy')}`
+                        : `${format(parseISO(displayStart), 'MMM d, yyyy')} – ${format(parseISO(displayEnd), 'MMM d, yyyy')}`
                     : period === 'week'
                       ? 'This week'
                       : period === 'month'
@@ -1027,7 +1107,7 @@
                         </div>
                         <p className="text-sm text-muted-foreground">
                           {app.category}
-                          {app.platform.toLowerCase() !== 'ios' && ` · ${app.session_count} sessions`}
+                          {screentimeUiPlatform(app.platform) !== 'ios' && ` · ${app.session_count} sessions`}
                         </p>
                       </div>
                     </div>

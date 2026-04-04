@@ -35,3 +35,4 @@ dist-ssr
 /lifeos-agent-cli/.env
 /src-tauri/target
 /src-tauri
+*.txt

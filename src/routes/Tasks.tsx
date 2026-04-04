@@ -51,6 +51,7 @@ import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../com
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
+import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
@@ -369,18 +370,26 @@ export default function Tasks() {
       .filter((id): id is string => !!id);
     const resolvedListId = matchedListIds.length ? matchedListIds[matchedListIds.length - 1] : null;
 
-    const matchedTagIds = Array.from(
-      new Set(
-        tagTokenNames
-          .map((name) => tags.find((t) => normalize(t.name) === normalize(name))?.id)
-          .filter((id): id is string => !!id)
-      )
-    );
+    const matchedTagIdsOrdered: string[] = [];
+    const seenTagIds = new Set<string>();
+    for (const name of tagTokenNames) {
+      const id = tags.find((t) => normalize(t.name) === normalize(name))?.id;
+      if (id && !seenTagIds.has(id)) {
+        seenTagIds.add(id);
+        matchedTagIdsOrdered.push(id);
+      }
+    }
 
     const hasTagTokens = tagTokenNames.length > 0;
     const hasListTokens = listTokenNames.length > 0;
     if (hasListTokens) setNewTaskListId(resolvedListId);
-    if (hasTagTokens) setNewTaskTagIds(matchedTagIds);
+    if (hasTagTokens) {
+      setNewTaskTagIds(matchedTagIdsOrdered);
+      if (!hasListTokens) {
+        const lid = listIdFromTagIds(matchedTagIdsOrdered, tags);
+        if (lid) setNewTaskListId(lid);
+      }
+    }
 
     const hasReminderToken = parsed.detectedTokens.some((t) => t.type === 'reminder');
     if (hasReminderToken) {
@@ -944,13 +953,6 @@ export default function Tasks() {
     if (!titleToUse) return;
 
     const defaultListId = taskLists.find(l => l.is_default)?.id;
-    const tagDefaultListId = (() => {
-      for (const tid of newTaskTagIds) {
-        const dl = tags.find((t) => t.id === tid)?.default_list_id ?? null;
-        if (dl) return dl;
-      }
-      return null;
-    })();
     createTask.mutate({
       title: titleToUse,
       is_completed: false,
@@ -966,7 +968,7 @@ export default function Tasks() {
       early_reminder_minutes: newTaskRemindersEnabled ? (newTaskEarlyReminderMinutes ?? null) : undefined,
       list_id:
         newTaskListId ??
-        tagDefaultListId ??
+        listIdFromTagIds(newTaskTagIds, tags) ??
         (activeView === 'list' && activeListId ? activeListId : defaultListId),
       due_date: newTaskDate || (
         activeView === 'today' ? toDateString(new Date()) :
@@ -1226,17 +1228,10 @@ export default function Tasks() {
     if (!titleToSave) titleToSave = rawTitle.trim();
 
     const initialListId = defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined);
-    const tagDefaultListId = (() => {
-      for (const tid of editForm.tag_ids ?? []) {
-        const dl = tags.find((t) => t.id === tid)?.default_list_id ?? null;
-        if (dl) return dl;
-      }
-      return null;
-    })();
     const resolvedListId =
-      editForm.list_id && editForm.list_id === initialListId && tagDefaultListId
-        ? tagDefaultListId
-        : editForm.list_id ?? initialListId;
+      editForm.list_id ??
+      listIdFromTagIds(editForm.tag_ids ?? [], tags) ??
+      initialListId;
 
     const payload: CreateInput<Task> = {
       title: titleToSave,
@@ -1564,6 +1559,7 @@ export default function Tasks() {
                 setEditingTagId(null);
                 setNewTagName('');
                 setNewTagColor('#3b82f6');
+                setNewTagDefaultListId(null);
                 setIsTagModalOpen(true);
               }}
               className="p-2 rounded-lg hover:bg-secondary transition-colors touch-manipulation"
@@ -1855,7 +1851,14 @@ export default function Tasks() {
                       key={tag.id}
                       type="button"
                       onClick={() => {
-                        if (!newTaskTagIds.includes(tag.id)) setNewTaskTagIds([...newTaskTagIds, tag.id]);
+                        if (newTaskTagIds.includes(tag.id)) {
+                          stripTriggerFromTitle();
+                          return;
+                        }
+                        const next = [...newTaskTagIds, tag.id];
+                        setNewTaskTagIds(next);
+                        const lid = listIdFromTagIds(next, tags);
+                        if (lid) setNewTaskListId(lid);
                         stripTriggerFromTitle();
                       }}
                       className="w-full text-left text-sm px-2 py-1.5 rounded hover:bg-secondary flex items-center gap-2"
@@ -2066,11 +2069,12 @@ export default function Tasks() {
                               key={tag.id}
                               type="button"
                               onClick={() => {
-                                if (newTaskTagIds.includes(tag.id)) {
-                                  setNewTaskTagIds(newTaskTagIds.filter(id => id !== tag.id));
-                                } else {
-                                  setNewTaskTagIds([...newTaskTagIds, tag.id]);
-                                }
+                                const next = newTaskTagIds.includes(tag.id)
+                                  ? newTaskTagIds.filter((id) => id !== tag.id)
+                                  : [...newTaskTagIds, tag.id];
+                                setNewTaskTagIds(next);
+                                const lid = listIdFromTagIds(next, tags);
+                                if (lid) setNewTaskListId(lid);
                               }}
                               className={cn(
                                 "text-xs text-left px-2 py-1.5 rounded hover:bg-secondary transition-colors flex items-center gap-2",
@@ -2318,16 +2322,6 @@ export default function Tasks() {
             </div>
           </div>
 
-          <Select
-            label="Default list"
-            value={newTagDefaultListId ?? ''}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setNewTagDefaultListId(e.target.value ? e.target.value : null)}
-            options={[
-              { value: '', label: 'None' },
-              ...(taskLists ?? []).map((l) => ({ value: l.id, label: l.name })),
-            ]}
-          />
-
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
@@ -2382,12 +2376,27 @@ export default function Tasks() {
               ))}
             </div>
           </div>
+          <Select
+            label="Default list when this tag is selected"
+            value={newTagDefaultListId ?? ''}
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+              setNewTagDefaultListId(e.target.value ? e.target.value : null)
+            }
+            options={[
+              { value: '', label: 'None' },
+              ...(taskLists ?? []).map((l) => ({ value: l.id, label: l.name })),
+            ]}
+          />
+          <p className="text-xs text-muted-foreground -mt-2">
+            New tasks pick this list when you add the tag (first tag with a default wins).
+          </p>
           <div className="flex justify-end gap-2">
             <Button
               variant="ghost"
               onClick={() => {
                 setIsTagModalOpen(false);
                 setEditingTagId(null);
+                setNewTagDefaultListId(null);
               }}
             >
               Cancel

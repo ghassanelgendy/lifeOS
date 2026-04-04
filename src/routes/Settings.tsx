@@ -19,6 +19,8 @@ import {
   User,
   Link2,
   RotateCcw,
+  MapPin,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_WIDGET_IDS, SLEEP_WIDGET_IDS, PAGE_WIDGET_DEFAULTS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
@@ -27,13 +29,15 @@ import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
-import { Button, ConfirmSheet } from '../components/ui';
+import { Button, ConfirmSheet, Input } from '../components/ui';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
 import { useTickTickStatus, connectTickTick, importTickTickTasks, syncNowFromTickTick, disconnectTickTickIntegration } from '../hooks/useTickTick';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
+import type { GeocodeHit } from '../lib/prayerGeocoding';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -56,6 +60,20 @@ const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
   },
 };
 
+const SETTINGS_NAV = [
+  { id: 'account', label: 'Account' },
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'defaults', label: 'App defaults' },
+  { id: 'layout', label: 'Layout & widgets' },
+  { id: 'notifications', label: 'Notifications' },
+  { id: 'prayer', label: 'Prayer times' },
+  { id: 'habits', label: 'Habits' },
+  { id: 'privacy', label: 'Privacy & analytics' },
+  { id: 'integrations', label: 'Integrations' },
+  { id: 'data', label: 'Data & backup' },
+  { id: 'about', label: 'About' },
+] as const;
+
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const {
@@ -75,6 +93,8 @@ export default function SettingsPage() {
     setDefaultTaskView,
     defaultTaskListId,
     setDefaultTaskListId,
+    habitsPrayerDefaultExpanded,
+    setHabitsPrayerDefaultExpanded,
     tauriStartMinimized,
     setTauriStartMinimized,
     pageWidgetOrder,
@@ -82,6 +102,10 @@ export default function SettingsPage() {
     togglePageWidget,
     movePageWidget,
     resetPageWidgets,
+    prayerLocationMode,
+    setPrayerLocationMode,
+    prayerLocationLabel,
+    setPrayerLocation,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
@@ -95,6 +119,11 @@ export default function SettingsPage() {
   const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [isTauri, setIsTauri] = useState(false);
+  const [prayerCityQuery, setPrayerCityQuery] = useState('');
+  const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
+  const [prayerCityLoading, setPrayerCityLoading] = useState(false);
+  const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
+  const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -102,6 +131,55 @@ export default function SettingsPage() {
       .then(() => setIsTauri(true))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (prayerLocationMode !== 'city') {
+      setPrayerCityHits([]);
+      return;
+    }
+    const q = prayerCityQuery.trim();
+    if (q.length < 2) {
+      setPrayerCityHits([]);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      setPrayerCityLoading(true);
+      searchCities(q)
+        .then(setPrayerCityHits)
+        .catch(() => setPrayerCityHits([]))
+        .finally(() => setPrayerCityLoading(false));
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [prayerCityQuery, prayerLocationMode]);
+
+  const handlePrayerDeviceLocation = () => {
+    if (!navigator.geolocation) {
+      setPrayerGeoError('Geolocation is not supported in this browser.');
+      return;
+    }
+    setPrayerGeoLoading(true);
+    setPrayerGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const la = pos.coords.latitude;
+        const ln = pos.coords.longitude;
+        try {
+          const label = await reverseGeocodeLabel(la, ln);
+          setPrayerLocation(la, ln, label);
+        } catch {
+          setPrayerGeoError('Could not resolve city name.');
+        } finally {
+          setPrayerGeoLoading(false);
+        }
+      },
+      (err) => {
+        setPrayerGeoLoading(false);
+        setPrayerGeoError(err?.message || 'Could not read device location.');
+      },
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 300_000 }
+    );
+  };
+
   const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
 
   // Export data
@@ -177,16 +255,42 @@ export default function SettingsPage() {
     }
   };
 
+  const scrollToSettingsSection = (id: (typeof SETTINGS_NAV)[number]['id']) => {
+    document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-2xl md:max-w-none">
-      {/* Header */}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-6xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">Manage your app preferences and data</p>
+        {user ? (
+          <p className="text-xs text-muted-foreground mt-2">
+            Signed-in preferences (theme, layout, prayer location, etc.) sync to your account automatically.
+          </p>
+        ) : null}
       </div>
 
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 lg:items-start">
+        <nav
+          aria-label="Settings sections"
+          className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 lg:w-52 shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto border-b border-border lg:border-b-0 lg:pr-2"
+        >
+          {SETTINGS_NAV.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => scrollToSettingsSection(id)}
+              className="text-left text-sm px-3 py-2 rounded-lg whitespace-nowrap lg:whitespace-normal text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors shrink-0 lg:shrink"
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex-1 min-w-0 space-y-10">
       {/* Account */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section id="settings-account" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Account</h2>
         </div>
@@ -205,89 +309,8 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Integrations - TickTick */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Integrations</h2>
-          <p className="text-sm text-muted-foreground mt-1">Connect task apps and sync tasks</p>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <Link2 size={20} className="text-muted-foreground" />
-              <div>
-                <p className="font-medium">TickTick</p>
-                <p className="text-sm text-muted-foreground">
-                  {ticktickConnected ? '2-way sync: changes in LifeOS or TickTick stay in sync. Sync now to pull latest from TickTick.' : 'Import and sync tasks with TickTick.'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {ticktickLoading ? (
-                <span className="text-sm text-muted-foreground">Checking…</span>
-              ) :               ticktickConnected ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      setTicktickStatus(null);
-                      const result = await syncNowFromTickTick();
-                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
-                      else setTicktickStatus(`Synced: ${result.inserted} new, ${result.updated} updated, ${result.deleted} removed`);
-                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-                      refetchTickTick();
-                      setTimeout(() => setTicktickStatus(null), 5000);
-                    }}
-                  >
-                    Sync now
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      setTicktickStatus(null);
-                      const result = await importTickTickTasks();
-                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
-                      else setTicktickStatus(`Imported ${result.imported} of ${result.total} tasks`);
-                      refetchTickTick();
-                      setTimeout(() => setTicktickStatus(null), 5000);
-                    }}
-                  >
-                    Import tasks
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      const result = await disconnectTickTickIntegration();
-                      if (result.success) refetchTickTick();
-                      else setTicktickStatus(result.error ?? 'Failed to disconnect');
-                    }}
-                  >
-                    Disconnect
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  size="sm"
-                  onClick={() => connectTickTick()}
-                >
-                  Connect TickTick
-                </Button>
-              )}
-            </div>
-          </div>
-          {ticktickStatus && (
-            <p className={cn('text-sm', ticktickStatus.startsWith('Error') ? 'text-destructive' : 'text-muted-foreground')}>
-              {ticktickStatus}
-            </p>
-          )}
-        </div>
-      </section>
-
       {/* Appearance */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section id="settings-appearance" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Appearance</h2>
         </div>
@@ -354,6 +377,7 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      <div id="settings-defaults" className="space-y-10 scroll-mt-20">
       {/* Default Pages */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border">
@@ -412,6 +436,20 @@ export default function SettingsPage() {
               )}
             </select>
           </div>
+          <div>
+            <p className="font-medium mb-2">Habits: Prayer tracking</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              When you open Habits, show the prayer tracker expanded or collapsed by default.
+            </p>
+            <select
+              value={habitsPrayerDefaultExpanded ? 'expanded' : 'collapsed'}
+              onChange={(e) => setHabitsPrayerDefaultExpanded(e.target.value === 'expanded')}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="expanded">Expanded</option>
+              <option value="collapsed">Collapsed</option>
+            </select>
+          </div>
         </div>
       </section>
 
@@ -437,7 +475,9 @@ export default function SettingsPage() {
           </div>
         </section>
       )}
+      </div>
 
+      <div id="settings-layout" className="space-y-10 scroll-mt-20">
       {/* Page Widgets */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border">
@@ -510,8 +550,58 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Task reminders (push notifications) */}
+      {/* Mobile Navigation */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Mobile Navigation</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <Smartphone size={20} />
+            <div>
+              <p className="font-medium">Bottom Bar Items</p>
+              <p className="text-sm text-muted-foreground">
+                Choose which items to show (max 5). Settings is always included.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {NAV_ITEMS.map((item) => {
+              const isSelected = mobileNavItems.includes(item.href);
+              const isSettings = item.href === '/settings';
+              const canToggle = !isSettings && (isSelected || mobileNavItems.length < 5);
+
+              return (
+                <button
+                  key={item.href}
+                  onClick={() => canToggle && handleToggleNavItem(item.href)}
+                  disabled={!canToggle}
+                  className={cn(
+                    "flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all",
+                    isSelected
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground",
+                    canToggle && "hover:border-primary/50 cursor-pointer",
+                    !canToggle && !isSettings && "opacity-50 cursor-not-allowed",
+                    isSettings && "opacity-75"
+                  )}
+                >
+                  <item.icon size={16} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {isSelected && <Check size={14} className="text-green-500" />}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {mobileNavItems.length}/5 items selected
+          </p>
+        </div>
+      </section>
+      </div>
+
+      {/* Task reminders (push notifications) */}
+      <section id="settings-notifications" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Notifications</h2>
         </div>
@@ -625,8 +715,114 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Prayer times location */}
+      <section id="settings-prayer" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Prayer times</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Prayer times on the dashboard and Habits use this place. The line below is what you see in the app (city name, not coordinates).
+          </p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-start gap-2 text-sm min-w-0">
+            <MapPin className="shrink-0 mt-0.5 text-muted-foreground" size={18} />
+            <div className="min-w-0">
+              <p className="font-medium text-foreground">Current place</p>
+              <p className="text-muted-foreground break-words">{prayerLocationLabel}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Set location</p>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="prayer-location-mode"
+                className="rounded border-border"
+                checked={prayerLocationMode === 'device'}
+                onChange={() => {
+                  setPrayerLocationMode('device');
+                  setPrayerGeoError(null);
+                }}
+              />
+              Use device location (GPS)
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="prayer-location-mode"
+                className="rounded border-border"
+                checked={prayerLocationMode === 'city'}
+                onChange={() => {
+                  setPrayerLocationMode('city');
+                  setPrayerGeoError(null);
+                }}
+              />
+              Search for a city
+            </label>
+          </div>
+
+          {prayerLocationMode === 'device' && (
+            <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-3">
+              <p className="text-sm text-muted-foreground">
+                Your browser will ask for permission. Coordinates are saved on this device and turned into a city name when possible.
+              </p>
+              <Button type="button" onClick={handlePrayerDeviceLocation} disabled={prayerGeoLoading}>
+                {prayerGeoLoading ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 inline" size={16} />
+                    Getting location…
+                  </>
+                ) : (
+                  'Update from device'
+                )}
+              </Button>
+              {prayerGeoError ? <p className="text-sm text-red-400">{prayerGeoError}</p> : null}
+            </div>
+          )}
+
+          {prayerLocationMode === 'city' && (
+            <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-3">
+              <Input
+                label="City"
+                value={prayerCityQuery}
+                onChange={(e) => setPrayerCityQuery(e.target.value)}
+                placeholder="e.g. Cairo, Istanbul, London"
+              />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground min-h-[1rem]">
+                {prayerCityLoading ? (
+                  <>
+                    <Loader2 className="animate-spin shrink-0" size={14} />
+                    Searching…
+                  </>
+                ) : null}
+              </div>
+              {prayerCityHits.length > 0 && (
+                <ul className="max-h-48 overflow-y-auto rounded-lg border border-border divide-y divide-border bg-background">
+                  {prayerCityHits.map((hit, i) => (
+                    <li key={`${hit.lat}-${hit.lng}-${i}`}>
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-secondary/80 transition-colors"
+                        onClick={() => {
+                          setPrayerLocation(hit.lat, hit.lng, hit.label);
+                          setPrayerCityQuery('');
+                          setPrayerCityHits([]);
+                        }}
+                      >
+                        {hit.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Archived habits management */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section id="settings-habits" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Archived Habits</h2>
           <p className="text-sm text-muted-foreground mt-1">Restore habits hidden from the Habits page.</p>
@@ -655,59 +851,10 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Mobile Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Mobile Navigation</h2>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <Smartphone size={20} />
-            <div>
-              <p className="font-medium">Bottom Bar Items</p>
-              <p className="text-sm text-muted-foreground">
-                Choose which items to show (max 5). Settings is always included.
-              </p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {NAV_ITEMS.map((item) => {
-              const isSelected = mobileNavItems.includes(item.href);
-              const isSettings = item.href === '/settings';
-              const canToggle = !isSettings && (isSelected || mobileNavItems.length < 5);
-
-              return (
-                <button
-                  key={item.href}
-                  onClick={() => canToggle && handleToggleNavItem(item.href)}
-                  disabled={!canToggle}
-                  className={cn(
-                    "flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all",
-                    isSelected
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground",
-                    canToggle && "hover:border-primary/50 cursor-pointer",
-                    !canToggle && !isSettings && "opacity-50 cursor-not-allowed",
-                    isSettings && "opacity-75"
-                  )}
-                >
-                  <item.icon size={16} />
-                  <span className="flex-1 text-left">{item.label}</span>
-                  {isSelected && <Check size={14} className="text-green-500" />}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            {mobileNavItems.length}/5 items selected
-          </p>
-        </div>
-      </section>
-
       {/* Privacy */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section id="settings-privacy" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Privacy</h2>
+          <h2 className="font-semibold">Privacy & analytics</h2>
         </div>
         <div className="p-4 space-y-4">
           {/* Privacy Mode */}
@@ -762,8 +909,86 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Integrations - TickTick */}
+      <section id="settings-integrations" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Integrations</h2>
+          <p className="text-sm text-muted-foreground mt-1">Connect task apps and sync tasks</p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Link2 size={20} className="text-muted-foreground" />
+              <div>
+                <p className="font-medium">TickTick</p>
+                <p className="text-sm text-muted-foreground">
+                  {ticktickConnected ? '2-way sync: changes in LifeOS or TickTick stay in sync. Sync now to pull latest from TickTick.' : 'Import and sync tasks with TickTick.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {ticktickLoading ? (
+                <span className="text-sm text-muted-foreground">Checking…</span>
+              ) : ticktickConnected ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      setTicktickStatus(null);
+                      const result = await syncNowFromTickTick();
+                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
+                      else setTicktickStatus(`Synced: ${result.inserted} new, ${result.updated} updated, ${result.deleted} removed`);
+                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                      refetchTickTick();
+                      setTimeout(() => setTicktickStatus(null), 5000);
+                    }}
+                  >
+                    Sync now
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      setTicktickStatus(null);
+                      const result = await importTickTickTasks();
+                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
+                      else setTicktickStatus(`Imported ${result.imported} of ${result.total} tasks`);
+                      refetchTickTick();
+                      setTimeout(() => setTicktickStatus(null), 5000);
+                    }}
+                  >
+                    Import tasks
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={async () => {
+                      const result = await disconnectTickTickIntegration();
+                      if (result.success) refetchTickTick();
+                      else setTicktickStatus(result.error ?? 'Failed to disconnect');
+                    }}
+                  >
+                    Disconnect
+                  </Button>
+                </>
+              ) : (
+                <Button size="sm" onClick={() => connectTickTick()}>
+                  Connect TickTick
+                </Button>
+              )}
+            </div>
+          </div>
+          {ticktickStatus && (
+            <p className={cn('text-sm', ticktickStatus.startsWith('Error') ? 'text-destructive' : 'text-muted-foreground')}>
+              {ticktickStatus}
+            </p>
+          )}
+        </div>
+      </section>
+
       {/* Data Management */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section id="settings-data" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Data Management</h2>
         </div>
@@ -845,7 +1070,7 @@ export default function SettingsPage() {
       </section>
 
       {/* About */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section id="settings-about" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">About</h2>
         </div>
@@ -867,6 +1092,9 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+        </div>
+      </div>
+
       <ConfirmSheet
         isOpen={confirmAction === 'reset'}
         title="Reset to Demo Data"

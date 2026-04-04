@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
-const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/calendar'];
+export const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/calendar'];
 
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits', 'magic_week'] as const;
@@ -26,6 +26,9 @@ export const ACCENT_THEME_LABELS: Record<AccentTheme, string> = {
   amber: 'Amber',
 };
 
+/** How prayer-time coordinates are chosen: GPS refresh vs city search. */
+export type PrayerLocationMode = 'device' | 'city';
+
 interface UIState {
   // Sidebar
   isSidebarCollapsed: boolean;
@@ -48,6 +51,18 @@ interface UIState {
   // Analytics
   analyticsShowTips: boolean;
   setAnalyticsShowTips: (show: boolean) => void;
+
+  /** Habits page: prayer tracking block starts expanded (true) or collapsed (false) */
+  habitsPrayerDefaultExpanded: boolean;
+  setHabitsPrayerDefaultExpanded: (expanded: boolean) => void;
+
+  /** Prayer times: lat/lng + human label (city, country). */
+  prayerLocationMode: PrayerLocationMode;
+  setPrayerLocationMode: (mode: PrayerLocationMode) => void;
+  prayerLatitude: number;
+  prayerLongitude: number;
+  prayerLocationLabel: string;
+  setPrayerLocation: (lat: number, lng: number, label: string) => void;
 
   // Theme (dark by default per PRD)
   theme: 'dark' | 'light';
@@ -92,6 +107,30 @@ interface UIState {
   resetPageWidgets: (page: string) => void;
 }
 
+/** Serializable UI preferences (localStorage + Supabase). */
+export type PersistedUiSlice = {
+  isSidebarCollapsed: boolean;
+  privacyMode: boolean;
+  analyticsShowTips: boolean;
+  habitsPrayerDefaultExpanded: boolean;
+  prayerLocationMode: PrayerLocationMode;
+  prayerLatitude: number;
+  prayerLongitude: number;
+  prayerLocationLabel: string;
+  theme: 'dark' | 'light';
+  accentTheme: AccentTheme;
+  mobileNavItems: string[];
+  dashboardWidgetOrder: string[];
+  dashboardWidgetVisible: Record<string, boolean>;
+  defaultTab: string;
+  defaultTaskView: string | null;
+  defaultTaskListId: string | null;
+  calendarShowTasks: boolean;
+  tauriStartMinimized: boolean;
+  pageWidgetOrder: Record<string, string[]>;
+  pageWidgetVisible: Record<string, Record<string, boolean>>;
+};
+
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
@@ -115,6 +154,17 @@ export const useUIStore = create<UIState>()(
       // Analytics
       analyticsShowTips: true,
       setAnalyticsShowTips: (show: boolean) => set({ analyticsShowTips: show }),
+
+      habitsPrayerDefaultExpanded: true,
+      setHabitsPrayerDefaultExpanded: (expanded: boolean) => set({ habitsPrayerDefaultExpanded: expanded }),
+
+      prayerLocationMode: 'city',
+      setPrayerLocationMode: (prayerLocationMode) => set({ prayerLocationMode }),
+      prayerLatitude: 30.0444,
+      prayerLongitude: 31.2357,
+      prayerLocationLabel: 'Cairo, Egypt',
+      setPrayerLocation: (prayerLatitude, prayerLongitude, prayerLocationLabel) =>
+        set({ prayerLatitude, prayerLongitude, prayerLocationLabel }),
 
       // Theme
       theme: 'dark',
@@ -232,23 +282,33 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: 'lifeos-ui-store',
-      partialize: (state) => ({
-        isSidebarCollapsed: state.isSidebarCollapsed,
-        privacyMode: state.privacyMode,
-        analyticsShowTips: state.analyticsShowTips,
-        theme: state.theme,
-        accentTheme: state.accentTheme,
-        mobileNavItems: state.mobileNavItems,
-        dashboardWidgetOrder: state.dashboardWidgetOrder,
-        dashboardWidgetVisible: state.dashboardWidgetVisible,
-        defaultTab: state.defaultTab,
-        defaultTaskView: state.defaultTaskView,
-        defaultTaskListId: state.defaultTaskListId,
-        calendarShowTasks: state.calendarShowTasks,
-        tauriStartMinimized: state.tauriStartMinimized,
-        pageWidgetOrder: state.pageWidgetOrder,
-        pageWidgetVisible: state.pageWidgetVisible,
-      }),
+      partialize: (state) => getPersistedUiSlice(state),
     }
   )
 );
+
+/** Serializable preferences: localStorage + Supabase `user_app_settings.settings`. */
+export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
+  return {
+    isSidebarCollapsed: state.isSidebarCollapsed,
+    privacyMode: state.privacyMode,
+    analyticsShowTips: state.analyticsShowTips,
+    habitsPrayerDefaultExpanded: state.habitsPrayerDefaultExpanded,
+    prayerLocationMode: state.prayerLocationMode,
+    prayerLatitude: state.prayerLatitude,
+    prayerLongitude: state.prayerLongitude,
+    prayerLocationLabel: state.prayerLocationLabel,
+    theme: state.theme,
+    accentTheme: state.accentTheme,
+    mobileNavItems: state.mobileNavItems,
+    dashboardWidgetOrder: state.dashboardWidgetOrder,
+    dashboardWidgetVisible: state.dashboardWidgetVisible,
+    defaultTab: state.defaultTab,
+    defaultTaskView: state.defaultTaskView,
+    defaultTaskListId: state.defaultTaskListId,
+    calendarShowTasks: state.calendarShowTasks,
+    tauriStartMinimized: state.tauriStartMinimized,
+    pageWidgetOrder: state.pageWidgetOrder,
+    pageWidgetVisible: state.pageWidgetVisible,
+  };
+}

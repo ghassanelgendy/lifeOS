@@ -21,6 +21,7 @@ import { cn } from '../lib/utils';
 import type { TaskList, Tag, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
 import { formatTime12h } from '../lib/utils';
 import { parseTaskInput } from '../lib/taskInputSuggestions';
+import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 
 const RECURRENCE_LABELS: Record<string, string> = {
   none: 'No repeat',
@@ -234,15 +235,19 @@ export function TaskDetailsContent({
                 .map((name) => taskLists.find((l) => normalize(l.name) === normalize(name))?.id)
                 .filter((id): id is string => !!id);
 
-              const matchedTagIds = Array.from(
-                new Set(
-                  tagTokenNames
-                    .map((name) => tags.find((t) => normalize(t.name) === normalize(name))?.id)
-                    .filter((id): id is string => !!id)
-                )
-              );
+              const matchedTagIds: string[] = [];
+              const seenTagIds = new Set<string>();
+              for (const name of tagTokenNames) {
+                const id = tags.find((t) => normalize(t.name) === normalize(name))?.id;
+                if (id && !seenTagIds.has(id)) {
+                  seenTagIds.add(id);
+                  matchedTagIds.push(id);
+                }
+              }
 
               const resolvedListId = matchedListIds.length ? matchedListIds[matchedListIds.length - 1] : undefined;
+              const listFromTags =
+                !resolvedListId && matchedTagIds.length > 0 ? listIdFromTagIds(matchedTagIds, tags) : null;
 
               const unknownListNames = Array.from(
                 new Set(listTokenNames.filter((name) => !taskLists.some((l) => normalize(l.name) === normalize(name))))
@@ -265,8 +270,8 @@ export function TaskDetailsContent({
                 ...(parsed.date && { due_date: parsed.date, date_enabled: true }),
                 ...(parsed.time && { due_time: parsed.time, time_enabled: true }),
                 ...(parsed.priority != null && { priority: parsed.priority }),
-                ...(resolvedListId && { list_id: resolvedListId }),
-                ...(matchedTagIds.length ? { tag_ids: matchedTagIds } : {}),
+                ...(resolvedListId ? { list_id: resolvedListId } : listFromTags ? { list_id: listFromTags } : {}),
+                ...(tagTokenNames.length > 0 ? { tag_ids: matchedTagIds } : {}),
                 ...(parsed.reminderOffsetMinutes != null
                   ? { reminders_enabled: true, early_reminder_minutes: parsed.reminderOffsetMinutes }
                   : {}),
@@ -671,9 +676,12 @@ export function TaskDetailsContent({
                   onClick={() => {
                     setForm((prev) => {
                       const current = prev.tag_ids ?? [];
+                      const nextTagIds = selected ? current.filter((id) => id !== tag.id) : [...current, tag.id];
+                      const lid = listIdFromTagIds(nextTagIds, tags);
                       return {
                         ...prev,
-                        tag_ids: selected ? current.filter((id) => id !== tag.id) : [...current, tag.id],
+                        tag_ids: nextTagIds,
+                        ...(lid != null ? { list_id: lid } : {}),
                       };
                     });
                   }}
