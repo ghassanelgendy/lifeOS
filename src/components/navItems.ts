@@ -12,6 +12,7 @@ import {
   Moon,
   Focus as FocusIcon,
   BarChart3,
+  CalendarRange,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Focus', icon: FocusIcon, href: '/focus' },
   { label: 'Habits', icon: Target, href: '/habits' },
   { label: 'Calendar', icon: Calendar, href: '/calendar' },
+  { label: 'Week plan', icon: CalendarRange, href: '/planner' },
   { label: 'Bio-Metrics', icon: Dumbbell, href: '/health' },
   { label: 'Screen Time', icon: Monitor, href: '/screentime' },
   { label: 'Sleep', icon: Moon, href: '/sleep' },

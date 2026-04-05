@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
-export const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/calendar'];
+export const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/planner', '/calendar'];
 
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits', 'magic_week'] as const;
@@ -28,6 +28,24 @@ export const ACCENT_THEME_LABELS: Record<AccentTheme, string> = {
 
 /** How prayer-time coordinates are chosen: GPS refresh vs city search. */
 export type PrayerLocationMode = 'device' | 'city';
+
+/** Dashboard decision horizon (default landing layout for Home). */
+export const DASHBOARD_MODES = ['quick_view', 'tactical', 'strategic', 'annual_review'] as const;
+export type DashboardMode = (typeof DASHBOARD_MODES)[number];
+export const DEFAULT_DASHBOARD_MODE: DashboardMode = 'quick_view';
+
+export function isDashboardMode(v: string): v is DashboardMode {
+  return (DASHBOARD_MODES as readonly string[]).includes(v);
+}
+
+export const DASHBOARD_MODE_LABELS: Record<DashboardMode, string> = {
+  quick_view: 'Quick View',
+  tactical: 'Tactical',
+  strategic: 'Strategic',
+  annual_review: 'Annual Review',
+};
+
+export type StrategicHorizonDays = 30 | 90 | 180;
 
 interface UIState {
   // Sidebar
@@ -82,6 +100,17 @@ interface UIState {
   toggleDashboardWidget: (id: string) => void;
   moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
 
+  /** Which dashboard layout Home uses (persisted). */
+  dashboardMode: DashboardMode;
+  setDashboardMode: (mode: DashboardMode) => void;
+  /** Advance to next mode (for settings double-click). */
+  cycleDashboardMode: () => void;
+  /** Strategic mode chart range (persisted). */
+  strategicHorizonDays: StrategicHorizonDays;
+  setStrategicHorizonDays: (days: StrategicHorizonDays) => void;
+  annualReviewNotesByYear: Record<string, string>;
+  setAnnualReviewNotesForYear: (year: string, note: string) => void;
+
   // Default pages
   defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
   setDefaultTab: (tab: string) => void;
@@ -129,6 +158,10 @@ export type PersistedUiSlice = {
   tauriStartMinimized: boolean;
   pageWidgetOrder: Record<string, string[]>;
   pageWidgetVisible: Record<string, Record<string, boolean>>;
+  dashboardMode: DashboardMode;
+  strategicHorizonDays: StrategicHorizonDays;
+  /** Year -> reflection draft for Annual Review (persisted). */
+  annualReviewNotesByYear: Record<string, string>;
 };
 
 export const useUIStore = create<UIState>()(
@@ -211,6 +244,22 @@ export const useUIStore = create<UIState>()(
             },
           };
         }),
+
+      dashboardMode: DEFAULT_DASHBOARD_MODE,
+      setDashboardMode: (dashboardMode) => set({ dashboardMode }),
+      cycleDashboardMode: () =>
+        set((state) => {
+          const i = DASHBOARD_MODES.indexOf(state.dashboardMode);
+          const next = DASHBOARD_MODES[(Math.max(0, i) + 1) % DASHBOARD_MODES.length];
+          return { dashboardMode: next };
+        }),
+      strategicHorizonDays: 90,
+      setStrategicHorizonDays: (strategicHorizonDays) => set({ strategicHorizonDays }),
+      annualReviewNotesByYear: {},
+      setAnnualReviewNotesForYear: (year, note) =>
+        set((state) => ({
+          annualReviewNotesByYear: { ...state.annualReviewNotesByYear, [year]: note },
+        })),
 
       // Default pages
       defaultTab: 'dashboard',
@@ -310,5 +359,8 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     tauriStartMinimized: state.tauriStartMinimized,
     pageWidgetOrder: state.pageWidgetOrder,
     pageWidgetVisible: state.pageWidgetVisible,
+    dashboardMode: state.dashboardMode,
+    strategicHorizonDays: state.strategicHorizonDays,
+    annualReviewNotesByYear: state.annualReviewNotesByYear,
   };
 }

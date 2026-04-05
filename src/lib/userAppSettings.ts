@@ -1,10 +1,14 @@
 import {
   ACCENT_THEMES,
   DASHBOARD_WIDGET_IDS,
+  DEFAULT_DASHBOARD_MODE,
   DEFAULT_MOBILE_NAV,
   SLEEP_WIDGET_IDS,
+  isDashboardMode,
   type AccentTheme,
+  type DashboardMode,
   type PersistedUiSlice,
+  type StrategicHorizonDays,
 } from '../stores/useUIStore';
 
 function isRecord(x: unknown): x is Record<string, unknown> {
@@ -68,6 +72,26 @@ function asPageVisible(
   return out;
 }
 
+function asDashboardMode(x: unknown, fallback: DashboardMode): DashboardMode {
+  return typeof x === 'string' && isDashboardMode(x) ? x : fallback;
+}
+
+function asStrategicHorizonDays(x: unknown, fallback: StrategicHorizonDays): StrategicHorizonDays {
+  const n = typeof x === 'number' ? x : Number(x);
+  if (n === 30 || n === 90 || n === 180) return n;
+  return fallback;
+}
+
+function asAnnualReviewNotesByYear(x: unknown): Record<string, string> {
+  if (!isRecord(x)) return {};
+  const out: Record<string, string> = {};
+  for (const k of Object.keys(x)) {
+    const v = x[k];
+    if (typeof v === 'string') out[k] = v;
+  }
+  return out;
+}
+
 /** Turn remote JSON into a safe partial to merge into the UI store. */
 export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUiSlice> | null {
   if (!isRecord(remote)) return null;
@@ -124,6 +148,10 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
     sleep: SLEEP_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
   };
   patch.pageWidgetVisible = asPageVisible(remote.pageWidgetVisible, defaultVisible);
+
+  patch.dashboardMode = asDashboardMode(remote.dashboardMode, DEFAULT_DASHBOARD_MODE);
+  patch.strategicHorizonDays = asStrategicHorizonDays(remote.strategicHorizonDays, 90);
+  patch.annualReviewNotesByYear = asAnnualReviewNotesByYear(remote.annualReviewNotesByYear);
 
   return patch;
 }

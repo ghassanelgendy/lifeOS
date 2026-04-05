@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Shield,
   Download,
@@ -23,7 +23,18 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { useUIStore, DASHBOARD_WIDGET_IDS, SLEEP_WIDGET_IDS, PAGE_WIDGET_DEFAULTS, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme } from '../stores/useUIStore';
+import {
+  useUIStore,
+  DASHBOARD_WIDGET_IDS,
+  DASHBOARD_MODES,
+  DASHBOARD_MODE_LABELS,
+  SLEEP_WIDGET_IDS,
+  PAGE_WIDGET_DEFAULTS,
+  ACCENT_THEMES,
+  ACCENT_THEME_LABELS,
+  type AccentTheme,
+  type DashboardMode,
+} from '../stores/useUIStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
@@ -95,6 +106,9 @@ export default function SettingsPage() {
     setDefaultTaskListId,
     habitsPrayerDefaultExpanded,
     setHabitsPrayerDefaultExpanded,
+    dashboardMode,
+    setDashboardMode,
+    cycleDashboardMode,
     tauriStartMinimized,
     setTauriStartMinimized,
     pageWidgetOrder,
@@ -118,6 +132,7 @@ export default function SettingsPage() {
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
   const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
+  const dashboardModeRowTapRef = useRef<number>(0);
   const [isTauri, setIsTauri] = useState(false);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
@@ -436,6 +451,49 @@ export default function SettingsPage() {
               )}
             </select>
           </div>
+          <div
+            className="rounded-lg border border-transparent p-1 -m-1"
+            onDoubleClick={(e) => {
+              const el = e.target as HTMLElement;
+              if (el.closest('select')) return;
+              cycleDashboardMode();
+            }}
+            onTouchEnd={(e) => {
+              const el = e.target as HTMLElement;
+              if (el.closest('select')) return;
+              const now = Date.now();
+              if (now - dashboardModeRowTapRef.current < 320) {
+                cycleDashboardMode();
+                dashboardModeRowTapRef.current = 0;
+              } else {
+                dashboardModeRowTapRef.current = now;
+              }
+            }}
+          >
+            <p className="font-medium mb-2">Default dashboard view</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              Which layout opens when you go to Dashboard (Home). Syncs across devices when signed in. Use the menu below to
+              choose; double-click or double-tap this block (outside the menu) to cycle modes.
+            </p>
+            <label htmlFor="settings-dashboard-mode" className="sr-only">
+              Default dashboard view
+            </label>
+            <select
+              id="settings-dashboard-mode"
+              value={dashboardMode}
+              onChange={(e) => setDashboardMode(e.target.value as DashboardMode)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              {DASHBOARD_MODES.map((m) => (
+                <option key={m} value={m}>
+                  {DASHBOARD_MODE_LABELS[m]}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-muted-foreground mt-2">
+              Current: <span className="font-medium text-foreground">{DASHBOARD_MODE_LABELS[dashboardMode]}</span>
+            </p>
+          </div>
           <div>
             <p className="font-medium mb-2">Habits: Prayer tracking</p>
             <p className="text-sm text-muted-foreground mb-2">
@@ -483,7 +541,7 @@ export default function SettingsPage() {
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Page Widgets</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Choose which sections to show and in what order per page.
+            Choose which sections to show and in what order per page. Dashboard widgets apply to the <span className="font-medium text-foreground">Tactical</span> dashboard only (not Quick View, Strategic, or Annual Review).
           </p>
         </div>
         <div className="p-4 space-y-2">

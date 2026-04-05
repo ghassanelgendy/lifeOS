@@ -27,6 +27,7 @@ import Screentime from './routes/Screentime';
 import Sleep from './routes/Sleep';
 import AnalyticsPage from './routes/Analytics';
 import SettingsPage from './routes/Settings';
+import WeeklyPlanner from './routes/WeeklyPlanner';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
 import AuthTickTickCallback from './routes/AuthTickTickCallback';
@@ -157,6 +158,7 @@ function AppInner() {
             <Route path="habits" element={<Habits />} />
             <Route path="academics" element={<Academics />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="planner" element={<WeeklyPlanner />} />
             <Route path="finance" element={<Finance />} />
             <Route path="screentime" element={<Screentime />} />
             <Route path="sleep" element={<Sleep />} />

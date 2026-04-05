@@ -182,6 +182,49 @@ export interface AcademicPaper {
   updated_at: string;
 }
 
+/** Annual strategic goal → broken into quarterly milestones; tasks may link to a milestone. */
+export type StrategicGoalStatus = 'active' | 'completed' | 'archived';
+export type StrategicQuarterStatus = 'pending' | 'in_progress' | 'done';
+
+export interface StrategicGoal {
+  id: string;
+  user_id: string;
+  year: number;
+  title: string;
+  description?: string | null;
+  status: StrategicGoalStatus;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StrategicGoalQuarter {
+  id: string;
+  goal_id: string;
+  quarter: number;
+  title: string;
+  status: StrategicQuarterStatus;
+  notes?: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** ISO week: week_start_date is Monday; day_index 0 = Mon … 6 = Sun */
+export interface WeeklyPlannerItem {
+  id: string;
+  user_id: string;
+  week_start_date: string;
+  day_index: number;
+  title: string;
+  notes?: string | null;
+  strategic_quarter_id?: string | null;
+  is_done: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ========================
 // Calendar & Shifts
 // ========================
@@ -283,6 +326,8 @@ export interface Task {
   ticktick_id?: string | null;
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;
+  /** Optional link to an annual strategic plan quarter milestone */
+  strategic_quarter_id?: string | null;
   ios_reminders_enabled?: boolean;
   ios_reminder_id?: string | null;
   ios_reminder_list?: string | null;

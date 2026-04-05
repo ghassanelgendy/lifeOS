@@ -17,7 +17,7 @@ type JoinedPrayerHabit = PrayerHabit & {
   habit?: { id: string; title: string; color: string } | null;
 };
 
-type PrayerTrackerItem = {
+export type PrayerTrackerItem = {
   prayerName: PrayerName;
   prayerHabitId: string;
   habitId: string;

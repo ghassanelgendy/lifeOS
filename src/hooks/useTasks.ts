@@ -28,7 +28,7 @@ const TASK_INSERT_KEYS = [
   'list_id', 'project_id', 'tag_ids', 'recurrence', 'recurrence_interval', 'recurrence_end',
   'reminders_enabled', 'recurrence_end_type', 'recurrence_count', 'calendar_event_id', 'calendar_source_key',
   'ios_reminders_enabled', 'ios_reminder_id', 'ios_reminder_list', 'ios_reminder_updated_at',
-  'parent_id', 'sort_order',
+  'parent_id', 'sort_order', 'strategic_quarter_id',
 ] as const;
 
 function taskInsertPayload(input: CreateInput<Task>): Record<string, unknown> {
