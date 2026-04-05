@@ -11,18 +11,21 @@ create index if not exists user_app_settings_updated_at_idx on public.user_app_s
 
 alter table public.user_app_settings enable row level security;
 
+drop policy if exists "user_app_settings_select_own" on public.user_app_settings;
 create policy "user_app_settings_select_own"
   on public.user_app_settings
   for select
   to authenticated
   using (auth.uid() = user_id);
 
+drop policy if exists "user_app_settings_insert_own" on public.user_app_settings;
 create policy "user_app_settings_insert_own"
   on public.user_app_settings
   for insert
   to authenticated
   with check (auth.uid() = user_id);
 
+drop policy if exists "user_app_settings_update_own" on public.user_app_settings;
 create policy "user_app_settings_update_own"
   on public.user_app_settings
   for update
