@@ -89,7 +89,7 @@ export function getRangeBounds(rangeDays: AnalyticsRangeDays, now = new Date()):
   return { start: dateToYmd(start), end: dateToYmd(end) };
 }
 
-async function selectRange<T>(viewName: string, start: string, end: string): Promise<T[]> {
+async function selectRange<T>(viewName: string, start: string, end: string, userId: string): Promise<T[]> {
   const { data, error } = await supabase
     .from(viewName)
     .select('*')

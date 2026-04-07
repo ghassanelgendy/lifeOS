@@ -180,9 +180,10 @@ function DayColumn({
             // Also add as an actual Task due on that day so it appears in the app-wide todo list.
             createTask.mutate({
               title: t,
+              is_completed: false,
               due_date: dueDate,
               strategic_quarter_id: qid || null,
-              tag_ids: [],
+              tag_ids: [] as string[],
               recurrence: 'none',
               priority: 'none',
             });
