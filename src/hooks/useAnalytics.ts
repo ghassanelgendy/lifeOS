@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 export type AnalyticsRangeDays = 7 | 30 | 90;
 
@@ -92,6 +93,7 @@ async function selectRange<T>(viewName: string, start: string, end: string): Pro
   const { data, error } = await supabase
     .from(viewName)
     .select('*')
+    .eq('user_id', userId)
     .gte('date', start)
     .lte('date', end)
     .order('date', { ascending: true });
@@ -100,41 +102,48 @@ async function selectRange<T>(viewName: string, start: string, end: string): Pro
 }
 
 export function useAnalyticsDaily(rangeDays: AnalyticsRangeDays) {
+  const { user } = useAuth();
   const bounds = useMemo(() => getRangeBounds(rangeDays), [rangeDays]);
 
   const finance = useQuery({
-    queryKey: ['analytics', 'daily', 'finance', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyFinanceRow>('analytics_daily_finance', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'finance', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyFinanceRow>('analytics_daily_finance', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const sleep = useQuery({
-    queryKey: ['analytics', 'daily', 'sleep', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailySleepRow>('analytics_daily_sleep', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'sleep', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailySleepRow>('analytics_daily_sleep', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const tasks = useQuery({
-    queryKey: ['analytics', 'daily', 'tasks', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyTasksRow>('analytics_daily_tasks', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'tasks', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyTasksRow>('analytics_daily_tasks', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const habits = useQuery({
-    queryKey: ['analytics', 'daily', 'habits', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyHabitsRow>('analytics_daily_habits', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'habits', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyHabitsRow>('analytics_daily_habits', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const screentime = useQuery({
-    queryKey: ['analytics', 'daily', 'screentime', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyScreentimeRow>('analytics_daily_screentime', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'screentime', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyScreentimeRow>('analytics_daily_screentime', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   return { bounds, finance, sleep, tasks, habits, screentime };
 }
 
 export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
+  const { user } = useAuth();
   const bounds = useMemo(() => getRangeBounds(rangeDays), [rangeDays]);
 
   const topApps = useQuery({
-    queryKey: ['analytics', 'top', 'apps', bounds.start, bounds.end],
+    queryKey: ['analytics', 'top', 'apps', bounds.start, bounds.end, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('analytics_top_apps', {
         start_date: bounds.start,
@@ -144,10 +153,11 @@ export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
       if (error) throw error;
       return (data ?? []) as AnalyticsTopAppRow[];
     },
+    enabled: !!user?.id,
   });
 
   const topDomains = useQuery({
-    queryKey: ['analytics', 'top', 'domains', bounds.start, bounds.end],
+    queryKey: ['analytics', 'top', 'domains', bounds.start, bounds.end, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('analytics_top_domains', {
         start_date: bounds.start,
@@ -157,10 +167,11 @@ export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
       if (error) throw error;
       return (data ?? []) as AnalyticsTopDomainRow[];
     },
+    enabled: !!user?.id,
   });
 
   const topExpenseCategories = useQuery({
-    queryKey: ['analytics', 'top', 'expense_categories', bounds.start, bounds.end],
+    queryKey: ['analytics', 'top', 'expense_categories', bounds.start, bounds.end, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('analytics_top_expense_categories', {
         start_date: bounds.start,
@@ -170,10 +181,11 @@ export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
       if (error) throw error;
       return (data ?? []) as AnalyticsTopCategoryRow[];
     },
+    enabled: !!user?.id,
   });
 
   const topMerchants = useQuery({
-    queryKey: ['analytics', 'top', 'merchants', bounds.start, bounds.end],
+    queryKey: ['analytics', 'top', 'merchants', bounds.start, bounds.end, user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.rpc('analytics_top_merchants', {
         start_date: bounds.start,
@@ -183,6 +195,7 @@ export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
       if (error) throw error;
       return (data ?? []) as AnalyticsTopMerchantRow[];
     },
+    enabled: !!user?.id,
   });
 
   return { bounds, topApps, topDomains, topExpenseCategories, topMerchants };
@@ -191,31 +204,37 @@ export function useAnalyticsTop(rangeDays: AnalyticsRangeDays) {
 // Fetch analytics for an explicit date range (inclusive).
 // Useful for fixed windows like "Sun-Sat last week".
 export function useAnalyticsDailyRange(start: string, end: string) {
+  const { user } = useAuth();
   const bounds = { start, end };
 
   const finance = useQuery({
-    queryKey: ['analytics', 'daily', 'finance', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyFinanceRow>('analytics_daily_finance', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'finance', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyFinanceRow>('analytics_daily_finance', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const sleep = useQuery({
-    queryKey: ['analytics', 'daily', 'sleep', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailySleepRow>('analytics_daily_sleep', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'sleep', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailySleepRow>('analytics_daily_sleep', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const tasks = useQuery({
-    queryKey: ['analytics', 'daily', 'tasks', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyTasksRow>('analytics_daily_tasks', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'tasks', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyTasksRow>('analytics_daily_tasks', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const habits = useQuery({
-    queryKey: ['analytics', 'daily', 'habits', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyHabitsRow>('analytics_daily_habits', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'habits', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyHabitsRow>('analytics_daily_habits', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   const screentime = useQuery({
-    queryKey: ['analytics', 'daily', 'screentime', bounds.start, bounds.end],
-    queryFn: () => selectRange<AnalyticsDailyScreentimeRow>('analytics_daily_screentime', bounds.start, bounds.end),
+    queryKey: ['analytics', 'daily', 'screentime', bounds.start, bounds.end, user?.id],
+    queryFn: () => selectRange<AnalyticsDailyScreentimeRow>('analytics_daily_screentime', bounds.start, bounds.end, user!.id),
+    enabled: !!user?.id,
   });
 
   return { bounds, finance, sleep, tasks, habits, screentime };

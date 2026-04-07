@@ -108,6 +108,10 @@ export default function Login() {
             required
             disabled={loading}
           />
+          <p className="text-[11px] leading-snug text-muted-foreground text-center">
+            Hint: to test without an account, use <span className="font-medium">ghesso@best.com</span> /{' '}
+            <span className="font-medium">123</span>
+          </p>
           {error && (
             <p className="text-sm text-destructive" role="alert">
               {error}
@@ -131,6 +135,28 @@ export default function Login() {
             Sign up
           </Link>
         </p>
+
+        <div className="pt-2 border-t border-border/60">
+          <div className="flex items-center justify-center gap-4 text-[11px] text-muted-foreground">
+            <a
+              href="https://github.com/ghassanelgendy"
+              target="_blank"
+              rel="noreferrer"
+              className="underline-offset-2 hover:underline"
+            >
+              GitHub
+            </a>
+            <span className="text-muted-foreground/60">·</span>
+            <a
+              href="https://www.linkedin.com/in/ghassanelgendy/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline-offset-2 hover:underline"
+            >
+              LinkedIn
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   );
