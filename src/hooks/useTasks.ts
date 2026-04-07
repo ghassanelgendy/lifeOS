@@ -441,6 +441,8 @@ export function useCreateTask() {
         await idbSaveTasks([...existing, optimistic]);
 
         addToOfflineQueue({ entity: 'tasks', op: 'create', payload: optimistic as unknown as Record<string, unknown> });
+        // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
+        void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
         return optimistic;
       }
 
@@ -453,6 +455,8 @@ export function useCreateTask() {
       queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), created]);
       const existing = await idbGetTasks();
       await idbSaveTasks([...existing, created]);
+      // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
+      void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
 
       if (isOnline()) {
         void syncTaskToTickTick('create', created.id, {

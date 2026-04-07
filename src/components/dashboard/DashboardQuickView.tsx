@@ -15,7 +15,6 @@ import {
 import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
-import type { PrayerTrackerItem } from '../../hooks/usePrayerHabits';
 import type { Task } from '../../types/schema';
 
 function formatSleepMinutes(m: number | null) {
@@ -30,15 +29,6 @@ function formatSleepMinutes(m: number | null) {
 const QV_LINK_PILL =
   'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50';
 const QV_LINK_ARROW = 'size-3 shrink-0';
-
-const ADHAN_TO_LABEL: Record<string, string> = {
-  fajr: 'Fajr',
-  sunrise: 'Sunrise',
-  dhuhr: 'Dhuhr',
-  asr: 'Asr',
-  maghrib: 'Maghrib',
-  isha: 'Isha',
-};
 
 function parseDueForSort(t: Task): number {
   if (!t.due_date) return 0;
@@ -169,7 +159,7 @@ export function DashboardQuickView() {
   const toggleTask = useToggleTask();
   const logHabit = useLogHabit();
   const { tracker: prayerTracker, togglePrayerStatus, isLoading: prayerLoading } = usePrayerTracker(today);
-  const { times: prayerTimesList, nextPrayer: nextPrayerKey, timeToNext } = usePrayerTimes();
+  const { times: prayerTimesList } = usePrayerTimes();
 
   const quickViewHabits = useMemo(() => habits.filter(isHabitShownInQuickView), [habits]);
 
@@ -199,20 +189,25 @@ export function DashboardQuickView() {
   const isHabitDoneToday = (habitId: string) =>
     todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed);
 
-  const nextPrayerLabel = nextPrayerKey ? ADHAN_TO_LABEL[nextPrayerKey.toLowerCase()] ?? null : null;
+  const lastPrayerSlot = useMemo(() => {
+    const now = today.getTime();
+    const past = prayerTimesList
+      .filter((t) => t.name !== 'Sunrise')
+      .filter((t) => t.time.getTime() <= now);
+    if (past.length === 0) return undefined;
+    return past.reduce<(typeof prayerTimesList)[number] | undefined>((latest, cur) => {
+      if (!latest) return cur;
+      return cur.time.getTime() >= latest.time.getTime() ? cur : latest;
+    }, undefined);
+  }, [prayerTimesList, today]);
 
-  const nextPrayerSlot = useMemo(
-    () => (nextPrayerLabel ? prayerTimesList.find((t) => t.name === nextPrayerLabel) : undefined),
-    [prayerTimesList, nextPrayerLabel],
+  const lastPrayerTrackerItem = useMemo(
+    () => (lastPrayerSlot ? prayerTracker.find((p) => p.prayerName === lastPrayerSlot.name) : undefined),
+    [prayerTracker, lastPrayerSlot],
   );
 
-  const nextPrayerTrackerItem = useMemo((): PrayerTrackerItem | undefined => {
-    if (!nextPrayerLabel) return undefined;
-    return prayerTracker.find((p) => p.prayerName === nextPrayerLabel);
-  }, [prayerTracker, nextPrayerLabel]);
-
-  const nextPrayerDone = nextPrayerTrackerItem?.status === 'Prayed';
-  const nextPrayerCanTick = !!nextPrayerTrackerItem;
+  const lastPrayerDone = lastPrayerTrackerItem?.status === 'Prayed';
+  const lastPrayerCanTick = !!lastPrayerTrackerItem;
 
   const dueTodayIncompleteHabits = useMemo(
     () => habitsDueToday.filter((h) => !isHabitDoneToday(h.id)),
@@ -220,15 +215,8 @@ export function DashboardQuickView() {
   );
 
   const dueTodayBundleCount = useMemo(() => {
-    let n = tasksDueTodayOnly.length + dueTodayIncompleteHabits.length;
-    if (nextPrayerCanTick && !nextPrayerDone) n += 1;
-    return n;
-  }, [
-    tasksDueTodayOnly.length,
-    dueTodayIncompleteHabits,
-    nextPrayerCanTick,
-    nextPrayerDone,
-  ]);
+    return tasksDueTodayOnly.length + dueTodayIncompleteHabits.length;
+  }, [tasksDueTodayOnly.length, dueTodayIncompleteHabits]);
 
   const nextUp = upcomingItems.slice(0, 8);
 
@@ -253,10 +241,10 @@ export function DashboardQuickView() {
     overdueIncomplete.length > 0 ||
     tasksDueTodayOnly.length > 0 ||
     habitsDueToday.length > 0 ||
-    !!nextPrayerLabel;
+    !!lastPrayerSlot;
 
   const hasTodaySubsection =
-    !!nextPrayerLabel || tasksDueTodayOnly.length > 0 || habitsDueToday.length > 0;
+    !!lastPrayerSlot || tasksDueTodayOnly.length > 0 || habitsDueToday.length > 0;
 
   return (
     <div className="space-y-5 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -277,7 +265,7 @@ export function DashboardQuickView() {
             <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Due today</p>
             <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1 text-primary">{dueTodayBundleCount}</p>
             <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-              Tasks + habits + next prayer left
+              Tasks + habits left
             </p>
           </div>
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0">
@@ -332,7 +320,7 @@ export function DashboardQuickView() {
                 Due today
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Next prayer only · tasks due today · standard habits
+                Last prayer · tasks due today · standard habits
               </p>
             </div>
             <div className="flex flex-wrap gap-2 text-xs">
@@ -382,27 +370,21 @@ export function DashboardQuickView() {
               {hasTodaySubsection && (
                 <div className="space-y-2">
                   <ul className="space-y-2">
-                    {nextPrayerLabel && (
+                    {lastPrayerSlot && (
                       <li>
                         <DueTodayRow
                           kind="prayer"
-                          title={`${nextPrayerLabel} prayer`}
+                          title={`${lastPrayerSlot.name} prayer`}
                           subtitle={
-                            nextPrayerSlot
-                              ? `${format(nextPrayerSlot.time, 'h:mm a')}${timeToNext ? ` · in ${timeToNext}` : ''}`
-                              : timeToNext
-                                ? `in ${timeToNext}`
-                                : undefined
+                            lastPrayerTrackerItem?.prayedAt
+                              ? `Prayed · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
+                              : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
                           }
-                          done={nextPrayerDone}
+                          done={lastPrayerDone}
                           busy={prayerLoading}
-                          showToggle={nextPrayerCanTick}
-                          label={`Mark ${nextPrayerLabel} as prayed`}
-                          onToggle={
-                            nextPrayerTrackerItem
-                              ? () => togglePrayerStatus(nextPrayerTrackerItem, 'Prayed')
-                              : undefined
-                          }
+                          showToggle={lastPrayerCanTick}
+                          label={`Mark ${lastPrayerSlot.name} as prayed`}
+                          onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
                         />
                       </li>
                     )}

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { addWeeks, eachDayOfInterval, endOfWeek, format, startOfWeek } from 'date-fns';
 import { Check, ChevronLeft, ChevronRight, Trash2, Link2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Button, Input } from '../components/ui';
+import { Button, ConfirmSheet, Input } from '../components/ui';
 import { useStrategicMilestonesForYear } from '../hooks/useStrategicPlanning';
 import {
   useWeeklyPlannerItems,
@@ -10,6 +10,7 @@ import {
   useUpdateWeeklyPlannerItem,
   useDeleteWeeklyPlannerItem,
 } from '../hooks/useWeeklyPlanner';
+import { useCreateTask } from '../hooks/useTasks';
 import type { WeeklyPlannerItem } from '../types/schema';
 import { cn } from '../lib/utils';
 
@@ -25,6 +26,7 @@ function PlannerRow({
   const update = useUpdateWeeklyPlannerItem();
   const del = useDeleteWeeklyPlannerItem();
   const qLabel = item.strategic_quarter_id ? labelByQuarterId.get(item.strategic_quarter_id) : null;
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <div
@@ -73,15 +75,26 @@ function PlannerRow({
           type="button"
           className="text-muted-foreground hover:text-destructive p-1 rounded-md shrink-0"
           aria-label="Remove"
-          onClick={() => {
-            if (confirm('Remove this planner line?')) {
-              del.mutate({ id: item.id, week_start_date: weekStartStr });
-            }
-          }}
+          onClick={() => setConfirmOpen(true)}
         >
           <Trash2 className="size-4" />
         </button>
       </div>
+      <ConfirmSheet
+        isOpen={confirmOpen}
+        title="Remove planner line?"
+        message="This will remove it from your weekly planner."
+        confirmLabel="Remove"
+        confirmVariant="destructive"
+        isLoading={del.isPending}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          del.mutate(
+            { id: item.id, week_start_date: weekStartStr },
+            { onSettled: () => setConfirmOpen(false) },
+          );
+        }}
+      />
     </div>
   );
 }
@@ -104,6 +117,7 @@ function DayColumn({
   const [draft, setDraft] = useState('');
   const [qid, setQid] = useState('');
   const create = useCreateWeeklyPlannerItem();
+  const createTask = useCreateTask();
 
   const dayItems = items.filter((i) => i.day_index === dayIndex);
 
@@ -144,10 +158,11 @@ function DayColumn({
           size="sm"
           variant="secondary"
           className="w-full h-8 text-xs"
-          disabled={!draft.trim() || create.isPending}
+          disabled={!draft.trim() || create.isPending || createTask.isPending}
           onClick={() => {
             const t = draft.trim();
             if (!t) return;
+            const dueDate = format(dayDate, 'yyyy-MM-dd');
             create.mutate(
               {
                 week_start_date: weekStartStr,
@@ -162,6 +177,15 @@ function DayColumn({
                 },
               },
             );
+            // Also add as an actual Task due on that day so it appears in the app-wide todo list.
+            createTask.mutate({
+              title: t,
+              due_date: dueDate,
+              strategic_quarter_id: qid || null,
+              tag_ids: [],
+              recurrence: 'none',
+              priority: 'none',
+            });
           }}
         >
           Add
@@ -177,10 +201,10 @@ export default function WeeklyPlanner() {
   const [weekOffset, setWeekOffset] = useState(1);
 
   const weekStart = useMemo(
-    () => startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 }),
+    () => startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 0 }),
     [weekOffset],
   );
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
@@ -215,7 +239,7 @@ export default function WeeklyPlanner() {
           <p className="text-sm font-medium">
             {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">Week starts Monday · stored in your timezone</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Week starts Sunday · stored in your timezone</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => setWeekOffset((w) => w - 1)}>

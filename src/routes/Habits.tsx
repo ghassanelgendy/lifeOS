@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Plus,
@@ -31,7 +31,7 @@ import {
   useWeeklyAdherence,
   useHabitStreaks,
 } from '../hooks/useHabits';
-import { Modal, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
@@ -162,6 +162,7 @@ export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const habitFormRef = useRef<HTMLFormElement | null>(null);
   const [habitType, setHabitType] = useState<HabitType>('standard');
   const [detoxMode, setDetoxMode] = useState<DetoxMode>('linear');
   const [detoxStartTarget, setDetoxStartTarget] = useState(3);
@@ -754,13 +755,15 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Habit Modal */}
-      <Modal
+      {/* Habit Details — match Tasks editing sheet (bottom, scrollable) */}
+      <DetailsSheet
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onConfirm={() => habitFormRef.current?.requestSubmit()}
         title={editingHabit ? 'Edit Habit' : 'New Habit'}
+        confirmDisabled={!formData.title?.trim() || createHabit.isPending || updateHabit.isPending}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form ref={habitFormRef} onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Habit Name"
             value={formData.title}
@@ -921,16 +924,8 @@ export default function Habits() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={createHabit.isPending || updateHabit.isPending}>
-              {editingHabit ? 'Update' : 'Create'}
-            </Button>
-          </div>
         </form>
-      </Modal>
+      </DetailsSheet>
       <ConfirmSheet
         isOpen={!!archiveHabitId}
         title="Archive Habit"
