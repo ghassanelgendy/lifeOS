@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -146,27 +145,6 @@ export function usePapersByProject(projectId: string) {
       return data as AcademicPaper[];
     },
     enabled: !!projectId && !!user?.id,
-  });
-}
-
-export function usePaper(id: string) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...PAPERS_KEY, id, user?.id],
-    queryFn: async () => {
-      // Verify paper belongs to user via project ownership
-      const { data: paper, error: paperError } = await supabase
-        .from('academic_papers')
-        .select('*, projects!inner(user_id)')
-        .eq('id', id)
-        .single();
-      if (paperError) throw paperError;
-      if ((paper as any).projects?.user_id !== user?.id) {
-        throw new Error('Paper not found or access denied');
-      }
-      return paper as AcademicPaper;
-    },
-    enabled: !!id && !!user?.id,
   });
 }
 

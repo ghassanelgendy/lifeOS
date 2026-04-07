@@ -187,9 +187,9 @@ export class TransactionParser {
   }
 
   detectBank(text: string): string {
-    const lower = text.toLowerCase();
     const line = text;
     if (/from hsbc:|your hsbc/i.test(line)) return 'HSBC';
+    const lower = text.toLowerCase();
     if (/orange cash|orange money|اورنچ كاش|receiver dial|recharged to|your new balance.*transaction id/i.test(lower)) return 'Orange Cash';
     // NBE: explicit branding, or Arabic instant-transfer wording (تم إضافة/تنفيذ/إستلام + تحويل لحظي/لحسابكم/لبطاقتكم/رقم مرجعي)
     if (/الاهلى|nbe\s+otp|nbe\s+atm|بطاقة المدفوعة مقدماً|ببطاقتكم مسبقة الدفع|لبطاقتكم مسبقة الدفع|NBE OTP/i.test(line)) return 'NBE';
@@ -203,7 +203,6 @@ export class TransactionParser {
 
   /** Returns true if message should not create a transaction (OTP, PIN update, request id only) */
   shouldSkipInsert(text: string, parsed: Partial<ParsedTransaction>): boolean {
-    const lower = text.toLowerCase();
     if (/your otp\s+\d+\s+available for|otp:\s*\d+.*الرقم السرى|هذا الكود سرى|nbe otp:\s*\d+/i.test(text)) return true;
     if (/pin has been updated|تم تقديم طلبكم رقم/i.test(text) && !parsed.amount) return true;
     if (/كشف حساب كارتك|الحد الادني للسداد/i.test(text)) return true;

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -26,25 +25,6 @@ export function useWellnessLogs() {
     });
 }
 
-export function useWellnessLog(date: string) {
-    const { user } = useAuth();
-    return useQuery({
-        queryKey: [...QUERY_KEY, date, user?.id],
-        queryFn: async () => {
-            const q = supabase
-                .from('wellness_logs')
-                .select('*')
-                .eq('date', date);
-            if (user?.id) q.eq('user_id', user.id);
-            const { data, error } = await q.single();
-
-            if (error && error.code !== 'PGRST116') throw error; // Ignore not found
-            return data as WellnessLog | null;
-        },
-        enabled: !!date && !!user?.id,
-    });
-}
-
 export function useUpsertWellnessLog() {
     const queryClient = useQueryClient();
 
@@ -62,21 +42,6 @@ export function useUpsertWellnessLog() {
 
             if (error) throw error;
             return data as WellnessLog;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-        },
-    });
-}
-
-export function useDeleteWellnessLog() {
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (id: string) => {
-            const { error } = await supabase.from('wellness_logs').delete().eq('id', id);
-            if (error) throw error;
-            return true;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: QUERY_KEY });

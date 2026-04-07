@@ -30,10 +30,6 @@ export function screentimeUiPlatform(platform: string | null | undefined): Scree
   return null;
 }
 
-export function isIosOrWindowsTracked(platform: string | null | undefined): boolean {
-  return screentimeUiPlatform(platform) != null;
-}
-
 export function platformLabelTracked(platform: string | null | undefined): string {
   const b = screentimeUiPlatform(platform);
   if (b === 'ios') return 'IOS';

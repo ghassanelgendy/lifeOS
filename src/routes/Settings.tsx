@@ -212,7 +212,7 @@ export default function SettingsPage() {
       URL.revokeObjectURL(url);
       setExportStatus('Data exported successfully!');
       setTimeout(() => setExportStatus(null), 3000);
-    } catch (error) {
+    } catch {
       setExportStatus('Export failed. Please try again.');
       setTimeout(() => setExportStatus(null), 3000);
     }
@@ -239,7 +239,7 @@ export default function SettingsPage() {
           setImportStatus('Import failed. Invalid file format.');
           setTimeout(() => setImportStatus(null), 3000);
         }
-      } catch (error) {
+      } catch {
         setImportStatus('Import failed. Please check the file.');
         setTimeout(() => setImportStatus(null), 3000);
       }

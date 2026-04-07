@@ -2,8 +2,6 @@
 // We keep this deliberately small and focused on the tables we care about.
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 const DB_NAME = 'lifeos-indexeddb';
 const DB_VERSION = 2;
 

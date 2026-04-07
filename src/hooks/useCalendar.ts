@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -23,46 +22,6 @@ export function useCalendarEvents() {
       return data as CalendarEvent[];
     },
     enabled: !!user?.id,
-  });
-}
-
-export function useCalendarEventsByRange(start: string, end: string) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...QUERY_KEY, 'range', start, end, user?.id],
-    queryFn: async () => {
-      const q = supabase.from('calendar_events').select('*');
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-
-      // We will filter in JS because of recurrence logic needing to be checked against range
-      const events = data as CalendarEvent[];
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-
-      return events.filter(e => {
-        const eventStart = new Date(e.start_time);
-        if (e.recurrence !== 'none') return true; // Include all recurring to check later
-        return eventStart >= startDate && eventStart <= endDate;
-      });
-    },
-    enabled: !!start && !!end && !!user?.id,
-  });
-}
-
-export function useCalendarEvent(id: string) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...QUERY_KEY, id, user?.id],
-    queryFn: async () => {
-      const q = supabase.from('calendar_events').select('*').eq('id', id);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q.single();
-      if (error) throw error;
-      return data as CalendarEvent;
-    },
-    enabled: !!id && !!user?.id,
   });
 }
 
@@ -211,12 +170,6 @@ export function useUpcomingEvents(days: number = 7) {
   });
 }
 
-// Get shift events specifically
-export function useShiftEvents() {
-  const { data: events = [] } = useCalendarEvents();
-  return events.filter((e) => e.type === 'Shift');
-}
-
 // Get tasks with due dates for calendar display
 export function useTasksForCalendar(startDate: Date, endDate: Date) {
   const { user } = useAuth();
@@ -238,27 +191,4 @@ export function useTasksForCalendar(startDate: Date, endDate: Date) {
     },
     enabled: !!user?.id,
   });
-}
-
-// Combined events and tasks for calendar
-export function useCalendarItems(startDate: Date, endDate: Date) {
-  const expandedEvents = useExpandedCalendarEvents(startDate, endDate);
-  const { data: tasks = [] } = useTasksForCalendar(startDate, endDate);
-
-  // Convert tasks to calendar-like items
-  const taskItems = tasks.map((task: any) => ({
-    id: `task-${task.id}`,
-    title: task.title,
-    type: 'Task' as const,
-    start_time: task.due_date!,
-    end_time: task.due_date!, // Tasks are point-in-time usually unless duration added
-    all_day: !task.due_time,
-    color: task.priority === 'high' ? '#ef4444' : task.priority === 'medium' ? '#f97316' : '#3b82f6',
-    isTask: true,
-    taskId: task.id,
-  }));
-
-  return [...expandedEvents, ...taskItems].sort((a, b) =>
-    new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
-  );
 }

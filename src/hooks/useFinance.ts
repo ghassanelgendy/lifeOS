@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
@@ -103,30 +102,6 @@ export function useTransactions() {
       }
     },
     enabled: !!user?.id,
-  });
-}
-
-export function useTransactionsByRange(start: string, end: string) {
-  const { user } = useAuth();
-  const key = transactionsKey(user?.id);
-  const userId = user?.id;
-  return useQuery({
-    queryKey: [...key, 'range', start, end],
-    queryFn: async () => {
-      const q = supabase
-        .from('transactions')
-        .select('*')
-        .gte('date', start)
-        .lte('date', end)
-        .order('date', { ascending: false })
-        .order('created_at', { ascending: false });
-      if (userId) q.eq('user_id', userId);
-      const { data, error } = await q;
-      if (error) throw error;
-      const list = (data ?? []) as (Transaction & { user_id?: string | null })[];
-      return userId ? (filterToCurrentUser(list, userId, 'transactions (range)') as Transaction[]) : list;
-    },
-    enabled: !!user?.id && !!start && !!end,
   });
 }
 
