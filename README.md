@@ -2,6 +2,10 @@
 
 LifeOS is a personal operating system: one place to run your day-to-day life (tasks, habits, focus sessions, sleep, screentime, calendar, finance, analytics) with a fast UI and a Supabase-backed sync layer.
 
+## Demo
+
+Live: `https://life-os-tan.vercel.app`
+
 ## Mission
 
 Turn “I should…” into **a concrete, calm plan** — and keep it close enough to reality that you’ll actually follow it.
@@ -21,8 +25,6 @@ lifeOS is built for the problem that most tools avoid: **your life is multi-doma
 - **Fits your workflow**: web-first, with PWA + desktop (Tauri) options.
 
 This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with data stored in **Supabase**. It also supports a **PWA** service worker and a **Tauri** desktop build.
-
-## Widgets
 
 [![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](#)
@@ -129,35 +131,6 @@ There are two common “lanes”:
 - **Serverless / edge**: Supabase Edge Functions (Deno) use Supabase secrets; Vercel API routes use Vercel env vars.
 
 The repo includes `.env.example` as a starting point.
-
----
-
-## Cron + notifications (how to run reminders)
-
-This project uses Supabase Edge Functions for:
-- task reminders (`send-task-reminders`)
-- prayer reminders (`prayer-notifications-dispatch`)
-
-### Required Supabase secrets (Edge Functions)
-
-- **`ALLOWED_ORIGINS`**: comma-separated browser origins allowed by CORS  
-  Example: `http://localhost:5173,https://life-os-tan.vercel.app`
-- **`CRON_SECRET`**: shared secret used to authorize cron invocations
-
-Optional:
-- `PRAYER_CRON_SECRET`
-- `TASKS_CRON_SECRET`
-
-### Triggering via cron-job.org
-
-Create a cron job that calls:
-- `https://<project-ref>.supabase.co/functions/v1/send-task-reminders`
-- `https://<project-ref>.supabase.co/functions/v1/prayer-notifications-dispatch`
-
-Method: `POST`  
-Headers:
-- `x-cron-secret: <CRON_SECRET>`
-- `Content-Type: application/json`
 
 ---
 
