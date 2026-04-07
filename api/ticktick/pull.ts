@@ -46,11 +46,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const rawDeleteMissing = Array.isArray(req.query?.deleteMissing)
-    ? req.query?.deleteMissing?.[0]
-    : (req.query as { deleteMissing?: string | string[] })?.deleteMissing;
-  const deleteMissing =
-    typeof rawDeleteMissing === 'string' && ['1', 'true', 'yes'].includes(rawDeleteMissing.toLowerCase());
+  // Security: never allow destructive sync via query params.
+  // TickTick API can omit tasks (completed/past-due), so deletion is unsafe and can be abused.
+  const deleteMissing = false;
 
   const userId = await getUserIdFromRequest(req);
   if (!userId) {

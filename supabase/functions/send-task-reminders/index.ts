@@ -11,10 +11,23 @@ const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY');
 const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getAllowedOrigins(): string[] {
+  const raw = Deno.env.get('ALLOWED_ORIGINS') ?? Deno.env.get('APP_ORIGINS') ?? '';
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function corsHeadersFor(origin: string | null): Record<string, string> {
+  const allowed = getAllowedOrigins();
+  const isAllowed = !!origin && allowed.includes(origin);
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin! : 'null',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+    'Vary': 'Origin',
+  };
+}
 
 // Early reminder offsets we support (minutes before due time). 0 = at due time.
 const EARLY_OFFSETS = [0, 5, 10, 15, 30, 60];
@@ -45,8 +58,28 @@ webpush.setVapidDetails('mailto:lifeos@example.com', vapidPublic!, vapidPrivate!
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  const origin = req.headers.get('origin');
+  const corsHeaders = corsHeadersFor(origin);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  // Cron-only endpoint: require shared secret when configured.
+  const configuredSecrets = [
+    Deno.env.get('CRON_SECRET')?.trim(),
+    Deno.env.get('TASKS_CRON_SECRET')?.trim(),
+  ].filter((s): s is string => Boolean(s && s.length > 0));
+
+  if (configuredSecrets.length > 0) {
+    const headerSecret = req.headers.get('x-cron-secret')?.trim();
+    const bearerSecret = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
+    const apiKeySecret = req.headers.get('apikey')?.trim();
+    const providedSecret = headerSecret ?? bearerSecret ?? apiKeySecret;
+    const isAuthorized = !!providedSecret && configuredSecrets.some((s) => s === providedSecret);
+    if (!isAuthorized) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   try {

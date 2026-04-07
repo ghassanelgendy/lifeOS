@@ -22,10 +22,6 @@
 - If the user asks “where is state for X?”: check `src/stores/*`, then any hooks in `src/hooks/*` that read/update stores.
 - If the user asks “how does sync/fetch/persistence work?”: check `src/lib/*` and `src/hooks/*`, then `src/db/*` for offline/persistence details.
 
-## Separate scope: lifeos-agent-cli
-- If the request is about the agent CLI: scope to `lifeos-agent-cli/src/*` and `lifeos-agent-cli/prompts/*`.
-- Never mix `lifeos-agent-cli` logic with the main app unless the user explicitly asks for cross-integration.
-
 ## Implementation defaults
 1. Prefer existing helper functions and established patterns in the closest related file(s).
 2. Keep changes minimal and localized to the relevant folder(s).

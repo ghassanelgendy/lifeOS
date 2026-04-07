@@ -159,12 +159,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     if (operation === 'delete') {
-      const { data: taskRow } = await supabase
+      const { data: taskRow, error: taskErr } = await supabase
         .from('tasks')
         .select('ticktick_id')
         .eq('id', taskId)
         .eq('user_id', userId)
         .single();
+      if (taskErr || !taskRow) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
       const ticktickId = (taskRow as { ticktick_id?: string } | null)?.ticktick_id;
       if (!ticktickId) {
         return res.status(200).json({ success: true, skipped: 'no ticktick_id' });
@@ -189,7 +192,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
       const ticktickId = created?.id;
       if (ticktickId) {
-        await supabase.from('tasks').update({ ticktick_id: ticktickId, updated_at: new Date().toISOString() }).eq('id', taskId).eq('user_id', userId);
+        const { data: updatedRow, error: upErr } = await supabase
+          .from('tasks')
+          .update({ ticktick_id: ticktickId, updated_at: new Date().toISOString() })
+          .eq('id', taskId)
+          .eq('user_id', userId)
+          .select('id')
+          .maybeSingle();
+        if (upErr || !updatedRow?.id) {
+          return res.status(404).json({ error: 'Task not found' });
+        }
       }
       return res.status(200).json({ success: true, ticktick_id: ticktickId });
     }

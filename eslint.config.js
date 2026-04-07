@@ -11,7 +11,6 @@ export default defineConfig([
     'src-tauri/**',
     '**/src-tauri/**',
     '.lifeos-cache/**',
-    'lifeos-agent-cli/.lifeos-cache/**',
   ]),
   {
     files: ['**/*.{ts,tsx}'],

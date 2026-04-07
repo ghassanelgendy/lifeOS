@@ -11,10 +11,23 @@ const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY');
 const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret, x-cronsecret',
-};
+function getAllowedOrigins(): string[] {
+  const raw = Deno.env.get('ALLOWED_ORIGINS') ?? Deno.env.get('APP_ORIGINS') ?? '';
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function corsHeadersFor(origin: string | null): Record<string, string> {
+  const allowed = getAllowedOrigins();
+  const isAllowed = !!origin && allowed.includes(origin);
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin! : 'null',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret',
+    'Vary': 'Origin',
+  };
+}
 
 if (!vapidPublic || !vapidPrivate) {
   console.error('Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY');
@@ -61,48 +74,37 @@ function isDueNow(localMinuteOfDay: number, notifyMinuteNormalized: number, wind
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  const origin = req.headers.get('origin');
+  const corsHeaders = corsHeadersFor(origin);
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   // Require cron secret when configured.
   // Supports:
   // - x-cron-secret header (preferred)
-  // - x-cronsecret header (provider variant)
   // - Authorization: Bearer <CRON_SECRET>
-  // - ?cron_secret=<CRON_SECRET> query param (fallback for providers with limited header support)
-  // - Authorization/apikey using SUPABASE_SERVICE_ROLE_KEY (fallback)
+  // - apikey: <CRON_SECRET> (provider variant)
   const configuredSecrets = [
     Deno.env.get('CRON_SECRET')?.trim(),
     Deno.env.get('PRAYER_CRON_SECRET')?.trim(),
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')?.trim(),
   ].filter((s): s is string => Boolean(s && s.length > 0));
 
   if (configuredSecrets.length > 0) {
     const headerSecret = req.headers.get('x-cron-secret')?.trim();
-    const headerSecretAlt = req.headers.get('x-cronsecret')?.trim();
     const bearerSecret = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '').trim();
     const apiKeySecret = req.headers.get('apikey')?.trim();
-    const url = new URL(req.url);
-    const urlSecret =
-      (url.searchParams.get('cron_secret')
-        ?? url.searchParams.get('cronSecret')
-        ?? url.searchParams.get('token'))?.trim();
-    const providedSecret = headerSecret ?? headerSecretAlt ?? bearerSecret ?? apiKeySecret ?? urlSecret;
+    const providedSecret = headerSecret ?? bearerSecret ?? apiKeySecret;
     const isAuthorized = !!providedSecret && configuredSecrets.some((s) => s === providedSecret);
 
     if (!isAuthorized) {
       console.error('Unauthorized cron invocation', {
         hasXCronSecret: Boolean(headerSecret),
-        hasXCronSecretAlt: Boolean(headerSecretAlt),
         hasAuthorization: Boolean(req.headers.get('authorization')),
         hasApiKey: Boolean(apiKeySecret),
-        hasQuerySecret: Boolean(urlSecret),
         configuredSecretsCount: configuredSecrets.length,
       });
       return new Response(JSON.stringify({
         error: 'Unauthorized',
-        hint: 'Provide x-cron-secret, Authorization Bearer token, apikey, or cron_secret query param matching configured secrets.',
+        hint: 'Provide x-cron-secret, Authorization Bearer token, or apikey matching configured secrets.',
       }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
