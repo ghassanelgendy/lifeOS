@@ -1,17 +1,26 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import type { CreateInput, Note, UpdateInput } from '../types/schema';
+import type { CreateInput, Note, NoteFolder, UpdateInput } from '../types/schema';
 
 const NOTES_KEY = ['notes'];
+const NOTE_FOLDERS_KEY = ['note-folders'];
 
 function normalizeNoteInput(input: CreateInput<Note> | UpdateInput<Note>) {
   const title = typeof input.title === 'string' ? input.title.trim() : input.title;
+  const author = typeof input.author === 'string' ? input.author.trim() : input.author;
+  const folderId = input.folder_id === '' ? null : input.folder_id;
   return {
     ...input,
     ...(title !== undefined ? { title } : {}),
     ...(typeof input.body === 'string' ? { body: input.body } : {}),
+    ...(author !== undefined ? { author: author || null } : {}),
+    ...(folderId !== undefined ? { folder_id: folderId } : {}),
   };
+}
+
+function normalizeFolderName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ');
 }
 
 export function useNotes() {
@@ -32,6 +41,46 @@ export function useNotes() {
   });
 }
 
+export function useNoteFolders() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...NOTE_FOLDERS_KEY, user?.id],
+    queryFn: async () => {
+      const q = supabase
+        .from('note_folders')
+        .select('*')
+        .order('sort_order', { ascending: true })
+        .order('name', { ascending: true });
+      if (user?.id) q.eq('user_id', user.id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data as NoteFolder[];
+    },
+    enabled: !!user?.id,
+  });
+}
+
+export function useCreateNoteFolder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { name: string; sort_order?: number }) => {
+      const name = normalizeFolderName(input.name);
+      if (!name) throw new Error('Folder name required');
+      const { data, error } = await supabase
+        .from('note_folders')
+        .insert({ name, sort_order: input.sort_order ?? 0 })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as NoteFolder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
+    },
+  });
+}
+
 export function useCreateNote() {
   const queryClient = useQueryClient();
 
@@ -47,6 +96,7 @@ export function useCreateNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
     },
   });
 }
@@ -68,6 +118,7 @@ export function useUpdateNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
     },
   });
 }
@@ -86,6 +137,7 @@ export function useDeleteNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
     },
   });
 }

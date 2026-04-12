@@ -258,6 +258,18 @@ export interface Note {
   user_id?: string | null;
   title: string;
   body: string;
+  author?: string | null;
+  note_date: string;
+  folder_id?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteFolder {
+  id: string;
+  user_id?: string | null;
+  name: string;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
