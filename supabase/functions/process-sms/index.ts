@@ -50,6 +50,51 @@ function isPromotionQuickFilter(message: string): boolean {
   return false;
 }
 
+function parseFormUrlEncoded(text: string): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  const parts = (text || '').split('&');
+  for (const p of parts) {
+    if (!p) continue;
+    const eq = p.indexOf('=');
+    const k = eq >= 0 ? p.slice(0, eq) : p;
+    const v = eq >= 0 ? p.slice(eq + 1) : '';
+    const key = decodeURIComponent((k || '').replace(/\+/g, ' '));
+    const val = decodeURIComponent((v || '').replace(/\+/g, ' '));
+    if (key) out[key] = val;
+  }
+  return out;
+}
+
+async function parseIncoming(req: Request): Promise<Record<string, unknown>> {
+  // Support iOS6 tweaks that can only "open URL" (GET), plus Shortcuts (JSON), plus HTML form posts.
+  const url = new URL(req.url);
+  if (req.method === 'GET') {
+    const out: Record<string, unknown> = {};
+    url.searchParams.forEach((value, key) => {
+      out[key] = value;
+    });
+    return out;
+  }
+
+  const ct = (req.headers.get('content-type') || '').toLowerCase();
+  if (ct.includes('application/json')) {
+    try {
+      return (await req.json()) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+
+  // Accept form or plain text
+  const raw = await req.text();
+  if (ct.includes('application/x-www-form-urlencoded')) {
+    return parseFormUrlEncoded(raw);
+  }
+  // If it's just text/plain, treat it as "message"
+  if (raw && raw.trim()) return { message: raw.trim() };
+  return {};
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -61,7 +106,7 @@ serve(async (req: Request) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const body = (await req.json()) as Record<string, unknown>;
+    const body = await parseIncoming(req);
     const message = getMessageFromBody(body);
     const userId = getUserIdFromBody(body);
     const sender = typeof body.sender === 'string' ? body.sender : undefined;

@@ -11,7 +11,9 @@ import {
   Repeat,
   CheckSquare,
   CalendarPlus,
+  Copy,
   Link2,
+  RefreshCw,
   X,
   Circle,
   CheckCircle2
@@ -48,6 +50,7 @@ import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../compone
 import type { CalendarEvent, CreateInput, EventType, RecurrencePattern, Task, TaskPriority } from '../types/schema';
 import { useCreateTask, useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
+import { useTaskCalendarFeed } from '../hooks/useTaskCalendarFeed';
 import { downloadCalendarIcs } from '../lib/calendarExport';
 import type { IcalEvent } from '../lib/icalSubscribe';
 import { supabase } from '../lib/supabase';
@@ -104,9 +107,16 @@ export default function CalendarPage() {
   const { data: allEvents = [] } = useCalendarEvents();
   const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, setColor: setIcalColor, setName: setIcalName } = useIcalSubscriptions();
   const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, subscriptionList);
+  const {
+    feedUrl: taskCalendarFeedUrl,
+    resetToken: resetTaskCalendarFeedToken,
+    isLoading: isTaskCalendarFeedLoading,
+    error: taskCalendarFeedError,
+  } = useTaskCalendarFeed();
   const [newIcalUrl, setNewIcalUrl] = useState('');
   const [newIcalColor, setNewIcalColor] = useState('#3b82f6');
   const [newIcalName, setNewIcalName] = useState('');
+  const [taskFeedCopyStatus, setTaskFeedCopyStatus] = useState('');
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
@@ -325,6 +335,18 @@ export default function CalendarPage() {
     addIcalUrl(url, newIcalColor, newIcalName);
     setNewIcalUrl('');
     setNewIcalName('');
+  };
+
+  const handleCopyTaskCalendarFeed = async () => {
+    if (!taskCalendarFeedUrl) return;
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(taskCalendarFeedUrl);
+      setTaskFeedCopyStatus('Copied');
+      window.setTimeout(() => setTaskFeedCopyStatus(''), 2000);
+    } catch {
+      setTaskFeedCopyStatus('Copy failed');
+    }
   };
 
   // Get tasks for a specific day
@@ -974,6 +996,57 @@ export default function CalendarPage() {
                 ))}
               </div>
             )}
+
+            {/* Task calendar feed */}
+            <div className="mt-6 pt-4 border-t border-border">
+              <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                <CalendarPlus size={12} />
+                Task calendar feed
+              </h4>
+              <p className="text-xs text-muted-foreground mb-2">
+                Subscribe from Apple Calendar, Google Calendar, or Outlook. Tasks need both a date and a time.
+              </p>
+              {taskCalendarFeedError ? (
+                <p className="text-xs text-destructive">
+                  Task calendar link unavailable.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={isTaskCalendarFeedLoading ? 'Preparing link...' : taskCalendarFeedUrl}
+                    readOnly
+                    className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground"
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => void handleCopyTaskCalendarFeed()}
+                      disabled={!taskCalendarFeedUrl}
+                    >
+                      <Copy size={14} />
+                      Copy link
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => resetTaskCalendarFeedToken.mutate()}
+                      disabled={resetTaskCalendarFeedToken.isPending || !taskCalendarFeedUrl}
+                      title="Create a new subscription link and disable the old one"
+                    >
+                      <RefreshCw size={14} />
+                      Reset
+                    </Button>
+                    {taskFeedCopyStatus && (
+                      <span className="text-xs text-muted-foreground">{taskFeedCopyStatus}</span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Subscribed iCal calendars */}
             <div className="mt-6 pt-4 border-t border-border">

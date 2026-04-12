@@ -34,3 +34,9 @@ dist-ssr
 /src-tauri/target
 /src-tauri
 *.txt
+
+# iOS 6 lite: optional auto-login secrets (never commit)
+public/ios6-lite/legacy-autologin.local.js
+public/ios6-check.html
+/public/ios6-lite
+/UIWebViewWrapper
