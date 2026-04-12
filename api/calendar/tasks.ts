@@ -6,7 +6,7 @@
  * their next refresh without a Google/Apple OAuth integration.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getSupabaseService } from '../lib/supabaseServer';
+import { getSupabaseService } from '../lib/supabaseServer.js';
 
 type TaskCalendarFeed = {
   user_id: string;

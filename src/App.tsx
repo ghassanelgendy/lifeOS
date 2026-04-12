@@ -21,6 +21,7 @@ import Focus from './routes/Focus';
 import Health from './routes/Health';
 import Academics from './routes/Academics';
 import CalendarPage from './routes/Calendar';
+import Notes from './routes/Notes';
 import Finance from './routes/Finance';
 import Habits from './routes/Habits';
 import Screentime from './routes/Screentime';
@@ -158,6 +159,7 @@ function AppInner() {
             <Route path="habits" element={<Habits />} />
             <Route path="academics" element={<Academics />} />
             <Route path="calendar" element={<CalendarPage />} />
+            <Route path="notes" element={<Notes />} />
             <Route path="planner" element={<WeeklyPlanner />} />
             <Route path="finance" element={<Finance />} />
             <Route path="screentime" element={<Screentime />} />

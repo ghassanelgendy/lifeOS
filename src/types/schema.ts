@@ -251,6 +251,18 @@ export interface CalendarEvent {
 }
 
 // ========================
+// Notes
+// ========================
+export interface Note {
+  id: string;
+  user_id?: string | null;
+  title: string;
+  body: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// ========================
 // Task Lists (Categories)
 // ========================
 export interface TaskList {

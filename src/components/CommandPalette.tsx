@@ -142,6 +142,13 @@ export function CommandPalette() {
               <span>Academics</span>
             </Command.Item>
             <Command.Item
+              onSelect={() => runCommand(() => navigate('/notes'))}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              <span>Notes</span>
+            </Command.Item>
+            <Command.Item
               onSelect={() => runCommand(() => navigate('/calendar'))}
               className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
             >
