@@ -697,7 +697,7 @@ export default function SettingsPage() {
                       onClick={() => push.disable().then(() => setPushStatus('Reminders off')).catch(() => setPushStatus('Failed to disable'))}
                       disabled={push.isDisabling}
                     >
-                      {push.isDisabling ? '…' : 'Disable'}
+                      {push.isDisabling ? '...' : 'Disable'}
                     </Button>
                   </div>
                 ) : (
@@ -707,7 +707,7 @@ export default function SettingsPage() {
                     }
                     disabled={push.isEnabling}
                   >
-                    {push.isEnabling ? '…' : 'Enable'}
+                    {push.isEnabling ? '...' : 'Enable'}
                   </Button>
                 )}
               </div>
@@ -741,7 +741,7 @@ export default function SettingsPage() {
             </div>
             {push.supported && push.vapidConfigured && push.isEnabled ? (
               prayerNotif.isLoading ? (
-                <span className="text-sm text-muted-foreground">Loading…</span>
+                <span className="text-sm text-muted-foreground">Loading...</span>
               ) : prayerNotif.prayerHabitsCount === 0 ? (
                 <Link to="/habits">
                   <Button variant="outline">Set up in Habits</Button>
@@ -754,14 +754,14 @@ export default function SettingsPage() {
                       onClick={() => prayerNotif.setAllEnabled(false)}
                       disabled={prayerNotif.isUpdating}
                     >
-                      {prayerNotif.isUpdating ? '…' : 'Turn off'}
+                      {prayerNotif.isUpdating ? '...' : 'Turn off'}
                     </Button>
                   ) : (
                     <Button
                       onClick={() => prayerNotif.setAllEnabled(true)}
                       disabled={prayerNotif.isUpdating}
                     >
-                      {prayerNotif.isUpdating ? '…' : 'Turn on'}
+                      {prayerNotif.isUpdating ? '...' : 'Turn on'}
                     </Button>
                   )}
                 </div>

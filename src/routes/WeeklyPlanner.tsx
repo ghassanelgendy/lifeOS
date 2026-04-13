@@ -135,7 +135,7 @@ function DayColumn({
       </div>
       <div className="mt-3 pt-2 border-t border-dashed border-border/60 space-y-2">
         <Input
-          placeholder="Plan…"
+          placeholder="Plan..."
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           className="h-8 text-xs"
@@ -149,7 +149,7 @@ function DayColumn({
           <option value="">Optional: link goal milestone</option>
           {milestoneOptions.map((o) => (
             <option key={o.id} value={o.id}>
-              {o.label.length > 70 ? `${o.label.slice(0, 67)}…` : o.label}
+              {o.label.length > 70 ? `${o.label.slice(0, 67)}...` : o.label}
             </option>
           ))}
         </select>
@@ -261,7 +261,7 @@ export default function WeeklyPlanner() {
       </div>
 
       {milestonesLoading ? (
-        <p className="text-sm text-muted-foreground">Loading milestones…</p>
+        <p className="text-sm text-muted-foreground">Loading milestones...</p>
       ) : milestoneOptions.length === 0 ? (
         <p className="text-xs text-amber-600/90 dark:text-amber-400/90 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
           No milestones for {year} yet. Add goals and Q1–Q4 items in Dashboard → Annual Review to link them here.
@@ -269,7 +269,7 @@ export default function WeeklyPlanner() {
       ) : null}
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading this week…</p>
+        <p className="text-sm text-muted-foreground">Loading this week...</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
           {days.map((dayDate, i) => (

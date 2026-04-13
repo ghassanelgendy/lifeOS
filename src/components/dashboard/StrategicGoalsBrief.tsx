@@ -53,7 +53,7 @@ export function StrategicGoalsBrief() {
       </div>
       <div className="p-4">
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading goals…</p>
+          <p className="text-sm text-muted-foreground">Loading goals...</p>
         ) : activeGoals.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
             No active goals for {year}. Add them in{' '}

@@ -250,7 +250,7 @@ export function MagicWeekReportWidget() {
   if (isLoading || !analysis) {
     return (
       <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-sm text-muted-foreground">Loading magic week…</p>
+        <p className="text-sm text-muted-foreground">Loading magic week...</p>
       </section>
     );
   }

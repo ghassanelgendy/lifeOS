@@ -885,7 +885,7 @@ export function TaskDetailsContent({
         className="w-full min-h-[48px] flex items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors mt-2 mb-10"
         aria-label="Add image"
       >
-        Add Image…
+        Add Image...
       </button>
     </div>
   );

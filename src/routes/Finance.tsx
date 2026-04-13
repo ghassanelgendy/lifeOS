@@ -1148,7 +1148,7 @@ export default function Finance() {
             )}
             <Input
               type="search"
-              placeholder="Search…"
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full sm:w-auto sm:min-w-[180px] text-xs"

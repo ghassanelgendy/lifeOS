@@ -53,14 +53,14 @@ export default function AuthTickTickCallback() {
       {status === 'connecting' && (
         <>
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-muted-foreground">Connecting TickTick…</p>
+          <p className="text-muted-foreground">Connecting TickTick...</p>
         </>
       )}
-      {status === 'success' && <p className="text-green-600">TickTick connected. Redirecting…</p>}
+      {status === 'success' && <p className="text-green-600">TickTick connected. Redirecting...</p>}
       {status === 'error' && (
         <>
           <p className="text-destructive">{message}</p>
-          <p className="text-sm text-muted-foreground">Redirecting to Settings…</p>
+          <p className="text-sm text-muted-foreground">Redirecting to Settings...</p>
         </>
       )}
     </div>

@@ -45,6 +45,12 @@ export default function Notes() {
   const deleteNote = useDeleteNote();
   const createFolder = useCreateNoteFolder();
 
+  const isIos6 =
+    typeof navigator !== 'undefined' &&
+    /iP(hone|od|ad)/.test(navigator.userAgent) &&
+    /OS 6[_\d]*\b/.test(navigator.userAgent);
+  const loadingText = isIos6 ? 'loading' : 'Loading...';
+
   const [activeId, setActiveId] = useState<string>(NEW_NOTE_ID);
   const [activeFolderId, setActiveFolderId] = useState<string>(ALL_FOLDERS);
   const [search, setSearch] = useState('');
@@ -221,7 +227,7 @@ export default function Notes() {
                   {folder.name} <span className="text-muted-foreground">({folderCounts.get(folder.id) || 0})</span>
                 </button>
               ))}
-              {foldersLoading && <span className="text-sm text-muted-foreground px-2 py-2">Loading folders...</span>}
+              {foldersLoading && <span className="text-sm text-muted-foreground px-2 py-2">{loadingText}</span>}
             </div>
             <div className="flex gap-2">
               <input
@@ -241,7 +247,7 @@ export default function Notes() {
 
           <div className="flex-1 overflow-y-auto min-h-0">
             {isLoading ? (
-              <p className="p-4 text-sm text-muted-foreground">Loading notes...</p>
+              <p className="p-4 text-sm text-muted-foreground">{loadingText}</p>
             ) : error ? (
               <p className="p-4 text-sm text-destructive">Could not load notes.</p>
             ) : filteredNotes.length === 0 ? (

@@ -126,10 +126,10 @@ function QuarterBlock({
                               e.target.value = '';
                             }}
                           >
-                            <option value="">Link a task…</option>
+                            <option value="">Link a task...</option>
                             {linkableTasks.map((t) => (
                               <option key={t.id} value={t.id}>
-                                {t.title.length > 60 ? `${t.title.slice(0, 57)}…` : t.title}
+                                {t.title.length > 60 ? `${t.title.slice(0, 57)}...` : t.title}
                               </option>
                             ))}
                           </select>
@@ -221,7 +221,7 @@ export function StrategicAnnualGoalsSection({ year }: { year: number }) {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
+        <p className="text-sm text-muted-foreground">Loading...</p>
       ) : goals.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">No goals yet. Add one to break the year into quarters.</p>
       ) : (
