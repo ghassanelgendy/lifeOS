@@ -79,14 +79,15 @@ Select.displayName = 'Select';
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
+  wrapperClassName?: string;
 }
 
 export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
-  ({ className, label, error, id, ...props }, ref) => {
+  ({ className, wrapperClassName, label, error, id, ...props }, ref) => {
     const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
 
     return (
-      <div className="space-y-1.5">
+      <div className={cn("space-y-1.5", wrapperClassName)}>
         {label && (
           <label htmlFor={textareaId} className="text-sm font-medium text-muted-foreground">
             {label}

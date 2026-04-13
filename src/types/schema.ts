@@ -258,7 +258,6 @@ export interface Note {
   user_id?: string | null;
   title: string;
   body: string;
-  author?: string | null;
   note_date: string;
   folder_id?: string | null;
   created_at: string;

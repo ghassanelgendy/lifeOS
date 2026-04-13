@@ -8,13 +8,11 @@ const NOTE_FOLDERS_KEY = ['note-folders'];
 
 function normalizeNoteInput(input: CreateInput<Note> | UpdateInput<Note>) {
   const title = typeof input.title === 'string' ? input.title.trim() : input.title;
-  const author = typeof input.author === 'string' ? input.author.trim() : input.author;
   const folderId = input.folder_id === '' ? null : input.folder_id;
   return {
     ...input,
     ...(title !== undefined ? { title } : {}),
     ...(typeof input.body === 'string' ? { body: input.body } : {}),
-    ...(author !== undefined ? { author: author || null } : {}),
     ...(folderId !== undefined ? { folder_id: folderId } : {}),
   };
 }

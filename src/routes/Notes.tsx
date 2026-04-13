@@ -50,7 +50,6 @@ export default function Notes() {
   const [search, setSearch] = useState('');
   const [draftTitle, setDraftTitle] = useState('');
   const [draftBody, setDraftBody] = useState('');
-  const [draftAuthor, setDraftAuthor] = useState('');
   const [draftDate, setDraftDate] = useState(todayInputDate());
   const [draftFolderId, setDraftFolderId] = useState<string>(NO_FOLDER);
   const [newFolderName, setNewFolderName] = useState('');
@@ -72,7 +71,6 @@ export default function Notes() {
     }
     setDraftTitle(activeNote.title);
     setDraftBody(activeNote.body);
-    setDraftAuthor(activeNote.author || '');
     setDraftDate(activeNote.note_date?.split('T')[0] || todayInputDate());
     setDraftFolderId(activeNote.folder_id || NO_FOLDER);
   }, [activeId, activeNote, notes]);
@@ -83,7 +81,7 @@ export default function Notes() {
       if (activeFolderId === NO_FOLDER && note.folder_id) return false;
       if (activeFolderId !== ALL_FOLDERS && activeFolderId !== NO_FOLDER && note.folder_id !== activeFolderId) return false;
       if (!q) return true;
-      return `${note.title}\n${note.body}\n${note.author || ''}`.toLowerCase().includes(q);
+      return `${note.title}\n${note.body}`.toLowerCase().includes(q);
     });
   }, [notes, activeFolderId, search]);
 
@@ -107,16 +105,14 @@ export default function Notes() {
   const isDirty = activeNote
     ? draftTitle !== activeNote.title ||
       draftBody !== activeNote.body ||
-      draftAuthor !== (activeNote.author || '') ||
       draftDate !== (activeNote.note_date?.split('T')[0] || '') ||
       draftFolderId !== (activeNote.folder_id || NO_FOLDER)
-    : hasContent || draftAuthor.trim().length > 0 || draftFolderId !== NO_FOLDER || draftDate !== todayInputDate();
+    : hasContent || draftFolderId !== NO_FOLDER || draftDate !== todayInputDate();
 
   const startNewNote = () => {
     setActiveId(NEW_NOTE_ID);
     setDraftTitle('');
     setDraftBody('');
-    setDraftAuthor('');
     setDraftDate(todayInputDate());
     setDraftFolderId(activeFolderId !== ALL_FOLDERS ? activeFolderId : NO_FOLDER);
     setSaveMessage('');
@@ -140,7 +136,6 @@ export default function Notes() {
     const payload = {
       title: noteTitle(draftTitle, draftBody),
       body: draftBody,
-      author: draftAuthor,
       note_date: draftDate || todayInputDate(),
       folder_id: draftFolderId === NO_FOLDER ? null : draftFolderId,
     };
@@ -169,7 +164,7 @@ export default function Notes() {
       <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notes</h1>
-          <p className="text-muted-foreground">Capture notes with folders, author, and date.</p>
+          <p className="text-muted-foreground">Capture notes with folders and date.</p>
         </div>
         <Button type="button" onClick={startNewNote}>
           <Plus size={18} />
@@ -275,7 +270,6 @@ export default function Notes() {
                       {note.body || 'No body'}
                     </p>
                     <p className="mt-2 text-[11px] text-muted-foreground">
-                      {note.author ? `${note.author} · ` : ''}
                       {formatNoteDate(note.note_date)}
                       {note.folder_id ? ` · ${folderNameById.get(note.folder_id) || 'Folder'}` : ''}
                     </p>
@@ -286,21 +280,15 @@ export default function Notes() {
           </div>
         </aside>
 
-        <section className="rounded-xl border border-border bg-card p-4 min-w-0 lg:h-[calc(100vh-12rem)] overflow-y-auto">
-          <div className="space-y-4">
+        <section className="rounded-xl border border-border bg-card min-w-0 lg:h-[calc(100vh-12rem)] overflow-hidden flex flex-col">
+          <div className="flex-1 min-h-0 p-4 flex flex-col gap-4">
             <Input
               label="Title"
               value={draftTitle}
               onChange={(e) => setDraftTitle(e.target.value)}
               placeholder="Untitled note"
             />
-            <div className="grid sm:grid-cols-3 gap-3">
-              <Input
-                label="Author"
-                value={draftAuthor}
-                onChange={(e) => setDraftAuthor(e.target.value)}
-                placeholder="Author or source"
-              />
+            <div className="grid sm:grid-cols-2 gap-3">
               <Input
                 label="Date"
                 type="date"
@@ -319,7 +307,8 @@ export default function Notes() {
               value={draftBody}
               onChange={(e) => setDraftBody(e.target.value)}
               placeholder="Start writing..."
-              className="min-h-[18rem] md:min-h-[26rem] resize-y"
+              wrapperClassName="flex-1 min-h-0 flex flex-col"
+              className="flex-1 min-h-0 resize-none"
             />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="text-sm text-muted-foreground">
