@@ -155,7 +155,10 @@ export function useIcalSubscriptionEvents(
       return events.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     },
     enabled: subscriptions.length > 0 && !!startDate && !!endDate,
-    staleTime: 1000 * 60 * 5, // 5 min
+    staleTime: 0,
+    refetchInterval: 1000 * 30,
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   });
 }
 

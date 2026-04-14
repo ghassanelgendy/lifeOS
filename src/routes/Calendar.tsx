@@ -349,6 +349,12 @@ export default function CalendarPage() {
     }
   };
 
+  const isTaskCalendarFeedVisible = !!taskCalendarFeedUrl && subscriptionList.some((sub) => sub.url === taskCalendarFeedUrl);
+  const handleShowTaskCalendarFeed = () => {
+    if (!taskCalendarFeedUrl || isTaskCalendarFeedVisible) return;
+    addIcalUrl(taskCalendarFeedUrl, '#a855f7', 'LifeOS feed');
+  };
+
   // Get tasks for a specific day
   const getTasksForDay = (day: Date) => {
     return tasksWithDates.filter((task) => {
@@ -569,7 +575,7 @@ export default function CalendarPage() {
   const dayTimedItems = [
     ...selectedDayEvents.filter((e) => !e.all_day).map((e) => ({
       id: `event-${e.id}`,
-      type: 'event' as const,
+      type: ('sourceType' in e && e.sourceType === 'task') ? 'task-feed' as const : 'event' as const,
       title: e.title,
       start: getNormalizedEventBounds(e).start,
       end: getNormalizedEventBounds(e).end,
@@ -701,9 +707,12 @@ export default function CalendarPage() {
                   <div className="space-y-1.5">
                     {dayAllDayEvents.map((event) => {
                       const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
+                      const isIcal = 'isIcal' in event && event.isIcal;
+                      const isIcalTask = isIcal && 'sourceType' in event && event.sourceType === 'task';
                       return (
                         <div key={`all-${event.id}`} className="flex items-center gap-2 rounded px-2 py-1" style={{ backgroundColor: `${color}25` }}>
                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+                          {isIcalTask ? <CheckSquare size={12} className="text-muted-foreground flex-shrink-0" /> : isIcal ? <Link2 size={12} className="text-muted-foreground flex-shrink-0" /> : null}
                           <span className="text-sm truncate">{event.title}</span>
                         </div>
                       );
@@ -748,7 +757,7 @@ export default function CalendarPage() {
                         style={{ top: `${top}px`, height: `${height}px`, borderColor: `${item.color}80`, backgroundColor: `${item.color}22`, color: item.color }}
                       >
                         <div className="flex items-center gap-1">
-                          {item.type === 'task' ? <CheckSquare size={11} /> : <Circle size={10} />}
+                          {item.type === 'task' || item.type === 'task-feed' ? <CheckSquare size={11} /> : <Circle size={10} />}
                           <span className="font-medium truncate">{item.title}</span>
                         </div>
                         <div className="text-[10px] opacity-80 mt-0.5">
@@ -806,6 +815,7 @@ export default function CalendarPage() {
                       {dayEvents.slice(0, 2).map((event) => {
                         const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
                         const isIcal = 'isIcal' in event && event.isIcal;
+                        const isIcalTask = isIcal && 'sourceType' in event && event.sourceType === 'task';
                         return (
                           <div
                             key={event.id}
@@ -820,7 +830,7 @@ export default function CalendarPage() {
                             style={{ backgroundColor: `${color}30`, color }}
                           >
                             {'type' in event && event.type === 'Shift' && '🔶 '}
-                            {isIcal && <Link2 size={8} className="inline mr-0.5 opacity-70" />}
+                            {isIcalTask ? <CheckSquare size={8} className="inline mr-0.5 opacity-70" /> : isIcal && <Link2 size={8} className="inline mr-0.5 opacity-70" />}
                             {event.title}
                           </div>
                         );
@@ -879,6 +889,7 @@ export default function CalendarPage() {
                 selectedDayEvents.map((event) => {
                   const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
                   const isIcal = 'isIcal' in event && event.isIcal;
+                  const isIcalTask = isIcal && 'sourceType' in event && event.sourceType === 'task';
                   const linkedTask = getTaskByEvent(event as ExtendedCalendarEvent);
                   return (
                   <div
@@ -892,7 +903,7 @@ export default function CalendarPage() {
                             className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ backgroundColor: color }}
                           />
-                          {isIcal && <Link2 size={12} className="text-muted-foreground flex-shrink-0" />}
+                          {isIcalTask ? <CheckSquare size={12} className="text-muted-foreground flex-shrink-0" /> : isIcal && <Link2 size={12} className="text-muted-foreground flex-shrink-0" />}
                           <span className="font-medium text-sm truncate">{event.title}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
@@ -914,6 +925,11 @@ export default function CalendarPage() {
                             <Repeat size={12} />
                             Recurring
                           </div>
+                        )}
+                        {event.description && (
+                          <p className="mt-2 text-xs text-muted-foreground whitespace-pre-line break-words">
+                            {event.description}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -1004,7 +1020,7 @@ export default function CalendarPage() {
                 Task calendar feed
               </h4>
               <p className="text-xs text-muted-foreground mb-2">
-                Subscribe from Apple Calendar, Google Calendar, or Outlook. Tasks need both a date and a time.
+                Subscribe from Apple Calendar, Google Calendar, or Outlook. Tasks with a date appear in the feed; timed tasks use their duration.
               </p>
               {taskCalendarFeedError ? (
                 <p className="text-xs text-destructive">
@@ -1018,7 +1034,7 @@ export default function CalendarPage() {
                     readOnly
                     className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground"
                   />
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"
                       variant="secondary"
@@ -1028,6 +1044,17 @@ export default function CalendarPage() {
                     >
                       <Copy size={14} />
                       Copy link
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleShowTaskCalendarFeed}
+                      disabled={!taskCalendarFeedUrl || isTaskCalendarFeedVisible}
+                      title="Show this generated feed inside the LifeOS calendar"
+                    >
+                      <Link2 size={14} />
+                      {isTaskCalendarFeedVisible ? 'Shown here' : 'Show here'}
                     </Button>
                     <Button
                       type="button"

@@ -42,7 +42,9 @@ function generateToken(): string {
 
 function buildFeedUrl(token: string | undefined): string {
   if (!token || typeof window === 'undefined') return '';
-  return `${window.location.origin}/api/calendar/tasks?token=${encodeURIComponent(token)}`;
+  const configuredOrigin = import.meta.env.VITE_PUBLIC_APP_URL?.replace(/\/$/, '');
+  const origin = configuredOrigin || window.location.origin;
+  return `${origin}/api/calendar/tasks?token=${encodeURIComponent(token)}`;
 }
 
 export function useTaskCalendarFeed() {

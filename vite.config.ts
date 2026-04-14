@@ -2,6 +2,7 @@ import { defineConfig, type PluginOption } from 'vite'
 import react from '@vitejs/plugin-react'
 import legacy from '@vitejs/plugin-legacy'
 import { VitePWA } from 'vite-plugin-pwa'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const host = process.env.TAURI_DEV_HOST
 const isTauriBuild = !!process.env.TAURI_ENV_PLATFORM
@@ -36,6 +37,69 @@ export default defineConfig({
         server.middlewares.use(async (req, res, next) => {
           const requestUrl = req.url || '';
           const parsed = new URL(requestUrl, 'http://localhost');
+
+          if (parsed.pathname === '/api/calendar/tasks') {
+            try {
+              const query: Record<string, string | string[]> = {};
+              parsed.searchParams.forEach((value, key) => {
+                const existing = query[key];
+                if (Array.isArray(existing)) {
+                  query[key] = [...existing, value];
+                } else if (existing) {
+                  query[key] = [existing, value];
+                } else {
+                  query[key] = value;
+                }
+              });
+
+              const apiRes = {
+                setHeader(name: string, value: number | string | readonly string[]) {
+                  res.setHeader(name, value);
+                  return apiRes;
+                },
+                status(code: number) {
+                  res.statusCode = code;
+                  return apiRes;
+                },
+                json(body: unknown) {
+                  if (!res.headersSent) res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                  res.end(JSON.stringify(body));
+                  return apiRes;
+                },
+                send(body: unknown) {
+                  if (typeof body === 'string' || body instanceof Uint8Array) {
+                    res.end(body);
+                  } else {
+                    if (!res.headersSent) res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                    res.end(JSON.stringify(body));
+                  }
+                  return apiRes;
+                },
+                end(body?: unknown) {
+                  if (typeof body === 'string' || body instanceof Uint8Array || body === undefined) {
+                    res.end(body);
+                  } else {
+                    res.end(JSON.stringify(body));
+                  }
+                  return apiRes;
+                },
+              };
+
+              const { default: handler } = await import('./api/calendar/tasks.ts');
+              await handler(
+                { method: req.method, query, headers: req.headers } as VercelRequest,
+                apiRes as unknown as VercelResponse
+              );
+            } catch (err) {
+              console.error('[dev-calendar-feed]', err);
+              if (!res.headersSent) {
+                res.statusCode = 500;
+                res.setHeader('Content-Type', 'application/json; charset=utf-8');
+              }
+              res.end(JSON.stringify({ error: 'Feed unavailable' }));
+            }
+            return;
+          }
 
           if (parsed.pathname !== '/api/proxy') {
             next();
@@ -78,7 +142,11 @@ export default defineConfig({
             const text = await response.text();
             res.statusCode = 200;
             res.setHeader('Content-Type', response.headers.get('Content-Type') || 'text/calendar; charset=utf-8');
-            res.setHeader('Cache-Control', 'public, max-age=300');
+            res.setHeader('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate');
+            res.setHeader('CDN-Cache-Control', 'no-store');
+            res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+            res.setHeader('Pragma', 'no-cache');
+            res.setHeader('Expires', '0');
             res.end(text);
           } catch (err) {
             console.error('[dev-api-proxy]', err);

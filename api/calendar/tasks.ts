@@ -2,8 +2,8 @@
  * GET /api/calendar/tasks?token=<secret>
  *
  * Public-by-secret iCalendar feed for LifeOS calendar events plus incomplete
- * LifeOS tasks with due dates. Calendar apps poll this URL, so edits appear on
- * their next refresh without a Google/Apple OAuth integration.
+ * LifeOS tasks with due dates. Calendar apps poll this URL, so each response is
+ * uncached and always reflects the current database state.
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { getSupabaseService } from '../lib/supabaseServer.js';
@@ -203,13 +203,7 @@ function foldLine(line: string): string[] {
 }
 
 function buildDescription(task: TaskFeedRow): string {
-  const taskUrl = sanitizeUrl(task.url);
-  const parts = [
-    task.description?.trim() || '',
-    task.priority && task.priority !== 'none' ? `Priority: ${task.priority}` : '',
-    taskUrl,
-  ].filter(Boolean);
-  return parts.join('\n\n');
+  return task.description?.trim() || '';
 }
 
 function isTaskLinkedToCalendarEvent(task: TaskFeedRow): boolean {
@@ -277,6 +271,7 @@ function appendTaskEvent(lines: string[], feed: TaskCalendarFeed, task: TaskFeed
   }
   lines.push(`SUMMARY:${escapeText(task.title)}`);
   lines.push('CATEGORIES:LifeOS Task');
+  lines.push('X-LIFEOS-ITEM-TYPE:TASK');
   lines.push('TRANSP:OPAQUE');
   if (description) lines.push(`DESCRIPTION:${escapeText(description)}`);
   if (task.location) lines.push(`LOCATION:${escapeText(task.location)}`);
@@ -293,8 +288,8 @@ function buildIcs(feed: TaskCalendarFeed, tasks: TaskFeedRow[], events: Calendar
     'PRODID:-//LifeOS//Calendar Feed//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'REFRESH-INTERVAL;VALUE=DURATION:PT15M',
-    'X-PUBLISHED-TTL:PT15M',
+    'REFRESH-INTERVAL;VALUE=DURATION:PT1M',
+    'X-PUBLISHED-TTL:PT1M',
     `X-WR-CALNAME:${escapeText(feed.name || 'LifeOS Tasks')}`,
     `X-WR-TIMEZONE:${escapeText(timeZone)}`,
   ];
@@ -372,7 +367,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const ics = buildIcs(typedFeed, typedTasks, typedEvents);
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'inline; filename="lifeos-calendar.ics"');
-  res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=60');
+  res.setHeader('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate');
+  res.setHeader('CDN-Cache-Control', 'no-store');
+  res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-LifeOS-Task-Count', String(typedTasks.length));
   res.setHeader('X-LifeOS-Event-Count', String(typedEvents.length));

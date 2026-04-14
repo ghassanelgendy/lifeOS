@@ -22,7 +22,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!response.ok) return res.status(response.status).json({ error: 'Upstream error' });
     const text = await response.text();
     res.setHeader('Content-Type', response.headers.get('Content-Type') || 'text/calendar; charset=utf-8');
-    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.setHeader('Cache-Control', 'no-store, no-cache, max-age=0, must-revalidate');
+    res.setHeader('CDN-Cache-Control', 'no-store');
+    res.setHeader('Vercel-CDN-Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     return res.send(text);
   } catch (err) {
     console.error('[proxy]', err);
