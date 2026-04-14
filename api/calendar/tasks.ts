@@ -349,7 +349,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const typedFeed = feed as TaskCalendarFeed;
   let query = supabase
     .from('tasks')
-    .select('id,title,description,due_date,due_time,duration_minutes,priority,location,url,is_completed,is_wont_do,calendar_event_id,calendar_source_key,created_at,updated_at')
+    .select('id,title,description,due_date,due_time,is_completed,created_at,updated_at')
     .eq('user_id', typedFeed.user_id)
     .not('due_date', 'is', null)
     .order('due_date', { ascending: true })
@@ -373,11 +373,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (eventsError) {
     console.error('[task-calendar-feed] event lookup failed', eventsError);
-    return res.status(500).json({ error: 'Feed unavailable' });
   }
 
   const typedTasks = (tasks || []) as TaskFeedRow[];
-  const typedEvents = (events || []) as CalendarEventFeedRow[];
+  const typedEvents = (eventsError ? [] : events || []) as CalendarEventFeedRow[];
   const ics = buildIcs(typedFeed, typedTasks, typedEvents);
   res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
   res.setHeader('Content-Disposition', 'inline; filename="lifeos-calendar.ics"');
