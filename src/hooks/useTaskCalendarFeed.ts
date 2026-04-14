@@ -47,6 +47,16 @@ function buildFeedUrl(token: string | undefined): string {
   return `${origin}/api/calendar/tasks?token=${encodeURIComponent(token)}`;
 }
 
+function feedPayload(userId: string): Pick<TaskCalendarFeed, 'user_id' | 'token' | 'name' | 'time_zone' | 'include_completed'> {
+  return {
+    user_id: userId,
+    token: generateToken(),
+    name: 'LifeOS Tasks',
+    time_zone: getBrowserTimeZone(),
+    include_completed: false,
+  };
+}
+
 export function useTaskCalendarFeed() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -66,13 +76,7 @@ export function useTaskCalendarFeed() {
 
       const { data: created, error: insertError } = await supabase
         .from('task_calendar_feeds')
-        .insert({
-          user_id: user.id,
-          token: generateToken(),
-          name: 'LifeOS Tasks',
-          time_zone: getBrowserTimeZone(),
-          include_completed: false,
-        })
+        .upsert(feedPayload(user.id), { onConflict: 'user_id' })
         .select('*')
         .single();
       if (insertError) throw insertError;
@@ -86,11 +90,7 @@ export function useTaskCalendarFeed() {
       if (!user?.id) throw new Error('Not signed in');
       const { data, error } = await supabase
         .from('task_calendar_feeds')
-        .update({
-          token: generateToken(),
-          time_zone: getBrowserTimeZone(),
-        })
-        .eq('user_id', user.id)
+        .upsert(feedPayload(user.id), { onConflict: 'user_id' })
         .select('*')
         .single();
       if (error) throw error;

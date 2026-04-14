@@ -301,7 +301,14 @@ export async function fetchIcalEvents(
 
   // Use same-origin proxy to avoid CORS (external calendars usually don't allow cross-origin)
   const isBrowser = typeof window !== 'undefined';
-  const fetchUrl = isBrowser
+  const isSameOrigin = isBrowser && (() => {
+    try {
+      return new URL(href).origin === window.location.origin;
+    } catch {
+      return false;
+    }
+  })();
+  const fetchUrl = isBrowser && !isSameOrigin
     ? `${window.location.origin}/api/proxy?url=${encodeURIComponent(href)}`
     : href;
   const cached = readIcalCache(href);
