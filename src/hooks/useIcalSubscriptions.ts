@@ -92,6 +92,13 @@ export function useIcalSubscriptions() {
     mutation.mutate(subscriptionList.filter((s) => s.url !== url));
   };
 
+  const replaceUrls = (predicate: (subscription: IcalSubscription) => boolean, next: IcalSubscription) => {
+    if (!user?.id) return;
+    const normalizedNext = { ...next, url: next.url.trim().replace(/^webcal:\/\//i, 'https://') };
+    const kept = subscriptionList.filter((s) => !predicate(s) && s.url !== normalizedNext.url);
+    mutation.mutate([...kept, normalizedNext]);
+  };
+
   const setColor = (url: string, color: string) => {
     if (!user?.id) return;
     mutation.mutate(
@@ -111,6 +118,7 @@ export function useIcalSubscriptions() {
     urls,
     addUrl,
     removeUrl,
+    replaceUrls,
     setColor,
     setName,
     isLoading: query.isLoading,

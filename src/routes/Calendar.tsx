@@ -105,7 +105,7 @@ export default function CalendarPage() {
   // Get expanded events (including recurring instances)
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
   const { data: allEvents = [] } = useCalendarEvents();
-  const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, setColor: setIcalColor, setName: setIcalName } = useIcalSubscriptions();
+  const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, replaceUrls: replaceIcalUrls, setColor: setIcalColor, setName: setIcalName } = useIcalSubscriptions();
   const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, subscriptionList);
   const {
     feedUrl: taskCalendarFeedUrl,
@@ -353,6 +353,36 @@ export default function CalendarPage() {
   const handleShowTaskCalendarFeed = () => {
     if (!taskCalendarFeedUrl || isTaskCalendarFeedVisible) return;
     addIcalUrl(taskCalendarFeedUrl, '#a855f7', 'LifeOS feed');
+  };
+
+  const isLifeOsTaskFeedUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      const currentFeed = taskCalendarFeedUrl ? new URL(taskCalendarFeedUrl) : new URL('/api/calendar/tasks', window.location.origin);
+      return parsed.origin === currentFeed.origin && parsed.pathname === '/api/calendar/tasks';
+    } catch {
+      return false;
+    }
+  };
+
+  const buildTaskCalendarFeedUrl = (token: string) => {
+    const url = taskCalendarFeedUrl
+      ? new URL(taskCalendarFeedUrl)
+      : new URL('/api/calendar/tasks', window.location.origin);
+    url.searchParams.set('token', token);
+    return url.toString();
+  };
+
+  const handleResetTaskCalendarFeed = () => {
+    resetTaskCalendarFeedToken.mutate(undefined, {
+      onSuccess: (feed) => {
+        replaceIcalUrls((subscription) => isLifeOsTaskFeedUrl(subscription.url), {
+          url: buildTaskCalendarFeedUrl(feed.token),
+          color: '#a855f7',
+          name: 'LifeOS feed',
+        });
+      },
+    });
   };
 
   // Get tasks for a specific day
@@ -1060,7 +1090,7 @@ export default function CalendarPage() {
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => resetTaskCalendarFeedToken.mutate()}
+                      onClick={handleResetTaskCalendarFeed}
                       disabled={resetTaskCalendarFeedToken.isPending || !taskCalendarFeedUrl}
                       title="Create a new subscription link and disable the old one"
                     >
