@@ -206,8 +206,15 @@ function buildDescription(task: TaskFeedRow): string {
   return task.description?.trim() || '';
 }
 
-function isTaskLinkedToCalendarEvent(task: TaskFeedRow): boolean {
-  return !!task.calendar_event_id || !!task.calendar_source_key?.startsWith('event:');
+function shouldIncludeTask(feed: TaskCalendarFeed, task: TaskFeedRow): boolean {
+  if (!feed.include_completed && task.is_completed) return false;
+  return !task.is_wont_do && !!parseDateParts(task.due_date);
+}
+
+function getLinkedCalendarEventId(task: TaskFeedRow): string | null {
+  if (task.calendar_event_id) return task.calendar_event_id;
+  const match = task.calendar_source_key?.match(/^event:([0-9a-f-]{36})$/i);
+  return match?.[1] ?? null;
 }
 
 function eventRrule(event: CalendarEventFeedRow): string | null {
@@ -247,8 +254,7 @@ function appendCalendarEvent(lines: string[], event: CalendarEventFeedRow, now: 
 }
 
 function appendTaskEvent(lines: string[], feed: TaskCalendarFeed, task: TaskFeedRow, now: string): void {
-  if (!feed.include_completed && task.is_completed) return;
-  if (task.is_wont_do || isTaskLinkedToCalendarEvent(task)) return;
+  if (!shouldIncludeTask(feed, task)) return;
 
   const timeZone = sanitizeTimeZone(feed.time_zone);
   const bounds = getTaskDateTimes(task, timeZone);
@@ -282,6 +288,12 @@ function appendTaskEvent(lines: string[], feed: TaskCalendarFeed, task: TaskFeed
 function buildIcs(feed: TaskCalendarFeed, tasks: TaskFeedRow[], events: CalendarEventFeedRow[]): string {
   const timeZone = sanitizeTimeZone(feed.time_zone);
   const now = formatUtcStamp(new Date().toISOString());
+  const eventIdsRenderedAsTasks = new Set(
+    tasks
+      .filter((task) => shouldIncludeTask(feed, task))
+      .map(getLinkedCalendarEventId)
+      .filter((id): id is string => !!id)
+  );
   const rawLines: string[] = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -294,7 +306,9 @@ function buildIcs(feed: TaskCalendarFeed, tasks: TaskFeedRow[], events: Calendar
     `X-WR-TIMEZONE:${escapeText(timeZone)}`,
   ];
 
-  events.forEach((event) => appendCalendarEvent(rawLines, event, now));
+  events.forEach((event) => {
+    if (!eventIdsRenderedAsTasks.has(event.id)) appendCalendarEvent(rawLines, event, now);
+  });
   tasks.forEach((task) => appendTaskEvent(rawLines, feed, task, now));
 
   rawLines.push('END:VCALENDAR');
@@ -342,7 +356,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     .order('due_time', { ascending: true });
 
   if (!typedFeed.include_completed) {
-    query = query.eq('is_completed', false);
+    query = query.or('is_completed.is.false,is_completed.is.null');
   }
 
   const { data: tasks, error: tasksError } = await query;
