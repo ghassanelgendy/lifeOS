@@ -665,6 +665,7 @@ export const taskDB = {
       description: task.description,
       frequency: task.recurrence === 'daily' ? 'Daily' : 'Weekly',
       target_count: 1,
+      adherence_weight: 1,
       color: '#22c55e',
       is_archived: false,
     });
@@ -738,6 +739,7 @@ export const habitDB = {
     const db = loadDB();
     const habit: Habit = {
       ...input,
+      adherence_weight: Math.max(0.1, Number(input.adherence_weight) || 1),
       id: uuidv4(),
       is_archived: false,
       created_at: now(),

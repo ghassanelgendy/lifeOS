@@ -143,6 +143,7 @@ async function ensurePrayerRows(
           description: `Daily ${prayerName} prayer`,
           frequency: 'Daily',
           target_count: 1,
+          adherence_weight: 1,
           color: '#8b5cf6',
           is_archived: false,
         })

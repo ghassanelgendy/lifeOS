@@ -797,6 +797,7 @@ export function useConvertTaskToHabit() {
         description: task.description,
         frequency: task.recurrence === 'daily' ? 'Daily' : 'Weekly',
         target_count: 1,
+        adherence_weight: 1,
         color: '#22c55e',
         is_active: true
       });

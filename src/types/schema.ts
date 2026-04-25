@@ -387,6 +387,7 @@ export interface Habit {
   time?: string | null; // Optional time of day (HH:mm format)
   show_in_tasks?: boolean; // If true, appears in tasks list
   week_days?: number[] | null; // Weekly schedule days (0-6 Sun-Sat)
+  adherence_weight: number;
   is_archived: boolean;
   created_at: string;
   updated_at: string;

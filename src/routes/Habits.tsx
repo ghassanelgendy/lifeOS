@@ -30,6 +30,9 @@ import {
   useLogHabit,
   useWeeklyAdherence,
   useHabitStreaks,
+  useHabitInsights,
+  getHabitAdherenceWeight,
+  isHabitScheduledForDate,
 } from '../hooks/useHabits';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
@@ -154,6 +157,7 @@ export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
+  const { data: habitInsights = {} } = useHabitInsights(habits);
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
@@ -176,12 +180,13 @@ export default function Habits() {
     time: undefined,
     show_in_tasks: false,
     week_days: [],
+    adherence_weight: 1,
   });
 
   // Get week days
   const today = new Date();
-  const weekStart = startOfWeek(today);
-  const weekEnd = endOfWeek(today);
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const todayStr = format(today, 'yyyy-MM-dd');
   const todayStart = new Date(`${todayStr}T00:00:00`);
@@ -214,6 +219,8 @@ export default function Habits() {
     }
     return out;
   }, [relapseLogs]);
+
+  const scheduledTodayHabits = habits.filter((habit: Habit) => isHabitScheduledForDate(habit, today));
 
   const getSoberDays = (habit: Habit) => {
     const lastRelapse = latestRelapseByHabit[habit.id];
@@ -266,6 +273,7 @@ export default function Habits() {
 
   // Toggle for standard habits; for detox habits this logs relapse events only.
   const handleToggleHabit = (habit: Habit) => {
+    if (!isHabitScheduledForDate(habit, today)) return;
     const isDetox = getHabitType(habit) === 'detox';
     const isCompleted = isHabitCompletedForDay(habit.id, today);
     logHabit.mutate({
@@ -290,6 +298,7 @@ export default function Habits() {
         time: habit.time || undefined,
         show_in_tasks: habit.show_in_tasks ?? false,
         week_days: habit.week_days ?? [],
+        adherence_weight: getHabitAdherenceWeight(habit),
       });
       setHabitType(getHabitType(habit));
       setDetoxMode(detox?.mode ?? 'linear');
@@ -306,6 +315,7 @@ export default function Habits() {
         time: undefined,
         show_in_tasks: false,
         week_days: [],
+        adherence_weight: 1,
       });
       setHabitType('standard');
       setDetoxMode('linear');
@@ -334,6 +344,7 @@ export default function Habits() {
       detox_start_target: habitType === 'detox' ? detoxConfig?.startTarget : null,
       detox_step: habitType === 'detox' ? detoxConfig?.step : null,
       target_count: habitType === 'detox' ? 1 : formData.target_count,
+      adherence_weight: Math.max(0.1, Number(formData.adherence_weight) || 1),
     };
 
     if (editingHabit) {
@@ -384,13 +395,13 @@ export default function Habits() {
             <span className="text-sm">Today</span>
           </div>
           <p className="text-2xl font-bold mt-1">
-            {habits.filter((h: Habit) => {
+            {scheduledTodayHabits.filter((h: Habit) => {
               const isDetox = getHabitType(h) === 'detox';
               const relapsedToday = isHabitCompletedForDay(h.id, today);
               return isDetox ? !relapsedToday : relapsedToday;
-            }).length}/{habits.length}
+            }).length}/{scheduledTodayHabits.length}
           </p>
-          <p className="text-xs text-muted-foreground">on track</p>
+          <p className="text-xs text-muted-foreground">scheduled today on track</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -458,6 +469,7 @@ export default function Habits() {
             <div className="md:hidden space-y-3">
               {habits.map((habit: Habit) => {
                 const stats = getHabitStats(habit);
+                const insight = habitInsights[habit.id];
                 const detoxConfig = getDetoxConfig(habit);
                 const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
                 return (
@@ -495,12 +507,20 @@ export default function Habits() {
                     <div className="text-[11px] text-muted-foreground mb-2">
                       {detoxConfig
                         ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
-                        : `${habit.frequency} · ${habit.target_count}x`}
+                        : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
                     </div>
+                    {insight && (
+                      <div className="mb-2 grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
+                        <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.adherencePct}% 90d</span>
+                        <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.usualTimeLabel}</span>
+                        <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.bestDayLabel}</span>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
                       {weekDays.map((day: Date) => {
-                        const isCompleted = isHabitCompletedForDay(habit.id, day);
-                        const canToggle = isToday(day) || day < today;
+                        const isScheduled = isHabitScheduledForDate(habit, day);
+                        const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
+                        const canToggle = isScheduled && isToday(day);
                         const isDetox = !!detoxConfig;
                         return (
                           <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
@@ -512,20 +532,22 @@ export default function Habits() {
                             </span>
                             <button
                               onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
-                              disabled={!isToday(day)}
+                              disabled={!canToggle}
+                              title={!isScheduled ? 'Not scheduled for this day' : undefined}
                               className={cn(
                                 "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                 isCompleted
                                   ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                   : "border border-border",
                                 isToday(day) && "hover:scale-105 active:scale-95",
-                                !canToggle && "opacity-40"
+                                !isScheduled && "opacity-20",
+                                isScheduled && !canToggle && "opacity-40"
                               )}
                               style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                             >
                               {isCompleted ? (
                                 isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
-                              ) : day > today ? (
+                              ) : !isScheduled || day > today ? (
                                 <span className="text-[10px] text-muted-foreground">-</span>
                               ) : null}
                             </button>
@@ -571,6 +593,7 @@ export default function Habits() {
                 <tbody>
                   {habits.map((habit: Habit) => {
                     const stats = getHabitStats(habit);
+                    const insight = habitInsights[habit.id];
                     const detoxConfig = getDetoxConfig(habit);
                     const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
                     return (
@@ -587,7 +610,7 @@ export default function Habits() {
                                 <span>
                                   {detoxConfig
                                     ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
-                                    : `${habit.frequency} · ${habit.target_count}x`}
+                                    : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
                                 </span>
                                 {habit.time && (
                                   <span className="flex items-center gap-1">
@@ -596,6 +619,13 @@ export default function Habits() {
                                   </span>
                                 )}
                               </div>
+                              {insight && (
+                                <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
+                                  <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.adherencePct}% 90d</span>
+                                  <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.usualTimeLabel}</span>
+                                  <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.bestDayLabel}</span>
+                                </div>
+                              )}
                             </div>
                             <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                               <button
@@ -614,8 +644,9 @@ export default function Habits() {
                           </div>
                         </td>
                         {weekDays.map((day: Date) => {
-                          const isCompleted = isHabitCompletedForDay(habit.id, day);
-                          const canToggle = isToday(day) || day < today;
+                          const isScheduled = isHabitScheduledForDate(habit, day);
+                          const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
+                          const canToggle = isScheduled && isToday(day);
                           const isDetox = !!detoxConfig;
 
                           return (
@@ -628,20 +659,22 @@ export default function Habits() {
                             >
                               <button
                                 onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
-                                disabled={!isToday(day)}
+                                disabled={!canToggle}
+                                title={!isScheduled ? 'Not scheduled for this day' : undefined}
                                 className={cn(
                                   "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
                                   isCompleted
                                     ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                     : "border border-border hover:border-muted-foreground",
                                   isToday(day) && "hover:scale-110",
-                                  !canToggle && "opacity-30"
+                                  !isScheduled && "opacity-20",
+                                  isScheduled && !canToggle && "opacity-30"
                                 )}
                                 style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                               >
                                 {isCompleted ? (
                                   isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={16} />
-                                ) : day > today ? (
+                                ) : !isScheduled || day > today ? (
                                   <span className="text-xs text-muted-foreground">-</span>
                                 ) : null}
                               </button>
@@ -667,7 +700,10 @@ export default function Habits() {
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4">Today's Habits</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {habits.map((habit: Habit) => {
+          {scheduledTodayHabits.length === 0 && (
+            <p className="text-sm text-muted-foreground md:col-span-2">No habits scheduled for today.</p>
+          )}
+          {scheduledTodayHabits.map((habit: Habit) => {
             const isCompleted = isHabitCompletedForDay(habit.id, today);
             const stats = getHabitStats(habit);
             const detoxConfig = getDetoxConfig(habit);
@@ -780,6 +816,19 @@ export default function Habits() {
             placeholder="Optional description"
           />
 
+          <Input
+            label="Adherence Weight"
+            type="number"
+            min={0.1}
+            step={0.1}
+            value={formData.adherence_weight ?? 1}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+              const value = Number(e.target.value);
+              setFormData({ ...formData, adherence_weight: Number.isFinite(value) && value > 0 ? value : 1 });
+            }}
+            placeholder="1"
+          />
+
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Habit Type"
@@ -879,7 +928,7 @@ export default function Habits() {
                   );
                 })}
               </div>
-              <p className="text-xs text-muted-foreground">Select which days this weekly habit should appear in Tasks.</p>
+              <p className="text-xs text-muted-foreground">Only these assigned days count toward adherence.</p>
             </div>
           )}
 

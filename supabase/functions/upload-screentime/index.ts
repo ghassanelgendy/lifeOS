@@ -604,6 +604,18 @@ function parseActivitySummary(text: string): FlatUsageItem[] {
     .filter((item): item is FlatUsageItem => item !== null);
 }
 
+function isPcLockApp(appName: string, source: string, platform: string): boolean {
+  const normalizedApp = String(appName || '').trim().toLowerCase();
+  const normalizedSource = String(source || '').trim().toLowerCase();
+  const normalizedPlatform = String(platform || '').trim().toLowerCase();
+  const isPc =
+    normalizedSource === 'pc' ||
+    normalizedPlatform === 'windows' ||
+    normalizedPlatform === 'macos' ||
+    normalizedPlatform === 'linux';
+  return isPc && normalizedApp === 'lockapp';
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -710,6 +722,7 @@ Deno.serve(async (req: Request) => {
       const item = toRecord(raw);
       const appName = firstString(item, ['app_name', 'app', 'name', 'AppName']);
       if (!appName) return;
+      if (isPcLockApp(appName, source, platform)) return;
 
       const firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
       const lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
@@ -825,6 +838,7 @@ Deno.serve(async (req: Request) => {
                 for (const appKey in day.Apps) {
                   const app = day.Apps[appKey];
                   const appName = app.AppName || appKey;
+                  if (isPcLockApp(appName, source, platform)) continue;
                   const providedCategory = app.Category;
                   const category = providedCategory && providedCategory !== 'Uncategorized'
                     ? providedCategory

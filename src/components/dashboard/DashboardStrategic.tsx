@@ -41,7 +41,14 @@ export function DashboardStrategic() {
   const taskTotals = useMemo(() => {
     const rows = tasks.data ?? [];
     const completed = rows.reduce((s, r) => s + (r.completed_count ?? 0), 0);
-    return { completed, days: rows.length };
+    const due = rows.reduce((s, r) => s + (r.due_count ?? 0), 0);
+    const dueCompleted = rows.reduce((s, r) => s + (r.due_completed_count ?? 0), 0);
+    const adherenceRows = rows.filter((r) => Number(r.due_count) > 0);
+    const adherence =
+      adherenceRows.length > 0
+        ? Math.round(adherenceRows.reduce((s, r) => s + (Number(r.adherence_pct) || 0), 0) / adherenceRows.length)
+        : null;
+    return { completed, due, dueCompleted, adherence, days: rows.length };
   }, [tasks.data]);
 
   return (
@@ -138,10 +145,10 @@ export function DashboardStrategic() {
         </section>
 
         <section className="rounded-xl border border-border bg-card p-4">
-          <h2 className="font-semibold mb-2">Tasks completed</h2>
-          <p className="text-3xl font-bold tabular-nums">{taskTotals.completed}</p>
+          <h2 className="font-semibold mb-2">Task adherence</h2>
+          <p className="text-3xl font-bold tabular-nums">{taskTotals.adherence != null ? `${taskTotals.adherence}%` : '—'}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            Total completed tasks in selected range ({taskTotals.days} days with data)
+            Due done {taskTotals.dueCompleted}/{taskTotals.due} · total completed {taskTotals.completed} ({taskTotals.days} days with data)
           </p>
           <Link to="/tasks" className="text-xs text-primary inline-flex items-center gap-1 mt-4">
             Tasks <ArrowRight className="size-3" />

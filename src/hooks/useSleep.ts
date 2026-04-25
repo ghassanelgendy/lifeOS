@@ -75,6 +75,33 @@ export function useLastNightSleepMinutes() {
   }, [segments]);
 }
 
+function overlapMinutesForDay(segment: SleepStage, day: Date): number {
+  if (stageIs(segment, 'Awake')) return 0;
+  const start = new Date(segment.started_at).getTime();
+  const end = new Date(segment.ended_at).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return 0;
+
+  const dayStart = new Date(day);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = new Date(dayStart);
+  dayEnd.setDate(dayEnd.getDate() + 1);
+
+  const overlapStart = Math.max(start, dayStart.getTime());
+  const overlapEnd = Math.min(end, dayEnd.getTime());
+  return Math.max(0, Math.round((overlapEnd - overlapStart) / (1000 * 60)));
+}
+
+/** Sleep minutes that overlap the selected local calendar day. */
+export function useSleepMinutesForDay(day: Date = new Date()) {
+  const startStr = format(subDays(day, 1), 'yyyy-MM-dd');
+  const endStr = format(day, 'yyyy-MM-dd');
+  const { data: segments = [] } = useSleepStages(startStr + 'T00:00:00.000Z', endStr + 'T23:59:59.999Z');
+  return useMemo(
+    () => segments.reduce((total, segment) => total + overlapMinutesForDay(segment, day), 0),
+    [day, segments],
+  );
+}
+
 export function useSleepStages(startDate: string, endDate: string) {
   const { user } = useAuth();
   return useQuery({

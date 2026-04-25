@@ -10,6 +10,14 @@ const QUERY_KEY = ['screentime'];
 /** PostgREST returns at most ~1000 rows per request; paginate so totals (e.g. Windows day sum) are not truncated. */
 const PAGE_SIZE = 1000;
 
+function isPcLockApp(stat: Pick<ScreentimeAppStat, 'app_name' | 'source' | 'platform'>): boolean {
+  const appName = (stat.app_name || '').trim().toLowerCase();
+  const source = (stat.source || '').trim().toLowerCase();
+  const platform = (stat.platform || '').trim().toLowerCase();
+  const isPc = source === 'pc' || platform === 'windows' || platform === 'macos' || platform === 'linux';
+  return isPc && appName === 'lockapp';
+}
+
 async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
   const all: ScreentimeAppStat[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
@@ -28,7 +36,7 @@ async function fetchAllAppStats(userId: string, startDate: string, endDate: stri
     all.push(...(data as ScreentimeAppStat[]));
     if (data.length < PAGE_SIZE) break;
   }
-  return all;
+  return all.filter((stat) => !isPcLockApp(stat));
 }
 
 async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
@@ -166,10 +174,27 @@ export function useTodayScreentime() {
   // Calculate total switches for today (sum across all sources/devices)
   const totalSwitches = summaries.reduce((sum, s) => sum + (s.total_switches || 0), 0);
 
+  const classifyDevice = (source?: string | null, platform?: string | null): 'pc' | 'phone' | 'other' => {
+    const src = (source || '').toLowerCase();
+    const pf = (platform || '').toLowerCase();
+    if (src === 'mobile' || pf === 'ios' || pf === 'android') return 'phone';
+    if (src === 'pc' || pf === 'windows' || pf === 'macos' || pf === 'linux') return 'pc';
+    return 'other';
+  };
+
+  const deviceSeconds = { pc: 0, phone: 0, other: 0 };
+  for (const stat of [...aggregatedApps, ...aggregatedWebsites]) {
+    deviceSeconds[classifyDevice(stat.source, stat.platform)] += stat.total_time_seconds || 0;
+  }
+
   return {
     totalMinutes,
     totalHours: hours,
     remainingMinutes: minutes,
+    totalSeconds,
+    pcMinutes: Math.round(deviceSeconds.pc / 60),
+    phoneMinutes: Math.round(deviceSeconds.phone / 60),
+    otherMinutes: Math.round(deviceSeconds.other / 60),
     topApps,
     topWebsites,
     appCount: appStats.length,

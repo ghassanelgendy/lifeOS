@@ -30,6 +30,9 @@ export interface AnalyticsDailyTasksRow {
   user_id: string;
   date: string;
   completed_count: number;
+  due_count?: number;
+  due_completed_count?: number;
+  adherence_pct?: number;
   focus_time_seconds: number;
   urgent_completed_count: number;
   flagged_completed_count: number;
@@ -41,6 +44,9 @@ export interface AnalyticsDailyHabitsRow {
   logs_count: number;
   completed_count: number;
   adherence_pct: number;
+  expected_weight?: number;
+  completed_weight?: number;
+  detox_penalty_weight?: number;
 }
 
 export interface AnalyticsDailyScreentimeRow {

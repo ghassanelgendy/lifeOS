@@ -94,13 +94,20 @@ export function DashboardAnnualReview() {
         : null;
 
     const tasksDone = taskRows.reduce((s, r) => s + (r.completed_count ?? 0), 0);
+    const dueTasks = taskRows.reduce((s, r) => s + (r.due_count ?? 0), 0);
+    const dueTasksDone = taskRows.reduce((s, r) => s + (r.due_completed_count ?? 0), 0);
+    const taskAdherenceRows = taskRows.filter((r) => Number(r.due_count) > 0);
+    const avgTaskAdherence =
+      taskAdherenceRows.length > 0
+        ? Math.round(taskAdherenceRows.reduce((s, r) => s + (Number(r.adherence_pct) || 0), 0) / taskAdherenceRows.length)
+        : null;
 
     const byDate = aggregateScreentimeSecondsByDate(stRows);
     let screenSeconds = 0;
     for (const v of byDate.values()) screenSeconds += v;
     const screenHours = Math.round(screenSeconds / 3600);
 
-    return { avgHabit, avgSleep, tasksDone, screenHours, daysHabit: habitRows.length };
+    return { avgHabit, avgSleep, tasksDone, dueTasks, dueTasksDone, avgTaskAdherence, screenHours, daysHabit: habitRows.length };
   }, [habits.data, sleep.data, tasks.data, screentime.data]);
 
   const yearOptions = [calendarYear, calendarYear - 1, calendarYear - 2];
@@ -147,8 +154,13 @@ export function DashboardAnnualReview() {
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Tasks done</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{ytdTotals.tasksDone}</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider">Task adherence</p>
+          <p className="text-2xl font-bold tabular-nums mt-1">
+            {ytdTotals.avgTaskAdherence != null ? `${ytdTotals.avgTaskAdherence}%` : '—'}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {ytdTotals.dueTasksDone}/{ytdTotals.dueTasks} due · {ytdTotals.tasksDone} done
+          </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider">Screen (approx h)</p>

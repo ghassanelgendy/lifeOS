@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
-import { ArrowRight, Calendar, Check, CheckSquare, Flame, Moon, Monitor, Sparkles } from 'lucide-react';
+import { ArrowRight, Calendar, Check, CheckSquare, Flame, Moon, Monitor, Smartphone, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useOverdueTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
-import { useLastNightSleepMinutes } from '../../hooks/useSleep';
+import { useLastNightSleepMinutes, useSleepMinutesForDay } from '../../hooks/useSleep';
 import {
   useDashboardUpcomingItems,
   habitMatchesDay,
@@ -23,6 +23,32 @@ function formatSleepMinutes(m: number | null) {
   const min = m % 60;
   if (h <= 0) return `${min}m`;
   return `${h}h ${min}m`;
+}
+
+function formatDurationMinutes(minutes: number) {
+  if (minutes <= 0) return '0m';
+  const h = Math.floor(minutes / 60);
+  const min = minutes % 60;
+  if (h <= 0) return `${min}m`;
+  if (min === 0) return `${h}h`;
+  return `${h}h ${min}m`;
+}
+
+function timeStringToMinutes(value?: string | null): number | null {
+  if (!value) return null;
+  const match = value.match(/^(\d{1,2}):(\d{2})/);
+  if (!match) return null;
+  const h = Number(match[1]);
+  const m = Number(match[2]);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return Math.max(0, Math.min(24 * 60, h * 60 + m));
+}
+
+function isoToDayMinutes(value?: string | null): number | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.getHours() * 60 + d.getMinutes();
 }
 
 /** Inline nav pills (Due today header, What’s next, metric cards, sleep). */
@@ -150,6 +176,7 @@ export function DashboardQuickView() {
   const { todayLogs, habits } = useWeeklyAdherence();
   const todayScreentime = useTodayScreentime();
   const lastNightSleep = useLastNightSleepMinutes();
+  const todaySleepMinutes = useSleepMinutesForDay(today);
   const upcomingItems = useDashboardUpcomingItems({
     lookAheadDays: 7,
     includePrayer: false,
@@ -162,14 +189,6 @@ export function DashboardQuickView() {
   const { times: prayerTimesList } = usePrayerTimes();
 
   const quickViewHabits = useMemo(() => habits.filter(isHabitShownInQuickView), [habits]);
-
-  const completedTodayStandard = useMemo(
-    () =>
-      todayLogs.filter(
-        (l) => l.completed && quickViewHabits.some((h) => h.id === l.habit_id),
-      ).length,
-    [todayLogs, quickViewHabits],
-  );
 
   const overdueIncomplete = useMemo(
     () => overdueTasks.filter((t) => !t.is_completed).sort((a, b) => parseDueForSort(a) - parseDueForSort(b)),
@@ -188,6 +207,19 @@ export function DashboardQuickView() {
 
   const isHabitDoneToday = (habitId: string) =>
     todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed);
+
+  const completedTodayPrayers = useMemo(
+    () => prayerTracker.filter((p) => p.status === 'Prayed').length,
+    [prayerTracker],
+  );
+
+  const completedTodayStandard = useMemo(
+    () => habitsDueToday.filter((h) => isHabitDoneToday(h.id)).length,
+    [habitsDueToday, todayLogs, todayStr],
+  );
+
+  const todayHabitTotal = 5 + habitsDueToday.length;
+  const todayHabitCompleted = completedTodayPrayers + completedTodayStandard;
 
   const lastPrayerSlot = useMemo(() => {
     const now = today.getTime();
@@ -224,6 +256,74 @@ export function DashboardQuickView() {
     todayScreentime.totalMinutes > 0
       ? `${todayScreentime.totalHours}h ${todayScreentime.remainingMinutes}m`
       : '—';
+
+  const screenChart = useMemo(() => {
+    const dayMinutes = 24 * 60;
+    const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
+    const sleep = Math.min(dayMinutes, Math.max(0, todaySleepMinutes || 0));
+    const pc = Math.max(0, todayScreentime.pcMinutes || 0);
+    const phone = Math.max(0, todayScreentime.phoneMinutes || 0);
+    const other = Math.max(0, todayScreentime.otherMinutes || 0);
+    const rawUsed = pc + phone + other;
+    const used = Math.min(dayMinutes, elapsed, rawUsed);
+    const scale = rawUsed > 0 ? used / rawUsed : 0;
+    const adjustedPc = Math.round(pc * scale);
+    const adjustedPhone = Math.round(phone * scale);
+    const adjustedOther = Math.max(0, used - adjustedPc - adjustedPhone);
+    const accounted = Math.min(dayMinutes, sleep + used);
+    const rest = Math.max(0, dayMinutes - accounted);
+    const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
+    const activeUseRatio = elapsed > 0 ? used / elapsed : 0;
+    const status =
+      elapsed >= 120 && activeUseRatio >= 0.75
+        ? 'High screentime pace'
+        : elapsed >= 120 && activeUseRatio >= 0.55
+          ? 'Watch your pace'
+          : 'Healthy pace';
+    return {
+      pc: adjustedPc,
+      phone: adjustedPhone,
+      other: adjustedOther,
+      sleep,
+      used,
+      accounted,
+      rawUsed,
+      elapsed,
+      rest,
+      overlapAdjusted: rawUsed > used,
+      status,
+      statusTone: status === 'High screentime pace' ? 'bad' : status === 'Watch your pace' ? 'warn' : 'good',
+      nowPct: pct(elapsed),
+      sleepPct: pct(sleep),
+      pcPct: pct(adjustedPc),
+      phonePct: pct(adjustedPhone),
+      otherPct: pct(adjustedOther),
+      restPct: pct(rest),
+    };
+  }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.otherMinutes, todaySleepMinutes]);
+
+  const habitCompletionMarkers = useMemo(() => {
+    const dayMinutes = 24 * 60;
+    const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
+    const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
+    const markers: { id: string; left: string; kind: 'habit' | 'prayer' }[] = [];
+
+    for (const habit of habitsDueToday) {
+      const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
+      if (!log) continue;
+      const minutes = timeStringToMinutes(habit.time) ?? isoToDayMinutes(log.created_at) ?? elapsed;
+      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit' });
+    }
+
+    for (const prayer of prayerTracker) {
+      if (prayer.status !== 'Prayed') continue;
+      const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
+      const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
+      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer' });
+    }
+
+    return markers.slice(0, 24);
+  }, [habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr]);
 
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
     if (item.kind === 'habit' && item.allDay && isToday(parseISO(item.start_time))) {
@@ -274,9 +374,10 @@ export function DashboardQuickView() {
               Habits
             </p>
             <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1">
-              {completedTodayStandard}
-              <span className="text-sm font-normal text-muted-foreground"> / {quickViewHabits.length}</span>
+              {todayHabitCompleted}
+              <span className="text-sm font-normal text-muted-foreground"> / {todayHabitTotal}</span>
             </p>
+            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">5 prayers + today&apos;s habits</p>
             <Link to="/habits" className={cn(QV_LINK_PILL, 'mt-2')}>
               Open
               <ArrowRight className={QV_LINK_ARROW} aria-hidden />
@@ -291,6 +392,88 @@ export function DashboardQuickView() {
           </div>
         </div>
         <div className="mt-2 sm:mt-3">
+          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-2 sm:gap-3">
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <Monitor className="size-3.5 text-sky-500 shrink-0" />
+                  Day progress
+                </p>
+                <p className={cn('text-lg sm:text-xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
+                  {formatDurationMinutes(screenChart.accounted)}
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">sleep + screen</span>
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground shrink-0">
+                <span className={cn('inline-flex items-center gap-1 tabular-nums', privacyMode && 'blur-sm')}>
+                  <Moon className="size-3 text-indigo-400" />
+                  Sleep {formatDurationMinutes(screenChart.sleep)}
+                </span>
+                <span className={cn('inline-flex items-center gap-1 tabular-nums', privacyMode && 'blur-sm')}>
+                  <Monitor className="size-3 text-sky-500" />
+                  PC {formatDurationMinutes(screenChart.pc)}
+                </span>
+                <span className={cn('inline-flex items-center gap-1 tabular-nums', privacyMode && 'blur-sm')}>
+                  <Smartphone className="size-3 text-violet-500" />
+                  Phone {formatDurationMinutes(screenChart.phone)}
+                </span>
+              </div>
+            </div>
+
+            <div
+              className="relative mt-4 h-3 w-full overflow-visible rounded-full bg-muted"
+              aria-label={`Today screentime ${formatDurationMinutes(screenChart.used)} of 24 hours`}
+            >
+              <div className="flex h-full w-full overflow-hidden rounded-full">
+                <div className={cn('bg-indigo-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} />
+                <div className={cn('bg-sky-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} />
+                <div className={cn('bg-violet-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
+                <div className={cn('bg-amber-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
+                <div className="bg-muted-foreground/20" style={{ width: screenChart.restPct }} />
+              </div>
+              {habitCompletionMarkers.map((marker) => (
+                <span
+                  key={marker.id}
+                  className={cn(
+                    'pointer-events-none absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background shadow-sm',
+                    marker.kind === 'prayer' ? 'bg-violet-300' : 'bg-emerald-400',
+                  )}
+                  style={{ left: marker.left }}
+                  aria-hidden
+                />
+              ))}
+              <span
+                className="pointer-events-none absolute -top-1.5 size-3 -translate-x-1/2 rounded-full border border-background bg-primary shadow-sm shadow-primary/40 animate-pulse"
+                style={{ left: screenChart.nowPct }}
+                aria-hidden
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+              <span>24h clock</span>
+              <span className={cn('tabular-nums', privacyMode && 'blur-sm')}>
+                Now {formatDurationMinutes(screenChart.elapsed)} into day · {formatDurationMinutes(screenChart.rest)} left
+              </span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-full px-2 py-0.5 font-medium',
+                  screenChart.statusTone === 'bad' && 'bg-red-500/15 text-red-500',
+                  screenChart.statusTone === 'warn' && 'bg-amber-500/15 text-amber-500',
+                  screenChart.statusTone === 'good' && 'bg-emerald-500/15 text-emerald-500',
+                )}
+              >
+                {screenChart.status}
+              </span>
+              {screenChart.overlapAdjusted && (
+                <span className="text-muted-foreground">
+                  Overlap adjusted from {formatDurationMinutes(screenChart.rawUsed)}
+                </span>
+              )}
+            </div>
+          </div>
+
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="min-w-0">
               <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
@@ -305,6 +488,7 @@ export function DashboardQuickView() {
               Sleep
               <ArrowRight className={QV_LINK_ARROW} aria-hidden />
             </Link>
+          </div>
           </div>
         </div>
       </section>

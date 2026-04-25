@@ -361,11 +361,18 @@ export default function Analytics() {
   const tasksAgg = useMemo(() => {
     const rows = daily.tasks.data ?? [];
     const completedByDay = rows.map((r) => Number(r.completed_count) || 0);
+    const dueRows = rows.filter((r) => Number(r.due_count) > 0);
+    const due = sum(rows.map((r) => r.due_count ?? 0));
+    const dueCompleted = sum(rows.map((r) => r.due_completed_count ?? 0));
+    const adherenceValues = dueRows.map((r) => Number(r.adherence_pct) || 0);
     const focusByDay = rows.map((r) => Number(r.focus_time_seconds) || 0);
     const n = Math.max(1, rows.length);
     return {
       nDays: rows.length,
       avgCompleted: sum(completedByDay) / n,
+      avgAdherence: adherenceValues.length > 0 ? Math.round(mean(adherenceValues) * 10) / 10 : 0,
+      due,
+      dueCompleted,
       avgFocusSeconds: sum(focusByDay) / n,
       totalCompleted: sum(completedByDay),
       totalFocusSeconds: sum(focusByDay),
@@ -376,7 +383,8 @@ export default function Analytics() {
     const rows = daily.habits.data ?? [];
     const logs = sum(rows.map((r) => r.logs_count));
     const completed = sum(rows.map((r) => r.completed_count));
-    const adherence = logs === 0 ? 0 : (completed / logs) * 100;
+    const scoredRows = rows.filter((r) => Number(r.expected_weight ?? r.logs_count) > 0);
+    const adherence = scoredRows.length > 0 ? mean(scoredRows.map((r) => Number(r.adherence_pct) || 0)) : 0;
     const n = Math.max(1, rows.length);
     return {
       nDays: rows.length,
@@ -710,9 +718,9 @@ export default function Analytics() {
   const tasksTrend = (() => {
     const rows = daily.tasks.data ?? [];
     if (rows.length < 4) return 0;
-    const last = rows.slice(-3).map((r) => r.completed_count);
-    const first = rows.slice(0, 3).map((r) => r.completed_count);
-    const p = pctChange(sum(last), sum(first));
+    const last = rows.slice(-3).map((r) => Number(r.adherence_pct) || 0);
+    const first = rows.slice(0, 3).map((r) => Number(r.adherence_pct) || 0);
+    const p = pctChange(mean(last), mean(first));
     return p == null ? 0 : Math.round(clamp(p, -999, 999));
   })();
 
@@ -801,10 +809,10 @@ export default function Analytics() {
           className="w-full text-left"
         >
           <DataCard
-            title={`Tasks (${rangeLabel})`}
-            value={Math.round(tasksAgg.avgCompleted * 10) / 10}
+            title={`Task adherence (${rangeLabel})`}
+            value={`${tasksAgg.avgAdherence}%`}
             trend={tasksTrend}
-            data={(daily.tasks.data ?? []).map((r) => r.completed_count)}
+            data={(daily.tasks.data ?? []).map((r) => Number(r.adherence_pct) || 0)}
           />
         </button>
         <button
@@ -890,12 +898,12 @@ export default function Analytics() {
             <div className="rounded-lg border border-border bg-secondary/10 p-3">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Tasks</p>
               <p className="mt-1 text-sm font-semibold tabular-nums">
-                {dayDetails.tasks ? `${dayDetails.tasks.completed_count} completed` : '—'}
+                {dayDetails.tasks ? `${Math.round(Number(dayDetails.tasks.adherence_pct) || 0)}% adherence` : '—'}
               </p>
               {dayDetails.tasks && (
                 <p className="text-xs text-muted-foreground mt-1">
-                  Focus {formatSeconds(dayDetails.tasks.focus_time_seconds)} · Urgent {dayDetails.tasks.urgent_completed_count} · Flagged{' '}
-                  {dayDetails.tasks.flagged_completed_count}
+                  Due {dayDetails.tasks.due_completed_count ?? 0}/{dayDetails.tasks.due_count ?? 0} · Completed{' '}
+                  {dayDetails.tasks.completed_count} · Focus {formatSeconds(dayDetails.tasks.focus_time_seconds)}
                 </p>
               )}
             </div>
@@ -1183,15 +1191,18 @@ export default function Analytics() {
                 <div className="rounded-lg border border-border bg-card p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
                   <p className="mt-1 text-sm">
-                    Tasks insights track <span className="font-semibold">completed tasks</span> and <span className="font-semibold">focus time</span> (time spent in focus-related tracking).
+                    Task adherence is based on <span className="font-semibold">completed due tasks</span> vs{' '}
+                    <span className="font-semibold">tasks due</span> in the selected range. Wont-do tasks are excluded from the denominator.
                   </p>
                 </div>
               )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="rounded-lg border border-border bg-card p-3">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Completed</p>
-                  <p className="mt-1 text-2xl font-bold tabular-nums">{Math.round(tasksAgg.avgCompleted * 10) / 10}</p>
-                  <p className="text-xs text-muted-foreground mt-1">avg/day · total {tasksAgg.totalCompleted}</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Adherence</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{tasksAgg.avgAdherence}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    due done {tasksAgg.dueCompleted}/{tasksAgg.due} · total completed {tasksAgg.totalCompleted}
+                  </p>
                 </div>
                 <div className="rounded-lg border border-border bg-card p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Focus time</p>
@@ -1218,7 +1229,7 @@ export default function Analytics() {
                 <div className="rounded-lg border border-border bg-card p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
                   <p className="mt-1 text-sm">
-                    Habits adherence is based on <span className="font-semibold">completed logs</span> vs <span className="font-semibold">expected logs</span> in the selected range.
+                    Habits adherence is based on scheduled habits for each day, habit weights, the 5 prayers, and detox relapse penalties.
                   </p>
                 </div>
               )}
@@ -1226,7 +1237,7 @@ export default function Analytics() {
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Adherence</p>
                 <p className="mt-1 text-sm">
                   Completed <span className="font-semibold tabular-nums">{habitsAgg.completed}</span> /{' '}
-                  <span className="font-semibold tabular-nums">{habitsAgg.logs}</span> logs ·{' '}
+                  <span className="font-semibold tabular-nums">{habitsAgg.logs}</span> expected ·{' '}
                   <span className="font-semibold tabular-nums">{habitsAgg.avgAdherence}%</span>
                 </p>
               </div>

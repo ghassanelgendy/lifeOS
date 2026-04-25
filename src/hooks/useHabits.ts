@@ -4,12 +4,29 @@ import { useAuth } from '../contexts/AuthContext';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
 import { round1 } from '../lib/utils';
-import { format, subDays } from 'date-fns';
+import { format, startOfWeek, differenceInCalendarDays, subDays } from 'date-fns';
 
 const HABITS_KEY = ['habits'];
 const HABIT_LOGS_KEY = ['habit-logs'];
 
 const toDateOnly = (d: Date): string => format(d, 'yyyy-MM-dd');
+
+export function getHabitAdherenceWeight(habit: Pick<Habit, 'adherence_weight'>): number {
+  const weight = Number(habit.adherence_weight);
+  return Number.isFinite(weight) && weight > 0 ? weight : 1;
+}
+
+export function isHabitScheduledForDate(habit: Pick<Habit, 'frequency' | 'week_days'>, date: Date): boolean {
+  if (habit.frequency === 'Daily') return true;
+  const weekDays = habit.week_days ?? [];
+  if (weekDays.length === 0) return false;
+  return weekDays.includes(date.getDay());
+}
+
+function clampPct(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
+}
 
 // ========================
 // Habits
@@ -81,13 +98,17 @@ export function useCreateHabit() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<Habit>) => {
+      const normalizedInput = {
+        ...input,
+        adherence_weight: Math.max(0.1, Number(input.adherence_weight) || 1),
+      };
       if (!isOnline()) {
-        addToOfflineQueue({ entity: 'habits', op: 'create', payload: { ...input, is_archived: false } as Record<string, unknown> });
-        const optimistic: Habit = { ...input, id: `offline-h-${Date.now()}`, is_archived: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Habit;
+        addToOfflineQueue({ entity: 'habits', op: 'create', payload: { ...normalizedInput, is_archived: false } as Record<string, unknown> });
+        const optimistic: Habit = { ...normalizedInput, id: `offline-h-${Date.now()}`, is_archived: false, created_at: new Date().toISOString(), updated_at: new Date().toISOString() } as Habit;
         queryClient.setQueryData(HABITS_KEY, (old: Habit[] | undefined) => [...(old ?? []), optimistic]);
         return optimistic;
       }
-      const { data, error } = await supabase.from('habits').insert({ ...input, is_archived: false }).select().single();
+      const { data, error } = await supabase.from('habits').insert({ ...normalizedInput, is_archived: false }).select().single();
       if (error) throw error;
       return data as Habit;
     },
@@ -398,6 +419,110 @@ export function useHabitStreaks(habitIds: string[]) {
   });
 }
 
+export interface HabitInsight {
+  scheduledDays: number;
+  successDays: number;
+  adherencePct: number;
+  eventCount: number;
+  usualTimeLabel: string;
+  bestDayLabel: string;
+  lastEventDate: string | null;
+}
+
+function formatHourLabel(hour: number): string {
+  const normalized = ((Math.round(hour) % 24) + 24) % 24;
+  const suffix = normalized >= 12 ? 'PM' : 'AM';
+  const display = normalized % 12 || 12;
+  return `${display} ${suffix}`;
+}
+
+const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+export function useHabitInsights(habits: Habit[], days = 90) {
+  const { user } = useAuth();
+  const habitIds = habits.map((h) => h.id);
+  const today = new Date();
+  const endStr = toDateOnly(today);
+  const start = subDays(today, Math.max(1, days) - 1);
+  const startStr = toDateOnly(start);
+
+  return useQuery({
+    queryKey: [...HABIT_LOGS_KEY, 'insights', [...habitIds].sort().join(','), startStr, endStr, user?.id],
+    queryFn: async () => {
+      if (!habitIds.length) return {} as Record<string, HabitInsight>;
+
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id,date,completed,created_at')
+        .in('habit_id', habitIds)
+        .gte('date', startStr)
+        .lte('date', endStr);
+      if (error) throw error;
+
+      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'created_at'>[];
+      const logsByHabit = new Map<string, typeof logs>();
+      for (const log of logs) {
+        const arr = logsByHabit.get(log.habit_id) ?? [];
+        arr.push(log);
+        logsByHabit.set(log.habit_id, arr);
+      }
+
+      const result: Record<string, HabitInsight> = {};
+
+      for (const habit of habits) {
+        const habitLogs = logsByHabit.get(habit.id) ?? [];
+        const logByDate = new Map(habitLogs.map((log) => [log.date, log]));
+        let scheduledDays = 0;
+        let successDays = 0;
+
+        for (let i = 0; i < days; i++) {
+          const day = subDays(today, i);
+          const dateStr = toDateOnly(day);
+          if (!isHabitScheduledForDate(habit, day)) continue;
+          scheduledDays += 1;
+          const log = logByDate.get(dateStr);
+          if (habit.habit_type === 'detox') {
+            if (!log?.completed) successDays += 1;
+          } else if (log?.completed) {
+            successDays += 1;
+          }
+        }
+
+        const eventLogs = habitLogs
+          .filter((log) => log.completed)
+          .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        const dayCounts = new Array(7).fill(0) as number[];
+        const hourValues: number[] = [];
+
+        for (const log of eventLogs) {
+          const eventDate = new Date(`${log.date}T00:00:00`);
+          if (!Number.isNaN(eventDate.getTime())) dayCounts[eventDate.getDay()] += 1;
+          const createdAt = new Date(log.created_at);
+          if (!Number.isNaN(createdAt.getTime())) hourValues.push(createdAt.getHours() + createdAt.getMinutes() / 60);
+        }
+
+        const bestDayIndex = dayCounts.reduce((best, count, idx) => (count > dayCounts[best] ? idx : best), 0);
+        const averageHour = hourValues.length > 0
+          ? hourValues.reduce((sum, hour) => sum + hour, 0) / hourValues.length
+          : null;
+
+        result[habit.id] = {
+          scheduledDays,
+          successDays,
+          adherencePct: scheduledDays > 0 ? clampPct(round1((successDays / scheduledDays) * 100)) : 0,
+          eventCount: eventLogs.length,
+          usualTimeLabel: averageHour == null ? 'No usual time yet' : `Usually around ${formatHourLabel(averageHour)}`,
+          bestDayLabel: eventLogs.length === 0 ? 'No pattern yet' : `Most often ${WEEKDAY_LABELS[bestDayIndex]}`,
+          lastEventDate: eventLogs[0]?.date ?? null,
+        };
+      }
+
+      return result;
+    },
+    enabled: !!user?.id && habits.length > 0,
+  });
+}
+
 // Calculate weekly adherence
 export function useWeeklyAdherence() {
   const { user } = useAuth();
@@ -409,14 +534,15 @@ export function useWeeklyAdherence() {
   // BUT hooks rules prevent valid conditional hooks usage. 
   // We will re-implement the data fetching inside this hook's query or use pure calculation if data is passed.
 
-  // BETTER APPROACH: Fetch range of logs for all habits.
+  // Week-to-date (Sun → today), not rolling 7 days.
   const today = new Date();
-  const weekAgo = subDays(today, 6);
+  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+  const daysElapsed = Math.max(1, differenceInCalendarDays(today, weekStart) + 1);
   const todayStr = toDateOnly(today);
-  const weekAgoStr = toDateOnly(weekAgo);
+  const weekStartStr = toDateOnly(weekStart);
 
   const { data: logs = [] } = useQuery({
-    queryKey: [...HABIT_LOGS_KEY, 'range', weekAgoStr, todayStr, user?.id],
+    queryKey: [...HABIT_LOGS_KEY, 'wtd', weekStartStr, todayStr, user?.id],
     queryFn: async () => {
       // Filter by habits owned by the user
       const habitIds = habits.map(h => h.id);
@@ -425,7 +551,7 @@ export function useWeeklyAdherence() {
       const { data, error } = await supabase
         .from('habit_logs')
         .select('*')
-        .gte('date', weekAgoStr)
+        .gte('date', weekStartStr)
         .lte('date', todayStr)
         .in('habit_id', habitIds);
       if (error) throw error;
@@ -449,7 +575,7 @@ export function useWeeklyAdherence() {
   });
 
   const { data: prayerLogs = [] } = useQuery({
-    queryKey: ['prayer-logs', 'range', weekAgoStr, todayStr, user?.id, prayerHabits.length],
+    queryKey: ['prayer-logs', 'wtd', weekStartStr, todayStr, user?.id, prayerHabits.length],
     queryFn: async () => {
       const prayerHabitIds = prayerHabits.map((p) => p.id);
       if (prayerHabitIds.length === 0) return [];
@@ -458,7 +584,7 @@ export function useWeeklyAdherence() {
         .from('prayer_logs')
         .select('prayer_habit_id,date,status')
         .eq('user_id', user?.id || '')
-        .gte('date', weekAgoStr)
+        .gte('date', weekStartStr)
         .lte('date', todayStr)
         .in('prayer_habit_id', prayerHabitIds);
       if (error) throw error;
@@ -467,36 +593,71 @@ export function useWeeklyAdherence() {
     enabled: !!user?.id && prayerHabits.length > 0,
   });
 
-  let totalExpected = 0;
-  let totalCompleted = 0;
-
-  habits.forEach((habit) => {
-    if (habit.frequency === 'Daily') {
-      totalExpected += 7 * habit.target_count;
-    } else {
-      totalExpected += habit.target_count;
-    }
-
-    // Count completed logs
-    const habitLogs = logs.filter(l => l.habit_id === habit.id && l.completed);
-    totalCompleted += habitLogs.length;
+  const weekDates = Array.from({ length: daysElapsed }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    return d;
   });
 
-  // Include active prayers in weekly adherence.
-  if (prayerHabits.length > 0) {
-    totalExpected += prayerHabits.length * 7;
-    totalCompleted += prayerLogs.filter((l) => l.status === 'Prayed').length;
-  }
+  const dailyAdherence = weekDates.map((day) => {
+    const dateStr = toDateOnly(day);
+    const scheduledHabits = habits.filter((habit) => isHabitScheduledForDate(habit, day));
+    const standardHabits = scheduledHabits.filter((habit) => habit.habit_type !== 'detox');
+    const detoxHabits = scheduledHabits.filter((habit) => habit.habit_type === 'detox');
+    const habitWeight = standardHabits.reduce((sum, habit) => sum + getHabitAdherenceWeight(habit), 0);
+    const prayerWeight = prayerHabits.length;
+    let missedWeight = 0;
+    let detoxPenaltyWeight = 0;
 
-  const adherence = totalExpected > 0 ? round1((totalCompleted / totalExpected) * 100) : 0;
+    standardHabits.forEach((habit) => {
+      const weight = getHabitAdherenceWeight(habit);
+      const log = logs.find((l) => l.habit_id === habit.id && l.date === dateStr);
+      if (!log?.completed) missedWeight += weight;
+    });
+
+    detoxHabits.forEach((habit) => {
+      const log = logs.find((l) => l.habit_id === habit.id && l.date === dateStr);
+      if (log?.completed) {
+        detoxPenaltyWeight += getHabitAdherenceWeight(habit);
+      }
+    });
+
+    if (prayerHabits.length > 0) {
+      prayerHabits.forEach((prayerHabit) => {
+        const prayerLog = prayerLogs.find(
+          (l) => l.prayer_habit_id === prayerHabit.id && l.date === dateStr
+        );
+        if (prayerLog?.status !== 'Prayed') missedWeight += 1;
+      });
+    }
+
+    // Detox habits are penalty-only: no relapse adds no credit, relapse lowers the day.
+    missedWeight += detoxPenaltyWeight;
+    const totalWeight = habitWeight + prayerWeight + detoxPenaltyWeight;
+
+    if (totalWeight <= 0) return null;
+
+    return {
+      date: dateStr,
+      adherence: clampPct(round1(((totalWeight - missedWeight) / totalWeight) * 100)),
+      totalWeight,
+      missedWeight,
+    };
+  });
+
+  const scoredDays = dailyAdherence.filter((day): day is NonNullable<typeof day> => day != null);
+  const adherence = scoredDays.length > 0
+    ? round1(scoredDays.reduce((sum, day) => sum + day.adherence, 0) / scoredDays.length)
+    : 0;
 
   // Filter logs for today for the UI usage
   const todayLogs = logs.filter(l => l.date === todayStr);
 
   return {
-    adherence: Math.min(adherence, 100),
-    totalExpected,
-    totalCompleted,
+    adherence: clampPct(adherence),
+    totalExpected: scoredDays.reduce((sum, day) => sum + day.totalWeight, 0),
+    totalCompleted: scoredDays.reduce((sum, day) => sum + Math.max(0, day.totalWeight - day.missedWeight), 0),
+    dailyAdherence,
     weekLogs: logs,
     todayLogs,
     habits,
