@@ -107,13 +107,15 @@ export function useSleepStages(startDate: string, endDate: string) {
   return useQuery({
     queryKey: [...QUERY_KEY, 'stages', startDate, endDate, user?.id],
     queryFn: async () => {
+      const start = new Date(startDate).getTime();
+      const end = new Date(endDate).getTime();
       try {
         const q = supabase
           .from('sleep_stages')
           .select('*')
           .eq('user_id', user!.id)
-          .gte('started_at', startDate)
-          .lte('started_at', endDate)
+          .lt('started_at', endDate)
+          .gt('ended_at', startDate)
           .order('started_at', { ascending: false });
         const { data, error } = await q;
         if (error) throw error;
@@ -122,12 +124,11 @@ export function useSleepStages(startDate: string, endDate: string) {
         return list;
       } catch {
         const local = await idbGetSleepStages();
-        const start = new Date(startDate).getTime();
-        const end = new Date(endDate).getTime();
         const filtered = (local as SleepStage[])
           .filter((s) => {
-            const t = new Date(s.started_at).getTime();
-            return t >= start && t <= end;
+            const started = new Date(s.started_at).getTime();
+            const ended = new Date(s.ended_at).getTime();
+            return started < end && ended > start;
           })
           .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime());
         return filtered;

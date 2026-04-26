@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
-import { ArrowRight, Calendar, Check, CheckSquare, Flame, Moon, Monitor, Smartphone, Sparkles } from 'lucide-react';
+import { ArrowRight, Calendar, Check, CheckSquare, Flame, Moon, Monitor, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useOverdueTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
+import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay } from '../../hooks/useSleep';
@@ -173,6 +173,7 @@ export function DashboardQuickView() {
   const todayStr = format(today, 'yyyy-MM-dd');
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { data: todayTasks = [] } = useTodayTasks();
+  const { data: completedTasks = [] } = useCompletedTasks();
   const { todayLogs, habits } = useWeeklyAdherence();
   const todayScreentime = useTodayScreentime();
   const lastNightSleep = useLastNightSleepMinutes();
@@ -302,17 +303,23 @@ export function DashboardQuickView() {
     };
   }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.otherMinutes, todaySleepMinutes]);
 
-  const habitCompletionMarkers = useMemo(() => {
+  const progressMarkers = useMemo(() => {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
-    const markers: { id: string; left: string; kind: 'habit' | 'prayer' }[] = [];
+    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task' }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
       if (!log) continue;
       const minutes = timeStringToMinutes(habit.time) ?? isoToDayMinutes(log.created_at) ?? elapsed;
       markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit' });
+    }
+
+    for (const task of completedTasks) {
+      if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
+      const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
+      markers.push({ id: `task-${task.id}`, left: pct(minutes), kind: 'task' });
     }
 
     for (const prayer of prayerTracker) {
@@ -322,8 +329,8 @@ export function DashboardQuickView() {
       markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer' });
     }
 
-    return markers.slice(0, 24);
-  }, [habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr]);
+    return markers.slice(0, 32);
+  }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr]);
 
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
     if (item.kind === 'habit' && item.allDay && isToday(parseISO(item.start_time))) {
@@ -377,7 +384,6 @@ export function DashboardQuickView() {
               {todayHabitCompleted}
               <span className="text-sm font-normal text-muted-foreground"> / {todayHabitTotal}</span>
             </p>
-            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">5 prayers + today&apos;s habits</p>
             <Link to="/habits" className={cn(QV_LINK_PILL, 'mt-2')}>
               Open
               <ArrowRight className={QV_LINK_ARROW} aria-hidden />
@@ -405,20 +411,6 @@ export function DashboardQuickView() {
                   <span className="ml-2 text-xs font-normal text-muted-foreground">sleep + screen</span>
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-muted-foreground shrink-0">
-                <span className={cn('inline-flex items-center gap-1 tabular-nums', privacyMode && 'blur-sm')}>
-                  <Moon className="size-3 text-indigo-400" />
-                  Sleep {formatDurationMinutes(screenChart.sleep)}
-                </span>
-                <span className={cn('inline-flex items-center gap-1 tabular-nums', privacyMode && 'blur-sm')}>
-                  <Monitor className="size-3 text-sky-500" />
-                  PC {formatDurationMinutes(screenChart.pc)}
-                </span>
-                <span className={cn('inline-flex items-center gap-1 tabular-nums', privacyMode && 'blur-sm')}>
-                  <Smartphone className="size-3 text-violet-500" />
-                  Phone {formatDurationMinutes(screenChart.phone)}
-                </span>
-              </div>
             </div>
 
             <div
@@ -432,12 +424,15 @@ export function DashboardQuickView() {
                 <div className={cn('bg-amber-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
                 <div className="bg-muted-foreground/20" style={{ width: screenChart.restPct }} />
               </div>
-              {habitCompletionMarkers.map((marker) => (
+              {progressMarkers.map((marker) => (
                 <span
                   key={marker.id}
                   className={cn(
-                    'pointer-events-none absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background shadow-sm',
-                    marker.kind === 'prayer' ? 'bg-violet-300' : 'bg-emerald-400',
+                    marker.kind === 'prayer'
+                      ? 'pointer-events-none absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background shadow-sm ring-1 ring-black/10 bg-violet-300'
+                      : 'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
+                    marker.kind === 'habit' && 'bg-emerald-400',
+                    marker.kind === 'task' && 'bg-rose-400',
                   )}
                   style={{ left: marker.left }}
                   aria-hidden
