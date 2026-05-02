@@ -4,32 +4,68 @@ import { isIP } from "node:net";
 
 const router = Router();
 
-const BLOCKED_PATTERNS = [
-  /^localhost$/i,
-  /^127\./,
-  /^10\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-  /^192\.168\./,
-  /^169\.254\./,
-  /^::1$/,
-  /^fc00:/i,
-  /^fd[0-9a-f]{2}:/i,
-  /^fe80:/i,
-  /^0\./,
-];
+function isPrivateIP(addr: string): boolean {
+  const a = addr.trim().toLowerCase();
 
-function isBlockedHost(hostname: string): boolean {
-  if (BLOCKED_PATTERNS.some((re) => re.test(hostname))) return true;
-  if (isIP(hostname) !== 0) {
-    return BLOCKED_PATTERNS.some((re) => re.test(hostname));
+  const ipv4Mapped = a.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/) || a.match(/^::ffff:([0-9a-f]{4}:[0-9a-f]{4})$/);
+  if (ipv4Mapped) {
+    const candidate = ipv4Mapped[1];
+    if (/^[0-9a-f]{4}:[0-9a-f]{4}$/.test(candidate)) {
+      const [hi, lo] = candidate.split(":").map((h) => parseInt(h, 16));
+      const d1 = (hi >> 8) & 0xff;
+      const d2 = hi & 0xff;
+      const d3 = (lo >> 8) & 0xff;
+      const d4 = lo & 0xff;
+      return isPrivateIPv4(`${d1}.${d2}.${d3}.${d4}`);
+    }
+    return isPrivateIPv4(candidate);
   }
+
+  if (isIP(a) === 6) return isPrivateIPv6(a);
+  if (isIP(a) === 4) return isPrivateIPv4(a);
+
   return false;
 }
 
-async function isBlockedAfterResolution(hostname: string): Promise<boolean> {
+function isPrivateIPv4(addr: string): boolean {
+  const parts = addr.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((p) => isNaN(p) || p < 0 || p > 255)) return true;
+  const [a, b] = parts;
+  return (
+    a === 0 ||
+    a === 10 ||
+    a === 127 ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && b === 168) ||
+    (a === 198 && (b === 18 || b === 19)) ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    a === 240 ||
+    a === 255
+  );
+}
+
+function isPrivateIPv6(addr: string): boolean {
+  const a = addr.toLowerCase();
+  return (
+    a === "::1" ||
+    a === "::" ||
+    a.startsWith("fc") ||
+    a.startsWith("fd") ||
+    a.startsWith("fe80") ||
+    a.startsWith("ff") ||
+    a.startsWith("64:ff9b")
+  );
+}
+
+async function hostIsBlocked(hostname: string): Promise<boolean> {
+  const h = hostname.replace(/^\[/, "").replace(/\]$/, "").toLowerCase();
+
+  if (isPrivateIP(h)) return true;
+
   try {
-    const { address } = await lookup(hostname);
-    return BLOCKED_PATTERNS.some((re) => re.test(address));
+    const records = await lookup(h, { all: true, verbatim: true });
+    return records.some((r) => isPrivateIP(r.address));
   } catch {
     return true;
   }
@@ -40,13 +76,12 @@ const MAX_REDIRECTS = 3;
 
 router.get("/proxy", async (req, res) => {
   const raw = req.query.url;
-  const url = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined;
-  const normalizedUrl = url ? url.trim().replace(/^webcal:\/\//i, "https://") : "";
-
-  if (!normalizedUrl) {
-    res.status(400).json({ error: "Missing url parameter" });
+  if (typeof raw !== "string") {
+    res.status(400).json({ error: "url must be a single string query parameter" });
     return;
   }
+
+  const normalizedUrl = raw.trim().replace(/^webcal:\/\//i, "https://");
 
   let parsed: URL;
   try {
@@ -61,20 +96,15 @@ router.get("/proxy", async (req, res) => {
     return;
   }
 
-  if (isBlockedHost(parsed.hostname)) {
+  if (await hostIsBlocked(parsed.hostname)) {
     res.status(403).json({ error: "Forbidden: private or internal hosts are not allowed" });
-    return;
-  }
-
-  if (await isBlockedAfterResolution(parsed.hostname)) {
-    res.status(403).json({ error: "Forbidden: host resolves to a private address" });
     return;
   }
 
   try {
     let currentUrl = normalizedUrl;
     let redirectsLeft = MAX_REDIRECTS;
-    let response: Response;
+    let response!: Response;
 
     while (true) {
       response = await fetch(currentUrl, {
@@ -85,8 +115,10 @@ router.get("/proxy", async (req, res) => {
         },
       });
 
+      const isRedirect = [301, 302, 307, 308].includes(response.status);
       const location = response.headers.get("location");
-      if ((response.status === 301 || response.status === 302 || response.status === 307 || response.status === 308) && location) {
+
+      if (isRedirect && location) {
         if (redirectsLeft-- <= 0) {
           res.status(502).json({ error: "Too many redirects" });
           return;
@@ -105,7 +137,7 @@ router.get("/proxy", async (req, res) => {
           return;
         }
 
-        if (isBlockedHost(nextUrl.hostname) || (await isBlockedAfterResolution(nextUrl.hostname))) {
+        if (await hostIsBlocked(nextUrl.hostname)) {
           res.status(403).json({ error: "Redirect to private/internal host blocked" });
           return;
         }
