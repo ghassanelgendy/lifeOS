@@ -1,43 +1,49 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
 
-node_modules
+# compiled output
 dist
-dist-ssr
-*.local
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
 
-# Editor directories and files
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
 .vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
 !.vscode/extensions.json
-.idea
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-/.electron-cache
-/dist-electron
-/release
-/supabase/functions/upload-screentime - Copy
-/supabase/functions/upload-screentime-chronos
+Thumbs.db
 
-# Environment
-.env
-/.lifeos-cache
-/src-tauri/target
-/src-tauri
-*.txt
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
 
-# iOS 6 lite: optional auto-login secrets (never commit)
-public/ios6-lite/legacy-autologin.local.js
-public/ios6-check.html
-/public/ios6-lite
-/UIWebViewWrapper
-dist.zip
+# Replit
+.cache/
+.local/

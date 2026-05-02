@@ -1,0 +1,43 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+/.electron-cache
+/dist-electron
+/release
+/supabase/functions/upload-screentime - Copy
+/supabase/functions/upload-screentime-chronos
+
+# Environment
+.env
+/.lifeos-cache
+/src-tauri/target
+/src-tauri
+*.txt
+
+# iOS 6 lite: optional auto-login secrets (never commit)
+public/ios6-lite/legacy-autologin.local.js
+public/ios6-check.html
+/public/ios6-lite
+/UIWebViewWrapper
+dist.zip
