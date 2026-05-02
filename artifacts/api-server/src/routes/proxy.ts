@@ -73,6 +73,8 @@ async function hostIsBlocked(hostname: string): Promise<boolean> {
 
 const ALLOWED_PROTOCOLS = new Set(["https:", "http:"]);
 const MAX_REDIRECTS = 3;
+const FETCH_TIMEOUT_MS = 10_000;
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 router.get("/proxy", async (req, res) => {
   const raw = req.query.url;
@@ -107,13 +109,20 @@ router.get("/proxy", async (req, res) => {
     let response!: Response;
 
     while (true) {
-      response = await fetch(currentUrl, {
-        redirect: "manual",
-        headers: {
-          "User-Agent": "lifeOS/1.0",
-          Accept: "text/calendar, text/plain, */*",
-        },
-      });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+      try {
+        response = await fetch(currentUrl, {
+          redirect: "manual",
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "lifeOS/1.0",
+            Accept: "text/calendar, text/plain, */*",
+          },
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
 
       const isRedirect = [301, 302, 307, 308].includes(response.status);
       const location = response.headers.get("location");
@@ -154,7 +163,17 @@ router.get("/proxy", async (req, res) => {
       return;
     }
 
-    const text = await response.text();
+    const contentLength = Number(response.headers.get("content-length") || "0");
+    if (contentLength > MAX_RESPONSE_BYTES) {
+      res.status(413).json({ error: "Upstream response too large" });
+      return;
+    }
+    const buffer = await response.arrayBuffer();
+    if (buffer.byteLength > MAX_RESPONSE_BYTES) {
+      res.status(413).json({ error: "Upstream response too large" });
+      return;
+    }
+    const text = new TextDecoder().decode(buffer);
     res.setHeader("Content-Type", response.headers.get("Content-Type") || "text/calendar; charset=utf-8");
     res.setHeader("Cache-Control", "no-store, no-cache, max-age=0, must-revalidate");
     res.setHeader("Pragma", "no-cache");

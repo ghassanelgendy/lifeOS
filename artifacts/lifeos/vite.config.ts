@@ -8,7 +8,8 @@ const rawPort = process.env.PORT;
 
 if (!rawPort) {
   throw new Error(
-    "PORT environment variable is required but was not provided.",
+    "PORT environment variable is required. " +
+    "When running outside the Replit workflow, set it manually: PORT=25109 pnpm dev",
   );
 }
 
