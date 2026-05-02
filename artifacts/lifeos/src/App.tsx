@@ -8,7 +8,6 @@ import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { useTransactionsRealtime } from './hooks/useFinance';
-import { useTickTickPullSync } from './hooks/useTickTick';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
@@ -30,7 +29,6 @@ import SettingsPage from './routes/Settings';
 import WeeklyPlanner from './routes/WeeklyPlanner';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
-import AuthTickTickCallback from './routes/AuthTickTickCallback';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -81,7 +79,6 @@ function ThemeSync() {
 
 function AppInner() {
   useTransactionsRealtime();
-  useTickTickPullSync();
   useEffect(() => {
     if (isOnline()) seedDatabase();
   }, []);
@@ -125,7 +122,6 @@ function AppInner() {
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
           <Route path="*" element={<ProtectedRoute />}>
-            <Route path="auth/ticktick/callback" element={<AuthTickTickCallback />} />
             <Route element={<AppShell />}>
               <Route index element={<DefaultLanding />} />
               <Route path="tasks" element={<Tasks />} />

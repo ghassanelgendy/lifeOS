@@ -17,7 +17,6 @@ import {
   GripVertical,
   LogOut,
   User,
-  Link2,
   RotateCcw,
   MapPin,
   Loader2,
@@ -44,7 +43,6 @@ import { Button, ConfirmSheet, Input } from '../components/ui';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
-import { useTickTickStatus, connectTickTick, importTickTickTasks, syncNowFromTickTick, disconnectTickTickIntegration } from '../hooks/useTickTick';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
@@ -80,7 +78,6 @@ const SETTINGS_NAV = [
   { id: 'prayer', label: 'Prayer times' },
   { id: 'habits', label: 'Habits' },
   { id: 'privacy', label: 'Privacy & analytics' },
-  { id: 'integrations', label: 'Integrations' },
   { id: 'data', label: 'Data & backup' },
   { id: 'about', label: 'About' },
 ] as const;
@@ -109,8 +106,6 @@ export default function SettingsPage() {
     dashboardMode,
     setDashboardMode,
     cycleDashboardMode,
-    tauriStartMinimized,
-    setTauriStartMinimized,
     pageWidgetOrder,
     pageWidgetVisible,
     togglePageWidget,
@@ -130,20 +125,14 @@ export default function SettingsPage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
-  const [ticktickStatus, setTicktickStatus] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const dashboardModeRowTapRef = useRef<number>(0);
-  const [isTauri, setIsTauri] = useState(false);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    setIsTauri(false);
-  }, []);
 
   useEffect(() => {
     if (prayerLocationMode !== 'city') {
@@ -192,8 +181,6 @@ export default function SettingsPage() {
       { enableHighAccuracy: false, timeout: 20000, maximumAge: 300_000 }
     );
   };
-
-  const { connected: ticktickConnected, isLoading: ticktickLoading, refetch: refetchTickTick } = useTickTickStatus();
 
   // Export data
   const handleExport = () => {
@@ -509,28 +496,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Desktop app (Tauri) */}
-      {isTauri && (
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h2 className="font-semibold">Desktop app</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Options when running as the Windows desktop app.
-            </p>
-          </div>
-          <div className="p-4 space-y-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={tauriStartMinimized}
-                onChange={(e) => setTauriStartMinimized(e.target.checked)}
-                className="rounded border-border"
-              />
-              <span className="text-sm">Start minimized when opening the app</span>
-            </label>
-          </div>
-        </section>
-      )}
       </div>
 
       <div id="settings-layout" className="space-y-10 scroll-mt-20">
@@ -962,84 +927,6 @@ export default function SettingsPage() {
               />
             </button>
           </div>
-        </div>
-      </section>
-
-      {/* Integrations - TickTick */}
-      <section id="settings-integrations" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Integrations</h2>
-          <p className="text-sm text-muted-foreground mt-1">Connect task apps and sync tasks</p>
-        </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <Link2 size={20} className="text-muted-foreground" />
-              <div>
-                <p className="font-medium">TickTick</p>
-                <p className="text-sm text-muted-foreground">
-                  {ticktickConnected ? '2-way sync: changes in LifeOS or TickTick stay in sync. Sync now to pull latest from TickTick.' : 'Import and sync tasks with TickTick.'}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {ticktickLoading ? (
-                <span className="text-sm text-muted-foreground">Checking…</span>
-              ) : ticktickConnected ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      setTicktickStatus(null);
-                      const result = await syncNowFromTickTick();
-                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
-                      else setTicktickStatus(`Synced: ${result.inserted} new, ${result.updated} updated, ${result.deleted} removed`);
-                      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-                      refetchTickTick();
-                      setTimeout(() => setTicktickStatus(null), 5000);
-                    }}
-                  >
-                    Sync now
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={async () => {
-                      setTicktickStatus(null);
-                      const result = await importTickTickTasks();
-                      if (result.error) setTicktickStatus(`Error: ${result.error}`);
-                      else setTicktickStatus(`Imported ${result.imported} of ${result.total} tasks`);
-                      refetchTickTick();
-                      setTimeout(() => setTicktickStatus(null), 5000);
-                    }}
-                  >
-                    Import tasks
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={async () => {
-                      const result = await disconnectTickTickIntegration();
-                      if (result.success) refetchTickTick();
-                      else setTicktickStatus(result.error ?? 'Failed to disconnect');
-                    }}
-                  >
-                    Disconnect
-                  </Button>
-                </>
-              ) : (
-                <Button size="sm" onClick={() => connectTickTick()}>
-                  Connect TickTick
-                </Button>
-              )}
-            </div>
-          </div>
-          {ticktickStatus && (
-            <p className={cn('text-sm', ticktickStatus.startsWith('Error') ? 'text-destructive' : 'text-muted-foreground')}>
-              {ticktickStatus}
-            </p>
-          )}
         </div>
       </section>
 

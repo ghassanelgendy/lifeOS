@@ -10,7 +10,6 @@ import {
   idbSaveTags,
   idbGetTasks,
 } from '../db/indexedDb';
-import { syncTaskToTickTick } from '../lib/ticktick';
 
 const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
@@ -457,15 +456,6 @@ export function useCreateTask() {
       // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
       void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
 
-      if (isOnline()) {
-        void syncTaskToTickTick('create', created.id, {
-          title: created.title,
-          description: created.description,
-          due_date: created.due_date,
-          due_time: created.due_time,
-          priority: created.priority,
-        }).then(() => queryClient.invalidateQueries({ queryKey: TASKS_KEY }));
-      }
       return created;
     },
   });
@@ -522,10 +512,9 @@ export function useUpdateTask() {
       if (error) throw error;
       return updated as Task;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: () => {
       if (isOnline()) {
         queryClient.invalidateQueries({ queryKey: TASKS_KEY });
-        void syncTaskToTickTick('update', variables.id, variables.data);
       }
     },
   });
@@ -594,7 +583,6 @@ export function useToggleTask() {
             recurrence_count: next.recurrence_count,
             parent_id: undefined,
             subtask_order: undefined,
-            ticktick_id: null,
             calendar_event_id: updatedTask.calendar_event_id ?? null,
           };
           const { error: insertErr } = await supabase.from('tasks').insert(taskInsertPayload(nextInput));
@@ -603,10 +591,9 @@ export function useToggleTask() {
       }
       return updatedTask;
     },
-    onSuccess: (updated) => {
+    onSuccess: () => {
       if (isOnline()) {
         queryClient.invalidateQueries({ queryKey: TASKS_KEY });
-        if (updated) void syncTaskToTickTick('complete', updated.id, { completed: updated.is_completed });
       }
     },
   });
@@ -626,10 +613,9 @@ export function useDeleteTask() {
       if (error) throw error;
       return true;
     },
-    onSuccess: (_data, id) => {
+    onSuccess: () => {
       if (isOnline()) {
         queryClient.invalidateQueries({ queryKey: TASKS_KEY });
-        void syncTaskToTickTick('delete', id);
       }
     },
   });

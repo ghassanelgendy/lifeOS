@@ -135,7 +135,6 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.defaultTaskView = asStrOrNull(remote.defaultTaskView);
   patch.defaultTaskListId = asStrOrNull(remote.defaultTaskListId);
   patch.calendarShowTasks = asBool(remote.calendarShowTasks, true);
-  patch.tauriStartMinimized = asBool(remote.tauriStartMinimized, false);
 
   const defaultOrder = {
     dashboard: [...DASHBOARD_WIDGET_IDS],

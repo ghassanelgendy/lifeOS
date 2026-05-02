@@ -351,7 +351,7 @@ export function parseTaskInput(title: string): TaskInputParseResult {
     re.lastIndex = 0;
   }
 
-  // Priority shortcuts: !high, !medium, !low, !none, !1, !2, !3, !4 (TickTick style)
+  // Priority shortcuts: !high, !medium, !low, !none, !1, !2, !3, !4
   const priorityRegex = /\b!(high|medium|low|none|[1-4])\b/gi;
   const priorityMatch = priorityRegex.exec(currentTitle);
   if (priorityMatch && !priority) {
