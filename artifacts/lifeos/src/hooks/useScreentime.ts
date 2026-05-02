@@ -1,0 +1,317 @@
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
+import type { ScreentimeAppStat, ScreentimeWebsiteStat, ScreentimeDailySummary } from '../types/schema';
+import { format, subDays } from 'date-fns';
+import { screentimeDateKey } from '../lib/screentimePlatform';
+import { useAuth } from '../contexts/AuthContext';
+
+const QUERY_KEY = ['screentime'];
+
+/** PostgREST returns at most ~1000 rows per request; paginate so totals (e.g. Windows day sum) are not truncated. */
+const PAGE_SIZE = 1000;
+
+function isPcLockApp(stat: Pick<ScreentimeAppStat, 'app_name' | 'source' | 'platform'>): boolean {
+  const appName = (stat.app_name || '').trim().toLowerCase();
+  const source = (stat.source || '').trim().toLowerCase();
+  const platform = (stat.platform || '').trim().toLowerCase();
+  const isPc = source === 'pc' || platform === 'windows' || platform === 'macos' || platform === 'linux';
+  return isPc && appName === 'lockapp';
+}
+
+async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
+  const all: ScreentimeAppStat[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('screentime_daily_app_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    if (!data?.length) break;
+    all.push(...(data as ScreentimeAppStat[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all.filter((stat) => !isPcLockApp(stat));
+}
+
+async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
+  const all: ScreentimeWebsiteStat[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('screentime_daily_website_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    if (!data?.length) break;
+    all.push(...(data as ScreentimeWebsiteStat[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+async function fetchAllDailySummaries(userId: string, startDate: string, endDate: string): Promise<ScreentimeDailySummary[]> {
+  const all: ScreentimeDailySummary[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const to = from + PAGE_SIZE - 1;
+    const { data, error } = await supabase
+      .from('screentime_daily_summary')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, to);
+    if (error) throw error;
+    if (!data?.length) break;
+    all.push(...(data as ScreentimeDailySummary[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return all;
+}
+
+// Get app stats for a date range
+export function useScreentimeAppStats(startDate: string, endDate: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...QUERY_KEY, 'apps', startDate, endDate, user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return fetchAllAppStats(user.id, startDate, endDate);
+    },
+    enabled: !!user?.id,
+  });
+}
+
+// Get website stats for a date range
+export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...QUERY_KEY, 'websites', startDate, endDate, user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return fetchAllWebsiteStats(user.id, startDate, endDate);
+    },
+    enabled: !!user?.id,
+  });
+}
+
+// Get daily summaries (switches) for a date range
+export function useScreentimeDailySummaries(startDate: string, endDate: string) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [...QUERY_KEY, 'summaries', startDate, endDate, user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      return fetchAllDailySummaries(user.id, startDate, endDate);
+    },
+    enabled: !!user?.id,
+  });
+}
+
+// Get today's screentime summary
+export function useTodayScreentime() {
+  const today = format(new Date(), 'yyyy-MM-dd');
+  
+  const { data: appStats = [] } = useScreentimeAppStats(today, today);
+  const { data: websiteStats = [] } = useScreentimeWebsiteStats(today, today);
+  const { data: summaries = [] } = useScreentimeDailySummaries(today, today);
+  
+  // Aggregate apps by name first (to avoid double-counting)
+  const aggregatedApps = appStats.reduce((acc, stat) => {
+    const existing = acc.find(a => a.app_name === stat.app_name);
+    if (existing) {
+      existing.total_time_seconds += stat.total_time_seconds;
+      existing.session_count += stat.session_count;
+    } else {
+      acc.push({ ...stat });
+    }
+    return acc;
+  }, [] as ScreentimeAppStat[]);
+  
+  // Aggregate websites by domain first (to avoid double-counting)
+  const aggregatedWebsites = websiteStats.reduce((acc, stat) => {
+    const existing = acc.find(w => w.domain === stat.domain);
+    if (existing) {
+      existing.total_time_seconds += stat.total_time_seconds;
+      existing.session_count += stat.session_count;
+    } else {
+      acc.push({ ...stat });
+    }
+    return acc;
+  }, [] as ScreentimeWebsiteStat[]);
+  
+  // App + domain rows (Windows tracker often attributes browser time to domains, not the browser app row).
+  const totalSeconds =
+    aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0) +
+    aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
+  
+  const totalMinutes = Math.round(totalSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  
+  // Top apps (by time) - already aggregated
+  const topApps = aggregatedApps
+    .sort((a, b) => b.total_time_seconds - a.total_time_seconds)
+    .slice(0, 5);
+  
+  // Top websites - already aggregated
+  const topWebsites = aggregatedWebsites
+    .sort((a, b) => b.total_time_seconds - a.total_time_seconds)
+    .slice(0, 5);
+  
+  // Calculate total switches for today (sum across all sources/devices)
+  const totalSwitches = summaries.reduce((sum, s) => sum + (s.total_switches || 0), 0);
+
+  const classifyDevice = (source?: string | null, platform?: string | null): 'pc' | 'phone' | 'other' => {
+    const src = (source || '').toLowerCase();
+    const pf = (platform || '').toLowerCase();
+    if (src === 'mobile' || pf === 'ios' || pf === 'android') return 'phone';
+    if (src === 'pc' || pf === 'windows' || pf === 'macos' || pf === 'linux') return 'pc';
+    return 'other';
+  };
+
+  const deviceSeconds = { pc: 0, phone: 0, other: 0 };
+  for (const stat of [...aggregatedApps, ...aggregatedWebsites]) {
+    deviceSeconds[classifyDevice(stat.source, stat.platform)] += stat.total_time_seconds || 0;
+  }
+
+  return {
+    totalMinutes,
+    totalHours: hours,
+    remainingMinutes: minutes,
+    totalSeconds,
+    pcMinutes: Math.round(deviceSeconds.pc / 60),
+    phoneMinutes: Math.round(deviceSeconds.phone / 60),
+    otherMinutes: Math.round(deviceSeconds.other / 60),
+    topApps,
+    topWebsites,
+    appCount: appStats.length,
+    websiteCount: websiteStats.length,
+    totalSwitches,
+  };
+}
+
+// Get screentime metrics for last N days
+export function useScreentimeMetrics(days: number = 30) {
+  const endDate = format(new Date(), 'yyyy-MM-dd');
+  const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+  
+  const { data: appStats = [], isLoading: appsLoading } = useScreentimeAppStats(startDate, endDate);
+  const { data: websiteStats = [], isLoading: websitesLoading } = useScreentimeWebsiteStats(startDate, endDate);
+  const { data: summaries = [], isLoading: summariesLoading } = useScreentimeDailySummaries(startDate, endDate);
+  
+  // Group by date (topApp/otherApps = split of app time for charts; no apps vs websites)
+  const dailyStats = new Map<string, { apps: number; websites: number; total: number; switches: number; topApp: number; otherApps: number }>();
+  
+  // Aggregate by date and app_name/domain to avoid double-counting
+  const dailyAppAggregates = new Map<string, Map<string, number>>();
+  const dailyWebsiteAggregates = new Map<string, Map<string, number>>();
+  
+  appStats.forEach(stat => {
+    const dayKey = screentimeDateKey(stat.date);
+    if (!dayKey) return;
+    if (!dailyAppAggregates.has(dayKey)) {
+      dailyAppAggregates.set(dayKey, new Map());
+    }
+    const appMap = dailyAppAggregates.get(dayKey)!;
+    const current = appMap.get(stat.app_name) || 0;
+    appMap.set(stat.app_name, current + stat.total_time_seconds);
+  });
+  
+  websiteStats.forEach(stat => {
+    const dayKey = screentimeDateKey(stat.date);
+    if (!dayKey) return;
+    if (!dailyWebsiteAggregates.has(dayKey)) {
+      dailyWebsiteAggregates.set(dayKey, new Map());
+    }
+    const websiteMap = dailyWebsiteAggregates.get(dayKey)!;
+    const current = websiteMap.get(stat.domain) || 0;
+    websiteMap.set(stat.domain, current + stat.total_time_seconds);
+  });
+  
+  // Per-day: total app time and "top app" vs "other apps" (meaningful split; no apps vs websites).
+  dailyAppAggregates.forEach((appMap, date) => {
+    const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
+    const appTotal = Array.from(appMap.values()).reduce((sum, val) => sum + val, 0);
+    const topAppSeconds = appMap.size > 0 ? Math.max(...appMap.values()) : 0;
+    const otherAppSeconds = appTotal - topAppSeconds;
+    existing.apps += appTotal;
+    existing.total += appTotal;
+    existing.topApp = topAppSeconds;
+    existing.otherApps = otherAppSeconds;
+    dailyStats.set(date, existing);
+  });
+
+  dailyWebsiteAggregates.forEach((websiteMap, date) => {
+    const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
+    const webSum = Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
+    existing.websites += webSum;
+    existing.total += webSum;
+    dailyStats.set(date, existing);
+  });
+
+  // Add switches from summaries
+  summaries.forEach(summary => {
+    const dayKey = screentimeDateKey(summary.date);
+    if (!dayKey) return;
+    const existing = dailyStats.get(dayKey) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
+    existing.switches += summary.total_switches || 0;
+    dailyStats.set(dayKey, existing);
+  });
+  
+  // Convert to array and sort by date (topApp/otherApps for "Top app vs Other" charts)
+  const history = Array.from(dailyStats.entries())
+    .map(([date, stats]) => ({
+      date,
+      minutes: Math.round(stats.total / 60),
+      topAppMinutes: Math.round((stats.topApp ?? 0) / 60),
+      otherMinutes: Math.round((stats.otherApps ?? 0) / 60),
+      switches: stats.switches,
+    }))
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  
+  // Calculate averages
+  const last7Days = history.slice(-7);
+  const prev7Days = history.slice(-14, -7);
+  
+  const avg7Days = last7Days.length > 0
+    ? Math.round(last7Days.reduce((sum, d) => sum + d.minutes, 0) / last7Days.length)
+    : 0;
+  
+  const prevAvg7Days = prev7Days.length > 0
+    ? Math.round(prev7Days.reduce((sum, d) => sum + d.minutes, 0) / prev7Days.length)
+    : 0;
+  
+  const trend = prevAvg7Days > 0
+    ? Math.round(((avg7Days - prevAvg7Days) / prevAvg7Days) * 100)
+    : 0;
+  
+  // Calculate average switches for last 7 days
+  const avgSwitches7Days = last7Days.length > 0
+    ? Math.round(last7Days.reduce((sum, d) => sum + (d.switches || 0), 0) / last7Days.length)
+    : 0;
+
+  // Get today's switches
+  const todaySwitches = history.length > 0 ? (history[history.length - 1]?.switches || 0) : 0;
+
+  return {
+    history,
+    avg7Days,
+    trend,
+    avgSwitches7Days,
+    todaySwitches,
+    isLoading: appsLoading || websitesLoading || summariesLoading,
+  };
+}
