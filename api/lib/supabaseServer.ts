@@ -22,9 +22,17 @@ export async function getUserIdFromRequest(req: { headers: { authorization?: str
   const auth = req.headers.authorization;
   const token = auth?.startsWith('Bearer ') ? auth.slice(7) : null;
   if (!token) return null;
-  const client = getSupabaseAnon();
-  if (!client) return null;
-  const { data: { user }, error } = await client.auth.getUser(token);
-  if (error || !user) return null;
-  return user.id;
+  if (!supabaseUrl || !supabaseAnonKey) return null;
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      apikey: supabaseAnonKey,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) return null;
+
+  const user = (await response.json()) as { id?: string | null };
+  return typeof user.id === 'string' && user.id ? user.id : null;
 }
