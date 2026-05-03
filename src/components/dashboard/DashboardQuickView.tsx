@@ -395,6 +395,10 @@ export function DashboardQuickView() {
               Screen
             </p>
             <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
+            <Link to="/screentime" className={cn(QV_LINK_PILL, 'mt-2')}>
+              Screen time
+              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
+            </Link>
           </div>
         </div>
         <div className="mt-2 sm:mt-3">

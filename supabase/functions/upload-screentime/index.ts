@@ -401,7 +401,6 @@ function categorizeApp(appName: string): string {
     'vscode': 'Development',
     
     // Productivity
-    'ticktick': 'Productivity',
     'icloudpasswords': 'Productivity',
     'icloudpasswordsextensionhelper': 'Productivity',
     'excel': 'Productivity',
@@ -561,7 +560,7 @@ function categorizeApp(appName: string): string {
   if (/mail|email|outlook|gmail|post/i.test(normalized)) return 'Communication';
   if (/social|facebook|twitter|instagram|linkedin|snapchat|tiktok/i.test(normalized)) return 'Social';
   if (/note|memo|notepad|text|document|write/i.test(normalized)) return 'Productivity';
-  if (/calendar|schedule|reminder|todo|task|ticktick/i.test(normalized)) return 'Productivity';
+  if (/calendar|schedule|reminder|todo|task/i.test(normalized)) return 'Productivity';
   if (/bank|finance|payment|wallet|money|fawry|thndr|instapay/i.test(normalized)) return 'Finance';
   if (/health|fitness|workout|exercise|wellness/i.test(normalized)) return 'Health';
   if (/map|navigation|gps|location|directions/i.test(normalized)) return 'Navigation';

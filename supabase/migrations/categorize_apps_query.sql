@@ -8,7 +8,7 @@ SET category = CASE
     THEN 'Development'
   
   -- Productivity
-  WHEN LOWER(TRIM(app_name)) IN ('ticktick', 'icloudpasswords', 'icloudpasswordsextensionhelper', 'excel', 'powerpnt', 'powerpoint', 'word', 'onenote', 'outlook', 'notes', 'reminders', 'calendar', 'google calendar', 'shortcuts', 'zoho desk', 'gemini', 'chatgpt')
+  WHEN LOWER(TRIM(app_name)) IN ('icloudpasswords', 'icloudpasswordsextensionhelper', 'excel', 'powerpnt', 'powerpoint', 'word', 'onenote', 'outlook', 'notes', 'reminders', 'calendar', 'google calendar', 'shortcuts', 'zoho desk', 'gemini', 'chatgpt')
     THEN 'Productivity'
   
   -- Utilities
@@ -76,7 +76,7 @@ SET category = CASE
   WHEN LOWER(TRIM(app_name)) ~ 'mail|email|outlook|gmail|post' THEN 'Communication'
   WHEN LOWER(TRIM(app_name)) ~ 'social|facebook|twitter|instagram|linkedin|snapchat|tiktok' THEN 'Social'
   WHEN LOWER(TRIM(app_name)) ~ 'note|memo|notepad|text|document|write' THEN 'Productivity'
-  WHEN LOWER(TRIM(app_name)) ~ 'calendar|schedule|reminder|todo|task|ticktick' THEN 'Productivity'
+  WHEN LOWER(TRIM(app_name)) ~ 'calendar|schedule|reminder|todo|task' THEN 'Productivity'
   WHEN LOWER(TRIM(app_name)) ~ 'bank|finance|payment|wallet|money|fawry|thndr|instapay' THEN 'Finance'
   WHEN LOWER(TRIM(app_name)) ~ 'health|fitness|workout|exercise|wellness' THEN 'Health'
   WHEN LOWER(TRIM(app_name)) ~ 'map|navigation|gps|location|directions' THEN 'Navigation'

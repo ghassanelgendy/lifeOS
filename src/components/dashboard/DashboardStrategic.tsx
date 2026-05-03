@@ -54,9 +54,7 @@ export function DashboardStrategic() {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
-        <p className="text-xs text-muted-foreground sm:max-w-md">
-          Medium-term execution: projects and habit trends. Use the range control for 30d / 90d / 6m.
-        </p>
+        <p className="text-xs text-muted-foreground sm:max-w-md">Medium-term execution: projects and habit trends.</p>
         <div className="flex rounded-lg border border-border p-1 bg-muted/30 w-fit" role="group" aria-label="Trend range">
           {HORIZON_OPTIONS.map((opt) => (
             <button

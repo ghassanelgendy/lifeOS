@@ -25,7 +25,7 @@ A personal life operating system dashboard with:
 - **State**: Zustand stores + TanStack Query with localStorage persistence
 - **Offline**: IndexedDB cache + offline queue sync
 - **Themes**: Dark/light + 6 accent colors (zinc/blue/green/violet/rose/amber)
-- **Integrations**: TickTick task sync (OAuth2), Supabase Realtime, adhan (prayer times)
+- **Integrations**: Supabase Realtime, adhan (prayer times)
 
 ### Routes
 - `/` — Dashboard (default landing, configurable)
@@ -47,10 +47,7 @@ A personal life operating system dashboard with:
 ### Environment Variables (Secrets)
 - `VITE_SUPABASE_URL` — Supabase project URL
 - `VITE_SUPABASE_ANON_KEY` — Supabase anon/public key
-- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key (server-side TickTick sync)
-- `VITE_TICKTICK_CLIENT_ID` — TickTick OAuth client ID (optional)
-- `VITE_TICKTICK_REDIRECT_URI` — TickTick OAuth redirect URI (optional)
-- `TICKTICK_CLIENT_SECRET` — TickTick OAuth client secret (optional)
+- `SUPABASE_SERVICE_ROLE_KEY` — Supabase service role key for server-side routes
 
 ## Key Commands
 

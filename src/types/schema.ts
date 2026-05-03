@@ -346,7 +346,6 @@ export interface Task {
   parent_id?: string; // FK to parent Task (for subtasks)
   subtask_order?: number;
   // Integrations
-  ticktick_id?: string | null;
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;
   /** Optional link to an annual strategic plan quarter milestone */
