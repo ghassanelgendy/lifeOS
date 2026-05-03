@@ -16,6 +16,15 @@ type Feature = {
   details: string[];
 };
 
+type PanelState = {
+  title: string;
+  description: string;
+  details: string[];
+  color: string;
+  icon: typeof CheckSquare;
+  isHero: boolean;
+};
+
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -142,7 +151,24 @@ function FeatureCard({ feature, index, active, onSelect }: { feature: Feature; i
 export default function Landing() {
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
-  const [activeFeature, setActiveFeature] = useState<Feature>(FEATURES[0]);
+  const [activeFeature, setActiveFeature] = useState<Feature | null>(null);
+  const panelState: PanelState = activeFeature
+    ? {
+        title: activeFeature.title,
+        description: activeFeature.description,
+        details: activeFeature.details,
+        color: activeFeature.color,
+        icon: activeFeature.icon,
+        isHero: false,
+      }
+    : {
+        title: 'Interactive module preview',
+        description: 'Click any module to reveal its feature set, details, and how it fits into your lifeOS dashboard.',
+        details: ['Choose a module from the grid', 'See its key capabilities', 'Switch instantly between modules'],
+        color: 'from-white/15 to-white/5',
+        icon: Layout,
+        isHero: true,
+      };
 
   return (
     <div className="min-h-screen bg-[#08080c] text-white flex flex-col overflow-x-hidden overflow-y-auto selection:bg-primary/30">
@@ -229,19 +255,19 @@ export default function Landing() {
             </div>
 
             <motion.div
-              key={activeFeature.title}
+              key={panelState.title}
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
               className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-6 sm:p-7"
             >
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${activeFeature.color} mb-4`}>
-                <activeFeature.icon size={22} className="text-white/90" />
+              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${panelState.color} mb-4`}>
+                <panelState.icon size={22} className="text-white/90" />
               </div>
-              <h3 className="text-2xl font-bold tracking-tight">{activeFeature.title}</h3>
-              <p className="mt-2 text-white/50 leading-relaxed">{activeFeature.description}</p>
+              <h3 className="text-2xl font-bold tracking-tight">{panelState.title}</h3>
+              <p className="mt-2 text-white/50 leading-relaxed">{panelState.description}</p>
               <ul className="mt-5 space-y-3">
-                {activeFeature.details.map((item) => (
+                {panelState.details.map((item) => (
                   <li key={item} className="flex items-center gap-2 text-sm text-white/70">
                     <span className="w-1.5 h-1.5 rounded-full bg-white/50" />
                     {item}
@@ -249,7 +275,7 @@ export default function Landing() {
                 ))}
               </ul>
               <div className="mt-6 rounded-2xl border border-white/[0.06] bg-black/20 p-4 text-sm text-white/55">
-                Click another module to switch this panel.
+                {panelState.isHero ? 'Pick a module to see its features here.' : 'Click another module to switch this panel.'}
               </div>
             </motion.div>
           </div>
