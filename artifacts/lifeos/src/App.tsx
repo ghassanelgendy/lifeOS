@@ -29,6 +29,7 @@ import SettingsPage from './routes/Settings';
 import WeeklyPlanner from './routes/WeeklyPlanner';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
+import Landing from './routes/Landing';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -41,21 +42,24 @@ const PERSIST_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
 function ProtectedRoute() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   return <Outlet />;
 }
 
 function RequireGuest({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  if (user) return <Navigate to="/" replace />;
+  if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
-function DefaultLanding() {
+function PublicHome() {
+  const { user, loading } = useAuth();
   const defaultTab = useUIStore((s) => s.defaultTab);
-  if (defaultTab === 'dashboard' || !defaultTab) return <Dashboard />;
-  return <Navigate to={`/${defaultTab}`} replace />;
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Landing />;
+  const dest = defaultTab && defaultTab !== 'dashboard' ? `/${defaultTab}` : '/dashboard';
+  return <Navigate to={dest} replace />;
 }
 
 function UserAppSettingsBridge() {
@@ -119,11 +123,12 @@ function AppInner() {
       <BrowserRouter>
         <FaviconSync />
         <Routes>
+          <Route path="/" element={<PublicHome />} />
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
           <Route path="*" element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route index element={<DefaultLanding />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="focus" element={<Focus />} />
               <Route path="health" element={<Health />} />
