@@ -7,8 +7,6 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-/* ─── helpers ─────────────────────────────────────────────────── */
-
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -41,8 +39,6 @@ function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
   return <span ref={ref}>0{suffix}</span>;
 }
 
-/* ─── data ─────────────────────────────────────────────────────── */
-
 const FEATURES = [
   { icon: CheckSquare, title: 'Tasks', description: 'Smart task management with priorities, due dates, subtasks, and recurrence.', color: 'from-blue-500/20 to-blue-600/5' },
   { icon: Timer,       title: 'Focus',   description: 'Pomodoro timer to protect deep work time and track productive sessions.',   color: 'from-orange-500/20 to-orange-600/5' },
@@ -66,8 +62,6 @@ const STATS = [
 
 const WORDS = ['organised', 'focused', 'consistent', 'in control'];
 
-/* ─── animation variants ─────────────────────────────────────────── */
-
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } }),
@@ -81,8 +75,6 @@ const cardVariant = {
   }),
 };
 
-/* ─── components ─────────────────────────────────────────────────── */
-
 function RotatingWord() {
   const [index, setIndex] = useState(0);
   useEffect(() => {
@@ -90,7 +82,7 @@ function RotatingWord() {
     return () => clearInterval(id);
   }, []);
   return (
-    <span className="relative inline-block overflow-hidden align-bottom" style={{ minWidth: '12ch' }}>
+    <span className="relative inline-block overflow-hidden align-bottom -ml-2 sm:-ml-3" style={{ minWidth: '12ch' }}>
       <motion.span
         key={index}
         initial={{ y: '100%', opacity: 0 }}
@@ -134,117 +126,62 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
   );
 }
 
-/* ─── page ────────────────────────────────────────────────────────── */
-
 export default function Landing() {
-  const featuresRef = useRef(null);
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
 
   return (
-    <div className="min-h-screen bg-[#08080c] text-white flex flex-col overflow-auto selection:bg-primary/30">
-
-      {/* ── background orbs ── */}
+    <div className="min-h-screen bg-[#08080c] text-white flex flex-col overflow-x-hidden overflow-y-auto selection:bg-primary/30">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <motion.div
-          animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
-          transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
-          className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full bg-primary/10 blur-[120px]"
-        />
-        <motion.div
-          animate={{ x: [0, -25, 0], y: [0, 30, 0] }}
-          transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 4 }}
-          className="absolute top-1/3 -right-60 w-[600px] h-[600px] rounded-full bg-violet-500/8 blur-[120px]"
-        />
-        <motion.div
-          animate={{ x: [0, 20, 0], y: [0, -15, 0] }}
-          transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut', delay: 8 }}
-          className="absolute -bottom-40 left-1/3 w-[500px] h-[500px] rounded-full bg-blue-500/8 blur-[100px]"
-        />
+        <motion.div animate={{ x: [0, 30, 0], y: [0, -20, 0] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }} className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full bg-primary/10 blur-[120px]" />
+        <motion.div animate={{ x: [0, -25, 0], y: [0, 30, 0] }} transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 4 }} className="absolute top-1/3 -right-60 w-[600px] h-[600px] rounded-full bg-violet-500/8 blur-[120px]" />
+        <motion.div animate={{ x: [0, 20, 0], y: [0, -15, 0] }} transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut', delay: 8 }} className="absolute -bottom-40 left-1/3 w-[500px] h-[500px] rounded-full bg-blue-500/8 blur-[100px]" />
       </div>
 
-      {/* ── nav ── */}
       <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#08080c]/80 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
           <span className="font-bold text-lg tracking-tight">lifeOS</span>
           <div className="flex items-center gap-2">
-            <Link
-              to="/login"
-              className="px-4 py-1.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors"
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/signup"
-              className="px-4 py-1.5 rounded-lg text-sm bg-white text-black font-medium hover:bg-white/90 transition-colors"
-            >
-              Get started
-            </Link>
+            <Link to="/login" className="px-4 py-1.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors">Sign in</Link>
+            <Link to="/signup" className="px-4 py-1.5 rounded-lg text-sm bg-white text-black font-medium hover:bg-white/90 transition-colors">Get started</Link>
           </div>
         </div>
       </header>
 
-      <main className="relative flex-1">
-
-        {/* ── hero ── */}
+      <main className="relative flex-1 overflow-y-auto">
         <section className="max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
-          <motion.div
-            variants={fadeUp} custom={0} initial="hidden" animate="show"
-            className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs text-white/50 mb-8"
-          >
+          <motion.div variants={fadeUp} custom={0} initial="hidden" animate="show" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs text-white/50 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-primary/80 animate-pulse inline-block" />
             Your personal operating system
           </motion.div>
 
-          <motion.h1
-            variants={fadeUp} custom={1} initial="hidden" animate="show"
-            className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.08] mb-6"
-          >
-            Stay{' '}
-            <RotatingWord />
+          <motion.h1 variants={fadeUp} custom={1} initial="hidden" animate="show" className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.08] mb-6">
+            Stay <RotatingWord />
             <br />
             <span className="text-white/30">every single day.</span>
           </motion.h1>
 
-          <motion.p
-            variants={fadeUp} custom={2} initial="hidden" animate="show"
-            className="text-white/45 text-lg max-w-lg mx-auto mb-10 leading-relaxed"
-          >
+          <motion.p variants={fadeUp} custom={2} initial="hidden" animate="show" className="text-white/45 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
             Tasks, habits, focus, finance, sleep, notes, and more — all connected in one personal dashboard.
           </motion.p>
 
-          <motion.div
-            variants={fadeUp} custom={3} initial="hidden" animate="show"
-            className="flex flex-col sm:flex-row items-center justify-center gap-3"
-          >
-            <Link
-              to="/signup"
-              className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all"
-            >
+          <motion.div variants={fadeUp} custom={3} initial="hidden" animate="show" className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link to="/signup" className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all">
               Create free account
               <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm text-white/80 hover:bg-white/[0.08] hover:text-white active:scale-95 transition-all"
-            >
+            <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.04] text-sm text-white/80 hover:bg-white/[0.08] hover:text-white active:scale-95 transition-all">
               <GoogleIcon className="w-4 h-4" />
               Continue with Google
             </Link>
           </motion.div>
 
-          <motion.p
-            variants={fadeUp} custom={4} initial="hidden" animate="show"
-            className="text-xs text-white/25 mt-5"
-          >
+          <motion.p variants={fadeUp} custom={4} initial="hidden" animate="show" className="text-xs text-white/25 mt-5">
             Already have an account?{' '}
-            <Link to="/login" className="text-white/45 underline underline-offset-2 hover:text-white/70 transition-colors">
-              Sign in
-            </Link>
+            <Link to="/login" className="text-white/45 underline underline-offset-2 hover:text-white/70 transition-colors">Sign in</Link>
           </motion.p>
         </section>
 
-        {/* ── stats ── */}
         <section ref={statsRef} className="border-y border-white/[0.05] bg-white/[0.02]">
           <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-3 divide-x divide-white/[0.06]">
             {STATS.map(({ value, suffix, label }) => (
@@ -258,63 +195,18 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* ── features ── */}
-        <section ref={featuresRef} className="max-w-6xl mx-auto px-6 py-24">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }} transition={{ duration: 0.5 }}
-            className="text-center mb-14"
-          >
+        <section className="max-w-6xl mx-auto px-6 py-24">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Everything in one place</h2>
-            <p className="text-white/40 text-base max-w-md mx-auto">
-              12 modules that cover every corner of your life — all talking to each other.
-            </p>
+            <p className="text-white/40 text-base max-w-md mx-auto">12 modules that cover every corner of your life — all talking to each other.</p>
           </motion.div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {FEATURES.map((feature, i) => (
-              <FeatureCard key={feature.title} feature={feature} index={i} />
-            ))}
+            {FEATURES.map((feature, i) => <FeatureCard key={feature.title} feature={feature} index={i} />)}
           </div>
-        </section>
-
-        {/* ── bottom CTA ── */}
-        <section className="max-w-6xl mx-auto px-6 pb-24">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }} transition={{ duration: 0.6 }}
-            className="relative rounded-3xl border border-white/[0.08] bg-white/[0.03] overflow-hidden p-12 text-center"
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-violet-500/10 pointer-events-none" />
-            <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-72 h-72 bg-primary/15 rounded-full blur-[80px] pointer-events-none" />
-            <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">
-                Ready to take control?
-              </h2>
-              <p className="text-white/40 text-base mb-8 max-w-sm mx-auto">
-                Sign up for free and start building the life you want — one day at a time.
-              </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link
-                  to="/signup"
-                  className="group inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all"
-                >
-                  Get started — it&apos;s free
-                  <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-                <Link
-                  to="/login"
-                  className="inline-flex items-center gap-2 px-7 py-3 rounded-xl border border-white/10 text-sm text-white/60 hover:text-white hover:bg-white/[0.06] active:scale-95 transition-all"
-                >
-                  Sign in instead
-                </Link>
-              </div>
-            </div>
-          </motion.div>
         </section>
       </main>
 
-      {/* ── footer ── */}
       <footer className="border-t border-white/[0.05] py-6">
         <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/25">
           <span className="font-semibold text-white/40">lifeOS</span>
