@@ -210,7 +210,7 @@ export default function Landing() {
               Create free account
               <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
             </Link>
-            <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.08] text-sm text-white/90 hover:bg-white/[0.12] hover:text-white active:scale-95 transition-all">
+            <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.08] text-sm text-white hover:bg-white/[0.12] hover:text-white active:scale-95 transition-all">
               <GoogleIcon className="w-4 h-4" />
               Continue with Google
             </Link>
