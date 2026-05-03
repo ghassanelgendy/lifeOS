@@ -252,11 +252,12 @@ export function useLogHabit() {
 
       let result;
       const dateOnly = (date || '').split('T')[0];
+      const completedAt = completed ? new Date().toISOString() : null;
 
       if (existing) {
         const { data, error } = await supabase
           .from('habit_logs')
-          .update({ completed, note, date: dateOnly })
+          .update({ completed, note, date: dateOnly, completed_at: completedAt })
           .eq('id', existing.id)
           .select()
           .single();
@@ -265,7 +266,7 @@ export function useLogHabit() {
       } else {
         const { data, error } = await supabase
           .from('habit_logs')
-          .insert({ habit_id: habitId, date: dateOnly, completed, note })
+          .insert({ habit_id: habitId, date: dateOnly, completed, note, completed_at: completedAt })
           .select()
           .single();
         if (error) throw error;
@@ -453,13 +454,13 @@ export function useHabitInsights(habits: Habit[], days = 90) {
 
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('habit_id,date,completed,created_at')
+        .select('habit_id,date,completed,completed_at')
         .in('habit_id', habitIds)
         .gte('date', startStr)
         .lte('date', endStr);
       if (error) throw error;
 
-      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'created_at'>[];
+      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'completed_at'>[];
       const logsByHabit = new Map<string, typeof logs>();
       for (const log of logs) {
         const arr = logsByHabit.get(log.habit_id) ?? [];
@@ -497,8 +498,8 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         for (const log of eventLogs) {
           const eventDate = new Date(`${log.date}T00:00:00`);
           if (!Number.isNaN(eventDate.getTime())) dayCounts[eventDate.getDay()] += 1;
-          const createdAt = new Date(log.created_at);
-          if (!Number.isNaN(createdAt.getTime())) hourValues.push(createdAt.getHours() + createdAt.getMinutes() / 60);
+          const completedAt = new Date(log.completed_at ?? '');
+          if (!Number.isNaN(completedAt.getTime())) hourValues.push(completedAt.getHours() + completedAt.getMinutes() / 60);
         }
 
         const bestDayIndex = dayCounts.reduce((best, count, idx) => (count > dayCounts[best] ? idx : best), 0);

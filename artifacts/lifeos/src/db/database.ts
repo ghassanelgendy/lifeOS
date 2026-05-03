@@ -808,6 +808,7 @@ export const habitLogDB = {
         ...db.habit_logs[existingIndex],
         completed,
         note,
+        completed_at: completed ? now() : null,
       };
       saveDB(db);
       return db.habit_logs[existingIndex];
@@ -820,7 +821,7 @@ export const habitLogDB = {
       date: dateOnly,
       completed,
       note,
-      created_at: now(),
+      completed_at: completed ? now() : null,
     };
     db.habit_logs.push(log);
     saveDB(db);

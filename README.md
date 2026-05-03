@@ -22,9 +22,9 @@ lifeOS is built for the problem that most tools avoid: **your life is multi-doma
 - **A tighter feedback loop**: plan the week → run today → review trends (sleep/screentime/finance/habits) → adjust.
 - **Less UI tax**: the same “details sheet” pattern across modules, so managing your system stays fast.
 - **Your metrics stay yours**: user-scoped analytics and auth boundaries (not shared averages leaking between users).
-- **Fits your workflow**: web-first, with PWA + desktop (Tauri) options.
+- **Fits your workflow**: web-first, with installable PWA support.
 
-This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with data stored in **Supabase**. It also supports a **PWA** service worker and a **Tauri** desktop build.
+This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with data stored in **Supabase**. It also supports a **PWA** service worker for installable offline-friendly use.
 
 [![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](#)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](#)
@@ -32,7 +32,6 @@ This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with d
 [![Supabase](https://img.shields.io/badge/Supabase-db%20%2B%20auth%20%2B%20edge-3ecf8e?logo=supabase&logoColor=white)](#)
 [![Vercel](https://img.shields.io/badge/Vercel-deploy-000000?logo=vercel&logoColor=white)](#)
 [![PWA](https://img.shields.io/badge/PWA-enabled-5a0fc8?logo=pwa&logoColor=white)](#)
-[![Tauri](https://img.shields.io/badge/Tauri-desktop-24c8db?logo=tauri&logoColor=white)](#)
 
 ---
 
@@ -45,7 +44,6 @@ This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with d
   - Smart views: Today / Week / Upcoming / All / Completed / Won’t-do
   - Lists and tags
   - Details editing via bottom sheet (scrollable)
-  - TickTick integration routes (sync + pull)
 - **Habits**
   - Daily + weekly habits
   - Habit logs and streaks
@@ -87,7 +85,6 @@ This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with d
   - migrations in `supabase/migrations/`
   - edge functions in `supabase/functions/`
 - **PWA**: `src/sw.ts` + `vite-plugin-pwa`
-- **Desktop**: Tauri in `src-tauri/`
 
 ---
 
@@ -95,30 +92,30 @@ This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with d
 
 ### Prereqs
 - Node.js (recommended: latest LTS)
-- npm
+- pnpm 10 (`corepack enable` if needed)
 
 ### Install
 
 ```bash
-npm install
+pnpm install --frozen-lockfile
 ```
 
 ### Run dev server
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 ### Lint
 
 ```bash
-npm run lint
+pnpm lint
 ```
 
 ### Build
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ---

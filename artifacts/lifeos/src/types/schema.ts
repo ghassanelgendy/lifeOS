@@ -397,7 +397,8 @@ export interface HabitLog {
   date: string; // ISO-8601 date only (YYYY-MM-DD)
   completed: boolean;
   note?: string;
-  created_at: string;
+  completed_at?: string | null;
+  created_at?: string | null;
 }
 
 // ========================

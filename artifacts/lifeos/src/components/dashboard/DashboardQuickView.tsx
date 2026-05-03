@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
 import { ArrowRight, Calendar, Check, CheckSquare, Flame, Moon, Monitor, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
+import { useCompletedTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay } from '../../hooks/useSleep';
@@ -51,6 +51,28 @@ function isoToDayMinutes(value?: string | null): number | null {
   return d.getHours() * 60 + d.getMinutes();
 }
 
+function withAlpha(color: string, alpha: number) {
+  if (!color) return color;
+  if (color.startsWith('#')) {
+    let hex = color.slice(1);
+    if (hex.length === 3) {
+      hex = hex.split('').map((ch) => ch + ch).join('');
+    }
+    if (hex.length === 6) {
+      const a = Math.round(Math.max(0, Math.min(1, alpha)) * 255)
+        .toString(16)
+        .padStart(2, '0');
+      return `#${hex}${a}`;
+    }
+  }
+  return color;
+}
+
+function formatSegmentPercent(minutes: number) {
+  const pct = Math.round((minutes / (24 * 60)) * 100);
+  return `${pct}%`;
+}
+
 /** Inline nav pills (Due today header, What’s next, metric cards, sleep). */
 const QV_LINK_PILL =
   'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50';
@@ -71,6 +93,12 @@ const ACCENT_DOT: Record<DueKind, string> = {
   habit: 'bg-emerald-500/70',
 };
 
+const COMPLETED_TOGGLE: Record<DueKind, string> = {
+  prayer: 'border-sky-500/35 bg-sky-500/12 text-sky-500 shadow-inner shadow-sky-500/10',
+  task: 'border-violet-500/35 bg-violet-500/12 text-violet-500 shadow-inner shadow-violet-500/10',
+  habit: 'border-emerald-500/35 bg-emerald-500/12 text-emerald-500 shadow-inner shadow-emerald-500/10',
+};
+
 function DueTodayRow({
   kind,
   title,
@@ -80,6 +108,7 @@ function DueTodayRow({
   onToggle,
   label,
   showToggle,
+  accentColor,
 }: {
   kind: DueKind;
   title: string;
@@ -89,9 +118,19 @@ function DueTodayRow({
   onToggle?: () => void;
   label: string;
   showToggle: boolean;
+  accentColor?: string;
 }) {
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : 'Habit';
+
+  const isCustomHabitColor = kind === 'habit' && !!accentColor;
+  const customToggleStyle = isCustomHabitColor && done
+    ? { backgroundColor: accentColor, borderColor: accentColor, color: '#ffffff' }
+    : undefined;
+  const customBadgeStyle = isCustomHabitColor
+    ? { backgroundColor: withAlpha(accentColor!, 0.14), color: accentColor }
+    : undefined;
+  const customDotStyle = isCustomHabitColor ? { backgroundColor: accentColor } : undefined;
 
   return (
     <div
@@ -116,15 +155,20 @@ function DueTodayRow({
             'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
             done
-              ? 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
+              ? (isCustomHabitColor ? 'shadow-inner' : COMPLETED_TOGGLE[kind])
               : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95',
             busy && 'pointer-events-none opacity-50',
           )}
+          style={customToggleStyle}
         >
           {done ? (
             <Check className="h-[14px] w-[14px]" strokeWidth={2.5} aria-hidden />
           ) : (
-            <span className={cn('size-2.5 rounded-full', ACCENT_DOT[kind])} aria-hidden />
+            <span
+              className={cn('size-2.5 rounded-full', !isCustomHabitColor && ACCENT_DOT[kind])}
+              style={customDotStyle}
+              aria-hidden
+            />
           )}
         </button>
       ) : (
@@ -145,8 +189,9 @@ function DueTodayRow({
               'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
               kind === 'prayer' && 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
               kind === 'task' && 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-              kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+              kind === 'habit' && !isCustomHabitColor && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
             )}
+            style={customBadgeStyle}
           >
             {kindLabel}
           </span>
@@ -171,7 +216,6 @@ function DueTodayRow({
 export function DashboardQuickView() {
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
-  const { data: overdueTasks = [] } = useOverdueTasks();
   const { data: todayTasks = [] } = useTodayTasks();
   const { data: completedTasks = [] } = useCompletedTasks();
   const { todayLogs, habits } = useWeeklyAdherence();
@@ -190,11 +234,7 @@ export function DashboardQuickView() {
   const { times: prayerTimesList } = usePrayerTimes();
 
   const quickViewHabits = useMemo(() => habits.filter(isHabitShownInQuickView), [habits]);
-
-  const overdueIncomplete = useMemo(
-    () => overdueTasks.filter((t) => !t.is_completed).sort((a, b) => parseDueForSort(a) - parseDueForSort(b)),
-    [overdueTasks],
-  );
+  const overdueIncomplete: Task[] = [];
 
   const tasksDueTodayOnly = useMemo(
     () => todayTasks.filter((t) => !t.is_completed).sort((a, b) => parseDueForSort(a) - parseDueForSort(b)),
@@ -307,13 +347,13 @@ export function DashboardQuickView() {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
-    const markers: { id: string; left: string; kind: 'habit' | 'task' | 'prayer' }[] = [];
+    const markers: { id: string; left: string; kind: 'habit' | 'task' | 'prayer'; color?: string }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
       if (!log) continue;
-      const minutes = timeStringToMinutes(habit.time) ?? isoToDayMinutes(log.created_at) ?? elapsed;
-      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit' });
+      const minutes = isoToDayMinutes(log.completed_at) ?? timeStringToMinutes(habit.time) ?? elapsed;
+      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit', color: habit.color });
     }
 
     for (const task of completedTasks) {
@@ -342,6 +382,70 @@ export function DashboardQuickView() {
     [],
   );
 
+  const progressSegments = useMemo(
+    () => [
+      {
+        key: 'sleep',
+        width: screenChart.sleepPct,
+        minutes: screenChart.sleep,
+        className: 'bg-indigo-500 text-white/90',
+      },
+      {
+        key: 'pc',
+        width: screenChart.pcPct,
+        minutes: screenChart.pc,
+        className: 'bg-sky-500 text-white/90',
+      },
+      {
+        key: 'phone',
+        width: screenChart.phonePct,
+        minutes: screenChart.phone,
+        className: 'bg-violet-500 text-white/90',
+      },
+      {
+        key: 'other',
+        width: screenChart.otherPct,
+        minutes: screenChart.other,
+        className: 'bg-amber-500 text-black/80',
+      },
+      {
+        key: 'rest',
+        width: screenChart.restPct,
+        minutes: screenChart.rest,
+        className: 'bg-muted-foreground/20 text-muted-foreground/70',
+      },
+    ],
+    [screenChart],
+  );
+
+  const progressPercentLabels = useMemo(() => {
+    let offset = 0;
+    const labels: { key: string; left: string; text: string; className: string }[] = [];
+
+    for (const segment of progressSegments) {
+      const widthPct = (segment.minutes / (24 * 60)) * 100;
+      const center = offset + widthPct / 2;
+
+      if ((segment.key === 'sleep' || segment.key === 'pc' || segment.key === 'phone') && segment.minutes > 0) {
+        labels.push({
+          key: segment.key,
+          left: `${Math.max(0, Math.min(100, center))}%`,
+          text: formatSegmentPercent(segment.minutes),
+          className:
+            segment.key === 'sleep'
+              ? 'text-white/90'
+              : segment.key === 'pc'
+                ? 'text-white/90'
+                : 'text-white/90',
+        });
+      }
+
+      offset += widthPct;
+    }
+
+    return labels;
+  }, [progressSegments]);
+
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
     if (item.kind === 'habit' && item.allDay && isToday(parseISO(item.start_time))) {
       return 'Today · Any time';
@@ -355,7 +459,6 @@ export function DashboardQuickView() {
   };
 
   const hasDueTodayContent =
-    overdueIncomplete.length > 0 ||
     tasksDueTodayOnly.length > 0 ||
     habitsDueToday.length > 0 ||
     !!lastPrayerSlot;
@@ -369,15 +472,7 @@ export function DashboardQuickView() {
         <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Today
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Overdue</p>
-            <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1">{overdueIncomplete.length}</p>
-            <Link to="/tasks" className={cn(QV_LINK_PILL, 'mt-2')}>
-              Tasks
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 ring-1 ring-primary/10">
             <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Due today</p>
             <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1 text-primary">{dueTodayBundleCount}</p>
@@ -406,9 +501,21 @@ export function DashboardQuickView() {
             </p>
             <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
           </div>
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1 truncate">
+              <Moon className="size-3.5 text-indigo-400 shrink-0" />
+              Last night sleep
+            </p>
+            <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
+              {formatSleepMinutes(lastNightSleep)}
+            </p>
+            <Link to="/sleep" className={cn(QV_LINK_PILL, 'mt-2')}>
+              Sleep
+              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
+            </Link>
+          </div>
         </div>
         <div className="mt-2 sm:mt-3">
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-2 sm:gap-3">
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="min-w-0">
@@ -428,22 +535,43 @@ export function DashboardQuickView() {
               aria-label={`Today screentime ${formatDurationMinutes(screenChart.used)} of 24 hours`}
             >
               <div className="flex h-3.5 w-full overflow-hidden rounded-full">
-                <div className={cn('bg-indigo-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} />
-                <div className={cn('bg-sky-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} />
-                <div className={cn('bg-violet-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
-                <div className={cn('bg-amber-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
-                <div className="bg-muted-foreground/20" style={{ width: screenChart.restPct }} />
+                {progressSegments.map((segment) => (
+                  <div
+                    key={segment.key}
+                    className={cn(
+                      'flex h-3.5 items-center justify-center overflow-hidden',
+                      segment.className,
+                      privacyMode && segment.key !== 'rest' && 'blur-sm',
+                    )}
+                    style={{ width: segment.width }}
+                  >
+                  </div>
+                ))}
               </div>
+              {progressPercentLabels.map((label) => (
+                <span
+                  key={label.key}
+                  className={cn(
+                    'pointer-events-none absolute top-[44%] -translate-x-1/2 -translate-y-1/2 text-[8px] font-semibold leading-none tracking-tight tabular-nums drop-shadow-[0_1px_1px_rgba(0,0,0,0.45)]',
+                    label.className,
+                    privacyMode && 'blur-sm',
+                  )}
+                  style={{ left: label.left }}
+                  aria-hidden
+                >
+                  {label.text}
+                </span>
+              ))}
               {progressMarkers.map((marker) => (
                 <span
                   key={marker.id}
                   className={cn(
                     'pointer-events-none absolute top-0 h-3.5 w-[4px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
-                    marker.kind === 'habit' && 'bg-emerald-400',
+                    marker.kind === 'habit' && !marker.color && 'bg-emerald-400',
                     marker.kind === 'task' && 'bg-rose-400',
                     marker.kind === 'prayer' && 'bg-sky-400',
                   )}
-                  style={{ left: marker.left }}
+                  style={{ left: marker.left, ...(marker.kind === 'habit' && marker.color ? { backgroundColor: marker.color } : {}) }}
                   aria-hidden
                 />
               ))}
@@ -502,28 +630,10 @@ export function DashboardQuickView() {
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-indigo-500" />Sleep</span>
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-sky-500" />PC</span>
               <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-violet-500" />Phone</span>
-              <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-amber-500" />Other</span>
               <span className="flex items-center gap-1"><span className="inline-block w-1 h-3 rounded-full bg-sky-400" />Prayer</span>
               <span className="flex items-center gap-1"><span className="inline-block w-1 h-3 rounded-full bg-emerald-400" />Habit</span>
               <span className="flex items-center gap-1"><span className="inline-block w-1 h-3 rounded-full bg-rose-400" />Task</span>
             </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <Moon className="size-3.5 text-indigo-400 shrink-0" />
-                Last night sleep
-              </p>
-              <p className={cn('text-lg sm:text-xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
-                {formatSleepMinutes(lastNightSleep)}
-              </p>
-            </div>
-            <Link to="/sleep" className={cn(QV_LINK_PILL, 'shrink-0 self-start sm:self-auto')}>
-              Sleep
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
           </div>
         </div>
       </section>
@@ -640,12 +750,13 @@ export function DashboardQuickView() {
                                 : 'Today · any time'
                             }
                             done={done}
-                            busy={logHabit.isPending}
-                            showToggle
-                            label={`Log habit ${h.title}`}
-                            onToggle={() =>
-                              logHabit.mutate({
-                                habitId: h.id,
+                          busy={logHabit.isPending}
+                          showToggle
+                          label={`Log habit ${h.title}`}
+                          accentColor={h.color}
+                          onToggle={() =>
+                            logHabit.mutate({
+                              habitId: h.id,
                                 date: todayStr,
                                 completed: !done,
                               })

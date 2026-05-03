@@ -87,6 +87,7 @@ async function upsertPrayerLogWithHabitSync(input: {
       .from('habit_logs')
       .update({
         completed,
+        completed_at: prayedAt,
         source: 'prayer',
       })
       .eq('id', existingHabitLog.id)
@@ -101,6 +102,7 @@ async function upsertPrayerLogWithHabitSync(input: {
         habit_id: input.habitId,
         date: input.date,
         completed,
+        completed_at: prayedAt,
         source: 'prayer',
       })
       .select('id')
@@ -318,6 +320,7 @@ export function usePrayerTracker(date: Date = new Date()) {
             .from('habit_logs')
             .update({
               completed: false,
+              completed_at: null,
               source: 'prayer',
             })
             .eq('id', existing.habit_log_id);

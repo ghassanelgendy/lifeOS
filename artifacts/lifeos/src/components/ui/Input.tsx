@@ -1,112 +1,116 @@
-import { forwardRef } from 'react';
-import { cn } from '../../lib/utils';
+import * as React from "react"
+
+import { cn } from "@/lib/utils"
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
+  label?: string
+  error?: string
 }
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(
+const fieldLabelClassName = "text-sm font-medium text-foreground"
+const fieldBaseClassName =
+  "flex h-10 w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, label, error, id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const inputId = id || label?.toLowerCase().replace(/\s+/g, "-")
 
     return (
-      <div className="space-y-1.5 min-w-0">
-        {label && (
-          <label htmlFor={inputId} className="text-sm font-medium text-muted-foreground">
+      <div className="min-w-0 space-y-1.5">
+        {label ? (
+          <label htmlFor={inputId} className={fieldLabelClassName}>
             {label}
           </label>
-        )}
+        ) : null}
         <input
           ref={ref}
           id={inputId}
           className={cn(
-            "flex h-10 w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus:ring-destructive",
+            fieldBaseClassName,
+            error ? "border-destructive focus-visible:ring-destructive" : null,
             className
           )}
           {...props}
         />
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
-    );
+    )
   }
-);
-
-Input.displayName = 'Input';
+)
+Input.displayName = "Input"
 
 interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string;
-  error?: string;
-  options: { value: string; label: string }[];
+  label?: string
+  error?: string
+  options: { value: string; label: string }[]
 }
 
-export const Select = forwardRef<HTMLSelectElement, SelectProps>(
+const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, id, options, ...props }, ref) => {
-    const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const selectId = id || label?.toLowerCase().replace(/\s+/g, "-")
 
     return (
       <div className="space-y-1.5">
-        {label && (
-          <label htmlFor={selectId} className="text-sm font-medium text-muted-foreground">
+        {label ? (
+          <label htmlFor={selectId} className={fieldLabelClassName}>
             {label}
           </label>
-        )}
+        ) : null}
         <select
           ref={ref}
           id={selectId}
           className={cn(
-            "flex h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
-            error && "border-destructive focus:ring-destructive",
+            fieldBaseClassName,
+            error ? "border-destructive focus-visible:ring-destructive" : null,
             className
           )}
           {...props}
         >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
             </option>
           ))}
         </select>
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
-    );
+    )
   }
-);
-
-Select.displayName = 'Select';
+)
+Select.displayName = "Select"
 
 interface TextAreaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label?: string;
-  error?: string;
-  wrapperClassName?: string;
+  label?: string
+  error?: string
+  wrapperClassName?: string
 }
 
-export const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(
+const TextArea = React.forwardRef<HTMLTextAreaElement, TextAreaProps>(
   ({ className, wrapperClassName, label, error, id, ...props }, ref) => {
-    const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const textAreaId = id || label?.toLowerCase().replace(/\s+/g, "-")
 
     return (
       <div className={cn("space-y-1.5", wrapperClassName)}>
-        {label && (
-          <label htmlFor={textareaId} className="text-sm font-medium text-muted-foreground">
+        {label ? (
+          <label htmlFor={textAreaId} className={fieldLabelClassName}>
             {label}
           </label>
-        )}
+        ) : null}
         <textarea
           ref={ref}
-          id={textareaId}
+          id={textAreaId}
           className={cn(
-            "flex min-h-[80px] w-full rounded-lg border border-border bg-background px-3 py-2 text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none",
-            error && "border-destructive focus:ring-destructive",
+            "flex min-h-[80px] w-full min-w-0 rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted-foreground shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none",
+            error ? "border-destructive focus-visible:ring-destructive" : null,
             className
           )}
           {...props}
         />
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error ? <p className="text-xs text-destructive">{error}</p> : null}
       </div>
-    );
+    )
   }
-);
+)
+TextArea.displayName = "TextArea"
 
-TextArea.displayName = 'TextArea';
+export { Input, Select, TextArea }
