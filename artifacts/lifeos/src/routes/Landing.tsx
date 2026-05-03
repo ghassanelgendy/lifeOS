@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useInView, useMotionValue, useSpring, animate } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import {
   CheckSquare, Timer, BookOpen, Calendar, TrendingUp,
   Moon, BarChart2, Wallet, StickyNote, Flame, Layout, Activity,
