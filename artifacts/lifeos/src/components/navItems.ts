@@ -23,7 +23,7 @@ export interface NavItem {
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, href: '/' },
+  { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { label: 'Tasks', icon: CheckSquare, href: '/tasks' },
   { label: 'Focus', icon: FocusIcon, href: '/focus' },
   { label: 'Habits', icon: Target, href: '/habits' },

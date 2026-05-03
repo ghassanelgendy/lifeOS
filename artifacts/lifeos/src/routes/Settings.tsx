@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Shield,
   Download,
@@ -105,7 +105,6 @@ export default function SettingsPage() {
     setHabitsPrayerDefaultExpanded,
     dashboardMode,
     setDashboardMode,
-    cycleDashboardMode,
     pageWidgetOrder,
     pageWidgetVisible,
     togglePageWidget,
@@ -126,7 +125,6 @@ export default function SettingsPage() {
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
-  const dashboardModeRowTapRef = useRef<number>(0);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
@@ -436,29 +434,10 @@ export default function SettingsPage() {
               )}
             </select>
           </div>
-          <div
-            className="rounded-lg border border-transparent p-1 -m-1"
-            onDoubleClick={(e) => {
-              const el = e.target as HTMLElement;
-              if (el.closest('select')) return;
-              cycleDashboardMode();
-            }}
-            onTouchEnd={(e) => {
-              const el = e.target as HTMLElement;
-              if (el.closest('select')) return;
-              const now = Date.now();
-              if (now - dashboardModeRowTapRef.current < 320) {
-                cycleDashboardMode();
-                dashboardModeRowTapRef.current = 0;
-              } else {
-                dashboardModeRowTapRef.current = now;
-              }
-            }}
-          >
+          <div className="rounded-lg border border-transparent p-1 -m-1">
             <p className="font-medium mb-2">Default dashboard view</p>
             <p className="text-sm text-muted-foreground mb-2">
-              Which layout opens when you go to Dashboard (Home). Syncs across devices when signed in. Use the menu below to
-              choose; double-click or double-tap this block (outside the menu) to cycle modes.
+              Which layout opens when you go to Dashboard (Home). Syncs across devices when signed in.
             </p>
             <label htmlFor="settings-dashboard-mode" className="sr-only">
               Default dashboard view
