@@ -447,6 +447,11 @@ export function DashboardQuickView() {
                   aria-hidden
                 />
               ))}
+              <span
+                className="pointer-events-none absolute top-0 h-3.5 w-[5px] -translate-x-1/2 rounded-full bg-primary shadow-sm shadow-primary/40 animate-pulse"
+                style={{ left: screenChart.nowPct }}
+                aria-hidden
+              />
               {timeMarkers.map((marker, i) => (
                 <span key={marker.label}>
                   {/* tick mark on bar */}
@@ -469,11 +474,6 @@ export function DashboardQuickView() {
                   </span>
                 </span>
               ))}
-              <span
-                className="pointer-events-none absolute -top-1.5 size-3 -translate-x-1/2 rounded-full border border-background bg-primary shadow-sm shadow-primary/40 animate-pulse"
-                style={{ left: screenChart.nowPct }}
-                aria-hidden
-              />
             </div>
             <div className="mt-8 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
               <span>24h clock</span>
