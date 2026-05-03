@@ -100,7 +100,7 @@ function RotatingWord() {
     return () => clearInterval(id);
   }, []);
   return (
-    <span className="relative inline-block overflow-hidden align-bottom">
+    <span className="relative inline-block overflow-hidden align-bottom min-w-[10ch] sm:min-w-[11ch]">
       <motion.span
         key={index}
         initial={{ y: '110%', opacity: 0 }}
