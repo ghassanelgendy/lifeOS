@@ -100,7 +100,7 @@ function RotatingWord() {
     return () => clearInterval(id);
   }, []);
   return (
-    <span className="relative inline-block overflow-hidden align-bottom min-w-[10ch] sm:min-w-[11ch]">
+    <span className="relative inline-block overflow-hidden align-bottom min-w-[8.5ch] sm:min-w-[9.5ch] -ml-1 sm:-ml-1.5">
       <motion.span
         key={index}
         initial={{ y: '110%', opacity: 0 }}
@@ -195,7 +195,7 @@ export default function Landing() {
             Your personal operating system
           </motion.div>
 
-          <motion.h1 variants={fadeUp} custom={1} initial="hidden" animate="show" className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.08] mb-6">
+          <motion.h1 variants={fadeUp} custom={1} initial="hidden" animate="show" className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.02] mb-6">
             Stay <RotatingWord />
             <br />
             <span className="text-white/30">every single day.</span>
