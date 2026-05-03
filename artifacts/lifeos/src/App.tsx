@@ -56,6 +56,12 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
 function PublicHome() {
   const { user, loading } = useAuth();
   const defaultTab = useUIStore((s) => s.defaultTab);
+  useEffect(() => {
+    document.body.dataset.route = 'landing';
+    return () => {
+      delete document.body.dataset.route;
+    };
+  }, []);
   if (loading) return <LoadingScreen />;
   if (!user) return <Landing />;
   const dest = defaultTab && defaultTab !== 'dashboard' ? `/${defaultTab}` : '/dashboard';

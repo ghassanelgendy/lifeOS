@@ -12,6 +12,14 @@ body {
   overflow: hidden;
 }
 
+body[data-route="landing"] {
+  overflow: auto;
+}
+
+body[data-route="landing"] #root {
+  overflow: visible;
+}
+
 /* Dark theme (default) */
 @theme {
   --color-background: hsl(240 10% 3.9%);
