@@ -428,11 +428,11 @@ export default function Tasks() {
     setHighlightedTime(parsed.time);
 
 
-    // Keep picker trigger active so users can choose via TickTick-like gestures (~, !, #).
+    // Keep picker trigger active so users can choose via inline gestures (~, !, #).
     setSuggestionTrigger(parsed.trigger);
     setSuggestionQuery((parsed.triggerQuery || '').trim());
 
-    // TickTick-style inline priority query (!1, !2, !3, !4, !high, ...)
+    // Inline priority query (!1, !2, !3, !4, !high, ...)
     if (parsed.trigger === 'priority' && parsed.triggerQuery) {
       const q = parsed.triggerQuery.toLowerCase();
       if (q === '1' || q.startsWith('h')) setNewTaskPriority('high');

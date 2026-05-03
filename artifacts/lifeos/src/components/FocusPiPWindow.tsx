@@ -66,7 +66,6 @@ export function FocusPiPWindow() {
 
     const options = pipMiniMode ? WINDOW_OPTIONS_MINI : WINDOW_OPTIONS_FULL;
     // Empty URL + location=0 keeps chrome minimal; URL bar is browser-controlled and can't be fully hidden in web.
-    // In Tauri/Electron the app window has no URL bar.
     const popup = window.open('about:blank', 'lifeos-focus-pip', options);
     if (!popup) return;
     popup.document.title = 'LifeOS Focus';
