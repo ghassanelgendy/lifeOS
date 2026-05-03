@@ -307,7 +307,7 @@ export function DashboardQuickView() {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
-    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task' }[] = [];
+    const markers: { id: string; left: string; kind: 'habit' | 'task' }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
@@ -326,11 +326,21 @@ export function DashboardQuickView() {
       if (prayer.status !== 'Prayed') continue;
       const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
       const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
-      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer' });
+      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'task' });
     }
 
     return markers.slice(0, 32);
   }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr]);
+
+  const timeMarkers = useMemo(
+    () => [
+      { label: '12am', left: '0%' },
+      { label: '6am', left: '25%' },
+      { label: '12pm', left: '50%' },
+      { label: '6pm', left: '75%' },
+    ],
+    [],
+  );
 
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
     if (item.kind === 'habit' && item.allDay && isToday(parseISO(item.start_time))) {
@@ -414,10 +424,10 @@ export function DashboardQuickView() {
             </div>
 
             <div
-              className="relative mt-4 h-3 w-full overflow-visible rounded-full bg-muted"
+              className="relative mt-4 h-4 w-full overflow-visible rounded-full bg-muted"
               aria-label={`Today screentime ${formatDurationMinutes(screenChart.used)} of 24 hours`}
             >
-              <div className="flex h-full w-full overflow-hidden rounded-full">
+              <div className="flex h-3.5 w-full overflow-hidden rounded-full">
                 <div className={cn('bg-indigo-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} />
                 <div className={cn('bg-sky-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} />
                 <div className={cn('bg-violet-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
@@ -428,9 +438,7 @@ export function DashboardQuickView() {
                 <span
                   key={marker.id}
                   className={cn(
-                    marker.kind === 'prayer'
-                      ? 'pointer-events-none absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background shadow-sm ring-1 ring-black/10 bg-violet-300'
-                      : 'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
+                    'pointer-events-none absolute top-0 h-3.5 w-[4px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
                     marker.kind === 'habit' && 'bg-emerald-400',
                     marker.kind === 'task' && 'bg-rose-400',
                   )}
@@ -438,13 +446,18 @@ export function DashboardQuickView() {
                   aria-hidden
                 />
               ))}
+              {timeMarkers.map((marker) => (
+                <span key={marker.label} className="pointer-events-none absolute -bottom-5 -translate-x-1/2 text-[10px] text-muted-foreground tabular-nums" style={{ left: marker.left }}>
+                  {marker.label}
+                </span>
+              ))}
               <span
                 className="pointer-events-none absolute -top-1.5 size-3 -translate-x-1/2 rounded-full border border-background bg-primary shadow-sm shadow-primary/40 animate-pulse"
                 style={{ left: screenChart.nowPct }}
                 aria-hidden
               />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <div className="mt-8 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
               <span>24h clock</span>
               <span className={cn('tabular-nums', privacyMode && 'blur-sm')}>
                 Now {formatDurationMinutes(screenChart.elapsed)} into day · {formatDurationMinutes(screenChart.rest)} left
