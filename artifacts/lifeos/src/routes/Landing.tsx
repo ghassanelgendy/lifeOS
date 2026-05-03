@@ -82,14 +82,14 @@ function RotatingWord() {
     return () => clearInterval(id);
   }, []);
   return (
-    <span className="relative inline-block overflow-hidden align-bottom -ml-2 sm:-ml-3" style={{ minWidth: '12ch' }}>
+    <span className="relative inline-block overflow-hidden align-bottom">
       <motion.span
         key={index}
-        initial={{ y: '100%', opacity: 0 }}
+        initial={{ y: '110%', opacity: 0 }}
         animate={{ y: '0%', opacity: 1 }}
-        exit={{ y: '-100%', opacity: 0 }}
+        exit={{ y: '-110%', opacity: 0 }}
         transition={{ duration: 0.42, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/60"
+        className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/60 whitespace-nowrap"
       >
         {WORDS[index]}
       </motion.span>
