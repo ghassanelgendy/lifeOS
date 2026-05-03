@@ -248,7 +248,7 @@ export default function Landing() {
                   key={feature.title}
                   feature={feature}
                   index={i}
-                  active={activeFeature.title === feature.title}
+                  active={activeFeature?.title === feature.title}
                   onSelect={() => setActiveFeature(feature)}
                 />
               ))}
