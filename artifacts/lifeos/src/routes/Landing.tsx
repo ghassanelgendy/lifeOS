@@ -7,6 +7,14 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
+type Feature = {
+  icon: typeof CheckSquare;
+  title: string;
+  description: string;
+  color: string;
+  details: string[];
+};
+
 function GoogleIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden>
@@ -39,19 +47,19 @@ function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
   return <span ref={ref}>0{suffix}</span>;
 }
 
-const FEATURES = [
-  { icon: CheckSquare, title: 'Tasks', description: 'Smart task management with priorities, due dates, subtasks, and recurrence.', color: 'from-blue-500/20 to-blue-600/5' },
-  { icon: Timer,       title: 'Focus',   description: 'Pomodoro timer to protect deep work time and track productive sessions.',   color: 'from-orange-500/20 to-orange-600/5' },
-  { icon: Flame,       title: 'Habits',  description: 'Build streaks, track daily habits, and watch consistency compound.',         color: 'from-red-500/20 to-red-600/5' },
-  { icon: Calendar,    title: 'Calendar', description: 'Week and month view with events, tasks, and upcoming deadlines at a glance.', color: 'from-violet-500/20 to-violet-600/5' },
-  { icon: Layout,      title: 'Planner', description: 'Plan your week on a structured time-block grid to stay on top of everything.', color: 'from-purple-500/20 to-purple-600/5' },
-  { icon: StickyNote,  title: 'Notes',   description: 'Capture ideas, meeting notes, and thoughts in rich Markdown notes.',          color: 'from-yellow-500/20 to-yellow-600/5' },
-  { icon: Wallet,      title: 'Finance', description: 'Track income, expenses, and budgets so your money goes where you want.',     color: 'from-green-500/20 to-green-600/5' },
-  { icon: Moon,        title: 'Sleep',   description: 'Log sleep sessions and review quality trends to protect your recovery.',      color: 'from-indigo-500/20 to-indigo-600/5' },
-  { icon: Activity,    title: 'Health',  description: 'Log workouts, water intake, and physical activity all in one place.',        color: 'from-pink-500/20 to-pink-600/5' },
-  { icon: BookOpen,    title: 'Academics', description: 'Track courses, assignments, grades, and study sessions effortlessly.',     color: 'from-cyan-500/20 to-cyan-600/5' },
-  { icon: TrendingUp,  title: 'Screentime', description: 'Monitor daily screen usage and set healthy limits to reclaim focus.',    color: 'from-teal-500/20 to-teal-600/5' },
-  { icon: BarChart2,   title: 'Analytics', description: "Bird's-eye view of your productivity, habits, and growth over time.",    color: 'from-emerald-500/20 to-emerald-600/5' },
+const FEATURES: Feature[] = [
+  { icon: CheckSquare, title: 'Tasks', description: 'Smart task management with priorities, due dates, subtasks, and recurrence.', color: 'from-blue-500/20 to-blue-600/5', details: ['Priorities and due dates', 'Subtasks and recurrence', 'Quick capture to inbox'] },
+  { icon: Timer, title: 'Focus', description: 'Pomodoro timer to protect deep work time and track productive sessions.', color: 'from-orange-500/20 to-orange-600/5', details: ['Pomodoro sessions', 'Distraction-free mode', 'Session streaks'] },
+  { icon: Flame, title: 'Habits', description: 'Build streaks, track daily habits, and watch consistency compound.', color: 'from-red-500/20 to-red-600/5', details: ['Daily streak tracking', 'Completion history', 'Habit consistency score'] },
+  { icon: Calendar, title: 'Calendar', description: 'Week and month view with events, tasks, and upcoming deadlines at a glance.', color: 'from-violet-500/20 to-violet-600/5', details: ['Week and month views', 'Event scheduling', 'Deadline visibility'] },
+  { icon: Layout, title: 'Planner', description: 'Plan your week on a structured time-block grid to stay on top of everything.', color: 'from-purple-500/20 to-purple-600/5', details: ['Time-block planning', 'Drag-style layout', 'Weekly structure overview'] },
+  { icon: StickyNote, title: 'Notes', description: 'Capture ideas, meeting notes, and thoughts in rich Markdown notes.', color: 'from-yellow-500/20 to-yellow-600/5', details: ['Markdown notes', 'Quick idea capture', 'Organized notebooks'] },
+  { icon: Wallet, title: 'Finance', description: 'Track income, expenses, and budgets so your money goes where you want.', color: 'from-green-500/20 to-green-600/5', details: ['Income and expense tracking', 'Budget overview', 'Cashflow snapshots'] },
+  { icon: Moon, title: 'Sleep', description: 'Log sleep sessions and review quality trends to protect your recovery.', color: 'from-indigo-500/20 to-indigo-600/5', details: ['Sleep session logging', 'Quality trends', 'Recovery insights'] },
+  { icon: Activity, title: 'Health', description: 'Log workouts, water intake, and physical activity all in one place.', color: 'from-pink-500/20 to-pink-600/5', details: ['Workouts and movement', 'Water tracking', 'Daily health check-ins'] },
+  { icon: BookOpen, title: 'Academics', description: 'Track courses, assignments, grades, and study sessions effortlessly.', color: 'from-cyan-500/20 to-cyan-600/5', details: ['Course tracking', 'Assignment planning', 'Study session logs'] },
+  { icon: TrendingUp, title: 'Screentime', description: 'Monitor daily screen usage and set healthy limits to reclaim focus.', color: 'from-teal-500/20 to-teal-600/5', details: ['Usage tracking', 'Healthy limits', 'Focus recovery'] },
+  { icon: BarChart2, title: 'Analytics', description: "Bird's-eye view of your productivity, habits, and growth over time.", color: 'from-emerald-500/20 to-emerald-600/5', details: ['Productivity trends', 'Habit growth charts', 'Whole-life overview'] },
 ];
 
 const STATS = [
@@ -97,7 +105,7 @@ function RotatingWord() {
   );
 }
 
-function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: number }) {
+function FeatureCard({ feature, index, active, onSelect }: { feature: Feature; index: number; active: boolean; onSelect: () => void }) {
   const ref = useRef(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
   const Icon = feature.icon;
@@ -110,7 +118,11 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
       initial="hidden"
       animate={inView ? 'show' : 'hidden'}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.03] p-5 overflow-hidden cursor-default"
+      onClick={onSelect}
+      className={cn(
+        'group relative rounded-2xl border bg-white/[0.03] p-5 overflow-hidden cursor-pointer text-left transition-all',
+        active ? 'border-white/20 ring-1 ring-white/20 bg-white/[0.06]' : 'border-white/[0.06]',
+      )}
     >
       <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
       <div className="relative flex gap-4">
@@ -129,6 +141,7 @@ function FeatureCard({ feature, index }: { feature: typeof FEATURES[0]; index: n
 export default function Landing() {
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
+  const [activeFeature, setActiveFeature] = useState<Feature>(FEATURES[0]);
 
   return (
     <div className="min-h-screen bg-[#08080c] text-white flex flex-col overflow-x-hidden overflow-y-auto selection:bg-primary/30">
@@ -201,8 +214,43 @@ export default function Landing() {
             <p className="text-white/40 text-base max-w-md mx-auto">12 modules that cover every corner of your life — all talking to each other.</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {FEATURES.map((feature, i) => <FeatureCard key={feature.title} feature={feature} index={i} />)}
+          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {FEATURES.map((feature, i) => (
+                <FeatureCard
+                  key={feature.title}
+                  feature={feature}
+                  index={i}
+                  active={activeFeature.title === feature.title}
+                  onSelect={() => setActiveFeature(feature)}
+                />
+              ))}
+            </div>
+
+            <motion.div
+              key={activeFeature.title}
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-6 sm:p-7"
+            >
+              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${activeFeature.color} mb-4`}>
+                <activeFeature.icon size={22} className="text-white/90" />
+              </div>
+              <h3 className="text-2xl font-bold tracking-tight">{activeFeature.title}</h3>
+              <p className="mt-2 text-white/50 leading-relaxed">{activeFeature.description}</p>
+              <ul className="mt-5 space-y-3">
+                {activeFeature.details.map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-sm text-white/70">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/50" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 rounded-2xl border border-white/[0.06] bg-black/20 p-4 text-sm text-white/55">
+                Click another module to switch this panel.
+              </div>
+            </motion.div>
           </div>
         </section>
       </main>
