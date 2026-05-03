@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -56,12 +56,23 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
 
 function PublicHome() {
   const { user, loading } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
   useEffect(() => {
     document.body.dataset.route = 'landing';
     return () => {
       delete document.body.dataset.route;
     };
   }, []);
+
+  useEffect(() => {
+    if (loading || !user) return;
+    if (location.pathname === '/') {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [loading, location.pathname, navigate, user]);
+
   if (loading) return <LoadingScreen />;
   if (!user) return <Landing />;
   return <Navigate to="/dashboard" replace />;
