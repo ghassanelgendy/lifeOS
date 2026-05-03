@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
-export const DEFAULT_MOBILE_NAV = ['/', '/tasks', '/focus', '/habits', '/planner', '/calendar'];
+export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/planner', '/calendar'];
 
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits', 'magic_week'] as const;
@@ -323,6 +323,18 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: 'lifeos-ui-store',
+      version: 1,
+      migrate: (persistedState) => {
+        const state = persistedState as Partial<PersistedUiSlice> | null;
+        if (!state) return state;
+        const mobileNavItems = Array.isArray(state.mobileNavItems)
+          ? state.mobileNavItems.map((item) => (item === '/' ? '/dashboard' : item))
+          : state.mobileNavItems;
+        return {
+          ...state,
+          mobileNavItems,
+        };
+      },
       partialize: (state) => getPersistedUiSlice(state),
     }
   )

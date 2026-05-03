@@ -401,7 +401,7 @@ export default function SettingsPage() {
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
               {NAV_ITEMS.filter((n) => n.href !== '/settings').map((item) => {
-                const val = item.href === '/' ? 'dashboard' : item.href.slice(1);
+                const val = item.href.slice(1);
                 return (
                   <option key={item.href} value={val}>
                     {item.label}
@@ -444,7 +444,7 @@ export default function SettingsPage() {
           <div className="rounded-lg border border-transparent p-1 -m-1">
             <p className="font-medium mb-2">Default dashboard view</p>
             <p className="text-sm text-muted-foreground mb-2">
-              Which layout opens when you go to Dashboard (Home). Syncs across devices when signed in.
+              Which layout opens when you go to Dashboard. Syncs across devices when signed in.
             </p>
             <label htmlFor="settings-dashboard-mode" className="sr-only">
               Default dashboard view

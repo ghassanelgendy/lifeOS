@@ -1,4 +1,3 @@
-import { Heart } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 
@@ -28,8 +27,7 @@ export function AppFooter() {
       )}
     >
       <div className="flex items-center gap-1.5">
-        <Heart size={12} className="text-red-500" />
-        <span>Made with love by Ghassan</span>
+        <span>Made with ❤️ by Ghassan</span>
       </div>
       <div className="flex items-center gap-3">
         <a

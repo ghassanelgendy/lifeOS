@@ -38,6 +38,10 @@ function asStrArray(x: unknown, fallback: string[]): string[] {
   return x.filter((i): i is string => typeof i === 'string');
 }
 
+function normalizeMobileNavItems(items: string[]): string[] {
+  return items.map((item) => (item === '/' ? '/dashboard' : item));
+}
+
 function asRecordBool(x: unknown, fallback: Record<string, boolean>): Record<string, boolean> {
   if (!isRecord(x)) return { ...fallback };
   const out: Record<string, boolean> = { ...fallback };
@@ -119,7 +123,7 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
 
   {
     const nav = asStrArray(remote.mobileNavItems, DEFAULT_MOBILE_NAV);
-    patch.mobileNavItems = nav.length > 0 ? nav : [...DEFAULT_MOBILE_NAV];
+    patch.mobileNavItems = nav.length > 0 ? normalizeMobileNavItems(nav) : [...DEFAULT_MOBILE_NAV];
   }
 
   {
