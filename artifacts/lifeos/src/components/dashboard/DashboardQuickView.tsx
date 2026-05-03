@@ -307,7 +307,7 @@ export function DashboardQuickView() {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
-    const markers: { id: string; left: string; kind: 'habit' | 'task' }[] = [];
+    const markers: { id: string; left: string; kind: 'habit' | 'task' | 'prayer' }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
@@ -326,7 +326,7 @@ export function DashboardQuickView() {
       if (prayer.status !== 'Prayed') continue;
       const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
       const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
-      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'task' });
+      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer' });
     }
 
     return markers.slice(0, 32);
@@ -441,14 +441,32 @@ export function DashboardQuickView() {
                     'pointer-events-none absolute top-0 h-3.5 w-[4px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
                     marker.kind === 'habit' && 'bg-emerald-400',
                     marker.kind === 'task' && 'bg-rose-400',
+                    marker.kind === 'prayer' && 'bg-sky-400',
                   )}
                   style={{ left: marker.left }}
                   aria-hidden
                 />
               ))}
-              {timeMarkers.map((marker) => (
-                <span key={marker.label} className="pointer-events-none absolute -bottom-5 -translate-x-1/2 text-[10px] text-muted-foreground tabular-nums" style={{ left: marker.left }}>
-                  {marker.label}
+              {timeMarkers.map((marker, i) => (
+                <span key={marker.label}>
+                  {/* tick mark on bar */}
+                  {i > 0 && (
+                    <span
+                      className="pointer-events-none absolute top-0 h-3.5 w-px bg-muted-foreground/30"
+                      style={{ left: marker.left }}
+                      aria-hidden
+                    />
+                  )}
+                  {/* label below bar */}
+                  <span
+                    className="pointer-events-none absolute -bottom-5 text-[10px] text-muted-foreground/70 tabular-nums"
+                    style={{
+                      left: marker.left,
+                      transform: i === 0 ? 'none' : i === timeMarkers.length - 1 ? 'translateX(-100%)' : 'translateX(-50%)',
+                    }}
+                  >
+                    {marker.label}
+                  </span>
                 </span>
               ))}
               <span
@@ -463,7 +481,7 @@ export function DashboardQuickView() {
                 Now {formatDurationMinutes(screenChart.elapsed)} into day · {formatDurationMinutes(screenChart.rest)} left
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
               <span
                 className={cn(
                   'inline-flex items-center rounded-full px-2 py-0.5 font-medium',
@@ -479,6 +497,15 @@ export function DashboardQuickView() {
                   Overlap adjusted from {formatDurationMinutes(screenChart.rawUsed)}
                 </span>
               )}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-indigo-500" />Sleep</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-sky-500" />PC</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-violet-500" />Phone</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-3 h-1.5 rounded-full bg-amber-500" />Other</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-1 h-3 rounded-full bg-sky-400" />Prayer</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-1 h-3 rounded-full bg-emerald-400" />Habit</span>
+              <span className="flex items-center gap-1"><span className="inline-block w-1 h-3 rounded-full bg-rose-400" />Task</span>
             </div>
           </div>
 
