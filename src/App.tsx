@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -30,7 +30,6 @@ import SettingsPage from './routes/Settings';
 import WeeklyPlanner from './routes/WeeklyPlanner';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
-import Landing from './routes/Landing';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -52,30 +51,6 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
   if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
-}
-
-function PublicHome() {
-  const { user, loading } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    document.body.dataset.route = 'landing';
-    return () => {
-      delete document.body.dataset.route;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (loading || !user) return;
-    if (location.pathname === '/') {
-      navigate('/dashboard', { replace: true });
-    }
-  }, [loading, location.pathname, navigate, user]);
-
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Landing />;
-  return <Navigate to="/dashboard" replace />;
 }
 
 function UserAppSettingsBridge() {
@@ -163,29 +138,30 @@ function AppInner() {
       <BrowserRouter>
         <FaviconSync />
         <Routes>
-          <Route path="/" element={<PublicHome />} />
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
-        <Route path="*" element={<ProtectedRoute />}>
-          <Route element={<AppShell />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="tasks" element={<Tasks />} />
-            <Route path="focus" element={<Focus />} />
-            <Route path="health" element={<Health />} />
-            <Route path="habits" element={<Habits />} />
-            <Route path="academics" element={<Academics />} />
-            <Route path="calendar" element={<CalendarPage />} />
-            <Route path="notes" element={<Notes />} />
-            <Route path="planner" element={<WeeklyPlanner />} />
-            <Route path="finance" element={<Finance />} />
-            <Route path="screentime" element={<Screentime />} />
-            <Route path="sleep" element={<Sleep />} />
-            <Route path="analytics" element={<AnalyticsPage />} />
-            <Route path="settings" element={<SettingsPage />} />
+          <Route path="/" element={<ProtectedRoute />}>
+            <Route element={<AppShell />}>
+              <Route index element={<Dashboard />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="focus" element={<Focus />} />
+              <Route path="health" element={<Health />} />
+              <Route path="habits" element={<Habits />} />
+              <Route path="academics" element={<Academics />} />
+              <Route path="calendar" element={<CalendarPage />} />
+              <Route path="notes" element={<Notes />} />
+              <Route path="planner" element={<WeeklyPlanner />} />
+              <Route path="finance" element={<Finance />} />
+              <Route path="screentime" element={<Screentime />} />
+              <Route path="sleep" element={<Sleep />} />
+              <Route path="analytics" element={<AnalyticsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
     </>
   );
 }
