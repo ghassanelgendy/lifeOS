@@ -161,5 +161,4 @@ src-tauri/            # desktop build
 
 ## License
 
-Private for now (until you decide otherwise).
-
+Private for now
