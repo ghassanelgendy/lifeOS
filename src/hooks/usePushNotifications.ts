@@ -82,9 +82,6 @@ export function usePushNotifications() {
 
       const { error } = await supabase.functions.invoke('send-test-notification', {
         body: { endpoint },
-        headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY}`,
-        },
       });
 
       if (error) throw error;

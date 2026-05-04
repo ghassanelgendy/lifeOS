@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-const CRON_SHARED_SECRET = process.env.CRON_SECRET;
+const CRON_SHARED_SECRET = process.env.CRON_SECRET || process.env.TASKS_CRON_SECRET;
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const startTime = Date.now();
@@ -19,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       hasCronSecret: !!CRON_SHARED_SECRET,
     });
     return res.status(500).json({
-      error: 'Missing SUPABASE_URL or CRON_SECRET in Vercel env',
+      error: 'Missing SUPABASE_URL/VITE_SUPABASE_URL or CRON_SECRET/TASKS_CRON_SECRET in Vercel env',
     });
   }
 

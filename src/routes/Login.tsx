@@ -54,7 +54,7 @@ export default function Login() {
       setError(err.message ?? 'Sign in failed');
       return;
     }
-    navigate('/', { replace: true });
+    navigate('/dashboard', { replace: true });
   };
 
   return (

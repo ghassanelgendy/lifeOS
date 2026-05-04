@@ -43,7 +43,7 @@ export function StrategicGoalsBrief() {
             Weekly planner <ChevronRight className="size-3.5" />
           </Link>
           <Link
-            to="/"
+            to="/dashboard"
             onClick={() => setDashboardMode('annual_review')}
             className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1.5 font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50"
           >
@@ -58,7 +58,7 @@ export function StrategicGoalsBrief() {
           <p className="text-sm text-muted-foreground text-center py-4">
             No active goals for {year}. Add them in{' '}
             <Link
-              to="/"
+              to="/dashboard"
               className="text-primary underline-offset-2 hover:underline"
               onClick={() => setDashboardMode('annual_review')}
             >

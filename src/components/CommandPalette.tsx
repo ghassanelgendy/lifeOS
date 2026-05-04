@@ -114,7 +114,7 @@ export function CommandPalette() {
 
           <Command.Group heading="Navigation" className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
             <Command.Item
-              onSelect={() => runCommand(() => navigate('/'))}
+              onSelect={() => runCommand(() => navigate('/dashboard'))}
               className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
