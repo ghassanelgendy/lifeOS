@@ -62,3 +62,34 @@ Notes:
 
 - Minute-level schedules require a Vercel plan that supports them.
 - Cron jobs run only on production deployments.
+
+## Habit reminders via cron-job.org
+
+Habit reminders now run directly against the Supabase Edge Function instead of the Vercel cron proxy.
+
+Edge Function:
+
+- `POST https://<project-ref>.supabase.co/functions/v1/habit-notifications-dispatch`
+
+Required Supabase Edge Function secrets:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `VAPID_PUBLIC_KEY`
+- `VAPID_PRIVATE_KEY`
+- `CRON_SECRET` or `HABITS_CRON_SECRET`
+
+Recommended cron-job.org setup:
+
+- Method: `POST`
+- URL: `https://<project-ref>.supabase.co/functions/v1/habit-notifications-dispatch`
+- Schedule: `* * * * *`
+- Header: `x-cron-secret: <your secret>`
+
+Behavior:
+
+- Habits with an explicit `time` notify at that local time on scheduled days.
+- Habits without a `time` use the user’s most common completion time, inferred from recent `habit_logs.completed_at`.
+- If there is not enough history yet, the reminder falls back to `09:00` local time.
+- Push must already be enabled in the app; there is no separate habit reminder toggle.
+- Push subscriptions are now authenticated-only: each subscription row must belong to a signed-in user, and the test-notification Edge Function will only send to a subscription owned by the caller.

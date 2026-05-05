@@ -612,7 +612,7 @@ export default function SettingsPage() {
               <div>
                 <p className="font-medium">Task reminders</p>
                 <p className="text-sm text-muted-foreground">
-                  Get notified when a task is due (date-only at 12:00 AM, or at set time). Add lifeOS to Home Screen for iOS.
+                  Get notified when a task is due (date-only at 12:00 AM, or at set time). Habit reminders also use this same push permission and are on by default for scheduled habits. Notifications are tied to your signed-in account only. Add lifeOS to Home Screen for iOS.
                 </p>
               </div>
             </div>
@@ -669,6 +669,14 @@ export default function SettingsPage() {
               {pushStatus}
             </p>
           )}
+          <p className="text-xs text-muted-foreground">
+            Habit reminders send at the habit&apos;s own time when set. If a habit has no time, lifeOS uses your usual completion time, falling back to 9:00 AM until it learns a pattern.
+          </p>
+          {!user ? (
+            <p className="text-xs text-muted-foreground">
+              Sign in is required before this device can register for notifications.
+            </p>
+          ) : null}
 
           {/* Prayer reminders */}
           <div className="flex items-center justify-between pt-4 border-t border-border">

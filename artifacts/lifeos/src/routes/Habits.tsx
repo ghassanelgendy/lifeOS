@@ -221,6 +221,10 @@ export default function Habits() {
   }, [relapseLogs]);
 
   const scheduledTodayHabits = habits.filter((habit: Habit) => isHabitScheduledForDate(habit, today));
+  const todayHabits = useMemo(
+    () => [...habits].sort((a, b) => Number(isHabitScheduledForDate(b, today)) - Number(isHabitScheduledForDate(a, today))),
+    [habits, today]
+  );
 
   const getSoberDays = (habit: Habit) => {
     const lastRelapse = latestRelapseByHabit[habit.id];
@@ -273,7 +277,6 @@ export default function Habits() {
 
   // Toggle for standard habits; for detox habits this logs relapse events only.
   const handleToggleHabit = (habit: Habit) => {
-    if (!isHabitScheduledForDate(habit, today)) return;
     const isDetox = getHabitType(habit) === 'detox';
     const isCompleted = isHabitCompletedForDay(habit.id, today);
     logHabit.mutate({
@@ -519,8 +522,8 @@ export default function Habits() {
                     <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
                       {weekDays.map((day: Date) => {
                         const isScheduled = isHabitScheduledForDate(habit, day);
-                        const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                        const canToggle = isScheduled && isToday(day);
+                        const isCompleted = isHabitCompletedForDay(habit.id, day);
+                        const canToggle = isToday(day);
                         const isDetox = !!detoxConfig;
                         return (
                           <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
@@ -533,15 +536,20 @@ export default function Habits() {
                             <button
                               onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
                               disabled={!canToggle}
-                              title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                              title={
+                                !isScheduled
+                                  ? (canToggle ? 'Off-schedule check-in' : 'Not scheduled for this day')
+                                  : undefined
+                              }
                               className={cn(
                                 "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                 isCompleted
                                   ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                   : "border border-border",
                                 isToday(day) && "hover:scale-105 active:scale-95",
-                                !isScheduled && "opacity-20",
-                                isScheduled && !canToggle && "opacity-40"
+                                !isScheduled && !isCompleted && "opacity-20",
+                                !canToggle && "opacity-40",
+                                canToggle && !isScheduled && "border-dashed"
                               )}
                               style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                             >
@@ -645,8 +653,8 @@ export default function Habits() {
                         </td>
                         {weekDays.map((day: Date) => {
                           const isScheduled = isHabitScheduledForDate(habit, day);
-                          const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                          const canToggle = isScheduled && isToday(day);
+                          const isCompleted = isHabitCompletedForDay(habit.id, day);
+                          const canToggle = isToday(day);
                           const isDetox = !!detoxConfig;
 
                           return (
@@ -660,15 +668,20 @@ export default function Habits() {
                               <button
                                 onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
                                 disabled={!canToggle}
-                                title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                                title={
+                                  !isScheduled
+                                    ? (canToggle ? 'Off-schedule check-in' : 'Not scheduled for this day')
+                                    : undefined
+                                }
                                 className={cn(
                                   "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
                                   isCompleted
                                     ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                     : "border border-border hover:border-muted-foreground",
                                   isToday(day) && "hover:scale-110",
-                                  !isScheduled && "opacity-20",
-                                  isScheduled && !canToggle && "opacity-30"
+                                  !isScheduled && !isCompleted && "opacity-20",
+                                  !canToggle && "opacity-30",
+                                  canToggle && !isScheduled && "border-dashed"
                                 )}
                                 style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                               >
@@ -701,14 +714,15 @@ export default function Habits() {
         <h2 className="text-lg font-semibold mb-4">Today's Habits</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {scheduledTodayHabits.length === 0 && (
-            <p className="text-sm text-muted-foreground md:col-span-2">No habits scheduled for today.</p>
+            <p className="text-sm text-muted-foreground md:col-span-2">No habits scheduled for today. You can still log any habit below.</p>
           )}
-          {scheduledTodayHabits.map((habit: Habit) => {
+          {todayHabits.map((habit: Habit) => {
             const isCompleted = isHabitCompletedForDay(habit.id, today);
             const stats = getHabitStats(habit);
             const detoxConfig = getDetoxConfig(habit);
             const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
             const isDetox = !!detoxConfig;
+            const isScheduledToday = isHabitScheduledForDate(habit, today);
 
             return (
               <div
@@ -746,6 +760,11 @@ export default function Habits() {
                     )}>
                       {habit.title}
                     </h3>
+                    {!isScheduledToday && (
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
+                        off-schedule
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {

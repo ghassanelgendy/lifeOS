@@ -10,10 +10,23 @@ const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const vapidPublic = Deno.env.get('VAPID_PUBLIC_KEY');
 const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
 
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+function getAllowedOrigins(): string[] {
+    const raw = Deno.env.get('ALLOWED_ORIGINS') ?? Deno.env.get('APP_ORIGINS') ?? '';
+    return raw
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+}
+
+function corsHeadersFor(origin: string | null): Record<string, string> {
+    const allowed = getAllowedOrigins();
+    const isAllowed = !!origin && allowed.includes(origin);
+    return {
+        'Access-Control-Allow-Origin': isAllowed ? origin! : 'null',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Vary': 'Origin',
+    };
+}
 
 // We will check for keys inside the handler to return a proper 500 response
 if (vapidPublic && vapidPrivate) {
@@ -25,6 +38,9 @@ if (vapidPublic && vapidPrivate) {
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
 Deno.serve(async (req: Request) => {
+    const origin = req.headers.get('origin');
+    const corsHeaders = corsHeadersFor(origin);
+
     if (req.method === 'OPTIONS') {
         return new Response(null, { headers: corsHeaders });
     }
@@ -37,6 +53,27 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
+        const authHeader = req.headers.get('authorization') ?? '';
+        const accessToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+        if (!accessToken) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        const {
+            data: { user },
+            error: authError,
+        } = await supabase.auth.getUser(accessToken);
+
+        if (authError || !user?.id) {
+            return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
         const body = await req.json();
         const endpoint = (body as any).endpoint;
 
@@ -50,8 +87,9 @@ Deno.serve(async (req: Request) => {
         // Get subscription from DB
         const { data: sub, error } = await supabase
             .from('push_subscriptions')
-            .select('endpoint, p256dh, auth')
+            .select('endpoint, p256dh, auth, user_id')
             .eq('endpoint', endpoint)
+            .eq('user_id', user.id)
             .single();
 
         if (error || !sub) {
@@ -64,6 +102,7 @@ Deno.serve(async (req: Request) => {
         const subscription = sub as any;
 
         const payload = JSON.stringify({
+            kind: 'task',
             title: 'Test Notification',
             taskId: 'test-notification', // Special ID
         });

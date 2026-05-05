@@ -23,6 +23,13 @@ export function isHabitScheduledForDate(habit: Pick<Habit, 'frequency' | 'week_d
   return weekDays.includes(date.getDay());
 }
 
+function countScheduledOccurrencesInRange(
+  habit: Pick<Habit, 'frequency' | 'week_days'>,
+  days: Date[],
+): number {
+  return days.reduce((count, day) => count + (isHabitScheduledForDate(habit, day) ? 1 : 0), 0);
+}
+
 function clampPct(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, value));
@@ -484,9 +491,12 @@ export function useHabitInsights(habits: Habit[], days = 90) {
           const log = logByDate.get(dateStr);
           if (habit.habit_type === 'detox') {
             if (!log?.completed) successDays += 1;
-          } else if (log?.completed) {
-            successDays += 1;
           }
+        }
+
+        if (habit.habit_type !== 'detox') {
+          const completedLogs = habitLogs.filter((log) => log.completed);
+          successDays = Math.min(scheduledDays, completedLogs.length);
         }
 
         const eventLogs = habitLogs
@@ -633,7 +643,7 @@ export function useWeeklyAdherence() {
     }
 
     // Detox habits are penalty-only: no relapse adds no credit, relapse lowers the day.
-    missedWeight += detoxPenaltyWeight;
+      missedWeight += detoxPenaltyWeight;
     const totalWeight = habitWeight + prayerWeight + detoxPenaltyWeight;
 
     if (totalWeight <= 0) return null;
@@ -647,8 +657,38 @@ export function useWeeklyAdherence() {
   });
 
   const scoredDays = dailyAdherence.filter((day): day is NonNullable<typeof day> => day != null);
-  const adherence = scoredDays.length > 0
-    ? round1(scoredDays.reduce((sum, day) => sum + day.adherence, 0) / scoredDays.length)
+  const baseExpected = scoredDays.reduce((sum, day) => sum + day.totalWeight, 0);
+  const baseCompleted = scoredDays.reduce((sum, day) => sum + Math.max(0, day.totalWeight - day.missedWeight), 0);
+
+  // Off-schedule completions can recover weekly adherence without rewriting the missed scheduled day.
+  const makeupBonus = habits
+    .filter((habit) => habit.habit_type !== 'detox')
+    .reduce((sum, habit) => {
+      const weight = getHabitAdherenceWeight(habit);
+      const scheduledOccurrences = countScheduledOccurrencesInRange(habit, weekDates);
+      if (scheduledOccurrences <= 0) return sum;
+
+      const completedLogs = logs.filter((log) => log.habit_id === habit.id && log.completed);
+      if (completedLogs.length <= 0) return sum;
+
+      let onScheduleCompleted = 0;
+      let offScheduleCompleted = 0;
+      for (const log of completedLogs) {
+        const logDate = new Date(`${log.date}T00:00:00`);
+        if (Number.isNaN(logDate.getTime())) continue;
+        if (isHabitScheduledForDate(habit, logDate)) onScheduleCompleted += 1;
+        else offScheduleCompleted += 1;
+      }
+
+      const creditedCompletions = Math.min(scheduledOccurrences, onScheduleCompleted + offScheduleCompleted);
+      const recoveredCompletions = Math.max(0, creditedCompletions - onScheduleCompleted);
+      return sum + recoveredCompletions * weight;
+    }, 0);
+
+  const totalExpected = baseExpected;
+  const totalCompleted = Math.min(totalExpected, baseCompleted + makeupBonus);
+  const adherence = totalExpected > 0
+    ? round1((totalCompleted / totalExpected) * 100)
     : 0;
 
   // Filter logs for today for the UI usage
@@ -656,8 +696,8 @@ export function useWeeklyAdherence() {
 
   return {
     adherence: clampPct(adherence),
-    totalExpected: scoredDays.reduce((sum, day) => sum + day.totalWeight, 0),
-    totalCompleted: scoredDays.reduce((sum, day) => sum + Math.max(0, day.totalWeight - day.missedWeight), 0),
+    totalExpected,
+    totalCompleted,
     dailyAdherence,
     weekLogs: logs,
     todayLogs,

@@ -28,20 +28,21 @@ export function usePushNotifications() {
   const enableMutation = useMutation({
     mutationFn: async () => {
       if (!supported || !vapidConfigured) throw new Error('Push not supported or VAPID not configured');
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Sign in required to enable notifications');
       const perm = await requestNotificationPermission();
       if (perm !== 'granted') throw new Error('Notification permission denied');
       const sub = await subscribePush();
       if (!sub) throw new Error('Failed to subscribe');
       const { endpoint, p256dh, auth } = subscriptionToJson(sub);
       const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      const { data: { user } } = await supabase.auth.getUser();
       const payload: Record<string, unknown> = {
         endpoint,
         p256dh: p256dh,
         auth,
         timezone,
+        user_id: user.id,
       };
-      if (user?.id) payload.user_id = user.id;
       const { error } = await supabase.from('push_subscriptions').upsert(payload, {
         onConflict: 'endpoint',
       });
@@ -73,6 +74,8 @@ export function usePushNotifications() {
 
   const testNotificationMutation = useMutation({
     mutationFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) throw new Error('Sign in required to send a test notification');
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (!sub) throw new Error('No subscription found');
@@ -80,12 +83,7 @@ export function usePushNotifications() {
       const { endpoint } = sub.toJSON();
       if (!endpoint) throw new Error('Invalid subscription');
 
-      const { error } = await supabase.functions.invoke('send-test-notification', {
-        body: { endpoint },
-        headers: {
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY}`,
-        },
-      });
+      const { error } = await supabase.functions.invoke('send-test-notification', { body: { endpoint } });
 
       if (error) throw error;
       return true;
