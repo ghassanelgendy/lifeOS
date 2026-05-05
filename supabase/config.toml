@@ -3,3 +3,6 @@ verify_jwt = false
 
 [functions.prayer-notifications-dispatch]
 verify_jwt = false
+
+[functions.habit-notifications-dispatch]
+verify_jwt = false
