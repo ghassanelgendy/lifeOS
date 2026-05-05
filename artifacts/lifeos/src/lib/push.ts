@@ -77,6 +77,11 @@ export async function getCurrentPushSubscription(): Promise<PushSubscription | n
   return reg.pushManager.getSubscription();
 }
 
+export async function showLocalNotification(title: string, options?: NotificationOptions): Promise<void> {
+  const reg = await getServiceWorkerRegistration();
+  await reg.showNotification(title, options);
+}
+
 export async function subscribePush(): Promise<PushSubscription | null> {
   if (!isPushSupported() || !VAPID_PUBLIC_KEY) return null;
 

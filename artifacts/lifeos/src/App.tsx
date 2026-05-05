@@ -27,6 +27,7 @@ import Sleep from './routes/Sleep';
 import AnalyticsPage from './routes/Analytics';
 import SettingsPage from './routes/Settings';
 import WeeklyPlanner from './routes/WeeklyPlanner';
+import Landing from './routes/Landing';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
 import './App.css';
@@ -41,7 +42,7 @@ const PERSIST_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
 function ProtectedRoute() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return <Navigate to="/login" replace />;
   return <Outlet />;
 }
 
@@ -50,6 +51,13 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
   if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
+}
+
+function HomeRoute() {
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
+  if (user) return <Navigate to="/dashboard" replace />;
+  return <Landing />;
 }
 
 function UserAppSettingsBridge() {
@@ -135,28 +143,28 @@ function AppInner() {
       <BrowserRouter>
         <FaviconSync />
         <Routes>
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
-          <Route path="/" element={<ProtectedRoute />}>
+          <Route element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route index element={<Dashboard />} />
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="focus" element={<Focus />} />
-              <Route path="health" element={<Health />} />
-              <Route path="habits" element={<Habits />} />
-              <Route path="academics" element={<Academics />} />
-              <Route path="calendar" element={<CalendarPage />} />
-              <Route path="notes" element={<Notes />} />
-              <Route path="planner" element={<WeeklyPlanner />} />
-              <Route path="finance" element={<Finance />} />
-              <Route path="screentime" element={<Screentime />} />
-              <Route path="sleep" element={<Sleep />} />
-              <Route path="analytics" element={<AnalyticsPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/focus" element={<Focus />} />
+              <Route path="/health" element={<Health />} />
+              <Route path="/habits" element={<Habits />} />
+              <Route path="/academics" element={<Academics />} />
+              <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/notes" element={<Notes />} />
+              <Route path="/planner" element={<WeeklyPlanner />} />
+              <Route path="/finance" element={<Finance />} />
+              <Route path="/screentime" element={<Screentime />} />
+              <Route path="/sleep" element={<Sleep />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </>

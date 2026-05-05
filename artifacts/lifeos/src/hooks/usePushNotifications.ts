@@ -6,6 +6,7 @@ import {
   isVapidConfigured,
   getNotificationPermission,
   requestNotificationPermission,
+  showLocalNotification,
   subscribePush,
   subscriptionToJson,
 } from '../lib/push';
@@ -102,6 +103,19 @@ export function usePushNotifications() {
       const { error } = await supabase.functions.invoke('send-test-notification', { body: { endpoint } });
 
       if (error) throw error;
+
+      await showLocalNotification('lifeOS', {
+        body: 'Test notification for this device. Remote push request was also sent.',
+        tag: `local-test-${Date.now()}`,
+        data: {
+          kind: 'task',
+          route: '/settings',
+          taskId: 'test-notification',
+          title: 'Test Notification',
+        },
+        icon: '/web-app-manifest-192x192.png',
+      });
+
       return true;
     },
   });
