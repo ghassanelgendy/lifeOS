@@ -3,15 +3,33 @@ import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
 export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/planner', '/calendar'];
+export const DEFAULT_DESKTOP_NAV = [
+  '/dashboard',
+  '/tasks',
+  '/focus',
+  '/habits',
+  '/calendar',
+  '/notes',
+  '/planner',
+  '/health',
+  '/screentime',
+  '/sleep',
+  '/analytics',
+  '/academics',
+  '/finance',
+];
 
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits', 'magic_week'] as const;
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 export const SLEEP_WIDGET_IDS = ['score', 'timeline', 'metrics', 'weekly', 'sessions'] as const;
 export type SleepWidgetId = (typeof SLEEP_WIDGET_IDS)[number];
+export const HABITS_WIDGET_IDS = ['stats', 'prayer', 'weekly', 'today'] as const;
+export type HabitsWidgetId = (typeof HABITS_WIDGET_IDS)[number];
 export const PAGE_WIDGET_DEFAULTS: Record<string, string[]> = {
   dashboard: [...DASHBOARD_WIDGET_IDS],
   sleep: [...SLEEP_WIDGET_IDS],
+  habits: [...HABITS_WIDGET_IDS],
 };
 
 // Accent color themes (used for primary, ring, accents)
@@ -91,6 +109,13 @@ interface UIState {
   // Mobile Navigation Customization
   mobileNavItems: string[];
   setMobileNavItems: (items: string[]) => void;
+  desktopNavOrder: string[];
+  desktopNavVisible: Record<string, boolean>;
+  setDesktopNavOrder: (order: string[]) => void;
+  setDesktopNavVisible: (visible: Record<string, boolean>) => void;
+  toggleDesktopNavItem: (href: string) => void;
+  moveDesktopNavItem: (href: string, direction: 'up' | 'down') => void;
+  resetDesktopNavItems: () => void;
 
   // Dashboard: widget order and visibility
   dashboardWidgetOrder: string[];
@@ -145,6 +170,8 @@ export type PersistedUiSlice = {
   theme: 'dark' | 'light';
   accentTheme: AccentTheme;
   mobileNavItems: string[];
+  desktopNavOrder: string[];
+  desktopNavVisible: Record<string, boolean>;
   dashboardWidgetOrder: string[];
   dashboardWidgetVisible: Record<string, boolean>;
   defaultTab: string;
@@ -203,6 +230,32 @@ export const useUIStore = create<UIState>()(
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,
       setMobileNavItems: (items) => set({ mobileNavItems: items }),
+      desktopNavOrder: [...DEFAULT_DESKTOP_NAV],
+      desktopNavVisible: DEFAULT_DESKTOP_NAV.reduce((acc, href) => ({ ...acc, [href]: true }), {} as Record<string, boolean>),
+      setDesktopNavOrder: (desktopNavOrder) => set({ desktopNavOrder }),
+      setDesktopNavVisible: (desktopNavVisible) => set({ desktopNavVisible }),
+      toggleDesktopNavItem: (href) =>
+        set((state) => ({
+          desktopNavVisible: {
+            ...state.desktopNavVisible,
+            [href]: !(state.desktopNavVisible[href] ?? true),
+          },
+        })),
+      moveDesktopNavItem: (href, direction) =>
+        set((state) => {
+          const order = [...state.desktopNavOrder];
+          const i = order.indexOf(href);
+          if (i === -1) return state;
+          const j = direction === 'up' ? i - 1 : i + 1;
+          if (j < 0 || j >= order.length) return state;
+          [order[i], order[j]] = [order[j], order[i]];
+          return { desktopNavOrder: order };
+        }),
+      resetDesktopNavItems: () =>
+        set({
+          desktopNavOrder: [...DEFAULT_DESKTOP_NAV],
+          desktopNavVisible: DEFAULT_DESKTOP_NAV.reduce((acc, href) => ({ ...acc, [href]: true }), {} as Record<string, boolean>),
+        }),
 
       // Dashboard
       dashboardWidgetOrder: [...DASHBOARD_WIDGET_IDS],
@@ -269,10 +322,12 @@ export const useUIStore = create<UIState>()(
       pageWidgetOrder: {
         dashboard: [...DASHBOARD_WIDGET_IDS],
         sleep: [...SLEEP_WIDGET_IDS],
+        habits: [...HABITS_WIDGET_IDS],
       },
       pageWidgetVisible: {
         dashboard: DASHBOARD_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
         sleep: SLEEP_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
+        habits: HABITS_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
       },
       setPageWidgetOrder: (page, order) =>
         set((state) => ({
@@ -330,9 +385,13 @@ export const useUIStore = create<UIState>()(
         const mobileNavItems = Array.isArray(state.mobileNavItems)
           ? state.mobileNavItems.map((item) => (item === '/' ? '/dashboard' : item))
           : state.mobileNavItems;
+        const desktopNavOrder = Array.isArray(state.desktopNavOrder)
+          ? state.desktopNavOrder.map((item) => (item === '/' ? '/dashboard' : item))
+          : state.desktopNavOrder;
         return {
           ...state,
           mobileNavItems,
+          desktopNavOrder,
         };
       },
       partialize: (state) => getPersistedUiSlice(state),
@@ -354,6 +413,8 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     theme: state.theme,
     accentTheme: state.accentTheme,
     mobileNavItems: state.mobileNavItems,
+    desktopNavOrder: state.desktopNavOrder,
+    desktopNavVisible: state.desktopNavVisible,
     dashboardWidgetOrder: state.dashboardWidgetOrder,
     dashboardWidgetVisible: state.dashboardWidgetVisible,
     defaultTab: state.defaultTab,

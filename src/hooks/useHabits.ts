@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
+import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { format, startOfWeek, differenceInCalendarDays, subDays } from 'date-fns';
@@ -627,7 +628,7 @@ export function useWeeklyAdherence() {
         const prayerLog = prayerLogs.find(
           (l) => l.prayer_habit_id === prayerHabit.id && l.date === dateStr
         );
-        if (prayerLog?.status !== 'Prayed') missedWeight += 1;
+        if (!isPrayerStatusComplete(prayerLog?.status)) missedWeight += 1;
       });
     }
 

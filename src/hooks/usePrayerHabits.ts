@@ -2,6 +2,10 @@ import { useEffect, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
+import {
+  getPrayerStatusChoices,
+  isPrayerStatusComplete,
+} from '../lib/prayerStatus';
 import { useAuth } from '../contexts/AuthContext';
 import { usePrayerTimes } from './usePrayerTimes';
 import type { PrayerHabit, PrayerLog, PrayerName, PrayerNotificationSetting, PrayerStatus } from '../types/schema';
@@ -35,7 +39,7 @@ async function upsertPrayerLogWithHabitSync(input: {
   status: PrayerStatus;
 }) {
   const nowIso = new Date().toISOString();
-  const prayedAt = input.status === 'Prayed' ? nowIso : null;
+  const prayedAt = isPrayerStatusComplete(input.status) ? nowIso : null;
 
   const { data: existingPrayerLog } = await supabase
     .from('prayer_logs')
@@ -80,7 +84,7 @@ async function upsertPrayerLogWithHabitSync(input: {
     .eq('date', input.date)
     .maybeSingle();
 
-  const completed = input.status === 'Prayed';
+  const completed = isPrayerStatusComplete(input.status);
   let habitLogId: string;
   if (existingHabitLog?.id) {
     const { data, error } = await supabase
@@ -282,7 +286,7 @@ export function usePrayerTracker(date: Date = new Date()) {
 
   const completionRate = useMemo(() => {
     if (tracker.length === 0) return 0;
-    const done = tracker.filter((t) => t.status === 'Prayed').length;
+    const done = tracker.filter((t) => isPrayerStatusComplete(t.status)).length;
     return Math.round((done / tracker.length) * 100);
   }, [tracker]);
 
@@ -290,7 +294,7 @@ export function usePrayerTracker(date: Date = new Date()) {
     const logs = weeklyQuery.data ?? [];
     const map = new Map<string, number>();
     logs.forEach((l) => {
-      if (l.status !== 'Prayed') return;
+      if (!isPrayerStatusComplete(l.status)) return;
       map.set(l.date, (map.get(l.date) ?? 0) + 1);
     });
     return Array.from(map.entries())
@@ -390,6 +394,7 @@ export function usePrayerTracker(date: Date = new Date()) {
     tracker,
     completionRate,
     weeklyCompletion,
+    statusOptions: getPrayerStatusChoices(),
     settings: settingsQuery.data ?? [],
     togglePrayerStatus: (prayer: PrayerTrackerItem, status: PrayerStatus) =>
       upsertPrayer.mutate({ prayer, status }),

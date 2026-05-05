@@ -39,7 +39,7 @@ import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
 import { supabase } from '../lib/supabase';
-import { useUIStore } from '../stores/useUIStore';
+import { HABITS_WIDGET_IDS, useUIStore, type HabitsWidgetId } from '../stores/useUIStore';
 
 const DEFAULT_COLORS = [
   '#22c55e', // Green
@@ -152,6 +152,8 @@ function computeDetoxTarget(detox: DetoxConfig, createdAt: string): number {
 
 export default function Habits() {
   const habitsPrayerDefaultExpanded = useUIStore((s) => s.habitsPrayerDefaultExpanded);
+  const habitsPageWidgetOrder = useUIStore((s) => s.pageWidgetOrder.habits);
+  const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
   const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
 
   const { data: habits = [], isLoading } = useHabits();
@@ -219,6 +221,42 @@ export default function Habits() {
     }
     return out;
   }, [relapseLogs]);
+
+  const desktopSectionOrder = useMemo(() => {
+    const validSaved = (habitsPageWidgetOrder ?? []).filter(
+      (id): id is HabitsWidgetId => (HABITS_WIDGET_IDS as readonly string[]).includes(id)
+    );
+    return [...validSaved, ...HABITS_WIDGET_IDS.filter((id) => !validSaved.includes(id))];
+  }, [habitsPageWidgetOrder]);
+
+  const desktopSectionOrderIndex = useMemo(
+    () =>
+      desktopSectionOrder.reduce(
+        (acc, id, index) => {
+          acc[id] = index;
+          return acc;
+        },
+        {} as Record<HabitsWidgetId, number>
+      ),
+    [desktopSectionOrder]
+  );
+
+  const desktopSectionVisible = useMemo(
+    () =>
+      HABITS_WIDGET_IDS.reduce(
+        (acc, id) => {
+          acc[id] = habitsPageWidgetVisible?.[id] !== false;
+          return acc;
+        },
+        {} as Record<HabitsWidgetId, boolean>
+      ),
+    [habitsPageWidgetVisible]
+  );
+
+  const getDesktopSectionProps = (id: HabitsWidgetId) => ({
+    className: cn('md:[order:var(--desktop-order)]', !desktopSectionVisible[id] && 'md:hidden'),
+    style: { '--desktop-order': desktopSectionOrderIndex[id] } as React.CSSProperties,
+  });
 
   const scheduledTodayHabits = habits.filter((habit: Habit) => isHabitScheduledForDate(habit, today));
   const todayHabits = useMemo(
@@ -377,7 +415,7 @@ export default function Habits() {
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -390,6 +428,7 @@ export default function Habits() {
         </Button>
       </div>
 
+      <div {...getDesktopSectionProps('stats')}>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="rounded-xl border border-border bg-card p-4">
@@ -433,8 +472,10 @@ export default function Habits() {
           <p className="text-xs text-muted-foreground">habits</p>
         </div>
       </div>
+      </div>
 
       {/* Prayer + Prayer Backlog — collapsible; default state from Settings */}
+      <div {...getDesktopSectionProps('prayer')}>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <button
           type="button"
@@ -455,7 +496,9 @@ export default function Habits() {
           </div>
         )}
       </div>
+      </div>
 
+      <div {...getDesktopSectionProps('weekly')}>
       {/* Weekly Overview */}
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4">This Week</h2>
@@ -708,7 +751,9 @@ export default function Habits() {
           </>
         )}
       </div>
+      </div>
 
+      <div {...getDesktopSectionProps('today')}>
       {/* Today's Habits */}
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4">Today's Habits</h2>
@@ -811,6 +856,9 @@ export default function Habits() {
       </div>
 
       {/* Habit Details — match Tasks editing sheet (bottom, scrollable) */}
+      </div>
+
+      {/* Habit Details */}
       <DetailsSheet
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

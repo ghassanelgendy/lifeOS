@@ -15,6 +15,7 @@ import {
 import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
+import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import type { Task } from '../../types/schema';
 
 function formatSleepMinutes(m: number | null) {
@@ -210,7 +211,7 @@ export function DashboardQuickView() {
     todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed);
 
   const completedTodayPrayers = useMemo(
-    () => prayerTracker.filter((p) => p.status === 'Prayed').length,
+    () => prayerTracker.filter((p) => isPrayerStatusComplete(p.status)).length,
     [prayerTracker],
   );
 
@@ -239,7 +240,7 @@ export function DashboardQuickView() {
     [prayerTracker, lastPrayerSlot],
   );
 
-  const lastPrayerDone = lastPrayerTrackerItem?.status === 'Prayed';
+  const lastPrayerDone = isPrayerStatusComplete(lastPrayerTrackerItem?.status);
   const lastPrayerCanTick = !!lastPrayerTrackerItem;
 
   const dueTodayIncompleteHabits = useMemo(
@@ -323,7 +324,7 @@ export function DashboardQuickView() {
     }
 
     for (const prayer of prayerTracker) {
-      if (prayer.status !== 'Prayed') continue;
+      if (!isPrayerStatusComplete(prayer.status)) continue;
       const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
       const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
       markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer' });
@@ -560,7 +561,7 @@ export function DashboardQuickView() {
                           title={`${lastPrayerSlot.name} prayer`}
                           subtitle={
                             lastPrayerTrackerItem?.prayedAt
-                              ? `Prayed · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
+                              ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
                               : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
                           }
                           done={lastPrayerDone}

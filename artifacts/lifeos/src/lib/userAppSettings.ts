@@ -2,7 +2,9 @@ import {
   ACCENT_THEMES,
   DASHBOARD_WIDGET_IDS,
   DEFAULT_DASHBOARD_MODE,
+  DEFAULT_DESKTOP_NAV,
   DEFAULT_MOBILE_NAV,
+  HABITS_WIDGET_IDS,
   SLEEP_WIDGET_IDS,
   isDashboardMode,
   type AccentTheme,
@@ -125,6 +127,14 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
     const nav = asStrArray(remote.mobileNavItems, DEFAULT_MOBILE_NAV);
     patch.mobileNavItems = nav.length > 0 ? normalizeMobileNavItems(nav) : [...DEFAULT_MOBILE_NAV];
   }
+  {
+    const nav = asStrArray(remote.desktopNavOrder, [...DEFAULT_DESKTOP_NAV]);
+    patch.desktopNavOrder = nav.length > 0 ? normalizeMobileNavItems(nav) : [...DEFAULT_DESKTOP_NAV];
+  }
+  patch.desktopNavVisible = asRecordBool(
+    remote.desktopNavVisible,
+    DEFAULT_DESKTOP_NAV.reduce((acc, href) => ({ ...acc, [href]: true }), {} as Record<string, boolean>)
+  );
 
   {
     const ord = asStrArray(remote.dashboardWidgetOrder, [...DASHBOARD_WIDGET_IDS]);
@@ -143,12 +153,14 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   const defaultOrder = {
     dashboard: [...DASHBOARD_WIDGET_IDS],
     sleep: [...SLEEP_WIDGET_IDS],
+    habits: [...HABITS_WIDGET_IDS],
   };
   patch.pageWidgetOrder = asPageOrder(remote.pageWidgetOrder, defaultOrder);
 
   const defaultVisible = {
     dashboard: DASHBOARD_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
     sleep: SLEEP_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
+    habits: HABITS_WIDGET_IDS.reduce((acc, id) => ({ ...acc, [id]: true }), {} as Record<string, boolean>),
   };
   patch.pageWidgetVisible = asPageVisible(remote.pageWidgetVisible, defaultVisible);
 

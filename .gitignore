@@ -51,4 +51,7 @@ dist.zip
 >>>>>>> Stashed changes
 /public/ios6-lite
 /public/ios6-lite
-/supabase
+/supabase/*
+!/supabase/migrations/
+/supabase/migrations/*
+!/supabase/migrations/20260505000002_prayer_logs_late_status.sql

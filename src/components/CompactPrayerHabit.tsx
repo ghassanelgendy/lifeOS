@@ -2,15 +2,17 @@ import { useState } from 'react';
 import { ChevronDown, ChevronUp, MoonStar, Sunrise, Sun, Sunset, Moon, Clock3, CheckCircle2, XCircle, Minus, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
+import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
 import { usePrayerTracker } from '../hooks/usePrayerHabits';
 import type { PrayerStatus } from '../types/schema';
 
-const STATUS_BUTTONS: { status: PrayerStatus; label: string; className: string }[] = [
-  { status: 'Prayed', label: 'Prayed', className: 'bg-green-500/15 text-green-500 border-green-500/30' },
-  { status: 'Missed', label: 'Missed', className: 'bg-red-500/15 text-red-500 border-red-500/30' },
-  { status: 'Skipped', label: 'Skip', className: 'bg-blue-500/15 text-blue-500 border-blue-500/30' },
-];
+const STATUS_BUTTONS: Record<PrayerStatus, { label: string; className: string }> = {
+  Prayed: { label: 'Prayed', className: 'bg-green-500/15 text-green-500 border-green-500/30' },
+  Late: { label: 'Late', className: 'bg-amber-500/15 text-amber-500 border-amber-500/30' },
+  Missed: { label: 'Skip', className: 'bg-red-500/15 text-red-500 border-red-500/30' },
+  Skipped: { label: 'Skip', className: 'bg-blue-500/15 text-blue-500 border-blue-500/30' },
+};
 
 type CompactPrayerHabitProps = {
   /** When true, render as a panel inside an outer card (no second card chrome). */
@@ -20,7 +22,7 @@ type CompactPrayerHabitProps = {
 export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps) {
   const { times, locationLabel } = usePrayerTimes();
   const today = new Date();
-  const { isLoading, tracker, togglePrayerStatus } = usePrayerTracker(today);
+  const { isLoading, tracker, statusOptions, togglePrayerStatus } = usePrayerTracker(today);
   const [isExpanded, setIsExpanded] = useState(true);
 
   const getIcon = (name: string) => {
@@ -35,7 +37,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
     }
   };
 
-  const prayedCount = tracker.filter(t => t.status === 'Prayed').length;
+  const prayedCount = tracker.filter(t => isPrayerStatusComplete(t.status)).length;
   const totalCount = tracker.length;
   const percentage = totalCount > 0 ? Math.round((prayedCount / totalCount) * 100) : 0;
 
@@ -100,6 +102,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                       <Icon size={16} className="text-primary" />
                       <p className="font-medium text-sm">{item.prayerName}</p>
                       {item.status === 'Prayed' && <CheckCircle2 size={14} className="text-green-500" />}
+                      {item.status === 'Late' && <Clock3 size={14} className="text-amber-500" />}
                       {item.status === 'Missed' && <XCircle size={14} className="text-red-500" />}
                       {item.status === 'Skipped' && <Minus size={14} className="text-blue-500" />}
                     </div>
@@ -108,22 +111,25 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    {STATUS_BUTTONS.map((s) => (
+                    {statusOptions.map((status) => {
+                      const meta = STATUS_BUTTONS[status];
+                      return (
                       <button
-                        key={s.status}
+                        key={status}
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          togglePrayerStatus(item, s.status);
+                          togglePrayerStatus(item, status);
                         }}
                         className={cn(
                           "text-xs px-2 py-1.5 rounded border transition-colors",
-                          item.status === s.status ? s.className : "border-border text-muted-foreground hover:bg-secondary"
+                          item.status === status ? meta.className : "border-border text-muted-foreground hover:bg-secondary"
                         )}
                       >
-                        {s.label}
+                        {meta.label}
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );

@@ -1,5 +1,5 @@
 import { Menu, X, Settings } from 'lucide-react';
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
@@ -10,6 +10,7 @@ import { AppFooter } from './AppFooter';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
 import { NAV_ITEMS, type NavItem } from './navItems';
+import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 
 function MobileNavLink({ item }: { item: NavItem }) {
   const match = useMatch({ path: item.href, end: item.href === '/' });
@@ -36,12 +37,29 @@ const CENTER_SWIPE_MIN = 0.25;
 const CENTER_SWIPE_MAX = 0.75;
 
 export function AppShell() {
-  const { isSidebarCollapsed, toggleSidebar, mobileNavItems, isMobileSidebarOpen, setMobileSidebarOpen } = useUIStore();
+  const {
+    isSidebarCollapsed,
+    toggleSidebar,
+    mobileNavItems,
+    desktopNavOrder,
+    desktopNavVisible,
+    isMobileSidebarOpen,
+    setMobileSidebarOpen,
+  } = useUIStore();
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const mobileNavigation = NAV_ITEMS.filter(item => mobileNavItems.includes(item.href));
+  const desktopNavigation = useMemo(() => {
+    const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings');
+    const fallback = [...DEFAULT_DESKTOP_NAV];
+    const savedOrder = (desktopNavOrder.length ? desktopNavOrder : fallback)
+      .map((href) => navItems.find((item) => item.href === href))
+      .filter((item): item is NavItem => !!item);
+    const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
+    return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
+  }, [desktopNavOrder, desktopNavVisible]);
   const currentIndex = mobileNavigation.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
@@ -191,7 +209,7 @@ export function AppShell() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 gap-1 flex flex-col px-2">
-          {NAV_ITEMS.filter(item => item.href !== '/settings').map((item) => (
+          {desktopNavigation.map((item) => (
             <NavLink
               key={item.href}
               to={item.href}

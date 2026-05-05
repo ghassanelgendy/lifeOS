@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Calendar, CheckCircle2, XCircle, Minus } from 'lucide-react';
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns';
+import { Calendar, CheckCircle2, ChevronLeft, ChevronRight, Clock3, XCircle } from 'lucide-react';
+import { addMonths, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns';
 import { cn } from '../lib/utils';
 import { useSetPrayerStatusAtDate } from '../hooks/usePrayerHabits';
 import { useQuery } from '@tanstack/react-query';
@@ -23,6 +23,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   const { user } = useAuth();
   const { setPrayerStatusAtDate } = useSetPrayerStatusAtDate();
   const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
+  const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
   const today = new Date();
 
   // Get prayer habits to map logs to prayer names
@@ -63,11 +64,11 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
       const end = endOfWeek(today, { weekStartsOn: 0 });
       return { start, end, days: eachDayOfInterval({ start, end }) };
     } else {
-      const start = startOfMonth(today);
-      const end = endOfMonth(today);
+      const start = startOfMonth(monthCursor);
+      const end = endOfMonth(monthCursor);
       return { start, end, days: eachDayOfInterval({ start, end }) };
     }
-  }, [view, today]);
+  }, [monthCursor, view, today]);
 
   // Fetch prayer logs for the date range
   const { data: logs = [], isLoading } = useQuery({
@@ -101,20 +102,18 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
 
   // Calculate stats
   const stats = useMemo(() => {
-    let total = 0;
     let missed = 0;
-    let skipped = 0;
+    let late = 0;
     let prayed = 0;
 
     dateRange.days.forEach((day) => {
       const dayStr = toDateOnly(day);
       PRAYER_NAMES.forEach((prayerName) => {
-        total++;
         const log = logsByDate.get(dayStr)?.get(prayerName);
         if (log) {
           if (log.status === 'Prayed') prayed++;
-          else if (log.status === 'Missed') missed++;
-          else if (log.status === 'Skipped') skipped++;
+          else if (log.status === 'Late') late++;
+          else missed++;
         } else {
           // If no log and date is in the past, count as missed
           if (day < today && !isToday(day)) {
@@ -124,7 +123,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
       });
     });
 
-    return { total, missed, skipped, prayed };
+    return { missed, late, prayed };
   }, [dateRange.days, logsByDate, today]);
 
   const shell = embedded
@@ -145,7 +144,32 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
     <div className={shell}>
       {/* Header */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <h2 className={embedded ? 'text-base font-semibold' : 'text-lg font-semibold'}>Prayer Backlog</h2>
+        <div className="flex items-center gap-2">
+          <h2 className={embedded ? 'text-base font-semibold' : 'text-lg font-semibold'}>Prayer Backlog</h2>
+          {view === 'monthly' && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous month"
+                onClick={() => setMonthCursor((current) => addMonths(current, -1))}
+                className="rounded border border-border p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <ChevronLeft size={12} />
+              </button>
+              <div className="min-w-[6.5rem] text-center text-xs font-medium text-muted-foreground">
+                {format(monthCursor, 'MMM yyyy')}
+              </div>
+              <button
+                type="button"
+                aria-label="Next month"
+                onClick={() => setMonthCursor((current) => addMonths(current, 1))}
+                className="rounded border border-border p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                <ChevronRight size={12} />
+              </button>
+            </>
+          )}
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setView('weekly')}
@@ -173,22 +197,18 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-3 mt-4">
-        <div className="rounded-lg border border-border bg-secondary/20 p-3">
-          <div className="text-xs text-muted-foreground mb-1">Total</div>
-          <div className="text-xl font-bold">{stats.total}</div>
-        </div>
+      <div className="grid grid-cols-3 gap-3 mt-4">
         <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3">
           <div className="text-xs text-green-500 mb-1">Prayed</div>
           <div className="text-xl font-bold text-green-500">{stats.prayed}</div>
         </div>
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+          <div className="text-xs text-amber-500 mb-1">Late</div>
+          <div className="text-xl font-bold text-amber-500">{stats.late}</div>
+        </div>
         <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
           <div className="text-xs text-red-500 mb-1">Missed</div>
           <div className="text-xl font-bold text-red-500">{stats.missed}</div>
-        </div>
-        <div className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-3">
-          <div className="text-xs text-blue-500 mb-1">Skipped</div>
-          <div className="text-xl font-bold text-blue-500">{stats.skipped}</div>
         </div>
       </div>
 
@@ -235,15 +255,30 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                   </div>
                   {PRAYER_NAMES.map((prayerName) => {
                     const log = dayLogs.get(prayerName);
-                    let status: 'prayed' | 'missed' | 'skipped' | 'none' = 'none';
+                    let status: 'prayed' | 'late' | 'missed' | 'none' = 'none';
                     if (log) {
-                      status = log.status.toLowerCase() as 'prayed' | 'missed' | 'skipped';
+                      status = log.status === 'Prayed'
+                        ? 'prayed'
+                        : log.status === 'Late'
+                          ? 'late'
+                          : 'missed';
                     } else if (isPast) {
                       status = 'missed';
                     }
                     const link = prayerHabitByName.get(prayerName);
                     const canToggleStatus = !!link && (isPast || isToday(day));
-                    const nextStatus = status === 'prayed' ? 'Missed' : 'Prayed';
+                    const nextStatus: PrayerLog['status'] =
+                      status === 'prayed'
+                        ? 'Late'
+                        : status === 'late'
+                          ? 'Missed'
+                          : 'Prayed';
+                    const hoverClass =
+                      nextStatus === 'Prayed'
+                        ? 'hover:bg-green-500/10 cursor-pointer'
+                        : nextStatus === 'Late'
+                          ? 'hover:bg-amber-500/10 cursor-pointer'
+                          : 'hover:bg-red-500/10 cursor-pointer';
 
                     return (
                       <div key={prayerName} className="flex items-center justify-center">
@@ -262,19 +297,17 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                           }}
                           className={cn(
                             "rounded p-0.5 transition-colors",
-                            canToggleStatus
-                              ? (nextStatus === 'Prayed' ? "hover:bg-green-500/10 cursor-pointer" : "hover:bg-red-500/10 cursor-pointer")
-                              : "cursor-default"
+                            canToggleStatus ? hoverClass : "cursor-default"
                           )}
                         >
                           {status === 'prayed' && (
                             <CheckCircle2 size={18} className="text-green-500" />
                           )}
+                          {status === 'late' && (
+                            <Clock3 size={18} className="text-amber-500" />
+                          )}
                           {status === 'missed' && (
                             <XCircle size={18} className="text-red-500" />
-                          )}
-                          {status === 'skipped' && (
-                            <Minus size={18} className="text-blue-500" />
                           )}
                           {status === 'none' && (
                             <div className="w-4 h-4 rounded-full border border-border" />

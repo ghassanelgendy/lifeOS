@@ -108,7 +108,7 @@ export interface SleepSession {
 }
 
 export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
-export type PrayerStatus = 'Prayed' | 'Missed' | 'Skipped';
+export type PrayerStatus = 'Prayed' | 'Missed' | 'Skipped' | 'Late';
 
 export interface PrayerHabit {
   id: string;

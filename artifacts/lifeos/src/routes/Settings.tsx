@@ -24,11 +24,10 @@ import {
 import { cn } from '../lib/utils';
 import {
   useUIStore,
-  DASHBOARD_WIDGET_IDS,
   DASHBOARD_MODES,
   DASHBOARD_MODE_LABELS,
-  SLEEP_WIDGET_IDS,
   PAGE_WIDGET_DEFAULTS,
+  DEFAULT_DESKTOP_NAV,
   ACCENT_THEMES,
   ACCENT_THEME_LABELS,
   type AccentTheme,
@@ -60,6 +59,12 @@ const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
 
 const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
   dashboard: DASHBOARD_WIDGET_LABELS,
+  habits: {
+    stats: 'Stats cards',
+    prayer: 'Prayer tracking',
+    weekly: 'This week',
+    today: "Today's habits",
+  },
   sleep: {
     score: 'Score summary',
     timeline: 'Sleep timeline',
@@ -82,6 +87,8 @@ const SETTINGS_NAV = [
   { id: 'about', label: 'About' },
 ] as const;
 
+type LayoutWidgetPage = 'dashboard' | 'habits' | 'sleep';
+
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const {
@@ -95,6 +102,11 @@ export default function SettingsPage() {
     setAccentTheme,
     mobileNavItems,
     setMobileNavItems,
+    desktopNavOrder,
+    desktopNavVisible,
+    toggleDesktopNavItem,
+    moveDesktopNavItem,
+    resetDesktopNavItems,
     defaultTab,
     setDefaultTab,
     defaultTaskView,
@@ -123,7 +135,7 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
-  const [selectedWidgetPage, setSelectedWidgetPage] = useState<'dashboard' | 'sleep'>('dashboard');
+  const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
@@ -256,6 +268,14 @@ export default function SettingsPage() {
   const scrollToSettingsSection = (id: (typeof SETTINGS_NAV)[number]['id']) => {
     document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+
+  const desktopNavCandidates = NAV_ITEMS.filter((item) => item.href !== '/settings');
+  const desktopNavOrderedHrefs = desktopNavOrder.length
+    ? [...desktopNavOrder, ...DEFAULT_DESKTOP_NAV.filter((href) => !desktopNavOrder.includes(href))]
+    : [...DEFAULT_DESKTOP_NAV];
+  const desktopNavSettingItems = desktopNavOrderedHrefs
+    .map((href) => desktopNavCandidates.find((item) => item.href === href))
+    .filter((item, index, items): item is (typeof NAV_ITEMS)[number] => !!item && items.findIndex((candidate) => candidate?.href === item.href) === index);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-6xl mx-auto">
@@ -483,17 +503,18 @@ export default function SettingsPage() {
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Page Widgets</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Choose which sections to show and in what order per page. Dashboard widgets apply to the <span className="font-medium text-foreground">Tactical</span> dashboard only (not Quick View, Strategic, or Annual Review).
+            Choose which sections to show and in what order per page. Habits layout applies on desktop only. Dashboard widgets apply to the <span className="font-medium text-foreground">Tactical</span> dashboard only (not Quick View, Strategic, or Annual Review).
           </p>
         </div>
         <div className="p-4 space-y-2">
           <div className="flex items-center justify-between pb-2">
             <select
               value={selectedWidgetPage}
-              onChange={(e) => setSelectedWidgetPage(e.target.value as 'dashboard' | 'sleep')}
+              onChange={(e) => setSelectedWidgetPage(e.target.value as LayoutWidgetPage)}
               className="px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="dashboard">Dashboard</option>
+              <option value="habits">Habits</option>
               <option value="sleep">Sleep</option>
             </select>
             <Button variant="outline" size="sm" onClick={() => resetPageWidgets(selectedWidgetPage)}>
@@ -502,7 +523,7 @@ export default function SettingsPage() {
             </Button>
           </div>
 
-          {(pageWidgetOrder?.[selectedWidgetPage]?.length ? pageWidgetOrder[selectedWidgetPage] : (PAGE_WIDGET_DEFAULTS[selectedWidgetPage] ?? (selectedWidgetPage === 'dashboard' ? DASHBOARD_WIDGET_IDS : SLEEP_WIDGET_IDS))).map((id, index) => {
+          {(pageWidgetOrder?.[selectedWidgetPage]?.length ? pageWidgetOrder[selectedWidgetPage] : (PAGE_WIDGET_DEFAULTS[selectedWidgetPage] ?? [])).map((id, index) => {
             const visible = pageWidgetVisible?.[selectedWidgetPage]?.[id] !== false;
             const label = PAGE_WIDGET_LABELS[selectedWidgetPage]?.[id] ?? id;
             const currentLen = (pageWidgetOrder?.[selectedWidgetPage]?.length ?? PAGE_WIDGET_DEFAULTS[selectedWidgetPage]?.length ?? 0);
@@ -547,6 +568,73 @@ export default function SettingsPage() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* Desktop Navigation */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Desktop Sidebar</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <p className="font-medium">Sidebar Items</p>
+            <p className="text-sm text-muted-foreground">
+              Choose which pages show in the desktop sidebar and in what order. Settings stays available separately at the bottom.
+            </p>
+          </div>
+          <div className="flex items-center justify-end">
+            <Button variant="outline" size="sm" onClick={resetDesktopNavItems}>
+              <RotateCcw size={14} />
+              Reset
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {desktopNavSettingItems.map((item, index) => {
+              const visible = desktopNavVisible[item.href] !== false;
+              return (
+                <div
+                  key={item.href}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                    visible ? "border-border bg-card" : "border-border/50 bg-secondary/20 opacity-75"
+                  )}
+                >
+                  <GripVertical size={16} className="text-muted-foreground flex-shrink-0" />
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer min-h-[44px]">
+                    <input
+                      type="checkbox"
+                      checked={visible}
+                      onChange={() => toggleDesktopNavItem(item.href)}
+                      className="rounded border-border"
+                    />
+                    <item.icon size={16} className="text-muted-foreground" />
+                    <span className="font-medium">{item.label}</span>
+                  </label>
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => moveDesktopNavItem(item.href, 'up')}
+                      disabled={index === 0}
+                      className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                      title="Move up"
+                    >
+                      <ChevronUp size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveDesktopNavItem(item.href, 'down')}
+                      disabled={index === desktopNavSettingItems.length - 1}
+                      className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                      title="Move down"
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </section>
 
