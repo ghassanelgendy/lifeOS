@@ -20,10 +20,15 @@ function getAllowedOrigins(): string[] {
 
 function corsHeadersFor(origin: string | null): Record<string, string> {
     const allowed = getAllowedOrigins();
+    const hasAllowList = allowed.length > 0;
     const isAllowed = !!origin && allowed.includes(origin);
+    const allowOrigin = hasAllowList
+        ? (isAllowed ? origin! : 'null')
+        : (origin ?? '*');
     return {
-        'Access-Control-Allow-Origin': isAllowed ? origin! : 'null',
+        'Access-Control-Allow-Origin': allowOrigin,
         'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
         'Vary': 'Origin',
     };
 }

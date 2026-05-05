@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import {
+  getCurrentPushSubscription,
   isPushSupported,
   isVapidConfigured,
   getNotificationPermission,
@@ -23,6 +24,21 @@ export function usePushNotifications() {
     initialData: () =>
       typeof Notification !== 'undefined' ? Notification.permission : ('denied' as NotificationPermission),
     staleTime: 60_000,
+  });
+
+  const { data: isEnabled = false } = useQuery({
+    queryKey: [...PUSH_KEY, 'subscription'],
+    queryFn: async () => {
+      if (!supported) return false;
+      try {
+        const sub = await getCurrentPushSubscription();
+        return Boolean(sub);
+      } catch {
+        return false;
+      }
+    },
+    initialData: false,
+    staleTime: 15_000,
   });
 
   const enableMutation = useMutation({
@@ -51,24 +67,25 @@ export function usePushNotifications() {
     },
     onSuccess: () => {
       queryClient.setQueryData([...PUSH_KEY, 'permission'], 'granted');
+      queryClient.setQueryData([...PUSH_KEY, 'subscription'], true);
     },
   });
 
   const disableMutation = useMutation({
     mutationFn: async () => {
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
+      const sub = await getCurrentPushSubscription();
       if (sub) {
+        const { endpoint } = subscriptionToJson(sub);
         await sub.unsubscribe();
-        const json = sub.toJSON();
-        if (json.endpoint) {
-          await supabase.from('push_subscriptions').delete().eq('endpoint', json.endpoint);
+        if (endpoint) {
+          const { error } = await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+          if (error) throw error;
         }
       }
       return true;
     },
     onSuccess: () => {
-      queryClient.setQueryData([...PUSH_KEY, 'permission'], 'default');
+      queryClient.setQueryData([...PUSH_KEY, 'subscription'], false);
     },
   });
 
@@ -76,9 +93,8 @@ export function usePushNotifications() {
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) throw new Error('Sign in required to send a test notification');
-      const reg = await navigator.serviceWorker.ready;
-      const sub = await reg.pushManager.getSubscription();
-      if (!sub) throw new Error('No subscription found');
+      const sub = await getCurrentPushSubscription();
+      if (!sub) throw new Error('No notification subscription found. Enable notifications, then reload once and try again.');
 
       const { endpoint } = sub.toJSON();
       if (!endpoint) throw new Error('Invalid subscription');
@@ -94,7 +110,7 @@ export function usePushNotifications() {
     supported,
     vapidConfigured,
     permission: permission ?? 'default',
-    isEnabled: permission === 'granted',
+    isEnabled,
     enable: enableMutation.mutateAsync,
     disable: disableMutation.mutateAsync,
     sendTestNotification: testNotificationMutation.mutateAsync,

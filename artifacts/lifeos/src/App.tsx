@@ -106,6 +106,28 @@ function AppInner() {
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const reloadWhenNewController = () => window.location.reload();
+    navigator.serviceWorker.addEventListener('controllerchange', reloadWhenNewController);
+    return () => navigator.serviceWorker.removeEventListener('controllerchange', reloadWhenNewController);
+  }, []);
+
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const checkForUpdates = () => {
+      navigator.serviceWorker.ready
+        .then((reg) => reg.update())
+        .catch(() => undefined);
+    };
+    checkForUpdates();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') checkForUpdates();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
+
   return (
     <>
       <UserAppSettingsBridge />
