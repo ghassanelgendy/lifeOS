@@ -4,27 +4,21 @@ import legacy from '@vitejs/plugin-legacy'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const host = process.env.TAURI_DEV_HOST
-const isTauriBuild = !!process.env.TAURI_ENV_PLATFORM
 const isIos6Legacy = process.env.IOS6_LEGACY === '1'
 
 // https://vite.dev/config/
 export default defineConfig({
   clearScreen: false,
-  envPrefix: ['VITE_', 'TAURI_ENV_'],
+  envPrefix: ['VITE_'],
   publicDir: 'public',
   server: {
     port: 5173,
     strictPort: true,
-    host: host || false,
-    watch: {
-      ignored: ['**/src-tauri/**'],
-    },
   },
   build: {
-    target: isIos6Legacy ? 'es5' : process.env.TAURI_ENV_PLATFORM === 'windows' ? 'chrome105' : 'safari13',
-    minify: !process.env.TAURI_ENV_DEBUG ? 'esbuild' : false,
-    sourcemap: !!process.env.TAURI_ENV_DEBUG,
+    target: isIos6Legacy ? 'es5' : 'safari13',
+    minify: 'esbuild',
+    sourcemap: false,
     rollupOptions: {
       input: 'index.html',
     },
@@ -200,9 +194,6 @@ export default defineConfig({
       // Exclude api/* (Vercel serverless) from Vite so esbuild never sees it (avoids "Invalid loader: ics")
       ignoreApiPlugin,
     ];
-
-    // Desktop (Tauri) should not register/build a service worker to avoid stale cached UI after packaging.
-    if (isTauriBuild) return basePlugins
 
     // iOS 6 WebKit: no service workers; registerSW + modern SW can break or confuse old Safari.
     if (isIos6Legacy) return basePlugins

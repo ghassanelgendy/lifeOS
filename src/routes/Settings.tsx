@@ -116,8 +116,6 @@ export default function SettingsPage() {
     setHabitsPrayerDefaultExpanded,
     dashboardMode,
     setDashboardMode,
-    tauriStartMinimized,
-    setTauriStartMinimized,
     pageWidgetOrder,
     pageWidgetVisible,
     togglePageWidget,
@@ -138,18 +136,12 @@ export default function SettingsPage() {
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
-  const [isTauri, setIsTauri] = useState(false);
+  const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
-
-  useEffect(() => {
-    import('@tauri-apps/api/window')
-      .then(() => setIsTauri(true))
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     if (prayerLocationMode !== 'city') {
@@ -468,63 +460,6 @@ export default function SettingsPage() {
             </p>
             <label htmlFor="settings-dashboard-mode" className="sr-only">
               Default dashboard view
-            </label>
-            <select
-              id="settings-dashboard-mode"
-              value={dashboardMode}
-              onChange={(e) => setDashboardMode(e.target.value as DashboardMode)}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              {DASHBOARD_MODES.map((m) => (
-                <option key={m} value={m}>
-                  {DASHBOARD_MODE_LABELS[m]}
-                </option>
-              ))}
-            </select>
-            <p className="text-xs text-muted-foreground mt-2">
-              Current: <span className="font-medium text-foreground">{DASHBOARD_MODE_LABELS[dashboardMode]}</span>
-            </p>
-          </div>
-          <div>
-            <p className="font-medium mb-2">Habits: Prayer tracking</p>
-            <p className="text-sm text-muted-foreground mb-2">
-              When you open Habits, show the prayer tracker expanded or collapsed by default.
-            </p>
-            <select
-              value={habitsPrayerDefaultExpanded ? 'expanded' : 'collapsed'}
-              onChange={(e) => setHabitsPrayerDefaultExpanded(e.target.value === 'expanded')}
-              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="expanded">Expanded</option>
-              <option value="collapsed">Collapsed</option>
-            </select>
-          </div>
-        </div>
-      </section>
-
-      {/* Desktop app (Tauri) */}
-      {isTauri && (
-        <section className="rounded-xl border border-border bg-card overflow-hidden">
-          <div className="p-4 border-b border-border">
-            <h2 className="font-semibold">Desktop app</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Options when running as the Windows desktop app.
-            </p>
-          </div>
-          <div className="p-4 space-y-4">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={tauriStartMinimized}
-                onChange={(e) => setTauriStartMinimized(e.target.checked)}
-                className="rounded border-border"
-              />
-              <span className="text-sm">Start minimized when opening the app</span>
-            </label>
-          </div>
-        </section>
-      )}
-      </div>
 
       <div id="settings-layout" className="space-y-10 scroll-mt-20">
       {/* Page Widgets */}

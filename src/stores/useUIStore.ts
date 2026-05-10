@@ -138,6 +138,28 @@ interface UIState {
 
   // Default pages
   defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
+
+  // Dashboard: widget order and visibility
+  dashboardWidgetOrder: string[];
+  dashboardWidgetVisible: Record<string, boolean>;
+  setDashboardWidgetOrder: (order: string[]) => void;
+  setDashboardWidgetVisible: (visible: Record<string, boolean>) => void;
+  toggleDashboardWidget: (id: string) => void;
+  moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
+
+  /** Which dashboard layout Home uses (persisted). */
+  dashboardMode: DashboardMode;
+  setDashboardMode: (mode: DashboardMode) => void;
+  /** Advance to next mode (for settings double-click). */
+  cycleDashboardMode: () => void;
+  /** Strategic mode chart range (persisted). */
+  strategicHorizonDays: StrategicHorizonDays;
+  setStrategicHorizonDays: (days: StrategicHorizonDays) => void;
+  annualReviewNotesByYear: Record<string, string>;
+  setAnnualReviewNotesForYear: (year: string, note: string) => void;
+
+  // Default pages
+  defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
   setDefaultTab: (tab: string) => void;
   /** Default Tasks view: smart list id ('today'|'week'|'upcoming'|'all'|'completed') or custom list uuid */
   defaultTaskView: string | null;
@@ -146,10 +168,6 @@ interface UIState {
   setDefaultTaskListId: (id: string | null) => void;
   calendarShowTasks: boolean;
   setCalendarShowTasks: (show: boolean) => void;
-
-  /** When true, Tauri desktop app starts minimized to taskbar */
-  tauriStartMinimized: boolean;
-  setTauriStartMinimized: (value: boolean) => void;
 
   // Page widgets (all pages customization foundation)
   pageWidgetOrder: Record<string, string[]>;
@@ -182,7 +200,6 @@ export type PersistedUiSlice = {
   defaultTaskView: string | null;
   defaultTaskListId: string | null;
   calendarShowTasks: boolean;
-  tauriStartMinimized: boolean;
   pageWidgetOrder: Record<string, string[]>;
   pageWidgetVisible: Record<string, Record<string, boolean>>;
   dashboardMode: DashboardMode;
@@ -324,9 +341,6 @@ export const useUIStore = create<UIState>()(
       calendarShowTasks: true,
       setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
 
-      tauriStartMinimized: false,
-      setTauriStartMinimized: (tauriStartMinimized) => set({ tauriStartMinimized }),
-
       pageWidgetOrder: {
         dashboard: [...DASHBOARD_WIDGET_IDS],
         sleep: [...SLEEP_WIDGET_IDS],
@@ -429,7 +443,6 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     defaultTaskView: state.defaultTaskView,
     defaultTaskListId: state.defaultTaskListId,
     calendarShowTasks: state.calendarShowTasks,
-    tauriStartMinimized: state.tauriStartMinimized,
     pageWidgetOrder: state.pageWidgetOrder,
     pageWidgetVisible: state.pageWidgetVisible,
     dashboardMode: state.dashboardMode,
