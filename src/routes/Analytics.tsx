@@ -5,18 +5,18 @@ import {
   CheckSquare,
   ChevronDown,
   ChevronRight,
-  Clock,
   Flame,
   Moon,
   Monitor,
   Sparkles,
+  TrendingUp,
   Wallet,
 } from 'lucide-react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
+  Cell,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -36,6 +36,7 @@ import {
   useAnalyticsTop,
   getRangeBounds,
 } from '../hooks/useAnalytics';
+import { useHabits, useHabitInsights } from '../hooks/useHabits';
 
 type SectionKey =
   | 'overview'
@@ -215,6 +216,11 @@ function sectionHeader(opts: {
   );
 }
 
+const HABIT_COLORS = [
+  '#a855f7', '#0ea5e9', '#22c55e', '#f59e0b', '#ef4444',
+  '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+];
+
 export default function Analytics() {
   const { privacyMode, analyticsShowTips } = useUIStore();
   const [rangeDays, setRangeDays] = useState<AnalyticsRangeDays>(30);
@@ -308,55 +314,9 @@ export default function Analytics() {
     };
   }, [daily.sleep.data]);
 
-  /** Per calendar day: phone (iOS) + PC (Windows) + sleep + other = 24h; then averaged across the analytics range. */
-  const avgDay24h = useMemo(() => {
-    const screentimeRows = daily.screentime.data ?? [];
-    const sleepRows = daily.sleep.data ?? [];
-    const sleepByDate = new Map(sleepRows.map((r) => [screentimeDateKey(r.date), Number(r.total_minutes) || 0]));
-    const iosSecondsByDate = new Map<string, number>();
-    const windowsSecondsByDate = new Map<string, number>();
-    for (const r of screentimeRows) {
-      const bucket = screentimeUiPlatform(r.platform);
-      if (bucket !== 'ios' && bucket !== 'windows') continue;
-      const d = screentimeDateKey(r.date);
-      if (!d) continue;
-      const sec = Number(r.total_time_seconds) || 0;
-      if (bucket === 'ios') iosSecondsByDate.set(d, (iosSecondsByDate.get(d) ?? 0) + sec);
-      else windowsSecondsByDate.set(d, (windowsSecondsByDate.get(d) ?? 0) + sec);
-    }
-    const dates = eachDateInclusive(daily.bounds.start, daily.bounds.end);
-    if (dates.length === 0) return null;
-    const phoneH: number[] = [];
-    const pcH: number[] = [];
-    const sleepH: number[] = [];
-    const otherH: number[] = [];
-    for (const dt of dates) {
-      const ph = (iosSecondsByDate.get(dt) ?? 0) / 3600;
-      const wh = (windowsSecondsByDate.get(dt) ?? 0) / 3600;
-      const sh = (sleepByDate.get(dt) ?? 0) / 60;
-      const oh = Math.max(0, 24 - ph - wh - sh);
-      phoneH.push(ph);
-      pcH.push(wh);
-      sleepH.push(sh);
-      otherH.push(oh);
-    }
-    return {
-      phone: mean(phoneH),
-      pc: mean(pcH),
-      sleep: mean(sleepH),
-      other: mean(otherH),
-      nDays: dates.length,
-      chartRow: [
-        {
-          label: 'Typical day',
-          phone: Math.round(mean(phoneH) * 10) / 10,
-          pc: Math.round(mean(pcH) * 10) / 10,
-          sleep: Math.round(mean(sleepH) * 10) / 10,
-          other: Math.round(mean(otherH) * 10) / 10,
-        },
-      ],
-    };
-  }, [daily.bounds.start, daily.bounds.end, daily.screentime.data, daily.sleep.data]);
+  // Habits per-habit data
+  const { data: allHabits = [] } = useHabits();
+  const habitInsights = useHabitInsights(allHabits, rangeDays);
 
   const tasksAgg = useMemo(() => {
     const rows = daily.tasks.data ?? [];
@@ -959,55 +919,7 @@ export default function Analytics() {
                 </p>
               </div>
 
-              {avgDay24h && (
-                <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-secondary shrink-0">
-                      <Clock size={18} className="text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">24-hour day (average)</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        <span className="font-medium text-foreground">Phone</span> is iOS screen time,{' '}
-                        <span className="font-medium text-foreground">PC</span> is Windows screen time (apps + sites),{' '}
-                        <span className="font-medium text-foreground">Sleep</span> is logged sleep.{' '}
-                        <span className="font-medium text-foreground">Other</span> is the rest of the 24h clock. Averaged over{' '}
-                        {avgDay24h.nDays} days in this range.
-                      </p>
-                    </div>
-                  </div>
-                  <div className={cn('rounded-md border border-border/60 bg-secondary/20', privacyMode && 'blur-sm select-none')}>
-                    <ResponsiveContainer width="100%" height={112}>
-                      <BarChart layout="vertical" data={avgDay24h.chartRow} margin={{ top: 4, right: 12, left: 4, bottom: 4 }}>
-                        <XAxis type="number" domain={[0, 24]} ticks={[0, 6, 12, 18, 24]} tickFormatter={(v) => `${v}h`} className="text-xs" />
-                        <YAxis type="category" dataKey="label" width={88} tick={{ fontSize: 12 }} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'var(--color-card)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '0.5rem',
-                            boxShadow: 'none',
-                          }}
-                          formatter={(value, name) => {
-                            const n = typeof value === 'number' ? value : Number(value);
-                            return [`${Number.isFinite(n) ? n.toFixed(1) : '—'}h`, String(name ?? '')];
-                          }}
-                          labelStyle={{ color: 'var(--color-muted-foreground)' }}
-                        />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="phone" name="Phone (iOS)" stackId="day" fill="#a855f7" isAnimationActive={false} />
-                        <Bar dataKey="pc" name="PC (Windows)" stackId="day" fill="#0ea5e9" isAnimationActive={false} />
-                        <Bar dataKey="sleep" name="Sleep" stackId="day" fill="#6366f1" isAnimationActive={false} />
-                        <Bar dataKey="other" name="Other" stackId="day" fill="#94a3b8" isAnimationActive={false} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <p className={cn('text-xs text-muted-foreground tabular-nums', privacyMode && 'blur-sm select-none')}>
-                    Avg: {avgDay24h.phone.toFixed(1)}h phone · {avgDay24h.pc.toFixed(1)}h PC · {avgDay24h.sleep.toFixed(1)}h sleep ·{' '}
-                    {avgDay24h.other.toFixed(1)}h other
-                  </p>
-                </div>
-              )}
+
             </div>
           )}
         </div>
@@ -1218,29 +1130,196 @@ export default function Analytics() {
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           {sectionHeader({
             title: 'Habits insights',
-            subtitle: 'Adherence and stability',
+            subtitle: `${habitsAgg.avgAdherence}% avg adherence · ${allHabits.length} active habits`,
             icon: Flame,
             isExpanded: expanded.habits,
             onToggle: () => toggle('habits'),
           })}
           {expanded.habits && (
-            <div className="border-t border-border p-4 bg-secondary/10 space-y-3">
+            <div className="border-t border-border p-4 bg-secondary/10 space-y-4">
               {analyticsShowTips && (
                 <div className="rounded-lg border border-border bg-card p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
                   <p className="mt-1 text-sm">
                     Habits adherence is based on scheduled habits for each day, habit weights, the 5 prayers, and detox relapse penalties.
+                    Per-habit cards show adherence for the selected range, with streak and best day.
                   </p>
                 </div>
               )}
-              <div className="rounded-lg border border-border bg-card p-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Adherence</p>
-                <p className="mt-1 text-sm">
-                  Completed <span className="font-semibold tabular-nums">{habitsAgg.completed}</span> /{' '}
-                  <span className="font-semibold tabular-nums">{habitsAgg.logs}</span> expected ·{' '}
-                  <span className="font-semibold tabular-nums">{habitsAgg.avgAdherence}%</span>
-                </p>
+
+              {/* Overall summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg adherence</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{habitsAgg.avgAdherence}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">{rangeLabel} window</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Completed</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{habitsAgg.completed}</p>
+                  <p className="text-xs text-muted-foreground mt-1">of {habitsAgg.logs} expected</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">New habits</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">
+                    {allHabits.filter((h) => {
+                      const created = h.created_at?.slice(0, 10);
+                      return created >= daily.bounds.start && created <= daily.bounds.end;
+                    }).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">introduced in range</p>
+                </div>
               </div>
+
+              {/* New habits introduced in range */}
+              {(() => {
+                const newHabits = allHabits.filter((h) => {
+                  const created = h.created_at?.slice(0, 10);
+                  return created >= daily.bounds.start && created <= daily.bounds.end;
+                });
+                if (newHabits.length === 0) return null;
+                return (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-3 border-b border-border flex items-center gap-2">
+                      <TrendingUp size={15} className="text-primary" />
+                      <p className="font-semibold text-sm">New habits introduced</p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {newHabits.map((h) => (
+                        <div key={h.id} className="flex items-center gap-3 px-4 py-3">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: h.color ?? '#a855f7' }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{h.title}</p>
+                            <p className="text-xs text-muted-foreground">Started {h.created_at?.slice(0, 10)}</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground capitalize">{h.frequency}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Per-habit adherence breakdown */}
+              {allHabits.length > 0 && (
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="p-3 border-b border-border">
+                    <p className="font-semibold text-sm">Per-habit breakdown</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{rangeLabel} adherence per habit</p>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {allHabits.map((habit, idx) => {
+                      const insight = habitInsights.data?.[habit.id];
+                      const pct = insight?.adherencePct ?? 0;
+                      const color = habit.color || HABIT_COLORS[idx % HABIT_COLORS.length];
+                      return (
+                        <div key={habit.id} className="px-4 py-3 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                              <p className="text-sm font-medium truncate">{habit.title}</p>
+                              {habit.habit_type === 'detox' && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 shrink-0">detox</span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="text-sm font-bold tabular-nums">{pct}%</p>
+                              {insight && (
+                                <p className="text-[11px] text-muted-foreground">
+                                  {insight.successDays}/{insight.scheduledDays} days
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                          {/* Adherence bar */}
+                          <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full transition-all"
+                              style={{ width: `${pct}%`, backgroundColor: color }}
+                            />
+                          </div>
+                          {insight && (
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                              <span>{insight.bestDayLabel}</span>
+                              <span>·</span>
+                              <span>{insight.usualTimeLabel}</span>
+                              {insight.lastEventDate && (
+                                <>
+                                  <span>·</span>
+                                  <span>Last: {insight.lastEventDate}</span>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Adherence over time chart */}
+              {(() => {
+                const rows = daily.habits.data ?? [];
+                if (rows.length === 0) return null;
+                const chartData = rows.map((r) => ({
+                  date: r.date.slice(5), // MM-DD
+                  adherence: Math.round(r.adherence_pct),
+                }));
+                return (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-3 border-b border-border">
+                      <p className="font-semibold text-sm">Daily adherence over time</p>
+                    </div>
+                    <div className="p-3">
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.4} />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+                            axisLine={false}
+                            tickLine={false}
+                            interval={Math.max(0, Math.floor(chartData.length / 8) - 1)}
+                          />
+                          <YAxis
+                            domain={[0, 100]}
+                            tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(v) => `${v}%`}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'var(--color-card)',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: '0.5rem',
+                              fontSize: 12,
+                            }}
+                            formatter={(v: unknown) => [`${v}%`, 'Adherence']}
+                          />
+                          <ReferenceLine y={habitsAgg.avgAdherence} stroke="var(--color-primary)" strokeDasharray="4 2" strokeWidth={1.5} />
+                          <Bar dataKey="adherence" radius={[3, 3, 0, 0]} maxBarSize={24} isAnimationActive={false}>
+                            {chartData.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={entry.adherence >= 80 ? '#22c55e' : entry.adherence >= 50 ? '#f59e0b' : '#ef4444'}
+                                opacity={0.85}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Dashed line = {habitsAgg.avgAdherence}% average · Green ≥80% · Amber ≥50% · Red &lt;50%
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
