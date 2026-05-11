@@ -10,6 +10,8 @@ import {
   TrendingUp,
   Clock,
   ListTodo,
+  Bell,
+  BellOff,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -183,6 +185,8 @@ export default function Habits() {
     show_in_tasks: false,
     week_days: [],
     adherence_weight: 1,
+    notify_enabled: false,
+    notify_time: undefined,
   });
 
   // Get week days
@@ -259,10 +263,6 @@ export default function Habits() {
   });
 
   const scheduledTodayHabits = habits.filter((habit: Habit) => isHabitScheduledForDate(habit, today));
-  const todayHabits = useMemo(
-    () => [...habits].sort((a, b) => Number(isHabitScheduledForDate(b, today)) - Number(isHabitScheduledForDate(a, today))),
-    [habits, today]
-  );
 
   const getSoberDays = (habit: Habit) => {
     const lastRelapse = latestRelapseByHabit[habit.id];
@@ -286,35 +286,39 @@ export default function Habits() {
   // Calculate completion stats for a habit
   const getHabitStats = (habit: Habit) => {
     const detox = getDetoxConfig(habit);
+    const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
+    const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
+    const validDays = last7Days.filter(day => !createdAtDate || format(day, 'yyyy-MM-dd') >= createdAtDate);
+
     if (detox) {
-      const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
-      const relapseDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
+      const relapseDays = validDays.filter(day => isHabitCompletedForDay(habit.id, day)).length;
       const soberDays = getSoberDays(habit);
       const target = computeDetoxTarget(detox, habit.created_at);
 
       return {
-        completedDays: Math.max(0, 7 - relapseDays),
+        completedDays: Math.max(0, validDays.length - relapseDays),
         streak: soberDays,
-        completionRate: Math.round((Math.max(0, 7 - relapseDays) / 7) * 100),
+        completionRate: validDays.length > 0 ? Math.round((Math.max(0, validDays.length - relapseDays) / validDays.length) * 100) : 0,
         relapseDays,
         soberDays,
         target,
       };
     }
 
-    const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
-    const completedDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
+    const scheduledDaysCount = validDays.filter(day => isHabitScheduledForDate(habit, day)).length;
+    const completedDays = validDays.filter(day => isHabitCompletedForDay(habit.id, day)).length;
     const streak = getStreak(habit.id);
 
     return {
       completedDays,
       streak,
-      completionRate: Math.round((completedDays / 7) * 100),
+      completionRate: scheduledDaysCount > 0 ? Math.round((completedDays / scheduledDaysCount) * 100) : 0,
     };
   };
 
   // Toggle for standard habits; for detox habits this logs relapse events only.
   const handleToggleHabit = (habit: Habit) => {
+    if (!isHabitScheduledForDate(habit, today)) return;
     const isDetox = getHabitType(habit) === 'detox';
     const isCompleted = isHabitCompletedForDay(habit.id, today);
     logHabit.mutate({
@@ -340,6 +344,8 @@ export default function Habits() {
         show_in_tasks: habit.show_in_tasks ?? false,
         week_days: habit.week_days ?? [],
         adherence_weight: getHabitAdherenceWeight(habit),
+        notify_enabled: habit.notify_enabled ?? false,
+        notify_time: habit.notify_time ?? undefined,
       });
       setHabitType(getHabitType(habit));
       setDetoxMode(detox?.mode ?? 'linear');
@@ -357,6 +363,8 @@ export default function Habits() {
         show_in_tasks: false,
         week_days: [],
         adherence_weight: 1,
+        notify_enabled: false,
+        notify_time: undefined,
       });
       setHabitType('standard');
       setDetoxMode('linear');
@@ -386,6 +394,9 @@ export default function Habits() {
       detox_step: habitType === 'detox' ? detoxConfig?.step : null,
       target_count: habitType === 'detox' ? 1 : formData.target_count,
       adherence_weight: Math.max(0.1, Number(formData.adherence_weight) || 1),
+      // Detox habits never get reminders
+      notify_enabled: habitType === 'detox' ? false : (formData.notify_enabled ?? false),
+      notify_time: (habitType === 'detox' || !formData.notify_enabled) ? null : (formData.notify_time || null),
     };
 
     if (editingHabit) {
@@ -565,8 +576,8 @@ export default function Habits() {
                     <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
                       {weekDays.map((day: Date) => {
                         const isScheduled = isHabitScheduledForDate(habit, day);
-                        const isCompleted = isHabitCompletedForDay(habit.id, day);
-                        const canToggle = isToday(day);
+                        const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
+                        const canToggle = isScheduled && isToday(day);
                         const isDetox = !!detoxConfig;
                         return (
                           <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
@@ -579,20 +590,15 @@ export default function Habits() {
                             <button
                               onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
                               disabled={!canToggle}
-                              title={
-                                !isScheduled
-                                  ? (canToggle ? 'Off-schedule check-in' : 'Not scheduled for this day')
-                                  : undefined
-                              }
+                              title={!isScheduled ? 'Not scheduled for this day' : undefined}
                               className={cn(
                                 "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                 isCompleted
                                   ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                   : "border border-border",
                                 isToday(day) && "hover:scale-105 active:scale-95",
-                                !isScheduled && !isCompleted && "opacity-20",
-                                !canToggle && "opacity-40",
-                                canToggle && !isScheduled && "border-dashed"
+                                !isScheduled && "opacity-20",
+                                isScheduled && !canToggle && "opacity-40"
                               )}
                               style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                             >
@@ -696,8 +702,8 @@ export default function Habits() {
                         </td>
                         {weekDays.map((day: Date) => {
                           const isScheduled = isHabitScheduledForDate(habit, day);
-                          const isCompleted = isHabitCompletedForDay(habit.id, day);
-                          const canToggle = isToday(day);
+                          const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
+                          const canToggle = isScheduled && isToday(day);
                           const isDetox = !!detoxConfig;
 
                           return (
@@ -711,20 +717,15 @@ export default function Habits() {
                               <button
                                 onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
                                 disabled={!canToggle}
-                                title={
-                                  !isScheduled
-                                    ? (canToggle ? 'Off-schedule check-in' : 'Not scheduled for this day')
-                                    : undefined
-                                }
+                                title={!isScheduled ? 'Not scheduled for this day' : undefined}
                                 className={cn(
                                   "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
                                   isCompleted
                                     ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                     : "border border-border hover:border-muted-foreground",
                                   isToday(day) && "hover:scale-110",
-                                  !isScheduled && !isCompleted && "opacity-20",
-                                  !canToggle && "opacity-30",
-                                  canToggle && !isScheduled && "border-dashed"
+                                  !isScheduled && "opacity-20",
+                                  isScheduled && !canToggle && "opacity-30"
                                 )}
                                 style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                               >
@@ -759,15 +760,14 @@ export default function Habits() {
         <h2 className="text-lg font-semibold mb-4">Today's Habits</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {scheduledTodayHabits.length === 0 && (
-            <p className="text-sm text-muted-foreground md:col-span-2">No habits scheduled for today. You can still log any habit below.</p>
+            <p className="text-sm text-muted-foreground md:col-span-2">No habits scheduled for today.</p>
           )}
-          {todayHabits.map((habit: Habit) => {
+          {scheduledTodayHabits.map((habit: Habit) => {
             const isCompleted = isHabitCompletedForDay(habit.id, today);
             const stats = getHabitStats(habit);
             const detoxConfig = getDetoxConfig(habit);
             const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
             const isDetox = !!detoxConfig;
-            const isScheduledToday = isHabitScheduledForDate(habit, today);
 
             return (
               <div
@@ -805,11 +805,6 @@ export default function Habits() {
                     )}>
                       {habit.title}
                     </h3>
-                    {!isScheduledToday && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
-                        off-schedule
-                      </span>
-                    )}
                     <button
                       type="button"
                       onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -855,7 +850,6 @@ export default function Habits() {
         </div>
       </div>
 
-      {/* Habit Details — match Tasks editing sheet (bottom, scrollable) */}
       </div>
 
       {/* Habit Details */}
@@ -1021,6 +1015,50 @@ export default function Habits() {
               </label>
             </div>
           </div>
+
+          {/* Notification opt-in — not available for detox habits */}
+          {habitType === 'standard' && (
+            <div className="rounded-lg border border-border p-3 space-y-3">
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center gap-2">
+                  {formData.notify_enabled
+                    ? <Bell size={16} className="text-primary" />
+                    : <BellOff size={16} className="text-muted-foreground" />}
+                  <div>
+                    <p className="text-sm font-medium">Push Reminder</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.notify_enabled ? 'Reminder is on' : 'Enable push notifications for this habit'}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.notify_enabled ?? false}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, notify_enabled: e.target.checked, notify_time: e.target.checked ? formData.notify_time : undefined })
+                  }
+                  className="w-4 h-4 rounded border-border"
+                />
+              </label>
+              {formData.notify_enabled && (
+                <div className="pt-1 border-t border-border">
+                  <Input
+                    label="Reminder time (leave blank to use your usual completion time)"
+                    type="time"
+                    value={formData.notify_time || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, notify_time: e.target.value || undefined })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.notify_time
+                      ? `You'll be reminded at ${formData.notify_time}`
+                      : 'Will remind you around the time you usually complete this habit'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Color</label>

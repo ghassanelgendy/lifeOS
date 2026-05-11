@@ -388,6 +388,8 @@ export interface Habit {
   week_days?: number[] | null; // Weekly schedule days (0-6 Sun-Sat)
   adherence_weight: number;
   is_archived: boolean;
+  notify_enabled: boolean;   // If true, push reminders are sent for this habit
+  notify_time?: string | null; // Manual override time for reminders (HH:mm)
   created_at: string;
   updated_at: string;
 }

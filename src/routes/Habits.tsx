@@ -10,6 +10,8 @@ import {
   TrendingUp,
   Clock,
   ListTodo,
+  Bell,
+  BellOff,
   ChevronDown,
   ChevronRight,
 } from 'lucide-react';
@@ -183,6 +185,8 @@ export default function Habits() {
     show_in_tasks: false,
     week_days: [],
     adherence_weight: 1,
+    notify_enabled: false,
+    notify_time: undefined,
   });
 
   // Get week days
@@ -340,6 +344,8 @@ export default function Habits() {
         show_in_tasks: habit.show_in_tasks ?? false,
         week_days: habit.week_days ?? [],
         adherence_weight: getHabitAdherenceWeight(habit),
+        notify_enabled: habit.notify_enabled ?? false,
+        notify_time: habit.notify_time ?? undefined,
       });
       setHabitType(getHabitType(habit));
       setDetoxMode(detox?.mode ?? 'linear');
@@ -357,6 +363,8 @@ export default function Habits() {
         show_in_tasks: false,
         week_days: [],
         adherence_weight: 1,
+        notify_enabled: false,
+        notify_time: undefined,
       });
       setHabitType('standard');
       setDetoxMode('linear');
@@ -386,6 +394,9 @@ export default function Habits() {
       detox_step: habitType === 'detox' ? detoxConfig?.step : null,
       target_count: habitType === 'detox' ? 1 : formData.target_count,
       adherence_weight: Math.max(0.1, Number(formData.adherence_weight) || 1),
+      // Detox habits never get reminders
+      notify_enabled: habitType === 'detox' ? false : (formData.notify_enabled ?? false),
+      notify_time: (habitType === 'detox' || !formData.notify_enabled) ? null : (formData.notify_time || null),
     };
 
     if (editingHabit) {
@@ -1004,6 +1015,50 @@ export default function Habits() {
               </label>
             </div>
           </div>
+
+          {/* Notification opt-in — not available for detox habits */}
+          {habitType === 'standard' && (
+            <div className="rounded-lg border border-border p-3 space-y-3">
+              <label className="flex items-center justify-between gap-3 cursor-pointer">
+                <div className="flex items-center gap-2">
+                  {formData.notify_enabled
+                    ? <Bell size={16} className="text-primary" />
+                    : <BellOff size={16} className="text-muted-foreground" />}
+                  <div>
+                    <p className="text-sm font-medium">Push Reminder</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formData.notify_enabled ? 'Reminder is on' : 'Enable push notifications for this habit'}
+                    </p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={formData.notify_enabled ?? false}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFormData({ ...formData, notify_enabled: e.target.checked, notify_time: e.target.checked ? formData.notify_time : undefined })
+                  }
+                  className="w-4 h-4 rounded border-border"
+                />
+              </label>
+              {formData.notify_enabled && (
+                <div className="pt-1 border-t border-border">
+                  <Input
+                    label="Reminder time (leave blank to use your usual completion time)"
+                    type="time"
+                    value={formData.notify_time || ''}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setFormData({ ...formData, notify_time: e.target.value || undefined })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.notify_time
+                      ? `You'll be reminded at ${formData.notify_time}`
+                      : 'Will remind you around the time you usually complete this habit'}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted-foreground">Color</label>
