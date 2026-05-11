@@ -2,33 +2,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
-import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { VitePWA } from "vite-plugin-pwa";
 
 const rawPort = process.env.PORT;
-
-// PORT is only required when running the dev/preview server, not during a static build.
-const isBuild = process.argv.includes('build');
-
-if (!rawPort && !isBuild) {
-  throw new Error(
-    "PORT environment variable is required. " +
-    "When running outside the Replit workflow, set it manually: PORT=25109 pnpm dev",
-  );
-}
-
-const port = rawPort ? Number(rawPort) : 3000;
-
-if (!isBuild && (Number.isNaN(port) || port <= 0)) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
+const port = rawPort ? Number(rawPort) : 5173;
 
 export default defineConfig({
   base: "/",
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',
@@ -45,24 +28,10 @@ export default defineConfig({
         type: 'module',
       },
     }),
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import("@replit/vite-plugin-cartographer").then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, ".."),
-            }),
-          ),
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
   ],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
     dedupe: ["react", "react-dom"],
   },
