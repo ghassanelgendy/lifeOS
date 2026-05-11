@@ -24,13 +24,6 @@ export function isHabitScheduledForDate(habit: Pick<Habit, 'frequency' | 'week_d
   return weekDays.includes(date.getDay());
 }
 
-function countScheduledOccurrencesInRange(
-  habit: Pick<Habit, 'frequency' | 'week_days'>,
-  days: Date[],
-): number {
-  return days.reduce((count, day) => count + (isHabitScheduledForDate(habit, day) ? 1 : 0), 0);
-}
-
 function clampPct(value: number): number {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, value));
@@ -260,12 +253,11 @@ export function useLogHabit() {
 
       let result;
       const dateOnly = (date || '').split('T')[0];
-      const completedAt = completed ? new Date().toISOString() : null;
 
       if (existing) {
         const { data, error } = await supabase
           .from('habit_logs')
-          .update({ completed, note, date: dateOnly, completed_at: completedAt })
+          .update({ completed, note, date: dateOnly })
           .eq('id', existing.id)
           .select()
           .single();
@@ -274,7 +266,7 @@ export function useLogHabit() {
       } else {
         const { data, error } = await supabase
           .from('habit_logs')
-          .insert({ habit_id: habitId, date: dateOnly, completed, note, completed_at: completedAt })
+          .insert({ habit_id: habitId, date: dateOnly, completed, note })
           .select()
           .single();
         if (error) throw error;
@@ -462,13 +454,13 @@ export function useHabitInsights(habits: Habit[], days = 90) {
 
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('habit_id,date,completed,completed_at')
+        .select('habit_id,date,completed,created_at')
         .in('habit_id', habitIds)
         .gte('date', startStr)
         .lte('date', endStr);
       if (error) throw error;
 
-      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'completed_at'>[];
+      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'created_at'>[];
       const logsByHabit = new Map<string, typeof logs>();
       for (const log of logs) {
         const arr = logsByHabit.get(log.habit_id) ?? [];
@@ -483,21 +475,20 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         const logByDate = new Map(habitLogs.map((log) => [log.date, log]));
         let scheduledDays = 0;
         let successDays = 0;
+        const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
 
         for (let i = 0; i < days; i++) {
           const day = subDays(today, i);
           const dateStr = toDateOnly(day);
+          if (createdAtDate && dateStr < createdAtDate) continue;
           if (!isHabitScheduledForDate(habit, day)) continue;
           scheduledDays += 1;
           const log = logByDate.get(dateStr);
           if (habit.habit_type === 'detox') {
             if (!log?.completed) successDays += 1;
+          } else if (log?.completed) {
+            successDays += 1;
           }
-        }
-
-        if (habit.habit_type !== 'detox') {
-          const completedLogs = habitLogs.filter((log) => log.completed);
-          successDays = Math.min(scheduledDays, completedLogs.length);
         }
 
         const eventLogs = habitLogs
@@ -509,8 +500,8 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         for (const log of eventLogs) {
           const eventDate = new Date(`${log.date}T00:00:00`);
           if (!Number.isNaN(eventDate.getTime())) dayCounts[eventDate.getDay()] += 1;
-          const completedAt = new Date(log.completed_at ?? '');
-          if (!Number.isNaN(completedAt.getTime())) hourValues.push(completedAt.getHours() + completedAt.getMinutes() / 60);
+          const createdAt = new Date(log.created_at);
+          if (!Number.isNaN(createdAt.getTime())) hourValues.push(createdAt.getHours() + createdAt.getMinutes() / 60);
         }
 
         const bestDayIndex = dayCounts.reduce((best, count, idx) => (count > dayCounts[best] ? idx : best), 0);
@@ -577,11 +568,11 @@ export function useWeeklyAdherence() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('prayer_habits')
-        .select('id')
+        .select('id, created_at')
         .eq('user_id', user?.id || '')
         .eq('is_active', true);
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string }>;
+      return (data ?? []) as Array<{ id: string; created_at: string }>;
     },
     enabled: !!user?.id,
   });
@@ -613,11 +604,21 @@ export function useWeeklyAdherence() {
 
   const dailyAdherence = weekDates.map((day) => {
     const dateStr = toDateOnly(day);
-    const scheduledHabits = habits.filter((habit) => isHabitScheduledForDate(habit, day));
+    const scheduledHabits = habits.filter((habit) => {
+      const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
+      if (createdAtDate && dateStr < createdAtDate) return false;
+      return isHabitScheduledForDate(habit, day);
+    });
+
+    const activePrayersForDay = prayerHabits.filter((ph) => {
+      const createdAtDate = ph.created_at ? ph.created_at.slice(0, 10) : null;
+      return !createdAtDate || dateStr >= createdAtDate;
+    });
+
     const standardHabits = scheduledHabits.filter((habit) => habit.habit_type !== 'detox');
     const detoxHabits = scheduledHabits.filter((habit) => habit.habit_type === 'detox');
     const habitWeight = standardHabits.reduce((sum, habit) => sum + getHabitAdherenceWeight(habit), 0);
-    const prayerWeight = prayerHabits.length;
+    const prayerWeight = activePrayersForDay.length;
     let missedWeight = 0;
     let detoxPenaltyWeight = 0;
 
@@ -634,17 +635,15 @@ export function useWeeklyAdherence() {
       }
     });
 
-    if (prayerHabits.length > 0) {
-      prayerHabits.forEach((prayerHabit) => {
-        const prayerLog = prayerLogs.find(
-          (l) => l.prayer_habit_id === prayerHabit.id && l.date === dateStr
-        );
-        if (!isPrayerStatusComplete(prayerLog?.status)) missedWeight += 1;
-      });
-    }
+    activePrayersForDay.forEach((prayerHabit) => {
+      const prayerLog = prayerLogs.find(
+        (l) => l.prayer_habit_id === prayerHabit.id && l.date === dateStr
+      );
+      if (!isPrayerStatusComplete(prayerLog?.status)) missedWeight += 1;
+    });
 
     // Detox habits are penalty-only: no relapse adds no credit, relapse lowers the day.
-      missedWeight += detoxPenaltyWeight;
+    missedWeight += detoxPenaltyWeight;
     const totalWeight = habitWeight + prayerWeight + detoxPenaltyWeight;
 
     if (totalWeight <= 0) return null;
@@ -658,38 +657,8 @@ export function useWeeklyAdherence() {
   });
 
   const scoredDays = dailyAdherence.filter((day): day is NonNullable<typeof day> => day != null);
-  const baseExpected = scoredDays.reduce((sum, day) => sum + day.totalWeight, 0);
-  const baseCompleted = scoredDays.reduce((sum, day) => sum + Math.max(0, day.totalWeight - day.missedWeight), 0);
-
-  // Off-schedule completions can recover weekly adherence without rewriting the missed scheduled day.
-  const makeupBonus = habits
-    .filter((habit) => habit.habit_type !== 'detox')
-    .reduce((sum, habit) => {
-      const weight = getHabitAdherenceWeight(habit);
-      const scheduledOccurrences = countScheduledOccurrencesInRange(habit, weekDates);
-      if (scheduledOccurrences <= 0) return sum;
-
-      const completedLogs = logs.filter((log) => log.habit_id === habit.id && log.completed);
-      if (completedLogs.length <= 0) return sum;
-
-      let onScheduleCompleted = 0;
-      let offScheduleCompleted = 0;
-      for (const log of completedLogs) {
-        const logDate = new Date(`${log.date}T00:00:00`);
-        if (Number.isNaN(logDate.getTime())) continue;
-        if (isHabitScheduledForDate(habit, logDate)) onScheduleCompleted += 1;
-        else offScheduleCompleted += 1;
-      }
-
-      const creditedCompletions = Math.min(scheduledOccurrences, onScheduleCompleted + offScheduleCompleted);
-      const recoveredCompletions = Math.max(0, creditedCompletions - onScheduleCompleted);
-      return sum + recoveredCompletions * weight;
-    }, 0);
-
-  const totalExpected = baseExpected;
-  const totalCompleted = Math.min(totalExpected, baseCompleted + makeupBonus);
-  const adherence = totalExpected > 0
-    ? round1((totalCompleted / totalExpected) * 100)
+  const adherence = scoredDays.length > 0
+    ? round1(scoredDays.reduce((sum, day) => sum + day.adherence, 0) / scoredDays.length)
     : 0;
 
   // Filter logs for today for the UI usage
@@ -697,8 +666,8 @@ export function useWeeklyAdherence() {
 
   return {
     adherence: clampPct(adherence),
-    totalExpected,
-    totalCompleted,
+    totalExpected: scoredDays.reduce((sum, day) => sum + day.totalWeight, 0),
+    totalCompleted: scoredDays.reduce((sum, day) => sum + Math.max(0, day.totalWeight - day.missedWeight), 0),
     dailyAdherence,
     weekLogs: logs,
     todayLogs,

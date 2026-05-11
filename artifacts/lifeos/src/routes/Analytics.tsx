@@ -37,7 +37,7 @@ import {
   useAnalyticsTop,
   getRangeBounds,
 } from '../hooks/useAnalytics';
-import { useHabits, useHabitInsights } from '../hooks/useHabits';
+import { useHabits, useHabitInsights, isHabitScheduledForDate } from '../hooks/useHabits';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -349,11 +349,11 @@ export default function Analytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('prayer_habits')
-        .select('id, prayer_name')
+        .select('id, prayer_name, created_at')
         .eq('user_id', user!.id)
         .eq('is_active', true);
       if (error) throw error;
-      return data as { id: string; prayer_name: string }[];
+      return data as { id: string; prayer_name: string; created_at: string }[];
     },
     enabled: !!user?.id,
   });
@@ -393,10 +393,11 @@ export default function Analytics() {
       Fajr: 'Fajr', Dhuhr: 'Dhuhr', Asr: 'Asr', Maghrib: 'Maghrib', Isha: 'Isha',
     };
     // Count all prayer slots in range
-    const dates = Array.from(new Set([...prayerLogsRange.map((l) => l.date)]));
+    const dates = eachDateInclusive(daily.bounds.start, daily.bounds.end);
     for (const date of dates) {
       const byPrayer = logsByDate.get(date) ?? new Map();
       for (const ph of activePrayerHabits) {
+        if (ph.created_at && ph.created_at.slice(0, 10) > date) continue;
         totalSlots++;
         const status = byPrayer.get(ph.id);
         if (isPrayerStatusComplete(status as any)) doneDays++;
@@ -410,49 +411,56 @@ export default function Analytics() {
       prayerNames: activePrayerHabits.map((p) => PRAYER_NAMES[p.prayer_name] ?? p.prayer_name),
       logsByDate,
     };
-  }, [activePrayerHabits, prayerLogsRange]);
+  }, [daily.bounds, activePrayerHabits, prayerLogsRange]);
 
   // Build map: date → missed habit titles (incl. detox relapses + missed prayers)
   const missedByDate = useMemo(() => {
-    const logsByDate = new Map<string, Map<string, boolean>>();
+    const habitLogsByDate = new Map<string, Map<string, boolean>>();
     for (const log of habitLogsRange) {
-      const byHabit = logsByDate.get(log.date) ?? new Map<string, boolean>();
+      const byHabit = habitLogsByDate.get(log.date) ?? new Map<string, boolean>();
       byHabit.set(log.habit_id, log.completed);
-      logsByDate.set(log.date, byHabit);
+      habitLogsByDate.set(log.date, byHabit);
     }
-    // Add all dates from prayer logs too
-    if (prayerSummary) {
-      for (const date of prayerSummary.logsByDate.keys()) {
-        if (!logsByDate.has(date)) logsByDate.set(date, new Map());
-      }
+    const prayerLogsByDate = new Map<string, Map<string, string>>();
+    for (const log of prayerLogsRange) {
+      const byPrayer = prayerLogsByDate.get(log.date) ?? new Map<string, string>();
+      byPrayer.set(log.prayer_habit_id, log.status);
+      prayerLogsByDate.set(log.date, byPrayer);
     }
+
     const result = new Map<string, string[]>();
-    for (const [date, byHabit] of logsByDate.entries()) {
+    const dates = eachDateInclusive(daily.bounds.start, daily.bounds.end);
+
+    for (const date of dates) {
       const missed: string[] = [];
+      const byHabit = habitLogsByDate.get(date) ?? new Map<string, boolean>();
+      const byPrayer = prayerLogsByDate.get(date) ?? new Map<string, string>();
+
+      const dateObj = new Date(`${date}T12:00:00`);
+
       for (const habit of allHabits) {
+        if (habit.created_at && habit.created_at.slice(0, 10) > date) continue;
+        if (!isHabitScheduledForDate(habit, dateObj)) continue;
+
         const completed = byHabit.get(habit.id);
         if (habit.habit_type === 'detox') {
-          // detox: completed=true means relapse (bad). completed=undefined = not scheduled.
           if (completed === true) missed.push(`⚠️ ${habit.title} (relapse)`);
         } else {
-          // standard: completed=false = scheduled but not done. undefined = not scheduled, skip.
-          if (completed === false) missed.push(habit.title);
+          if (!completed) missed.push(habit.title);
         }
       }
-      // Add missed prayers
-      if (prayerSummary) {
-        const byPrayer = prayerSummary.logsByDate.get(date) ?? new Map<string, string>();
-        for (const ph of activePrayerHabits) {
-          const status = byPrayer.get(ph.id);
-          if (!isPrayerStatusComplete(status as any)) {
-            missed.push(`🕌 ${ph.prayer_name} (prayer)`);
-          }
+
+      for (const ph of activePrayerHabits) {
+        if (ph.created_at && ph.created_at.slice(0, 10) > date) continue;
+        const status = byPrayer.get(ph.id);
+        if (!isPrayerStatusComplete(status as any)) {
+          missed.push(`🕌 ${ph.prayer_name} (prayer)`);
         }
       }
       result.set(date, missed);
     }
     return result;
-  }, [habitLogsRange, allHabits, prayerSummary, activePrayerHabits]);
+  }, [daily.bounds, habitLogsRange, allHabits, prayerLogsRange, activePrayerHabits]);
 
   // Time Travel: fetch habit_logs + prayer_logs for a specific day
   const { data: ttHabitLogs = [] } = useQuery({
