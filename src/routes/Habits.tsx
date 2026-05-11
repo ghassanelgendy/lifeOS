@@ -299,13 +299,14 @@ export default function Habits() {
     }
 
     const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
+    const scheduledDaysCount = last7Days.filter(day => isHabitScheduledForDate(habit, day)).length;
     const completedDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
     const streak = getStreak(habit.id);
 
     return {
       completedDays,
       streak,
-      completionRate: Math.round((completedDays / 7) * 100),
+      completionRate: scheduledDaysCount > 0 ? Math.round((completedDays / scheduledDaysCount) * 100) : 0,
     };
   };
 
