@@ -55,3 +55,6 @@ dist.zip
 !/supabase/migrations/
 /supabase/migrations/*
 !/supabase/migrations/20260505000002_prayer_logs_late_status.sql
+/scripts
+/supabase
+/supabase

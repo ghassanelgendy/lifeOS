@@ -395,10 +395,12 @@ export interface Habit {
 export interface HabitLog {
   id: string;
   habit_id: string;
+  user_id?: string;
   date: string; // ISO-8601 date only (YYYY-MM-DD)
   completed: boolean;
   note?: string;
-  created_at: string;
+  source?: string;
+  completed_at?: string; // when it was marked complete (no created_at in DB)
 }
 
 // ========================

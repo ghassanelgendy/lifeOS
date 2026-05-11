@@ -470,11 +470,11 @@ export default function Analytics() {
       if (!habitIds.length || !timeTravelDate) return [];
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('habit_id, completed, notes')
+        .select('habit_id, completed, note')
         .in('habit_id', habitIds)
         .eq('date', timeTravelDate);
       if (error) throw error;
-      return data as { habit_id: string; completed: boolean; notes?: string }[];
+      return data as { habit_id: string; completed: boolean; note?: string }[];
     },
     enabled: !!user?.id && !!timeTravelDate && allHabits.length > 0,
   });
@@ -506,7 +506,7 @@ export default function Analytics() {
         const log = byHabit.get(h.id)!;
         const isDetox = h.habit_type === 'detox';
         const done = isDetox ? !log.completed : log.completed;
-        return { habit: h, done, isDetox, notes: log.notes };
+        return { habit: h, done, isDetox, note: log.note };
       });
     const prayerRows = activePrayerHabits.map((ph) => {
       const status = byPrayer.get(ph.id) ?? null;
@@ -1199,7 +1199,7 @@ export default function Analytics() {
                       <p className="px-4 py-4 text-sm text-muted-foreground">No habits were scheduled for this day.</p>
                     ) : (
                       <div className="divide-y divide-border">
-                        {timeTravelData.habitRows.map(({ habit, done, isDetox, notes }) => (
+                        {timeTravelData.habitRows.map(({ habit, done, isDetox, note }) => (
                           <div key={habit.id} className="flex items-center gap-3 px-4 py-2.5">
                             <div
                               className={cn(
@@ -1215,7 +1215,7 @@ export default function Analytics() {
                                 {isDetox && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 shrink-0">detox</span>}
                                 {!done && isDetox && <span className="text-[10px] text-red-400 shrink-0">relapse</span>}
                               </div>
-                              {notes && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{notes}</p>}
+                              {note && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{note}</p>}
                             </div>
                           </div>
                         ))}
@@ -1302,7 +1302,14 @@ export default function Analytics() {
                               ) : (
                                 <>
                                   <p className="text-sm font-bold tabular-nums">{pct}%</p>
-                                  {insight && <p className="text-[11px] text-muted-foreground">{insight.successDays}/{insight.scheduledDays} days</p>}
+                                  {insight && (
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {insight.successDays}/{insight.scheduledDays} days
+                                      {insight.extraCompletions > 0 && (
+                                        <span className="ml-1 text-green-400">+{insight.extraCompletions} bonus</span>
+                                      )}
+                                    </p>
+                                  )}
                                 </>
                               )}
                             </div>
@@ -1790,7 +1797,12 @@ export default function Analytics() {
                                 <>
                                   <p className="text-sm font-bold tabular-nums">{pct}%</p>
                                   {insight && (
-                                    <p className="text-[11px] text-muted-foreground">{insight.successDays}/{insight.scheduledDays} days</p>
+                                    <p className="text-[11px] text-muted-foreground">
+                                      {insight.successDays}/{insight.scheduledDays} days
+                                      {insight.extraCompletions > 0 && (
+                                        <span className="ml-1 text-green-400">+{insight.extraCompletions} bonus</span>
+                                      )}
+                                    </p>
                                   )}
                                 </>
                               )}

@@ -345,6 +345,7 @@ export interface Task {
   // Subtasks
   parent_id?: string; // FK to parent Task (for subtasks)
   subtask_order?: number;
+  // Integrations
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;
   /** Optional link to an annual strategic plan quarter milestone */
@@ -394,11 +395,12 @@ export interface Habit {
 export interface HabitLog {
   id: string;
   habit_id: string;
+  user_id?: string;
   date: string; // ISO-8601 date only (YYYY-MM-DD)
   completed: boolean;
   note?: string;
-  completed_at?: string | null;
-  created_at?: string | null;
+  source?: string;
+  completed_at?: string; // when it was marked complete (no created_at in DB)
 }
 
 // ========================

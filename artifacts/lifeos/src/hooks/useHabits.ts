@@ -422,8 +422,9 @@ export function useHabitStreaks(habitIds: string[]) {
 
 export interface HabitInsight {
   scheduledDays: number;
-  successDays: number;
-  adherencePct: number;
+  successDays: number;        // on-schedule completions
+  extraCompletions: number;   // completions on non-scheduled days (make-up credit)
+  adherencePct: number;       // min(successDays + extraCompletions, scheduledDays) / scheduledDays * 100
   eventCount: number;
   usualTimeLabel: string;
   bestDayLabel: string;
@@ -454,13 +455,13 @@ export function useHabitInsights(habits: Habit[], days = 90) {
 
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('habit_id,date,completed,created_at')
+        .select('habit_id,date,completed,completed_at')
         .in('habit_id', habitIds)
         .gte('date', startStr)
         .lte('date', endStr);
       if (error) throw error;
 
-      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'created_at'>[];
+      const logs = (data ?? []) as Pick<HabitLog, 'habit_id' | 'date' | 'completed' | 'completed_at'>[];
       const logsByHabit = new Map<string, typeof logs>();
       for (const log of logs) {
         const arr = logsByHabit.get(log.habit_id) ?? [];
@@ -475,21 +476,33 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         const logByDate = new Map(habitLogs.map((log) => [log.date, log]));
         let scheduledDays = 0;
         let successDays = 0;
+        let extraCompletions = 0;  // completions on non-scheduled days
         const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
+        const isDetox = habit.habit_type === 'detox';
 
         for (let i = 0; i < days; i++) {
           const day = subDays(today, i);
           const dateStr = toDateOnly(day);
           if (createdAtDate && dateStr < createdAtDate) continue;
-          if (!isHabitScheduledForDate(habit, day)) continue;
-          scheduledDays += 1;
           const log = logByDate.get(dateStr);
-          if (habit.habit_type === 'detox') {
-            if (!log?.completed) successDays += 1;
-          } else if (log?.completed) {
-            successDays += 1;
+          const scheduled = isHabitScheduledForDate(habit, day);
+
+          if (scheduled) {
+            scheduledDays += 1;
+            if (isDetox) {
+              if (!log?.completed) successDays += 1;
+            } else if (log?.completed) {
+              successDays += 1;
+            }
+          } else if (!isDetox && log?.completed) {
+            // Non-scheduled day but completed: count as make-up credit
+            extraCompletions += 1;
           }
+          // Detox: completing on an off-day is neutral (no penalty, no bonus)
         }
+
+        // Effective success: on-schedule + make-up, capped at scheduledDays (max 100%)
+        const effectiveSuccess = Math.min(successDays + extraCompletions, scheduledDays);
 
         const eventLogs = habitLogs
           .filter((log) => log.completed)
@@ -500,8 +513,8 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         for (const log of eventLogs) {
           const eventDate = new Date(`${log.date}T00:00:00`);
           if (!Number.isNaN(eventDate.getTime())) dayCounts[eventDate.getDay()] += 1;
-          const createdAt = new Date(log.created_at);
-          if (!Number.isNaN(createdAt.getTime())) hourValues.push(createdAt.getHours() + createdAt.getMinutes() / 60);
+          const completedAt = new Date(log.completed_at ?? '');
+          if (!Number.isNaN(completedAt.getTime())) hourValues.push(completedAt.getHours() + completedAt.getMinutes() / 60);
         }
 
         const bestDayIndex = dayCounts.reduce((best, count, idx) => (count > dayCounts[best] ? idx : best), 0);
@@ -512,7 +525,8 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         result[habit.id] = {
           scheduledDays,
           successDays,
-          adherencePct: scheduledDays > 0 ? clampPct(round1((successDays / scheduledDays) * 100)) : 0,
+          extraCompletions,
+          adherencePct: scheduledDays > 0 ? clampPct(round1((effectiveSuccess / scheduledDays) * 100)) : 0,
           eventCount: eventLogs.length,
           usualTimeLabel: averageHour == null ? 'No usual time yet' : `Usually around ${formatHourLabel(averageHour)}`,
           bestDayLabel: eventLogs.length === 0 ? 'No pattern yet' : `Most often ${WEEKDAY_LABELS[bestDayIndex]}`,
