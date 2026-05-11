@@ -475,10 +475,12 @@ export function useHabitInsights(habits: Habit[], days = 90) {
         const logByDate = new Map(habitLogs.map((log) => [log.date, log]));
         let scheduledDays = 0;
         let successDays = 0;
+        const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
 
         for (let i = 0; i < days; i++) {
           const day = subDays(today, i);
           const dateStr = toDateOnly(day);
+          if (createdAtDate && dateStr < createdAtDate) continue;
           if (!isHabitScheduledForDate(habit, day)) continue;
           scheduledDays += 1;
           const log = logByDate.get(dateStr);
@@ -566,11 +568,11 @@ export function useWeeklyAdherence() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('prayer_habits')
-        .select('id')
+        .select('id, created_at')
         .eq('user_id', user?.id || '')
         .eq('is_active', true);
       if (error) throw error;
-      return (data ?? []) as Array<{ id: string }>;
+      return (data ?? []) as Array<{ id: string; created_at: string }>;
     },
     enabled: !!user?.id,
   });
@@ -602,11 +604,21 @@ export function useWeeklyAdherence() {
 
   const dailyAdherence = weekDates.map((day) => {
     const dateStr = toDateOnly(day);
-    const scheduledHabits = habits.filter((habit) => isHabitScheduledForDate(habit, day));
+    const scheduledHabits = habits.filter((habit) => {
+      const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
+      if (createdAtDate && dateStr < createdAtDate) return false;
+      return isHabitScheduledForDate(habit, day);
+    });
+
+    const activePrayersForDay = prayerHabits.filter((ph) => {
+      const createdAtDate = ph.created_at ? ph.created_at.slice(0, 10) : null;
+      return !createdAtDate || dateStr >= createdAtDate;
+    });
+
     const standardHabits = scheduledHabits.filter((habit) => habit.habit_type !== 'detox');
     const detoxHabits = scheduledHabits.filter((habit) => habit.habit_type === 'detox');
     const habitWeight = standardHabits.reduce((sum, habit) => sum + getHabitAdherenceWeight(habit), 0);
-    const prayerWeight = prayerHabits.length;
+    const prayerWeight = activePrayersForDay.length;
     let missedWeight = 0;
     let detoxPenaltyWeight = 0;
 
@@ -623,14 +635,12 @@ export function useWeeklyAdherence() {
       }
     });
 
-    if (prayerHabits.length > 0) {
-      prayerHabits.forEach((prayerHabit) => {
-        const prayerLog = prayerLogs.find(
-          (l) => l.prayer_habit_id === prayerHabit.id && l.date === dateStr
-        );
-        if (!isPrayerStatusComplete(prayerLog?.status)) missedWeight += 1;
-      });
-    }
+    activePrayersForDay.forEach((prayerHabit) => {
+      const prayerLog = prayerLogs.find(
+        (l) => l.prayer_habit_id === prayerHabit.id && l.date === dateStr
+      );
+      if (!isPrayerStatusComplete(prayerLog?.status)) missedWeight += 1;
+    });
 
     // Detox habits are penalty-only: no relapse adds no credit, relapse lowers the day.
     missedWeight += detoxPenaltyWeight;

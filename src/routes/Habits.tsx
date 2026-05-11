@@ -282,25 +282,27 @@ export default function Habits() {
   // Calculate completion stats for a habit
   const getHabitStats = (habit: Habit) => {
     const detox = getDetoxConfig(habit);
+    const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
+    const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
+    const validDays = last7Days.filter(day => !createdAtDate || format(day, 'yyyy-MM-dd') >= createdAtDate);
+
     if (detox) {
-      const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
-      const relapseDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
+      const relapseDays = validDays.filter(day => isHabitCompletedForDay(habit.id, day)).length;
       const soberDays = getSoberDays(habit);
       const target = computeDetoxTarget(detox, habit.created_at);
 
       return {
-        completedDays: Math.max(0, 7 - relapseDays),
+        completedDays: Math.max(0, validDays.length - relapseDays),
         streak: soberDays,
-        completionRate: Math.round((Math.max(0, 7 - relapseDays) / 7) * 100),
+        completionRate: validDays.length > 0 ? Math.round((Math.max(0, validDays.length - relapseDays) / validDays.length) * 100) : 0,
         relapseDays,
         soberDays,
         target,
       };
     }
 
-    const last7Days = Array.from({ length: 7 }, (_, i) => subDays(today, i));
-    const scheduledDaysCount = last7Days.filter(day => isHabitScheduledForDate(habit, day)).length;
-    const completedDays = last7Days.filter(day => isHabitCompletedForDay(habit.id, day)).length;
+    const scheduledDaysCount = validDays.filter(day => isHabitScheduledForDate(habit, day)).length;
+    const completedDays = validDays.filter(day => isHabitCompletedForDay(habit.id, day)).length;
     const streak = getStreak(habit.id);
 
     return {
