@@ -5,18 +5,19 @@ import {
   CheckSquare,
   ChevronDown,
   ChevronRight,
-  Clock,
   Flame,
   Moon,
   Monitor,
   Sparkles,
+  TrendingUp,
   Wallet,
 } from 'lucide-react';
 import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
+  Cell,
+  ComposedChart,
   Line,
   ReferenceLine,
   ResponsiveContainer,
@@ -36,6 +37,11 @@ import {
   useAnalyticsTop,
   getRangeBounds,
 } from '../hooks/useAnalytics';
+import { useHabits, useHabitInsights } from '../hooks/useHabits';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { isPrayerStatusComplete } from '../lib/prayerStatus';
 
 type SectionKey =
   | 'overview'
@@ -215,6 +221,11 @@ function sectionHeader(opts: {
   );
 }
 
+const HABIT_COLORS = [
+  '#a855f7', '#0ea5e9', '#22c55e', '#f59e0b', '#ef4444',
+  '#6366f1', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+];
+
 export default function Analytics() {
   const { privacyMode, analyticsShowTips } = useUIStore();
   const [rangeDays, setRangeDays] = useState<AnalyticsRangeDays>(30);
@@ -228,13 +239,14 @@ export default function Analytics() {
     screentime: false,
     sleep: false,
     tasks: false,
-    habits: false,
+    habits: true,
     cross: true,
     anomalies: true,
   });
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDaySource, setSelectedDaySource] = useState<string | null>(null);
+  const [timeTravelDate, setTimeTravelDate] = useState<string>('');
   const closeDayDetails = () => {
     setSelectedDay(null);
     setSelectedDaySource(null);
@@ -308,55 +320,196 @@ export default function Analytics() {
     };
   }, [daily.sleep.data]);
 
-  /** Per calendar day: phone (iOS) + PC (Windows) + sleep + other = 24h; then averaged across the analytics range. */
-  const avgDay24h = useMemo(() => {
-    const screentimeRows = daily.screentime.data ?? [];
-    const sleepRows = daily.sleep.data ?? [];
-    const sleepByDate = new Map(sleepRows.map((r) => [screentimeDateKey(r.date), Number(r.total_minutes) || 0]));
-    const iosSecondsByDate = new Map<string, number>();
-    const windowsSecondsByDate = new Map<string, number>();
-    for (const r of screentimeRows) {
-      const bucket = screentimeUiPlatform(r.platform);
-      if (bucket !== 'ios' && bucket !== 'windows') continue;
-      const d = screentimeDateKey(r.date);
-      if (!d) continue;
-      const sec = Number(r.total_time_seconds) || 0;
-      if (bucket === 'ios') iosSecondsByDate.set(d, (iosSecondsByDate.get(d) ?? 0) + sec);
-      else windowsSecondsByDate.set(d, (windowsSecondsByDate.get(d) ?? 0) + sec);
+  // Habits per-habit data
+  const { user } = useAuth();
+  const { data: allHabits = [] } = useHabits();
+  const habitInsights = useHabitInsights(allHabits, rangeDays);
+
+  // Per-day habit logs for missed-habits tooltip
+  const { data: habitLogsRange = [] } = useQuery({
+    queryKey: ['habit-logs-range', daily.bounds.start, daily.bounds.end, user?.id],
+    queryFn: async () => {
+      const habitIds = allHabits.map((h) => h.id);
+      if (!habitIds.length) return [];
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id, date, completed')
+        .in('habit_id', habitIds)
+        .gte('date', daily.bounds.start)
+        .lte('date', daily.bounds.end);
+      if (error) throw error;
+      return data as { habit_id: string; date: string; completed: boolean }[];
+    },
+    enabled: !!user?.id && allHabits.length > 0,
+  });
+
+  // Active prayer habits
+  const { data: activePrayerHabits = [] } = useQuery({
+    queryKey: ['prayer-habits-active', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_habits')
+        .select('id, prayer_name')
+        .eq('user_id', user!.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data as { id: string; prayer_name: string }[];
+    },
+    enabled: !!user?.id,
+  });
+
+  // Prayer logs for the range
+  const { data: prayerLogsRange = [] } = useQuery({
+    queryKey: ['prayer-logs-range', daily.bounds.start, daily.bounds.end, user?.id],
+    queryFn: async () => {
+      const phIds = activePrayerHabits.map((p) => p.id);
+      if (!phIds.length) return [];
+      const { data, error } = await supabase
+        .from('prayer_logs')
+        .select('prayer_habit_id, date, status')
+        .eq('user_id', user!.id)
+        .in('prayer_habit_id', phIds)
+        .gte('date', daily.bounds.start)
+        .lte('date', daily.bounds.end);
+      if (error) throw error;
+      return data as { prayer_habit_id: string; date: string; status: string }[];
+    },
+    enabled: !!user?.id && activePrayerHabits.length > 0,
+  });
+
+  // Prayer summary: overall adherence over the range
+  const prayerSummary = useMemo(() => {
+    if (!activePrayerHabits.length) return null;
+    const total = activePrayerHabits.length; // prayers per day
+    const logsByDate = new Map<string, Map<string, string>>();
+    for (const log of prayerLogsRange) {
+      const byPrayer = logsByDate.get(log.date) ?? new Map<string, string>();
+      byPrayer.set(log.prayer_habit_id, log.status);
+      logsByDate.set(log.date, byPrayer);
     }
-    const dates = eachDateInclusive(daily.bounds.start, daily.bounds.end);
-    if (dates.length === 0) return null;
-    const phoneH: number[] = [];
-    const pcH: number[] = [];
-    const sleepH: number[] = [];
-    const otherH: number[] = [];
-    for (const dt of dates) {
-      const ph = (iosSecondsByDate.get(dt) ?? 0) / 3600;
-      const wh = (windowsSecondsByDate.get(dt) ?? 0) / 3600;
-      const sh = (sleepByDate.get(dt) ?? 0) / 60;
-      const oh = Math.max(0, 24 - ph - wh - sh);
-      phoneH.push(ph);
-      pcH.push(wh);
-      sleepH.push(sh);
-      otherH.push(oh);
+    let doneDays = 0;
+    let totalSlots = 0;
+    const PRAYER_NAMES: Record<string, string> = {
+      Fajr: 'Fajr', Dhuhr: 'Dhuhr', Asr: 'Asr', Maghrib: 'Maghrib', Isha: 'Isha',
+    };
+    // Count all prayer slots in range
+    const dates = Array.from(new Set([...prayerLogsRange.map((l) => l.date)]));
+    for (const date of dates) {
+      const byPrayer = logsByDate.get(date) ?? new Map();
+      for (const ph of activePrayerHabits) {
+        totalSlots++;
+        const status = byPrayer.get(ph.id);
+        if (isPrayerStatusComplete(status as any)) doneDays++;
+      }
     }
     return {
-      phone: mean(phoneH),
-      pc: mean(pcH),
-      sleep: mean(sleepH),
-      other: mean(otherH),
-      nDays: dates.length,
-      chartRow: [
-        {
-          label: 'Typical day',
-          phone: Math.round(mean(phoneH) * 10) / 10,
-          pc: Math.round(mean(pcH) * 10) / 10,
-          sleep: Math.round(mean(sleepH) * 10) / 10,
-          other: Math.round(mean(otherH) * 10) / 10,
-        },
-      ],
+      total,
+      doneDays,
+      totalSlots,
+      adherencePct: totalSlots > 0 ? Math.round((doneDays / totalSlots) * 100) : 0,
+      prayerNames: activePrayerHabits.map((p) => PRAYER_NAMES[p.prayer_name] ?? p.prayer_name),
+      logsByDate,
     };
-  }, [daily.bounds.start, daily.bounds.end, daily.screentime.data, daily.sleep.data]);
+  }, [activePrayerHabits, prayerLogsRange]);
+
+  // Build map: date → missed habit titles (incl. detox relapses + missed prayers)
+  const missedByDate = useMemo(() => {
+    const logsByDate = new Map<string, Map<string, boolean>>();
+    for (const log of habitLogsRange) {
+      const byHabit = logsByDate.get(log.date) ?? new Map<string, boolean>();
+      byHabit.set(log.habit_id, log.completed);
+      logsByDate.set(log.date, byHabit);
+    }
+    // Add all dates from prayer logs too
+    if (prayerSummary) {
+      for (const date of prayerSummary.logsByDate.keys()) {
+        if (!logsByDate.has(date)) logsByDate.set(date, new Map());
+      }
+    }
+    const result = new Map<string, string[]>();
+    for (const [date, byHabit] of logsByDate.entries()) {
+      const missed: string[] = [];
+      for (const habit of allHabits) {
+        const completed = byHabit.get(habit.id);
+        if (habit.habit_type === 'detox') {
+          // detox: completed=true means relapse (bad). completed=undefined = not scheduled.
+          if (completed === true) missed.push(`⚠️ ${habit.title} (relapse)`);
+        } else {
+          // standard: completed=false = scheduled but not done. undefined = not scheduled, skip.
+          if (completed === false) missed.push(habit.title);
+        }
+      }
+      // Add missed prayers
+      if (prayerSummary) {
+        const byPrayer = prayerSummary.logsByDate.get(date) ?? new Map<string, string>();
+        for (const ph of activePrayerHabits) {
+          const status = byPrayer.get(ph.id);
+          if (!isPrayerStatusComplete(status as any)) {
+            missed.push(`🕌 ${ph.prayer_name} (prayer)`);
+          }
+        }
+      }
+      result.set(date, missed);
+    }
+    return result;
+  }, [habitLogsRange, allHabits, prayerSummary, activePrayerHabits]);
+
+  // Time Travel: fetch habit_logs + prayer_logs for a specific day
+  const { data: ttHabitLogs = [] } = useQuery({
+    queryKey: ['tt-habit-logs', timeTravelDate, user?.id],
+    queryFn: async () => {
+      const habitIds = allHabits.map((h) => h.id);
+      if (!habitIds.length || !timeTravelDate) return [];
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id, completed, notes')
+        .in('habit_id', habitIds)
+        .eq('date', timeTravelDate);
+      if (error) throw error;
+      return data as { habit_id: string; completed: boolean; notes?: string }[];
+    },
+    enabled: !!user?.id && !!timeTravelDate && allHabits.length > 0,
+  });
+
+  const { data: ttPrayerLogs = [] } = useQuery({
+    queryKey: ['tt-prayer-logs', timeTravelDate, user?.id],
+    queryFn: async () => {
+      const phIds = activePrayerHabits.map((p) => p.id);
+      if (!phIds.length || !timeTravelDate) return [];
+      const { data, error } = await supabase
+        .from('prayer_logs')
+        .select('prayer_habit_id, status')
+        .eq('user_id', user!.id)
+        .in('prayer_habit_id', phIds)
+        .eq('date', timeTravelDate);
+      if (error) throw error;
+      return data as { prayer_habit_id: string; status: string }[];
+    },
+    enabled: !!user?.id && !!timeTravelDate && activePrayerHabits.length > 0,
+  });
+
+  const timeTravelData = useMemo(() => {
+    if (!timeTravelDate) return null;
+    const byHabit = new Map(ttHabitLogs.map((l) => [l.habit_id, l]));
+    const byPrayer = new Map(ttPrayerLogs.map((l) => [l.prayer_habit_id, l.status]));
+    const habitRows = allHabits
+      .filter((h) => byHabit.has(h.id)) // only scheduled habits
+      .map((h) => {
+        const log = byHabit.get(h.id)!;
+        const isDetox = h.habit_type === 'detox';
+        const done = isDetox ? !log.completed : log.completed;
+        return { habit: h, done, isDetox, notes: log.notes };
+      });
+    const prayerRows = activePrayerHabits.map((ph) => {
+      const status = byPrayer.get(ph.id) ?? null;
+      const done = isPrayerStatusComplete(status as any);
+      return { ph, status, done };
+    });
+    const prayersDone = prayerRows.filter((r) => r.done).length;
+    const habitsDone = habitRows.filter((r) => r.done).length;
+    return { habitRows, prayerRows, prayersDone, habitsDone };
+  }, [timeTravelDate, ttHabitLogs, ttPrayerLogs, allHabits, activePrayerHabits]);
+
 
   const tasksAgg = useMemo(() => {
     const rows = daily.tasks.data ?? [];
@@ -925,6 +1078,346 @@ export default function Analytics() {
 
       {/* Sections */}
       <div className="space-y-4">
+        {/* Habits — moved to top */}
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {sectionHeader({
+            title: 'Habits insights',
+            subtitle: `${habitsAgg.avgAdherence}% avg adherence · ${allHabits.length} active habits`,
+            icon: Flame,
+            isExpanded: expanded.habits,
+            onToggle: () => toggle('habits'),
+          })}
+          {expanded.habits && (
+            <div className="border-t border-border p-4 bg-secondary/10 space-y-4">
+              {analyticsShowTips && (
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
+                  <p className="mt-1 text-sm">
+                    Habits adherence is based on scheduled habits for each day, habit weights, the 5 prayers, and detox relapse penalties.
+                    Per-habit cards show adherence for the selected range, with streak and best day.
+                  </p>
+                </div>
+              )}
+
+              {/* Overall summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg adherence</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{habitsAgg.avgAdherence}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">{rangeLabel} window</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Completed</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{habitsAgg.completed}</p>
+                  <p className="text-xs text-muted-foreground mt-1">of {habitsAgg.logs} expected</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">New habits</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">
+                    {allHabits.filter((h) => {
+                      const created = h.created_at?.slice(0, 10);
+                      return created >= daily.bounds.start && created <= daily.bounds.end;
+                    }).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">introduced in range</p>
+                </div>
+              </div>
+
+              {/* ⏰ Time Travel */}
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="p-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">⏰</span>
+                    <p className="font-semibold text-sm">Time Travel</p>
+                    <span className="text-xs text-muted-foreground">— pick a day to see what you did</span>
+                  </div>
+                  <input
+                    type="date"
+                    value={timeTravelDate}
+                    max={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) => setTimeTravelDate(e.target.value)}
+                    className="text-xs rounded-lg border border-border bg-secondary/50 px-2 py-1.5 text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                  />
+                </div>
+
+                {timeTravelDate && timeTravelData && (
+                  <div className="border-t border-border">
+                    {/* Header */}
+                    <div className="px-4 py-3 bg-primary/5 flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold">{new Date(timeTravelDate + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {timeTravelData.habitsDone}/{timeTravelData.habitRows.length} habits done
+                          {timeTravelData.prayerRows.length > 0 && ` · ${timeTravelData.prayersDone}/${timeTravelData.prayerRows.length} prayers`}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setTimeTravelDate('')}
+                        className="text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-secondary"
+                      >
+                        ✕ clear
+                      </button>
+                    </div>
+
+                    {/* Prayers */}
+                    {timeTravelData.prayerRows.length > 0 && (
+                      <div className="px-4 py-2 border-b border-border">
+                        <p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-2">Prayers</p>
+                        <div className="flex flex-wrap gap-2">
+                          {timeTravelData.prayerRows.map(({ ph, status, done }) => (
+                            <div
+                              key={ph.id}
+                              className={cn(
+                                'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border',
+                                done
+                                  ? 'bg-green-500/15 border-green-500/30 text-green-400'
+                                  : status === 'Late'
+                                  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                                  : 'bg-red-500/15 border-red-500/30 text-red-400'
+                              )}
+                            >
+                              <span>{done ? '✓' : '✗'}</span>
+                              <span>{ph.prayer_name}</span>
+                              {status && <span className="opacity-70">({status})</span>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Habits */}
+                    {timeTravelData.habitRows.length === 0 ? (
+                      <p className="px-4 py-4 text-sm text-muted-foreground">No habits were scheduled for this day.</p>
+                    ) : (
+                      <div className="divide-y divide-border">
+                        {timeTravelData.habitRows.map(({ habit, done, isDetox, notes }) => (
+                          <div key={habit.id} className="flex items-center gap-3 px-4 py-2.5">
+                            <div
+                              className={cn(
+                                'w-5 h-5 rounded-full flex items-center justify-center text-xs shrink-0',
+                                done ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                              )}
+                            >
+                              {done ? '✓' : '✗'}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className={cn('text-sm truncate', done ? 'text-foreground' : 'text-muted-foreground line-through')}>{habit.title}</p>
+                                {isDetox && <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 shrink-0">detox</span>}
+                                {!done && isDetox && <span className="text-[10px] text-red-400 shrink-0">relapse</span>}
+                              </div>
+                              {notes && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{notes}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {timeTravelDate && !timeTravelData?.habitRows.length && !timeTravelData?.prayerRows.length && (
+                  <div className="border-t border-border px-4 py-4">
+                    <p className="text-sm text-muted-foreground">Loading…</p>
+                  </div>
+                )}
+              </div>
+
+              {/* New habits introduced in range */}
+
+              {(() => {
+                const newHabits = allHabits.filter((h) => {
+                  const created = h.created_at?.slice(0, 10);
+                  return created >= daily.bounds.start && created <= daily.bounds.end;
+                });
+                if (newHabits.length === 0) return null;
+                return (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-3 border-b border-border flex items-center gap-2">
+                      <TrendingUp size={15} className="text-primary" />
+                      <p className="font-semibold text-sm">New habits introduced</p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {newHabits.map((h) => (
+                        <div key={h.id} className="flex items-center gap-3 px-4 py-3">
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: h.color ?? '#a855f7' }} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{h.title}</p>
+                            <p className="text-xs text-muted-foreground">Started {h.created_at?.slice(0, 10)}</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground capitalize">{h.frequency}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Per-habit adherence breakdown */}
+              {allHabits.length > 0 && (
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="p-3 border-b border-border">
+                    <p className="font-semibold text-sm">Per-habit breakdown</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{rangeLabel} adherence per habit</p>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {allHabits.map((habit, idx) => {
+                      const insight = habitInsights.data?.[habit.id];
+                      const isDetox = habit.habit_type === 'detox';
+                      const pct = insight?.adherencePct ?? 0;
+                      const relapses = isDetox ? (insight ? insight.scheduledDays - insight.successDays : 0) : 0;
+                      const color = habit.color || HABIT_COLORS[idx % HABIT_COLORS.length];
+                      const barFill = isDetox
+                        ? (relapses === 0 ? '#22c55e' : '#ef4444')
+                        : (pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444');
+                      const barWidth = isDetox
+                        ? (insight && insight.scheduledDays > 0 ? (relapses / insight.scheduledDays) * 100 : 0)
+                        : pct;
+                      return (
+                        <div key={habit.id} className="px-4 py-3 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                              <p className="text-sm font-medium truncate">{habit.title}</p>
+                              {isDetox && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 shrink-0">detox</span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              {isDetox ? (
+                                <>
+                                  <p className={cn('text-sm font-bold tabular-nums', relapses > 0 ? 'text-red-400' : 'text-green-400')}>
+                                    {relapses === 0 ? '✓ Clean' : `${relapses} relapse${relapses > 1 ? 's' : ''}`}
+                                  </p>
+                                  {insight && <p className="text-[11px] text-muted-foreground">{insight.successDays}/{insight.scheduledDays} clean days</p>}
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-bold tabular-nums">{pct}%</p>
+                                  {insight && <p className="text-[11px] text-muted-foreground">{insight.successDays}/{insight.scheduledDays} days</p>}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                            <div className="absolute inset-y-0 left-0 rounded-full transition-all" style={{ width: `${barWidth}%`, backgroundColor: barFill }} />
+                          </div>
+                          {insight && (
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                              {isDetox ? (
+                                <span>{relapses === 0 ? '🟢 No relapses in range' : `Last relapse: ${insight.lastEventDate ?? '—'}`}</span>
+                              ) : (
+                                <>
+                                  <span>{insight.bestDayLabel}</span>
+                                  <span>·</span>
+                                  <span>{insight.usualTimeLabel}</span>
+                                  {insight.lastEventDate && <><span>·</span><span>Last: {insight.lastEventDate}</span></>}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {/* Prayers row */}
+                    {prayerSummary && (
+                      <div className="px-4 py-3 space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-base shrink-0">🕌</span>
+                            <p className="text-sm font-medium truncate">Prayers</p>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 shrink-0">
+                              {prayerSummary.total}/day
+                            </span>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className={cn('text-sm font-bold tabular-nums', prayerSummary.adherencePct >= 80 ? 'text-green-400' : prayerSummary.adherencePct >= 50 ? 'text-amber-400' : 'text-red-400')}>
+                              {prayerSummary.adherencePct}%
+                            </p>
+                            <p className="text-[11px] text-muted-foreground">{prayerSummary.doneDays}/{prayerSummary.totalSlots} prayed</p>
+                          </div>
+                        </div>
+                        <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                          <div
+                            className="absolute inset-y-0 left-0 rounded-full transition-all"
+                            style={{
+                              width: `${prayerSummary.adherencePct}%`,
+                              backgroundColor: prayerSummary.adherencePct >= 80 ? '#22c55e' : prayerSummary.adherencePct >= 50 ? '#f59e0b' : '#ef4444',
+                            }}
+                          />
+                        </div>
+                        <p className="text-[11px] text-muted-foreground">
+                          {prayerSummary.prayerNames.join(' · ')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+
+              {/* Adherence over time chart */}
+              {(() => {
+                const rows = daily.habits.data ?? [];
+                if (rows.length === 0) return null;
+                const chartData = rows.map((r) => ({
+                  fullDate: r.date,
+                  date: r.date.slice(5),
+                  adherence: Math.round(r.adherence_pct),
+                }));
+                const CustomTooltip = ({ active, payload }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const entry = payload[0]?.payload;
+                  const pct: number = entry?.adherence ?? 0;
+                  const fullDate: string = entry?.fullDate ?? '';
+                  const missed = missedByDate.get(fullDate) ?? [];
+                  const barColor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                  return (
+                    <div style={{ backgroundColor: '#1a1a2e', border: `1px solid ${barColor}40`, borderRadius: '0.5rem', padding: '10px 12px', fontSize: 12, color: '#fff', maxWidth: 220 }}>
+                      <p style={{ fontWeight: 700, color: barColor, marginBottom: 4 }}>{pct}% adherence</p>
+                      <p style={{ color: '#94a3b8', marginBottom: missed.length ? 6 : 0 }}>{fullDate}</p>
+                      {missed.length > 0 && (
+                        <>
+                          <p style={{ color: '#ef4444', fontWeight: 600, marginBottom: 3 }}>Missed / relapses:</p>
+                          {missed.slice(0, 6).map((m, i) => <p key={i} style={{ color: '#fca5a5', marginBottom: 1 }}>• {m}</p>)}
+                          {missed.length > 6 && <p style={{ color: '#94a3b8' }}>+{missed.length - 6} more</p>}
+                        </>
+                      )}
+                      {missed.length === 0 && pct > 0 && <p style={{ color: '#86efac' }}>✓ All habits done!</p>}
+                    </div>
+                  );
+                };
+                return (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-3 border-b border-border">
+                      <p className="font-semibold text-sm">Daily adherence over time</p>
+                    </div>
+                    <div className="p-3">
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.4} />
+                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(chartData.length / 8) - 1)} />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                          <Tooltip content={<CustomTooltip />} />
+                          <ReferenceLine y={habitsAgg.avgAdherence} stroke="var(--color-primary)" strokeDasharray="4 2" strokeWidth={1.5} />
+                          <Bar dataKey="adherence" radius={[3, 3, 0, 0]} maxBarSize={24} isAnimationActive={false}>
+                            {chartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.adherence >= 80 ? '#22c55e' : entry.adherence >= 50 ? '#f59e0b' : '#ef4444'} opacity={0.85} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Dashed line = {habitsAgg.avgAdherence}% average · Green ≥80% · Amber ≥50% · Red &lt;50%
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+        </div>
+
         {/* Overview */}
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           {sectionHeader({
@@ -959,55 +1452,7 @@ export default function Analytics() {
                 </p>
               </div>
 
-              {avgDay24h && (
-                <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 rounded-lg bg-secondary shrink-0">
-                      <Clock size={18} className="text-muted-foreground" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold">24-hour day (average)</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        <span className="font-medium text-foreground">Phone</span> is iOS screen time,{' '}
-                        <span className="font-medium text-foreground">PC</span> is Windows screen time (apps + sites),{' '}
-                        <span className="font-medium text-foreground">Sleep</span> is logged sleep.{' '}
-                        <span className="font-medium text-foreground">Other</span> is the rest of the 24h clock. Averaged over{' '}
-                        {avgDay24h.nDays} days in this range.
-                      </p>
-                    </div>
-                  </div>
-                  <div className={cn('rounded-md border border-border/60 bg-secondary/20', privacyMode && 'blur-sm select-none')}>
-                    <ResponsiveContainer width="100%" height={112}>
-                      <BarChart layout="vertical" data={avgDay24h.chartRow} margin={{ top: 4, right: 12, left: 4, bottom: 4 }}>
-                        <XAxis type="number" domain={[0, 24]} ticks={[0, 6, 12, 18, 24]} tickFormatter={(v) => `${v}h`} className="text-xs" />
-                        <YAxis type="category" dataKey="label" width={88} tick={{ fontSize: 12 }} />
-                        <Tooltip
-                          contentStyle={{
-                            backgroundColor: 'var(--color-card)',
-                            border: '1px solid var(--color-border)',
-                            borderRadius: '0.5rem',
-                            boxShadow: 'none',
-                          }}
-                          formatter={(value, name) => {
-                            const n = typeof value === 'number' ? value : Number(value);
-                            return [`${Number.isFinite(n) ? n.toFixed(1) : '—'}h`, String(name ?? '')];
-                          }}
-                          labelStyle={{ color: 'var(--color-muted-foreground)' }}
-                        />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                        <Bar dataKey="phone" name="Phone (iOS)" stackId="day" fill="#a855f7" isAnimationActive={false} />
-                        <Bar dataKey="pc" name="PC (Windows)" stackId="day" fill="#0ea5e9" isAnimationActive={false} />
-                        <Bar dataKey="sleep" name="Sleep" stackId="day" fill="#6366f1" isAnimationActive={false} />
-                        <Bar dataKey="other" name="Other" stackId="day" fill="#94a3b8" isAnimationActive={false} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <p className={cn('text-xs text-muted-foreground tabular-nums', privacyMode && 'blur-sm select-none')}>
-                    Avg: {avgDay24h.phone.toFixed(1)}h phone · {avgDay24h.pc.toFixed(1)}h PC · {avgDay24h.sleep.toFixed(1)}h sleep ·{' '}
-                    {avgDay24h.other.toFixed(1)}h other
-                  </p>
-                </div>
-              )}
+
             </div>
           )}
         </div>
@@ -1218,29 +1663,252 @@ export default function Analytics() {
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           {sectionHeader({
             title: 'Habits insights',
-            subtitle: 'Adherence and stability',
+            subtitle: `${habitsAgg.avgAdherence}% avg adherence · ${allHabits.length} active habits`,
             icon: Flame,
             isExpanded: expanded.habits,
             onToggle: () => toggle('habits'),
           })}
           {expanded.habits && (
-            <div className="border-t border-border p-4 bg-secondary/10 space-y-3">
+            <div className="border-t border-border p-4 bg-secondary/10 space-y-4">
               {analyticsShowTips && (
                 <div className="rounded-lg border border-border bg-card p-3">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">What this means</p>
                   <p className="mt-1 text-sm">
                     Habits adherence is based on scheduled habits for each day, habit weights, the 5 prayers, and detox relapse penalties.
+                    Per-habit cards show adherence for the selected range, with streak and best day.
                   </p>
                 </div>
               )}
-              <div className="rounded-lg border border-border bg-card p-3">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Adherence</p>
-                <p className="mt-1 text-sm">
-                  Completed <span className="font-semibold tabular-nums">{habitsAgg.completed}</span> /{' '}
-                  <span className="font-semibold tabular-nums">{habitsAgg.logs}</span> expected ·{' '}
-                  <span className="font-semibold tabular-nums">{habitsAgg.avgAdherence}%</span>
-                </p>
+
+              {/* Overall summary */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg adherence</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{habitsAgg.avgAdherence}%</p>
+                  <p className="text-xs text-muted-foreground mt-1">{rangeLabel} window</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Completed</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">{habitsAgg.completed}</p>
+                  <p className="text-xs text-muted-foreground mt-1">of {habitsAgg.logs} expected</p>
+                </div>
+                <div className="rounded-lg border border-border bg-card p-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">New habits</p>
+                  <p className="mt-1 text-2xl font-bold tabular-nums">
+                    {allHabits.filter((h) => {
+                      const created = h.created_at?.slice(0, 10);
+                      return created >= daily.bounds.start && created <= daily.bounds.end;
+                    }).length}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">introduced in range</p>
+                </div>
               </div>
+
+              {/* New habits introduced in range */}
+              {(() => {
+                const newHabits = allHabits.filter((h) => {
+                  const created = h.created_at?.slice(0, 10);
+                  return created >= daily.bounds.start && created <= daily.bounds.end;
+                });
+                if (newHabits.length === 0) return null;
+                return (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-3 border-b border-border flex items-center gap-2">
+                      <TrendingUp size={15} className="text-primary" />
+                      <p className="font-semibold text-sm">New habits introduced</p>
+                    </div>
+                    <div className="divide-y divide-border">
+                      {newHabits.map((h) => (
+                        <div key={h.id} className="flex items-center gap-3 px-4 py-3">
+                          <div
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: h.color ?? '#a855f7' }}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{h.title}</p>
+                            <p className="text-xs text-muted-foreground">Started {h.created_at?.slice(0, 10)}</p>
+                          </div>
+                          <span className="text-xs text-muted-foreground capitalize">{h.frequency}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Per-habit adherence breakdown */}
+              {allHabits.length > 0 && (
+                <div className="rounded-xl border border-border bg-card overflow-hidden">
+                  <div className="p-3 border-b border-border">
+                    <p className="font-semibold text-sm">Per-habit breakdown</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{rangeLabel} adherence per habit</p>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {allHabits.map((habit, idx) => {
+                      const insight = habitInsights.data?.[habit.id];
+                      const isDetox = habit.habit_type === 'detox';
+                      // For detox: successDays = clean days (no relapse). adherencePct = clean %.
+                      // relapses = scheduledDays - successDays
+                      const pct = insight?.adherencePct ?? 0;
+                      const relapses = isDetox ? (insight ? insight.scheduledDays - insight.successDays : 0) : 0;
+                      const color = habit.color || HABIT_COLORS[idx % HABIT_COLORS.length];
+                      const barFill = isDetox
+                        ? (relapses === 0 ? '#22c55e' : '#ef4444')
+                        : (pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444');
+                      const barWidth = isDetox
+                        ? (insight && insight.scheduledDays > 0 ? (relapses / insight.scheduledDays) * 100 : 0)
+                        : pct;
+                      return (
+                        <div key={habit.id} className="px-4 py-3 space-y-2">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                              <p className="text-sm font-medium truncate">{habit.title}</p>
+                              {isDetox && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 shrink-0">detox</span>
+                              )}
+                            </div>
+                            <div className="text-right shrink-0">
+                              {isDetox ? (
+                                <>
+                                  <p className={cn('text-sm font-bold tabular-nums', relapses > 0 ? 'text-red-400' : 'text-green-400')}>
+                                    {relapses === 0 ? '✓ Clean' : `${relapses} relapse${relapses > 1 ? 's' : ''}`}
+                                  </p>
+                                  {insight && (
+                                    <p className="text-[11px] text-muted-foreground">{insight.successDays}/{insight.scheduledDays} clean days</p>
+                                  )}
+                                </>
+                              ) : (
+                                <>
+                                  <p className="text-sm font-bold tabular-nums">{pct}%</p>
+                                  {insight && (
+                                    <p className="text-[11px] text-muted-foreground">{insight.successDays}/{insight.scheduledDays} days</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {/* Bar: for detox = relapse fill (bad = more fill), for standard = adherence fill */}
+                          <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className="absolute inset-y-0 left-0 rounded-full transition-all"
+                              style={{ width: `${barWidth}%`, backgroundColor: barFill }}
+                            />
+                          </div>
+                          {insight && (
+                            <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                              {isDetox ? (
+                                <span>{relapses === 0 ? '🟢 No relapses in range' : `Last relapse: ${insight.lastEventDate ?? '—'}`}</span>
+                              ) : (
+                                <>
+                                  <span>{insight.bestDayLabel}</span>
+                                  <span>·</span>
+                                  <span>{insight.usualTimeLabel}</span>
+                                  {insight.lastEventDate && (
+                                    <>
+                                      <span>·</span>
+                                      <span>Last: {insight.lastEventDate}</span>
+                                    </>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Adherence over time chart */}
+              {(() => {
+                const rows = daily.habits.data ?? [];
+                if (rows.length === 0) return null;
+                const chartData = rows.map((r) => ({
+                  fullDate: r.date,
+                  date: r.date.slice(5), // MM-DD for axis
+                  adherence: Math.round(r.adherence_pct),
+                }));
+
+                const CustomTooltip = ({ active, payload }: any) => {
+                  if (!active || !payload?.length) return null;
+                  const entry = payload[0]?.payload;
+                  const pct: number = entry?.adherence ?? 0;
+                  const fullDate: string = entry?.fullDate ?? '';
+                  const missed = missedByDate.get(fullDate) ?? [];
+                  const barColor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+                  return (
+                    <div style={{
+                      backgroundColor: '#1a1a2e',
+                      border: `1px solid ${barColor}40`,
+                      borderRadius: '0.5rem',
+                      padding: '10px 12px',
+                      fontSize: 12,
+                      color: '#fff',
+                      maxWidth: 220,
+                    }}>
+                      <p style={{ fontWeight: 700, color: barColor, marginBottom: 4 }}>{pct}% adherence</p>
+                      <p style={{ color: '#94a3b8', marginBottom: missed.length ? 6 : 0 }}>{fullDate}</p>
+                      {missed.length > 0 && (
+                        <>
+                          <p style={{ color: '#ef4444', fontWeight: 600, marginBottom: 3 }}>Missed / relapses:</p>
+                          {missed.slice(0, 6).map((m, i) => (
+                            <p key={i} style={{ color: '#fca5a5', marginBottom: 1 }}>• {m}</p>
+                          ))}
+                          {missed.length > 6 && <p style={{ color: '#94a3b8' }}>+{missed.length - 6} more</p>}
+                        </>
+                      )}
+                      {missed.length === 0 && pct > 0 && (
+                        <p style={{ color: '#86efac' }}>✓ All habits done!</p>
+                      )}
+                    </div>
+                  );
+                };
+
+                return (
+                  <div className="rounded-xl border border-border bg-card overflow-hidden">
+                    <div className="p-3 border-b border-border">
+                      <p className="font-semibold text-sm">Daily adherence over time</p>
+                    </div>
+                    <div className="p-3">
+                      <ResponsiveContainer width="100%" height={180}>
+                        <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 4 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.4} />
+                          <XAxis
+                            dataKey="date"
+                            tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+                            axisLine={false}
+                            tickLine={false}
+                            interval={Math.max(0, Math.floor(chartData.length / 8) - 1)}
+                          />
+                          <YAxis
+                            domain={[0, 100]}
+                            tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+                            axisLine={false}
+                            tickLine={false}
+                            tickFormatter={(v) => `${v}%`}
+                          />
+                          <Tooltip content={<CustomTooltip />} />
+                          <ReferenceLine y={habitsAgg.avgAdherence} stroke="var(--color-primary)" strokeDasharray="4 2" strokeWidth={1.5} />
+                          <Bar dataKey="adherence" radius={[3, 3, 0, 0]} maxBarSize={24} isAnimationActive={false}>
+                            {chartData.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={entry.adherence >= 80 ? '#22c55e' : entry.adherence >= 50 ? '#f59e0b' : '#ef4444'}
+                                opacity={0.85}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <p className="text-xs text-muted-foreground mt-1 text-center">
+                        Dashed line = {habitsAgg.avgAdherence}% average · Green ≥80% · Amber ≥50% · Red &lt;50%
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>
@@ -1332,7 +2000,7 @@ export default function Analytics() {
                         {selectedRelationship && crossView === 'scatter' && (
                           <div style={{ height: 320, minHeight: 320 }}>
                             <ResponsiveContainer width="100%" height="100%">
-                              <ScatterChart margin={{ top: 12, right: 12, left: 0, bottom: 8 }}>
+                              <ComposedChart margin={{ top: 12, right: 12, left: 0, bottom: 8 }}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.5} />
                                 <XAxis
                                   type="number"
@@ -1372,30 +2040,30 @@ export default function Analytics() {
                                     openDayDetails(date, selectedRelationship.label);
                                   }}
                                 />
+                                {/* Regression trendline — requires ComposedChart */}
                                 {(() => {
                                   const xs = selectedRelationship.points.map((p) => p.x);
                                   const minX = Math.min(...xs);
                                   const maxX = Math.max(...xs);
                                   const y1 = selectedRelationship.slope * minX + selectedRelationship.intercept;
                                   const y2 = selectedRelationship.slope * maxX + selectedRelationship.intercept;
+                                  const trendData = [{ x: minX, y: y1 }, { x: maxX, y: y2 }];
                                   return (
-                                    <>
-                                      <ReferenceLine x={minX} stroke="transparent" />
-                                      <Line
-                                        type="linear"
-                                        dataKey="y"
-                                        data={[
-                                          { x: minX, y: y1 },
-                                          { x: maxX, y: y2 },
-                                        ]}
-                                        dot={false}
-                                        stroke="rgb(34, 197, 94)"
-                                        strokeWidth={2}
-                                      />
-                                    </>
+                                    <Line
+                                      data={trendData}
+                                      type="linear"
+                                      dataKey="y"
+                                      dot={false}
+                                      activeDot={false}
+                                      stroke="#22c55e"
+                                      strokeWidth={2}
+                                      strokeDasharray="6 3"
+                                      legendType="none"
+                                      isAnimationActive={false}
+                                    />
                                   );
                                 })()}
-                              </ScatterChart>
+                              </ComposedChart>
                             </ResponsiveContainer>
                           </div>
                         )}
