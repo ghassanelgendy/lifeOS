@@ -1,5 +1,0 @@
-[functions.sync-inbody]
-verify_jwt = false
-
-[functions.prayer-notifications-dispatch]
-verify_jwt = false
