@@ -137,7 +137,6 @@ export default function SettingsPage() {
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
-  const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
@@ -460,8 +459,25 @@ export default function SettingsPage() {
             </p>
             <label htmlFor="settings-dashboard-mode" className="sr-only">
               Default dashboard view
+            </label>
+            <select
+              id="settings-dashboard-mode"
+              value={dashboardMode}
+              onChange={(e) => setDashboardMode(e.target.value as DashboardMode)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              {DASHBOARD_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {DASHBOARD_MODE_LABELS[mode]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+    </div>
 
-      <div id="settings-layout" className="space-y-10 scroll-mt-20">
+    <div id="settings-layout" className="space-y-10 scroll-mt-20">
       {/* Page Widgets */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border">

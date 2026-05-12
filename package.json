@@ -9,11 +9,11 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "dev": "pnpm --dir artifacts/lifeos dev",
-    "build": "pnpm --dir artifacts/lifeos build",
-    "lint": "eslint artifacts/lifeos/src",
-    "preview": "pnpm --dir artifacts/lifeos serve",
-    "typecheck": "pnpm --dir artifacts/lifeos typecheck",
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint src",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "icons:apple": "node scripts/generate-apple-touch-icons.mjs"
   },
   "dependencies": {
