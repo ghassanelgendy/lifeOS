@@ -684,7 +684,7 @@ export default function Analytics() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 sm:flex-none min-w-0",
+                "flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-normal sm:whitespace-nowrap text-center leading-tight flex-1 sm:flex-none min-w-0",
                 isActive 
                   ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
