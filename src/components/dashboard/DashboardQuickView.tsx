@@ -487,7 +487,6 @@ export function DashboardQuickView() {
               )}
             </div>
           </div>
-          </div>
         </div>
       </section>
 
