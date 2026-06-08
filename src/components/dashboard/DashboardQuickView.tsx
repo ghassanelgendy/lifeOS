@@ -367,7 +367,7 @@ export function DashboardQuickView() {
         <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Today
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
 
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 ring-1 ring-primary/10">
             <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Due today</p>
@@ -447,9 +447,8 @@ export function DashboardQuickView() {
                 <span
                   key={marker.id}
                   className={cn(
-                    marker.kind === 'prayer'
-                      ? 'pointer-events-none absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background shadow-sm ring-1 ring-black/10 bg-violet-300'
-                      : 'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
+                    'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
+                    !marker.color && marker.kind === 'prayer' && 'bg-violet-300',
                     !marker.color && marker.kind === 'habit' && 'bg-emerald-400',
                     !marker.color && marker.kind === 'task' && 'bg-rose-400',
                   )}
