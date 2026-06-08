@@ -376,7 +376,7 @@ export function DashboardQuickView() {
               Tasks + habits left
             </p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0">
+          <Link to="/habits" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
             <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1 truncate">
               <Flame className="size-3.5 text-orange-500 shrink-0" />
               Habits
@@ -385,37 +385,23 @@ export function DashboardQuickView() {
               {todayHabitCompleted}
               <span className="text-sm font-normal text-muted-foreground"> / {todayHabitTotal}</span>
             </p>
-            <Link to="/habits" className={cn(QV_LINK_PILL, 'mt-2')}>
-              Open
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0">
+          </Link>
+          <Link to="/screentime" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
             <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1 truncate">
               <Monitor className="size-3.5 text-sky-500 shrink-0" />
               Screen
             </p>
             <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
-            <Link to="/screentime" className={cn(QV_LINK_PILL, 'mt-2')}>
-              Screen time
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 min-w-0">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <Moon className="size-3.5 text-indigo-400 shrink-0" />
-                Sleep
-              </p>
-              <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
-                {formatSleepMinutes(lastNightSleep)}
-              </p>
-            </div>
-            <Link to="/sleep" className={cn(QV_LINK_PILL, 'shrink-0 mt-2 sm:mt-0')}>
+          </Link>
+          <Link to="/sleep" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
+            <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+              <Moon className="size-3.5 text-indigo-400 shrink-0" />
               Sleep
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
+            </p>
+            <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
+              {formatSleepMinutes(lastNightSleep)}
+            </p>
+          </Link>
         </div>
         <div className="mt-2 sm:mt-3">
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
@@ -429,6 +415,12 @@ export function DashboardQuickView() {
                   {formatDurationMinutes(screenChart.accounted)}
                   <span className="ml-2 text-xs font-normal text-muted-foreground">sleep + screen</span>
                 </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-500" /> Sleep</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-sky-500" /> PC</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-violet-500" /> Phone</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" /> Other</span>
+                </div>
               </div>
             </div>
 
@@ -457,7 +449,7 @@ export function DashboardQuickView() {
                 />
               ))}
               <span
-                className="pointer-events-none absolute -top-1.5 size-3 -translate-x-1/2 rounded-full border border-background bg-primary shadow-sm shadow-primary/40 animate-pulse"
+                className="pointer-events-none absolute -inset-y-1 w-[3px] -translate-x-1/2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary))] animate-pulse"
                 style={{ left: screenChart.nowPct }}
                 aria-hidden
               />
