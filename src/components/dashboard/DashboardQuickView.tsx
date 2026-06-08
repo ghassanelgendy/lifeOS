@@ -368,14 +368,7 @@ export function DashboardQuickView() {
           Today
         </h2>
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Overdue</p>
-            <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1">{overdueIncomplete.length}</p>
-            <Link to="/tasks" className={cn(QV_LINK_PILL, 'mt-2')}>
-              Tasks
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
+
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 ring-1 ring-primary/10">
             <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Due today</p>
             <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1 text-primary">{dueTodayBundleCount}</p>
@@ -408,9 +401,23 @@ export function DashboardQuickView() {
               <ArrowRight className={QV_LINK_ARROW} aria-hidden />
             </Link>
           </div>
+          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 min-w-0">
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                <Moon className="size-3.5 text-indigo-400 shrink-0" />
+                Sleep
+              </p>
+              <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
+                {formatSleepMinutes(lastNightSleep)}
+              </p>
+            </div>
+            <Link to="/sleep" className={cn(QV_LINK_PILL, 'shrink-0 mt-2 sm:mt-0')}>
+              Sleep
+              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
+            </Link>
+          </div>
         </div>
         <div className="mt-2 sm:mt-3">
-          <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-2 sm:gap-3">
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div className="min-w-0">
@@ -479,22 +486,6 @@ export function DashboardQuickView() {
                 </span>
               )}
             </div>
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                <Moon className="size-3.5 text-indigo-400 shrink-0" />
-                Last night sleep
-              </p>
-              <p className={cn('text-lg sm:text-xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
-                {formatSleepMinutes(lastNightSleep)}
-              </p>
-            </div>
-            <Link to="/sleep" className={cn(QV_LINK_PILL, 'shrink-0 self-start sm:self-auto')}>
-              Sleep
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
           </div>
           </div>
         </div>
