@@ -90,6 +90,7 @@ function DueTodayRow({
   onToggle?: () => void;
   label: string;
   showToggle: boolean;
+  color?: string;
 }) {
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : 'Habit';
@@ -125,7 +126,11 @@ function DueTodayRow({
           {done ? (
             <Check className="h-[14px] w-[14px]" strokeWidth={2.5} aria-hidden />
           ) : (
-            <span className={cn('size-2.5 rounded-full', ACCENT_DOT[kind])} aria-hidden />
+            <span 
+              className={cn('size-2.5 rounded-full', !color && ACCENT_DOT[kind])} 
+              style={color ? { backgroundColor: color } : undefined}
+              aria-hidden 
+            />
           )}
         </button>
       ) : (
@@ -144,10 +149,11 @@ function DueTodayRow({
           <span
             className={cn(
               'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-              kind === 'prayer' && 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
-              kind === 'task' && 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
-              kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+              !color && kind === 'prayer' && 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+              !color && kind === 'task' && 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+              !color && kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
             )}
+            style={color ? { backgroundColor: `${color}26`, color: color } : undefined}
           >
             {kindLabel}
           </span>
@@ -308,13 +314,13 @@ export function DashboardQuickView() {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
-    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task' }[] = [];
+    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task'; color?: string }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
       if (!log) continue;
       const minutes = timeStringToMinutes(habit.time) ?? isoToDayMinutes(log.created_at) ?? elapsed;
-      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit' });
+      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit', color: habit.color });
     }
 
     for (const task of completedTasks) {
@@ -436,10 +442,10 @@ export function DashboardQuickView() {
                     marker.kind === 'prayer'
                       ? 'pointer-events-none absolute top-1/2 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-background shadow-sm ring-1 ring-black/10 bg-violet-300'
                       : 'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
-                    marker.kind === 'habit' && 'bg-emerald-400',
-                    marker.kind === 'task' && 'bg-rose-400',
+                    !marker.color && marker.kind === 'habit' && 'bg-emerald-400',
+                    !marker.color && marker.kind === 'task' && 'bg-rose-400',
                   )}
-                  style={{ left: marker.left }}
+                  style={{ left: marker.left, backgroundColor: marker.color }}
                   aria-hidden
                 />
               ))}
@@ -608,6 +614,7 @@ export function DashboardQuickView() {
                             busy={logHabit.isPending}
                             showToggle
                             label={`Log habit ${h.title}`}
+                            color={h.color}
                             onToggle={() =>
                               logHabit.mutate({
                                 habitId: h.id,
