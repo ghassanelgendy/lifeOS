@@ -440,7 +440,7 @@ export function DashboardQuickView() {
                   key={marker.id}
                   className={cn(
                     'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
-                    !marker.color && marker.kind === 'prayer' && 'bg-violet-300',
+                    !marker.color && marker.kind === 'prayer' && 'bg-slate-400',
                     !marker.color && marker.kind === 'habit' && 'bg-emerald-400',
                     !marker.color && marker.kind === 'task' && 'bg-rose-400',
                   )}
@@ -449,7 +449,7 @@ export function DashboardQuickView() {
                 />
               ))}
               <span
-                className="pointer-events-none absolute -inset-y-1 w-[3px] -translate-x-1/2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary))] animate-pulse"
+                className="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary))] animate-pulse"
                 style={{ left: screenChart.nowPct }}
                 aria-hidden
               />
