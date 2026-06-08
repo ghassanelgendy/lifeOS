@@ -486,26 +486,9 @@ export function DashboardQuickView() {
         aria-labelledby="qv-due-today-heading"
       >
         <div className="border-b border-border bg-muted/30 px-4 py-3 sm:px-5 sm:py-3.5">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <h2 id="qv-due-today-heading" className="font-semibold text-base sm:text-lg tracking-tight">
-                Due today
-              </h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Last prayer · tasks due today · standard habits
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              <Link to="/habits" className={QV_LINK_PILL}>
-                Habits
-                <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-              </Link>
-              <Link to="/tasks" className={QV_LINK_PILL}>
-                Tasks
-                <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-              </Link>
-            </div>
-          </div>
+          <h2 id="qv-due-today-heading" className="font-semibold text-base sm:text-lg tracking-tight">
+            Due today
+          </h2>
         </div>
 
         <div className="p-4 sm:p-5 space-y-6">
