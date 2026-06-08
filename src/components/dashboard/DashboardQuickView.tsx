@@ -81,6 +81,7 @@ function DueTodayRow({
   onToggle,
   label,
   showToggle,
+  color,
 }: {
   kind: DueKind;
   title: string;
