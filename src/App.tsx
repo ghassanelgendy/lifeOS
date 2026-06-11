@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
@@ -108,19 +108,38 @@ function AppInner() {
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 
-  // PWA: when a new service worker takes over, reload so the app gets latest code
+  // PWA: when a new service worker takes over, reload so the app gets latest code.
+  // Guard: skip the very first controllerchange that fires when the SW claims the
+  // page on initial load — only reload for *subsequent* SW updates.
+  const swClaimedRef = useRef(false);
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
-    const reloadWhenNewController = () => window.location.reload();
+    // Mark that the current controller is already known
+    if (navigator.serviceWorker.controller) swClaimedRef.current = true;
+    const reloadWhenNewController = () => {
+      if (!swClaimedRef.current) {
+        // First claim on page load — don't reload
+        swClaimedRef.current = true;
+        return;
+      }
+      window.location.reload();
+    };
     navigator.serviceWorker.addEventListener('controllerchange', reloadWhenNewController);
     return () => navigator.serviceWorker.removeEventListener('controllerchange', reloadWhenNewController);
   }, []);
 
-  // PWA: check for updates on load and when app becomes visible (e.g. user returns to tab)
+  // PWA: check for updates on load and when app becomes visible (e.g. user returns to tab).
+  // Throttle to at most once per 30 s so rapid mobile visibility toggles don't
+  // hammer the network and trigger repeated SW activations.
+  const lastUpdateCheckRef = useRef(0);
   useEffect(() => {
     if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    const SW_UPDATE_THROTTLE_MS = 30_000; // 30 seconds
     const checkForUpdates = () => {
-      navigator.serviceWorker.ready.then((reg) => reg.update());
+      const now = Date.now();
+      if (now - lastUpdateCheckRef.current < SW_UPDATE_THROTTLE_MS) return;
+      lastUpdateCheckRef.current = now;
+      navigator.serviceWorker.ready.then((reg) => reg.update()).catch(() => {});
     };
     checkForUpdates();
     const onVisible = () => {
