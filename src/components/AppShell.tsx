@@ -160,7 +160,7 @@ export function AppShell() {
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 flex flex-col gap-0.5 px-3">
-            {NAV_ITEMS.filter(item => item.href !== '/settings').map((item) => (
+            {desktopNavigation.map((item) => (
               <NavLink
                 key={item.href}
                 to={item.href}

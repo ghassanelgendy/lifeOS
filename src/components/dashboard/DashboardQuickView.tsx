@@ -433,6 +433,33 @@ export function DashboardQuickView() {
   const timelineItems: Array<{ timeValue: number; done: boolean; element: React.ReactNode }> = [];
   const addedKeys = new Set<string>();
 
+  // Prayer: participates in the sort — when done it sinks to the bottom,
+  // when the next prayer slot arrives (undone) it jumps back to top.
+  if (lastPrayerSlot) {
+    timelineItems.push({
+      timeValue: -2, // Always first among incomplete items
+      done: lastPrayerDone,
+      element: (
+        <li key="prayer-current">
+          <DueTodayRow
+            kind="prayer"
+            title={`${lastPrayerSlot.name} prayer`}
+            subtitle={
+              lastPrayerTrackerItem?.prayedAt
+                ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
+                : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
+            }
+            done={lastPrayerDone}
+            busy={prayerLoading}
+            showToggle={lastPrayerCanTick}
+            label={`Mark ${lastPrayerSlot.name} as prayed`}
+            onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
+          />
+        </li>
+      ),
+    });
+  }
+
   overdueIncomplete.forEach((t) => {
     addedKeys.add(`task-${t.id}`);
     timelineItems.push({
@@ -738,24 +765,6 @@ export function DashboardQuickView() {
           ) : (
             <div className="space-y-2">
               <ul className="space-y-2">
-                {lastPrayerSlot && (
-                  <li>
-                    <DueTodayRow
-                      kind="prayer"
-                      title={`${lastPrayerSlot.name} prayer`}
-                      subtitle={
-                        lastPrayerTrackerItem?.prayedAt
-                          ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
-                          : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
-                      }
-                      done={lastPrayerDone}
-                      busy={prayerLoading}
-                      showToggle={lastPrayerCanTick}
-                      label={`Mark ${lastPrayerSlot.name} as prayed`}
-                      onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
-                    />
-                  </li>
-                )}
                 {timelineItems.map((item) => item.element)}
               </ul>
             </div>
