@@ -14,9 +14,9 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { isPrayerStatusComplete } from '../lib/prayerStatus';
 
-import { 
-  clamp, pctChange, sum, mean, stddev, pearson, regressionSlope, regressionIntercept, 
-  addDaysYmd, eachDateInclusive, quantile 
+import {
+  clamp, pctChange, sum, mean, stddev, pearson, regressionSlope, regressionIntercept,
+  addDaysYmd, eachDateInclusive, quantile
 } from '../lib/analytics-utils';
 
 import { AnalyticsOverview } from '../components/analytics/AnalyticsOverview';
@@ -62,12 +62,12 @@ export default function Analytics() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDaySource, setSelectedDaySource] = useState<string | null>(null);
   const [timeTravelDate, setTimeTravelDate] = useState<string>('');
-  
+
   const closeDayDetails = () => {
     setSelectedDay(null);
     setSelectedDaySource(null);
   };
-  
+
   const openDayDetails = (date: string, source?: string) => {
     setSelectedDay(date);
     setSelectedDaySource(source ?? null);
@@ -633,17 +633,17 @@ export default function Analytics() {
     { id: 'overview', label: 'Overview', icon: Sparkles },
     { id: 'habits', label: 'Habits', icon: Flame },
     { id: 'digital', label: 'Digital', icon: Monitor },
-    { id: 'health_wealth', label: 'Health & Wealth', icon: Moon },
+    { id: 'health_wealth', label: 'Health', icon: Moon },
     { id: 'insights', label: 'Insights', icon: Activity },
   ] as const;
 
   return (
     <div className="w-full max-w-7xl mx-auto pb-20 space-y-6 overflow-x-hidden">
-      <DayDetailsModal 
-        isOpen={!!selectedDay} 
-        onClose={closeDayDetails} 
-        date={selectedDay} 
-        source={selectedDaySource} 
+      <DayDetailsModal
+        isOpen={!!selectedDay}
+        onClose={closeDayDetails}
+        date={selectedDay}
+        source={selectedDaySource}
         data={dayDetails}
         privacyMode={privacyMode}
       />
@@ -685,8 +685,8 @@ export default function Analytics() {
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
                 "flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-normal sm:whitespace-nowrap text-center leading-tight flex-1 sm:flex-none min-w-0",
-                isActive 
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                isActive
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               )}
             >
@@ -700,7 +700,7 @@ export default function Analytics() {
       {/* Tab Content Area */}
       <div className="pt-2">
         {activeTab === 'overview' && (
-          <AnalyticsOverview 
+          <AnalyticsOverview
             rangeDays={rangeDays}
             rangeLabel={rangeLabel}
             privacyMode={privacyMode}
@@ -715,7 +715,7 @@ export default function Analytics() {
         )}
 
         {activeTab === 'habits' && (
-          <AnalyticsHabits 
+          <AnalyticsHabits
             habitsAgg={habitsAgg}
             allHabits={allHabits}
             habitInsights={habitInsights}
@@ -732,7 +732,7 @@ export default function Analytics() {
         )}
 
         {activeTab === 'digital' && (
-          <AnalyticsDigital 
+          <AnalyticsDigital
             screentimeAgg={screentimeAgg}
             tasksAgg={tasksAgg}
             topApps={top.topApps}
@@ -743,7 +743,7 @@ export default function Analytics() {
         )}
 
         {activeTab === 'health_wealth' && (
-          <AnalyticsHealthWealth 
+          <AnalyticsHealthWealth
             sleepAgg={sleepAgg}
             financeAgg={financeAgg}
             topExpenseCategories={top.topExpenseCategories}
@@ -755,7 +755,7 @@ export default function Analytics() {
         )}
 
         {activeTab === 'insights' && (
-          <AnalyticsDeepInsights 
+          <AnalyticsDeepInsights
             crossRelationships={crossRelationships}
             selectedRelId={selectedRelId}
             setSelectedRelId={setSelectedRelId}

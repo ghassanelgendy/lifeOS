@@ -21,6 +21,7 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isToday,
+  isYesterday,
   subDays,
 } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -317,13 +318,13 @@ export default function Habits() {
   };
 
   // Toggle for standard habits; for detox habits this logs relapse events only.
-  const handleToggleHabit = (habit: Habit) => {
-    if (!isHabitScheduledForDate(habit, today)) return;
+  const handleToggleHabit = (habit: Habit, date: Date = today) => {
+    if (!isHabitScheduledForDate(habit, date)) return;
     const isDetox = getHabitType(habit) === 'detox';
-    const isCompleted = isHabitCompletedForDay(habit.id, today);
+    const isCompleted = isHabitCompletedForDay(habit.id, date);
     logHabit.mutate({
       habitId: habit.id,
-      date: todayStr,
+      date: format(date, 'yyyy-MM-dd'),
       completed: !isCompleted,
       note: isDetox ? (!isCompleted ? 'relapse' : 'relapse-removed') : undefined,
     });
@@ -577,7 +578,7 @@ export default function Habits() {
                       {weekDays.map((day: Date) => {
                         const isScheduled = isHabitScheduledForDate(habit, day);
                         const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                        const canToggle = isScheduled && isToday(day);
+                        const canToggle = isScheduled && (isToday(day) || isYesterday(day));
                         const isDetox = !!detoxConfig;
                         return (
                           <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
@@ -588,7 +589,7 @@ export default function Habits() {
                               {format(day, 'EEE')}
                             </span>
                             <button
-                              onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
+                              onClick={() => canToggle && handleToggleHabit(habit, day)}
                               disabled={!canToggle}
                               title={!isScheduled ? 'Not scheduled for this day' : undefined}
                               className={cn(
@@ -596,7 +597,7 @@ export default function Habits() {
                                 isCompleted
                                   ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                   : "border border-border",
-                                isToday(day) && "hover:scale-105 active:scale-95",
+                                canToggle && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
                                 !isScheduled && "opacity-20",
                                 isScheduled && !canToggle && "opacity-40"
                               )}
@@ -703,7 +704,7 @@ export default function Habits() {
                         {weekDays.map((day: Date) => {
                           const isScheduled = isHabitScheduledForDate(habit, day);
                           const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                          const canToggle = isScheduled && isToday(day);
+                          const canToggle = isScheduled && (isToday(day) || isYesterday(day));
                           const isDetox = !!detoxConfig;
 
                           return (
@@ -715,7 +716,7 @@ export default function Habits() {
                               )}
                             >
                               <button
-                                onClick={() => canToggle && isToday(day) && handleToggleHabit(habit)}
+                                onClick={() => canToggle && handleToggleHabit(habit, day)}
                                 disabled={!canToggle}
                                 title={!isScheduled ? 'Not scheduled for this day' : undefined}
                                 className={cn(
@@ -723,7 +724,7 @@ export default function Habits() {
                                   isCompleted
                                     ? (isDetox ? "bg-red-500 text-white" : "text-white")
                                     : "border border-border hover:border-muted-foreground",
-                                  isToday(day) && "hover:scale-110",
+                                  canToggle && "hover:scale-110",
                                   !isScheduled && "opacity-20",
                                   isScheduled && !canToggle && "opacity-30"
                                 )}

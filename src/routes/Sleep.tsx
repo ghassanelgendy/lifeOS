@@ -2,17 +2,19 @@ import { useMemo } from 'react';
 import { useState } from 'react';
 import { format, parseISO, subDays } from 'date-fns';
 import { Moon, Clock, Activity } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../lib/utils';
+import { DataCard } from '../components/DataCard';
+import { DetailsSheet } from '../components/ui/DetailsSheet';
 import { useUIStore, PAGE_WIDGET_DEFAULTS } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
 const STAGE_COLORS: Record<string, string> = {
-  Deep: '#4c1d95',
-  Core: '#8b5cf6',
-  REM: '#ef4444',
-  Awake: '#facc15',
+  Deep: '#4338ca', // Indigo 700
+  Core: '#60a5fa', // Blue 400
+  REM: '#2dd4bf',  // Teal 400
+  Awake: '#fbbf24', // Amber 400
 };
 
 type NightSession = {
@@ -92,34 +94,22 @@ function buildSessions(segments: SleepStage[]): NightSession[] {
   }).sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function MetricCard({ label, value, reference, status, tone }: { label: string; value: string; reference: string; status: string; tone: 'normal' | 'within' }) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-sm font-medium text-muted-foreground">{label}</p>
-        <span className={cn('text-xs px-2 py-0.5 rounded-full', tone === 'normal' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-blue-500/10 text-blue-500 border border-blue-500/20')}>
-          {status}
-        </span>
-      </div>
-      <p className="text-xl font-bold text-foreground">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">Reference: {reference}</p>
-    </div>
-  );
-}
 
 export default function Sleep() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [activeSessionIndex, setActiveSessionIndex] = useState(0);
+  const [sessionLimit, setSessionLimit] = useState<7 | 30>(7);
   const periodDays = 180;
-  const end = selectedDate;
-  const start = subDays(end, periodDays);
-  const startStr = `${format(start, 'yyyy-MM-dd')}T00:00:00.000Z`;
-  const endStr = `${format(end, 'yyyy-MM-dd')}T23:59:59.999Z`;
+  // Always query 180 days from today to allow instant switching between sessions
+  const endStr = `${format(new Date(), 'yyyy-MM-dd')}T23:59:59.999Z`;
+  const startStr = `${format(subDays(new Date(), periodDays), 'yyyy-MM-dd')}T00:00:00.000Z`;
 
   const { data: stages = [], isLoading } = useSleepStages(startStr, endStr);
   const { avgSleepMinutes, nightsCount } = useSleepMetrics(7);
   const sessions = useMemo(() => buildSessions(stages), [stages]);
   const active = useMemo(() => sessions[0], [sessions]);
+  const [selectedSession, setSelectedSession] = useState<NightSession | null>(null);
   const weekly = useMemo(() => sessions.slice(0, 7).reverse(), [sessions]);
+  const monthly = useMemo(() => sessions.slice(0, 30).reverse(), [sessions]);
 
   const weeklyAvgWindow = useMemo(() => {
     if (!weekly.length) {
@@ -147,97 +137,26 @@ export default function Sleep() {
     { name: 'Awake', value: active.awakeMinutes, fill: STAGE_COLORS.Awake },
   ] : [];
 
-  const metrics = active ? {
-    deepPct: pct(active.deepMinutes, active.sleepMinutes),
-    corePct: pct(active.coreMinutes, active.sleepMinutes),
-    remPct: pct(active.remMinutes, active.sleepMinutes),
-  } : { deepPct: 0, corePct: 0, remPct: 0 };
+  const weeklyMetrics = useMemo(() => {
+    if (!weekly.length) return { deepPct: 0, corePct: 0, remPct: 0, continuity: 0, wakeCount: 0 };
+    const avg = (fn: (s: NightSession) => number) => Math.round(weekly.reduce((acc, s) => acc + fn(s), 0) / weekly.length);
+    return {
+      deepPct: avg(s => pct(s.deepMinutes, s.sleepMinutes)),
+      corePct: avg(s => pct(s.coreMinutes, s.sleepMinutes)),
+      remPct: avg(s => pct(s.remMinutes, s.sleepMinutes)),
+      continuity: avg(s => s.deepContinuity),
+      wakeCount: Math.round((weekly.reduce((acc, s) => acc + s.wakeCount, 0) / weekly.length) * 10) / 10,
+    };
+  }, [weekly]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Sleep</h1>
           <p className="text-muted-foreground">Track your sleep quality and patterns</p>
         </div>
-      </div>
-
-      {/* Basic Stats Section - Always visible at top */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock size={18} className="text-muted-foreground" />
-            <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg Sleep (7d)</p>
-          </div>
-          <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-            {formatDuration(avgSleepMinutes)}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">{nightsCount} nights</p>
-        </div>
-        
-        {active && (
-          <>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity size={18} className="text-muted-foreground" />
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Last Night</p>
-              </div>
-              <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                {formatDuration(active.sleepMinutes)}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Moon size={18} className="text-muted-foreground" />
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Wake Count</p>
-              </div>
-              <p className={cn("text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
-                {active.wakeCount}
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {active.wakeCount <= 1 ? 'Good' : 'Needs improvement'}
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock size={18} className="text-muted-foreground" />
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg Sleep Window (7d)</p>
-              </div>
-              {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake ? (
-                <>
-                  <p className="text-sm text-muted-foreground">
-                    Bed: <span className="font-semibold text-foreground">
-                      {format(weeklyAvgWindow.avgBedtime, 'h:mm a')}
-                    </span>
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Wake: <span className="font-semibold text-foreground">
-                      {format(weeklyAvgWindow.avgWake, 'h:mm a')}
-                    </span>
-                  </p>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">Not enough data yet</p>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Current day label */}
-      <div className="rounded-xl border border-border bg-card p-4 flex items-center justify-between">
-        <p className="text-sm font-medium text-foreground">
-          Today · {format(selectedDate, 'EEE, MMM d')}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Showing last 6 months of sleep
-        </p>
       </div>
 
       {isLoading ? (
@@ -255,37 +174,61 @@ export default function Sleep() {
         sleepOrder.filter(visible).map((sectionId) => {
           if (sectionId === 'score') {
             return (
-              <div key="score" className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-lg font-semibold mb-4">Last Night Summary</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">Duration</p>
-                    <p className={cn("text-4xl font-black text-foreground leading-none mt-2", privacyMode && "blur-sm")}>
-                      {formatDuration(active.sleepMinutes)}
-                    </p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-3">
-                      Efficiency: {pct(active.sleepMinutes, active.totalMinutes)}% · Wakes: {active.wakeCount}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      Avg sleep (last 7): {formatDuration(Math.round(weekly.reduce((s, n) => s + n.sleepMinutes, 0) / Math.max(weekly.length, 1)))}
-                    </p>
+              <div key="score" className="rounded-xl border border-border bg-card p-4 md:p-6">
+                <div className="flex flex-col md:flex-row gap-8 items-center justify-between">
+                  <div className="flex-1 space-y-6">
+                    <div>
+                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                        <Moon size={20} className="text-primary" />
+                        <h2 className="text-sm font-semibold uppercase tracking-wider">
+                          Last Night
+                        </h2>
+                      </div>
+                      <p className={cn("text-6xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
+                        {formatDuration(active.sleepMinutes)}
+                      </p>
+                      <p className="text-lg text-muted-foreground mt-3 font-medium">
+                        {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
+                      </p>
+                    </div>
+                    
+                    <div className="flex items-center gap-6 pt-4 border-t border-border/50">
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Efficiency</p>
+                        <p className="text-xl font-bold">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Wakes</p>
+                        <p className="text-xl font-bold">{active.wakeCount}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-1">Deep</p>
+                        <p className="text-xl font-bold">{formatDuration(active.deepMinutes)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="h-48 flex items-center justify-center">
+                  
+                  <div className="w-full md:w-64 h-64 flex items-center justify-center relative">
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                      <p className="text-4xl font-bold">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Score</p>
+                    </div>
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie 
                           data={donutData} 
                           dataKey="value" 
                           nameKey="name" 
-                          innerRadius={50} 
-                          outerRadius={80} 
+                          innerRadius={80} 
+                          outerRadius={100} 
                           strokeWidth={0}
-                          label={({ name, percent }) => `${name} ${(((percent ?? 0) * 100)).toFixed(0)}%`}
+                          cornerRadius={4}
+                          paddingAngle={2}
                         />
-                        <Tooltip formatter={(v: number | undefined) => `${v ?? 0} min`} />
+                        <Tooltip 
+                          formatter={(v: number | undefined) => `${v ?? 0} min`} 
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                        />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -295,85 +238,118 @@ export default function Sleep() {
           }
 
           if (sectionId === 'weekly') {
-            const bars = weekly.map((s) => ({ 
-              day: format(parseISO(s.date), 'EEE'), 
+            const bars = monthly.map((s) => ({ 
+              day: format(parseISO(s.date), 'MMM d'), 
               sleep: Math.round(s.sleepMinutes / 60 * 10) / 10 
             }));
-            const axisColor = '#ffffff';
-            const gridColor = 'hsl(var(--border))';
-
+            const thirtyDayAvg = monthly.length > 0 ? Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length) / 60 * 10) / 10 : 0;
+            
             return (
-              <div key="weekly" className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-lg font-semibold mb-4">Weekly Overview</h2>
-                <div className="h-48 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
+              <div key="weekly" className="rounded-xl border border-border bg-card p-4 md:p-6">
+                <div className="flex items-start justify-between mb-8">
+                  <div>
+                    <h2 className="text-lg font-semibold">30-Day Overview</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Your sleep trends over the last 30 days</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">30d Average</p>
+                    <p className={cn("text-2xl font-bold", privacyMode && "blur-sm")}>
+                      {monthly.length > 0 ? formatDuration(Math.round(thirtyDayAvg * 60)) : '0h 0m'}
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="h-56 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
                   <style>{`
+                    .recharts-bar-rectangle { transition: fill 0.2s, opacity 0.2s; }
                     .recharts-bar-rectangle:hover {
                       fill: hsl(var(--primary)) !important;
                       opacity: 1 !important;
                     }
                   `}</style>
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={bars}>
-                      <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+                    <BarChart data={bars} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
                       <XAxis
                         dataKey="day"
-                        tick={{ fontSize: 12, fill: axisColor }}
-                        stroke={axisColor}
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        stroke="hsl(var(--border))"
+                        tickLine={false}
+                        axisLine={false}
+                        dy={10}
                       />
                       <YAxis
-                        tick={{ fontSize: 12, fill: axisColor }}
-                        stroke={axisColor}
+                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                        stroke="hsl(var(--border))"
+                        tickLine={false}
+                        axisLine={false}
+                        dx={-10}
                       />
                       <Tooltip 
-                        cursor={false}
-                        formatter={(v: number | undefined) => `${v ?? 0} h`}
+                        cursor={{ fill: 'hsl(var(--secondary))', opacity: 0.5, radius: 8 }}
+                        formatter={(v: number | undefined) => [`${v ?? 0} h`, 'Sleep']}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
-                          borderRadius: '8px',
+                          borderRadius: '12px',
                           color: 'hsl(var(--foreground))',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
                         }}
+                      />
+                      <ReferenceLine 
+                        y={thirtyDayAvg} 
+                        stroke="hsl(var(--muted-foreground))" 
+                        strokeDasharray="3 3" 
+                        opacity={0.5} 
                       />
                       <Bar
                         dataKey="sleep"
-                        radius={[8, 8, 0, 0]}
-                        className="fill-primary"
-                        onMouseEnter={() => {}}
-                        onMouseLeave={() => {}}
+                        radius={[6, 6, 6, 6]}
+                        className="fill-primary/80"
+                        barSize={32}
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+                
+                {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake && (
+                  <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Typical Window</span>
+                    <span className="font-medium">
+                      {format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – {format(weeklyAvgWindow.avgWake, 'h:mm a')}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           }
 
           if (sectionId === 'timeline') {
             return (
-              <div key="timeline" className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-lg font-semibold mb-4">Sleep Stages Timeline</h2>
-                <div className="h-16 rounded-lg overflow-hidden flex bg-secondary/50">
+              <div key="timeline" className="rounded-2xl border border-border/50 bg-card p-6">
+                <h2 className="text-lg font-semibold mb-6">Sleep Stages Timeline</h2>
+                <div className="h-20 rounded-xl overflow-hidden flex bg-secondary/50 ring-1 ring-inset ring-border/50">
                   {active.segments.map((seg, idx) => (
                     <div
                       key={`${seg.started_at}-${idx}`}
                       style={{
-                        width: `${Math.max(1, (seg.duration_minutes / Math.max(active.totalMinutes, 1)) * 100)}%`,
+                        width: `${Math.max(0.5, (seg.duration_minutes / Math.max(active.totalMinutes, 1)) * 100)}%`,
                         background: STAGE_COLORS[seg.stage] ?? '#a1a1aa',
                       }}
-                      title={`${seg.stage} ${seg.duration_minutes}m`}
+                      title={`${seg.stage}: ${format(new Date(seg.started_at), 'h:mm a')} - ${formatDuration(seg.duration_minutes)}`}
                       className="transition-opacity hover:opacity-80"
                     />
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mt-3">
+                <div className="flex items-center justify-between text-sm text-muted-foreground mt-4 font-medium">
                   <span>{format(active.bedtime, 'h:mm a')}</span>
                   <span>{format(active.waketime, 'h:mm a')}</span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border/50">
                   {Object.entries(STAGE_COLORS).map(([name, color]) => (
-                    <div key={name} className="flex items-center gap-2 text-sm">
-                      <span className="w-3 h-3 rounded-full" style={{ background: color }} />
-                      <span className="text-muted-foreground">{name}</span>
+                    <div key={name} className="flex items-center gap-2 text-sm font-medium">
+                      <span className="w-3 h-3 rounded-full shadow-sm" style={{ background: color }} />
+                      <span className="text-foreground">{name}</span>
                     </div>
                   ))}
                 </div>
@@ -384,49 +360,39 @@ export default function Sleep() {
           if (sectionId === 'metrics') {
             return (
               <div key="metrics" className="space-y-3">
-                <h2 className="text-lg font-semibold mb-2">Sleep Metrics</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <MetricCard 
-                    label="Night sleep" 
-                    value={formatDuration(active.sleepMinutes)} 
-                    reference="6-10 h" 
-                    status="Normal" 
-                    tone="normal" 
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-lg font-semibold">Sleep Metrics</h2>
+                  <p className="text-xs text-muted-foreground">7-Day Average</p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <DataCard 
+                    title="Night sleep" 
+                    value={formatDuration(avgSleepMinutes)}
                   />
-                  <MetricCard 
-                    label="Deep sleep" 
-                    value={`${metrics.deepPct}%`} 
-                    reference="20-60%" 
-                    status={metrics.deepPct >= 20 && metrics.deepPct <= 60 ? "Normal" : "Check"} 
-                    tone={metrics.deepPct >= 20 && metrics.deepPct <= 60 ? "normal" : "within"} 
+                  <DataCard 
+                    title="Deep sleep" 
+                    value={weeklyMetrics.deepPct}
+                    unit="%"
                   />
-                  <MetricCard 
-                    label="Light/Core sleep" 
-                    value={`${metrics.corePct}%`} 
-                    reference="<55%" 
-                    status={metrics.corePct < 55 ? "Normal" : "High"} 
-                    tone={metrics.corePct < 55 ? "normal" : "within"} 
+                  <DataCard 
+                    title="Light/Core sleep" 
+                    value={weeklyMetrics.corePct}
+                    unit="%"
                   />
-                  <MetricCard 
-                    label="REM sleep" 
-                    value={`${metrics.remPct}%`} 
-                    reference="10-30%" 
-                    status={metrics.remPct >= 10 && metrics.remPct <= 30 ? "Normal" : "Check"} 
-                    tone={metrics.remPct >= 10 && metrics.remPct <= 30 ? "normal" : "within"} 
+                  <DataCard 
+                    title="REM sleep" 
+                    value={weeklyMetrics.remPct}
+                    unit="%"
                   />
-                  <MetricCard 
-                    label="Deep continuity" 
-                    value={`${active.deepContinuity} points`} 
-                    reference="70-100 points" 
-                    status={active.deepContinuity >= 70 ? "Normal" : "Low"} 
-                    tone={active.deepContinuity >= 70 ? "normal" : "within"} 
+                  <DataCard 
+                    title="Deep continuity" 
+                    value={weeklyMetrics.continuity}
+                    unit="pts"
                   />
-                  <MetricCard 
-                    label="Times woke up" 
-                    value={`${active.wakeCount} times`} 
-                    reference="0-1 time" 
-                    status={active.wakeCount <= 1 ? 'Normal' : 'High'} 
-                    tone={active.wakeCount <= 1 ? 'normal' : 'within'} 
+                  <DataCard 
+                    title="Times woke up" 
+                    value={weeklyMetrics.wakeCount}
+                    unit="x"
                   />
                 </div>
               </div>
@@ -435,16 +401,38 @@ export default function Sleep() {
 
           if (sectionId === 'sessions') {
             return (
-              <div key="sessions" className="rounded-xl border border-border bg-card p-6">
-                <h2 className="text-lg font-semibold mb-4">Recent Sessions</h2>
-                <div className="space-y-2">
-                  {sessions.slice(0, 7).map((s) => (
+              <div key="sessions" className="rounded-xl border border-border bg-card p-4 md:p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Recent Sessions</h2>
+                  <div className="flex bg-secondary/50 rounded-lg p-1">
+                    <button
+                      onClick={() => setSessionLimit(7)}
+                      className={cn(
+                        "text-xs px-3 py-1.5 rounded-md transition-colors",
+                        sessionLimit === 7 ? "bg-card shadow-sm text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      7d
+                    </button>
+                    <button
+                      onClick={() => setSessionLimit(30)}
+                      className={cn(
+                        "text-xs px-3 py-1.5 rounded-md transition-colors",
+                        sessionLimit === 30 ? "bg-card shadow-sm text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      30d
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 -mr-2">
+                  {sessions.slice(0, sessionLimit).map((s) => (
                     <button
                       key={s.key}
-                      onClick={() => setSelectedDate(parseISO(s.date))}
+                      onClick={() => setSelectedSession(s)}
                       className={cn(
-                        "w-full text-left rounded-lg border border-border bg-card p-4 hover:bg-secondary/50 transition-colors",
-                        s.date === active.date && "ring-2 ring-primary"
+                        "w-full text-left rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:bg-secondary/80",
+                        s.key === active?.key && "ring-2 ring-inset ring-primary bg-primary/5 border-transparent"
                       )}
                     >
                       <div className="flex items-center justify-between">
@@ -469,6 +457,105 @@ export default function Sleep() {
           return null;
         })
       )}
+      {/* Selected Session Details Sheet */}
+      <DetailsSheet 
+        isOpen={!!selectedSession} 
+        onClose={() => setSelectedSession(null)} 
+        onConfirm={() => setSelectedSession(null)} 
+        title={selectedSession ? format(selectedSession.waketime, 'EEEE, MMM d') : 'Session Details'}
+      >
+        {selectedSession && (
+          <div className="space-y-6 pt-4">
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+              <div className="flex flex-col gap-6">
+                <div>
+                  <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                    <Moon size={20} className="text-primary" />
+                    <h2 className="text-sm font-semibold uppercase tracking-wider">Duration</h2>
+                  </div>
+                  <p className={cn("text-5xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
+                    {formatDuration(selectedSession.sleepMinutes)}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-3 font-medium">
+                    {format(selectedSession.bedtime, 'h:mm a')} – {format(selectedSession.waketime, 'h:mm a')}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-4 pt-4 border-t border-border/50">
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Efficiency</p>
+                    <p className="text-lg font-bold">{pct(selectedSession.sleepMinutes, selectedSession.totalMinutes)}%</p>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Wakes</p>
+                    <p className="text-lg font-bold">{selectedSession.wakeCount}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+              <h2 className="text-lg font-semibold mb-6">Sleep Stages Timeline</h2>
+              <div className="h-20 rounded-xl overflow-hidden flex bg-secondary/50 ring-1 ring-inset ring-border/50">
+                {selectedSession.segments.map((seg, idx) => (
+                  <div
+                    key={`${seg.started_at}-${idx}`}
+                    style={{
+                      width: `${Math.max(0.5, (seg.duration_minutes / Math.max(selectedSession.totalMinutes, 1)) * 100)}%`,
+                      background: STAGE_COLORS[seg.stage] ?? '#a1a1aa',
+                    }}
+                    title={`${seg.stage}: ${format(new Date(seg.started_at), 'h:mm a')} - ${formatDuration(seg.duration_minutes)}`}
+                    className="transition-opacity hover:opacity-80"
+                  />
+                ))}
+              </div>
+              <div className="flex items-center justify-between text-sm text-muted-foreground mt-4 font-medium">
+                <span>{format(selectedSession.bedtime, 'h:mm a')}</span>
+                <span>{format(selectedSession.waketime, 'h:mm a')}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border/50">
+                {Object.entries(STAGE_COLORS).map(([name, color]) => (
+                  <div key={name} className="flex items-center gap-2 text-sm font-medium">
+                    <span className="w-3 h-3 rounded-full shadow-sm" style={{ background: color }} />
+                    <span className="text-foreground">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold mb-2">Session Metrics</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <DataCard 
+                  title="Deep sleep" 
+                  value={pct(selectedSession.deepMinutes, selectedSession.sleepMinutes)}
+                  unit="%"
+                />
+                <DataCard 
+                  title="Light/Core sleep" 
+                  value={pct(selectedSession.coreMinutes, selectedSession.sleepMinutes)}
+                  unit="%"
+                />
+                <DataCard 
+                  title="REM sleep" 
+                  value={pct(selectedSession.remMinutes, selectedSession.sleepMinutes)}
+                  unit="%"
+                />
+                <DataCard 
+                  title="Deep continuity" 
+                  value={selectedSession.deepContinuity}
+                  unit="pts"
+                />
+                <DataCard 
+                  title="Times woke up" 
+                  value={selectedSession.wakeCount}
+                  unit="x"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+      </DetailsSheet>
     </div>
   );
 }

@@ -67,7 +67,7 @@ function parseDueForSort(t: Task): number {
 type DueKind = 'prayer' | 'task' | 'habit';
 
 const ACCENT_DOT: Record<DueKind, string> = {
-  prayer: 'bg-sky-500/70',
+  prayer: 'bg-slate-500/70',
   task: 'bg-violet-500/70',
   habit: 'bg-emerald-500/70',
 };
@@ -101,7 +101,7 @@ function DueTodayRow({
       className={cn(
         'group flex items-stretch gap-3 rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
         'transition-all duration-200 hover:border-border hover:shadow-md',
-        done && 'opacity-75 border-primary/20 bg-primary/5',
+        done && (kind === 'prayer' ? 'opacity-75 border-slate-500/20 bg-slate-500/5' : 'opacity-75 border-primary/20 bg-primary/5'),
       )}
     >
       {showToggle && onToggle ? (
@@ -119,8 +119,12 @@ function DueTodayRow({
             'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
             done
-              ? 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
-              : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95',
+              ? kind === 'prayer'
+                ? 'border-slate-500 bg-slate-500 text-slate-50 shadow-inner shadow-slate-500/20'
+                : 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
+              : kind === 'prayer'
+                ? 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-slate-500/50 hover:bg-accent/40 active:scale-95'
+                : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95',
             busy && 'pointer-events-none opacity-50',
           )}
         >
@@ -150,7 +154,7 @@ function DueTodayRow({
           <span
             className={cn(
               'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-              !color && kind === 'prayer' && 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+              !color && kind === 'prayer' && 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
               !color && kind === 'task' && 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
               !color && kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
             )}
@@ -159,7 +163,7 @@ function DueTodayRow({
             {kindLabel}
           </span>
           {done && (
-            <span className="text-[10px] font-medium uppercase tracking-wide text-primary">Done</span>
+            <span className={cn("text-[10px] font-medium uppercase tracking-wide", kind === 'prayer' ? "text-slate-500 dark:text-slate-400" : "text-primary")}>Done</span>
           )}
         </div>
         <p
@@ -358,8 +362,75 @@ export function DashboardQuickView() {
     habitsDueToday.length > 0 ||
     !!lastPrayerSlot;
 
-  const hasTodaySubsection =
-    !!lastPrayerSlot || tasksDueTodayOnly.length > 0 || habitsDueToday.length > 0;
+  const timelineItems: Array<{ timeValue: number; element: React.ReactNode }> = [];
+
+  overdueIncomplete.forEach((t) => {
+    timelineItems.push({
+      timeValue: -1,
+      element: (
+        <li key={`task-${t.id}`}>
+          <DueTodayRow
+            kind="task"
+            title={t.title}
+            subtitle={
+              t.due_date
+                ? `Overdue · ${format(parseISO(t.due_date.includes('T') ? t.due_date : `${t.due_date}T12:00:00`), 'MMM d')}${t.due_time && t.due_time.length >= 5 ? ` · ${t.due_time.slice(0, 5)}` : ''}`
+                : 'Overdue'
+            }
+            done={false}
+            busy={toggleTask.isPending}
+            showToggle
+            label={`Complete overdue task ${t.title}`}
+            onToggle={() => toggleTask.mutate(t.id)}
+          />
+        </li>
+      ),
+    });
+  });
+
+  tasksDueTodayOnly.forEach((t) => {
+    timelineItems.push({
+      timeValue: t.due_time ? (timeStringToMinutes(t.due_time) ?? 1440) : 1440,
+      element: (
+        <li key={`task-${t.id}`}>
+          <DueTodayRow
+            kind="task"
+            title={t.title}
+            subtitle={t.due_time && t.due_time.length >= 5 ? `Today · ${t.due_time.slice(0, 5)}` : 'Today'}
+            done={false}
+            busy={toggleTask.isPending}
+            showToggle
+            label={`Complete task ${t.title}`}
+            onToggle={() => toggleTask.mutate(t.id)}
+          />
+        </li>
+      ),
+    });
+  });
+
+  habitsDueToday.forEach((h) => {
+    const done = isHabitDoneToday(h.id);
+    timelineItems.push({
+      timeValue: h.time ? (timeStringToMinutes(h.time) ?? 1440) : 1440,
+      element: (
+        <li key={`habit-${h.id}`}>
+          <DueTodayRow
+            kind="habit"
+            title={h.title}
+            subtitle={h.time && h.time.length >= 5 ? `Today · ${h.time.slice(0, 5)}` : 'Today · any time'}
+            done={done}
+            busy={logHabit.isPending}
+            showToggle
+            label={`Log habit ${h.title}`}
+            color={h.color}
+            onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
+          />
+        </li>
+      ),
+    });
+  });
+
+  timelineItems.sort((a, b) => a.timeValue - b.timeValue);
 
   return (
     <div className="space-y-5 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -372,9 +443,6 @@ export function DashboardQuickView() {
           <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 ring-1 ring-primary/10">
             <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Due today</p>
             <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1 text-primary">{dueTodayBundleCount}</p>
-            <p className="text-[11px] text-muted-foreground mt-1 leading-snug">
-              Tasks + habits left
-            </p>
           </div>
           <Link to="/habits" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
             <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1 truncate">
@@ -413,7 +481,6 @@ export function DashboardQuickView() {
                 </p>
                 <p className={cn('text-lg sm:text-xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
                   {formatDurationMinutes(screenChart.accounted)}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">sleep + screen</span>
                 </p>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-500" /> Sleep</span>
@@ -491,110 +558,33 @@ export function DashboardQuickView() {
           </h2>
         </div>
 
-        <div className="p-4 sm:p-5 space-y-6">
+        <div className="p-4 sm:p-5">
           {!hasDueTodayContent ? (
             <p className="text-sm text-muted-foreground text-center py-6">Nothing due today. Enjoy the calm.</p>
           ) : (
-            <>
-              {overdueIncomplete.length > 0 && (
-                <div className="space-y-2">
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-destructive/90">Overdue</h3>
-                  <ul className="space-y-2">
-                    {overdueIncomplete.map((t) => (
-                      <li key={t.id}>
-                        <DueTodayRow
-                          kind="task"
-                          title={t.title}
-                          subtitle={
-                            t.due_date
-                              ? `Was due ${format(parseISO(t.due_date.includes('T') ? t.due_date : `${t.due_date}T12:00:00`), 'MMM d')}${t.due_time && t.due_time.length >= 5 ? ` · ${t.due_time.slice(0, 5)}` : ''}`
-                              : undefined
-                          }
-                          done={false}
-                          busy={toggleTask.isPending}
-                          showToggle
-                          label={`Complete overdue task ${t.title}`}
-                          onToggle={() => toggleTask.mutate(t.id)}
-                        />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {hasTodaySubsection && (
-                <div className="space-y-2">
-                  <ul className="space-y-2">
-                    {lastPrayerSlot && (
-                      <li>
-                        <DueTodayRow
-                          kind="prayer"
-                          title={`${lastPrayerSlot.name} prayer`}
-                          subtitle={
-                            lastPrayerTrackerItem?.prayedAt
-                              ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
-                              : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
-                          }
-                          done={lastPrayerDone}
-                          busy={prayerLoading}
-                          showToggle={lastPrayerCanTick}
-                          label={`Mark ${lastPrayerSlot.name} as prayed`}
-                          onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
-                        />
-                      </li>
-                    )}
-
-                    {tasksDueTodayOnly.map((t) => (
-                      <li key={t.id}>
-                        <DueTodayRow
-                          kind="task"
-                          title={t.title}
-                          subtitle={
-                            t.due_time && t.due_time.length >= 5
-                              ? `Due today · ${t.due_time.slice(0, 5)}`
-                              : 'Due today'
-                          }
-                          done={false}
-                          busy={toggleTask.isPending}
-                          showToggle
-                          label={`Complete task ${t.title}`}
-                          onToggle={() => toggleTask.mutate(t.id)}
-                        />
-                      </li>
-                    ))}
-
-                    {habitsDueToday.map((h) => {
-                      const done = isHabitDoneToday(h.id);
-                      return (
-                        <li key={h.id}>
-                          <DueTodayRow
-                            kind="habit"
-                            title={h.title}
-                            subtitle={
-                              h.time && h.time.length >= 5
-                                ? `Today · ${h.time.slice(0, 5)}`
-                                : 'Today · any time'
-                            }
-                            done={done}
-                            busy={logHabit.isPending}
-                            showToggle
-                            label={`Log habit ${h.title}`}
-                            color={h.color}
-                            onToggle={() =>
-                              logHabit.mutate({
-                                habitId: h.id,
-                                date: todayStr,
-                                completed: !done,
-                              })
-                            }
-                          />
-                        </li>
-                      );
-                    })}
-                  </ul>
-                </div>
-              )}
-            </>
+            <div className="space-y-2">
+              <ul className="space-y-2">
+                {lastPrayerSlot && (
+                  <li>
+                    <DueTodayRow
+                      kind="prayer"
+                      title={`${lastPrayerSlot.name} prayer`}
+                      subtitle={
+                        lastPrayerTrackerItem?.prayedAt
+                          ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
+                          : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
+                      }
+                      done={lastPrayerDone}
+                      busy={prayerLoading}
+                      showToggle={lastPrayerCanTick}
+                      label={`Mark ${lastPrayerSlot.name} as prayed`}
+                      onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
+                    />
+                  </li>
+                )}
+                {timelineItems.map((item) => item.element)}
+              </ul>
+            </div>
           )}
         </div>
       </section>

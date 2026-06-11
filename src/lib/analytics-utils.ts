@@ -18,6 +18,7 @@ export function formatSeconds(sec: number): string {
   const s = Math.max(0, Math.floor(sec || 0));
   const h = Math.floor(s / 3600);
   const m = Math.floor((s % 3600) / 60);
+  if (h >= 10) return `${Math.round(s / 3600)}h`;
   if (h <= 0) return `${m}m`;
   return `${h}h ${m}m`;
 }
@@ -26,6 +27,7 @@ export function formatMinutes(min: number): string {
   const m = Math.max(0, Math.floor(min || 0));
   const h = Math.floor(m / 60);
   const mm = m % 60;
+  if (h >= 10) return `${Math.round(m / 60)}h`;
   if (h <= 0) return `${mm}m`;
   return `${h}h ${mm}m`;
 }

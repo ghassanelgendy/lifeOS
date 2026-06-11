@@ -150,7 +150,7 @@ export function useDashboardUpcomingItems(options?: {
           id: 'prayer-next',
           title: `${nextSlot.name} prayer`,
           start_time: nextSlot.time.toISOString(),
-          color: '#0ea5e9',
+          color: '#64748b',
           kind: 'prayer',
         });
       }
