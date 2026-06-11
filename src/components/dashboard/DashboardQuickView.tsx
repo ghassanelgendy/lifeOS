@@ -430,13 +430,14 @@ export function DashboardQuickView() {
     !!lastPrayerSlot ||
     upcomingItems.length > 0;
 
-  const timelineItems: Array<{ timeValue: number; element: React.ReactNode }> = [];
+  const timelineItems: Array<{ timeValue: number; done: boolean; element: React.ReactNode }> = [];
   const addedKeys = new Set<string>();
 
   overdueIncomplete.forEach((t) => {
     addedKeys.add(`task-${t.id}`);
     timelineItems.push({
       timeValue: -1,
+      done: false,
       element: (
         <li key={`task-${t.id}`}>
           <DueTodayRow
@@ -462,6 +463,7 @@ export function DashboardQuickView() {
     addedKeys.add(`task-${t.id}`);
     timelineItems.push({
       timeValue: t.due_time ? (timeStringToMinutes(t.due_time) ?? 1440) : 1440,
+      done: false,
       element: (
         <li key={`task-${t.id}`}>
           <DueTodayRow
@@ -498,6 +500,7 @@ export function DashboardQuickView() {
 
     timelineItems.push({
       timeValue: h.time ? (timeStringToMinutes(h.time) ?? 1440) : (habitAverages[h.id] ?? 1440),
+      done,
       element: (
         <li key={`habit-${h.id}`}>
           <DueTodayRow
@@ -535,6 +538,7 @@ export function DashboardQuickView() {
 
     timelineItems.push({
       timeValue,
+      done: false,
       element: (
         <li key={item.id}>
           <DueTodayRow
@@ -559,7 +563,11 @@ export function DashboardQuickView() {
     });
   });
 
-  timelineItems.sort((a, b) => a.timeValue - b.timeValue);
+  timelineItems.sort((a, b) => {
+    // Completed items sink to the bottom
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    return a.timeValue - b.timeValue;
+  });
 
   const habitAdherencePct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 0;
 
@@ -618,7 +626,7 @@ export function DashboardQuickView() {
                   <Sparkles className="size-3.5 text-primary shrink-0" />
                   Day progress
                 </p>
-                <div className="flex items-baseline gap-2 mt-1 flex-wrap">
+                <div className="flex items-baseline justify-center gap-2 mt-1 flex-wrap">
                   <p className={cn('text-lg sm:text-xl font-bold tabular-nums tracking-tight text-muted-foreground', privacyMode && 'blur-sm')}>
                     {Math.round(screenChart.accounted / 60)}h
                   </p>
