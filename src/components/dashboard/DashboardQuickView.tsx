@@ -131,10 +131,10 @@ function DueTodayRow({
           {done ? (
             <Check className="h-[14px] w-[14px]" strokeWidth={2.5} aria-hidden />
           ) : (
-            <span 
-              className={cn('size-2.5 rounded-full', !color && ACCENT_DOT[kind])} 
+            <span
+              className={cn('size-2.5 rounded-full', !color && ACCENT_DOT[kind])}
               style={color ? { backgroundColor: color } : undefined}
-              aria-hidden 
+              aria-hidden
             />
           )}
         </button>
@@ -500,6 +500,13 @@ export function DashboardQuickView() {
                     {formatDurationMinutes(screenChart.accounted)}
                   </p>
                   <p className="text-sm font-medium text-muted-foreground">tracked</p>
+
+                  <span className="text-muted-foreground/30 px-1 font-light">|</span>
+
+                  <p className={cn('text-lg sm:text-xl font-bold tabular-nums tracking-tight text-muted-foreground', privacyMode && 'blur-sm')}>
+                    {formatDurationMinutes(Math.max(0, screenChart.elapsed - screenChart.accounted))}
+                  </p>
+                  <p className="text-xs font-medium text-muted-foreground/70">real life</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-500" /> Sleep</span>
@@ -520,7 +527,7 @@ export function DashboardQuickView() {
                 <div className={cn('bg-violet-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
                 <div className={cn('bg-amber-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
               </div>
-              
+
               {progressMarkers.map((marker) => (
                 <div
                   key={marker.id}
