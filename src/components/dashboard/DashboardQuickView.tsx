@@ -618,16 +618,23 @@ export function DashboardQuickView() {
                   <Sparkles className="size-3.5 text-primary shrink-0" />
                   Day progress
                 </p>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <p className={cn('text-xl sm:text-2xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
-                    {formatDurationMinutes(screenChart.accounted)}
+                <div className="flex items-baseline gap-2 mt-1 flex-wrap">
+                  <p className={cn('text-lg sm:text-xl font-bold tabular-nums tracking-tight text-muted-foreground', privacyMode && 'blur-sm')}>
+                    {Math.round(screenChart.accounted / 60)}h
                   </p>
-                  <p className="text-sm font-medium text-muted-foreground">tracked</p>
+                  <p className="text-xs font-medium text-muted-foreground/70">tracked</p>
 
                   <span className="text-muted-foreground/30 px-1 font-light">|</span>
 
                   <p className={cn('text-lg sm:text-xl font-bold tabular-nums tracking-tight text-muted-foreground', privacyMode && 'blur-sm')}>
-                    {formatDurationMinutes(Math.max(0, screenChart.elapsed - screenChart.accounted))}
+                    {Math.round(Math.max(0, screenChart.elapsed - screenChart.sleep) / 60)}h
+                  </p>
+                  <p className="text-xs font-medium text-muted-foreground/70">awake</p>
+
+                  <span className="text-muted-foreground/30 px-1 font-light">|</span>
+
+                  <p className={cn('text-lg sm:text-xl font-bold tabular-nums tracking-tight text-muted-foreground', privacyMode && 'blur-sm')}>
+                    {Math.round(Math.max(0, screenChart.elapsed - screenChart.accounted) / 60)}h
                   </p>
                   <p className="text-xs font-medium text-muted-foreground/70">real life</p>
                 </div>

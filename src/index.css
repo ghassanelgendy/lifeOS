@@ -277,6 +277,16 @@ html.light[data-accent="amber"] {
 @layer base {
   * {
     border-color: var(--color-border);
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Keep text editable in inputs */
+  input,
+  textarea,
+  [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   body {
