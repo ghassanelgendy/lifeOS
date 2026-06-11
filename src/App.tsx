@@ -122,6 +122,20 @@ function AppInner() {
         swClaimedRef.current = true;
         return;
       }
+
+      // Guard against infinite reload loops (e.g. from browser bugs or conflicting scripts)
+      try {
+        const lastReload = sessionStorage.getItem('pwa_reload_time');
+        const now = Date.now();
+        if (lastReload && now - parseInt(lastReload, 10) < 10000) {
+          console.warn('[PWA] Prevented infinite reload loop.');
+          return;
+        }
+        sessionStorage.setItem('pwa_reload_time', now.toString());
+      } catch (e) {
+        // Fallback if sessionStorage is disabled or blocked
+      }
+
       window.location.reload();
     };
     navigator.serviceWorker.addEventListener('controllerchange', reloadWhenNewController);
