@@ -6,7 +6,7 @@ import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
-import { useLastNightSleepMinutes, useSleepMinutesForDay } from '../../hooks/useSleep';
+import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics } from '../../hooks/useSleep';
 import {
   useDashboardUpcomingItems,
   habitMatchesDay,
@@ -190,6 +190,7 @@ export function DashboardQuickView() {
   const todayScreentime = useTodayScreentime();
   const lastNightSleep = useLastNightSleepMinutes();
   const todaySleepMinutes = useSleepMinutesForDay(today);
+  const { avgBedtimeMinutes } = useSleepMetrics(7);
   const upcomingItems = useDashboardUpcomingItems({
     lookAheadDays: 7,
     includePrayer: false,
@@ -319,26 +320,31 @@ export function DashboardQuickView() {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
-    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task'; color?: string }[] = [];
+    const formatMinutesAsTime = (minutes: number) => {
+      const d = new Date();
+      d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+      return format(d, 'h:mm a');
+    };
+    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task'; color?: string; name: string; timeStr: string }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
       if (!log) continue;
       const minutes = timeStringToMinutes(habit.time) ?? isoToDayMinutes(log.created_at) ?? elapsed;
-      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit', color: habit.color });
+      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit', color: habit.color, name: habit.title, timeStr: formatMinutesAsTime(minutes) });
     }
 
     for (const task of completedTasks) {
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
       const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
-      markers.push({ id: `task-${task.id}`, left: pct(minutes), kind: 'task' });
+      markers.push({ id: `task-${task.id}`, left: pct(minutes), kind: 'task', name: task.title, timeStr: formatMinutesAsTime(minutes) });
     }
 
     for (const prayer of prayerTracker) {
       if (!isPrayerStatusComplete(prayer.status)) continue;
       const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
       const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
-      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer' });
+      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer', name: `${prayer.prayerName} prayer`, timeStr: formatMinutesAsTime(minutes) });
     }
 
     return markers.slice(0, 32);
@@ -432,57 +438,70 @@ export function DashboardQuickView() {
 
   timelineItems.sort((a, b) => a.timeValue - b.timeValue);
 
+  const habitAdherencePct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 0;
+
+  let sleepTimeStr = '';
+  if (avgBedtimeMinutes !== null && avgBedtimeMinutes !== undefined) {
+    const elapsed = Math.min(24 * 60, Math.max(0, today.getHours() * 60 + today.getMinutes()));
+    let remaining = avgBedtimeMinutes - elapsed;
+    if (remaining < 0) remaining += 24 * 60;
+    sleepTimeStr = ` · ${formatDurationMinutes(remaining)} until sleep`;
+  }
+
   return (
-    <div className="space-y-5 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <section aria-labelledby="qv-today-heading">
+    <div className="space-y-5 sm:space-y-6">
+      <section aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
         <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Today
         </h2>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2 sm:gap-3">
-
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 ring-1 ring-primary/10">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider truncate">Due today</p>
-            <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1 text-primary">{dueTodayBundleCount}</p>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
+          <div className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md transition-all">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider truncate">Due today</p>
+            <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1 text-primary">{dueTodayBundleCount}</p>
           </div>
-          <Link to="/habits" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1 truncate">
+          <Link to="/habits" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
               <Flame className="size-3.5 text-orange-500 shrink-0" />
               Habits
             </p>
-            <p className="text-xl sm:text-2xl font-bold tabular-nums mt-1">
+            <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1">
               {todayHabitCompleted}
-              <span className="text-sm font-normal text-muted-foreground"> / {todayHabitTotal}</span>
+              <span className="text-base sm:text-lg font-medium text-muted-foreground/60 ml-1">/ {todayHabitTotal}</span>
             </p>
           </Link>
-          <Link to="/screentime" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1 truncate">
+          <Link to="/screentime" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
               <Monitor className="size-3.5 text-sky-500 shrink-0" />
               Screen
             </p>
-            <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
+            <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
           </Link>
-          <Link to="/sleep" className="block rounded-xl border border-border bg-card p-3 sm:p-4 min-w-0 transition-colors hover:bg-accent/50 hover:border-border/80">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+          <Link to="/sleep" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all">
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
               <Moon className="size-3.5 text-indigo-400 shrink-0" />
               Sleep
             </p>
-            <p className={cn('text-xl sm:text-2xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
+            <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>
               {formatSleepMinutes(lastNightSleep)}
             </p>
           </Link>
         </div>
-        <div className="mt-2 sm:mt-3">
-          <div className="rounded-xl border border-border bg-card p-3 sm:p-4">
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+
+        <div className="mt-3 sm:mt-4">
+          <div className="rounded-2xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  <Monitor className="size-3.5 text-sky-500 shrink-0" />
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
+                  <Sparkles className="size-3.5 text-primary shrink-0" />
                   Day progress
                 </p>
-                <p className={cn('text-lg sm:text-xl font-bold tabular-nums mt-1', privacyMode && 'blur-sm')}>
-                  {formatDurationMinutes(screenChart.accounted)}
-                </p>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+                <div className="flex items-baseline gap-2 mt-1">
+                  <p className={cn('text-xl sm:text-2xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+                    {formatDurationMinutes(screenChart.accounted)}
+                  </p>
+                  <p className="text-sm font-medium text-muted-foreground">tracked</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-500" /> Sleep</span>
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-sky-500" /> PC</span>
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-violet-500" /> Phone</span>
@@ -492,39 +511,52 @@ export function DashboardQuickView() {
             </div>
 
             <div
-              className="relative mt-4 h-3 w-full overflow-visible rounded-full bg-muted"
-              aria-label={`Today screentime ${formatDurationMinutes(screenChart.used)} of 24 hours`}
+              className="relative mt-5 h-4 w-full overflow-visible rounded-full bg-muted-foreground/10"
+              aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
             >
               <div className="flex h-full w-full overflow-hidden rounded-full">
-                <div className={cn('bg-indigo-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} />
-                <div className={cn('bg-sky-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} />
-                <div className={cn('bg-violet-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
-                <div className={cn('bg-amber-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
-                <div className="bg-muted-foreground/20" style={{ width: screenChart.restPct }} />
+                <div className={cn('bg-indigo-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} />
+                <div className={cn('bg-sky-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} />
+                <div className={cn('bg-violet-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
+                <div className={cn('bg-amber-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
               </div>
+              
               {progressMarkers.map((marker) => (
-                <span
+                <div
                   key={marker.id}
-                  className={cn(
-                    'pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full opacity-95 ring-1 ring-black/10',
-                    !marker.color && marker.kind === 'prayer' && 'bg-slate-400',
-                    !marker.color && marker.kind === 'habit' && 'bg-emerald-400',
-                    !marker.color && marker.kind === 'task' && 'bg-rose-400',
-                  )}
-                  style={{ left: marker.left, backgroundColor: marker.color }}
-                  aria-hidden
-                />
+                  className="group absolute inset-y-0 w-[5px] -translate-x-1/2 cursor-crosshair sm:hover:z-50"
+                  style={{ left: marker.left }}
+                >
+                  <div
+                    className={cn(
+                      'h-full w-full rounded-[1px] opacity-90 shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                      !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
+                      !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
+                      !marker.color && marker.kind === 'task' && 'bg-rose-50',
+                    )}
+                    style={marker.color ? { backgroundColor: marker.color, filter: 'brightness(1.5)' } : undefined}
+                  />
+                  {/* Tooltip */}
+                  <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100 sm:group-hover:block">
+                    <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
+                      <span className="font-semibold">{marker.name}</span>
+                      <span className="text-[10px] text-muted-foreground/80 font-medium tracking-wide uppercase mt-0.5">{marker.timeStr}</span>
+                      <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95 backdrop-blur-sm" />
+                    </div>
+                  </div>
+                </div>
               ))}
+
               <span
-                className="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full bg-primary shadow-[0_0_8px_rgba(var(--primary))] animate-pulse"
+                className="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full bg-foreground shadow-[0_0_8px_rgba(var(--foreground))] animate-pulse"
                 style={{ left: screenChart.nowPct }}
                 aria-hidden
               />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+            <div className="mt-4 flex items-center justify-between gap-2 text-[11px] font-medium text-muted-foreground">
               <span>24h clock</span>
-              <span className={cn('tabular-nums', privacyMode && 'blur-sm')}>
-                Now {formatDurationMinutes(screenChart.elapsed)} into day · {formatDurationMinutes(screenChart.rest)} left
+              <span className={cn('tabular-nums font-semibold text-foreground/80', privacyMode && 'blur-sm')}>
+                Habit Adherence: {habitAdherencePct}%{sleepTimeStr}
               </span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
@@ -549,7 +581,7 @@ export function DashboardQuickView() {
       </section>
 
       <section
-        className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm"
+        className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-150"
         aria-labelledby="qv-due-today-heading"
       >
         <div className="border-b border-border bg-muted/30 px-4 py-3 sm:px-5 sm:py-3.5">
@@ -589,7 +621,7 @@ export function DashboardQuickView() {
         </div>
       </section>
 
-      <section className="rounded-xl border border-border bg-card overflow-hidden" aria-labelledby="qv-next-heading">
+      <section className="rounded-xl border border-border bg-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-300" aria-labelledby="qv-next-heading">
         <div className="p-3 sm:p-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
             <Calendar className="text-blue-500 shrink-0" size={18} />

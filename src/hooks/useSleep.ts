@@ -48,7 +48,6 @@ export function groupSegmentsByNight(segments: SleepStage[]): { date: string; sl
   });
 }
 
-/** Average sleep time over the last N days. Uses same night-grouping as Sleep page. */
 export function useSleepMetrics(days: number = 7) {
   const end = useMemo(() => new Date(), []);
   const endStr = format(end, 'yyyy-MM-dd');
@@ -56,9 +55,52 @@ export function useSleepMetrics(days: number = 7) {
   const { data: segments = [] } = useSleepStages(startStr + 'T00:00:00.000Z', endStr + 'T23:59:59.999Z');
   return useMemo(() => {
     const nights = groupSegmentsByNight(segments);
-    if (nights.length === 0) return { avgSleepMinutes: 0, nightsCount: 0 };
+    if (nights.length === 0) return { avgSleepMinutes: 0, avgBedtimeMinutes: null, nightsCount: 0 };
     const totalMin = nights.reduce((s, n) => s + n.sleepMinutes, 0);
-    return { avgSleepMinutes: Math.round(totalMin / nights.length), nightsCount: nights.length };
+
+    // Calculate average bedtime
+    // Night groups are returned with segments in groups. Let's find the first segment of each night.
+    const bedtimes = [];
+    const sortedSegs = [...segments].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
+    const groups: SleepStage[][] = [];
+    let current: SleepStage[] = [];
+    for (const seg of sortedSegs) {
+      if (current.length === 0) {
+        current.push(seg);
+      } else {
+        const last = current[current.length - 1];
+        const gapMin = (new Date(seg.started_at).getTime() - new Date(last.ended_at).getTime()) / (1000 * 60);
+        if (gapMin < 120) {
+          current.push(seg);
+        } else {
+          groups.push(current);
+          current = [seg];
+        }
+      }
+    }
+    if (current.length > 0) groups.push(current);
+
+    for (const group of groups) {
+      if (group.length > 0) {
+        const date = new Date(group[0].started_at);
+        let mins = date.getHours() * 60 + date.getMinutes();
+        // If they slept between 00:00 and 12:00, add 24 hours so it averages correctly with e.g. 23:00
+        if (mins < 12 * 60) mins += 24 * 60;
+        bedtimes.push(mins);
+      }
+    }
+
+    let avgBedtimeMinutes = null;
+    if (bedtimes.length > 0) {
+      const avgRaw = bedtimes.reduce((a, b) => a + b, 0) / bedtimes.length;
+      avgBedtimeMinutes = Math.round(avgRaw % (24 * 60));
+    }
+
+    return { 
+      avgSleepMinutes: Math.round(totalMin / nights.length), 
+      avgBedtimeMinutes,
+      nightsCount: nights.length 
+    };
   }, [segments]);
 }
 

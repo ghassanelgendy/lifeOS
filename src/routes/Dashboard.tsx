@@ -22,7 +22,15 @@ function ModeBody({ mode }: { mode: DashboardMode }) {
 
 export default function Dashboard() {
   const dashboardMode = useUIStore((s) => s.dashboardMode);
-  const label = DASHBOARD_MODE_LABELS[dashboardMode];
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+  };
+
+  const label = dashboardMode === 'quick_view' ? getGreeting() : DASHBOARD_MODE_LABELS[dashboardMode];
 
   return (
     <div className="space-y-3 sm:space-y-4">
