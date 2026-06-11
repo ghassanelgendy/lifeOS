@@ -100,7 +100,7 @@ function DueTodayRow({
   return (
     <div
       className={cn(
-        'group flex items-stretch gap-3 rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
+        'task-item group flex items-stretch gap-3 rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
         'transition-all duration-200 hover:border-border hover:shadow-md',
         done && (kind === 'prayer' ? 'opacity-75 border-slate-500/20 bg-slate-500/5' : 'opacity-75 border-primary/20 bg-primary/5'),
       )}
@@ -129,15 +129,31 @@ function DueTodayRow({
             busy && 'pointer-events-none opacity-50',
           )}
         >
-          {done ? (
-            <Check className="h-[14px] w-[14px]" strokeWidth={2.5} aria-hidden />
-          ) : (
+          <div className="relative flex h-full w-full items-center justify-center">
             <span
-              className={cn('size-2.5 rounded-full', !color && ACCENT_DOT[kind])}
+              className={cn(
+                'absolute size-2.5 rounded-full transition-all duration-300',
+                !color && ACCENT_DOT[kind],
+                done ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+              )}
               style={color ? { backgroundColor: color } : undefined}
               aria-hidden
             />
-          )}
+            <svg
+              className={cn(
+                "task-checkmark absolute transition-opacity duration-300",
+                done ? "task-checkmark--active opacity-100" : "opacity-0"
+              )}
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path className="task-checkmark__check" d="M4 8.5 7 11 12 5" />
+            </svg>
+          </div>
         </button>
       ) : (
         <div
@@ -351,7 +367,7 @@ export function DashboardQuickView() {
     };
   }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.otherMinutes, todaySleepMinutes]);
 
-  const progressMarkers = useMemo(() => {
+  const progressMarkerClusters = useMemo(() => {
     const dayMinutes = 24 * 60;
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
@@ -360,18 +376,17 @@ export function DashboardQuickView() {
       d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
       return format(d, 'h:mm a');
     };
-    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task'; color?: string; name: string; timeStr: string; isCompleted?: boolean }[] = [];
+    const rawMarkers: { id: string; minutes: number; kind: 'habit' | 'prayer' | 'task'; color?: string; name: string; timeStr: string; isCompleted?: boolean }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
       if (!log) continue;
 
       // Debug: check what completed_at value we're getting from the log
-      if (typeof window !== 'undefined') console.log(`[progress-bar] habit="${habit.title}" completed_at=${JSON.stringify(log.completed_at)} parsed=${isoToDayMinutes(log.completed_at)}`);
       const minutes = isoToDayMinutes(log.completed_at) ?? timeStringToMinutes(habit.time) ?? elapsed;
-      markers.push({
+      rawMarkers.push({
         id: `habit-${habit.id}`,
-        left: pct(minutes),
+        minutes,
         kind: 'habit',
         color: habit.color,
         name: habit.title,
@@ -382,19 +397,39 @@ export function DashboardQuickView() {
 
     for (const task of completedTasks) {
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
-      if (typeof window !== 'undefined') console.log(`[progress-bar] task="${task.title}" completed_at=${JSON.stringify(task.completed_at)} parsed=${isoToDayMinutes(task.completed_at)}`);
       const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
-      markers.push({ id: `task-${task.id}`, left: pct(minutes), kind: 'task', name: task.title, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
+      rawMarkers.push({ id: `task-${task.id}`, minutes, kind: 'task', name: task.title, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
     }
 
     for (const prayer of prayerTracker) {
       if (!isPrayerStatusComplete(prayer.status)) continue;
       const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
       const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
-      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer', name: `${prayer.prayerName} prayer`, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
+      rawMarkers.push({ id: `prayer-${prayer.prayerHabitId}`, minutes, kind: 'prayer', name: `${prayer.prayerName} prayer`, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
     }
 
-    return markers.slice(0, 32);
+    rawMarkers.sort((a, b) => a.minutes - b.minutes);
+
+    const clusters: { id: string; leftPct: string; markers: typeof rawMarkers }[] = [];
+    const grouped: (typeof rawMarkers)[] = [];
+    for (const marker of rawMarkers) {
+      const lastGroup = grouped[grouped.length - 1];
+      if (lastGroup && marker.minutes - lastGroup[0].minutes <= 5) {
+        lastGroup.push(marker);
+      } else {
+        grouped.push([marker]);
+      }
+    }
+
+    for (const group of grouped) {
+      clusters.push({
+        id: group[0].id,
+        leftPct: pct(group[0].minutes),
+        markers: group,
+      });
+    }
+
+    return clusters;
   }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr, habitAverages]);
 
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
@@ -440,7 +475,7 @@ export function DashboardQuickView() {
       timeValue: -2, // Always first among incomplete items
       done: lastPrayerDone,
       element: (
-        <li key="prayer-current">
+        <li key={`prayer-current-${lastPrayerDone}`}>
           <DueTodayRow
             kind="prayer"
             title={`${lastPrayerSlot.name} prayer`}
@@ -466,7 +501,7 @@ export function DashboardQuickView() {
       timeValue: -1,
       done: false,
       element: (
-        <li key={`task-${t.id}`}>
+        <li key={`task-${t.id}-false`}>
           <DueTodayRow
             kind="task"
             title={t.title}
@@ -492,7 +527,7 @@ export function DashboardQuickView() {
       timeValue: t.due_time ? (timeStringToMinutes(t.due_time) ?? 1440) : 1440,
       done: false,
       element: (
-        <li key={`task-${t.id}`}>
+        <li key={`task-${t.id}-false`}>
           <DueTodayRow
             kind="task"
             title={t.title}
@@ -529,7 +564,7 @@ export function DashboardQuickView() {
       timeValue: h.time ? (timeStringToMinutes(h.time) ?? 1440) : (habitAverages[h.id] ?? 1440),
       done,
       element: (
-        <li key={`habit-${h.id}`}>
+        <li key={`habit-${h.id}-${done}`}>
           <DueTodayRow
             kind="habit"
             title={h.title}
@@ -567,7 +602,7 @@ export function DashboardQuickView() {
       timeValue,
       done: false,
       element: (
-        <li key={item.id}>
+        <li key={`${item.id}-false`}>
           <DueTodayRow
             kind={item.kind as DueKind}
             title={item.title}
@@ -696,30 +731,37 @@ export function DashboardQuickView() {
                 )}
               </div>
 
-              {progressMarkers.map((marker) => (
+              {progressMarkerClusters.map((cluster) => (
                 <div
-                  key={marker.id}
-                  className="group absolute inset-y-0 w-[5px] -translate-x-1/2 cursor-crosshair sm:hover:z-50"
-                  style={{ left: marker.left }}
+                  key={cluster.id}
+                  className="absolute inset-y-0 flex gap-[2px]"
+                  style={{ left: cluster.leftPct, transform: 'translateX(-2.5px)' }}
                 >
-                  <div
-                    className={cn(
-                      'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
-                      marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
-                      !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
-                      !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
-                      !marker.color && marker.kind === 'task' && 'bg-rose-50',
-                    )}
-                    style={marker.color ? { backgroundColor: marker.color, filter: marker.isCompleted ? 'brightness(1.5)' : undefined } : undefined}
-                  />
-                  {/* Tooltip */}
-                  <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100 sm:group-hover:block">
-                    <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
-                      <span className="font-semibold">{marker.name}</span>
-                      <span className="text-[10px] text-muted-foreground/80 font-medium tracking-wide uppercase mt-0.5">{marker.timeStr}</span>
-                      <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95 backdrop-blur-sm" />
+                  {cluster.markers.map((marker) => (
+                    <div
+                      key={marker.id}
+                      className="group relative h-full w-[5px] cursor-crosshair sm:hover:z-50 shrink-0"
+                    >
+                      <div
+                        className={cn(
+                          'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                          marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
+                          !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
+                          !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
+                          !marker.color && marker.kind === 'task' && 'bg-rose-50',
+                        )}
+                        style={marker.color ? { backgroundColor: marker.color, filter: marker.isCompleted ? 'brightness(1.5)' : undefined } : undefined}
+                      />
+                      {/* Tooltip */}
+                      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100 sm:group-hover:block">
+                        <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
+                          <span className="font-semibold">{marker.name}</span>
+                          <span className="text-[10px] text-muted-foreground/80 font-medium tracking-wide uppercase mt-0.5">{marker.timeStr}</span>
+                          <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95 backdrop-blur-sm" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
               ))}
 

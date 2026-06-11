@@ -693,7 +693,6 @@ export default function SettingsPage() {
                       onClick={() => push.sendTestNotification()
                         .then(() => setPushStatus('Test sent!'))
                         .catch((e) => {
-                          console.error('Test Notification Error:', e);
                           setPushStatus(e?.message ?? 'Test failed');
                         })
                       }

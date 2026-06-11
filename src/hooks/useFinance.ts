@@ -67,9 +67,6 @@ function filterToCurrentUser<T extends { user_id?: string | null }>(
 ): T[] {
   const own = data.filter((row) => row.user_id == null || row.user_id === currentUserId);
   if (own.length !== data.length) {
-    console.error(
-      `[LifeOS] ${entityName}: API returned rows belonging to other users. Enable RLS in Supabase. See supabase/migrations/20250205100000_enable_rls_on_tables.sql`
-    );
   }
   return own;
 }

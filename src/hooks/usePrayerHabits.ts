@@ -199,7 +199,7 @@ export function usePrayerTracker(date: Date = new Date()) {
     void ensurePrayerRows(user.id, times).then(() => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
-    }).catch((e) => console.error('Prayer habit sync failed', e));
+    }).catch(() => {});
   }, [user?.id, timesSignature, times, queryClient, dateStr]);
 
   const habitsQuery = useQuery({

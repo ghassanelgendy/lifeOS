@@ -586,7 +586,6 @@ export default function CalendarPage() {
       setIsModalOpen(false);
       setEditingEvent(null);
     } catch (err) {
-      console.error('Failed to save event/task link', err);
     }
   };
 

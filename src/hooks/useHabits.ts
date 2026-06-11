@@ -261,7 +261,6 @@ export function useHabitAverages() {
         .in('habit_id', habitIds);
         
       if (error || !data) {
-        console.error('Failed to fetch habit averages:', error);
         return {};
       }
       

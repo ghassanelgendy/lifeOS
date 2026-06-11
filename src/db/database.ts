@@ -57,7 +57,6 @@ function loadDB(): Database {
       return { ...defaultDatabase, ...JSON.parse(stored) };
     }
   } catch (e) {
-    console.error('Failed to load database:', e);
   }
   return defaultDatabase;
 }
@@ -67,7 +66,6 @@ function saveDB(db: Database): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
   } catch (e) {
-    console.error('Failed to save database:', e);
   }
 }
 
@@ -995,7 +993,6 @@ export const dbUtils = {
       saveDB({ ...defaultDatabase, ...data });
       return true;
     } catch (e) {
-      console.error('Failed to import database:', e);
       return false;
     }
   },

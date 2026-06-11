@@ -128,7 +128,6 @@ function AppInner() {
         const lastReload = sessionStorage.getItem('pwa_reload_time');
         const now = Date.now();
         if (lastReload && now - parseInt(lastReload, 10) < 10000) {
-          console.warn('[PWA] Prevented infinite reload loop.');
           return;
         }
         sessionStorage.setItem('pwa_reload_time', now.toString());

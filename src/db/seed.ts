@@ -22,8 +22,6 @@ export async function seedDatabase(): Promise<void> {
     return;
   }
 
-  console.log('Seeding tags for new user...');
-
   await supabase.from('tags').insert([
     { name: 'Urgent', color: '#ef4444' },
     { name: 'Important', color: '#f97316' },
@@ -34,7 +32,6 @@ export async function seedDatabase(): Promise<void> {
   ]);
 
   localStorage.setItem(SEED_KEY, 'true');
-  console.log('Tags seeded.');
 }
 
 // Function to reset and reseed (call after ensuring session exists)
