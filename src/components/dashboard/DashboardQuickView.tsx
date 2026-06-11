@@ -455,11 +455,11 @@ export function DashboardQuickView() {
           Today
         </h2>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-          <div className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md transition-all">
+          <div className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-75">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider truncate">Due today</p>
             <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1 text-primary">{dueTodayBundleCount}</p>
           </div>
-          <Link to="/habits" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all">
+          <Link to="/habits" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
               <Flame className="size-3.5 text-orange-500 shrink-0" />
               Habits
@@ -469,14 +469,14 @@ export function DashboardQuickView() {
               <span className="text-base sm:text-lg font-medium text-muted-foreground/60 ml-1">/ {todayHabitTotal}</span>
             </p>
           </Link>
-          <Link to="/screentime" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all">
+          <Link to="/screentime" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
               <Monitor className="size-3.5 text-sky-500 shrink-0" />
               Screen
             </p>
             <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
           </Link>
-          <Link to="/sleep" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all">
+          <Link to="/sleep" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-200">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
               <Moon className="size-3.5 text-indigo-400 shrink-0" />
               Sleep
@@ -559,23 +559,13 @@ export function DashboardQuickView() {
                 Habit Adherence: {habitAdherencePct}%{sleepTimeStr}
               </span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px]">
-              <span
-                className={cn(
-                  'inline-flex items-center rounded-full px-2 py-0.5 font-medium',
-                  screenChart.statusTone === 'bad' && 'bg-red-500/15 text-red-500',
-                  screenChart.statusTone === 'warn' && 'bg-amber-500/15 text-amber-500',
-                  screenChart.statusTone === 'good' && 'bg-emerald-500/15 text-emerald-500',
-                )}
-              >
-                {screenChart.status}
-              </span>
-              {screenChart.overlapAdjusted && (
+            {screenChart.overlapAdjusted && (
+              <div className="mt-2 flex items-center text-[11px]">
                 <span className="text-muted-foreground">
                   Overlap adjusted from {formatDurationMinutes(screenChart.rawUsed)}
                 </span>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
