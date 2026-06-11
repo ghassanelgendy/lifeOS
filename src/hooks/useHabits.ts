@@ -238,6 +238,62 @@ export function useTodayHabitLogs() {
   });
 }
 
+export function useHabitAverages() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['habit-averages', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return {};
+      
+      const { data: habits, error: habitsError } = await supabase
+        .from('habits')
+        .select('id')
+        .eq('user_id', user?.id || '');
+      
+      if (habitsError) return {};
+      const habitIds = habits?.map(h => h.id) || [];
+      if (habitIds.length === 0) return {};
+      
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id, completed_at, created_at')
+        .eq('completed', true)
+        .in('habit_id', habitIds);
+        
+      if (error || !data) {
+        console.error('Failed to fetch habit averages:', error);
+        return {};
+      }
+      
+      const averages: Record<string, number> = {};
+      const counts: Record<string, number> = {};
+      
+      data.forEach(log => {
+         // Some logs might not have completed_at (older ones), fallback to created_at
+         const timestamp = (log as any).completed_at || log.created_at;
+         if (!timestamp) return;
+         const d = new Date(timestamp);
+         const minutes = d.getHours() * 60 + d.getMinutes();
+         
+         if (!averages[log.habit_id]) {
+           averages[log.habit_id] = 0;
+           counts[log.habit_id] = 0;
+         }
+         averages[log.habit_id] += minutes;
+         counts[log.habit_id]++;
+      });
+      
+      const result: Record<string, number> = {};
+      Object.keys(averages).forEach(id => {
+         result[id] = Math.round(averages[id] / counts[id]);
+      });
+      
+      return result;
+    },
+    enabled: !!user?.id
+  });
+}
+
 export function useLogHabit() {
   const queryClient = useQueryClient();
 
@@ -257,7 +313,12 @@ export function useLogHabit() {
       if (existing) {
         const { data, error } = await supabase
           .from('habit_logs')
-          .update({ completed, note, date: dateOnly })
+          .update({ 
+            completed, 
+            note, 
+            date: dateOnly,
+            completed_at: completed ? new Date().toISOString() : null
+          })
           .eq('id', existing.id)
           .select()
           .single();
@@ -266,7 +327,13 @@ export function useLogHabit() {
       } else {
         const { data, error } = await supabase
           .from('habit_logs')
-          .insert({ habit_id: habitId, date: dateOnly, completed, note })
+          .insert({ 
+            habit_id: habitId, 
+            date: dateOnly, 
+            completed, 
+            note,
+            completed_at: completed ? new Date().toISOString() : null
+          })
           .select()
           .single();
         if (error) throw error;
@@ -431,11 +498,14 @@ export interface HabitInsight {
   lastEventDate: string | null;
 }
 
-function formatHourLabel(hour: number): string {
-  const normalized = ((Math.round(hour) % 24) + 24) % 24;
-  const suffix = normalized >= 12 ? 'PM' : 'AM';
-  const display = normalized % 12 || 12;
-  return `${display} ${suffix}`;
+export function formatHourLabel(hour: number): string {
+  const totalMinutes = Math.round(hour * 60);
+  const normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  const h = Math.floor(normalized / 60);
+  const m = normalized % 60;
+  const suffix = h >= 12 ? 'PM' : 'AM';
+  const display = h % 12 || 12;
+  return `${display}:${String(m).padStart(2, '0')} ${suffix}`;
 }
 
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -528,7 +598,7 @@ export function useHabitInsights(habits: Habit[], days = 90) {
           extraCompletions,
           adherencePct: scheduledDays > 0 ? clampPct(round1((effectiveSuccess / scheduledDays) * 100)) : 0,
           eventCount: eventLogs.length,
-          usualTimeLabel: averageHour == null ? 'No usual time yet' : `Usually around ${formatHourLabel(averageHour)}`,
+          usualTimeLabel: averageHour == null ? 'No usual time yet' : `Usually ${formatHourLabel(averageHour)}`,
           bestDayLabel: eventLogs.length === 0 ? 'No pattern yet' : `Most often ${WEEKDAY_LABELS[bestDayIndex]}`,
           lastEventDate: eventLogs[0]?.date ?? null,
         };

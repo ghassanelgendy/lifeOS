@@ -668,6 +668,7 @@ export const taskDB = {
       adherence_weight: 1,
       color: '#22c55e',
       is_archived: false,
+      notify_enabled: false,
     });
 
     // Delete the task
@@ -820,7 +821,7 @@ export const habitLogDB = {
       date: dateOnly,
       completed,
       note,
-      created_at: now(),
+      completed_at: now(),
     };
     db.habit_logs.push(log);
     saveDB(db);

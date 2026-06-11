@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
-import { ArrowRight, Calendar, Check, CheckSquare, Flame, Moon, Monitor, Sparkles } from 'lucide-react';
+import { ArrowRight, Check, Flame, Moon, Monitor, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask } from '../../hooks/useTasks';
-import { useWeeklyAdherence, useLogHabit } from '../../hooks/useHabits';
+import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics } from '../../hooks/useSleep';
 import {
@@ -64,12 +64,13 @@ function parseDueForSort(t: Task): number {
   return new Date(`${d}T${tp}`).getTime();
 }
 
-type DueKind = 'prayer' | 'task' | 'habit';
+type DueKind = 'prayer' | 'task' | 'habit' | 'event';
 
 const ACCENT_DOT: Record<DueKind, string> = {
   prayer: 'bg-slate-500/70',
-  task: 'bg-violet-500/70',
+  task: 'bg-amber-500/70',
   habit: 'bg-emerald-500/70',
+  event: 'bg-indigo-500/70',
 };
 
 function DueTodayRow({
@@ -94,7 +95,7 @@ function DueTodayRow({
   color?: string;
 }) {
   const kindLabel =
-    kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : 'Habit';
+    kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
   return (
     <div
@@ -155,8 +156,9 @@ function DueTodayRow({
             className={cn(
               'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
               !color && kind === 'prayer' && 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
-              !color && kind === 'task' && 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+              !color && kind === 'task' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
               !color && kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+              !color && kind === 'event' && 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
             )}
             style={color ? { backgroundColor: `${color}26`, color: color } : undefined}
           >
@@ -187,6 +189,7 @@ export function DashboardQuickView() {
   const { data: todayTasks = [] } = useTodayTasks();
   const { data: completedTasks = [] } = useCompletedTasks();
   const { todayLogs, habits } = useWeeklyAdherence();
+
   const todayScreentime = useTodayScreentime();
   const lastNightSleep = useLastNightSleepMinutes();
   const todaySleepMinutes = useSleepMinutesForDay(today);
@@ -203,6 +206,25 @@ export function DashboardQuickView() {
   const { times: prayerTimesList } = usePrayerTimes();
 
   const quickViewHabits = useMemo(() => habits.filter(isHabitShownInQuickView), [habits]);
+  const { data: habitInsights = {} } = useHabitInsights(quickViewHabits);
+  // Derive a habitId -> average minutes map from insights (same data the Habits page uses)
+  const habitAverages = useMemo(() => {
+    const result: Record<string, number> = {};
+    for (const [id, insight] of Object.entries(habitInsights)) {
+      if (insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet') {
+        const match = insight.usualTimeLabel.match(/Usually (\d+):(\d+)\s*(AM|PM)/i);
+        if (match) {
+          let hour = parseInt(match[1], 10);
+          const min = parseInt(match[2], 10);
+          const isPM = match[3].toUpperCase() === 'PM';
+          if (isPM && hour !== 12) hour += 12;
+          if (!isPM && hour === 12) hour = 0;
+          result[id] = hour * 60 + min;
+        }
+      }
+    }
+    return result;
+  }, [habitInsights]);
 
   const overdueIncomplete = useMemo(
     () => overdueTasks.filter((t) => !t.is_completed).sort((a, b) => parseDueForSort(a) - parseDueForSort(b)),
@@ -264,7 +286,6 @@ export function DashboardQuickView() {
     return tasksDueTodayOnly.length + dueTodayIncompleteHabits.length;
   }, [tasksDueTodayOnly.length, dueTodayIncompleteHabits]);
 
-  const nextUp = upcomingItems.slice(0, 8);
 
   const screenLabel =
     todayScreentime.totalMinutes > 0
@@ -279,13 +300,25 @@ export function DashboardQuickView() {
     const phone = Math.max(0, todayScreentime.phoneMinutes || 0);
     const other = Math.max(0, todayScreentime.otherMinutes || 0);
     const rawUsed = pc + phone + other;
-    const used = Math.min(dayMinutes, elapsed, rawUsed);
-    const scale = rawUsed > 0 ? used / rawUsed : 0;
-    const adjustedPc = Math.round(pc * scale);
-    const adjustedPhone = Math.round(phone * scale);
-    const adjustedOther = Math.max(0, used - adjustedPc - adjustedPhone);
+
+    const maxNonOverlapScreentime = Math.max(0, elapsed - sleep);
+    const overlap = Math.max(0, rawUsed - maxNonOverlapScreentime);
+    const overlapDisplay = Math.min(overlap, pc + phone);
+
+    let adjustedPc = pc;
+    let adjustedPhone = phone;
+    let adjustedOther = other;
+
+    if (overlapDisplay > 0) {
+      const pcRatio = pc + phone > 0 ? pc / (pc + phone) : 0.5;
+      adjustedPc = Math.max(0, pc - overlapDisplay * pcRatio);
+      adjustedPhone = Math.max(0, phone - overlapDisplay * (1 - pcRatio));
+    }
+
+    const used = adjustedPc + adjustedPhone + adjustedOther + overlapDisplay;
     const accounted = Math.min(dayMinutes, sleep + used);
     const rest = Math.max(0, dayMinutes - accounted);
+
     const pct = (minutes: number) => `${Math.max(0, Math.min(100, (minutes / dayMinutes) * 100))}%`;
     const activeUseRatio = elapsed > 0 ? used / elapsed : 0;
     const status =
@@ -310,6 +343,8 @@ export function DashboardQuickView() {
       nowPct: pct(elapsed),
       sleepPct: pct(sleep),
       pcPct: pct(adjustedPc),
+      overlapPct: pct(overlapDisplay),
+      overlap,
       phonePct: pct(adjustedPhone),
       otherPct: pct(adjustedOther),
       restPct: pct(rest),
@@ -325,52 +360,81 @@ export function DashboardQuickView() {
       d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
       return format(d, 'h:mm a');
     };
-    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task'; color?: string; name: string; timeStr: string }[] = [];
+    const markers: { id: string; left: string; kind: 'habit' | 'prayer' | 'task'; color?: string; name: string; timeStr: string; isCompleted?: boolean }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
       if (!log) continue;
-      const minutes = timeStringToMinutes(habit.time) ?? isoToDayMinutes(log.created_at) ?? elapsed;
-      markers.push({ id: `habit-${habit.id}`, left: pct(minutes), kind: 'habit', color: habit.color, name: habit.title, timeStr: formatMinutesAsTime(minutes) });
+
+      // Debug: check what completed_at value we're getting from the log
+      if (typeof window !== 'undefined') console.log(`[progress-bar] habit="${habit.title}" completed_at=${JSON.stringify(log.completed_at)} parsed=${isoToDayMinutes(log.completed_at)}`);
+      const minutes = isoToDayMinutes(log.completed_at) ?? timeStringToMinutes(habit.time) ?? elapsed;
+      markers.push({
+        id: `habit-${habit.id}`,
+        left: pct(minutes),
+        kind: 'habit',
+        color: habit.color,
+        name: habit.title,
+        timeStr: formatMinutesAsTime(minutes),
+        isCompleted: true
+      });
     }
 
     for (const task of completedTasks) {
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
+      if (typeof window !== 'undefined') console.log(`[progress-bar] task="${task.title}" completed_at=${JSON.stringify(task.completed_at)} parsed=${isoToDayMinutes(task.completed_at)}`);
       const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
-      markers.push({ id: `task-${task.id}`, left: pct(minutes), kind: 'task', name: task.title, timeStr: formatMinutesAsTime(minutes) });
+      markers.push({ id: `task-${task.id}`, left: pct(minutes), kind: 'task', name: task.title, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
     }
 
     for (const prayer of prayerTracker) {
       if (!isPrayerStatusComplete(prayer.status)) continue;
       const prayerTime = prayerTimesList.find((p) => p.name === prayer.prayerName)?.time;
       const minutes = isoToDayMinutes(prayer.prayedAt) ?? (prayerTime ? prayerTime.getHours() * 60 + prayerTime.getMinutes() : elapsed);
-      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer', name: `${prayer.prayerName} prayer`, timeStr: formatMinutesAsTime(minutes) });
+      markers.push({ id: `prayer-${prayer.prayerHabitId}`, left: pct(minutes), kind: 'prayer', name: `${prayer.prayerName} prayer`, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
     }
 
     return markers.slice(0, 32);
-  }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr]);
+  }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr, habitAverages]);
 
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
-    if (item.kind === 'habit' && item.allDay && isToday(parseISO(item.start_time))) {
+    const isHabit = item.kind === 'habit';
+    const insight = (isHabit && item.entityId) ? habitInsights[item.entityId] : undefined;
+    const hasUsualTime = insight && insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet';
+
+    if (isHabit && item.allDay && isToday(parseISO(item.start_time))) {
+      if (hasUsualTime) {
+        return insight.usualTimeLabel;
+      }
       return 'Today · Any time';
     }
     if (item.allDay && item.kind === 'task' && isToday(parseISO(item.start_time))) {
       return 'Today · All day';
     }
-    return isToday(parseISO(item.start_time))
-      ? `Today, ${format(parseISO(item.start_time), 'h:mm a')}`
+
+    let whenStr = isToday(parseISO(item.start_time))
+      ? `Today · ${format(parseISO(item.start_time), 'h:mm a')}`
       : format(parseISO(item.start_time), 'EEE, MMM d · h:mm a');
+
+    if (isHabit && hasUsualTime) {
+      whenStr += ` · ${insight.usualTimeLabel}`;
+    }
+
+    return whenStr;
   };
 
   const hasDueTodayContent =
     overdueIncomplete.length > 0 ||
     tasksDueTodayOnly.length > 0 ||
     habitsDueToday.length > 0 ||
-    !!lastPrayerSlot;
+    !!lastPrayerSlot ||
+    upcomingItems.length > 0;
 
   const timelineItems: Array<{ timeValue: number; element: React.ReactNode }> = [];
+  const addedKeys = new Set<string>();
 
   overdueIncomplete.forEach((t) => {
+    addedKeys.add(`task-${t.id}`);
     timelineItems.push({
       timeValue: -1,
       element: (
@@ -395,6 +459,7 @@ export function DashboardQuickView() {
   });
 
   tasksDueTodayOnly.forEach((t) => {
+    addedKeys.add(`task-${t.id}`);
     timelineItems.push({
       timeValue: t.due_time ? (timeStringToMinutes(t.due_time) ?? 1440) : 1440,
       element: (
@@ -415,21 +480,79 @@ export function DashboardQuickView() {
   });
 
   habitsDueToday.forEach((h) => {
+    addedKeys.add(`habit-${h.id}`);
     const done = isHabitDoneToday(h.id);
+    const insight = habitInsights[h.id];
+    const hasUsualTime = insight && insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet';
+
+    let subtitle = 'Today · any time';
+    if (h.time && h.time.length >= 5) {
+      const timeStr = format(new Date(`2000-01-01T${h.time.slice(0, 5)}`), 'h:mm a');
+      subtitle = `Today · ${timeStr}`;
+      if (hasUsualTime) {
+        subtitle += ` · ${insight.usualTimeLabel}`;
+      }
+    } else if (hasUsualTime) {
+      subtitle = insight.usualTimeLabel;
+    }
+
     timelineItems.push({
-      timeValue: h.time ? (timeStringToMinutes(h.time) ?? 1440) : 1440,
+      timeValue: h.time ? (timeStringToMinutes(h.time) ?? 1440) : (habitAverages[h.id] ?? 1440),
       element: (
         <li key={`habit-${h.id}`}>
           <DueTodayRow
             kind="habit"
             title={h.title}
-            subtitle={h.time && h.time.length >= 5 ? `Today · ${h.time.slice(0, 5)}` : 'Today · any time'}
+            subtitle={subtitle}
             done={done}
             busy={logHabit.isPending}
             showToggle
             label={`Log habit ${h.title}`}
             color={h.color}
             onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
+          />
+        </li>
+      ),
+    });
+  });
+
+  upcomingItems.forEach((item) => {
+    const key = item.kind === 'task' || item.kind === 'habit'
+      ? `${item.kind}-${item.entityId}`
+      : item.id;
+
+    if (addedKeys.has(key)) return;
+    addedKeys.add(key);
+
+    const parsedStart = parseISO(item.start_time);
+    const diffMs = parsedStart.getTime() - today.getTime();
+    const timeValue = 1440 + Math.round(diffMs / 60000);
+
+    const subtitle = formatItemWhen(item);
+    const isTask = item.kind === 'task';
+    const isHabit = item.kind === 'habit';
+    const showToggle = isTask || isHabit;
+
+    timelineItems.push({
+      timeValue,
+      element: (
+        <li key={item.id}>
+          <DueTodayRow
+            kind={item.kind as DueKind}
+            title={item.title}
+            subtitle={subtitle}
+            done={false}
+            busy={isTask ? toggleTask.isPending : isHabit ? logHabit.isPending : false}
+            showToggle={showToggle}
+            label={isTask ? `Complete task ${item.title}` : isHabit ? `Log habit ${item.title}` : ''}
+            color={item.color}
+            onToggle={
+              isTask && item.entityId
+                ? () => toggleTask.mutate(item.entityId!)
+                : isHabit && item.entityId
+                  ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
+                  : undefined
+            }
           />
         </li>
       ),
@@ -445,7 +568,7 @@ export function DashboardQuickView() {
     const elapsed = Math.min(24 * 60, Math.max(0, today.getHours() * 60 + today.getMinutes()));
     let remaining = avgBedtimeMinutes - elapsed;
     if (remaining < 0) remaining += 24 * 60;
-    sleepTimeStr = ` · ${formatDurationMinutes(remaining)} until sleep`;
+    sleepTimeStr = ` · ${Math.round(remaining / 60)}h until sleep`;
   }
 
   return (
@@ -526,6 +649,9 @@ export function DashboardQuickView() {
                 <div className={cn('bg-sky-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} />
                 <div className={cn('bg-violet-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} />
                 <div className={cn('bg-amber-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} />
+                {screenChart.overlap > 0 && (
+                  <div className={cn('bg-red-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
+                )}
               </div>
 
               {progressMarkers.map((marker) => (
@@ -536,12 +662,13 @@ export function DashboardQuickView() {
                 >
                   <div
                     className={cn(
-                      'h-full w-full rounded-[1px] opacity-90 shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                      'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                      marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
                       !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
                       !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
                       !marker.color && marker.kind === 'task' && 'bg-rose-50',
                     )}
-                    style={marker.color ? { backgroundColor: marker.color, filter: 'brightness(1.5)' } : undefined}
+                    style={marker.color ? { backgroundColor: marker.color, filter: marker.isCompleted ? 'brightness(1.5)' : undefined } : undefined}
                   />
                   {/* Tooltip */}
                   <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 opacity-0 transition-opacity group-hover:opacity-100 group-active:opacity-100 sm:group-hover:block">
@@ -566,13 +693,6 @@ export function DashboardQuickView() {
                 Habit Adherence: {habitAdherencePct}%{sleepTimeStr}
               </span>
             </div>
-            {screenChart.overlapAdjusted && (
-              <div className="mt-2 flex items-center text-[11px]">
-                <span className="text-muted-foreground">
-                  Overlap adjusted from {formatDurationMinutes(screenChart.rawUsed)}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </section>
@@ -581,10 +701,20 @@ export function DashboardQuickView() {
         className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-150"
         aria-labelledby="qv-due-today-heading"
       >
-        <div className="border-b border-border bg-muted/30 px-4 py-3 sm:px-5 sm:py-3.5">
+        <div className="border-b border-border bg-muted/30 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-2">
           <h2 id="qv-due-today-heading" className="font-semibold text-base sm:text-lg tracking-tight">
             Due today
           </h2>
+          <div className="flex flex-wrap items-center gap-2 shrink-0 text-xs">
+            <Link to="/calendar" className={QV_LINK_PILL}>
+              Calendar
+              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
+            </Link>
+            <Link to="/tasks" className={QV_LINK_PILL}>
+              Tasks
+              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
+            </Link>
+          </div>
         </div>
 
         <div className="p-4 sm:p-5">
@@ -614,55 +744,6 @@ export function DashboardQuickView() {
                 {timelineItems.map((item) => item.element)}
               </ul>
             </div>
-          )}
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border bg-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-300" aria-labelledby="qv-next-heading">
-        <div className="p-3 sm:p-4 border-b border-border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <Calendar className="text-blue-500 shrink-0" size={18} />
-            <h2 id="qv-next-heading" className="font-semibold truncate text-sm sm:text-base">
-              What&apos;s next
-            </h2>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 shrink-0 text-xs">
-            <Link to="/calendar" className={QV_LINK_PILL}>
-              Calendar
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-            <Link to="/tasks" className={QV_LINK_PILL}>
-              Tasks
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
-        </div>
-        <div className="p-3 sm:p-4">
-          {nextUp.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <CheckSquare className="mx-auto mb-2 opacity-50" size={24} />
-              <p className="text-sm">Nothing scheduled ahead. You&apos;re clear.</p>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {nextUp.map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/20"
-                >
-                  <div className="w-1.5 self-stretch min-h-[2.5rem] rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm break-words">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{formatItemWhen(item)}</p>
-                  </div>
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground shrink-0">
-                    {item.kind === 'task' && 'Task'}
-                    {item.kind === 'habit' && 'Habit'}
-                    {item.kind === 'event' && 'Event'}
-                  </span>
-                </li>
-              ))}
-            </ul>
           )}
         </div>
       </section>

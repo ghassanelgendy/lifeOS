@@ -67,7 +67,7 @@ export function useDashboardUpcomingItems(options?: {
         id: `event-${event.id}`,
         title: event.title,
         start_time: event.start_time,
-        color: event.color ?? '#3b82f6',
+        color: event.color ?? '#6366f1',
         kind: 'event',
         type: event.type,
       });
@@ -86,7 +86,7 @@ export function useDashboardUpcomingItems(options?: {
         id: `task-${task.id}`,
         title: task.title,
         start_time: startTime,
-        color: '#a855f7',
+        color: '#f59e0b',
         kind: 'task',
         entityId: task.id,
         allDay: !(task.due_time && task.due_time.length >= 5),

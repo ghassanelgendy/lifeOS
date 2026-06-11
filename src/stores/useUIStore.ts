@@ -138,28 +138,6 @@ interface UIState {
 
   // Default pages
   defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
-
-  // Dashboard: widget order and visibility
-  dashboardWidgetOrder: string[];
-  dashboardWidgetVisible: Record<string, boolean>;
-  setDashboardWidgetOrder: (order: string[]) => void;
-  setDashboardWidgetVisible: (visible: Record<string, boolean>) => void;
-  toggleDashboardWidget: (id: string) => void;
-  moveDashboardWidget: (id: string, direction: 'up' | 'down') => void;
-
-  /** Which dashboard layout Home uses (persisted). */
-  dashboardMode: DashboardMode;
-  setDashboardMode: (mode: DashboardMode) => void;
-  /** Advance to next mode (for settings double-click). */
-  cycleDashboardMode: () => void;
-  /** Strategic mode chart range (persisted). */
-  strategicHorizonDays: StrategicHorizonDays;
-  setStrategicHorizonDays: (days: StrategicHorizonDays) => void;
-  annualReviewNotesByYear: Record<string, string>;
-  setAnnualReviewNotesForYear: (year: string, note: string) => void;
-
-  // Default pages
-  defaultTab: string; // e.g. 'dashboard', 'tasks', 'finance', 'screentime'
   setDefaultTab: (tab: string) => void;
   /** Default Tasks view: smart list id ('today'|'week'|'upcoming'|'all'|'completed') or custom list uuid */
   defaultTaskView: string | null;

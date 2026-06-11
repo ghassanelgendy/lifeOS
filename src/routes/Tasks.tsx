@@ -672,7 +672,7 @@ export default function Tasks() {
         title: habit.title,
         description: habit.description || undefined,
         is_completed: isCompleted,
-        completed_at: isCompleted ? habitLog?.created_at : undefined,
+        completed_at: isCompleted ? habitLog?.completed_at : undefined,
         priority: 'none' as TaskPriority,
         due_date: todayStr,
         due_time: habit.time || undefined,

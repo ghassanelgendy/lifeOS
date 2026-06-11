@@ -833,12 +833,23 @@ export default function Habits() {
                         Detox {detoxConfig.mode}: {stats.soberDays}d sober / target {detoxTarget}d
                       </span>
                     )}
-                    {habit.time && (
-                      <span className="flex items-center gap-1 flex-shrink-0">
-                        <Clock size={12} />
-                        {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
-                      </span>
-                    )}
+                    {(() => {
+                      const insight = habitInsights[habit.id];
+                      return habit.time ? (
+                        <span className="flex items-center gap-1 flex-shrink-0">
+                          <Clock size={12} />
+                          {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
+                          {insight?.eventCount > 0 && ` (${insight.usualTimeLabel})`}
+                        </span>
+                      ) : (
+                        insight?.eventCount > 0 && (
+                          <span className="flex items-center gap-1 flex-shrink-0">
+                            <Clock size={12} />
+                            {insight.usualTimeLabel}
+                          </span>
+                        )
+                      );
+                    })()}
                   </div>
                 </div>
                 <div className="text-right">
