@@ -322,6 +322,7 @@ export default function Tasks() {
 
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Clean up any pending sort feedback timeout on unmount.
@@ -590,7 +591,7 @@ export default function Tasks() {
   }, []);
 
   // Swipe left/right to change view (Today ↔ Week ↔ Upcoming) on mobile
-  const VIEW_SWIPE_ORDER: ViewType[] = ['today', 'week', 'upcoming'];
+  const VIEW_SWIPE_ORDER = useMemo<ViewType[]>(() => ['today', 'week', 'upcoming'], []);
   useEffect(() => {
     const list = taskListRef.current;
     if (!list) return;
@@ -635,6 +636,7 @@ export default function Tasks() {
       list.removeEventListener('touchstart', onTouchStart);
       list.removeEventListener('touchend', onTouchEnd);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeView]);
 
   useEffect(() => {

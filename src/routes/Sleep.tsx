@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useState } from 'react';
 import { format, parseISO, subDays } from 'date-fns';
-import { Moon, Clock, Activity } from 'lucide-react';
+import { Moon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../lib/utils';

@@ -56,7 +56,7 @@ function loadDB(): Database {
     if (stored) {
       return { ...defaultDatabase, ...JSON.parse(stored) };
     }
-  } catch (e) {
+  } catch {
   }
   return defaultDatabase;
 }
@@ -65,7 +65,7 @@ function loadDB(): Database {
 function saveDB(db: Database): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
-  } catch (e) {
+  } catch {
   }
 }
 
@@ -992,7 +992,7 @@ export const dbUtils = {
       const data = JSON.parse(jsonData) as Database;
       saveDB({ ...defaultDatabase, ...data });
       return true;
-    } catch (e) {
+    } catch {
       return false;
     }
   },

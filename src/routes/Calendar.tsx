@@ -589,7 +589,7 @@ export default function CalendarPage() {
       await queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setIsModalOpen(false);
       setEditingEvent(null);
-    } catch (err) {
+    } catch {
     }
   };
 

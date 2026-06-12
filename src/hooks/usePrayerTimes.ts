@@ -26,7 +26,7 @@ export function usePrayerTimes() {
     try {
       const times = new PrayerTimes(coords, date, params);
       setPrayerTimes(times);
-    } catch (e) {
+    } catch {
     }
   }, [lat, lng]);
 

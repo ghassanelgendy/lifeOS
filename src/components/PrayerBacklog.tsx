@@ -24,7 +24,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   const { setPrayerStatusAtDate } = useSetPrayerStatusAtDate();
   const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
 
   // Get prayer habits to map logs to prayer names
   const { data: prayerHabits = [] } = useQuery({

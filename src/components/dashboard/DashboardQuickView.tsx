@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
-import { ArrowRight, Check, Flame, Moon, Monitor, Sparkles } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
@@ -163,7 +161,7 @@ function DueTodayRow({
           )}
           aria-hidden
         >
-          <Sparkles className="size-4 text-muted-foreground/50" />
+          <div className="size-4 text-muted-foreground/50" />
         </div>
       )}
 
@@ -237,7 +235,7 @@ export function DashboardQuickView() {
     }
   };
 
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const todayStr = format(today, 'yyyy-MM-dd');
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { data: todayTasks = [] } = useTodayTasks();

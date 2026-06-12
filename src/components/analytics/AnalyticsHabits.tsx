@@ -1,4 +1,4 @@
-import { Flame, TrendingUp } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip as RechartsTooltip, ReferenceLine, Bar, Cell } from 'recharts';
 import { aggregateWeekly } from '../../lib/analytics-utils';
@@ -12,7 +12,6 @@ interface AnalyticsHabitsProps {
   habitsAgg: any;
   allHabits: any[];
   habitInsights: any;
-  prayerSummary: any;
   daily: any;
   missedByDate: Map<string, string[]>;
   rangeLabel: string;
@@ -23,11 +22,33 @@ interface AnalyticsHabitsProps {
   habitLogsRange: any[]; // Needed to calculate weekly avg for individual habits
 }
 
+const CustomTooltip = ({ active, payload, missedByDate }: any) => {
+  if (!active || !payload?.length) return null;
+  const entry = payload[0]?.payload;
+  const pct: number = entry?.adherence ?? 0;
+  const fullDate: string = entry?.fullDate ?? '';
+  const missed = missedByDate.get(fullDate) ?? [];
+  const barColor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
+  return (
+    <div style={{ backgroundColor: '#1a1a2e', border: `1px solid ${barColor}40`, borderRadius: '0.5rem', padding: '10px 12px', fontSize: 12, color: '#fff', maxWidth: 220 }}>
+      <p style={{ fontWeight: 700, color: barColor, marginBottom: 4 }}>{pct}% adherence</p>
+      <p style={{ color: '#94a3b8', marginBottom: missed.length ? 6 : 0 }}>{fullDate}</p>
+      {missed.length > 0 && (
+        <>
+          <p style={{ color: '#ef4444', fontWeight: 600, marginBottom: 3 }}>Missed / relapses:</p>
+          {missed.slice(0, 6).map((m: any, i: number) => <p key={i} style={{ color: '#fca5a5', marginBottom: 1 }}>• {m}</p>)}
+          {missed.length > 6 && <p style={{ color: '#94a3b8' }}>+{missed.length - 6} more</p>}
+        </>
+      )}
+      {missed.length === 0 && pct > 0 && <p style={{ color: '#86efac' }}>✓ All habits done!</p>}
+    </div>
+  );
+};
+
 export function AnalyticsHabits({
   habitsAgg,
   allHabits,
   habitInsights,
-  prayerSummary,
   daily,
   missedByDate,
   rangeLabel,
@@ -44,29 +65,6 @@ export function AnalyticsHabits({
     date: r.date.slice(5),
     adherence: Math.round(r.adherence_pct),
   }));
-
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (!active || !payload?.length) return null;
-    const entry = payload[0]?.payload;
-    const pct: number = entry?.adherence ?? 0;
-    const fullDate: string = entry?.fullDate ?? '';
-    const missed = missedByDate.get(fullDate) ?? [];
-    const barColor = pct >= 80 ? '#22c55e' : pct >= 50 ? '#f59e0b' : '#ef4444';
-    return (
-      <div style={{ backgroundColor: '#1a1a2e', border: `1px solid ${barColor}40`, borderRadius: '0.5rem', padding: '10px 12px', fontSize: 12, color: '#fff', maxWidth: 220 }}>
-        <p style={{ fontWeight: 700, color: barColor, marginBottom: 4 }}>{pct}% adherence</p>
-        <p style={{ color: '#94a3b8', marginBottom: missed.length ? 6 : 0 }}>{fullDate}</p>
-        {missed.length > 0 && (
-          <>
-            <p style={{ color: '#ef4444', fontWeight: 600, marginBottom: 3 }}>Missed / relapses:</p>
-            {missed.slice(0, 6).map((m, i) => <p key={i} style={{ color: '#fca5a5', marginBottom: 1 }}>• {m}</p>)}
-            {missed.length > 6 && <p style={{ color: '#94a3b8' }}>+{missed.length - 6} more</p>}
-          </>
-        )}
-        {missed.length === 0 && pct > 0 && <p style={{ color: '#86efac' }}>✓ All habits done!</p>}
-      </div>
-    );
-  };
 
   const newHabits = allHabits.filter((h) => {
     const created = h.created_at?.slice(0, 10);
@@ -198,7 +196,7 @@ export function AnalyticsHabits({
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.4} vertical={false} />
                   <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} axisLine={false} tickLine={false} interval={Math.max(0, Math.floor(chartData.length / 8) - 1)} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                  <RechartsTooltip content={<CustomTooltip />} cursor={{ fill: 'var(--color-secondary)', opacity: 0.5 }} />
+                  <RechartsTooltip content={<CustomTooltip missedByDate={missedByDate} />} cursor={{ fill: 'var(--color-secondary)', opacity: 0.5 }} />
                   <ReferenceLine y={habitsAgg.avgAdherence} stroke="var(--color-primary)" strokeDasharray="4 2" strokeWidth={1.5} opacity={0.6} />
                   <Bar dataKey="adherence" radius={[4, 4, 0, 0]} maxBarSize={32} isAnimationActive={false}>
                     {chartData.map((entry: any, index: number) => (

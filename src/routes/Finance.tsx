@@ -142,6 +142,10 @@ export default function Finance() {
     ensureDefaultBanks.mutate();
   }, [user?.id, banksLoading, banks.length]);
 
+  // QNB account filter (visible only when bank is QNB): debit 0050/**7893, credit ****1473
+  const QNB_DEBIT = /0050|\*\*7893|7893/;
+  const QNB_CREDIT = /1473|\*\*\*1473/;
+
   // Ensure default investment accounts (Thndr, Fawry) exist once
   useEffect(() => {
     if (!user?.id || invAccountsLoading || activeTab !== 'investments' || hasEnsuredInvDefaults.current) return;

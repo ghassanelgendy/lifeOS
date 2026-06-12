@@ -131,7 +131,7 @@ function AppInner() {
           return;
         }
         sessionStorage.setItem('pwa_reload_time', now.toString());
-      } catch (e) {
+      } catch {
         // Fallback if sessionStorage is disabled or blocked
       }
 
