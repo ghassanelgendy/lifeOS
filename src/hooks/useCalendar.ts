@@ -165,11 +165,12 @@ export function useIcalSubscriptionEvents(
 // Get upcoming events for dashboard (only future events, no past)
 export function useUpcomingEvents(days: number = 7) {
   const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const futureDate = addDays(now, days);
-  const events = useExpandedCalendarEvents(now, futureDate);
+  const events = useExpandedCalendarEvents(startOfToday, futureDate);
   return events.filter((event) => {
     const start = new Date(event.start_time);
-    return start > now && start <= futureDate;
+    return start >= startOfToday && start <= futureDate;
   });
 }
 

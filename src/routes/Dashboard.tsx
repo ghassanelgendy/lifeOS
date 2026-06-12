@@ -33,7 +33,7 @@ export default function Dashboard() {
   const label = dashboardMode === 'quick_view' ? getGreeting() : DASHBOARD_MODE_LABELS[dashboardMode];
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <div className="space-y-3 sm:space-y-4 overflow-x-hidden w-full max-w-full">
       <header className="rounded-lg border border-transparent px-1 py-1 -mx-1" aria-live="polite">
         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{label}</h1>
         <p className="text-muted-foreground text-sm sm:text-base">{format(new Date(), 'EEEE, MMMM d, yyyy')}</p>

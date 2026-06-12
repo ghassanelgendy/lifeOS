@@ -81,7 +81,6 @@ export function AnalyticsOverview({
                 .sort((a, b) => a[0].localeCompare(b[0]))
                 .map((x) => Math.round((x[1] / 60) * 10) / 10);
             })()}
-            unit="min"
             invertTrend
           />
         </button>

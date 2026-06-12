@@ -434,9 +434,8 @@ export default function Habits() {
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
           <p className="text-muted-foreground">Build good habits and detox bad ones</p>
         </div>
-        <Button onClick={() => handleOpenModal()}>
+        <Button size="icon" onClick={() => handleOpenModal()} aria-label="New Habit">
           <Plus size={18} />
-          New Habit
         </Button>
       </div>
 

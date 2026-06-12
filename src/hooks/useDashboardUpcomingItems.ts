@@ -12,6 +12,7 @@ export interface DashboardUpcomingItem {
   id: string;
   title: string;
   start_time: string;
+  end_time?: string;
   color: string;
   kind: DashboardUpcomingItemKind;
   type?: string;
@@ -59,14 +60,11 @@ export function useDashboardUpcomingItems(options?: {
 
     for (const event of upcomingEvents) {
       const eventKey = `event:${event.id}`;
-      const hasLinkedTask = upcomingTasks.some(
-        (task) => task.calendar_event_id === event.id || task.calendar_source_key === eventKey,
-      );
-      if (hasLinkedTask) continue;
       items.set(eventKey, {
         id: `event-${event.id}`,
         title: event.title,
         start_time: event.start_time,
+        end_time: event.end_time,
         color: event.color ?? '#6366f1',
         kind: 'event',
         type: event.type,
@@ -74,14 +72,13 @@ export function useDashboardUpcomingItems(options?: {
     }
 
     for (const task of upcomingTasks) {
+      if (task.calendar_event_id || task.calendar_source_key) continue;
       if (!task.due_date) continue;
       const timePart = task.due_time && task.due_time.length >= 5 ? task.due_time.slice(0, 5) : '00:00';
       const parsed = new Date(`${task.due_date}T${timePart}`);
       if (parsed <= now) continue;
       const startTime = Number.isNaN(parsed.getTime()) ? `${task.due_date}T00:00:00` : parsed.toISOString();
-      const dedupeKey = task.calendar_event_id
-        ? `event:${task.calendar_event_id}`
-        : task.calendar_source_key || `task:${task.id}`;
+      const dedupeKey = `task:${task.id}`;
       items.set(dedupeKey, {
         id: `task-${task.id}`,
         title: task.title,

@@ -274,7 +274,7 @@ export function AppShell() {
             className={cn(
               "flex flex-col p-4 md:p-6 section-slide-in",
               "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
-              isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full"
+              isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
             )}
             style={
               {

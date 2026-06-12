@@ -508,8 +508,8 @@ export default function CalendarPage() {
       setFormData({
         title: calEvent.title,
         type: calEvent.type,
-        start_time: calEvent.start_time.slice(0, 16),
-        end_time: calEvent.end_time.slice(0, 16),
+        start_time: format(new Date(calEvent.start_time), "yyyy-MM-dd'T'HH:mm"),
+        end_time: format(new Date(calEvent.end_time), "yyyy-MM-dd'T'HH:mm"),
         all_day: calEvent.all_day,
         color: calEvent.color,
         description: calEvent.description,
@@ -557,17 +557,21 @@ export default function CalendarPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const eventData = {
+    const eventData: any = {
       ...formData,
       color: EVENT_TYPE_COLORS[formData.type as EventType],
-    } as CreateInput<CalendarEvent>;
-    if (!eventData.all_day && eventData.start_time && eventData.end_time) {
+    };
+    if (eventData.recurrence_end === '') {
+      eventData.recurrence_end = null;
+    }
+    if (eventData.start_time && eventData.end_time) {
       const start = new Date(eventData.start_time);
       const end = new Date(eventData.end_time);
-      if (end <= start) {
+      if (!eventData.all_day && end <= start) {
         end.setDate(end.getDate() + 1);
-        eventData.end_time = format(end, "yyyy-MM-dd'T'HH:mm");
       }
+      eventData.start_time = start.toISOString();
+      eventData.end_time = end.toISOString();
     }
 
     try {
@@ -654,9 +658,8 @@ export default function CalendarPage() {
             <CalendarPlus size={18} />
             Add to Calendar
           </Button>
-          <Button onClick={() => void handleOpenModal()}>
+          <Button size="icon" onClick={() => void handleOpenModal()} aria-label="Add Event">
             <Plus size={18} />
-            Add Event
           </Button>
         </div>
       </div>
