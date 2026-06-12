@@ -35,26 +35,15 @@ dist-ssr
 /src-tauri
 *.txt
 
-<<<<<<< Updated upstream
 # iOS 6 lite: optional auto-login secrets (never commit)
 public/ios6-lite/legacy-autologin.local.js
 public/ios6-check.html
-/public/ios6-lite
-/UIWebViewWrapper
 dist.zip
-=======
 # Replit
 .cache/
 .local/
 /src-tauri
 /UIWebViewWrapper
->>>>>>> Stashed changes
 /public/ios6-lite
-/public/ios6-lite
-/supabase/*
-!/supabase/migrations/
-/supabase/migrations/*
-!/supabase/migrations/20260505000002_prayer_logs_late_status.sql
 /scripts
-/supabase
-/supabase
+supabase/SUPABASE_ISSUE.MD
