@@ -9,12 +9,13 @@ on:
       - main
 
 jobs:
-  build:
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Setup pnpm
@@ -29,11 +30,69 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Security Audit
-        run: pnpm audit || true
+      - name: Typecheck
+        run: pnpm typecheck
 
       - name: Lint
         run: pnpm lint
 
+      - name: Test
+        run: pnpm test
+
       - name: Build
         run: pnpm build
+
+  security-sast:
+    name: SAST & Secrets Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for secret scanning
+
+      - name: Gitleaks (Secret Scanning)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: njsscan (SAST)
+        uses: ajinabraham/njsscan-action@master
+        with:
+          args: '. --sarif --output results.sarif || true'
+
+  security-dast:
+    name: DAST (OWASP ZAP)
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Start Dev Server
+        run: |
+          pnpm dev &
+          npx wait-on http://localhost:5173
+
+      - name: OWASP ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'http://localhost:5173'
+          fail_action: false # Do not fail the pipeline on ZAP warnings (DAST often throws false positives locally)
+          cmd_options: '-a'
+          allow_issue_writing: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
