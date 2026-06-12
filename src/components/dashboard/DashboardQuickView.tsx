@@ -502,24 +502,29 @@ export function DashboardQuickView() {
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
     const isHabit = item.kind === 'habit';
     const insight = (isHabit && item.entityId) ? habitInsights[item.entityId] : undefined;
+    const pct = insight ? insight.adherencePct : 0;
     const hasUsualTime = insight && insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet';
 
-    if (isHabit && item.allDay && isToday(parseISO(item.start_time))) {
-      if (hasUsualTime) {
-        return insight.usualTimeLabel;
-      }
-      return 'Today · Any time';
-    }
     if (item.allDay && item.kind === 'task' && isToday(parseISO(item.start_time))) {
-      return 'Today · All day';
+      return 'All day';
     }
 
     let whenStr = isToday(parseISO(item.start_time))
-      ? `Today · ${format(parseISO(item.start_time), 'h:mm a')}`
+      ? format(parseISO(item.start_time), 'h:mm a')
       : format(parseISO(item.start_time), 'EEE, MMM d · h:mm a');
 
-    if (isHabit && hasUsualTime) {
-      whenStr += ` · ${insight.usualTimeLabel}`;
+    if (isHabit) {
+      if (!item.allDay) {
+        return `${pct}% · ${whenStr}`;
+      }
+      
+      let prefix = isToday(parseISO(item.start_time)) ? '' : format(parseISO(item.start_time), 'EEE, MMM d · ');
+      
+      if (hasUsualTime && insight?.usualTimeLabel) {
+        return `${pct}% · ${prefix}${insight.usualTimeLabel.replace(/^Usually\s+/i, '')}`;
+      }
+      
+      return `${pct}% · ${prefix}Any time`;
     }
 
     return whenStr;
@@ -609,7 +614,7 @@ export function DashboardQuickView() {
           <DueTodayRow
             kind="task"
             title={t.title}
-            subtitle={t.due_time && t.due_time.length >= 5 ? `Today · ${format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a')}` : 'Today'}
+            subtitle={t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time'}
             done={isPending ? pendingTarget : false}
             busy={toggleTask.isPending}
             showToggle
@@ -629,22 +634,36 @@ export function DashboardQuickView() {
     const pendingTarget = pendingData?.targetState ?? !done;
     const visualDone = isPending ? pendingTarget : done;
     
-    let subtitle = 'Today · any time';
     const insight = habitInsights[h.id];
+    const pct = insight ? insight.adherencePct : 0;
     const hasUsualTime = insight && insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet';
     
-    if (insight && insight.eventCount > 0) {
-      if (done && insight.lastEventDate && insight.lastEventDate < todayStr) {
-        subtitle = `Streak maintained!`;
-      } else if (!done && insight.adherencePct >= 80) {
-        subtitle = `On track (${insight.adherencePct}%)`;
+    let timeStr = 'Any time';
+    let minutes = 1440;
+    
+    if (done) {
+      const log = todayLogs.find((l) => l.habit_id === h.id && l.date === todayStr && l.completed);
+      if (log && log.completed_at) {
+        timeStr = format(parseISO(log.completed_at), 'h:mm a');
+        minutes = isoToDayMinutes(log.completed_at) ?? 1440;
+      } else if (h.time && h.time.length >= 5) {
+        timeStr = format(new Date(`2000-01-01T${h.time.slice(0, 5)}`), 'h:mm a');
+        minutes = timeStringToMinutes(h.time) ?? 1440;
       }
-    } else if (hasUsualTime) {
-      subtitle = insight.usualTimeLabel;
+    } else {
+      if (h.time && h.time.length >= 5) {
+        timeStr = format(new Date(`2000-01-01T${h.time.slice(0, 5)}`), 'h:mm a');
+        minutes = timeStringToMinutes(h.time) ?? 1440;
+      } else if (hasUsualTime && insight?.usualTimeLabel) {
+        timeStr = insight.usualTimeLabel.replace(/^Usually\s+/i, '');
+        minutes = habitAverages[h.id] ?? 1440;
+      }
     }
 
+    const subtitle = `${pct}% · ${timeStr}`;
+
     timelineItems.push({
-      timeValue: h.time ? (timeStringToMinutes(h.time) ?? 1440) : (habitAverages[h.id] ?? 1440),
+      timeValue: minutes,
       done,
       element: (
         <li key={`habit-${h.id}`}>
@@ -777,15 +796,22 @@ export function DashboardQuickView() {
     const isPending = !!pendingToggles[key];
     const visualDone = isPending ? false : true;
 
+    let minutes = 1440;
+    if (t.completed_at) {
+      minutes = isoToDayMinutes(t.completed_at) ?? 1440;
+    } else if (t.due_time && t.due_time.length >= 5) {
+      minutes = timeStringToMinutes(t.due_time) ?? 1440;
+    }
+
     timelineItems.push({
-      timeValue: t.due_time ? (timeStringToMinutes(t.due_time) ?? 1440) : 1440,
+      timeValue: minutes,
       done: true,
       element: (
         <li key={key}>
           <DueTodayRow
             kind="task"
             title={t.title}
-            subtitle={t.due_time && t.due_time.length >= 5 ? `Today · ${format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a')}` : 'Today'}
+            subtitle={t.completed_at ? format(parseISO(t.completed_at), 'h:mm a') : (t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time')}
             done={visualDone}
             busy={toggleTask.isPending}
             showToggle
