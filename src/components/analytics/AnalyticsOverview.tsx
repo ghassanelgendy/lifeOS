@@ -2,8 +2,8 @@ import { DataCard } from '../DataCard';
 import { formatCurrency } from '../../lib/utils';
 import { formatMinutes, formatSeconds, aggregateWeekly } from '../../lib/analytics-utils';
 import { Sparkles, TrendingUp } from 'lucide-react';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell 
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell
 } from 'recharts';
 
 interface AnalyticsOverviewProps {
@@ -37,14 +37,14 @@ export function AnalyticsOverview({
 }: AnalyticsOverviewProps) {
 
   // Weekly calculations
-  const sleepWeekly = aggregateWeekly(daily.sleep.data ?? [], r => r.total_minutes);
-  const screenWeekly = aggregateWeekly(daily.screentime.data ?? [], r => r.total_time_seconds);
-  const spendWeekly = aggregateWeekly(daily.finance.data ?? [], r => Number(r.expense));
-  const habitsWeekly = aggregateWeekly(daily.habits.data ?? [], r => Number(r.adherence_pct));
+  const sleepWeekly = aggregateWeekly(daily.sleep.data ?? [], (r: any) => r.total_minutes);
+  const screenWeekly = aggregateWeekly(daily.screentime.data ?? [], (r: any) => r.total_time_seconds);
+  const spendWeekly = aggregateWeekly(daily.finance.data ?? [], (r: any) => Number(r.expense));
+  const habitsWeekly = aggregateWeekly(daily.habits.data ?? [], (r: any) => Number(r.adherence_pct));
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
+
       {/* KPI summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <button
