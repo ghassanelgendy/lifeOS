@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { Link } from 'react-router-dom';
 import { format, isToday, parseISO } from 'date-fns';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
@@ -199,7 +201,7 @@ function DueTodayRow({
 
 export function DashboardQuickView() {
   const [parent] = useAutoAnimate();
-  const [pendingToggles, setPendingToggles] = useState<Record<string, { timeout: NodeJS.Timeout; targetState: boolean }>>({});
+  const [pendingToggles, setPendingToggles] = useState<Record<string, { timeout: ReturnType<typeof setTimeout>; targetState: boolean }>>({});
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   const handleTooltipClick = (id: string) => {
@@ -231,7 +233,7 @@ export function DashboardQuickView() {
           });
         }
       }, 1000);
-      setPendingToggles((p) => ({ ...p, [id]: { timeout: timeout as unknown as NodeJS.Timeout, targetState } }));
+      setPendingToggles((p) => ({ ...p, [id]: { timeout: timeout as unknown as ReturnType<typeof setTimeout>, targetState } }));
     }
   };
 
@@ -445,7 +447,7 @@ export function DashboardQuickView() {
         if (!isToday(parsedStart)) continue;
         const parsedEnd = parseISO(item.end_time || item.start_time);
         
-        const eventKey = item.isIcal ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+        const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
         const linkedTask = completedTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', ''));
         const isManuallyDone = !!linkedTask?.is_completed;
         const isAutoDone = parsedEnd < today;
@@ -563,7 +565,7 @@ export function DashboardQuickView() {
             busy={prayerLoading}
             showToggle={lastPrayerCanTick}
             label={`Mark ${lastPrayerSlot.name} as prayed`}
-            onToggle={lastPrayerTrackerItem ? () => handleToggleWrapper('prayer-next', () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed')) : undefined}
+            onToggle={lastPrayerTrackerItem ? () => handleToggleWrapper('prayer-next', !lastPrayerDone, () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed')) : undefined}
           />
         </li>
       ),
@@ -709,7 +711,7 @@ export function DashboardQuickView() {
     let updatedTimeValue = timeValue;
 
     if (isEvent) {
-      const eventKey = item.isIcal ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+      const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
       linkedTask = completedTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', '')) 
         || todayTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', ''))
         || overdueTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', ''));
@@ -763,7 +765,7 @@ export function DashboardQuickView() {
                         if (linkedTask) {
                           await toggleTask.mutateAsync(linkedTask.id);
                         } else {
-                          const eventKey = item.isIcal ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+                          const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
                           await createTask.mutateAsync({
                             title: item.title,
                             is_completed: true,
@@ -771,8 +773,9 @@ export function DashboardQuickView() {
                             due_date: format(parsedStart, 'yyyy-MM-dd'),
                             due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
                             calendar_source_key: eventKey,
-                            calendar_event_id: item.isIcal ? null : item.id.replace('event-', ''),
+                            calendar_event_id: item.type === 'ical' ? null : item.id.replace('event-', ''),
                             tag_ids: [],
+                            recurrence: 'none',
                           });
                         }
                       })
@@ -814,7 +817,7 @@ export function DashboardQuickView() {
             busy={toggleTask.isPending}
             showToggle
             label={`Complete task ${t.title}`}
-            onToggle={() => handleToggleWrapper(key, () => toggleTask.mutate(t.id))}
+            onToggle={() => handleToggleWrapper(key, !visualDone, () => toggleTask.mutate(t.id))}
           />
         </li>
       ),

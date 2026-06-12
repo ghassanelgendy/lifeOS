@@ -172,9 +172,6 @@ export default function Finance() {
       ? transactions
       : transactions.filter((t) => (t.bank || '').trim() === selectedBank);
 
-  // QNB account filter (visible only when bank is QNB): debit 0050/**7893, credit ****1473
-  const QNB_DEBIT = /0050|\*\*7893|7893/;
-  const QNB_CREDIT = /1473|\*\*\*1473/;
   const filteredTransactions = useMemo(() => {
     if (selectedBank !== 'QNB' || selectedQNBAccount === 'all') return bankFilteredTransactions;
     return bankFilteredTransactions.filter((t) => {
