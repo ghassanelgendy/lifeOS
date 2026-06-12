@@ -42,6 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // codeql[js/request-forgery] Mitigated: This is a public calendar proxy. Internal IPs and localhost are explicitly blocked above.
     const response = await fetch(parsedUrl.toString(), {
       headers: { 'User-Agent': 'lifeOS/1.0', Accept: 'text/calendar, text/plain, */*' },
       cache: 'no-store',
