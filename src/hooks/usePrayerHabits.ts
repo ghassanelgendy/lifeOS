@@ -338,7 +338,49 @@ export function usePrayerTracker(date: Date = new Date()) {
         status: input.status,
       });
     },
-    onSuccess: () => {
+    onMutate: async (input: { prayer: PrayerTrackerItem; status: PrayerStatus }) => {
+      const todayKey = [...QUERY_KEY, user?.id, 'today', dateStr];
+      await queryClient.cancelQueries({ queryKey: todayKey });
+      const previousLogs = queryClient.getQueryData(todayKey);
+
+      queryClient.setQueryData(todayKey, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        const newLogs = [...old];
+        const existingIndex = newLogs.findIndex((l) => l.prayer_habit_id === input.prayer.prayerHabitId);
+        
+        if (existingIndex >= 0) {
+          if (newLogs[existingIndex].status === input.status) {
+            // Undo case
+            newLogs.splice(existingIndex, 1);
+          } else {
+            // Update case
+            newLogs[existingIndex] = {
+              ...newLogs[existingIndex],
+              status: input.status,
+              prayed_at: isPrayerStatusComplete(input.status) ? new Date().toISOString() : null,
+            };
+          }
+        } else {
+          // Insert case
+          newLogs.push({
+            id: `optimistic-${Date.now()}`,
+            prayer_habit_id: input.prayer.prayerHabitId,
+            date: dateStr,
+            status: input.status,
+            prayed_at: isPrayerStatusComplete(input.status) ? new Date().toISOString() : null,
+          });
+        }
+        return newLogs;
+      });
+
+      return { previousLogs, todayKey };
+    },
+    onError: (err, variables, context: any) => {
+      if (context?.previousLogs) {
+        queryClient.setQueryData(context.todayKey, context.previousLogs);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'today', dateStr] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'weekly', dateStr] });
       queryClient.invalidateQueries({ queryKey: ['habit-logs'] });

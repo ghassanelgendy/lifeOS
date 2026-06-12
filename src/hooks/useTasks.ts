@@ -591,10 +591,38 @@ export function useToggleTask() {
       }
       return updatedTask;
     },
-    onSuccess: () => {
-      if (isOnline()) {
-        queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries({ queryKey: TASKS_KEY });
+      const previousTasks = queryClient.getQueriesData({ queryKey: TASKS_KEY });
+
+      queryClient.setQueriesData({ queryKey: TASKS_KEY }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((t: Task) => {
+          if (t.id === id) {
+            const newCompleted = !t.is_completed;
+            return {
+              ...t,
+              is_completed: newCompleted,
+              is_wont_do: false,
+              completed_at: newCompleted ? new Date().toISOString() : null,
+              updated_at: new Date().toISOString(),
+            };
+          }
+          return t;
+        });
+      });
+
+      return { previousTasks };
+    },
+    onError: (err, newTodo, context: any) => {
+      if (context?.previousTasks) {
+        context.previousTasks.forEach(([queryKey, data]: [any, any]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: TASKS_KEY });
     },
   });
 }

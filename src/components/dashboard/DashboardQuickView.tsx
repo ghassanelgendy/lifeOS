@@ -561,11 +561,11 @@ export function DashboardQuickView() {
                 ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
                 : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
             }
-            done={visualPrayerDone}
+            done={lastPrayerDone}
             busy={prayerLoading}
             showToggle={lastPrayerCanTick}
             label={`Mark ${lastPrayerSlot.name} as prayed`}
-            onToggle={lastPrayerTrackerItem ? () => handleToggleWrapper('prayer-next', !lastPrayerDone, () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed')) : undefined}
+            onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
           />
         </li>
       ),
@@ -590,11 +590,11 @@ export function DashboardQuickView() {
                 ? `Overdue · ${format(parseISO(t.due_date.includes('T') ? t.due_date : `${t.due_date}T12:00:00`), 'MMM d')}${t.due_time && t.due_time.length >= 5 ? ` · ${format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a')}` : ''}`
                 : 'Overdue'
             }
-            done={isPending ? pendingTarget : false}
+            done={false}
             busy={toggleTask.isPending}
             showToggle
             label={`Complete overdue task ${t.title}`}
-            onToggle={() => handleToggleWrapper(`task-${t.id}`, !isPending, () => toggleTask.mutate(t.id))}
+            onToggle={() => toggleTask.mutate(t.id)}
           />
         </li>
       ),
@@ -615,11 +615,11 @@ export function DashboardQuickView() {
             kind="task"
             title={t.title}
             subtitle={t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time'}
-            done={isPending ? pendingTarget : false}
+            done={false}
             busy={toggleTask.isPending}
             showToggle
             label={`Complete task ${t.title}`}
-            onToggle={() => handleToggleWrapper(`task-${t.id}`, !isPending, () => toggleTask.mutate(t.id))}
+            onToggle={() => toggleTask.mutate(t.id)}
           />
         </li>
       ),
@@ -671,12 +671,12 @@ export function DashboardQuickView() {
             kind="habit"
             title={h.title}
             subtitle={subtitle}
-            done={visualDone}
+            done={done}
             busy={logHabit.isPending}
             showToggle
             label={`Log habit ${h.title}`}
             color={h.color}
-            onToggle={() => handleToggleWrapper(`habit-${h.id}`, !visualDone, () => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done }))}
+            onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
           />
         </li>
       ),
@@ -739,7 +739,7 @@ export function DashboardQuickView() {
     }
 
     const currentDoneState = isEvent ? isManuallyDone || isAutoDone : false;
-    const isDone = isPending ? pendingTarget : currentDoneState;
+    const isDone = currentDoneState;
 
     timelineItems.push({
       timeValue: isEvent ? updatedTimeValue : timeValue,
@@ -757,11 +757,11 @@ export function DashboardQuickView() {
             color={item.color}
             onToggle={
               isTask && item.entityId
-                ? () => handleToggleWrapper(key, !isDone, () => toggleTask.mutate(item.entityId!))
+                ? () => toggleTask.mutate(item.entityId!)
                 : isHabit && item.entityId
-                  ? () => handleToggleWrapper(key, !isDone, () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true }))
+                  ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
                   : isEvent
-                    ? () => handleToggleWrapper(key, !isDone, async () => {
+                    ? async () => {
                         if (linkedTask) {
                           await toggleTask.mutateAsync(linkedTask.id);
                         } else {
@@ -794,9 +794,6 @@ export function DashboardQuickView() {
     if (addedKeys.has(key)) return;
     addedKeys.add(key);
 
-    const isPending = !!pendingToggles[key];
-    const visualDone = isPending ? false : true;
-
     let minutes = 1440;
     if (t.completed_at) {
       minutes = isoToDayMinutes(t.completed_at) ?? 1440;
@@ -813,11 +810,11 @@ export function DashboardQuickView() {
             kind="task"
             title={t.title}
             subtitle={t.completed_at ? format(parseISO(t.completed_at), 'h:mm a') : (t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time')}
-            done={visualDone}
+            done={true}
             busy={toggleTask.isPending}
             showToggle
             label={`Complete task ${t.title}`}
-            onToggle={() => handleToggleWrapper(key, !visualDone, () => toggleTask.mutate(t.id))}
+            onToggle={() => toggleTask.mutate(t.id)}
           />
         </li>
       ),

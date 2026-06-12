@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -340,7 +341,46 @@ export function useLogHabit() {
       }
       return result as HabitLog;
     },
-    onSuccess: () => {
+    onMutate: async ({ habitId, date, completed, note }) => {
+      await queryClient.cancelQueries({ queryKey: HABIT_LOGS_KEY });
+      const previousLogs = queryClient.getQueriesData({ queryKey: HABIT_LOGS_KEY });
+      const dateOnly = (date || '').split('T')[0];
+
+      queryClient.setQueriesData({ queryKey: HABIT_LOGS_KEY }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        const newLogs = [...old];
+        const existingIndex = newLogs.findIndex(l => l.habit_id === habitId && l.date === dateOnly);
+        
+        if (existingIndex >= 0) {
+          newLogs[existingIndex] = {
+            ...newLogs[existingIndex],
+            completed,
+            note: note !== undefined ? note : newLogs[existingIndex].note,
+            completed_at: completed ? new Date().toISOString() : null,
+          };
+        } else {
+          newLogs.push({
+            id: `optimistic-${Date.now()}`,
+            habit_id: habitId,
+            date: dateOnly,
+            completed,
+            note,
+            completed_at: completed ? new Date().toISOString() : null,
+          } as any);
+        }
+        return newLogs;
+      });
+
+      return { previousLogs };
+    },
+    onError: (err, newLog, context: any) => {
+      if (context?.previousLogs) {
+        context.previousLogs.forEach(([queryKey, data]: [any, any]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: HABIT_LOGS_KEY });
     },
   });
@@ -744,15 +784,16 @@ export function useWeeklyAdherence() {
     ? round1(scoredDays.reduce((sum, day) => sum + day.adherence, 0) / scoredDays.length)
     : 0;
 
-  // Filter logs for today for the UI usage
-  const todayLogs = logs.filter(l => l.date === todayStr);
+  // Filter logs for today for the UI usage and memoize both arrays
+  const todayLogs = useMemo(() => logs.filter(l => l.date === todayStr), [logs, todayStr]);
+  const weekLogs = useMemo(() => logs, [logs]);
 
   return {
     adherence: clampPct(adherence),
     totalExpected: scoredDays.reduce((sum, day) => sum + day.totalWeight, 0),
     totalCompleted: scoredDays.reduce((sum, day) => sum + Math.max(0, day.totalWeight - day.missedWeight), 0),
     dailyAdherence,
-    weekLogs: logs,
+    weekLogs,
     todayLogs,
     habits,
   };
