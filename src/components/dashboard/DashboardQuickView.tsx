@@ -778,7 +778,7 @@ export function DashboardQuickView() {
                             recurrence: 'none',
                           });
                         }
-                      })
+                      }
                     : undefined
             }
           />
