@@ -1,164 +1,113 @@
-# lifeOS
+<div align="center">
+  <h1>🌟 lifeOS</h1>
+  <p><strong>Your personal operating system for a focused, balanced, and intentional life.</strong></p>
+  <p>Turn “I should…” into <b>a concrete, calm plan</b> — and keep it close enough to reality that you’ll actually follow it.</p>
+  
+  <p>
+    <a href="https://life-os-tan.vercel.app"><b>✨ View Live Demo ✨</b></a>
+  </p>
 
-LifeOS is a personal operating system: one place to run your day-to-day life (tasks, habits, focus sessions, sleep, screentime, calendar, finance, analytics) with a fast UI and a Supabase-backed sync layer.
-
-## Demo
-
-Live: `https://life-os-tan.vercel.app`
-
-## Mission
-
-Turn “I should…” into **a concrete, calm plan** — and keep it close enough to reality that you’ll actually follow it.
-
-## Vision
-
-An OS for your life where your **intent** (plans) and your **evidence** (what happened) live together — so you can iterate on your routines with the same clarity you use to ship software.
-
-## What changes for you
-
-lifeOS is built for the problem that most tools avoid: **your life is multi-domain**, but your execution still needs to feel like one system.
-
-- **One home for execution**: tasks + habits + schedule + key signals in one place, so you stop context-switching.
-- **A tighter feedback loop**: plan the week → run today → review trends (sleep/screentime/finance/habits) → adjust.
-- **Less UI tax**: the same “details sheet” pattern across modules, so managing your system stays fast.
-- **Your metrics stay yours**: user-scoped analytics and auth boundaries (not shared averages leaking between users).
-- **Fits your workflow**: web-first, with installable PWA support.
-
-This repo is a **React + Vite + TypeScript** app, deployed on **Vercel**, with data stored in **Supabase**. It also supports a **PWA** service worker for installable offline-friendly use.
-
-[![React](https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white)](#)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript&logoColor=white)](#)
-[![Vite](https://img.shields.io/badge/Vite-7-646cff?logo=vite&logoColor=white)](#)
-[![Supabase](https://img.shields.io/badge/Supabase-db%20%2B%20auth%20%2B%20edge-3ecf8e?logo=supabase&logoColor=white)](#)
-[![Vercel](https://img.shields.io/badge/Vercel-deploy-000000?logo=vercel&logoColor=white)](#)
-[![PWA](https://img.shields.io/badge/PWA-enabled-5a0fc8?logo=pwa&logoColor=white)](#)
+  ![Hero Mockup](./public/1.jpeg)
+  
+  <div>
+    <img src="https://img.shields.io/badge/React-19-149eca?style=for-the-badge&logo=react&logoColor=white" alt="React" />
+    <img src="https://img.shields.io/badge/TypeScript-5.9-3178c6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Vite-7-646cff?style=for-the-badge&logo=vite&logoColor=white" alt="Vite" />
+    <img src="https://img.shields.io/badge/Supabase-3ecf8e?style=for-the-badge&logo=supabase&logoColor=white" alt="Supabase" />
+    <img src="https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel" />
+    <img src="https://img.shields.io/badge/PWA-5a0fc8?style=for-the-badge&logo=pwa&logoColor=white" alt="PWA" />
+  </div>
+</div>
 
 ---
 
-## Features (full list)
+## 🚀 The Vision
 
-- **Dashboard**
-  - Quick-view “Today” metrics and daily overview
-  - Strategic + annual review panels
-- **Tasks**
-  - Smart views: Today / Week / Upcoming / All / Completed / Won’t-do
-  - Lists and tags
-  - Details editing via bottom sheet (scrollable)
-- **Habits**
-  - Daily + weekly habits
-  - Habit logs and streaks
-  - Adherence % tracking
-  - Habit editing uses the same bottom-sheet details UX pattern
-  - Prayer habit tracking + notifications plumbing (Supabase Edge Functions)
-- **Weekly planner**
-  - Week-at-a-glance planning by day (Sunday start)
-  - Adds planner items + creates real tasks due on that day
-- **Focus**
-  - Focus sessions and tracking
-- **Sleep**
-  - Sleep sessions + trends
-  - Upload path via Supabase Edge Function
-- **Screentime**
-  - Daily summaries
-  - Apps + websites breakdown
-  - Upload path via Supabase Edge Function
-- **Calendar**
-  - Calendar events
-  - iCal subscription support
-- **Finance**
-  - Transactions
-  - Budgets + summaries
-  - SMS ingestion pipeline (Supabase function)
-- **Analytics**
-  - Cross-domain trend dashboards (habits/tasks/sleep/screentime/finance)
+An OS for your life where your **intent** (plans) and your **evidence** (what actually happened) live together. Iterate on your routines with the same clarity, precision, and ease you use to ship high-quality software. 
+
+**lifeOS is built for the problem that most tools avoid:** your life is multi-domain, but your execution needs to feel like one unified system.
+
+## 💎 Why lifeOS?
+
+- 🧠 **One Home for Execution:** Stop context-switching. Tasks, habits, schedules, and key metrics all live under one roof.
+- 🔄 **A Tighter Feedback Loop:** Plan the week ➡️ Run today ➡️ Review trends (sleep, screentime, finance, habits) ➡️ Adjust and improve.
+- ⚡ **Zero UI Tax:** Utilizing a consistent "details sheet" pattern across all modules ensures managing your system stays lightning fast.
+- 🔒 **Your Data, Your Metrics:** User-scoped analytics and strict auth boundaries mean your data is yours alone.
+- 📱 **Fits Your Workflow:** Built web-first, with robust PWA support so you can install it on your phone or desktop.
 
 ---
 
-## Tech stack (practical)
+## ✨ Everything You Need, In One Place
 
-- **Frontend**: React 19, React Router, TypeScript
-- **UI**: Tailwind utilities + repo UI primitives in `src/components/ui/*`
-- **State**: Zustand (`src/stores/*`)
-- **Data**: Supabase (`src/lib/supabase.ts`) + React Query caching
-- **Deploy**: Vercel (`vercel.json`)
-- **Supabase**:
-  - migrations in `supabase/migrations/`
-  - edge functions in `supabase/functions/`
-- **PWA**: `src/sw.ts` + `vite-plugin-pwa`
+![Feature Grid](./public/2.jpeg)
 
----
+### 📊 **The Command Center (Dashboard)**
+Get a bird's-eye view of your life. 
+* **Customizable Widgets:** Tailor your dashboard to show exactly what matters to you.
+* **Daily & Strategic Overviews:** Quick-view "Today" metrics and strategic panels for long-term goals.
 
-## Getting started (local dev)
+### ✅ **Smart Task & Goal Management**
+More than just a to-do list.
+* **Intelligent Views & Tags:** Slice your tasks by Today, Week, Upcoming, Completed, or "Won't-do". Organize with custom tags.
+* **Strategic Goals:** Break down yearly goals into manageable quarterly objectives and link them to your daily tasks.
+* **Weekly Planner:** Plan your week by day. Add items that magically create real tasks due on that specific day.
+* **Focus Mode:** Track focus time and track urgent/flagged items.
 
-### Prereqs
-- Node.js (recommended: latest LTS)
-- pnpm 10 (`corepack enable` if needed)
+### 🔄 **Advanced Habit Engine**
+Build routines that stick.
+* **Track Anything:** Support for standard and detox (incremental/exponential) habits, adherence tracking, and streak visualization.
+* **Specialized Routines:** Built-in tracking for Prayer habits seamlessly connected to Supabase Edge Functions for smart notifications.
 
-### Install
+### 📅 **Unified Calendar & Events**
+Own your time.
+* **Calendar Sync:** Full calendar event support with iCal subscription capabilities.
+* **Task-to-Calendar Links:** Seamlessly sync tasks to calendar blocks and vice versa.
 
-```bash
-pnpm install --frozen-lockfile
-```
+### 💰 **Complete Financial Hub**
+Absolute clarity on your money.
+* **Smart Budgeting:** Track transactions, set category budgets, and view intelligent cash-flow summaries.
+* **Automated Ingestion:** Forward bank SMS alerts or use intelligent transaction rules to automatically categorize expenses.
+* **Investment Portfolio:** Track investment accounts and specialized investment transactions alongside daily spending.
 
-### Run dev server
+### 🧠 **Health & Wellness Tracking**
+Optimize your energy and body.
+* **Sleep Analytics:** Track sleep sessions, sleep stages (Core, Deep, REM), and sleep scores.
+* **Body Metrics:** Log InBody scans tracking weight, BMI, skeletal muscle mass, body fat percentage, and BMR.
+* **Wellness Logs:** Keep daily tabs on overarching wellness metrics.
 
-```bash
-pnpm dev
-```
+### 📱 **Digital Wellbeing (Screentime)**
+Take back your attention.
+* **Granular Tracking:** Daily summaries of app usage, website visits, session counts, and total switches.
+* **Automated Sync:** Edge Function pathways for effortless cross-platform data ingestion.
 
-### Lint
+### 📚 **Knowledge & Project Management**
+Your personal database.
+* **Rich Notes:** Capture ideas effortlessly with folder-organized rich-text notes.
+* **Project Tracking:** Manage structured projects like Theses, Certifications, or Coding ventures.
+* **Academic Paper Library:** Track research papers, methodologies, key findings, and reading statuses linked directly to your projects.
 
-```bash
-pnpm lint
-```
-
-### Build
-
-```bash
-pnpm build
-```
-
----
-
-## Environment variables
-
-There are two common “lanes”:
-
-- **Frontend (Vite)**: variables prefixed with `VITE_` are bundled for the client.
-- **Serverless / edge**: Supabase Edge Functions (Deno) use Supabase secrets; Vercel API routes use Vercel env vars.
-
-The repo includes `.env.example` as a starting point.
+### 📈 **Cross-Domain Analytics**
+Connect the dots.
+* Compare trends across habits, tasks, sleep, screentime, and finance to discover incredible insights about your personal performance.
 
 ---
 
-## Repo structure
+## 🛠 Tech Stack
 
-```text
-src/
-  components/         # feature components + UI
-  components/ui/      # shared UI primitives (sheets, inputs, buttons, etc.)
-  routes/             # pages
-  hooks/              # data fetching + domain hooks
-  stores/             # Zustand stores
-  lib/                # shared utilities + integrations
-  db/                 # local/offline helpers and seeding
-supabase/
-  migrations/         # schema + RLS changes
-  functions/          # Edge Functions (Deno)
-api/                  # Vercel serverless handlers
-src-tauri/            # desktop build
-```
+![Tech Stack Architecture](./public/3.jpeg)
+
+Built with a modern, high-performance, and scalable stack:
+
+- **Frontend Core:** React 19, React Router, TypeScript
+- **Styling:** Tailwind CSS + custom UI primitives (`src/components/ui/*`)
+- **State Management:** Zustand (`src/stores/*`)
+- **Backend & Database:** Supabase (`src/lib/supabase.ts`) + React Query for lightning-fast caching
+- **Serverless Power:** Supabase Edge Functions (`supabase/functions/`) & Vercel API routes (`api/`)
+- **Deployment:** Vercel (`vercel.json`)
+- **Offline / PWA:** `src/sw.ts` + `vite-plugin-pwa`
 
 ---
 
-## Conventions (how to contribute)
-
-- Prefer reusing existing hooks/components over creating near-duplicates.
-- Keep authz/security server-side (Supabase RLS + server routes); UI checks are UX only.
-- Keep changes small and easy to review.
-
----
-
-## License
-
-Private for now
+<div align="center">
+  <p>Built with ❤️ to help you reclaim your time.</p>
+</div>
