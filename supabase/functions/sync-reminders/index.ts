@@ -188,7 +188,16 @@ Deno.serve(async (req: Request) => {
   try {
     if (!anonKey) return jsonResponse({ error: 'SUPABASE_ANON_KEY is not configured.' }, 500);
 
-    const body = await req.json();
+    let body: Record<string, any> = {};
+    try {
+      const text = await req.text();
+      if (text.trim()) {
+        body = JSON.parse(text);
+      }
+    } catch (e) {
+      return jsonResponse({ error: 'Invalid JSON payload' }, 400);
+    }
+
     const mode = (body?.mode ?? 'push') as Mode;
     const userId = body?.user_id;
 
