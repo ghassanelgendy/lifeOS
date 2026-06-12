@@ -7,8 +7,8 @@ declare module "https://deno.land/std@0.168.0/http/server.ts" {
   export function serve(handler: (req: Request) => Response | Promise<Response>): void;
 }
 
-declare module "https://esm.sh/@supabase/supabase-js@2" {
-  export function createClient(url: string, key: string): SupabaseClient;
+declare module "npm:@supabase/supabase-js@2" {
+  export function createClient(url: string, key: string, options?: any): SupabaseClient;
 }
 
 declare namespace Deno {
@@ -26,6 +26,8 @@ interface SupabaseQueryBuilder<T = unknown> {
   in(column: string, values: unknown[]): this;
   order(column: string, opts?: { ascending?: boolean }): this;
   gte(column: string, value: string): this;
+  gt(column: string, value: string): this;
+  limit(count: number): this;
   insert(data: Record<string, unknown> | Record<string, unknown>[]): this;
   upsert(data: Record<string, unknown> | Record<string, unknown>[], opts?: { onConflict?: string; ignoreDuplicates?: boolean }): this;
   update(data: Record<string, unknown>): this;
@@ -37,13 +39,14 @@ interface SupabaseQueryBuilder<T = unknown> {
 
 interface SupabaseClient {
   from(table: string): SupabaseQueryBuilder;
+  auth: any;
 }
 
 declare module "npm:@supabase/supabase-js@2" {
-  export function createClient(url: string, key: string): SupabaseClient;
+  export function createClient(url: string, key: string, options?: any): SupabaseClient;
 }
 
-declare module "npm:web-push@3.6.7" {
+declare module "https://esm.sh/web-push@3.6.7" {
   const webpush: {
     setVapidDetails(mailto: string, publicKey: string, privateKey: string): void;
     sendNotification(
