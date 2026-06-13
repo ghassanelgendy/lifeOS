@@ -47,3 +47,4 @@ dist.zip
 /public/ios6-lite
 /scripts
 supabase/SUPABASE_ISSUE.MD
+supabase/current_db.sql

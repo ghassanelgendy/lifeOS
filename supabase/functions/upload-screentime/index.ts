@@ -147,6 +147,8 @@ interface ScreentimePayload {
   totalApps?: number | string;
   /** Plain-text summary from iOS Activity block (name + duration per line). */
   activity_summary?: string;
+  /** Explicit time added in the payload for phone */
+  time?: string;
 }
 
 function parseTimeToSeconds(timeStr: string): number {
@@ -272,7 +274,7 @@ function buildUploadedAt(uploadDateRaw: string, uploadTimeRaw?: string | null): 
     return `${datePart}T00:00:00.000Z`;
   }
 
-  // Accept HH, HH:mm, or HH:mm:ss. Treat as UTC.
+  // Accept HH, HH:mm, or HH:mm:ss.
   const m = timeTrimmed.match(/^(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/);
   if (!m) return null;
   const hh = Math.max(0, Math.min(23, parseInt(m[1], 10) || 0));
@@ -281,7 +283,9 @@ function buildUploadedAt(uploadDateRaw: string, uploadTimeRaw?: string | null): 
   const hhStr = String(hh).padStart(2, '0');
   const mmStr = String(mm).padStart(2, '0');
   const ssStr = String(ss).padStart(2, '0');
-  return `${datePart}T${hhStr}:${mmStr}:${ssStr}.000Z`;
+  
+  // Try to use a timezone offset if provided in the future, otherwise default to local time string without Z
+  return `${datePart}T${hhStr}:${mmStr}:${ssStr}`;
 }
 
 function toRecord(value: unknown): Record<string, unknown> {
@@ -634,8 +638,8 @@ Deno.serve(async (req: Request) => {
 
     // Root-level upload timestamp for iOS Shortcut (do not affect aggregation)
     const payloadRecord = toRecord(payload);
-    const uploadDateRaw = firstString(payloadRecord, ['upload_date', 'uploadDate']);
-    const uploadTimeRaw = firstString(payloadRecord, ['upload_time', 'uploadTime']);
+    const uploadDateRaw = firstString(payloadRecord, ['upload_date', 'uploadDate', 'date']);
+    const uploadTimeRaw = firstString(payloadRecord, ['upload_time', 'uploadTime', 'time']);
     const upload_date = uploadDateRaw ? parseDateToDateString(uploadDateRaw) : null;
     const upload_time = uploadTimeRaw ? uploadTimeRaw.trim() : null;
     const uploaded_at = uploadDateRaw ? buildUploadedAt(uploadDateRaw, uploadTimeRaw) : null;
@@ -710,7 +714,7 @@ Deno.serve(async (req: Request) => {
     const platformLower = rawPlatform.toLowerCase();
     const platform = platformLower || 'windows';
     const deviceId = payload.device_id || '';
-    const isCumulative = payload.is_cumulative === true || payload.cumulative === true;
+    const isCumulative = payload.is_cumulative === true || payload.cumulative === true || !!payload.activity_summary || source === 'phone' || source === 'mobile';
     const todayDate = new Date().toISOString().split('T')[0];
 
     const appRows: any[] = [];
@@ -723,10 +727,23 @@ Deno.serve(async (req: Request) => {
       if (!appName) return;
       if (isPcLockApp(appName, source, platform)) return;
 
-      const firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
-      const lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
-      const lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
+      let firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
+      let lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
+      let lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
       
+      const durationSeconds = getItemDurationSeconds(item);
+
+      // Backfill missing timestamps using the root upload time if available
+      if (!lastActive && uploaded_at) lastActive = uploaded_at;
+      if (!lastSeen && uploaded_at) lastSeen = uploaded_at;
+      if (!firstSeen && uploaded_at) {
+        const d = new Date(uploaded_at);
+        if (!isNaN(d.getTime())) {
+          d.setSeconds(d.getSeconds() - durationSeconds);
+          firstSeen = d.toISOString();
+        }
+      }
+
       // Use provided category if available, otherwise categorize by app name
       const providedCategory = firstString(item, ['category', 'Category']);
       const category = providedCategory && providedCategory !== 'Uncategorized' 
@@ -742,7 +759,7 @@ Deno.serve(async (req: Request) => {
         app_name: appName,
         category,
         process_path: firstString(item, ['process_path', 'processPath', 'ProcessPath']),
-        total_time_seconds: getItemDurationSeconds(item),
+        total_time_seconds: durationSeconds,
         session_count: getItemSessionCount(item),
         first_seen_at: firstSeen ? parseTimestamp(firstSeen) : null,
         last_seen_at: lastSeen ? parseTimestamp(lastSeen) : null,
@@ -757,9 +774,22 @@ Deno.serve(async (req: Request) => {
       const domain = extractDomain(rawDomain);
       if (!domain) return;
 
-      const firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
-      const lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
-      const lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
+      let firstSeen = firstString(item, ['first_seen_at', 'firstSeenAt', 'FirstSeen']);
+      let lastSeen = firstString(item, ['last_seen_at', 'lastSeenAt', 'LastSeen']);
+      let lastActive = firstString(item, ['last_active_at', 'lastActiveAt', 'LastActiveTime']);
+
+      const durationSeconds = getItemDurationSeconds(item);
+
+      // Backfill missing timestamps using the root upload time if available
+      if (!lastActive && uploaded_at) lastActive = uploaded_at;
+      if (!lastSeen && uploaded_at) lastSeen = uploaded_at;
+      if (!firstSeen && uploaded_at) {
+        const d = new Date(uploaded_at);
+        if (!isNaN(d.getTime())) {
+          d.setSeconds(d.getSeconds() - durationSeconds);
+          firstSeen = d.toISOString();
+        }
+      }
 
       websiteRows.push({
         user_id: payload.user_id,
@@ -769,7 +799,7 @@ Deno.serve(async (req: Request) => {
         platform,
         domain,
         favicon_url: firstString(item, ['favicon_url', 'faviconUrl', 'FaviconUrl']),
-        total_time_seconds: getItemDurationSeconds(item),
+        total_time_seconds: durationSeconds,
         session_count: getItemSessionCount(item),
         first_seen_at: firstSeen ? parseTimestamp(firstSeen) : null,
         last_seen_at: lastSeen ? parseTimestamp(lastSeen) : null,
@@ -1082,11 +1112,22 @@ Deno.serve(async (req: Request) => {
       for (const row of mergedAppRows) {
         const existing = existingAppsByKey.get(`${row.date}|${row.app_name}`);
         if (!existing) continue;
-        row.total_time_seconds = Math.max(row.total_time_seconds, existing.total_time_seconds || 0);
+        
+        const existingTime = existing.total_time_seconds || 0;
+        
+        // If duration hasn't grown since the last upload, the app hasn't been used.
+        // We MUST preserve the existing last_active_at so it doesn't artificially jump forward.
+        if (row.total_time_seconds <= existingTime) {
+          row.last_active_at = existing.last_active_at;
+          row.last_seen_at = existing.last_seen_at;
+        } else {
+          row.last_active_at = maxIso(row.last_active_at, existing.last_active_at || null);
+          row.last_seen_at = maxIso(row.last_seen_at, existing.last_seen_at || null);
+        }
+        
+        row.total_time_seconds = Math.max(row.total_time_seconds, existingTime);
         row.session_count = Math.max(row.session_count, existing.session_count || 0);
         row.first_seen_at = minIso(row.first_seen_at, existing.first_seen_at || null);
-        row.last_seen_at = maxIso(row.last_seen_at, existing.last_seen_at || null);
-        row.last_active_at = maxIso(row.last_active_at, existing.last_active_at || null);
       }
     }
 
@@ -1119,11 +1160,22 @@ Deno.serve(async (req: Request) => {
       for (const row of mergedWebsiteRows) {
         const existing = existingWebsitesByKey.get(`${row.date}|${row.domain}`);
         if (!existing) continue;
-        row.total_time_seconds = Math.max(row.total_time_seconds, existing.total_time_seconds || 0);
+        
+        const existingTime = existing.total_time_seconds || 0;
+        
+        // If duration hasn't grown since the last upload, the website hasn't been used.
+        // We MUST preserve the existing last_active_at so it doesn't artificially jump forward.
+        if (row.total_time_seconds <= existingTime) {
+          row.last_active_at = existing.last_active_at;
+          row.last_seen_at = existing.last_seen_at;
+        } else {
+          row.last_active_at = maxIso(row.last_active_at, existing.last_active_at || null);
+          row.last_seen_at = maxIso(row.last_seen_at, existing.last_seen_at || null);
+        }
+        
+        row.total_time_seconds = Math.max(row.total_time_seconds, existingTime);
         row.session_count = Math.max(row.session_count, existing.session_count || 0);
         row.first_seen_at = minIso(row.first_seen_at, existing.first_seen_at || null);
-        row.last_seen_at = maxIso(row.last_seen_at, existing.last_seen_at || null);
-        row.last_active_at = maxIso(row.last_active_at, existing.last_active_at || null);
       }
     }
 
