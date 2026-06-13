@@ -19,65 +19,122 @@ function isPcLockApp(stat: Pick<ScreentimeAppStat, 'app_name' | 'source' | 'plat
 }
 
 async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
-  const all: ScreentimeAppStat[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const to = from + PAGE_SIZE - 1;
-    const { data, error } = await supabase
-      .from('screentime_daily_app_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, to);
-    if (error) throw error;
-    if (!data?.length) break;
-    all.push(...(data as ScreentimeAppStat[]));
-    if (data.length < PAGE_SIZE) break;
+  const { data, count, error } = await supabase
+    .from('screentime_daily_app_stats')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true })
+    .order('id', { ascending: true })
+    .range(0, PAGE_SIZE - 1);
+  if (error) throw error;
+  if (!data?.length) return [];
+  
+  const all: ScreentimeAppStat[] = [...(data as ScreentimeAppStat[])];
+  
+  if (count && count > PAGE_SIZE) {
+    const promises = [];
+    for (let from = PAGE_SIZE; from < count; from += PAGE_SIZE) {
+      promises.push(
+        supabase
+          .from('screentime_daily_app_stats')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1)
+      );
+    }
+    const results = await Promise.all(promises);
+    for (const res of results) {
+      if (res.error) throw res.error;
+      if (res.data) all.push(...(res.data as ScreentimeAppStat[]));
+    }
   }
+  
   return all.filter((stat) => !isPcLockApp(stat));
 }
 
 async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
-  const all: ScreentimeWebsiteStat[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const to = from + PAGE_SIZE - 1;
-    const { data, error } = await supabase
-      .from('screentime_daily_website_stats')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, to);
-    if (error) throw error;
-    if (!data?.length) break;
-    all.push(...(data as ScreentimeWebsiteStat[]));
-    if (data.length < PAGE_SIZE) break;
+  const { data, count, error } = await supabase
+    .from('screentime_daily_website_stats')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true })
+    .order('id', { ascending: true })
+    .range(0, PAGE_SIZE - 1);
+  if (error) throw error;
+  if (!data?.length) return [];
+  
+  const all: ScreentimeWebsiteStat[] = [...(data as ScreentimeWebsiteStat[])];
+  
+  if (count && count > PAGE_SIZE) {
+    const promises = [];
+    for (let from = PAGE_SIZE; from < count; from += PAGE_SIZE) {
+      promises.push(
+        supabase
+          .from('screentime_daily_website_stats')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1)
+      );
+    }
+    const results = await Promise.all(promises);
+    for (const res of results) {
+      if (res.error) throw res.error;
+      if (res.data) all.push(...(res.data as ScreentimeWebsiteStat[]));
+    }
   }
+  
   return all;
 }
 
 async function fetchAllDailySummaries(userId: string, startDate: string, endDate: string): Promise<ScreentimeDailySummary[]> {
-  const all: ScreentimeDailySummary[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const to = from + PAGE_SIZE - 1;
-    const { data, error } = await supabase
-      .from('screentime_daily_summary')
-      .select('*')
-      .eq('user_id', userId)
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, to);
-    if (error) throw error;
-    if (!data?.length) break;
-    all.push(...(data as ScreentimeDailySummary[]));
-    if (data.length < PAGE_SIZE) break;
+  const { data, count, error } = await supabase
+    .from('screentime_daily_summary')
+    .select('*', { count: 'exact' })
+    .eq('user_id', userId)
+    .gte('date', startDate)
+    .lte('date', endDate)
+    .order('date', { ascending: true })
+    .order('id', { ascending: true })
+    .range(0, PAGE_SIZE - 1);
+  if (error) throw error;
+  if (!data?.length) return [];
+  
+  const all: ScreentimeDailySummary[] = [...(data as ScreentimeDailySummary[])];
+  
+  if (count && count > PAGE_SIZE) {
+    const promises = [];
+    for (let from = PAGE_SIZE; from < count; from += PAGE_SIZE) {
+      promises.push(
+        supabase
+          .from('screentime_daily_summary')
+          .select('*')
+          .eq('user_id', userId)
+          .gte('date', startDate)
+          .lte('date', endDate)
+          .order('date', { ascending: true })
+          .order('id', { ascending: true })
+          .range(from, from + PAGE_SIZE - 1)
+      );
+    }
+    const results = await Promise.all(promises);
+    for (const res of results) {
+      if (res.error) throw res.error;
+      if (res.data) all.push(...(res.data as ScreentimeDailySummary[]));
+    }
   }
+  
   return all;
 }
 
@@ -200,6 +257,8 @@ export function useTodayScreentime() {
     appCount: appStats.length,
     websiteCount: websiteStats.length,
     totalSwitches,
+    rawAppStats: appStats,
+    rawWebsiteStats: websiteStats,
   };
 }
 

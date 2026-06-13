@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
-import { format, isToday, parseISO } from 'date-fns';
+import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Flame, Monitor, Moon, Sparkles, ArrowRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
-import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics } from '../../hooks/useSleep';
+import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
 import {
   useDashboardUpcomingItems,
   habitMatchesDay,
@@ -57,6 +57,57 @@ function isoToDayMinutes(value?: string | null): number | null {
 const QV_LINK_PILL =
   'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50';
 const QV_LINK_ARROW = 'size-3 shrink-0';
+
+type TimeSegment = { start: number; end: number }; // 0 to 1440
+
+function mergeSegments(segs: TimeSegment[], mergeGap = 5): TimeSegment[] {
+  if (!segs.length) return [];
+  const sorted = [...segs].sort((a, b) => a.start - b.start);
+  const merged: TimeSegment[] = [];
+  let current = { ...sorted[0] };
+  for (let i = 1; i < sorted.length; i++) {
+    const next = sorted[i];
+    if (next.start <= current.end + mergeGap) {
+      current.end = Math.max(current.end, next.end);
+    } else {
+      merged.push(current);
+      current = { ...next };
+    }
+  }
+  merged.push(current);
+  return merged;
+}
+
+function intersectSegments(a: TimeSegment[], b: TimeSegment[]): TimeSegment[] {
+  const result: TimeSegment[] = [];
+  for (const s1 of a) {
+    for (const s2 of b) {
+      const maxStart = Math.max(s1.start, s2.start);
+      const minEnd = Math.min(s1.end, s2.end);
+      if (maxStart < minEnd) {
+        result.push({ start: maxStart, end: minEnd });
+      }
+    }
+  }
+  return mergeSegments(result, 0);
+}
+
+function subtractSegments(target: TimeSegment[], subtract: TimeSegment[]): TimeSegment[] {
+  let current = [...target];
+  for (const sub of subtract) {
+    const next: TimeSegment[] = [];
+    for (const seg of current) {
+      if (sub.end <= seg.start || sub.start >= seg.end) {
+        next.push(seg);
+      } else {
+        if (seg.start < sub.start) next.push({ start: seg.start, end: sub.start });
+        if (seg.end > sub.end) next.push({ start: sub.end, end: seg.end });
+      }
+    }
+    current = next;
+  }
+  return current;
+}
 
 function parseDueForSort(t: Task): number {
   if (!t.due_date) return 0;
@@ -248,6 +299,94 @@ export function DashboardQuickView() {
   const lastNightSleep = useLastNightSleepMinutes();
   const todaySleepMinutes = useSleepMinutesForDay(today);
   const { avgBedtimeMinutes } = useSleepMetrics(7);
+  
+  const startOfDayStr = format(subDays(today, 1), 'yyyy-MM-dd') + 'T00:00:00.000Z';
+  const endOfDayStr = format(today, 'yyyy-MM-dd') + 'T23:59:59.999Z';
+  const { data: sleepSegments = [] } = useSleepStages(startOfDayStr, endOfDayStr);
+
+  const timelineBlocks = useMemo(() => {
+    const dayStart = new Date(today);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayStartMs = dayStart.getTime();
+
+    // 1. Process Sleep Segments
+    const rawSleep: TimeSegment[] = [];
+    for (const seg of sleepSegments) {
+      if ((seg.stage || '').toLowerCase() === 'awake') continue;
+      const st = new Date(seg.started_at).getTime();
+      const ed = new Date(seg.ended_at).getTime();
+      if (isNaN(st) || isNaN(ed) || st >= ed) continue;
+      const overlapStart = Math.max(st, dayStartMs);
+      const overlapEnd = Math.min(ed, dayStartMs + 86400000);
+      if (overlapEnd > overlapStart) {
+        rawSleep.push({
+          start: (overlapStart - dayStartMs) / 60000,
+          end: (overlapEnd - dayStartMs) / 60000,
+        });
+      }
+    }
+
+    // 2. Process Screentime by packing durations backwards from last_active_at
+    const packStats = (stats: any[]) => {
+      const validStats = stats.filter(s => s.last_active_at && s.total_time_seconds > 0);
+      validStats.sort((a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime());
+      
+      const packed: TimeSegment[] = [];
+      let nextAllowedEnd = dayStartMs + 86400000;
+
+      for (const stat of validStats) {
+        const targetEnd = new Date(stat.last_active_at).getTime();
+        const durationMs = stat.total_time_seconds * 1000;
+        
+        let ed = Math.min(targetEnd, nextAllowedEnd);
+        let st = ed - durationMs;
+        
+        // Prevent shifting before the start of the day if possible, though it just gets clipped anyway
+        nextAllowedEnd = st;
+        
+        const overlapStart = Math.max(st, dayStartMs);
+        const overlapEnd = Math.min(ed, dayStartMs + 86400000);
+        
+        if (overlapEnd > overlapStart) {
+          packed.push({
+            start: (overlapStart - dayStartMs) / 60000,
+            end: (overlapEnd - dayStartMs) / 60000,
+          });
+        }
+      }
+      return packed;
+    };
+
+    const pcStats = [...(todayScreentime.rawAppStats || []), ...(todayScreentime.rawWebsiteStats || [])].filter(s => {
+      const src = (s.source || '').toLowerCase();
+      const pf = (s.platform || '').toLowerCase();
+      return src === 'pc' || pf === 'windows' || pf === 'macos' || pf === 'linux';
+    });
+
+    const phoneStats = [...(todayScreentime.rawAppStats || []), ...(todayScreentime.rawWebsiteStats || [])].filter(s => {
+      const src = (s.source || '').toLowerCase();
+      const pf = (s.platform || '').toLowerCase();
+      return src === 'mobile' || pf === 'ios' || pf === 'android' || src === 'phone';
+    });
+
+    const rawPC = packStats(pcStats);
+    const rawPhone = packStats(phoneStats);
+
+    const mergedSleep = mergeSegments(rawSleep, 0);
+    const mergedPC = mergeSegments(rawPC, 5);
+    const mergedPhone = mergeSegments(rawPhone, 5);
+
+    const overlap = intersectSegments(mergedPC, mergedPhone);
+    const purePC = subtractSegments(mergedPC, overlap);
+    const purePhone = subtractSegments(mergedPhone, overlap);
+
+    return {
+      sleep: mergedSleep,
+      pc: purePC,
+      phone: purePhone,
+      overlap,
+    };
+  }, [today, sleepSegments, todayScreentime.rawAppStats, todayScreentime.rawWebsiteStats]);
   const upcomingItems = useDashboardUpcomingItems({
     lookAheadDays: 7,
     includePrayer: false,
@@ -357,8 +496,10 @@ export function DashboardQuickView() {
     const rawUsed = pc + phone + other;
 
     const maxNonOverlapScreentime = Math.max(0, elapsed - sleep);
-    const overlap = Math.max(0, rawUsed - maxNonOverlapScreentime);
-    const overlapDisplay = Math.min(overlap, pc + phone);
+    
+    // Use the mathematically exact overlap computed from the timeline blocks
+    const exactOverlapMinutes = Math.round(timelineBlocks.overlap.reduce((sum, b) => sum + (b.end - b.start), 0));
+    const overlapDisplay = exactOverlapMinutes;
 
     let adjustedPc = pc;
     let adjustedPhone = phone;
@@ -399,7 +540,7 @@ export function DashboardQuickView() {
       sleepPct: pct(sleep),
       pcPct: pct(adjustedPc),
       overlapPct: pct(overlapDisplay),
-      overlap,
+      overlap: overlapDisplay,
       phonePct: pct(adjustedPhone),
       otherPct: pct(adjustedOther),
       restPct: pct(rest),

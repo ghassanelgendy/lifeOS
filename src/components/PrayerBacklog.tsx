@@ -27,7 +27,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   const today = useMemo(() => new Date(), []);
 
   // Get prayer habits to map logs to prayer names
-  const { data: prayerHabits = [] } = useQuery({
+  const { data: prayerHabits = [], isLoading: isHabitsLoading } = useQuery({
     queryKey: ['prayer-tracker', user?.id, 'habits'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -71,7 +71,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   }, [monthCursor, view, today]);
 
   // Fetch prayer logs for the date range
-  const { data: logs = [], isLoading } = useQuery({
+  const { data: logs = [], isLoading: isLogsLoading } = useQuery({
     queryKey: ['prayer-tracker', user?.id, 'backlog', view, toDateOnly(dateRange.start), toDateOnly(dateRange.end)],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -129,6 +129,8 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   const shell = embedded
     ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
     : 'rounded-xl border border-border bg-card p-4 md:p-6 h-full flex flex-col';
+
+  const isLoading = isLogsLoading || isHabitsLoading;
 
   if (isLoading) {
     return (

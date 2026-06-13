@@ -102,8 +102,8 @@ export function AppShell() {
     const deltaY = t.clientY - touchStart.current.y;
     const w = window.innerWidth;
 
-    // Swipe from left edge on Tasks → open mobile sidebar
-    if (isOnTasks && touchStart.current.x < SWIPE_EDGE_PX && deltaX > SWIPE_MIN_DELTA) {
+    // Swipe from left edge on ANY page → open mobile sidebar
+    if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 30) {
       setMobileSidebarOpen(true);
       touchStart.current = null;
       return;
@@ -140,7 +140,7 @@ export function AppShell() {
       <>
         <div
           className={cn(
-            "md:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-300",
+            "md:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-150",
             isMobileSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => setMobileSidebarOpen(false)}
@@ -148,14 +148,17 @@ export function AppShell() {
         />
         <aside
           className={cn(
-            "md:hidden fixed top-0 left-0 z-50 w-[min(22rem,94vw)] min-w-[18rem] h-full flex flex-col bg-card border-r border-border shadow-xl transition-transform duration-300 ease-out",
+            "md:hidden fixed top-0 left-0 z-50 w-[min(22rem,94vw)] min-w-[18rem] h-full flex flex-col bg-card border-r border-border shadow-xl transition-transform duration-150 ease-out will-change-transform transform-gpu",
             isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
           style={{ paddingTop: 'env(safe-area-inset-top)' }}
         >
           <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
             <span className="text-xl font-bold tracking-tight">LifeOS</span>
-            <button onClick={() => setMobileSidebarOpen(false)} className="p-1 hover:bg-secondary rounded-md touch-manipulation">
+            <button 
+              onClick={() => setMobileSidebarOpen(false)} 
+              className="p-1 hover:bg-secondary rounded-md active:scale-95 transition-transform touch-manipulation"
+            >
               <X size={24} />
             </button>
           </div>
@@ -250,7 +253,7 @@ export function AppShell() {
         >
           <button
             onClick={() => setMobileSidebarOpen(true)}
-            className="p-2 -ml-2 hover:bg-secondary rounded-lg touch-manipulation"
+            className="p-2 -ml-2 hover:bg-secondary rounded-lg active:scale-95 transition-transform touch-manipulation"
             aria-label="Open menu"
           >
             <Menu size={24} />

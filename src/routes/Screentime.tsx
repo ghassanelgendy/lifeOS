@@ -86,30 +86,35 @@ import { useUIStore } from '../stores/useUIStore';
       period === 'today' ? todayStr : period === 'yesterday' ? format(subDays(today, 1), 'yyyy-MM-dd') : start;
     const displayEnd =
       period === 'today' ? todayStr : period === 'yesterday' ? format(subDays(today, 1), 'yyyy-MM-dd') : end;
-    const statsForDisplay = useMemo(
-      () =>
-        appStats.filter((s) => {
-          const d = screentimeDateKey(s.date);
-          return d >= displayStart && d <= displayEnd;
-        }),
-      [appStats, displayStart, displayEnd]
-    );
-    const websitesForDisplay = useMemo(
-      () =>
-        websiteStats.filter((s) => {
-          const d = screentimeDateKey(s.date);
-          return d >= displayStart && d <= displayEnd;
-        }),
-      [websiteStats, displayStart, displayEnd]
-    );
-    const summariesForDisplay = useMemo(
-      () =>
-        summaries.filter((s) => {
-          const d = screentimeDateKey(s.date);
-          return d >= displayStart && d <= displayEnd;
-        }),
-      [summaries, displayStart, displayEnd]
-    );
+    const statsForDisplay = useMemo(() => {
+      if (period === 'today' && isLoading && todayData?.rawAppStats?.length) {
+        return todayData.rawAppStats;
+      }
+      return appStats.filter((s) => {
+        const d = screentimeDateKey(s.date);
+        return d >= displayStart && d <= displayEnd;
+      });
+    }, [appStats, displayStart, displayEnd, period, isLoading, todayData]);
+
+    const websitesForDisplay = useMemo(() => {
+      if (period === 'today' && isLoading && todayData?.rawWebsiteStats?.length) {
+        return todayData.rawWebsiteStats;
+      }
+      return websiteStats.filter((s) => {
+        const d = screentimeDateKey(s.date);
+        return d >= displayStart && d <= displayEnd;
+      });
+    }, [websiteStats, displayStart, displayEnd, period, isLoading, todayData]);
+
+    const summariesForDisplay = useMemo(() => {
+      if (period === 'today' && isLoading && todayData?.dailySummaries?.length) {
+        return todayData.dailySummaries;
+      }
+      return summaries.filter((s) => {
+        const d = screentimeDateKey(s.date);
+        return d >= displayStart && d <= displayEnd;
+      });
+    }, [summaries, displayStart, displayEnd, period, isLoading, todayData]);
 
     // Only iOS and Windows; aggregate by (app_name, platform) — use statsForDisplay so cards show selected day only when Today
     const aggregatedApps = statsForDisplay.reduce((acc, stat) => {

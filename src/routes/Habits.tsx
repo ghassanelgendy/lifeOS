@@ -1,4 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Plus,
@@ -159,6 +160,38 @@ export default function Habits() {
   const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
   const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
 
+  const [mobileListRef] = useAutoAnimate();
+  const [pendingListRef] = useAutoAnimate();
+  const [completedListRef] = useAutoAnimate();
+  const [desktopTableRef] = useAutoAnimate();
+
+  const groupAndSortHabits = (habitsList: Habit[]) => {
+    const grouped = habitsList.reduce((acc, h) => {
+      const isDetox = h.habit_type === 'detox' || h.detox_mode ? 'detox' : 'standard';
+      const c = h.color || DEFAULT_COLORS[0];
+      const key = `${isDetox}-${c}`;
+      if (!acc[key]) acc[key] = { color: c, isDetox, habits: [] };
+      acc[key].habits.push(h);
+      return acc;
+    }, {} as Record<string, { color: string, isDetox: string, habits: Habit[] }>);
+    
+    return Object.values(grouped)
+      .sort((a, b) => {
+        if (a.isDetox !== b.isDetox) {
+          return a.isDetox === 'detox' ? 1 : -1;
+        }
+        const idxA = DEFAULT_COLORS.indexOf(a.color);
+        const idxB = DEFAULT_COLORS.indexOf(b.color);
+        return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+      })
+      .map(group => ({
+        id: `${group.isDetox}-${group.color}`,
+        color: group.color,
+        isDetox: group.isDetox === 'detox',
+        habits: group.habits
+      }));
+  };
+
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
@@ -282,6 +315,13 @@ export default function Habits() {
   // Get streak for a habit
   const getStreak = (habitId: string): number => {
     return streaks[habitId] ?? 0;
+  };
+
+  const getStreakNode = (streak: number, size = 14) => {
+    if (streak === 0) return <Flame size={size} className="text-muted-foreground opacity-50" />;
+    if (streak >= 14) return <Flame size={size} className="text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.8)] animate-pulse" />;
+    if (streak >= 7) return <Flame size={size} className="text-orange-500 drop-shadow-[0_0_2px_rgba(249,115,22,0.5)]" />;
+    return <Flame size={size} className="text-amber-500" />;
   };
 
   // Calculate completion stats for a habit
@@ -523,103 +563,107 @@ export default function Habits() {
         ) : (
           <>
             {/* Mobile: one card per habit, days in a compact scrollable row — no full-width scroll */}
-            <div className="md:hidden space-y-3">
-              {habits.map((habit: Habit) => {
-                const stats = getHabitStats(habit);
-                const insight = habitInsights[habit.id];
-                const detoxConfig = getDetoxConfig(habit);
-                const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
-                return (
-                  <div
-                    key={habit.id}
-                    className="rounded-lg border border-border p-3"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div
-                          className="w-3 h-3 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: habit.color }}
-                        />
-                        <span className="font-medium truncate">{habit.title}</span>
-                      </div>
-                      <div className="flex items-center gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => handleOpenModal(habit)}
-                          className="p-1.5 rounded hover:bg-secondary transition-colors"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(habit.id)}
-                          className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                        <span className="flex items-center gap-0.5 text-amber-500 font-bold ml-0.5">
-                          <Flame size={14} />
-                          {stats.streak}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-[11px] text-muted-foreground mb-2">
-                      {detoxConfig
-                        ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
-                        : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
-                    </div>
-                    {insight && (
-                      <div className="mb-2 grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
-                        <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.adherencePct}% 90d</span>
-                        <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.usualTimeLabel}</span>
-                        <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.bestDayLabel}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
-                      {weekDays.map((day: Date) => {
-                        const isScheduled = isHabitScheduledForDate(habit, day);
-                        const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                        const canToggle = isScheduled && (isToday(day) || isYesterday(day));
-                        const isDetox = !!detoxConfig;
-                        return (
-                          <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
-                            <span className={cn(
-                              "text-[10px] text-muted-foreground",
-                              isToday(day) && "text-primary font-medium"
-                            )}>
-                              {format(day, 'EEE')}
-                            </span>
-                            <button
-                              onClick={() => canToggle && handleToggleHabit(habit, day)}
-                              disabled={!canToggle}
-                              title={!isScheduled ? 'Not scheduled for this day' : undefined}
-                              className={cn(
-                                "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
-                                isCompleted
-                                  ? (isDetox ? "bg-red-500 text-white" : "text-white")
-                                  : "border border-border",
-                                canToggle && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
-                                !isScheduled && "opacity-20",
-                                isScheduled && !canToggle && "opacity-40"
-                              )}
-                              style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
-                            >
-                              {isCompleted ? (
-                                isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
-                              ) : !isScheduled || day > today ? (
-                                <span className="text-[10px] text-muted-foreground">-</span>
-                              ) : null}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
+            <div className="md:hidden space-y-6" ref={mobileListRef}>
+              {groupAndSortHabits(habits).map(({ id, color, isDetox, habits: groupHabits }) => (
+                <div key={id} className="space-y-3">
+                  <div className="flex items-center gap-2 px-1">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
+                    {isDetox && <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detox</span>}
                   </div>
-                );
-              })}
+                  {groupHabits.map((habit: Habit) => {
+                    const stats = getHabitStats(habit);
+                    const insight = habitInsights[habit.id];
+                    const detoxConfig = getDetoxConfig(habit);
+                    const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
+                    return (
+                      <div
+                        key={habit.id}
+                        className="rounded-lg border border-border p-3 shadow-sm bg-card"
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-medium truncate">{habit.title}</span>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              onClick={() => handleOpenModal(habit)}
+                              className="p-1.5 rounded hover:bg-secondary transition-colors"
+                            >
+                              <Edit2 size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(habit.id)}
+                              className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                            <span className="flex items-center gap-0.5 font-bold ml-0.5">
+                              {getStreakNode(stats.streak, 14)}
+                              <span className={stats.streak >= 14 ? "text-red-500" : stats.streak >= 7 ? "text-orange-500" : stats.streak > 0 ? "text-amber-500" : "text-muted-foreground"}>{stats.streak}</span>
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mb-2">
+                          {detoxConfig
+                            ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
+                            : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
+                        </div>
+                        {insight && (
+                          <div className="mb-2 grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
+                            <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.adherencePct}% 90d</span>
+                            <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.usualTimeLabel}</span>
+                            <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.bestDayLabel}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-1 overflow-x-auto pb-1 -mx-1">
+                          {weekDays.map((day: Date) => {
+                            const isScheduled = isHabitScheduledForDate(habit, day);
+                            const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
+                            const canToggle = isScheduled && (isToday(day) || isYesterday(day));
+                            const isDetox = !!detoxConfig;
+                            return (
+                              <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
+                                <span className={cn(
+                                  "text-[10px] text-muted-foreground",
+                                  isToday(day) && "text-primary font-medium"
+                                )}>
+                                  {format(day, 'EEE')}
+                                </span>
+                                <button
+                                  onClick={() => canToggle && handleToggleHabit(habit, day)}
+                                  disabled={!canToggle}
+                                  title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                                  className={cn(
+                                    "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
+                                    isCompleted
+                                      ? (isDetox ? "bg-red-500 text-white" : "text-white")
+                                      : "border border-border bg-background",
+                                    canToggle && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
+                                    !isScheduled && "opacity-20",
+                                    isScheduled && !canToggle && "opacity-40"
+                                  )}
+                                  style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
+                                >
+                                  {isCompleted ? (
+                                    isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
+                                  ) : !isScheduled || day > today ? (
+                                    <span className="text-[10px] text-muted-foreground">-</span>
+                                  ) : null}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
             </div>
 
             {/* Desktop: full table */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full border-separate border-spacing-y-2">
                 <thead>
                   <tr>
                     <th className="text-left p-2 min-w-[150px]">Habit</th>
@@ -628,7 +672,7 @@ export default function Habits() {
                         key={day.toISOString()}
                         className={cn(
                           "p-2 text-center min-w-[60px]",
-                          isToday(day) && "bg-secondary rounded-t-lg"
+                          isToday(day) && "bg-secondary/50 rounded-t-lg"
                         )}
                       >
                         <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>
@@ -641,111 +685,120 @@ export default function Habits() {
                       </th>
                     ))}
                     <th className="p-2 text-center min-w-[60px]">
-                      <div className="flex items-center justify-center gap-1 text-amber-500">
+                      <div className="flex items-center justify-center gap-1 text-muted-foreground">
                         <Flame size={14} />
                       </div>
                     </th>
                   </tr>
                 </thead>
-                <tbody>
-                  {habits.map((habit: Habit) => {
-                    const stats = getHabitStats(habit);
-                    const insight = habitInsights[habit.id];
-                    const detoxConfig = getDetoxConfig(habit);
-                    const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
-                    return (
-                      <tr key={habit.id} className="group">
-                        <td className="p-2">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: habit.color }}
-                            />
-                            <div className="min-w-0">
-                              <div className="font-medium truncate">{habit.title}</div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-2">
-                                <span>
-                                  {detoxConfig
-                                    ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
-                                    : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
-                                </span>
-                                {habit.time && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock size={12} />
-                                    {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
-                                  </span>
-                                )}
-                              </div>
-                              {insight && (
-                                <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
-                                  <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.adherencePct}% 90d</span>
-                                  <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.usualTimeLabel}</span>
-                                  <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.bestDayLabel}</span>
+                <tbody ref={desktopTableRef}>
+                  {groupAndSortHabits(habits).map(({ id, color, isDetox, habits: groupHabits }) => (
+                        <React.Fragment key={id}>
+                          {isDetox && (
+                            <tr className="bg-transparent h-6">
+                              <td colSpan={weekDays.length + 2} className="px-2 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-none">
+                                Detox ({groupHabits.length})
+                              </td>
+                            </tr>
+                          )}
+                          {groupHabits.map((habit: Habit) => {
+                        const stats = getHabitStats(habit);
+                        const insight = habitInsights[habit.id];
+                        const detoxConfig = getDetoxConfig(habit);
+                        const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
+                        return (
+                          <tr key={habit.id} className="group bg-card shadow-sm hover:shadow-md transition-shadow">
+                            <td className="p-3 border-y border-l border-border rounded-l-xl relative">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ backgroundColor: habit.color }} />
+                              <div className="flex items-center gap-3 pl-2">
+                                <div className="min-w-0">
+                                  <div className="font-medium truncate">{habit.title}</div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-2">
+                                    <span>
+                                      {detoxConfig
+                                        ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
+                                        : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
+                                    </span>
+                                    {habit.time && (
+                                      <span className="flex items-center gap-1">
+                                        <Clock size={12} />
+                                        {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {insight && (
+                                    <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
+                                      <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.adherencePct}% 90d</span>
+                                      <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.usualTimeLabel}</span>
+                                      <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.bestDayLabel}</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                            <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-                              <button
-                                onClick={() => handleOpenModal(habit)}
-                                className="p-1 rounded hover:bg-secondary transition-colors"
-                              >
-                                <Edit2 size={12} />
-                              </button>
-                              <button
-                                onClick={() => handleDelete(habit.id)}
-                                className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                        {weekDays.map((day: Date) => {
-                          const isScheduled = isHabitScheduledForDate(habit, day);
-                          const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                          const canToggle = isScheduled && (isToday(day) || isYesterday(day));
-                          const isDetox = !!detoxConfig;
-
-                          return (
-                            <td
-                              key={day.toISOString()}
-                              className={cn(
-                                "p-2 text-center",
-                                isToday(day) && "bg-secondary"
-                              )}
-                            >
-                              <button
-                                onClick={() => canToggle && handleToggleHabit(habit, day)}
-                                disabled={!canToggle}
-                                title={!isScheduled ? 'Not scheduled for this day' : undefined}
-                                className={cn(
-                                  "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
-                                  isCompleted
-                                    ? (isDetox ? "bg-red-500 text-white" : "text-white")
-                                    : "border border-border hover:border-muted-foreground",
-                                  canToggle && "hover:scale-110",
-                                  !isScheduled && "opacity-20",
-                                  isScheduled && !canToggle && "opacity-30"
-                                )}
-                                style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
-                              >
-                                {isCompleted ? (
-                                  isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={16} />
-                                ) : !isScheduled || day > today ? (
-                                  <span className="text-xs text-muted-foreground">-</span>
-                                ) : null}
-                              </button>
+                                <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity ml-auto">
+                                  <button
+                                    onClick={() => handleOpenModal(habit)}
+                                    className="p-1.5 rounded hover:bg-secondary transition-colors"
+                                  >
+                                    <Edit2 size={14} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(habit.id)}
+                                    className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                                  >
+                                    <Trash2 size={14} />
+                                  </button>
+                                </div>
+                              </div>
                             </td>
-                          );
-                        })}
-                        <td className="p-2 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="font-bold text-amber-500">{stats.streak}</span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                            {weekDays.map((day: Date) => {
+                              const isScheduled = isHabitScheduledForDate(habit, day);
+                              const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
+                              const canToggle = isScheduled && (isToday(day) || isYesterday(day));
+                              const isDetox = !!detoxConfig;
+
+                              return (
+                                <td
+                                  key={day.toISOString()}
+                                  className={cn(
+                                    "p-2 text-center border-y border-border",
+                                    isToday(day) && "bg-secondary/20"
+                                  )}
+                                >
+                                  <button
+                                    onClick={() => canToggle && handleToggleHabit(habit, day)}
+                                    disabled={!canToggle}
+                                    title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                                    className={cn(
+                                      "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
+                                      isCompleted
+                                        ? (isDetox ? "bg-red-500 text-white" : "text-white")
+                                        : "border border-border hover:border-muted-foreground bg-background",
+                                      canToggle && "hover:scale-110",
+                                      !isScheduled && "opacity-20",
+                                      isScheduled && !canToggle && "opacity-30"
+                                    )}
+                                    style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
+                                  >
+                                    {isCompleted ? (
+                                      isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={16} />
+                                    ) : !isScheduled || day > today ? (
+                                      <span className="text-xs text-muted-foreground">-</span>
+                                    ) : null}
+                                  </button>
+                                </td>
+                              );
+                            })}
+                            <td className="p-2 text-center border-y border-r border-border rounded-r-xl">
+                              <div className="flex items-center justify-center gap-1 font-bold">
+                                {getStreakNode(stats.streak, 14)}
+                                <span className={stats.streak >= 14 ? "text-red-500" : stats.streak >= 7 ? "text-orange-500" : stats.streak > 0 ? "text-amber-500" : "text-muted-foreground"}>{stats.streak}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -758,106 +811,155 @@ export default function Habits() {
       {/* Today's Habits */}
       <div className="rounded-xl border border-border bg-card p-4 md:p-6">
         <h2 className="text-lg font-semibold mb-4">Today's Habits</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {scheduledTodayHabits.length === 0 && (
-            <p className="text-sm text-muted-foreground md:col-span-2">No habits scheduled for today.</p>
-          )}
-          {scheduledTodayHabits.map((habit: Habit) => {
-            const isCompleted = isHabitCompletedForDay(habit.id, today);
-            const stats = getHabitStats(habit);
-            const detoxConfig = getDetoxConfig(habit);
-            const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
-            const isDetox = !!detoxConfig;
+        <div className="space-y-6">
+          {scheduledTodayHabits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No habits scheduled for today.</p>
+          ) : (
+            <>
+              {/* Pending Habits */}
+              {groupAndSortHabits(scheduledTodayHabits.filter(h => !isHabitCompletedForDay(h.id, today))).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 uppercase tracking-wider">Pending</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3" ref={pendingListRef}>
+                    {groupAndSortHabits(scheduledTodayHabits.filter(h => !isHabitCompletedForDay(h.id, today))).map(({ id, color, isDetox, habits: groupHabits }) => (
+                      <React.Fragment key={id}>
+                        {isDetox && (
+                          <div className="col-span-full mt-2 mb-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detox</span>
+                          </div>
+                        )}
+                        {groupHabits.map((habit: Habit) => {
+                          const isCompleted = false;
+                          const stats = getHabitStats(habit);
+                          const detoxConfig = getDetoxConfig(habit);
+                          const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
+                          const isDetox = !!detoxConfig;
 
-            return (
-              <div
-                key={habit.id}
-                onClick={() => handleToggleHabit(habit)}
-                className={cn(
-                  "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all",
-                  isDetox
-                    ? (isCompleted
-                      ? "border-red-500/50 bg-red-500/10"
-                      : "border-emerald-500/50 bg-emerald-500/10")
-                    : (isCompleted
-                      ? "border-green-500/50 bg-green-500/10"
-                      : "border-border hover:border-muted-foreground hover:bg-secondary/20")
-                )}
-              >
-                <div
-                  className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
-                    isCompleted ? "text-white" : "border border-border"
-                  )}
-                  style={isCompleted ? { backgroundColor: isDetox ? '#ef4444' : habit.color } : undefined}
-                >
-                  {isCompleted ? (
-                    isDetox ? <span className="text-xs font-bold">R</span> : <Check size={24} />
-                  ) : (
-                    <div className="w-6 h-6 rounded-full border-2 border-muted-foreground" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className={cn(
-                      "font-medium",
-                      isCompleted && !isDetox && "line-through text-muted-foreground"
-                    )}>
-                      {habit.title}
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation();
-                        handleOpenModal(habit);
-                      }}
-                      className="p-1 rounded hover:bg-secondary transition-colors"
-                      title="Edit habit"
-                    >
-                      <Edit2 size={12} />
-                    </button>
-                    {stats.streak >= 3 && (
-                      <span className="flex items-center gap-0.5 text-xs text-amber-500">
-                        <Flame size={12} />
-                        {stats.streak}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {getVisibleDescription(habit) && (
-                      <span className="truncate">{getVisibleDescription(habit)}</span>
-                    )}
-                    {detoxConfig && (
-                      <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
-                        Detox {detoxConfig.mode}: {stats.soberDays}d sober / target {detoxTarget}d
-                      </span>
-                    )}
-                    {(() => {
-                      const insight = habitInsights[habit.id];
-                      return habit.time ? (
-                        <span className="flex items-center gap-1 flex-shrink-0">
-                          <Clock size={12} />
-                          {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
-                          {insight?.eventCount > 0 && ` (${insight.usualTimeLabel})`}
-                        </span>
-                      ) : (
-                        insight?.eventCount > 0 && (
-                          <span className="flex items-center gap-1 flex-shrink-0">
-                            <Clock size={12} />
-                            {insight.usualTimeLabel}
-                          </span>
-                        )
-                      );
-                    })()}
+                          return (
+                            <div
+                              key={habit.id}
+                              onClick={() => handleToggleHabit(habit)}
+                              className={cn(
+                                "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all bg-card shadow-sm hover:shadow-md",
+                                isDetox
+                                  ? "border-emerald-500/50 bg-emerald-500/10"
+                                  : "border-border hover:border-muted-foreground hover:bg-secondary/20"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all",
+                                  "border border-border bg-background"
+                                )}
+                              >
+                                <div className="w-6 h-6 rounded-full border-2 border-muted-foreground" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3 className="font-medium">{habit.title}</h3>
+                                  <button
+                                    type="button"
+                                    onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                                      e.stopPropagation();
+                                      handleOpenModal(habit);
+                                    }}
+                                    className="p-1 rounded hover:bg-secondary transition-colors"
+                                    title="Edit habit"
+                                  >
+                                    <Edit2 size={12} />
+                                  </button>
+                                  {stats.streak >= 3 && (
+                                    <span className="flex items-center gap-0.5 text-xs font-bold">
+                                      {getStreakNode(stats.streak, 12)}
+                                      <span className={stats.streak >= 14 ? "text-red-500" : stats.streak >= 7 ? "text-orange-500" : "text-amber-500"}>{stats.streak}</span>
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  {detoxConfig && (
+                                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
+                                      Detox {detoxConfig.mode}: {stats.soberDays}d sober / target {detoxTarget}d
+                                    </span>
+                                  )}
+                                  {(() => {
+                                    const insight = habitInsights[habit.id];
+                                    return habit.time ? (
+                                      <span className="flex items-center gap-1 flex-shrink-0">
+                                        <Clock size={12} />
+                                        {format(new Date(`2000-01-01T${habit.time}`), 'h:mm a')}
+                                      </span>
+                                    ) : null;
+                                  })()}
+                                </div>
+                              </div>
+                              <div className="w-1.5 self-stretch rounded-full" style={{ backgroundColor: habit.color }} />
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium">{isDetox ? `${stats.soberDays}d` : `${stats.completionRate}%`}</div>
-                  <div className="text-xs text-muted-foreground">{isDetox ? 'sober' : 'this week'}</div>
+              )}
+
+              {/* Completed Habits */}
+              {groupAndSortHabits(scheduledTodayHabits.filter(h => isHabitCompletedForDay(h.id, today))).length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 mt-6 uppercase tracking-wider">Completed</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60" ref={completedListRef}>
+                    {groupAndSortHabits(scheduledTodayHabits.filter(h => isHabitCompletedForDay(h.id, today))).map(({ id, color, isDetox, habits: groupHabits }) => (
+                      <React.Fragment key={id}>
+                        {isDetox && (
+                          <div className="col-span-full mt-2 mb-1">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detox</span>
+                          </div>
+                        )}
+                        {groupHabits.map((habit: Habit) => {
+                          const isCompleted = true;
+                          const stats = getHabitStats(habit);
+                          const detoxConfig = getDetoxConfig(habit);
+                          const isDetox = !!detoxConfig;
+
+                          return (
+                            <div
+                              key={habit.id}
+                              onClick={() => handleToggleHabit(habit)}
+                              className={cn(
+                                "flex items-center gap-4 p-4 rounded-xl border cursor-pointer transition-all bg-card shadow-sm",
+                                isDetox
+                                  ? "border-red-500/50 bg-red-500/10"
+                                  : "border-green-500/50 bg-green-500/10"
+                              )}
+                            >
+                              <div
+                                className={cn(
+                                  "w-12 h-12 rounded-xl flex items-center justify-center transition-all text-white"
+                                )}
+                                style={{ backgroundColor: isDetox ? '#ef4444' : habit.color }}
+                              >
+                                {isDetox ? <span className="text-xs font-bold">R</span> : <Check size={24} />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <h3 className={cn(
+                                    "font-medium",
+                                    !isDetox && "line-through text-muted-foreground"
+                                  )}>
+                                    {habit.title}
+                                  </h3>
+                                </div>
+                              </div>
+                              <div className="w-1.5 self-stretch rounded-full" style={{ backgroundColor: habit.color }} />
+                            </div>
+                          );
+                        })}
+                      </React.Fragment>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              )}
+            </>
+          )}
         </div>
       </div>
 
