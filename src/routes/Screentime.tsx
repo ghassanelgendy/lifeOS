@@ -361,7 +361,7 @@ import { useUIStore } from '../stores/useUIStore';
         created_at?: string;
         date: string;
       }) =>
-        stat.last_active_at || stat.last_seen_at || stat.updated_at || stat.created_at || stat.date + 'T23:59:59';
+        stat.updated_at || stat.last_active_at || stat.last_seen_at || stat.created_at || stat.date + 'T23:59:59';
       const consider = (stat: {
         platform?: string | null;
         last_active_at?: string | null;
@@ -378,8 +378,10 @@ import { useUIStore } from '../stores/useUIStore';
       };
       appStats.forEach(consider);
       websiteStats.forEach(consider);
+      if (todayData?.rawAppStats) todayData.rawAppStats.forEach(consider);
+      if (todayData?.rawWebsiteStats) todayData.rawWebsiteStats.forEach(consider);
       return { windowsLast, iosLast };
-    }, [appStats, websiteStats]);
+    }, [appStats, websiteStats, todayData]);
 
     // Weekly pattern: aggregate by day of week (in hours) - separate iOS and Windows
     const weeklyPattern = useMemo(() => {
@@ -637,15 +639,27 @@ import { useUIStore } from '../stores/useUIStore';
         {(deviceLastPush.windowsLast || deviceLastPush.iosLast) && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
             {deviceLastPush.windowsLast && (
-              <span title="Windows last had usage at this time">
+              <span title="Windows last synced at this time">
                 <span className="font-medium text-foreground/80">Windows</span>
-                <span className="opacity-70"> · {format(parseISO(deviceLastPush.windowsLast), 'd MMM, h:mm a')}</span>
+                <span className="opacity-70"> · {(() => {
+                  try {
+                    return format(new Date(deviceLastPush.windowsLast as string), 'd MMM, h:mm a');
+                  } catch {
+                    return 'Recent';
+                  }
+                })()}</span>
               </span>
             )}
             {deviceLastPush.iosLast && (
-              <span title="iOS last had usage at this time">
+              <span title="iOS last synced at this time">
                 <span className="font-medium text-foreground/80">iOS</span>
-                <span className="opacity-70"> · {format(parseISO(deviceLastPush.iosLast), 'd MMM, h:mm a')}</span>
+                <span className="opacity-70"> · {(() => {
+                  try {
+                    return format(new Date(deviceLastPush.iosLast as string), 'd MMM, h:mm a');
+                  } catch {
+                    return 'Recent';
+                  }
+                })()}</span>
               </span>
             )}
           </div>

@@ -259,6 +259,7 @@ export function useTodayScreentime() {
     totalSwitches,
     rawAppStats: appStats,
     rawWebsiteStats: websiteStats,
+    dailySummaries: summaries,
   };
 }
 

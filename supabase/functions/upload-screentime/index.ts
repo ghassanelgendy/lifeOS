@@ -1223,7 +1223,7 @@ Deno.serve(async (req: Request) => {
     if (mergedAppRows.length > 0) {
       const batchSize = 500;
       for (let i = 0; i < mergedAppRows.length; i += batchSize) {
-        const batch = mergedAppRows.slice(i, i + batchSize);
+        const batch = mergedAppRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
         const { data, error } = await supabase
           .from('screentime_daily_app_stats')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' })
@@ -1241,7 +1241,7 @@ Deno.serve(async (req: Request) => {
     if (mergedWebsiteRows.length > 0) {
       const batchSize = 500;
       for (let i = 0; i < mergedWebsiteRows.length; i += batchSize) {
-        const batch = mergedWebsiteRows.slice(i, i + batchSize);
+        const batch = mergedWebsiteRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
         const { data, error } = await supabase
           .from('screentime_daily_website_stats')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' })
@@ -1259,7 +1259,7 @@ Deno.serve(async (req: Request) => {
     if (mergedSummaryRows.length > 0) {
       const batchSize = 500;
       for (let i = 0; i < mergedSummaryRows.length; i += batchSize) {
-        const batch = mergedSummaryRows.slice(i, i + batchSize);
+        const batch = mergedSummaryRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
         const { data, error } = await supabase
           .from('screentime_daily_summary')
           .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' })
