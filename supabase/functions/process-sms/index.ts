@@ -1,8 +1,7 @@
 /// <reference path="../deno.d.ts" />
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { TransactionParser } from './parser.ts';
-import { enrichWithGemini, type GeminiEnrichment } from './gemini.ts';
 
 type TransactionRule = { id?: string; entity_pattern?: string; bank?: string; transaction_type?: string; category: string; type: 'income' | 'expense' };
 type InsertedTransaction = { id: string; amount: number; category: string; type: string; entity?: string | null; bank?: string | null };
@@ -161,44 +160,8 @@ serve(async (req: Request) => {
       );
     }
 
-    // ===== OPTIONAL: GEMINI AI VERIFY & ENRICH =====
-    let aiEnrichment: GeminiEnrichment | null = null;
-    const geminiKey = Deno.env.get('GEMINI_API_KEY');
-    const geminiModel = Deno.env.get('GEMINI_MODEL');
-    const useAi = body.use_ai !== false;
-    if (geminiKey && useAi) {
-      try {
-        aiEnrichment = await enrichWithGemini(geminiKey, message, {
-          amount: parsed.amount,
-          bank: parsed.bank,
-          type: parsed.type,
-          entity: parsed.entity,
-          direction: parsed.direction,
-          date: parsed.date,
-          time: parsed.time,
-          account: parsed.account,
-        }, geminiModel || undefined);
-        if (aiEnrichment?.is_promotion === true || aiEnrichment?.is_valid === false) {
-          return new Response(
-            JSON.stringify({
-              success: true,
-              skipped: true,
-              reason: aiEnrichment?.is_promotion === true
-                ? 'AI classified as promotion (offers, ads, marketing).'
-                : 'AI verified: not a valid transaction to record.',
-              ai_corrections: aiEnrichment.corrections ?? undefined,
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-          );
-        }
-        if (aiEnrichment) console.log('Gemini enrichment:', aiEnrichment);
-      } catch (e) {
-        console.error('Gemini enrichment failed:', e);
-      }
-    }
-
     // ===== SMART CATEGORIZATION =====
-    
+
     // Get user's categorization rules
     const { data: rulesData } = await supabaseClient
       .from('transaction_rules')
@@ -246,18 +209,9 @@ serve(async (req: Request) => {
 
     // Fallback categorization based on transaction type
     if (category === 'Uncategorized') {
-      if (aiEnrichment?.category && VALID_CATEGORIES.has(aiEnrichment.category)) {
-        category = aiEnrichment.category;
-      } else {
-        category = getDefaultCategory(parsed.type, parsed.entity);
-      }
+      category = getDefaultCategory(parsed.type, parsed.entity);
     }
     category = toSchemaCategory(category);
-
-    // Override type from AI if valid
-    if (aiEnrichment?.type === 'income' || aiEnrichment?.type === 'expense') {
-      type = aiEnrichment.type;
-    }
 
     // Ensure category is never blank - default based on transaction type
     if (!category || category.trim() === '' || category === 'Uncategorized') {
@@ -265,13 +219,10 @@ serve(async (req: Request) => {
     }
 
     // ===== DATE: always use invocation date (edge function clock) =====
-    // To avoid inconsistencies from SMS formats and timezones, we ignore any parsed/AI dates
-    // and always record the transaction on the date the function is invoked.
     const now = new Date();
     const transactionDate = now.toISOString().split('T')[0];
 
     // ===== DUPLICATE CHECK =====
-    
     const { data: duplicatesData } = await supabaseClient
       .from('transactions')
       .select('id')
@@ -294,23 +245,17 @@ serve(async (req: Request) => {
     }
 
     // ===== INSERT TRANSACTION =====
-    // Columns match public.transactions: type, category, amount, description, date, is_recurring,
-    // time, bank, transaction_type, entity, direction, account, original_message, raw_sms, sender,
-    // parsed_successfully, processing_notes, cash_flow (CHECK: 'Cash In (+)', 'Cash Out (-)', 'Unknown'),
-    // device_info (jsonb), source (CHECK: 'manual', 'sms', 'api', 'import'), user_id
-
     const cashFlow = ['Cash In (+)', 'Cash Out (-)', 'Unknown'].includes(parsed.cashFlow)
       ? parsed.cashFlow
       : (type === 'income' ? 'Cash In (+)' : 'Cash Out (-)');
 
-    const finalAmount = aiEnrichment?.amount != null ? aiEnrichment.amount : (parsed.amount ? parseFloat(parsed.amount) : 0);
-    const finalDescription = (aiEnrichment?.description?.trim()) || parsed.entity || `${parsed.type} - ${parsed.bank}`;
-    const finalEntity = (aiEnrichment?.entity != null ? aiEnrichment.entity : parsed.entity) || null;
-    const finalBank = (aiEnrichment?.bank?.trim()) || parsed.bank || null;
-    const finalTransactionType = (aiEnrichment?.transaction_type?.trim()) || parsed.type || null;
-    const finalTime = (aiEnrichment?.time?.trim()) || parsed.time || null;
-    const finalAccount = (aiEnrichment?.account != null ? aiEnrichment.account : parsed.account) || null;
-    const processingNotes = aiEnrichment?.corrections?.trim() || null;
+    const finalAmount = parsed.amount ? parseFloat(parsed.amount) : 0;
+    const finalDescription = parsed.entity || `${parsed.type} - ${parsed.bank}`;
+    const finalEntity = parsed.entity || null;
+    const finalBank = parsed.bank || null;
+    const finalTransactionType = parsed.type || null;
+    const finalTime = parsed.time || null;
+    const finalAccount = parsed.account || null;
 
     const { data: insertedDataRaw, error: insertError } = await supabaseClient
       .from('transactions')
@@ -331,7 +276,7 @@ serve(async (req: Request) => {
         raw_sms: rawSms ?? message,
         sender: sender ?? null,
         parsed_successfully: true,
-        processing_notes: processingNotes,
+        processing_notes: null,
         cash_flow: cashFlow,
         device_info: deviceInfo ?? null,
         source: 'sms',
@@ -348,17 +293,13 @@ serve(async (req: Request) => {
 
     console.log('Transaction inserted:', insertedData.id);
 
-    // ===== BUDGET CHECK =====
-    
     const budgetWarning = await checkBudget(
-      supabaseClient, 
-      userId, 
-      category, 
+      supabaseClient,
+      userId,
+      category,
       transactionDate
     );
 
-    // ===== RETURN SUCCESS =====
-    
     return new Response(
       JSON.stringify({
         success: true,
@@ -367,12 +308,11 @@ serve(async (req: Request) => {
           amount: insertedData.amount,
           category: insertedData.category,
           type: insertedData.type,
-          entity: finalEntity ?? parsed.entity,
-          bank: finalBank ?? parsed.bank,
+          entity: parsed.entity,
+          bank: parsed.bank,
         },
         budgetWarning: budgetWarning,
         parsed: parsed,
-        ...(aiEnrichment && { ai_enrichment: { category: aiEnrichment.category, corrections: aiEnrichment.corrections } }),
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -417,12 +357,9 @@ function toSchemaCategory(cat: string): string {
   if (/shopping|mall|store/.test(lower)) return 'shopping';
   if (/ipn|transfer/.test(lower)) return 'ipn';
   if (/income|in|credit/.test(lower)) return 'other_income';
-  // Handle "Other" - default to other_expense, but caller should determine based on transaction type
   if (lower === 'other') return 'other_expense';
   return 'other_expense';
 }
-
-// Map to LifeOS schema categories (entity + transaction type → category)
 
 function getDefaultCategory(transactionType: string, entity: string | null): string {
   const type = transactionType.toLowerCase();
@@ -440,37 +377,26 @@ function getDefaultCategory(transactionType: string, entity: string | null): str
   if (type.includes('fee') || type.includes('charge') || type.includes('charges')) return 'utilities';
   if (type.includes('ipn') || type.includes('transfer')) return 'ipn';
 
-  // Food & dining (check entity first so "Other" is only when nothing matches)
   if (
     /gourmet|carrefour|metro|market|grocery|سوبرماركت|restaurant|cafe|مطعم|كافيه|valu|valu\s*shop|noon\s*e\s*commerce|noon|mcdonald|kfc|starbucks|dominos|pizza|food|dining/.test(ent)
   ) return 'food';
 
-  // Transport
   if (/uber|taxi|careem|petrol|بنزين|transport|fuel|gas/.test(ent)) return 'transport';
-
-  // Entertainment
   if (/cinema|netflix|entertainment|apple\.com|spotify|game/.test(ent)) return 'entertainment';
-
-  // Health
   if (/hospital|pharmacy|doctor|صيدلية|clinic|medical/.test(ent)) return 'health';
-
-  // Education
   if (/school|university|course|تعليم|education/.test(ent)) return 'education';
-
-  // Shopping (generic stores, malls, merchants)
   if (/mall|shop|store|متجر|shopping|acceptmerchant|merchant/.test(ent)) return 'shopping';
 
   return 'other_expense';
 }
 
 async function checkBudget(
-  client: any, 
-  userId: string, 
-  category: string, 
+  client: any,
+  userId: string,
+  category: string,
   transactionDate: string
 ): Promise<string | null> {
   try {
-    // Get budget for this category
     const { data: budget } = await client
       .from('budgets')
       .select('monthly_limit')
@@ -480,7 +406,6 @@ async function checkBudget(
 
     if (!budget) return null;
 
-    // Get month's spending
     const monthStart = transactionDate.slice(0, 7) + '-01';
     const { data: monthTransactions } = await client
       .from('transactions')
@@ -493,7 +418,7 @@ async function checkBudget(
     if (!monthTransactions) return null;
 
     const totalSpent = monthTransactions.reduce(
-      (sum: number, t: any) => sum + parseFloat(t.amount || 0), 
+      (sum: number, t: any) => sum + parseFloat(t.amount || 0),
       0
     );
 
