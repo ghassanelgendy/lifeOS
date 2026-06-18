@@ -68,6 +68,8 @@ export function useDashboardUpcomingItems(options?: {
         color: event.color ?? '#6366f1',
         kind: 'event',
         type: event.type,
+        location: event.location || undefined,
+        description: event.description || undefined,
       });
     }
 
@@ -87,6 +89,7 @@ export function useDashboardUpcomingItems(options?: {
         kind: 'task',
         entityId: task.id,
         allDay: !(task.due_time && task.due_time.length >= 5),
+        description: task.description || undefined,
       });
     }
 
@@ -137,6 +140,7 @@ export function useDashboardUpcomingItems(options?: {
         kind: 'habit',
         entityId: habit.id,
         allDay: slot.allDay,
+        description: habit.description || undefined,
       });
     }
 

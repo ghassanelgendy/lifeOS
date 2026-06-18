@@ -6,3 +6,9 @@ verify_jwt = false
 
 [functions.habit-notifications-dispatch]
 verify_jwt = false
+
+[functions.send-task-reminders]
+verify_jwt = false
+
+[functions.calendar-notifications-dispatch]
+verify_jwt = false

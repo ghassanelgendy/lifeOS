@@ -58,8 +58,7 @@ export function useSleepMetrics(days: number = 7) {
     if (nights.length === 0) return { avgSleepMinutes: 0, avgBedtimeMinutes: null, nightsCount: 0 };
     const totalMin = nights.reduce((s, n) => s + n.sleepMinutes, 0);
 
-    // Calculate average bedtime
-    // Night groups are returned with segments in groups. Let's find the first segment of each night.
+    // Calculate average bedtime by grouping sleep groups by their end date
     const bedtimes = [];
     const sortedSegs = [...segments].sort((a, b) => new Date(a.started_at).getTime() - new Date(b.started_at).getTime());
     const groups: SleepStage[][] = [];
@@ -80,9 +79,22 @@ export function useSleepMetrics(days: number = 7) {
     }
     if (current.length > 0) groups.push(current);
 
+    const byDateGroups = new Map<string, SleepStage[][]>();
     for (const group of groups) {
       if (group.length > 0) {
-        const date = new Date(group[0].started_at);
+        const dateStr = group[group.length - 1].ended_at.slice(0, 10);
+        if (!byDateGroups.has(dateStr)) {
+          byDateGroups.set(dateStr, []);
+        }
+        byDateGroups.get(dateStr)!.push(group);
+      }
+    }
+
+    for (const [_, groupsForDate] of byDateGroups.entries()) {
+      groupsForDate.sort((a, b) => new Date(a[0].started_at).getTime() - new Date(b[0].started_at).getTime());
+      const firstGroup = groupsForDate[0];
+      if (firstGroup && firstGroup.length > 0) {
+        const date = new Date(firstGroup[0].started_at);
         let mins = date.getHours() * 60 + date.getMinutes();
         // If they slept between 00:00 and 12:00, add 24 hours so it averages correctly with e.g. 23:00
         if (mins < 12 * 60) mins += 24 * 60;

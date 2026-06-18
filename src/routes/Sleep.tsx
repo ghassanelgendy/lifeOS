@@ -63,7 +63,7 @@ function buildSessions(segments: SleepStage[]): NightSession[] {
   }
   if (current.length) groups.push(current);
 
-  return groups.map((g) => {
+  const rawSessions = groups.map((g) => {
     const first = g[0];
     const last = g[g.length - 1];
     const totalMinutes = g.reduce((s, x) => s + x.duration_minutes, 0);
@@ -75,7 +75,7 @@ function buildSessions(segments: SleepStage[]): NightSession[] {
     const sleepMinutes = Math.max(totalMinutes - awakeMinutes, 0);
     const wakeCount = awakeSegments.filter((x) => x.duration_minutes >= 5).length;
     const deepContinuity = Math.min(100, Math.max(0, 100 - wakeCount * 8));
-    const session: NightSession = {
+    const session = {
       key: `${first.started_at}-${last.ended_at}`,
       date: last.ended_at.slice(0, 10),
       bedtime: new Date(first.started_at),
@@ -91,7 +91,60 @@ function buildSessions(segments: SleepStage[]): NightSession[] {
       segments: g,
     };
     return session;
-  }).sort((a, b) => b.date.localeCompare(a.date));
+  });
+
+  // Group and merge sessions by date
+  const byDate = new Map<string, typeof rawSessions>();
+  for (const s of rawSessions) {
+    if (!byDate.has(s.date)) {
+      byDate.set(s.date, []);
+    }
+    byDate.get(s.date)!.push(s);
+  }
+
+  const mergedSessions: NightSession[] = [];
+  for (const [date, sessionsForDate] of byDate.entries()) {
+    if (sessionsForDate.length === 1) {
+      mergedSessions.push(sessionsForDate[0]);
+    } else {
+      // Sort by bedtime to find chronological bounds
+      sessionsForDate.sort((a, b) => a.bedtime.getTime() - b.bedtime.getTime());
+      const first = sessionsForDate[0];
+      const last = sessionsForDate[sessionsForDate.length - 1];
+
+      const totalMinutes = sessionsForDate.reduce((sum, s) => sum + s.totalMinutes, 0);
+      const sleepMinutes = sessionsForDate.reduce((sum, s) => sum + s.sleepMinutes, 0);
+      const deepMinutes = sessionsForDate.reduce((sum, s) => sum + s.deepMinutes, 0);
+      const coreMinutes = sessionsForDate.reduce((sum, s) => sum + s.coreMinutes, 0);
+      const remMinutes = sessionsForDate.reduce((sum, s) => sum + s.remMinutes, 0);
+      const awakeMinutes = sessionsForDate.reduce((sum, s) => sum + s.awakeMinutes, 0);
+      const wakeCount = sessionsForDate.reduce((sum, s) => sum + s.wakeCount, 0);
+      const deepContinuity = Math.min(100, Math.max(0, 100 - wakeCount * 8));
+
+      const combinedSegments: SleepStage[] = [];
+      for (const s of sessionsForDate) {
+        combinedSegments.push(...s.segments);
+      }
+
+      mergedSessions.push({
+        key: sessionsForDate.map(s => s.key).join('_'),
+        date,
+        bedtime: first.bedtime,
+        waketime: last.waketime,
+        totalMinutes,
+        sleepMinutes,
+        deepMinutes,
+        coreMinutes,
+        remMinutes,
+        awakeMinutes,
+        wakeCount,
+        deepContinuity,
+        segments: combinedSegments,
+      });
+    }
+  }
+
+  return mergedSessions.sort((a, b) => b.date.localeCompare(a.date));
 }
 
 

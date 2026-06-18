@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -97,7 +98,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div
       ref={overlayRef}
       data-lifeos-modal
@@ -178,6 +179,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

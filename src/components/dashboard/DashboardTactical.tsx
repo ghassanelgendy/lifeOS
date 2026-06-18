@@ -29,7 +29,7 @@ import { useScreentimeMetrics, useTodayScreentime } from '../../hooks/useScreent
 import { useSleepMetrics } from '../../hooks/useSleep';
 import { useDashboardUpcomingItems } from '../../hooks/useDashboardUpcomingItems';
 
-export function DashboardTactical() {
+export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
   const { metrics, hasData: hasHealthData } = useHealthMetrics();
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { adherence, todayLogs } = useWeeklyAdherence();
@@ -426,7 +426,11 @@ if (widgetId === 'overdue' || widgetId === 'events') {
                 ) : (
                   <div className="space-y-2">
                     {overdueTasks.slice(0, 5).map(task => (
-                      <div key={task.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                      <div
+                        key={task.id}
+                        onClick={() => onSelectEntry({ ...task, kind: 'task' })}
+                        className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
+                      >
                         <span className="font-medium text-sm truncate">{task.title}</span>
                         <span className="text-xs text-red-400 font-mono flex-shrink-0 ml-2">
                           {format(new Date(task.due_date!), 'MMM d')}
@@ -463,7 +467,11 @@ if (widgetId === 'overdue' || widgetId === 'events') {
                 ) : (
                   <div className="space-y-2">
                     {upcomingItems.slice(0, 5).map(item => (
-                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                      <div
+                        key={item.id}
+                        onClick={() => onSelectEntry(item)}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 cursor-pointer transition-colors"
+                      >
                         <div
                           className="w-2 h-8 rounded-full flex-shrink-0"
                           style={{ backgroundColor: item.color }}
@@ -539,9 +547,9 @@ if (widgetId === 'overdue' || widgetId === 'events') {
               {allHabits.map(habit => {
                 const isCompleted = todayLogs.some(l => l.habit_id === habit.id && l.completed);
                 return (
-                  <Link
+                  <button
                     key={habit.id}
-                    to="/habits"
+                    onClick={() => onSelectEntry({ ...habit, kind: 'habit', entityId: habit.id })}
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                       isCompleted
@@ -555,7 +563,7 @@ if (widgetId === 'overdue' || widgetId === 'events') {
                     />
                     <span className="text-sm font-medium">{habit.title}</span>
                     {isCompleted && <CheckCircle size={14} />}
-                  </Link>
+                  </button>
                 );
               })}
             </div>

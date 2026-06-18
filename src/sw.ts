@@ -57,7 +57,7 @@ const NOTIFICATION_ACTIONS = [
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
 
-  let payload: { taskId?: string; title?: string; body?: string; prayerName?: string } = {};
+  let payload: { taskId?: string; title?: string; body?: string; prayerName?: string; calendarEventId?: string; isCustom?: boolean } = {};
   try {
     payload = event.data.json();
   } catch {
@@ -66,18 +66,33 @@ self.addEventListener('push', (event: PushEvent) => {
 
   const taskId = payload.taskId ?? '';
   const isPrayer = !!payload.prayerName;
+  const isCalendar = !!payload.calendarEventId;
+  const isCustom = !!payload.isCustom || isCalendar;
 
-  const notificationTitle = isPrayer ? (payload.title ?? `Time to pray ${payload.prayerName}`) : 'lifeOS';
-  const body = isPrayer ? (payload.body ?? '') : `Ready to "${payload.title ?? 'Task'}"`;
+  const notificationTitle = isPrayer 
+    ? (payload.title ?? `Time to pray ${payload.prayerName}`) 
+    : isCustom 
+    ? (payload.title ?? 'lifeOS') 
+    : 'lifeOS';
+    
+  const body = isPrayer 
+    ? (payload.body ?? '') 
+    : isCustom 
+    ? (payload.body ?? '') 
+    : `Ready to "${payload.title ?? 'Task'}"`;
 
   event.waitUntil(
     self.registration.showNotification(notificationTitle, {
       body: body || undefined,
-      tag: isPrayer ? `prayer-${payload.prayerName}-${Date.now()}` : (taskId || `task-${Date.now()}`),
+      tag: isPrayer 
+        ? `prayer-${payload.prayerName}-${Date.now()}` 
+        : isCalendar 
+        ? `calendar-${payload.calendarEventId}-${Date.now()}` 
+        : (taskId || `task-${Date.now()}`),
       renotify: true,
       requireInteraction: false,
-      data: { taskId, title: payload.title, prayerName: payload.prayerName },
-      actions: isPrayer ? [] : [...NOTIFICATION_ACTIONS],
+      data: { taskId, title: payload.title, prayerName: payload.prayerName, calendarEventId: payload.calendarEventId },
+      actions: (isPrayer || isCalendar) ? [] : [...NOTIFICATION_ACTIONS],
       icon: '/web-app-manifest-192x192.png',
     })
   );

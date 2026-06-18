@@ -12,14 +12,41 @@ import { FocusPiPWindow } from './FocusPiPWindow';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 
-function MobileNavLink({ item }: { item: NavItem }) {
+function MobileNavLink({
+  item,
+  isMobileSidebarOpen,
+  setMobileSidebarOpen,
+}: {
+  item: NavItem;
+  isMobileSidebarOpen: boolean;
+  setMobileSidebarOpen: (open: boolean) => void;
+}) {
   const match = useMatch({ path: item.href, end: item.href === '/' });
   const isActive = !!match;
   const Icon = item.icon;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (isMobileSidebarOpen) {
+      setMobileSidebarOpen(false);
+      if (isActive && (item.href === '/dashboard' || item.href === '/')) {
+        e.preventDefault();
+      }
+      return;
+    }
+
+    if (isActive) {
+      if (item.href === '/dashboard' || item.href === '/') {
+        e.preventDefault();
+        setMobileSidebarOpen(true);
+      }
+    }
+  };
+
   return (
     <NavLink
       to={item.href}
       end={item.href === '/'}
+      onClick={handleClick}
       className={({ isActive: active }) => cn(
         "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150",
         active ? "text-foreground" : "text-muted-foreground"
@@ -303,7 +330,12 @@ export function AppShell() {
         >
           <div className="flex justify-around items-center h-16">
             {mobileNavigation.map((item) => (
-              <MobileNavLink key={item.href} item={item} />
+              <MobileNavLink 
+                key={item.href} 
+                item={item} 
+                isMobileSidebarOpen={isMobileSidebarOpen}
+                setMobileSidebarOpen={setMobileSidebarOpen}
+              />
             ))}
           </div>
         </nav>

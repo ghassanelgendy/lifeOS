@@ -22,7 +22,8 @@ export function isHabitScheduledForDate(habit: Pick<Habit, 'frequency' | 'week_d
   if (habit.frequency === 'Daily') return true;
   const weekDays = habit.week_days ?? [];
   if (weekDays.length === 0) return false;
-  return weekDays.includes(date.getDay());
+  const day = date.getDay();
+  return weekDays.some((d) => Number(d) === day);
 }
 
 function clampPct(value: number): number {
@@ -386,6 +387,45 @@ export function useLogHabit() {
   });
 }
 
+export function getHabitStreak(habit: Habit, logs: string[]): number {
+  if (!logs.length) return 0;
+
+  const logsSet = new Set(logs);
+  const today = new Date();
+  const todayStr = toDateOnly(today);
+  const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
+
+  let streak = 0;
+  let checkDate = new Date(today);
+
+  // Step backwards day-by-day up to 365 days or until before the habit's creation
+  for (let i = 0; i < 365; i++) {
+    const dateStr = toDateOnly(checkDate);
+    if (createdAtDate && dateStr < createdAtDate) {
+      break;
+    }
+
+    const scheduled = isHabitScheduledForDate(habit, checkDate);
+    if (scheduled) {
+      const completed = logsSet.has(dateStr);
+      if (completed) {
+        streak++;
+      } else {
+        // If it is today and they haven't completed it yet, the streak is not broken.
+        // If it is yesterday or older, the streak breaks.
+        if (dateStr !== todayStr) {
+          break;
+        }
+      }
+    }
+
+    // Step back one calendar day
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  return streak;
+}
+
 export function useHabitStreak(habitId: string) {
   const { user } = useAuth();
   return useQuery({
@@ -394,7 +434,7 @@ export function useHabitStreak(habitId: string) {
       // First verify the habit belongs to the user
       const { data: habit, error: habitError } = await supabase
         .from('habits')
-        .select('id, user_id')
+        .select('*')
         .eq('id', habitId)
         .single();
       if (habitError) throw habitError;
@@ -404,42 +444,15 @@ export function useHabitStreak(habitId: string) {
       
       const { data: logs, error } = await supabase
         .from('habit_logs')
-        .select('*')
+        .select('date')
         .eq('habit_id', habitId)
         .eq('completed', true)
         .order('date', { ascending: false });
 
       if (error) throw error;
+      if (!logs) return 0;
 
-      // Calculate streak manually (client side for now)
-      let streak = 0;
-      if (!logs || logs.length === 0) return 0;
-
-      const today = toDateOnly(new Date());
-      const yesterdayStr = toDateOnly(subDays(new Date(), 1));
-
-      // Check if most recent is today or yesterday
-      const mostRecent = logs[0].date;
-      if (mostRecent !== today && mostRecent !== yesterdayStr) {
-        return 0; // Streak broken
-      }
-
-      streak = 1;
-      let currentDate = new Date(mostRecent);
-
-      for (let i = 1; i < logs.length; i++) {
-        const logDate = new Date(logs[i].date);
-        const diffTime = Math.abs(currentDate.getTime() - logDate.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-        if (diffDays === 1) {
-          streak++;
-          currentDate = logDate;
-        } else {
-          break;
-        }
-      }
-      return streak;
+      return getHabitStreak(habit as Habit, logs.map((l) => l.date));
     },
     enabled: !!habitId && !!user?.id,
   });
@@ -472,6 +485,16 @@ export function useHabitStreaks(habitIds: string[]) {
     queryFn: async () => {
       if (!habitIds.length) return {} as Record<string, number>;
 
+      // Fetch habits to get their scheduling information
+      const { data: habits, error: habitsError } = await supabase
+        .from('habits')
+        .select('*')
+        .in('id', habitIds);
+      if (habitsError) throw habitsError;
+
+      const habitsMap = new Map<string, Habit>();
+      (habits || []).forEach((h) => habitsMap.set(h.id, h as Habit));
+
       const { data, error } = await supabase
         .from('habit_logs')
         .select('habit_id,date,completed')
@@ -487,37 +510,16 @@ export function useHabitStreaks(habitIds: string[]) {
         byHabit.set(log.habit_id, arr);
       });
 
-      const today = new Date();
-      const todayStr = toDateOnly(today);
-      const yesterdayStr = toDateOnly(subDays(today, 1));
       const streaks: Record<string, number> = {};
 
       habitIds.forEach((habitId) => {
         const logs = byHabit.get(habitId) ?? [];
-        if (!logs.length) {
+        const habit = habitsMap.get(habitId);
+        if (!habit) {
           streaks[habitId] = 0;
           return;
         }
-        const mostRecent = logs[0];
-        if (mostRecent !== todayStr && mostRecent !== yesterdayStr) {
-          streaks[habitId] = 0;
-          return;
-        }
-
-        let streak = 1;
-        let currentDate = new Date(mostRecent);
-        for (let i = 1; i < logs.length; i++) {
-          const logDate = new Date(logs[i]);
-          const diffTime = Math.abs(currentDate.getTime() - logDate.getTime());
-          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          if (diffDays === 1) {
-            streak++;
-            currentDate = logDate;
-          } else {
-            break;
-          }
-        }
-        streaks[habitId] = streak;
+        streaks[habitId] = getHabitStreak(habit, logs);
       });
 
       return streaks;

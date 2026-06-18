@@ -109,8 +109,9 @@ Deno.serve(async (req: Request) => {
 
           let q = supabase
             .from('tasks')
-            .select('id, title, due_date, due_time, reminders_enabled, early_reminder_minutes')
+            .select('id, title, user_id, due_date, due_time, reminders_enabled, early_reminder_minutes')
             .eq('is_completed', false)
+            .eq('is_wont_do', false)
             .eq('reminders_enabled', true)
             .eq('due_date', targetDate)
             .eq('due_time', targetTime)
@@ -139,16 +140,56 @@ Deno.serve(async (req: Request) => {
 
         const { data: subs, error: subsError } = await supabase
           .from('push_subscriptions')
-          .select('endpoint, p256dh, auth')
+          .select('endpoint, p256dh, auth, user_id')
           .eq('timezone', tz);
 
         const subList = subs as any[];
         if (subsError || !subList?.length) continue;
 
+        // Group subscriptions by user_id
+        const subsByUser = new Map<string, any[]>();
+        for (const sub of subList) {
+          if (sub.user_id) {
+            const list = subsByUser.get(sub.user_id) || [];
+            list.push(sub);
+            subsByUser.set(sub.user_id, list);
+          }
+        }
+
         let sent = 0;
         for (const task of taskList) {
+          if (!task.user_id) continue;
+
+          const idempotencyKey = `task:${task.user_id}:${task.id}:${tz}:${task.due_date}:${task.due_time}`;
+          
+          // Check if already sent
+          const { data: existingLog } = await (supabase
+            .from('notification_delivery_logs')
+            .select('id, status')
+            .eq('idempotency_key', idempotencyKey) as any).maybeSingle();
+          if (existingLog?.id) continue;
+
+          const userSubs = subsByUser.get(task.user_id) || [];
+          if (!userSubs.length) continue;
+
+          // Register delivery start
+          const { error: insertError } = await supabase.from('notification_delivery_logs').insert({
+            user_id: task.user_id,
+            source_type: 'task',
+            source_id: task.id,
+            scheduled_for: now.toISOString(),
+            status: 'pending',
+            idempotency_key: idempotencyKey,
+          });
+
+          if (insertError) {
+            if ((insertError as any).code === '23505') continue; // Unique violation duplicate check
+            throw insertError;
+          }
+
           const payload = JSON.stringify({ taskId: task.id, title: task.title });
-          for (const sub of subList) {
+          let anySuccess = false;
+          for (const sub of userSubs) {
             try {
               await webpush.sendNotification(
                 {
@@ -158,6 +199,7 @@ Deno.serve(async (req: Request) => {
                 payload
               );
               sent++;
+              anySuccess = true;
             } catch (e) {
               console.error('Push failed', sub.endpoint.slice(0, 50), e);
               if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
@@ -165,6 +207,15 @@ Deno.serve(async (req: Request) => {
               }
             }
           }
+
+          await supabase
+            .from('notification_delivery_logs')
+            .update({
+              status: anySuccess ? 'sent' : 'failed',
+              sent_at: anySuccess ? new Date().toISOString() : null,
+              error: anySuccess ? null : 'No valid subscriptions',
+            })
+            .eq('idempotency_key', idempotencyKey);
         }
         results.push({ timezone: tz, tasks: taskList.length, sent });
       } catch (tzProcError) {

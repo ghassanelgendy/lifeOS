@@ -33,14 +33,28 @@ export function DetailsSheet({
   const [scrolled, setScrolled] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
 
+  const onConfirmRef = useRef(onConfirm);
+  onConfirmRef.current = onConfirm;
+  const confirmDisabledRef = useRef(confirmDisabled);
+  confirmDisabledRef.current = confirmDisabled;
+
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCloseRef.current();
+      } else if (e.key === 'Enter') {
+        const target = e.target as HTMLElement | null;
+        const isTextarea = target?.tagName === 'TEXTAREA';
+        if (!isTextarea && !confirmDisabledRef.current) {
+          e.preventDefault();
+          onConfirmRef.current();
+        }
+      }
     };
 
     if (isOpen) {
       setSheetVisible(false);
-      document.addEventListener('keydown', handleEscape);
+      document.addEventListener('keydown', handleKeyDown);
 
       // Lock the main content scroll (PullToRefresh container) so opening from deep in the list doesn't jump
       const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
@@ -61,7 +75,7 @@ export function DetailsSheet({
 
       return () => {
         cancelAnimationFrame(t);
-        document.removeEventListener('keydown', handleEscape);
+        document.removeEventListener('keydown', handleKeyDown);
         if (scrollRoot) {
           scrollRoot.style.overflow = '';
           scrollRoot.scrollTop = scrollPositionRef.current;
@@ -75,7 +89,7 @@ export function DetailsSheet({
       };
     }
     setSheetVisible(false);
-    return () => document.removeEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
   const handleScroll = () => {

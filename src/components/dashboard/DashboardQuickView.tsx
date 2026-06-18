@@ -135,6 +135,7 @@ function DueTodayRow({
   label,
   showToggle,
   color,
+  onClick,
 }: {
   kind: DueKind;
   title: string;
@@ -145,15 +146,18 @@ function DueTodayRow({
   label: string;
   showToggle: boolean;
   color?: string;
+  onClick?: () => void;
 }) {
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
   return (
     <div
+      onClick={onClick}
       className={cn(
         'task-item group flex items-stretch gap-3 rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
         'transition-all duration-200 hover:border-border hover:shadow-md',
+        onClick && 'cursor-pointer',
         done && (kind === 'prayer' ? 'opacity-75 border-slate-500/20 bg-slate-500/5' : 'opacity-75 border-primary/20 bg-primary/5'),
       )}
     >
@@ -250,7 +254,7 @@ function DueTodayRow({
   );
 }
 
-export function DashboardQuickView() {
+export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
   const [parent] = useAutoAnimate();
   const [pendingToggles, setPendingToggles] = useState<Record<string, { timeout: ReturnType<typeof setTimeout>; targetState: boolean }>>({});
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
@@ -577,9 +581,18 @@ export function DashboardQuickView() {
 
     for (const task of completedTasks) {
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
-      if (task.calendar_source_key || task.calendar_event_id) continue;
+      
+      const isCalendarEvent = !!(task.calendar_source_key || task.calendar_event_id);
       const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
-      rawMarkers.push({ id: `task-${task.id}`, minutes, kind: 'task', name: task.title, timeStr: formatMinutesAsTime(minutes), isCompleted: true });
+      rawMarkers.push({
+        id: `task-${task.id}`,
+        minutes,
+        kind: isCalendarEvent ? 'event' : 'task',
+        color: isCalendarEvent ? '#6366f1' : undefined,
+        name: task.title,
+        timeStr: formatMinutesAsTime(minutes),
+        isCompleted: true
+      });
     }
 
     for (const item of upcomingItems) {
@@ -593,14 +606,14 @@ export function DashboardQuickView() {
         const isManuallyDone = !!linkedTask?.is_completed;
         const isAutoDone = parsedEnd < today;
         
-        if (isManuallyDone || isAutoDone) {
-          const completedDate = (isManuallyDone && linkedTask?.completed_at) ? new Date(linkedTask.completed_at) : parsedEnd;
-          const minutes = completedDate.getHours() * 60 + completedDate.getMinutes();
+        // Add auto-done events if they haven't been manually toggled yet
+        if (!isManuallyDone && isAutoDone) {
+          const minutes = parsedEnd.getHours() * 60 + parsedEnd.getMinutes();
           rawMarkers.push({
             id: item.id,
             minutes,
-            kind: 'task', // using task for now, but color will distinguish
-            color: item.color || '#3b82f6',
+            kind: 'event',
+            color: item.color || '#6366f1',
             name: item.title,
             timeStr: formatMinutesAsTime(minutes),
             isCompleted: true
@@ -680,8 +693,22 @@ export function DashboardQuickView() {
     !!lastPrayerSlot ||
     upcomingItemsToday.length > 0;
 
-  const timelineItems: Array<{ timeValue: number; done: boolean; element: React.ReactNode }> = [];
+  const timelineRawItems: Array<{
+    key: string;
+    kind: DueKind;
+    done: boolean;
+    isPrayer: boolean;
+    isAnytime: boolean;
+    sortTime: number;
+    element: React.ReactNode;
+  }> = [];
   const addedKeys = new Set<string>();
+
+  const getTodayTimestamp = (minutes: number) => {
+    const d = new Date(today);
+    d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
+    return d.getTime();
+  };
 
   // Prayer: participates in the sort — when done it sinks to the bottom,
   // when the next prayer slot arrives (undone) it jumps back to top.
@@ -689,9 +716,13 @@ export function DashboardQuickView() {
     const isPrayerPending = !!pendingToggles['prayer-next'];
     const visualPrayerDone = isPrayerPending ? !lastPrayerDone : lastPrayerDone;
 
-    timelineItems.push({
-      timeValue: -2, // Always first among incomplete items
+    timelineRawItems.push({
+      key: 'prayer-current',
+      kind: 'prayer',
       done: lastPrayerDone,
+      isPrayer: true,
+      isAnytime: false,
+      sortTime: lastPrayerSlot.time.getTime(),
       element: (
         <li key="prayer-current">
           <DueTodayRow
@@ -718,9 +749,13 @@ export function DashboardQuickView() {
     const pendingData = pendingToggles[`task-${t.id}`];
     const isPending = !!pendingData;
     const pendingTarget = pendingData?.targetState ?? false;
-    timelineItems.push({
-      timeValue: -1,
+    timelineRawItems.push({
+      key: `task-${t.id}`,
+      kind: 'task',
       done: false,
+      isPrayer: false,
+      isAnytime: false,
+      sortTime: parseDueForSort(t),
       element: (
         <li key={`task-${t.id}`}>
           <DueTodayRow
@@ -736,6 +771,7 @@ export function DashboardQuickView() {
             showToggle
             label={`Complete overdue task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
+            onClick={() => onSelectEntry({ ...t, kind: 'task' })}
           />
         </li>
       ),
@@ -747,9 +783,17 @@ export function DashboardQuickView() {
     const pendingData = pendingToggles[`task-${t.id}`];
     const isPending = !!pendingData;
     const pendingTarget = pendingData?.targetState ?? false;
-    timelineItems.push({
-      timeValue: t.due_time ? (timeStringToMinutes(t.due_time) ?? 1440) : 1440,
+    
+    const minutes = t.due_time ? (timeStringToMinutes(t.due_time) ?? null) : null;
+    const sortTime = minutes !== null ? getTodayTimestamp(minutes) : Infinity;
+
+    timelineRawItems.push({
+      key: `task-${t.id}`,
+      kind: 'task',
       done: false,
+      isPrayer: false,
+      isAnytime: !t.due_time,
+      sortTime,
       element: (
         <li key={`task-${t.id}`}>
           <DueTodayRow
@@ -761,6 +805,7 @@ export function DashboardQuickView() {
             showToggle
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
+            onClick={() => onSelectEntry({ ...t, kind: 'task' })}
           />
         </li>
       ),
@@ -780,32 +825,42 @@ export function DashboardQuickView() {
     const hasUsualTime = insight && insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet';
     
     let timeStr = 'Any time';
-    let minutes = 1440;
+    let minutes: number | null = null;
+    let isAnytime = true;
     
     if (done) {
       const log = todayLogs.find((l) => l.habit_id === h.id && l.date === todayStr && l.completed);
       if (log && log.completed_at) {
         timeStr = format(parseISO(log.completed_at), 'h:mm a');
-        minutes = isoToDayMinutes(log.completed_at) ?? 1440;
+        minutes = isoToDayMinutes(log.completed_at);
+        isAnytime = false;
       } else if (h.time && h.time.length >= 5) {
         timeStr = format(new Date(`2000-01-01T${h.time.slice(0, 5)}`), 'h:mm a');
-        minutes = timeStringToMinutes(h.time) ?? 1440;
+        minutes = timeStringToMinutes(h.time);
+        isAnytime = false;
       }
     } else {
       if (h.time && h.time.length >= 5) {
         timeStr = format(new Date(`2000-01-01T${h.time.slice(0, 5)}`), 'h:mm a');
-        minutes = timeStringToMinutes(h.time) ?? 1440;
+        minutes = timeStringToMinutes(h.time);
+        isAnytime = false;
       } else if (hasUsualTime && insight?.usualTimeLabel) {
         timeStr = insight.usualTimeLabel.replace(/^Usually\s+/i, '');
-        minutes = habitAverages[h.id] ?? 1440;
+        minutes = habitAverages[h.id] ?? null;
+        isAnytime = false;
       }
     }
 
+    const sortTime = minutes !== null ? getTodayTimestamp(minutes) : Infinity;
     const subtitle = `${pct}% · ${timeStr}`;
 
-    timelineItems.push({
-      timeValue: minutes,
+    timelineRawItems.push({
+      key: `habit-${h.id}`,
+      kind: 'habit',
       done,
+      isPrayer: false,
+      isAnytime,
+      sortTime,
       element: (
         <li key={`habit-${h.id}`}>
           <DueTodayRow
@@ -818,6 +873,7 @@ export function DashboardQuickView() {
             label={`Log habit ${h.title}`}
             color={h.color}
             onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
+            onClick={() => onSelectEntry({ ...h, kind: 'habit', entityId: h.id })}
           />
         </li>
       ),
@@ -837,9 +893,6 @@ export function DashboardQuickView() {
     const pendingTarget = pendingData?.targetState ?? false;
 
     const parsedStart = parseISO(item.start_time);
-    const diffMs = parsedStart.getTime() - today.getTime();
-    const timeValue = 1440 + Math.round(diffMs / 60000);
-
     const subtitle = formatItemWhen(item);
     const isTask = item.kind === 'task';
     const isHabit = item.kind === 'habit';
@@ -849,7 +902,8 @@ export function DashboardQuickView() {
     let linkedTask: any = null;
     let isManuallyDone = false;
     let isAutoDone = false;
-    let updatedTimeValue = timeValue;
+    let sortTime = Infinity;
+    let isAnytime = item.allDay;
 
     if (isEvent) {
       const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
@@ -866,25 +920,27 @@ export function DashboardQuickView() {
         isAutoDone = true;
       }
 
-      if (!isManuallyDone && !isAutoDone) {
-        if (today < parsedStart) {
-          const diffMs = parsedStart.getTime() - today.getTime();
-          updatedTimeValue = 1440 + Math.round(diffMs / 60000);
-        } else {
-          const diffMs = parsedEnd.getTime() - today.getTime();
-          updatedTimeValue = 1440 + Math.round(diffMs / 60000);
-        }
+      if (today < parsedStart) {
+        sortTime = parsedStart.getTime();
       } else {
-        updatedTimeValue = 1440;
+        sortTime = parsedEnd.getTime();
+      }
+    } else {
+      if (!isAnytime) {
+        sortTime = parsedStart.getTime();
       }
     }
 
     const currentDoneState = isEvent ? isManuallyDone || isAutoDone : false;
     const isDone = currentDoneState;
 
-    timelineItems.push({
-      timeValue: isEvent ? updatedTimeValue : timeValue,
-      done: currentDoneState,
+    timelineRawItems.push({
+      key: item.id,
+      kind: item.kind as DueKind,
+      done: isDone,
+      isPrayer: false,
+      isAnytime,
+      sortTime,
       element: (
         <li key={item.id}>
           <DueTodayRow
@@ -892,10 +948,11 @@ export function DashboardQuickView() {
             title={item.title}
             subtitle={subtitle}
             done={isDone}
-            busy={isTask ? toggleTask.isPending : isHabit ? logHabit.isPending : false}
+            busy={isTask ? toggleTask.isPending : isHabit ? logHabit.isPending : (toggleTask.isPending || createTask.isPending)}
             showToggle={showToggle}
             label={isTask ? `Complete task ${item.title}` : isHabit ? `Log habit ${item.title}` : isEvent ? `Complete event ${item.title}` : ''}
             color={item.color}
+            onClick={() => onSelectEntry(item)}
             onToggle={
               isTask && item.entityId
                 ? () => toggleTask.mutate(item.entityId!)
@@ -935,16 +992,15 @@ export function DashboardQuickView() {
     if (addedKeys.has(key)) return;
     addedKeys.add(key);
 
-    let minutes = 1440;
-    if (t.completed_at) {
-      minutes = isoToDayMinutes(t.completed_at) ?? 1440;
-    } else if (t.due_time && t.due_time.length >= 5) {
-      minutes = timeStringToMinutes(t.due_time) ?? 1440;
-    }
+    const sortTime = t.completed_at ? parseISO(t.completed_at).getTime() : Infinity;
 
-    timelineItems.push({
-      timeValue: minutes,
+    timelineRawItems.push({
+      key,
+      kind: 'task',
       done: true,
+      isPrayer: false,
+      isAnytime: false,
+      sortTime,
       element: (
         <li key={key}>
           <DueTodayRow
@@ -956,17 +1012,46 @@ export function DashboardQuickView() {
             showToggle
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
+            onClick={() => onSelectEntry({ ...t, kind: 'task' })}
           />
         </li>
       ),
     });
   });
 
-  timelineItems.sort((a, b) => {
-    // Completed items sink to the bottom
-    if (a.done !== b.done) return a.done ? 1 : -1;
-    return a.timeValue - b.timeValue;
-  });
+  const doneItems = timelineRawItems.filter((item) => item.done);
+  const todoItems = timelineRawItems.filter((item) => !item.done);
+
+  doneItems.sort((a, b) => a.sortTime - b.sortTime);
+
+  const activePrayerItem = todoItems.find((item) => item.isPrayer);
+
+  const nowMs = today.getTime();
+  const futureScheduledTodo = todoItems.filter(
+    (item) => !item.isPrayer && !item.isAnytime && item.sortTime !== Infinity && item.sortTime >= nowMs
+  );
+
+  let upNextItem: typeof timelineRawItems[number] | undefined = undefined;
+  if (futureScheduledTodo.length > 0) {
+    futureScheduledTodo.sort((a, b) => a.sortTime - b.sortTime);
+    upNextItem = futureScheduledTodo[0];
+  }
+
+  const remainingTodo = todoItems.filter(
+    (item) => item !== activePrayerItem && item !== upNextItem
+  );
+  remainingTodo.sort((a, b) => a.sortTime - b.sortTime);
+
+  const sortedTodoItems: typeof timelineRawItems = [];
+  if (activePrayerItem) {
+    sortedTodoItems.push(activePrayerItem);
+  }
+  if (upNextItem) {
+    sortedTodoItems.push(upNextItem);
+  }
+  sortedTodoItems.push(...remainingTodo);
+
+  const timelineItems = [...sortedTodoItems, ...doneItems];
 
   const habitAdherencePct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 0;
 

@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Link as LinkIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { cn } from '../lib/utils';
 import type { TaskList, Tag, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
@@ -207,12 +207,19 @@ export function TaskDetailsContent({
 
   const closePicker = () => setOpenPicker(null);
 
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    // Automatically focus title input when modal/sheet is opened
+    titleInputRef.current?.focus();
+  }, []);
+
   return (
     <div className="space-y-6 pb-6">
       {/* Section 1 — Core Information */}
       <Card>
         <div className="p-4 space-y-4">
           <input
+            ref={titleInputRef}
             type="text"
             placeholder="Title (e.g. wed, tod, 9:00, tmrw)"
             value={form.title ?? ''}
