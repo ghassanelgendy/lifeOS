@@ -21,12 +21,12 @@ jobs:
         with:
           node-version: 24
 
-      - name: Install PostgreSQL Client
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y postgresql-client
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
 
-      - name: Perform Database Dump
+      - name: Perform Database Backup
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: |
@@ -35,29 +35,38 @@ jobs:
             exit 1
           fi
           
-          # Create backups directory
-          mkdir -p backups
+          # Create temporary backups directory
+          mkdir -p backups_temp
           
-          # Date format for the filename
-          FILENAME="supabase-backup-$(date +%Y-%m-%d_%H-%M-%S).sql"
+          echo "Starting Supabase database backup..."
           
-          echo "Starting full database dump (schema + data)..."
-          # pg_dump options:
-          # --clean: Clean (drop) database objects before recreating
-          # --if-exists: Use IF EXISTS when dropping objects
-          # --inserts: Dump data as INSERT commands (rather than COPY) for maximum compatibility/readability
-          # --create: Include commands to create the database itself (if needed)
-          pg_dump --dbname="$SUPABASE_DB_URL" --clean --if-exists --inserts --create > "backups/$FILENAME"
+          # 1. Dump roles
+          echo "Dumping roles..."
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backups_temp/roles.sql --role-only
           
-          # Compress the backup file
-          gzip "backups/$FILENAME"
-          echo "Backup compressed: backups/$FILENAME.gz"
+          # 2. Dump schema
+          echo "Dumping schema..."
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backups_temp/schema.sql
           
-          # Store filename for subsequent steps
-          echo "BACKUP_FILE=backups/$FILENAME.gz" >> $GITHUB_ENV
-          echo "BACKUP_NAME=$FILENAME.gz" >> $GITHUB_ENV
+          # 3. Dump data (using COPY for performance and compatibility)
+          echo "Dumping data..."
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backups_temp/data.sql --data-only --use-copy
+          
+          # Create timestamped tarball name
+          TIMESTAMP=$(date +%Y-%m-%d_%H-%M-%S)
+          TARBALL_NAME="supabase-backup-$TIMESTAMP.tar.gz"
+          
+          # Compress the three dump files into a single archive
+          tar -czf "$TARBALL_NAME" -C backups_temp roles.sql schema.sql data.sql
+          echo "Archive created: $TARBALL_NAME"
+          
+          # Clean up uncompressed files
+          rm -rf backups_temp
+          
+          # Store filenames in environment for subsequent steps
+          echo "BACKUP_TARBALL=$TARBALL_NAME" >> $GITHUB_ENV
 
-      - name: Encrypt Backup File
+      - name: Encrypt Backup Archive
         env:
           PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
         run: |
@@ -66,12 +75,12 @@ jobs:
             exit 1
           fi
           
-          # Encrypt the compressed backup file using AES-256
-          gpg --symmetric --batch --yes --passphrase "$PASSPHRASE" --cipher-algo AES256 "${{ env.BACKUP_FILE }}"
-          echo "Backup encrypted: ${{ env.BACKUP_FILE }}.gpg"
+          # Encrypt the tarball using AES-256 symmetric encryption
+          gpg --symmetric --batch --yes --passphrase "$PASSPHRASE" --cipher-algo AES256 "${{ env.BACKUP_TARBALL }}"
+          echo "Backup encrypted: ${{ env.BACKUP_TARBALL }}.gpg"
           
           # Store encrypted filename for upload
-          echo "ENCRYPTED_BACKUP_FILE=${{ env.BACKUP_FILE }}.gpg" >> $GITHUB_ENV
+          echo "ENCRYPTED_BACKUP_FILE=${{ env.BACKUP_TARBALL }}.gpg" >> $GITHUB_ENV
 
       - name: Upload Encrypted Backup as Artifact
         uses: actions/upload-artifact@v4
