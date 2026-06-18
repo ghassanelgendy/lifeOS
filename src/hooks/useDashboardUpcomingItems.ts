@@ -20,6 +20,8 @@ export interface DashboardUpcomingItem {
   entityId?: string;
   /** Habit without time-of-day (date-only for today) */
   allDay?: boolean;
+  location?: string;
+  description?: string;
 }
 
 export function habitMatchesDay(habit: Habit, day: Date): boolean {

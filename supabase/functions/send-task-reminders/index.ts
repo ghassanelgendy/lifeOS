@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
             .eq('is_wont_do', false)
             .eq('reminders_enabled', true)
             .eq('due_date', targetDate)
-            .eq('due_time', targetTime)
+            .in('due_time', [targetTime, `${targetTime}:00`])
             .is('parent_id', null);
 
           if (E !== 0) {
