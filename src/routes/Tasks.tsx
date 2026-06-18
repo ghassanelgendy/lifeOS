@@ -347,6 +347,14 @@ export default function Tasks() {
     // Set the actual date/time for task creation
     setNewTaskDate(parsed.date || '');
     setNewTaskTime(parsed.time || '');
+    if (parsed.time) {
+      setNewTaskRemindersEnabled(true);
+      if (newTaskEarlyReminderMinutes === null) {
+        setNewTaskEarlyReminderMinutes(0);
+      }
+    } else {
+      setNewTaskRemindersEnabled(false);
+    }
 
     // AUTO-ASSIGN PRIORITY
     if (parsed.priority) {
@@ -1902,10 +1910,21 @@ export default function Tasks() {
                     onChange={(e) => setNewTaskDate(e.target.value)}
                     className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
-                  <input
+                   <input
                     type="time"
                     value={newTaskTime}
-                    onChange={(e) => setNewTaskTime(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setNewTaskTime(val);
+                      if (val) {
+                        setNewTaskRemindersEnabled(true);
+                        if (newTaskEarlyReminderMinutes === null) {
+                          setNewTaskEarlyReminderMinutes(0);
+                        }
+                      } else {
+                        setNewTaskRemindersEnabled(false);
+                      }
+                    }}
                     className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
                   <input

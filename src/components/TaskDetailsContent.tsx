@@ -195,8 +195,9 @@ export function TaskDetailsContent({
   const recurrenceEndLabel = form.recurrence_end_type
     ? RECURRENCE_END_LABELS[form.recurrence_end_type] ?? form.recurrence_end_type
     : 'Never';
-  const earlyReminderLabel =
-    form.early_reminder_minutes != null && form.early_reminder_minutes > 0
+  const earlyReminderLabel = !form.reminders_enabled
+    ? 'None'
+    : form.early_reminder_minutes != null && form.early_reminder_minutes > 0
       ? EARLY_REMINDER_OPTIONS.find((o) => o.value === form.early_reminder_minutes)?.label ?? `${form.early_reminder_minutes} minutes before`
       : 'At time of event';
   const tagCount = form.tag_ids?.length ?? 0;
@@ -378,11 +379,16 @@ export function TaskDetailsContent({
                 timeEnabled ? 'bg-primary' : 'bg-muted'
               )}
               onClick={() => {
-                setForm((prev) => ({
-                  ...prev,
-                  time_enabled: !timeEnabled,
-                  due_time: timeEnabled ? undefined : prev.due_time ?? '09:00',
-                }));
+                setForm((prev) => {
+                  const nextTimeEnabled = !timeEnabled;
+                  return {
+                    ...prev,
+                    time_enabled: nextTimeEnabled,
+                    due_time: nextTimeEnabled ? prev.due_time ?? '09:00' : undefined,
+                    reminders_enabled: nextTimeEnabled ? true : false,
+                    early_reminder_minutes: nextTimeEnabled ? (prev.early_reminder_minutes ?? 0) : null,
+                  };
+                });
               }}
             >
               <span
@@ -577,30 +583,77 @@ export function TaskDetailsContent({
           </>
         )}
         <Divider />
-        <button
-          type="button"
-          onClick={() => setOpenPicker(openPicker === 'earlyReminder' ? null : 'earlyReminder')}
-          className="flex items-center gap-3 min-h-[52px] px-4 py-3 w-full text-left hover:bg-secondary/30 active:bg-secondary/50 transition-colors"
-          aria-expanded={openPicker === 'earlyReminder'}
-        >
-          <Bell size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">Early Reminder</span>
-          <span className="text-sm font-medium text-primary">{earlyReminderLabel}</span>
-          <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
-        </button>
+        <div className="flex items-center min-h-[52px] px-4 py-3 hover:bg-secondary/10 transition-colors">
+          <button
+            type="button"
+            onClick={() => setOpenPicker(openPicker === 'earlyReminder' ? null : 'earlyReminder')}
+            className="flex items-center gap-3 flex-1 text-left min-w-0"
+            aria-expanded={openPicker === 'earlyReminder'}
+          >
+            <Bell size={20} className="text-muted-foreground shrink-0" aria-hidden />
+            <span className="text-sm font-medium text-foreground flex-1 truncate">Early Reminder</span>
+            <span className="text-sm font-medium text-primary shrink-0 mr-1">{earlyReminderLabel}</span>
+            <ChevronRight size={18} className="text-muted-foreground shrink-0 mr-2" aria-hidden />
+          </button>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={!!form.reminders_enabled}
+            aria-label="Toggle reminders"
+            title="Toggle Reminders"
+            className={cn(
+              'w-11 h-6 rounded-full transition-colors relative shrink-0',
+              form.reminders_enabled ? 'bg-primary' : 'bg-muted'
+            )}
+            onClick={() => {
+              setForm((prev) => {
+                const nextRemindersEnabled = !prev.reminders_enabled;
+                return {
+                  ...prev,
+                  reminders_enabled: nextRemindersEnabled,
+                  early_reminder_minutes: nextRemindersEnabled ? (prev.early_reminder_minutes ?? 0) : null,
+                };
+              });
+            }}
+          >
+            <span
+              className={cn(
+                'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
+                form.reminders_enabled ? 'left-6' : 'left-1'
+              )}
+            />
+          </button>
+        </div>
         {openPicker === 'earlyReminder' && (
           <div className="px-4 pb-3 pt-1 border-t border-border flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => {
+                setForm((prev) => ({ ...prev, reminders_enabled: false, early_reminder_minutes: null }));
+                closePicker();
+              }}
+              className={cn(
+                'text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                !form.reminders_enabled ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+              )}
+            >
+              None
+            </button>
             {EARLY_REMINDER_OPTIONS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => {
-                  setForm((prev) => ({ ...prev, early_reminder_minutes: opt.value === 0 ? null : opt.value }));
+                  setForm((prev) => ({
+                    ...prev,
+                    reminders_enabled: true,
+                    early_reminder_minutes: opt.value === 0 ? null : opt.value
+                  }));
                   closePicker();
                 }}
                 className={cn(
                   'text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  (form.early_reminder_minutes ?? 0) === opt.value ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
+                  form.reminders_enabled && (form.early_reminder_minutes ?? 0) === opt.value ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-secondary/80'
                 )}
               >
                 {opt.label}
