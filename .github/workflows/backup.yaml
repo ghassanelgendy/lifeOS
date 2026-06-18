@@ -16,6 +16,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
       - name: Install PostgreSQL Client
         run: |
           sudo apt-get update
@@ -42,7 +47,7 @@ jobs:
           # --if-exists: Use IF EXISTS when dropping objects
           # --inserts: Dump data as INSERT commands (rather than COPY) for maximum compatibility/readability
           # --create: Include commands to create the database itself (if needed)
-          pg_dump "$SUPABASE_DB_URL" --clean --if-exists --inserts --create > "backups/$FILENAME"
+          pg_dump --dbname="$SUPABASE_DB_URL" --clean --if-exists --inserts --create > "backups/$FILENAME"
           
           # Compress the backup file
           gzip "backups/$FILENAME"
