@@ -83,19 +83,32 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { data: timezones, error: tzError } = await supabase
+    const { data: subscriptionRows, error: subscriptionError } = await supabase
       .from('push_subscriptions')
-      .select('timezone')
-      .not('timezone', 'is', null);
+      .select('endpoint, p256dh, auth, timezone, user_id')
+      .not('user_id', 'is', null);
 
-    if (tzError) throw tzError;
+    if (subscriptionError) throw subscriptionError;
 
-    const uniqueTimezones = [...new Set((timezones as any[]).map((t: any) => t.timezone))];
+    const subscriptions = ((subscriptionRows ?? []) as any[])
+      .filter((sub) => sub.user_id && sub.endpoint && sub.p256dh && sub.auth);
+
+    if (!subscriptions.length) {
+      return new Response(JSON.stringify({ ok: true, results: [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const subscriptionsByTimezone = new Map<string, any[]>();
+    for (const sub of subscriptions) {
+      const timezone = sub.timezone?.trim() || 'UTC';
+      if (!subscriptionsByTimezone.has(timezone)) subscriptionsByTimezone.set(timezone, []);
+      subscriptionsByTimezone.get(timezone)!.push(sub);
+    }
+
     const results: any[] = [];
 
-    for (const tz of uniqueTimezones) {
-      if (typeof tz !== 'string') continue;
-
+    for (const [tz, timezoneSubscriptions] of subscriptionsByTimezone.entries()) {
       try {
         const now = new Date();
         let taskList: any[] = [];
@@ -138,17 +151,9 @@ Deno.serve(async (req: Request) => {
 
         if (taskList.length === 0) continue;
 
-        const { data: subs, error: subsError } = await supabase
-          .from('push_subscriptions')
-          .select('endpoint, p256dh, auth, user_id')
-          .eq('timezone', tz);
-
-        const subList = subs as any[];
-        if (subsError || !subList?.length) continue;
-
         // Group subscriptions by user_id
         const subsByUser = new Map<string, any[]>();
-        for (const sub of subList) {
+        for (const sub of timezoneSubscriptions) {
           if (sub.user_id) {
             const list = subsByUser.get(sub.user_id) || [];
             list.push(sub);
@@ -224,7 +229,7 @@ Deno.serve(async (req: Request) => {
     }
 
     return new Response(
-      JSON.stringify({ results }),
+      JSON.stringify({ ok: true, results }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (err) {
