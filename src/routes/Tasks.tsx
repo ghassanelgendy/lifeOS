@@ -20,7 +20,7 @@ import {
   CircleSlash2,
   ArrowUpDown,
 } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
@@ -47,6 +47,7 @@ import {
   useConvertTaskToHabit,
 } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
+import { useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
@@ -148,6 +149,7 @@ export default function Tasks() {
 
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+  const updateCalendarEvent = useUpdateCalendarEvent();
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
   const createTaskList = useCreateTaskList();
@@ -218,6 +220,8 @@ export default function Tasks() {
   const mainContentRef = useRef<HTMLDivElement>(null);
   const taskListRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const notificationHandled = useRef<string | null>(null);
   const isTouchDevice = typeof window !== 'undefined' && (('ontouchstart' in window) || navigator.maxTouchPoints > 0);
 
@@ -1097,6 +1101,35 @@ export default function Tasks() {
     setIsEditModalOpen(true);
   };
 
+  // Redirect to edit task if navigation state payload contains editTaskId
+  useEffect(() => {
+    const state = location.state as { editTaskId?: string } | null;
+    if (state?.editTaskId && allTasks.length > 0) {
+      const taskId = state.editTaskId;
+      const task = allTasks.find((t) => t.id === taskId);
+      if (task) {
+        handleEditTask(task);
+        // Wipe the router state so refreshing/back navigation doesn't reopen the sheet
+        navigate(location.pathname, { replace: true, state: {} });
+      } else {
+        // Fallback: fetch directly from Supabase if it's a subtask or not in allTasks list yet
+        import('../lib/supabase').then(({ supabase }) => {
+          supabase
+            .from('tasks')
+            .select('*')
+            .eq('id', taskId)
+            .single()
+            .then(({ data, error }) => {
+              if (!error && data) {
+                handleEditTask(data as Task);
+                navigate(location.pathname, { replace: true, state: {} });
+              }
+            });
+        });
+      }
+    }
+  }, [location.state, allTasks, navigate, location.pathname]);
+
   // Save task edits (date_enabled/time_enabled control whether due_date/due_time are sent)
   const handleSaveTask = () => {
     if (!selectedTask) return;
@@ -1176,6 +1209,31 @@ export default function Tasks() {
       if (recurrenceEndType !== 'after_count') payload.recurrence_count = undefined;
       if (recurrenceEndType === 'after_count') {
         payload.recurrence_count = Math.max(1, Number(editForm.recurrence_count || 1));
+      }
+    }
+
+    if (selectedTask.calendar_event_id) {
+      const datePart = payload.due_date || selectedTask.due_date;
+      const timePart = payload.due_time || selectedTask.due_time || '09:00';
+      const duration = payload.duration_minutes ?? selectedTask.duration_minutes ?? 45;
+      
+      if (datePart) {
+        const start = new Date(`${datePart}T${timePart.slice(0, 5)}:00`);
+        const end = new Date(start.getTime() + duration * 60 * 1000);
+        
+        try {
+          updateCalendarEvent.mutate({
+            id: selectedTask.calendar_event_id,
+            data: {
+              title: payload.title || selectedTask.title,
+              description: payload.description || undefined,
+              start_time: start.toISOString(),
+              end_time: end.toISOString(),
+            }
+          });
+        } catch (err) {
+          console.error('Failed to sync changes to calendar event:', err);
+        }
       }
     }
 

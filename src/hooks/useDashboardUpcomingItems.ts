@@ -22,6 +22,8 @@ export interface DashboardUpcomingItem {
   allDay?: boolean;
   location?: string;
   description?: string;
+  originalId?: string;
+  isRecurringInstance?: boolean;
 }
 
 export function habitMatchesDay(habit: Habit, day: Date): boolean {
@@ -72,6 +74,8 @@ export function useDashboardUpcomingItems(options?: {
         type: event.type,
         location: event.location || undefined,
         description: event.description || undefined,
+        originalId: event.originalId,
+        isRecurringInstance: event.isRecurringInstance,
       });
     }
 
