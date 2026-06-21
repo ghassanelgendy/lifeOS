@@ -41,15 +41,18 @@ jobs:
 
       - name: Build Application with Pake
         env:
-          # Uses the PRODUCTION_URL repository variable, with a fallback placeholder
-          APP_URL: ${{ vars.PRODUCTION_URL || 'https://lifeos-web.vercel.app' }}
+          # Uses the PRODUCTION_URL repository variable, with the correct Vercel fallback
+          APP_URL: ${{ vars.PRODUCTION_URL || 'https://life-os-tan.vercel.app/' }}
         shell: bash
         run: pake "${{ env.APP_URL }}" --name "lifeOS" --hide-title-bar
 
       - name: Upload Artifacts to Release
         uses: softprops/action-gh-release@v2
-        if: github.event_name == 'release'
         with:
+          tag_name: ${{ github.event.release.tag_name || 'latest' }}
+          name: ${{ github.event.release.name || 'Latest Desktop Build' }}
+          body: ${{ github.event.release.body || 'This is the latest automated desktop build of lifeOS, compiled on every push to main.' }}
+          prerelease: ${{ github.event.release.prerelease || true }}
           files: |
             *.exe
             *.msi
@@ -59,9 +62,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Artifacts to Actions (for non-releases)
+      - name: Upload Artifacts to Actions (Backup)
         uses: actions/upload-artifact@v4
-        if: github.event_name != 'release'
         with:
           name: desktop-app-${{ matrix.os }}
           path: |
