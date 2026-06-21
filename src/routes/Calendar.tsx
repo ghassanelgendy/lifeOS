@@ -47,7 +47,7 @@ import {
   useIcalSubscriptionEvents,
 } from '../hooks/useCalendar';
 import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
-import type { CalendarEvent, CreateInput, EventType, RecurrencePattern, Task, TaskPriority } from '../types/schema';
+import type { CalendarEvent, CreateInput, EventType, Task, TaskPriority } from '../types/schema';
 import { useCreateTask, useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
 import { useTaskCalendarFeed } from '../hooks/useTaskCalendarFeed';
@@ -78,6 +78,7 @@ export default function CalendarPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
+  const [selectedRecurrenceDays, setSelectedRecurrenceDays] = useState<number[]>([]);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [deleteTaskId, setDeleteTaskId] = useState<string | null>(null);
@@ -421,16 +422,51 @@ export default function CalendarPage() {
         priority: (taskForm.priority || 'none') as TaskPriority,
       },
     });
+
+    if (editingTask.calendar_event_id) {
+      const datePart = taskForm.due_date || editingTask.due_date;
+      const timePart = taskForm.due_time || editingTask.due_time || '09:00';
+      const duration = taskForm.duration_minutes ?? editingTask.duration_minutes ?? 45;
+      
+      if (datePart) {
+        const start = new Date(`${datePart}T${timePart.slice(0, 5)}:00`);
+        const end = new Date(start.getTime() + duration * 60 * 1000);
+        
+        try {
+          await updateEvent.mutateAsync({
+            id: editingTask.calendar_event_id,
+            data: {
+              title: taskForm.title || editingTask.title,
+              description: taskForm.description || undefined,
+              start_time: start.toISOString(),
+              end_time: end.toISOString(),
+            }
+          });
+        } catch (err) {
+          console.error('Failed to sync changes to calendar event:', err);
+        }
+      }
+    }
+
     setIsTaskModalOpen(false);
     setEditingTask(null);
   };
 
   const getTaskByEvent = (event: ExtendedCalendarEvent): Task | undefined => {
     const sourceKey = getEventSourceKey(event);
+    const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
+    const localStart = new Date(event.start_time);
+    const eventDate = format(localStart, 'yyyy-MM-dd');
+
     return allTasks.find((task) => {
       if (!('isIcal' in event && event.isIcal) && task.calendar_event_id) {
-        const eventId = ('originalId' in event ? event.originalId : undefined) || event.id;
-        if (task.calendar_event_id === eventId) return true;
+        if (task.calendar_event_id === eventId) {
+          const isRecurring = 'isRecurringInstance' in event && event.isRecurringInstance;
+          if (isRecurring) {
+            return task.due_date === eventDate;
+          }
+          return true;
+        }
       }
       return task.calendar_source_key === sourceKey || (task.description || '').includes(`[calendar_source:${sourceKey}]`);
     });
@@ -505,6 +541,17 @@ export default function CalendarPage() {
       if ('isIcal' in event && event.isIcal) return;
       const calEvent = event as CalendarEvent & { isRecurringInstance?: boolean; originalId?: string };
       setEditingEvent(calEvent);
+
+      // ponytail: parse custom weekly recurrence days
+      if (calEvent.recurrence?.startsWith('weekly:')) {
+        const days = calEvent.recurrence.split(':')[1].split(',').map(Number);
+        setSelectedRecurrenceDays(days);
+      } else if (calEvent.recurrence === 'weekly') {
+        setSelectedRecurrenceDays([new Date(calEvent.start_time).getDay()]);
+      } else {
+        setSelectedRecurrenceDays([]);
+      }
+
       setFormData({
         title: calEvent.title,
         type: calEvent.type,
@@ -537,6 +584,8 @@ export default function CalendarPage() {
       const endTime = new Date(defaultDate);
       endTime.setHours(10, 0, 0, 0);
 
+      setSelectedRecurrenceDays([startTime.getDay()]);
+
       setFormData({
         title: '',
         type: 'Event',
@@ -557,8 +606,20 @@ export default function CalendarPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    let recurrenceValue = formData.recurrence;
+    if (recurrenceValue === 'weekly') {
+      if (selectedRecurrenceDays.length > 0) {
+        recurrenceValue = `weekly:${selectedRecurrenceDays.join(',')}`;
+      } else {
+        const start = new Date(formData.start_time || new Date());
+        const startDay = Number.isNaN(start.getTime()) ? new Date().getDay() : start.getDay();
+        recurrenceValue = `weekly:${startDay}`;
+      }
+    }
+
     const eventData: any = {
       ...formData,
+      recurrence: recurrenceValue,
       color: EVENT_TYPE_COLORS[formData.type as EventType],
     };
     if (eventData.recurrence_end === '') {
@@ -1283,8 +1344,16 @@ export default function CalendarPage() {
           <div className="grid grid-cols-2 gap-4">
             <Select
               label="Recurrence"
-              value={formData.recurrence}
-              onChange={(e) => setFormData({ ...formData, recurrence: e.target.value as RecurrencePattern })}
+              value={formData.recurrence?.startsWith('weekly') ? 'weekly' : formData.recurrence}
+              onChange={(e) => {
+                const val = e.target.value;
+                setFormData({ ...formData, recurrence: val });
+                if (val === 'weekly') {
+                  const start = new Date(formData.start_time || new Date());
+                  const startDay = Number.isNaN(start.getTime()) ? new Date().getDay() : start.getDay();
+                  setSelectedRecurrenceDays([startDay]);
+                }
+              }}
               options={[
                 { value: 'none', label: 'Does not repeat' },
                 { value: 'daily', label: 'Daily' },
@@ -1292,13 +1361,52 @@ export default function CalendarPage() {
                 { value: 'monthly', label: 'Monthly' },
               ]}
             />
-            {formData.recurrence !== 'none' && (
+            {formData.recurrence && formData.recurrence !== 'none' && (
               <Input
                 label="Until"
                 type="date"
                 value={formData.recurrence_end}
                 onChange={(e) => setFormData({ ...formData, recurrence_end: e.target.value })}
               />
+            )}
+            {formData.recurrence?.startsWith('weekly') && (
+              <div className="col-span-2">
+                <label className="text-sm font-medium text-foreground">Repeat on</label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {[
+                    { value: 0, label: 'Sun' },
+                    { value: 1, label: 'Mon' },
+                    { value: 2, label: 'Tue' },
+                    { value: 3, label: 'Wed' },
+                    { value: 4, label: 'Thu' },
+                    { value: 5, label: 'Fri' },
+                    { value: 6, label: 'Sat' },
+                  ].map((d) => {
+                    const selected = selectedRecurrenceDays.includes(d.value);
+                    return (
+                      <button
+                        key={d.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedRecurrenceDays((prev) =>
+                            prev.includes(d.value)
+                              ? prev.filter((x) => x !== d.value)
+                              : [...prev, d.value].sort((a, b) => a - b)
+                          );
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 text-xs rounded-md border font-medium transition-colors",
+                          selected
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-border hover:bg-secondary text-muted-foreground"
+                        )}
+                      >
+                        {d.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
 

@@ -219,6 +219,20 @@ function getLinkedCalendarEventId(task: TaskFeedRow): string | null {
 
 function eventRrule(event: CalendarEventFeedRow): string | null {
   if (!event.recurrence || event.recurrence === 'none') return null;
+
+  // ponytail: handle weekly days recurrence e.g. 'weekly:1,3,5'
+  if (event.recurrence.startsWith('weekly:')) {
+    const dayNums = event.recurrence.split(':')[1].split(',').map(Number);
+    // Map 0-6 (Sun-Sat) to iCal BYDAY strings: SU, MO, TU, WE, TH, FR, SA
+    const icalDays = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    const byDay = dayNums.map((d) => icalDays[d]).filter(Boolean).join(',');
+    let rule = `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
+    if (event.recurrence_end) {
+      rule += `;UNTIL=${formatUtcStamp(event.recurrence_end)}`;
+    }
+    return rule;
+  }
+
   const freq = event.recurrence.toUpperCase();
   if (!['DAILY', 'WEEKLY', 'MONTHLY'].includes(freq)) return null;
   let rule = `RRULE:FREQ=${freq}`;

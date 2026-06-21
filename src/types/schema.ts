@@ -229,7 +229,7 @@ export interface WeeklyPlannerItem {
 // Calendar & Shifts
 // ========================
 export type EventType = 'Event' | 'Shift' | 'Deadline' | 'Reminder';
-export type RecurrencePattern = 'none' | 'daily' | 'weekly' | 'monthly';
+export type RecurrencePattern = 'none' | 'daily' | 'weekly' | 'monthly' | (string & {});
 
 export interface CalendarEvent {
   id: string;

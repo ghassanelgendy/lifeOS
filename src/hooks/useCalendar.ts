@@ -95,9 +95,23 @@ export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
       const recurrenceEnd = event.recurrence_end ? parseISO(event.recurrence_end) : endDate;
       let currentDate = eventStart;
 
+      // ponytail: parse custom weekly days recurrence e.g. 'weekly:1,3,5'
+      const isWeeklyDays = event.recurrence.startsWith('weekly:');
+      const weeklyDays = isWeeklyDays
+        ? event.recurrence.split(':')[1].split(',').map(Number)
+        : [];
+
       while (isBefore(currentDate, endDate) && isBefore(currentDate, recurrenceEnd)) {
         const currentEnd = new Date(currentDate.getTime() + duration);
-        if (currentDate < endDate && currentEnd > startDate) {
+        
+        let shouldAdd = false;
+        if (isWeeklyDays) {
+          shouldAdd = weeklyDays.includes(currentDate.getDay());
+        } else {
+          shouldAdd = true;
+        }
+
+        if (shouldAdd && currentDate < endDate && currentEnd > startDate) {
           expandedEvents.push({
             ...event,
             id: `${event.id}-${format(currentDate, 'yyyy-MM-dd')}`,
@@ -109,18 +123,22 @@ export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
         }
 
         // Move to next occurrence
-        switch (event.recurrence) {
-          case 'daily':
-            currentDate = addDays(currentDate, 1);
-            break;
-          case 'weekly':
-            currentDate = addWeeks(currentDate, 1);
-            break;
-          case 'monthly':
-            currentDate = addMonths(currentDate, 1);
-            break;
-          default:
-            currentDate = endDate; // Stop the loop
+        if (isWeeklyDays) {
+          currentDate = addDays(currentDate, 1);
+        } else {
+          switch (event.recurrence) {
+            case 'daily':
+              currentDate = addDays(currentDate, 1);
+              break;
+            case 'weekly':
+              currentDate = addWeeks(currentDate, 1);
+              break;
+            case 'monthly':
+              currentDate = addMonths(currentDate, 1);
+              break;
+            default:
+              currentDate = endDate; // Stop the loop
+          }
         }
       }
     }
