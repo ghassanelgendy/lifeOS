@@ -275,14 +275,14 @@ importers:
         specifier: ^7.4.1
         version: 7.4.1
       workbox-routing:
-        specifier: ^7.0.0
-        version: 7.4.0
+        specifier: ^7.4.1
+        version: 7.4.1
 
   lib/api-client-react:
     dependencies:
       '@tanstack/react-query':
         specifier: 'catalog:'
-        version: 5.100.7(react@19.2.5)
+        version: 5.100.7(react@19.2.7)
 
   lib/api-spec:
     devDependencies:
@@ -4272,6 +4272,10 @@ packages:
     resolution: {integrity: sha512-llUJLzz1zTUBrskt2pwZgLq59AemifIftw4aB7JxOqf1HY2FDaGDxgwpAPVzHU1kdWabH7FauP4i1oEeer2WCA==}
     engines: {node: '>=0.10.0'}
 
+  react@19.2.7:
+    resolution: {integrity: sha512-HNe9WslTbXmFK8o8cmwgAeJFSBvt1bPdHCVKtaaV+WlAN36mpT4hcRpwbf3fY56ar2oIXzsBpOAiIRHAdY0OlQ==}
+    engines: {node: '>=0.10.0'}
+
   read-cmd-shim@6.0.0:
     resolution: {integrity: sha512-1zM5HuOfagXCBWMN83fuFI/x+T/UhZ7k+KIzhrHXcQoeX5+7gmaDYjELQHmmzIodumBHeByBJT4QYS7ufAgs7A==}
     engines: {node: ^20.17.0 || >=22.9.0}
@@ -4662,6 +4666,7 @@ packages:
   tsconfck@3.1.6:
     resolution: {integrity: sha512-ks6Vjr/jEw0P1gmOVwutM3B7fWxoWBL2KRDb1JfqGVawBmO5UsvmWOQFGHBPl5yxYz4eERr19E6L7NMv+Fej4w==}
     engines: {node: ^18 || >=20}
+    deprecated: unmaintained
     hasBin: true
     peerDependencies:
       typescript: ^5.0.0
@@ -5041,9 +5046,6 @@ packages:
 
   workbox-recipes@7.4.1:
     resolution: {integrity: sha512-gnbVfmV4/TtmQaM4x9AtuXhcdstJsep3XMVeztOrQVPT+R6+6DeBjGTCQ7fFCXm+4GEHUA5VEBTyi5+4gWGeog==}
-
-  workbox-routing@7.4.0:
-    resolution: {integrity: sha512-C/ooj5uBWYAhAqwmU8HYQJdOjjDKBp9MzTQ+otpMmd+q0eF59K+NuXUek34wbL0RFrIXe/KKT+tUWcZcBqxbHQ==}
 
   workbox-routing@7.4.1:
     resolution: {integrity: sha512-yubJGErZOusuidAenaL5ypfhQOa7urxP/f8E0ws7FPb4039RiWXUWBAyUkmUoOL/BcQGen3h0J8872d51IYxtA==}
@@ -7318,6 +7320,11 @@ snapshots:
       '@tanstack/query-core': 5.100.7
       react: 19.2.5
 
+  '@tanstack/react-query@5.100.7(react@19.2.7)':
+    dependencies:
+      '@tanstack/query-core': 5.100.7
+      react: 19.2.7
+
   '@testing-library/dom@10.4.1':
     dependencies:
       '@babel/code-frame': 7.29.0
@@ -9464,6 +9471,8 @@ snapshots:
 
   react@19.2.5: {}
 
+  react@19.2.7: {}
+
   read-cmd-shim@6.0.0: {}
 
   readdirp@5.0.0: {}
@@ -10360,10 +10369,6 @@ snapshots:
       workbox-precaching: 7.4.1
       workbox-routing: 7.4.1
       workbox-strategies: 7.4.1
-
-  workbox-routing@7.4.0:
-    dependencies:
-      workbox-core: 7.4.0
 
   workbox-routing@7.4.1:
     dependencies:

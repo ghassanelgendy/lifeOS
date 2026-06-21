@@ -77,6 +77,6 @@
     "vitest": "^4.1.8",
     "workbox-core": "^7.0.0",
     "workbox-precaching": "^7.4.1",
-    "workbox-routing": "^7.0.0"
+    "workbox-routing": "^7.4.1"
   }
 }
