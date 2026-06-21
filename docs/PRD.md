@@ -2,7 +2,7 @@
 
 ## 1) Summary
 
-lifeOS is a unified personal productivity + tracking system. It’s built to help you **plan**, **execute**, and **review** your life across multiple domains (tasks, habits, focus, sleep, screentime, calendar, finance) with a single UI and consistent data model.
+lifeOS is a unified personal productivity + tracking system. It’s built to help you **plan**, **execute**, and **review** your life across multiple domains (tasks, habits, focus, sleep, screentime, calendar, finance, academics, health, notes) with a single UI and consistent data model.
 
 The product’s core value is **daily clarity** and **weekly/monthly reflection** with minimal friction.
 
@@ -65,6 +65,8 @@ Requirements:
 - Lists + tags with customizable category colors.
 - Fast completion toggles with optimistic UI state updates.
 - Details editing in a bottom details sheet or modal (scrollable, single save action).
+- **Power-User Inline Gesture Parsing**: Support for writing tasks using shorthand notations to automatically parse and set due dates, tags, specific lists, and reminders (e.g. inline gestures).
+- **Keyboard Shortcuts Panel**: Quick-access cheat sheet overlay displaying keyboard navigation and task action hotkeys.
 - **Bi-directional Calendar Sync**: Linked tasks (mapped via `calendar_event_id` or `event:id` keys) automatically sync Title, Description, and Completion Status changes with their linked calendar events in both directions.
 
 ### 5.3 Habits
@@ -74,10 +76,12 @@ Requirements:
 Requirements:
 - Daily and weekly habits with custom color coding.
 - Completion logs utilizing canonical timestamps (`completed_at`) for accurate timing.
+- **Make-Up Completions**: Ability to retroactively log completions for past days to ensure statistics and insights stay accurate.
 - **Adherence & Statistics**:
   - Display habit adherence percentage in row subtitles.
   - Surfaces "usual times" based on habit logging history (with minute-level precision).
   - Displays weekly averages and execution stats (current week vs. last week count) in the details modal.
+  - Adherence logic respects the habit's creation date (doesn't penalize user for days before a habit was added).
 - **Flexibility**: Allow viewing and logging/toggling yesterday's habits (using explicit date parameters).
 - Optimistic updates to reduce toggling latency.
 - Details editing matches the standard bottom-sheet details UX.
@@ -88,6 +92,7 @@ Requirements:
 
 Requirements:
 - Start/stop session flows.
+- **Picture-in-Picture (PiP) Window**: Floating Focus mode PiP overlay window allowing you to view and track your session elapsed time on top of other system windows.
 - Persist session history.
 
 ### 5.5 Sleep
@@ -151,6 +156,38 @@ Requirements:
 - Week view starting Sunday.
 - Add lines to each day.
 - When a “planner line” is added to a day, also create a Task due that day (so it appears in task views).
+
+### 5.11 Academics & Career
+
+**Purpose**: Manage thesis, certifications, and educational development.
+
+Requirements:
+- **Project Tracking**: Manage long-term projects (Thesis, Certification, Coding) with specific type tags, current statuses (Active, Paused, Done), description, and target dates.
+- **Literature Review & Papers**:
+  - Log academic papers with attributes (authors, publication year, URL, methodologies like AHP, TOPSIS, MCDM, ML, Simulation, etc.).
+  - Track paper reading status (Unread, Reading, Read, Reviewed), key findings, and custom notes.
+  - Associate specific papers with parent academic/career projects.
+- Displays status summaries and metrics counts.
+
+### 5.12 Health & Bio-Metrics
+
+**Purpose**: Track body composition and biometrical metrics.
+
+Requirements:
+- **InBody Scan Logging**: Log composition metrics including Weight (kg), Skeletal Muscle Mass (SMM in kg), Percent Body Fat (PBF in %), Visceral Fat Level, and Basal Metabolic Rate (BMR in kcal).
+- **Scan History**: Historical log table showing all scans, notes, and custom trend indicators comparing current metrics with the previous scan.
+- **Trend Charts**: Visual LineCharts using Recharts plotting Weight, Muscle Mass, and Body Fat changes over time.
+- **Privacy mode integration**: Blurs numerical biometric figures when privacy mode is enabled.
+
+### 5.13 Notes
+
+**Purpose**: Capture, edit, and organize knowledge.
+
+Requirements:
+- **Folder Organization**: Categorize notes inside custom notebooks/folders or keep them uncategorized.
+- **Quick Search**: In-app search capability filtering note titles and bodies.
+- **Note Editor**: Edit titles, body content, custom note dates, and folder associations in a single screen.
+- **Dirty State Tracking**: Informs user of unsaved changes before exiting or switching notes.
 
 ---
 
