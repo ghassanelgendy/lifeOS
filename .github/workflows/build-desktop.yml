@@ -44,7 +44,12 @@ jobs:
           # Uses the PRODUCTION_URL repository variable, with the correct Vercel fallback
           APP_URL: ${{ vars.PRODUCTION_URL || 'https://life-os-tan.vercel.app/' }}
         shell: bash
-        run: pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar
+        run: |
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray
+          else
+            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
+          fi
 
       - name: Upload Artifacts to Release
         uses: softprops/action-gh-release@v2
