@@ -57,6 +57,16 @@ function isEventAtTime(event: any, target: Date): boolean {
   }
 
   const diffDays = diffMs / (24 * 60 * 60 * 1000);
+
+  // ponytail: handle weekly days recurrence e.g. 'weekly:1,3,5'
+  if (event.recurrence && event.recurrence.startsWith('weekly:')) {
+    const days = event.recurrence.split(':')[1].split(',').map(Number);
+    if (!days.includes(target.getDay())) return false;
+    const targetTimeOfDay = target.getHours() * 60 + target.getMinutes();
+    const eventTimeOfDay = eventStart.getHours() * 60 + eventStart.getMinutes();
+    return Math.abs(targetTimeOfDay - eventTimeOfDay) < 1; // 1 minute tolerance
+  }
+
   switch (event.recurrence) {
     case 'daily': {
       return Math.abs(diffDays - Math.round(diffDays)) < 0.0007; // ~1 minute tolerance
@@ -111,12 +121,27 @@ Deno.serve(async (req: Request) => {
     const minBound = new Date(nowMin.getTime() - 30 * 60 * 1000).toISOString();
     const maxBound = new Date(nowMin.getTime() + 30 * 60 * 1000).toISOString();
 
-    const { data: events, error: eventsError } = await supabase
-      .from('calendar_events')
-      .select('id, title, start_time, end_time, recurrence, recurrence_end, user_id')
-      .or(`recurrence.neq.none,and(start_time.gte.${minBound},start_time.lte.${maxBound})`);
+    const [recurringRes, nonRecurringRes] = await Promise.all([
+      supabase
+        .from('calendar_events')
+        .select('id, title, start_time, end_time, recurrence, recurrence_end, user_id')
+        .neq('recurrence', 'none')
+        .not('user_id', 'is', null)
+        .lte('start_time', in5Mins.toISOString())
+        .or(`recurrence_end.is.null,recurrence_end.gte.${nowMin.toISOString().split('T')[0]}`),
+      supabase
+        .from('calendar_events')
+        .select('id, title, start_time, end_time, recurrence, recurrence_end, user_id')
+        .or('recurrence.eq.none,recurrence.is.null')
+        .not('user_id', 'is', null)
+        .gte('start_time', minBound)
+        .lte('start_time', maxBound)
+    ]);
 
-    if (eventsError) throw eventsError;
+    if (recurringRes.error) throw recurringRes.error;
+    if (nonRecurringRes.error) throw nonRecurringRes.error;
+
+    const events = [...(recurringRes.data || []), ...(nonRecurringRes.data || [])];
 
     const eventList = (events as any[]) || [];
     const dueEvents: Array<{ event: any; type: 'now' | '5min'; targetTime: Date }> = [];
