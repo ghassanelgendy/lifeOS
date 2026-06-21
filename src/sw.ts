@@ -57,7 +57,16 @@ const NOTIFICATION_ACTIONS = [
 self.addEventListener('push', (event: PushEvent) => {
   if (!event.data) return;
 
-  let payload: { taskId?: string; title?: string; body?: string; prayerName?: string; calendarEventId?: string; isCustom?: boolean } = {};
+  let payload: {
+    taskId?: string;
+    habitId?: string;
+    kind?: string;
+    title?: string;
+    body?: string;
+    prayerName?: string;
+    calendarEventId?: string;
+    isCustom?: boolean;
+  } = {};
   try {
     payload = event.data.json();
   } catch {
@@ -65,18 +74,24 @@ self.addEventListener('push', (event: PushEvent) => {
   }
 
   const taskId = payload.taskId ?? '';
+  const habitId = payload.habitId ?? '';
+  const isHabit = payload.kind === 'habit' || !!habitId;
   const isPrayer = !!payload.prayerName;
   const isCalendar = !!payload.calendarEventId;
-  const isCustom = !!payload.isCustom || isCalendar;
+  const isCustom = !!payload.isCustom || isCalendar || isHabit;
 
   const notificationTitle = isPrayer 
     ? (payload.title ?? `Time to pray ${payload.prayerName}`) 
+    : isHabit
+    ? (payload.title ?? 'Habit reminder')
     : isCustom 
     ? (payload.title ?? 'lifeOS') 
     : 'lifeOS';
     
   const body = isPrayer 
     ? (payload.body ?? '') 
+    : isHabit
+    ? (payload.body ?? '')
     : isCustom 
     ? (payload.body ?? '') 
     : `Ready to "${payload.title ?? 'Task'}"`;
@@ -88,11 +103,19 @@ self.addEventListener('push', (event: PushEvent) => {
         ? `prayer-${payload.prayerName}-${Date.now()}` 
         : isCalendar 
         ? `calendar-${payload.calendarEventId}-${Date.now()}` 
+        : isHabit
+        ? `habit-${habitId}-${Date.now()}`
         : (taskId || `task-${Date.now()}`),
       renotify: true,
       requireInteraction: false,
-      data: { taskId, title: payload.title, prayerName: payload.prayerName, calendarEventId: payload.calendarEventId },
-      actions: (isPrayer || isCalendar) ? [] : [...NOTIFICATION_ACTIONS],
+      data: {
+        taskId,
+        habitId,
+        prayerName: payload.prayerName,
+        calendarEventId: payload.calendarEventId,
+        title: payload.title
+      },
+      actions: (isPrayer || isCalendar || isHabit) ? [] : [...NOTIFICATION_ACTIONS],
       icon: '/web-app-manifest-192x192.png',
     })
   );
@@ -101,20 +124,28 @@ self.addEventListener('push', (event: PushEvent) => {
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
-  const { taskId } = event.notification.data ?? {};
+  const { taskId, habitId, calendarEventId, prayerName } = event.notification.data ?? {};
   const action = event.action === 'done' ? 'done' : event.action === 'postpone' ? 'postpone' : '';
 
-  const url = new URL('/tasks', self.location.origin);
+  const url = new URL('/dashboard', self.location.origin);
   if (taskId) {
     url.searchParams.set('taskId', taskId);
     if (action) url.searchParams.set('notification', action);
+  }
+  if (habitId) {
+    url.searchParams.set('habitId', habitId);
+  }
+  if (calendarEventId) {
+    url.searchParams.set('calendarEventId', calendarEventId);
+  }
+  if (prayerName) {
+    url.searchParams.set('prayerName', prayerName);
   }
 
   event.waitUntil(
     (async () => {
       const windowClients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      const appUrl = self.location.origin + '/';
-      const existing = windowClients.find((c) => c.url === appUrl || c.url.startsWith(self.location.origin + '/tasks'));
+      const existing = windowClients.find((c) => c.url.startsWith(self.location.origin));
       if (existing) {
         await existing.focus();
         (existing as WindowClient).navigate?.(url.toString());
