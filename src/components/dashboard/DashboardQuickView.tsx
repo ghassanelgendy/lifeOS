@@ -602,7 +602,12 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         const parsedEnd = parseISO(item.end_time || item.start_time);
         
         const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-        const linkedTask = completedTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', ''));
+        const eventIdToCheck = item.originalId || item.id.replace('event-', '');
+        const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
+        const linkedTask = completedTasks.find((t) => 
+          (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+          t.due_date === eventDateToCheck
+        );
         const isManuallyDone = !!linkedTask?.is_completed;
         const isAutoDone = parsedEnd < today;
         
@@ -907,9 +912,20 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
     if (isEvent) {
       const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-      linkedTask = completedTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', '')) 
-        || todayTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', ''))
-        || overdueTasks.find((t) => t.calendar_source_key === eventKey || t.calendar_event_id === item.id.replace('event-', ''));
+      const eventIdToCheck = item.originalId || item.id.replace('event-', '');
+      const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
+      linkedTask = completedTasks.find((t) => 
+        (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+        t.due_date === eventDateToCheck
+      ) 
+        || todayTasks.find((t) => 
+          (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+          t.due_date === eventDateToCheck
+        )
+        || overdueTasks.find((t) => 
+          (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+          t.due_date === eventDateToCheck
+        );
 
       if (linkedTask && linkedTask.is_completed) {
         isManuallyDone = true;
@@ -971,7 +987,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                             due_date: format(parsedStart, 'yyyy-MM-dd'),
                             due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
                             calendar_source_key: eventKey,
-                            calendar_event_id: item.type === 'ical' ? null : item.id.replace('event-', ''),
+                            calendar_event_id: item.type === 'ical' ? null : (item.originalId || item.id.replace('event-', '')),
                             tag_ids: [],
                             recurrence: 'none',
                           });
