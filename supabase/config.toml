@@ -12,3 +12,6 @@ verify_jwt = false
 
 [functions.calendar-notifications-dispatch]
 verify_jwt = false
+
+[functions.report-notification-dispatch]
+verify_jwt = false

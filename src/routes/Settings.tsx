@@ -95,6 +95,8 @@ export default function SettingsPage() {
     togglePrivacyMode,
     analyticsShowTips,
     setAnalyticsShowTips,
+    showWrappedReport,
+    setShowWrappedReport,
     theme,
     setTheme,
     accentTheme,
@@ -969,6 +971,31 @@ export default function SettingsPage() {
                 className={cn(
                   "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
                   analyticsShowTips ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
+          </div>
+
+          {/* Show Wrapped Report */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Info size={20} />
+              <div>
+                <p className="font-medium">Show Wrapped Report</p>
+                <p className="text-sm text-muted-foreground">Show Spotify-Wrapped style report on wrap days (Fri-Sun and 29-1)</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowWrappedReport(!showWrappedReport)}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors",
+                showWrappedReport ? "bg-green-500" : "bg-secondary"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                  showWrappedReport ? "translate-x-7" : "translate-x-1"
                 )}
               />
             </button>

@@ -66,6 +66,7 @@ self.addEventListener('push', (event: PushEvent) => {
     prayerName?: string;
     calendarEventId?: string;
     isCustom?: boolean;
+    reportType?: 'weekly' | 'monthly';
   } = {};
   try {
     payload = event.data.json();
@@ -75,13 +76,17 @@ self.addEventListener('push', (event: PushEvent) => {
 
   const taskId = payload.taskId ?? '';
   const habitId = payload.habitId ?? '';
+  const reportType = payload.reportType ?? '';
   const isHabit = payload.kind === 'habit' || !!habitId;
   const isPrayer = !!payload.prayerName;
   const isCalendar = !!payload.calendarEventId;
-  const isCustom = !!payload.isCustom || isCalendar || isHabit;
+  const isReport = !!reportType;
+  const isCustom = !!payload.isCustom || isCalendar || isHabit || isReport;
 
   const notificationTitle = isPrayer 
     ? (payload.title ?? `Time to pray ${payload.prayerName}`) 
+    : isReport
+    ? (payload.title ?? `${reportType === 'monthly' ? 'Monthly' : 'Weekly'} Report Ready`)
     : isHabit
     ? (payload.title ?? 'Habit reminder')
     : isCustom 
@@ -90,6 +95,8 @@ self.addEventListener('push', (event: PushEvent) => {
     
   const body = isPrayer 
     ? (payload.body ?? '') 
+    : isReport
+    ? (payload.body ?? '')
     : isHabit
     ? (payload.body ?? '')
     : isCustom 
@@ -105,6 +112,8 @@ self.addEventListener('push', (event: PushEvent) => {
         ? `calendar-${payload.calendarEventId}-${Date.now()}` 
         : isHabit
         ? `habit-${habitId}-${Date.now()}`
+        : isReport
+        ? `report-${reportType}-${Date.now()}`
         : (taskId || `task-${Date.now()}`),
       renotify: true,
       requireInteraction: false,
@@ -113,9 +122,10 @@ self.addEventListener('push', (event: PushEvent) => {
         habitId,
         prayerName: payload.prayerName,
         calendarEventId: payload.calendarEventId,
+        reportType,
         title: payload.title
       },
-      actions: (isPrayer || isCalendar || isHabit) ? [] : [...NOTIFICATION_ACTIONS],
+      actions: (isPrayer || isCalendar || isHabit || isReport) ? [] : [...NOTIFICATION_ACTIONS],
       icon: '/web-app-manifest-192x192.png',
     })
   );
@@ -124,10 +134,10 @@ self.addEventListener('push', (event: PushEvent) => {
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
-  const { taskId, habitId, calendarEventId, prayerName } = event.notification.data ?? {};
+  const { taskId, habitId, calendarEventId, prayerName, reportType } = event.notification.data ?? {};
   const action = event.action === 'done' ? 'done' : event.action === 'postpone' ? 'postpone' : '';
 
-  const url = new URL('/dashboard', self.location.origin);
+  const url = new URL(reportType ? '/analytics' : '/dashboard', self.location.origin);
   if (taskId) {
     url.searchParams.set('taskId', taskId);
     if (action) url.searchParams.set('notification', action);

@@ -20,7 +20,7 @@ export const DEFAULT_DESKTOP_NAV = [
 ];
 
 // Dashboard widget ids (default order)
-export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits', 'magic_week'] as const;
+export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
 export const SLEEP_WIDGET_IDS = ['score', 'timeline', 'metrics', 'weekly', 'sessions'] as const;
 export type SleepWidgetId = (typeof SLEEP_WIDGET_IDS)[number];
@@ -87,6 +87,8 @@ interface UIState {
   // Analytics
   analyticsShowTips: boolean;
   setAnalyticsShowTips: (show: boolean) => void;
+  showWrappedReport: boolean;
+  setShowWrappedReport: (show: boolean) => void;
 
   /** Habits page: prayer tracking block starts expanded (true) or collapsed (false) */
   habitsPrayerDefaultExpanded: boolean;
@@ -162,6 +164,7 @@ export type PersistedUiSlice = {
   isSidebarCollapsed: boolean;
   privacyMode: boolean;
   analyticsShowTips: boolean;
+  showWrappedReport: boolean;
   habitsPrayerDefaultExpanded: boolean;
   prayerLocationMode: PrayerLocationMode;
   prayerLatitude: number;
@@ -209,6 +212,8 @@ export const useUIStore = create<UIState>()(
       // Analytics
       analyticsShowTips: true,
       setAnalyticsShowTips: (show: boolean) => set({ analyticsShowTips: show }),
+      showWrappedReport: true,
+      setShowWrappedReport: (show: boolean) => set({ showWrappedReport: show }),
 
       habitsPrayerDefaultExpanded: true,
       setHabitsPrayerDefaultExpanded: (expanded: boolean) => set({ habitsPrayerDefaultExpanded: expanded }),
@@ -405,6 +410,7 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     isSidebarCollapsed: state.isSidebarCollapsed,
     privacyMode: state.privacyMode,
     analyticsShowTips: state.analyticsShowTips,
+    showWrappedReport: state.showWrappedReport,
     habitsPrayerDefaultExpanded: state.habitsPrayerDefaultExpanded,
     prayerLocationMode: state.prayerLocationMode,
     prayerLatitude: state.prayerLatitude,

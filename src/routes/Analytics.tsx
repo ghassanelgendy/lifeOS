@@ -25,6 +25,7 @@ import { AnalyticsDigital } from '../components/analytics/AnalyticsDigital';
 import { AnalyticsHealthWealth } from '../components/analytics/AnalyticsHealthWealth';
 import { AnalyticsDeepInsights } from '../components/analytics/AnalyticsDeepInsights';
 import { DayDetailsModal } from '../components/analytics/DayDetailsModal';
+import { AnalyticsReport } from '../components/analytics/AnalyticsReport';
 
 type RelationshipPoint = { x: number; y: number; date: string };
 type Relationship = {
@@ -51,7 +52,20 @@ type Relationship = {
 };
 
 export default function Analytics() {
-  const { privacyMode, analyticsShowTips } = useUIStore();
+  const { privacyMode, analyticsShowTips, showWrappedReport } = useUIStore();
+
+  // Wrap-day takeover logic
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0=Sun, 5=Fri, 6=Sat
+  const dayOfMonth = now.getDate();
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  const isWeeklyWrapDay = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0; // Fri, Sat, Sun
+  const isMonthlyWrapDay = dayOfMonth >= lastDayOfMonth - 1 || dayOfMonth === 1; // last 2 days + 1st
+  const isWrapDay = (isWeeklyWrapDay || isMonthlyWrapDay) && showWrappedReport;
+
+  const [showWrap, setShowWrap] = useState(isWrapDay);
+
   const [rangeDays, setRangeDays] = useState<AnalyticsRangeDays>(30);
   const daily = useAnalyticsDaily(rangeDays);
   const top = useAnalyticsTop(rangeDays);
@@ -637,6 +651,27 @@ export default function Analytics() {
     { id: 'insights', label: 'Insights', icon: Activity },
   ] as const;
 
+  if (showWrap) {
+    return (
+      <div className="w-full max-w-7xl mx-auto pb-20 space-y-6 overflow-x-hidden">
+        <DayDetailsModal
+          isOpen={!!selectedDay}
+          onClose={closeDayDetails}
+          date={selectedDay}
+          source={selectedDaySource}
+          data={dayDetails}
+          privacyMode={privacyMode}
+        />
+        <AnalyticsReport
+          onDismiss={() => setShowWrap(false)}
+          isWeeklyWrapDay={isWeeklyWrapDay}
+          isMonthlyWrapDay={isMonthlyWrapDay}
+          onOpenDayDetails={openDayDetails}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto pb-20 space-y-6 overflow-x-hidden">
       <DayDetailsModal
@@ -650,11 +685,22 @@ export default function Analytics() {
 
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground mt-1">
-            Insights across Sleep, Screen Time, Tasks, Habits, and Finance
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
+            <p className="text-muted-foreground mt-1">
+              Insights across Sleep, Screen Time, Tasks, Habits, and Finance
+            </p>
+          </div>
+          {isWrapDay && (
+            <button
+              onClick={() => setShowWrap(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-primary/80 to-accent/80 text-primary-foreground rounded-lg shadow hover:opacity-90 transition-all cursor-pointer sm:mt-1 w-fit"
+            >
+              <Sparkles size={14} />
+              View Wrap
+            </button>
+          )}
         </div>
 
         <div className="flex p-1 bg-secondary/50 rounded-xl w-full sm:w-fit shadow-inner">

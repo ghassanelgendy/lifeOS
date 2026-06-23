@@ -24,7 +24,7 @@ import { useCategoryBreakdown } from '../../hooks/useFinance';
 import { useProjects } from '../../hooks/useProjects';
 import { useUIStore, DASHBOARD_WIDGET_IDS } from '../../stores/useUIStore';
 import { PrayerTimesWidget } from '../PrayerTimesWidget';
-import { MagicWeekReportWidget } from '../MagicWeekReportWidget';
+
 import { useScreentimeMetrics, useTodayScreentime } from '../../hooks/useScreentime';
 import { useSleepMetrics } from '../../hooks/useSleep';
 import { useDashboardUpcomingItems } from '../../hooks/useDashboardUpcomingItems';
@@ -519,11 +519,7 @@ if (widgetId === 'overdue' || widgetId === 'events') {
           return <div key="events">{eventsSection}</div>;
         }
 
-        if (widgetId === 'magic_week') {
-          const isSaturday = new Date().getDay() === 6;
-          if (!isSaturday) return null;
-          return <MagicWeekReportWidget key="magic_week" />;
-        }
+
         if (widgetId === 'habits')
           return (
       <section key="habits" className="rounded-xl border border-border bg-card overflow-hidden">
