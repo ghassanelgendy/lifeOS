@@ -183,7 +183,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
     const taskId = (entry.entityId || entry.id || '').replace(/^task-/, '');
     const taskDetails = allTasks.find(t => t.id === taskId);
     
-    const taskDescription = taskDetails?.description || entry.description || taskDetails?.notes || entry.notes;
+    const taskDescription = taskDetails?.description || entry.description || (taskDetails as any)?.notes || entry.notes;
     
     const dueDate = taskDetails?.due_date || entry.due_date;
     const dueTime = taskDetails?.due_time || entry.due_time || entry.start_time;
@@ -262,9 +262,9 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
             <p className="text-xs text-muted-foreground uppercase font-semibold">Priority</p>
             <span className={cn(
               "inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold mt-1.5 border",
-              priorityColors[priority]
+              priorityColors[priority as keyof typeof priorityColors]
             )}>
-              {priorityLabels[priority]}
+              {priorityLabels[priority as keyof typeof priorityLabels]}
             </span>
           </div>
         )}

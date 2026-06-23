@@ -256,7 +256,6 @@ function DueTodayRow({
 
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
   const [parent] = useAutoAnimate();
-  const [pendingToggles, setPendingToggles] = useState<Record<string, { timeout: ReturnType<typeof setTimeout>; targetState: boolean }>>({});
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   const handleTooltipClick = (id: string) => {
@@ -266,31 +265,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     }, 700);
   };
 
-  const handleToggleWrapper = (id: string, targetState: boolean, mutateFn: () => void | Promise<any>) => {
-    if (pendingToggles[id]) {
-      clearTimeout(pendingToggles[id].timeout);
-      setPendingToggles((p) => {
-        const n = { ...p };
-        delete n[id];
-        return n;
-      });
-    } else {
-      const timeout = setTimeout(async () => {
-        try {
-          await mutateFn();
-          // Wait for React Query invalidation and refetch to complete
-          await new Promise((r) => setTimeout(r, 600));
-        } finally {
-          setPendingToggles((p) => {
-            const n = { ...p };
-            delete n[id];
-            return n;
-          });
-        }
-      }, 1000);
-      setPendingToggles((p) => ({ ...p, [id]: { timeout: timeout as unknown as ReturnType<typeof setTimeout>, targetState } }));
-    }
-  };
 
   const today = useMemo(() => new Date(), []);
   const todayStr = format(today, 'yyyy-MM-dd');
@@ -499,7 +473,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     const other = Math.max(0, todayScreentime.otherMinutes || 0);
     const rawUsed = pc + phone + other;
 
-    const maxNonOverlapScreentime = Math.max(0, elapsed - sleep);
+
     
     // Use the mathematically exact overlap computed from the timeline blocks
     const exactOverlapMinutes = Math.round(timelineBlocks.overlap.reduce((sum, b) => sum + (b.end - b.start), 0));
@@ -560,7 +534,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       d.setHours(Math.floor(minutes / 60), minutes % 60, 0, 0);
       return format(d, 'h:mm a');
     };
-    const rawMarkers: { id: string; minutes: number; kind: 'habit' | 'prayer' | 'task'; color?: string; name: string; timeStr: string; isCompleted?: boolean }[] = [];
+    const rawMarkers: { id: string; minutes: number; kind: DueKind; color?: string; name: string; timeStr: string; isCompleted?: boolean }[] = [];
 
     for (const habit of habitsDueToday) {
       const log = todayLogs.find((l) => l.habit_id === habit.id && l.date === todayStr && l.completed);
@@ -718,8 +692,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   // Prayer: participates in the sort — when done it sinks to the bottom,
   // when the next prayer slot arrives (undone) it jumps back to top.
   if (lastPrayerSlot) {
-    const isPrayerPending = !!pendingToggles['prayer-next'];
-    const visualPrayerDone = isPrayerPending ? !lastPrayerDone : lastPrayerDone;
+
 
     timelineRawItems.push({
       key: 'prayer-current',
@@ -751,9 +724,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   overdueIncomplete.forEach((t) => {
     addedKeys.add(`task-${t.id}`);
-    const pendingData = pendingToggles[`task-${t.id}`];
-    const isPending = !!pendingData;
-    const pendingTarget = pendingData?.targetState ?? false;
+
     timelineRawItems.push({
       key: `task-${t.id}`,
       kind: 'task',
@@ -785,9 +756,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   tasksDueTodayOnly.forEach((t) => {
     addedKeys.add(`task-${t.id}`);
-    const pendingData = pendingToggles[`task-${t.id}`];
-    const isPending = !!pendingData;
-    const pendingTarget = pendingData?.targetState ?? false;
+
     
     const minutes = t.due_time ? (timeStringToMinutes(t.due_time) ?? null) : null;
     const sortTime = minutes !== null ? getTodayTimestamp(minutes) : Infinity;
@@ -819,11 +788,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   habitsDueToday.forEach((h) => {
     addedKeys.add(`habit-${h.id}`);
-    const pendingData = pendingToggles[`habit-${h.id}`];
-    const isPending = !!pendingData;
     const done = isHabitDoneToday(h.id);
-    const pendingTarget = pendingData?.targetState ?? !done;
-    const visualDone = isPending ? pendingTarget : done;
     
     const insight = habitInsights[h.id];
     const pct = insight ? insight.adherencePct : 0;
@@ -893,9 +858,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     if (addedKeys.has(key)) return;
     addedKeys.add(key);
 
-    const pendingData = pendingToggles[key];
-    const isPending = !!pendingData;
-    const pendingTarget = pendingData?.targetState ?? false;
+
 
     const parsedStart = parseISO(item.start_time);
     const subtitle = formatItemWhen(item);
@@ -908,7 +871,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     let isManuallyDone = false;
     let isAutoDone = false;
     let sortTime = Infinity;
-    let isAnytime = item.allDay;
+    let isAnytime = !!item.allDay;
 
     if (isEvent) {
       const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;

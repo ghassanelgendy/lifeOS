@@ -122,15 +122,15 @@ Deno.serve(async (req: Request) => {
     const maxBound = new Date(nowMin.getTime() + 30 * 60 * 1000).toISOString();
 
     const [recurringRes, nonRecurringRes] = await Promise.all([
-      supabase
-        .from('calendar_events')
+      (supabase
+        .from('calendar_events') as any)
         .select('id, title, start_time, end_time, recurrence, recurrence_end, user_id')
         .neq('recurrence', 'none')
         .not('user_id', 'is', null)
         .lte('start_time', in5Mins.toISOString())
         .or(`recurrence_end.is.null,recurrence_end.gte.${nowMin.toISOString().split('T')[0]}`),
-      supabase
-        .from('calendar_events')
+      (supabase
+        .from('calendar_events') as any)
         .select('id, title, start_time, end_time, recurrence, recurrence_end, user_id')
         .or('recurrence.eq.none,recurrence.is.null')
         .not('user_id', 'is', null)

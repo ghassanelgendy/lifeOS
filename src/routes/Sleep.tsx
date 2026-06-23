@@ -149,7 +149,6 @@ function buildSessions(segments: SleepStage[]): NightSession[] {
 
 
 export default function Sleep() {
-  const [activeSessionIndex, setActiveSessionIndex] = useState(0);
   const [sessionLimit, setSessionLimit] = useState<7 | 30>(7);
   const periodDays = 180;
   // Always query 180 days from today to allow instant switching between sessions
@@ -157,7 +156,7 @@ export default function Sleep() {
   const startStr = `${format(subDays(new Date(), periodDays), 'yyyy-MM-dd')}T00:00:00.000Z`;
 
   const { data: stages = [], isLoading } = useSleepStages(startStr, endStr);
-  const { avgSleepMinutes, nightsCount } = useSleepMetrics(7);
+  const { avgSleepMinutes } = useSleepMetrics(7);
   const sessions = useMemo(() => buildSessions(stages), [stages]);
   const active = useMemo(() => sessions[0], [sessions]);
   const [selectedSession, setSelectedSession] = useState<NightSession | null>(null);
@@ -279,7 +278,7 @@ export default function Sleep() {
                           paddingAngle={2}
                         />
                         <Tooltip 
-                          formatter={(v: number | undefined) => `${v ?? 0} min`} 
+                          formatter={(v: any) => `${v ?? 0} min`} 
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
                         />
                       </PieChart>
@@ -340,7 +339,7 @@ export default function Sleep() {
                       />
                       <Tooltip 
                         cursor={{ fill: 'hsl(var(--secondary))', opacity: 0.5, radius: 8 }}
-                        formatter={(v: number | undefined) => [`${v ?? 0} h`, 'Sleep']}
+                        formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',
