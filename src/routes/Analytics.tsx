@@ -60,9 +60,14 @@ export default function Analytics() {
   const dayOfMonth = now.getDate();
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
-  const isWeeklyWrapDay = dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0; // Fri, Sat, Sun
-  const isMonthlyWrapDay = dayOfMonth >= lastDayOfMonth - 1 || dayOfMonth === 1; // last 2 days + 1st
-  const isWrapDay = (isWeeklyWrapDay || isMonthlyWrapDay) && showWrappedReport;
+  // Status 2: last 2 days of week (Saturday=6, Sunday=0)
+  const isWeeklyWrapDay = dayOfWeek === 6 || dayOfWeek === 0;
+  // Status 2: last 3 days of month (e.g. 28, 29, 30 in a 30-day month)
+  const isMonthlyWrapDay = dayOfMonth >= lastDayOfMonth - 2;
+
+  // Status 1 (showWrappedReport is true): Show always (even if it's not Saturday or last day in month)
+  // Status 2 (showWrappedReport is false): Show on scheduled wrap days (last 2 days of week or last 3 days of month)
+  const isWrapDay = showWrappedReport ? true : (isWeeklyWrapDay || isMonthlyWrapDay);
 
   const [showWrap, setShowWrap] = useState(isWrapDay);
 
@@ -664,8 +669,8 @@ export default function Analytics() {
         />
         <AnalyticsReport
           onDismiss={() => setShowWrap(false)}
-          isWeeklyWrapDay={isWeeklyWrapDay}
-          isMonthlyWrapDay={isMonthlyWrapDay}
+          isWeeklyWrapDay={showWrappedReport ? true : isWeeklyWrapDay}
+          isMonthlyWrapDay={showWrappedReport ? true : isMonthlyWrapDay}
           onOpenDayDetails={openDayDetails}
         />
       </div>

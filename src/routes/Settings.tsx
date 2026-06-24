@@ -981,8 +981,14 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <Info size={20} />
               <div>
-                <p className="font-medium">Show Wrapped Report</p>
-                <p className="text-sm text-muted-foreground">Show Spotify-Wrapped style report on wrap days (Fri-Sun and 29-1)</p>
+                <p className="font-medium">
+                  {showWrappedReport ? "Wrap Report: Always Show" : "Wrap Report: Scheduled"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {showWrappedReport
+                    ? "Show wrap report even if it's not Saturday or the last day of the month"
+                    : "Show only on the last 2 days of the week (Sat-Sun) or the last 3 days of the month"}
+                </p>
               </div>
             </div>
             <button

@@ -6,6 +6,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { mean, stddev, sum, pctChange } from '../lib/analytics-utils';
 import { generateSuggestions, type Suggestion } from '../lib/reportSuggestions';
+import { formatCurrency } from '../lib/utils';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -149,7 +150,7 @@ function computeOutliers(days: DayMetrics[]): Outlier[] {
     { key: 'sleepMinutes', label: 'Sleep', icon: '🌙', formatter: (v) => `${Math.floor(v / 60)}h ${Math.round(v % 60)}m` },
     { key: 'tasksCompleted', label: 'Tasks', icon: '✅', formatter: (v) => `${v} tasks` },
     { key: 'habitsAdherencePct', label: 'Habits', icon: '🎯', formatter: (v) => `${Math.round(v)}%` },
-    { key: 'expense', label: 'Spending', icon: '💸', formatter: (v) => `${v.toFixed(0)}`, higherIsBad: true },
+    { key: 'expense', label: 'Daily Spending', icon: '💸', formatter: (v) => formatCurrency(v), higherIsBad: true },
   ];
 
   for (const m of metrics) {

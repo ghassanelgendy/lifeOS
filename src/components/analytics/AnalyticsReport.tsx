@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import {
-  Moon, Monitor, CheckSquare, Flame, Wallet, Trophy, TrendingDown,
+  Moon, Monitor, CheckSquare, Flame, Wallet, Trophy, TrendingDown, TrendingUp,
   ChevronLeft, ChevronRight, Sparkles, Lightbulb, ChevronDown, ChevronUp,
   ArrowLeft,
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area,
-  LineChart, Line,
+  LineChart, Line, Cell,
 } from 'recharts';
-import { cn } from '../../lib/utils';
+import { cn, formatCurrency } from '../../lib/utils';
 import { useUIStore } from '../../stores/useUIStore';
 import { useWeeklyReport, useMonthlyReport, type ReportData } from '../../hooks/useReport';
 import { AnimatedCounter } from './AnimatedCounter';
@@ -80,16 +80,24 @@ function Section({ children, delay = 0 }: { children: React.ReactNode; delay?: n
 
 // ── Expandable card ──────────────────────────────────────────────────
 
-function ExpandableCard({ children, expandedContent, className }: {
+function ExpandableCard({ children, expandedContent, className, onClick, defaultExpanded = true }: {
   children: React.ReactNode;
   expandedContent?: React.ReactNode;
   className?: string;
+  onClick?: () => void;
+  defaultExpanded?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded);
   return (
     <div
       className={cn('rounded-xl border border-border bg-card overflow-hidden transition-all cursor-pointer', className)}
-      onClick={() => expandedContent && setExpanded(!expanded)}
+      onClick={() => {
+        if (onClick) {
+          onClick();
+        } else if (expandedContent) {
+          setExpanded(!expanded);
+        }
+      }}
     >
       <div className="p-4">{children}</div>
       {expanded && expandedContent && (
@@ -112,7 +120,7 @@ interface AnalyticsReportProps {
   onDismiss: () => void;
   isWeeklyWrapDay: boolean;
   isMonthlyWrapDay: boolean;
-  onOpenDayDetails?: (date: string) => void;
+  onOpenDayDetails?: (date: string, source?: string) => void;
 }
 
 export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, onOpenDayDetails }: AnalyticsReportProps) {
@@ -220,7 +228,11 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={sparkData}>
                   <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="currentColor" className="text-muted-foreground" />
-                  <Tooltip contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
+                    itemStyle={{ color: 'var(--color-foreground)' }}
+                    labelStyle={{ color: 'var(--color-muted-foreground)' }}
+                  />
                   <Area type="monotone" dataKey="sleep" stroke="#818cf8" fill="#818cf8" fillOpacity={0.15} name="Sleep (min)" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -237,17 +249,24 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
           </ExpandableCard>
 
           {/* Screen Time */}
-          <ExpandableCard expandedContent={
-            <div className="h-32">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={sparkData}>
-                  <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="currentColor" className="text-muted-foreground" />
-                  <Tooltip contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
-                  <Area type="monotone" dataKey="screen" stroke="#f472b6" fill="#f472b6" fillOpacity={0.15} name="Screen (hours)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          }>
+          <ExpandableCard
+            onClick={() => data.days.length > 0 && onOpenDayDetails?.(data.days[data.days.length - 1].date, 'Screen Time')}
+            expandedContent={
+              <div className="h-32">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={sparkData}>
+                    <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="currentColor" className="text-muted-foreground" />
+                    <Tooltip
+                      contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
+                      itemStyle={{ color: 'var(--color-foreground)' }}
+                      labelStyle={{ color: 'var(--color-muted-foreground)' }}
+                    />
+                    <Area type="monotone" dataKey="screen" stroke="#f472b6" fill="#f472b6" fillOpacity={0.15} name="Screen (hours)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            }
+          >
             <div className="flex items-center gap-2 mb-2">
               <Monitor size={14} className="text-pink-400" />
               <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Avg Screen</span>
@@ -264,7 +283,11 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={sparkData}>
                   <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="currentColor" className="text-muted-foreground" />
-                  <Tooltip contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
+                    itemStyle={{ color: 'var(--color-foreground)' }}
+                    labelStyle={{ color: 'var(--color-muted-foreground)' }}
+                  />
                   <Bar dataKey="tasks" fill="#34d399" radius={[4, 4, 0, 0]} name="Tasks" />
                 </BarChart>
               </ResponsiveContainer>
@@ -286,7 +309,11 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={sparkData}>
                   <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="currentColor" className="text-muted-foreground" />
-                  <Tooltip contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
+                    itemStyle={{ color: 'var(--color-foreground)' }}
+                    labelStyle={{ color: 'var(--color-muted-foreground)' }}
+                  />
                   <Line type="monotone" dataKey="habits" stroke="#fb923c" strokeWidth={2} dot={{ r: 3 }} name="Habits %" />
                 </LineChart>
               </ResponsiveContainer>
@@ -302,16 +329,28 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             <div className="mt-1"><DeltaBadge delta={data.habitsDelta} /></div>
           </ExpandableCard>
 
-          {/* Finance */}
-          <ExpandableCard className="col-span-2 sm:col-span-1">
+          {/* Total Spending */}
+          <ExpandableCard onClick={() => data.days.length > 0 && onOpenDayDetails?.(data.days[data.days.length - 1].date, 'Total Spending')}>
             <div className="flex items-center gap-2 mb-2">
               <Wallet size={14} className="text-cyan-400" />
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Spending</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total Spending</span>
             </div>
             <div className={cn('text-xl font-bold tabular-nums text-red-400', privacyMode && 'blur-sm')}>
-              <AnimatedCounter value={data.totalExpense} prefix="-" />
+              <AnimatedCounter value={data.totalExpense} formatter={formatCurrency} prefix="-" />
             </div>
             <div className="mt-1"><DeltaBadge delta={data.financeDelta} /></div>
+          </ExpandableCard>
+
+          {/* Total Income */}
+          <ExpandableCard onClick={() => data.days.length > 0 && onOpenDayDetails?.(data.days[data.days.length - 1].date, 'Total Income')}>
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp size={14} className="text-green-400" />
+              <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Total Income</span>
+            </div>
+            <div className={cn('text-xl font-bold tabular-nums text-green-400', privacyMode && 'blur-sm')}>
+              <AnimatedCounter value={data.totalIncome} formatter={formatCurrency} prefix="+" />
+            </div>
+            <div className="text-xs text-muted-foreground mt-1.5">Received this period</div>
           </ExpandableCard>
         </div>
       </Section>
@@ -377,7 +416,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                 >
                   <p className="text-sm font-medium">{o.label}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Average: {o.metric === 'Screen time' ? fmtSec(o.average) : o.metric === 'Sleep' ? fmtMin(o.average) : Math.round(o.average).toString()}
+                    Average: {o.metric === 'Screen time' ? fmtSec(o.average) : o.metric === 'Sleep' ? fmtMin(o.average) : o.metric === 'Daily Spending' ? formatCurrency(o.average) : Math.round(o.average).toString()}
                   </p>
                 </div>
               ))}
@@ -399,12 +438,14 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                 <XAxis dataKey="dow" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} stroke="currentColor" className="text-muted-foreground" />
                 <Tooltip
-                  contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12 }}
+                  contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
+                  itemStyle={{ color: 'var(--color-foreground)' }}
+                  labelStyle={{ color: 'var(--color-muted-foreground)' }}
                   formatter={(v: number) => [`${v}%`, 'Adherence']}
                 />
                 <Bar dataKey="adherence" radius={[6, 6, 0, 0]}>
                   {data.habitsByDow.map((entry, i) => (
-                    <rect key={i} fill={entry.adherence >= 70 ? '#22c55e' : entry.adherence >= 50 ? '#f59e0b' : '#ef4444'} />
+                    <Cell key={i} fill={entry.adherence >= 70 ? '#22c55e' : entry.adherence >= 50 ? '#f59e0b' : '#ef4444'} />
                   ))}
                 </Bar>
               </BarChart>
@@ -491,9 +532,13 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             </h3>
             <div className="space-y-2">
               {data.suggestions.map((s, i) => (
-                <ExpandableCard key={i} expandedContent={
-                  <p className="text-xs text-muted-foreground leading-relaxed">{s.detail}</p>
-                }>
+                <ExpandableCard
+                  key={i}
+                  defaultExpanded={false}
+                  expandedContent={
+                    <p className="text-xs text-muted-foreground leading-relaxed">{s.detail}</p>
+                  }
+                >
                   <div className="flex items-start gap-3">
                     <span className="text-lg flex-shrink-0">{s.icon}</span>
                     <p className="text-sm font-medium leading-snug">{s.title}</p>

@@ -7,6 +7,7 @@ interface AnimatedCounterProps {
   prefix?: string;
   suffix?: string;
   className?: string;
+  formatter?: (val: number) => string;
 }
 
 export function AnimatedCounter({
@@ -16,6 +17,7 @@ export function AnimatedCounter({
   prefix = '',
   suffix = '',
   className,
+  formatter,
 }: AnimatedCounterProps) {
   const [display, setDisplay] = useState(0);
   const rafRef = useRef<number>(0);
@@ -43,7 +45,9 @@ export function AnimatedCounter({
     return () => cancelAnimationFrame(rafRef.current);
   }, [value, duration]);
 
-  const formatted = decimals > 0 ? display.toFixed(decimals) : Math.round(display).toString();
+  const formatted = formatter
+    ? formatter(Math.round(display))
+    : (decimals > 0 ? display.toFixed(decimals) : Math.round(display).toString());
 
   return (
     <span className={className}>
