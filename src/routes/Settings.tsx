@@ -127,6 +127,12 @@ export default function SettingsPage() {
     setPrayerLocationMode,
     prayerLocationLabel,
     setPrayerLocation,
+    reportSleepTarget,
+    reportScreenTarget,
+    reportTasksTarget,
+    setReportSleepTarget,
+    setReportScreenTarget,
+    setReportTasksTarget,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
@@ -1005,6 +1011,54 @@ export default function SettingsPage() {
                 )}
               />
             </button>
+          </div>
+
+          {/* Report Targets */}
+          <div className="pt-4 border-t border-border space-y-4">
+            <div>
+              <p className="font-medium">Report Targets</p>
+              <p className="text-sm text-muted-foreground">
+                Customize targets used to calculate your composite weekly and monthly report scores.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Sleep Target (hours)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={reportSleepTarget}
+                  onChange={(e) => setReportSleepTarget(Number(e.target.value) || 8)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Screen Time Limit (hours)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={reportScreenTarget}
+                  onChange={(e) => setReportScreenTarget(Number(e.target.value) || 8)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Daily Tasks Target
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={reportTasksTarget}
+                  onChange={(e) => setReportTasksTarget(Number(e.target.value) || 5)}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>

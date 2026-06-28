@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { mean, stddev, sum, pctChange } from '../lib/analytics-utils';
 import { generateSuggestions, type Suggestion } from '../lib/reportSuggestions';
 import { formatCurrency } from '../lib/utils';
+import { useUIStore } from '../stores/useUIStore';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -228,16 +229,22 @@ function computeBestWorstDay(days: DayMetrics[]) {
   return { best, worst };
 }
 
-function computeWeekScore(days: DayMetrics[], prevDays: DayMetrics[]): { current: number; prev: number } {
+function computeWeekScore(
+  days: DayMetrics[],
+  prevDays: DayMetrics[],
+  sleepTarget: number,
+  screenTarget: number,
+  tasksTarget: number
+): { current: number; prev: number } {
   const score = (ds: DayMetrics[]) => {
     if (ds.length === 0) return 50;
     const sleepAvg = avg(ds.map((d) => d.sleepMinutes)) ?? 0;
-    const sleepScore = Math.min(100, (sleepAvg / 480) * 100); // 8h = 100
+    const sleepScore = Math.min(100, (sleepAvg / (sleepTarget * 60)) * 100);
     const screenAvg = avg(ds.map((d) => d.screenSeconds)) ?? 0;
-    const screenScore = Math.max(0, 100 - (screenAvg / (8 * 3600)) * 100); // 0h=100, 8h=0
+    const screenScore = Math.max(0, 100 - (screenAvg / (screenTarget * 3600)) * 100);
     const habitsAvg = avg(ds.map((d) => d.habitsAdherencePct)) ?? 0;
     const tasksTotal = sum(ds.map((d) => d.tasksCompleted));
-    const tasksScore = Math.min(100, (tasksTotal / Math.max(1, ds.length * 5)) * 100); // 5 tasks/day = 100
+    const tasksScore = Math.min(100, (tasksTotal / Math.max(1, ds.length * tasksTarget)) * 100);
     return Math.round((sleepScore * 0.25 + screenScore * 0.2 + habitsAvg * 0.35 + tasksScore * 0.2));
   };
   return { current: score(days), prev: score(prevDays) };
@@ -299,6 +306,7 @@ function dateRange(start: string, end: string): string[] {
 
 export function useWeeklyReport(weekOffset = 0): ReportData {
   const { user } = useAuth();
+  const { reportSleepTarget, reportScreenTarget, reportTasksTarget } = useUIStore();
   const bounds = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
   const dates = useMemo(() => dateRange(bounds.weekStart, bounds.weekEnd), [bounds]);
   const prevDates = useMemo(() => dateRange(bounds.prevStart, bounds.prevEnd), [bounds]);
@@ -359,7 +367,7 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
     const prevAvgFinance = avg(prevDays.map((d) => d.financeBalance));
 
     const { best, worst } = computeBestWorstDay(days);
-    const scores = computeWeekScore(days, prevDays);
+    const scores = computeWeekScore(days, prevDays, reportSleepTarget, reportScreenTarget, reportTasksTarget);
 
     // 30-day data for suggestions
     const thirtyDates = dateRange(thirtyStart, bounds.weekEnd);
@@ -395,11 +403,12 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
       weekScore: scores.current,
       prevWeekScore: scores.prev,
     };
-  }, [isLoading, curr, prev, thirty, dates, prevDates, bounds, thirtyStart, topAppsQ.data, topCatsQ.data]);
+  }, [isLoading, curr, prev, thirty, dates, prevDates, bounds, thirtyStart, topAppsQ.data, topCatsQ.data, reportSleepTarget, reportScreenTarget, reportTasksTarget]);
 }
 
 export function useMonthlyReport(monthOffset = 0): ReportData {
   const { user } = useAuth();
+  const { reportSleepTarget, reportScreenTarget, reportTasksTarget } = useUIStore();
   const bounds = useMemo(() => getMonthBounds(monthOffset), [monthOffset]);
   const dates = useMemo(() => dateRange(bounds.start, bounds.end), [bounds]);
   const prevDates = useMemo(() => dateRange(bounds.prevStart, bounds.prevEnd), [bounds]);
@@ -453,7 +462,7 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
     const prevAvgFinance = avg(prevDaysArr.map((d) => d.financeBalance));
 
     const { best, worst } = computeBestWorstDay(days);
-    const scores = computeWeekScore(days, prevDaysArr);
+    const scores = computeWeekScore(days, prevDaysArr, reportSleepTarget, reportScreenTarget, reportTasksTarget);
 
     return {
       type: 'monthly' as const,
@@ -485,7 +494,7 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
       weekScore: scores.current,
       prevWeekScore: scores.prev,
     };
-  }, [isLoading, curr, prev, dates, prevDates, bounds, topAppsQ.data, topCatsQ.data]);
+  }, [isLoading, curr, prev, dates, prevDates, bounds, topAppsQ.data, topCatsQ.data, reportSleepTarget, reportScreenTarget, reportTasksTarget]);
 }
 
 function emptyReport(type: 'weekly' | 'monthly', start: string, end: string, loading: boolean): ReportData {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Sparkles, Flame, Monitor, Moon, Activity } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
@@ -26,6 +26,7 @@ import { AnalyticsHealthWealth } from '../components/analytics/AnalyticsHealthWe
 import { AnalyticsDeepInsights } from '../components/analytics/AnalyticsDeepInsights';
 import { DayDetailsModal } from '../components/analytics/DayDetailsModal';
 import { AnalyticsReport } from '../components/analytics/AnalyticsReport';
+import { checkWrapStatus } from '../lib/wrapHelpers';
 
 type RelationshipPoint = { x: number; y: number; date: string };
 type Relationship = {
@@ -52,24 +53,39 @@ type Relationship = {
 };
 
 export default function Analytics() {
-  const { privacyMode, analyticsShowTips, showWrappedReport } = useUIStore();
+  const {
+    privacyMode,
+    analyticsShowTips,
+    showWrappedReport,
+    lastViewedWeeklyWrap,
+    lastViewedMonthlyWrap,
+    setLastViewedWeeklyWrap,
+    setLastViewedMonthlyWrap,
+  } = useUIStore();
 
   // Wrap-day takeover logic
   const now = new Date();
-  const dayOfWeek = now.getDay(); // 0=Sun, 5=Fri, 6=Sat
-  const dayOfMonth = now.getDate();
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-
-  // Status 2: last 2 days of week (Saturday=6, Sunday=0)
-  const isWeeklyWrapDay = dayOfWeek === 6 || dayOfWeek === 0;
-  // Status 2: last 3 days of month (e.g. 28, 29, 30 in a 30-day month)
-  const isMonthlyWrapDay = dayOfMonth >= lastDayOfMonth - 2;
+  const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus(now);
 
   // Status 1 (showWrappedReport is true): Show always (even if it's not Saturday or last day in month)
   // Status 2 (showWrappedReport is false): Show on scheduled wrap days (last 2 days of week or last 3 days of month)
   const isWrapDay = showWrappedReport ? true : (isWeeklyWrapDay || isMonthlyWrapDay);
 
-  const [showWrap, setShowWrap] = useState(isWrapDay);
+  const isWeeklyNew = isWeeklyWrapDay && lastViewedWeeklyWrap !== weeklyWrapKey;
+  const isMonthlyNew = isMonthlyWrapDay && lastViewedMonthlyWrap !== monthlyWrapKey;
+  const isNewWrap = isWeeklyNew || isMonthlyNew;
+
+  const [showWrap, setShowWrap] = useState(showWrappedReport ? true : isNewWrap);
+
+  // Mark wrap as viewed on mount / when it becomes available
+  useEffect(() => {
+    if (isWeeklyWrapDay && lastViewedWeeklyWrap !== weeklyWrapKey) {
+      setLastViewedWeeklyWrap(weeklyWrapKey);
+    }
+    if (isMonthlyWrapDay && lastViewedMonthlyWrap !== monthlyWrapKey) {
+      setLastViewedMonthlyWrap(monthlyWrapKey);
+    }
+  }, [isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey, lastViewedWeeklyWrap, lastViewedMonthlyWrap, setLastViewedWeeklyWrap, setLastViewedMonthlyWrap]);
 
   const [rangeDays, setRangeDays] = useState<AnalyticsRangeDays>(30);
   const daily = useAnalyticsDaily(rangeDays);

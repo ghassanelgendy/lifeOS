@@ -167,6 +167,13 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.dashboardMode = asDashboardMode(remote.dashboardMode, DEFAULT_DASHBOARD_MODE);
   patch.strategicHorizonDays = asStrategicHorizonDays(remote.strategicHorizonDays, 90);
   patch.annualReviewNotesByYear = asAnnualReviewNotesByYear(remote.annualReviewNotesByYear);
+  patch.lastViewedWeeklyWrap = asStrOrNull(remote.lastViewedWeeklyWrap);
+  patch.lastViewedMonthlyWrap = asStrOrNull(remote.lastViewedMonthlyWrap);
+  patch.lastNotifiedWeeklyWrap = asStrOrNull(remote.lastNotifiedWeeklyWrap);
+  patch.lastNotifiedMonthlyWrap = asStrOrNull(remote.lastNotifiedMonthlyWrap);
+  patch.reportSleepTarget = asNum(remote.reportSleepTarget, 8);
+  patch.reportScreenTarget = asNum(remote.reportScreenTarget, 8);
+  patch.reportTasksTarget = asNum(remote.reportTasksTarget, 5);
 
   return patch;
 }

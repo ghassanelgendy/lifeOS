@@ -157,6 +157,24 @@ interface UIState {
   togglePageWidget: (page: string, id: string) => void;
   movePageWidget: (page: string, id: string, direction: 'up' | 'down') => void;
   resetPageWidgets: (page: string) => void;
+
+  // Wrap Notifications & Tracking
+  lastViewedWeeklyWrap: string | null;
+  lastViewedMonthlyWrap: string | null;
+  lastNotifiedWeeklyWrap: string | null;
+  lastNotifiedMonthlyWrap: string | null;
+  setLastViewedWeeklyWrap: (key: string | null) => void;
+  setLastViewedMonthlyWrap: (key: string | null) => void;
+  setLastNotifiedWeeklyWrap: (key: string | null) => void;
+  setLastNotifiedMonthlyWrap: (key: string | null) => void;
+
+  // Report targets
+  reportSleepTarget: number;
+  reportScreenTarget: number;
+  reportTasksTarget: number;
+  setReportSleepTarget: (hours: number) => void;
+  setReportScreenTarget: (hours: number) => void;
+  setReportTasksTarget: (tasks: number) => void;
 }
 
 /** Serializable UI preferences (localStorage + Supabase). */
@@ -187,6 +205,13 @@ export type PersistedUiSlice = {
   strategicHorizonDays: StrategicHorizonDays;
   /** Year -> reflection draft for Annual Review (persisted). */
   annualReviewNotesByYear: Record<string, string>;
+  lastViewedWeeklyWrap: string | null;
+  lastViewedMonthlyWrap: string | null;
+  lastNotifiedWeeklyWrap: string | null;
+  lastNotifiedMonthlyWrap: string | null;
+  reportSleepTarget: number;
+  reportScreenTarget: number;
+  reportTasksTarget: number;
 };
 
 export const useUIStore = create<UIState>()(
@@ -214,6 +239,24 @@ export const useUIStore = create<UIState>()(
       setAnalyticsShowTips: (show: boolean) => set({ analyticsShowTips: show }),
       showWrappedReport: true,
       setShowWrappedReport: (show: boolean) => set({ showWrappedReport: show }),
+
+      // Wrap Notifications & Tracking
+      lastViewedWeeklyWrap: null,
+      lastViewedMonthlyWrap: null,
+      lastNotifiedWeeklyWrap: null,
+      lastNotifiedMonthlyWrap: null,
+      setLastViewedWeeklyWrap: (key) => set({ lastViewedWeeklyWrap: key }),
+      setLastViewedMonthlyWrap: (key) => set({ lastViewedMonthlyWrap: key }),
+      setLastNotifiedWeeklyWrap: (key) => set({ lastNotifiedWeeklyWrap: key }),
+      setLastNotifiedMonthlyWrap: (key) => set({ lastNotifiedMonthlyWrap: key }),
+
+      // Report targets initial values & setters
+      reportSleepTarget: 8,
+      reportScreenTarget: 8,
+      reportTasksTarget: 5,
+      setReportSleepTarget: (hours) => set({ reportSleepTarget: hours }),
+      setReportScreenTarget: (hours) => set({ reportScreenTarget: hours }),
+      setReportTasksTarget: (tasks) => set({ reportTasksTarget: tasks }),
 
       habitsPrayerDefaultExpanded: true,
       setHabitsPrayerDefaultExpanded: (expanded: boolean) => set({ habitsPrayerDefaultExpanded: expanded }),
@@ -432,5 +475,12 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     dashboardMode: state.dashboardMode,
     strategicHorizonDays: state.strategicHorizonDays,
     annualReviewNotesByYear: state.annualReviewNotesByYear,
+    lastViewedWeeklyWrap: state.lastViewedWeeklyWrap,
+    lastViewedMonthlyWrap: state.lastViewedMonthlyWrap,
+    lastNotifiedWeeklyWrap: state.lastNotifiedWeeklyWrap,
+    lastNotifiedMonthlyWrap: state.lastNotifiedMonthlyWrap,
+    reportSleepTarget: state.reportSleepTarget,
+    reportScreenTarget: state.reportScreenTarget,
+    reportTasksTarget: state.reportTasksTarget,
   };
 }

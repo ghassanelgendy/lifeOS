@@ -1,4 +1,4 @@
-import { Menu, X, Settings } from 'lucide-react';
+import { Menu, X, Settings, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
@@ -11,15 +11,18 @@ import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
+import { checkWrapStatus } from '../lib/wrapHelpers';
 
 function MobileNavLink({
   item,
   isMobileSidebarOpen,
   setMobileSidebarOpen,
+  showDot,
 }: {
   item: NavItem;
   isMobileSidebarOpen: boolean;
   setMobileSidebarOpen: (open: boolean) => void;
+  showDot?: boolean;
 }) {
   const match = useMatch({ path: item.href, end: item.href === '/' });
   const isActive = !!match;
@@ -48,11 +51,19 @@ function MobileNavLink({
       end={item.href === '/'}
       onClick={handleClick}
       className={({ isActive: active }) => cn(
-        "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150",
+        "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150 relative",
         active ? "text-foreground" : "text-muted-foreground"
       )}
     >
-      <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+      <div className="relative">
+        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+        {showDot && (
+          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+          </span>
+        )}
+      </div>
       <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
     </NavLink>
   );
@@ -72,12 +83,39 @@ export function AppShell() {
     desktopNavVisible,
     isMobileSidebarOpen,
     setMobileSidebarOpen,
+    lastViewedWeeklyWrap,
+    lastViewedMonthlyWrap,
+    lastNotifiedWeeklyWrap,
+    lastNotifiedMonthlyWrap,
+    setLastNotifiedWeeklyWrap,
+    setLastNotifiedMonthlyWrap,
   } = useUIStore();
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  const mobileNavigation = NAV_ITEMS.filter(item => mobileNavItems.includes(item.href));
+  const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus();
+
+  const showWrappedTakeover = useMemo(() => {
+    const showWeekly = isWeeklyWrapDay && lastViewedWeeklyWrap !== weeklyWrapKey;
+    const showMonthly = isMonthlyWrapDay && lastViewedMonthlyWrap !== monthlyWrapKey;
+    return showWeekly || showMonthly;
+  }, [isWeeklyWrapDay, isMonthlyWrapDay, lastViewedWeeklyWrap, lastViewedMonthlyWrap, weeklyWrapKey, monthlyWrapKey]);
+
+  const mobileNavigationMapped = useMemo(() => {
+    const rawItems = NAV_ITEMS.filter(item => mobileNavItems.includes(item.href));
+    return rawItems.map(item => {
+      if (item.href === '/settings' && showWrappedTakeover) {
+        return {
+          label: isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap',
+          icon: Sparkles,
+          href: '/analytics'
+        };
+      }
+      return item;
+    });
+  }, [mobileNavItems, showWrappedTakeover, isWeeklyWrapDay, isMonthlyWrapDay]);
+
   const desktopNavigation = useMemo(() => {
     const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings');
     const fallback = [...DEFAULT_DESKTOP_NAV];
@@ -87,7 +125,8 @@ export function AppShell() {
     const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
     return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
   }, [desktopNavOrder, desktopNavVisible]);
-  const currentIndex = mobileNavigation.findIndex(
+
+  const currentIndex = mobileNavigationMapped.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
   const isOnTasks = location.pathname === '/tasks';
@@ -95,6 +134,67 @@ export function AppShell() {
   const prevPathRef = useRef<string>(location.pathname);
   const prevIndexRef = useRef<number>(currentIndex);
   const [slideDirection, setSlideDirection] = useState<number>(0);
+
+  const [activeToast, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
+
+  useEffect(() => {
+    const localNotifiedWeekly = localStorage.getItem('local_notified_weekly_wrap');
+    const localNotifiedMonthly = localStorage.getItem('local_notified_monthly_wrap');
+
+    console.log("Wrapped check:", {
+      isWeeklyWrapDay,
+      lastNotifiedWeeklyWrap,
+      weeklyWrapKey,
+      lastViewedWeeklyWrap,
+      localNotifiedWeekly,
+      isMonthlyWrapDay,
+      lastNotifiedMonthlyWrap,
+      monthlyWrapKey,
+      lastViewedMonthlyWrap,
+      localNotifiedMonthly
+    });
+
+    if (isWeeklyWrapDay && 
+        lastNotifiedWeeklyWrap !== weeklyWrapKey && 
+        lastViewedWeeklyWrap !== weeklyWrapKey && 
+        localNotifiedWeekly !== weeklyWrapKey
+    ) {
+      setActiveToast('weekly');
+      setLastNotifiedWeeklyWrap(weeklyWrapKey);
+      localStorage.setItem('local_notified_weekly_wrap', weeklyWrapKey);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification("Weekly Wrapped is Ready!", {
+          body: "Check out your weekly summary, trends, and achievements in the Analytics tab!",
+          icon: "/web-app-manifest-192x192.png"
+        });
+      }
+    } else if (isMonthlyWrapDay && 
+               lastNotifiedMonthlyWrap !== monthlyWrapKey && 
+               lastViewedMonthlyWrap !== monthlyWrapKey && 
+               localNotifiedMonthly !== monthlyWrapKey
+    ) {
+      setActiveToast('monthly');
+      setLastNotifiedMonthlyWrap(monthlyWrapKey);
+      localStorage.setItem('local_notified_monthly_wrap', monthlyWrapKey);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification("Monthly Wrapped is Ready!", {
+          body: "Check out your monthly summary and insights in the Analytics tab!",
+          icon: "/web-app-manifest-192x192.png"
+        });
+      }
+    }
+  }, [
+    isWeeklyWrapDay,
+    isMonthlyWrapDay,
+    weeklyWrapKey,
+    monthlyWrapKey,
+    lastNotifiedWeeklyWrap,
+    lastNotifiedMonthlyWrap,
+    lastViewedWeeklyWrap,
+    lastViewedMonthlyWrap,
+    setLastNotifiedWeeklyWrap,
+    setLastNotifiedMonthlyWrap
+  ]);
 
   useEffect(() => {
     if (prevPathRef.current === location.pathname) return;
@@ -153,12 +253,12 @@ export function AppShell() {
       return;
     }
     if (deltaX > SWIPE_MIN_DELTA && currentIndex > 0) {
-      navigate(mobileNavigation[currentIndex - 1].href);
-    } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigation.length - 1) {
-      navigate(mobileNavigation[currentIndex + 1].href);
+      navigate(mobileNavigationMapped[currentIndex - 1].href);
+    } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigationMapped.length - 1) {
+      navigate(mobileNavigationMapped[currentIndex + 1].href);
     }
     touchStart.current = null;
-  }, [isOnTasks, currentIndex, mobileNavigation, navigate, setMobileSidebarOpen]);
+  }, [isOnTasks, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">
@@ -190,34 +290,66 @@ export function AppShell() {
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 flex flex-col gap-0.5 px-3">
-            {desktopNavigation.map((item) => (
+            {desktopNavigation.map((item) => {
+              const isAnalytics = item.href === '/analytics';
+              const showDot = isAnalytics && showWrappedTakeover;
+              return (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  end={item.href === '/'}
+                  className={({ isActive }) => cn(
+                    "flex items-center gap-4 rounded-xl px-4 py-3.5 text-lg font-medium transition-colors hover:bg-secondary min-h-[3.25rem] relative",
+                    isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
+                  )}
+                  onClick={() => setMobileSidebarOpen(false)}
+                >
+                  <div className="relative">
+                    <item.icon size={26} className="shrink-0" />
+                    {showDot && (
+                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <span className="min-w-0 break-words">{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
+          <div className="p-4 border-t border-border">
+            {showWrappedTakeover ? (
               <NavLink
-                key={item.href}
-                to={item.href}
-                end={item.href === '/'}
+                to="/analytics"
                 className={({ isActive }) => cn(
-                  "flex items-center gap-4 rounded-xl px-4 py-3.5 text-lg font-medium transition-colors hover:bg-secondary min-h-[3.25rem]",
+                  "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-lg font-medium hover:bg-secondary min-h-[3.25rem] relative border border-primary/20 bg-primary/5 text-primary",
+                  isActive ? "bg-primary text-primary-foreground" : ""
+                )}
+                onClick={() => setMobileSidebarOpen(false)}
+              >
+                <Sparkles size={26} className="shrink-0 text-primary animate-pulse" />
+                <span className="min-w-0 break-words font-semibold">
+                  {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
+                </span>
+                <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                </span>
+              </NavLink>
+            ) : (
+              <NavLink
+                to="/settings"
+                className={({ isActive }) => cn(
+                  "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-lg font-medium hover:bg-secondary min-h-[3.25rem]",
                   isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <item.icon size={26} className="shrink-0" />
-                <span className="min-w-0 break-words">{item.label}</span>
+                <Settings size={26} className="shrink-0" />
+                <span className="min-w-0 break-words">Settings</span>
               </NavLink>
-            ))}
-          </nav>
-          <div className="p-4 border-t border-border">
-            <NavLink
-              to="/settings"
-              className={({ isActive }) => cn(
-                "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-lg font-medium hover:bg-secondary min-h-[3.25rem]",
-                isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
-              )}
-              onClick={() => setMobileSidebarOpen(false)}
-            >
-              <Settings size={26} className="shrink-0" />
-              <span className="min-w-0 break-words">Settings</span>
-            </NavLink>
+            )}
           </div>
         </aside>
       </>
@@ -239,35 +371,69 @@ export function AppShell() {
         </div>
 
         <nav className="flex-1 overflow-y-auto py-4 gap-1 flex flex-col px-2">
-          {desktopNavigation.map((item) => (
+          {desktopNavigation.map((item) => {
+            const isAnalytics = item.href === '/analytics';
+            const showDot = isAnalytics && showWrappedTakeover;
+            return (
+              <NavLink
+                key={item.href}
+                to={item.href}
+                end={item.href === '/'}
+                className={({ isActive }) => cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground relative",
+                  isActive ? "bg-secondary text-foreground" : "text-muted-foreground",
+                  isSidebarCollapsed && "justify-center px-2"
+                )}
+              >
+                <div className="relative">
+                  <item.icon size={20} />
+                  {showDot && (
+                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                  )}
+                </div>
+                {!isSidebarCollapsed && <span>{item.label}</span>}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-border">
+          {showWrappedTakeover ? (
             <NavLink
-              key={item.href}
-              to={item.href}
-              end={item.href === '/'}
+              to="/analytics"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground",
+                "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors relative border border-primary/20 bg-primary/5 text-primary",
+                isActive ? "bg-primary text-primary-foreground" : "",
+                isSidebarCollapsed && "justify-center px-2"
+              )}
+            >
+              <Sparkles size={28} className="shrink-0 text-primary animate-pulse" />
+              {!isSidebarCollapsed && (
+                <span className="font-semibold text-primary">
+                  {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
+                </span>
+              )}
+              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </span>
+            </NavLink>
+          ) : (
+            <NavLink
+              to="/settings"
+              className={({ isActive }) => cn(
+                "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors",
                 isActive ? "bg-secondary text-foreground" : "text-muted-foreground",
                 isSidebarCollapsed && "justify-center px-2"
               )}
             >
-              <item.icon size={20} />
-              {!isSidebarCollapsed && <span>{item.label}</span>}
+              <Settings size={28} />
+              {!isSidebarCollapsed && <span>Settings</span>}
             </NavLink>
-          ))}
-        </nav>
-
-        <div className="p-4 border-t border-border">
-          <NavLink
-            to="/settings"
-            className={({ isActive }) => cn(
-              "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors",
-              isActive ? "bg-secondary text-foreground" : "text-muted-foreground",
-              isSidebarCollapsed && "justify-center px-2"
-            )}
-          >
-            <Settings size={28} />
-            {!isSidebarCollapsed && <span>Settings</span>}
-          </NavLink>
+          )}
         </div>
       </aside>
 
@@ -318,6 +484,51 @@ export function AppShell() {
         <AppFooter />
         <FocusSessionManager />
         <FocusPiPWindow />
+
+        {/* Wrap Toast Notification */}
+        {activeToast && (
+          <div className="fixed bottom-20 md:bottom-6 right-4 left-4 md:left-auto md:w-96 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
+            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-xl p-4 shadow-2xl flex gap-3.5 items-start">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/5 to-transparent pointer-events-none" />
+              <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0 relative">
+                <Sparkles size={20} className="animate-pulse" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-sm text-foreground">
+                  {activeToast === 'weekly' ? 'Weekly Wrapped is Ready!' : 'Monthly Wrapped is Ready!'}
+                </h4>
+                <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                  {activeToast === 'weekly' 
+                    ? 'Review your stats, trends, and achievements for the past week.' 
+                    : 'See your comprehensive monthly insights and progress.'}
+                </p>
+                <div className="flex gap-2 mt-3">
+                  <button
+                    onClick={() => {
+                      navigate('/analytics');
+                      setActiveToast(null);
+                    }}
+                    className="px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg shadow-sm cursor-pointer"
+                  >
+                    View Wrapped
+                  </button>
+                  <button
+                    onClick={() => setActiveToast(null)}
+                    className="px-3 py-1.5 text-xs font-semibold hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors rounded-lg cursor-pointer"
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => setActiveToast(null)}
+                className="p-1 hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
         {/* Mobile Bottom Tab Bar */}
@@ -329,14 +540,19 @@ export function AppShell() {
           }}
         >
           <div className="flex justify-around items-center h-16">
-            {mobileNavigation.map((item) => (
-              <MobileNavLink 
-                key={item.href} 
-                item={item} 
-                isMobileSidebarOpen={isMobileSidebarOpen}
-                setMobileSidebarOpen={setMobileSidebarOpen}
-              />
-            ))}
+            {mobileNavigationMapped.map((item) => {
+              const isAnalytics = item.href === '/analytics';
+              const showDot = isAnalytics && showWrappedTakeover;
+              return (
+                <MobileNavLink 
+                  key={item.href} 
+                  item={item} 
+                  isMobileSidebarOpen={isMobileSidebarOpen}
+                  setMobileSidebarOpen={setMobileSidebarOpen}
+                  showDot={showDot}
+                />
+              );
+            })}
           </div>
         </nav>
       </main>
