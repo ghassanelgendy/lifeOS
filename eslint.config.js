@@ -37,6 +37,7 @@ export default defineConfig([
       '@typescript-eslint/no-unused-expressions': 'off',
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-useless-assignment': 'off',
     },
     languageOptions: {
       ecmaVersion: 2020,

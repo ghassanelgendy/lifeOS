@@ -12,6 +12,8 @@ updates:
       dependencies:
         patterns:
           - "*"
+    cooldown:
+      default-days: 1
 
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"

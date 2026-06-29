@@ -46,15 +46,15 @@ jobs:
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray
-            mv lifeOS*.exe lifeOS.exe || true
-            mv lifeOS*.msi lifeOS.msi || true
+            mv [lL]ife[oO][sS]*.exe lifeOS.exe || true
+            mv [lL]ife[oO][sS]*.msi lifeOS.msi || true
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
             pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
-            mv lifeOS*.dmg lifeOS.dmg || true
+            mv [lL]ife[oO][sS]*.dmg lifeOS.dmg || true
           else
             pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
-            mv lifeOS*.deb lifeOS.deb || true
-            mv lifeOS*.AppImage lifeOS.AppImage || true
+            mv [lL]ife[oO][sS]*.deb lifeOS.deb || true
+            mv [lL]ife[oO][sS]*.AppImage lifeOS.AppImage || true
           fi
 
       - name: Upload Desktop Artifacts
