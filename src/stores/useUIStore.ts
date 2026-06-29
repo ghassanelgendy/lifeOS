@@ -172,9 +172,27 @@ interface UIState {
   reportSleepTarget: number;
   reportScreenTarget: number;
   reportTasksTarget: number;
+  reportHabitsTarget: number;
+  reportAutopilotEnabled: boolean;
+  reportSleepTargetCurrent: number;
+  reportScreenTargetCurrent: number;
+  reportHabitsTargetCurrent: number;
+  reportSleepTargetPrevious: number;
+  reportScreenTargetPrevious: number;
+  reportHabitsTargetPrevious: number;
+  lastAutopilotAdjustedWeek: string | null;
   setReportSleepTarget: (hours: number) => void;
   setReportScreenTarget: (hours: number) => void;
   setReportTasksTarget: (tasks: number) => void;
+  setReportHabitsTarget: (pct: number) => void;
+  setReportAutopilotEnabled: (enabled: boolean) => void;
+  setReportSleepTargetCurrent: (hours: number) => void;
+  setReportScreenTargetCurrent: (hours: number) => void;
+  setReportHabitsTargetCurrent: (pct: number) => void;
+  setReportSleepTargetPrevious: (hours: number) => void;
+  setReportScreenTargetPrevious: (hours: number) => void;
+  setReportHabitsTargetPrevious: (pct: number) => void;
+  setLastAutopilotAdjustedWeek: (key: string | null) => void;
 }
 
 /** Serializable UI preferences (localStorage + Supabase). */
@@ -212,6 +230,15 @@ export type PersistedUiSlice = {
   reportSleepTarget: number;
   reportScreenTarget: number;
   reportTasksTarget: number;
+  reportHabitsTarget: number;
+  reportAutopilotEnabled: boolean;
+  reportSleepTargetCurrent: number;
+  reportScreenTargetCurrent: number;
+  reportHabitsTargetCurrent: number;
+  reportSleepTargetPrevious: number;
+  reportScreenTargetPrevious: number;
+  reportHabitsTargetPrevious: number;
+  lastAutopilotAdjustedWeek: string | null;
 };
 
 export const useUIStore = create<UIState>()(
@@ -254,9 +281,27 @@ export const useUIStore = create<UIState>()(
       reportSleepTarget: 8,
       reportScreenTarget: 8,
       reportTasksTarget: 5,
+      reportHabitsTarget: 100,
+      reportAutopilotEnabled: false,
+      reportSleepTargetCurrent: 8,
+      reportScreenTargetCurrent: 8,
+      reportHabitsTargetCurrent: 100,
+      reportSleepTargetPrevious: 8,
+      reportScreenTargetPrevious: 8,
+      reportHabitsTargetPrevious: 100,
+      lastAutopilotAdjustedWeek: null,
       setReportSleepTarget: (hours) => set({ reportSleepTarget: hours }),
       setReportScreenTarget: (hours) => set({ reportScreenTarget: hours }),
       setReportTasksTarget: (tasks) => set({ reportTasksTarget: tasks }),
+      setReportHabitsTarget: (pct) => set({ reportHabitsTarget: pct }),
+      setReportAutopilotEnabled: (enabled) => set({ reportAutopilotEnabled: enabled }),
+      setReportSleepTargetCurrent: (hours) => set({ reportSleepTargetCurrent: hours }),
+      setReportScreenTargetCurrent: (hours) => set({ reportScreenTargetCurrent: hours }),
+      setReportHabitsTargetCurrent: (pct) => set({ reportHabitsTargetCurrent: pct }),
+      setReportSleepTargetPrevious: (hours) => set({ reportSleepTargetPrevious: hours }),
+      setReportScreenTargetPrevious: (hours) => set({ reportScreenTargetPrevious: hours }),
+      setReportHabitsTargetPrevious: (pct) => set({ reportHabitsTargetPrevious: pct }),
+      setLastAutopilotAdjustedWeek: (key) => set({ lastAutopilotAdjustedWeek: key }),
 
       habitsPrayerDefaultExpanded: true,
       setHabitsPrayerDefaultExpanded: (expanded: boolean) => set({ habitsPrayerDefaultExpanded: expanded }),
@@ -482,5 +527,14 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     reportSleepTarget: state.reportSleepTarget,
     reportScreenTarget: state.reportScreenTarget,
     reportTasksTarget: state.reportTasksTarget,
+    reportHabitsTarget: state.reportHabitsTarget,
+    reportAutopilotEnabled: state.reportAutopilotEnabled,
+    reportSleepTargetCurrent: state.reportSleepTargetCurrent,
+    reportScreenTargetCurrent: state.reportScreenTargetCurrent,
+    reportHabitsTargetCurrent: state.reportHabitsTargetCurrent,
+    reportSleepTargetPrevious: state.reportSleepTargetPrevious,
+    reportScreenTargetPrevious: state.reportScreenTargetPrevious,
+    reportHabitsTargetPrevious: state.reportHabitsTargetPrevious,
+    lastAutopilotAdjustedWeek: state.lastAutopilotAdjustedWeek,
   };
 }

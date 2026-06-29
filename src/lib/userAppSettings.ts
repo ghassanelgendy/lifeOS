@@ -174,6 +174,15 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.reportSleepTarget = asNum(remote.reportSleepTarget, 8);
   patch.reportScreenTarget = asNum(remote.reportScreenTarget, 8);
   patch.reportTasksTarget = asNum(remote.reportTasksTarget, 5);
+  patch.reportHabitsTarget = asNum(remote.reportHabitsTarget, 100);
+  patch.reportAutopilotEnabled = asBool(remote.reportAutopilotEnabled, false);
+  patch.reportSleepTargetCurrent = asNum(remote.reportSleepTargetCurrent, asNum(remote.reportSleepTarget, 8));
+  patch.reportScreenTargetCurrent = asNum(remote.reportScreenTargetCurrent, asNum(remote.reportScreenTarget, 8));
+  patch.reportHabitsTargetCurrent = asNum(remote.reportHabitsTargetCurrent, asNum(remote.reportHabitsTarget, 100));
+  patch.reportSleepTargetPrevious = asNum(remote.reportSleepTargetPrevious, asNum(remote.reportSleepTarget, 8));
+  patch.reportScreenTargetPrevious = asNum(remote.reportScreenTargetPrevious, asNum(remote.reportScreenTarget, 8));
+  patch.reportHabitsTargetPrevious = asNum(remote.reportHabitsTargetPrevious, asNum(remote.reportHabitsTarget, 100));
+  patch.lastAutopilotAdjustedWeek = asStrOrNull(remote.lastAutopilotAdjustedWeek);
 
   return patch;
 }

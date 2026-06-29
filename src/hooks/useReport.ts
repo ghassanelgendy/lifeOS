@@ -8,6 +8,7 @@ import { mean, stddev, sum, pctChange } from '../lib/analytics-utils';
 import { generateSuggestions, type Suggestion } from '../lib/reportSuggestions';
 import { formatCurrency } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
+import { checkWrapStatus } from '../lib/wrapHelpers';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -234,7 +235,8 @@ function computeWeekScore(
   prevDays: DayMetrics[],
   sleepTarget: number,
   screenTarget: number,
-  tasksTarget: number
+  tasksTarget: number,
+  habitsTarget: number
 ): { current: number; prev: number } {
   const score = (ds: DayMetrics[]) => {
     if (ds.length === 0) return 50;
@@ -243,9 +245,10 @@ function computeWeekScore(
     const screenAvg = avg(ds.map((d) => d.screenSeconds)) ?? 0;
     const screenScore = Math.max(0, 100 - (screenAvg / (screenTarget * 3600)) * 100);
     const habitsAvg = avg(ds.map((d) => d.habitsAdherencePct)) ?? 0;
+    const habitsScore = habitsTarget > 0 ? Math.min(100, (habitsAvg / habitsTarget) * 100) : 100;
     const tasksTotal = sum(ds.map((d) => d.tasksCompleted));
     const tasksScore = Math.min(100, (tasksTotal / Math.max(1, ds.length * tasksTarget)) * 100);
-    return Math.round((sleepScore * 0.25 + screenScore * 0.2 + habitsAvg * 0.35 + tasksScore * 0.2));
+    return Math.round((sleepScore * 0.25 + screenScore * 0.2 + habitsScore * 0.35 + tasksScore * 0.2));
   };
   return { current: score(days), prev: score(prevDays) };
 }
@@ -306,7 +309,41 @@ function dateRange(start: string, end: string): string[] {
 
 export function useWeeklyReport(weekOffset = 0): ReportData {
   const { user } = useAuth();
-  const { reportSleepTarget, reportScreenTarget, reportTasksTarget } = useUIStore();
+  const {
+    reportSleepTarget,
+    reportScreenTarget,
+    reportTasksTarget,
+    reportHabitsTarget,
+    reportAutopilotEnabled,
+    reportSleepTargetCurrent,
+    reportScreenTargetCurrent,
+    reportHabitsTargetCurrent,
+    reportSleepTargetPrevious,
+    reportScreenTargetPrevious,
+    reportHabitsTargetPrevious,
+    lastAutopilotAdjustedWeek,
+  } = useUIStore();
+
+  const { weeklyWrapKey } = checkWrapStatus();
+
+  const sleepTarget = reportAutopilotEnabled
+    ? (weekOffset === 0
+        ? (lastAutopilotAdjustedWeek === weeklyWrapKey ? reportSleepTargetPrevious : reportSleepTargetCurrent)
+        : reportSleepTarget)
+    : reportSleepTarget;
+
+  const screenTarget = reportAutopilotEnabled
+    ? (weekOffset === 0
+        ? (lastAutopilotAdjustedWeek === weeklyWrapKey ? reportScreenTargetPrevious : reportScreenTargetCurrent)
+        : reportScreenTarget)
+    : reportScreenTarget;
+
+  const habitsTarget = reportAutopilotEnabled
+    ? (weekOffset === 0
+        ? (lastAutopilotAdjustedWeek === weeklyWrapKey ? reportHabitsTargetPrevious : reportHabitsTargetCurrent)
+        : (reportHabitsTarget ?? 100))
+    : (reportHabitsTarget ?? 100);
+
   const bounds = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
   const dates = useMemo(() => dateRange(bounds.weekStart, bounds.weekEnd), [bounds]);
   const prevDates = useMemo(() => dateRange(bounds.prevStart, bounds.prevEnd), [bounds]);
@@ -367,7 +404,7 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
     const prevAvgFinance = avg(prevDays.map((d) => d.financeBalance));
 
     const { best, worst } = computeBestWorstDay(days);
-    const scores = computeWeekScore(days, prevDays, reportSleepTarget, reportScreenTarget, reportTasksTarget);
+    const scores = computeWeekScore(days, prevDays, sleepTarget, screenTarget, reportTasksTarget, habitsTarget);
 
     // 30-day data for suggestions
     const thirtyDates = dateRange(thirtyStart, bounds.weekEnd);
@@ -408,7 +445,21 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
 
 export function useMonthlyReport(monthOffset = 0): ReportData {
   const { user } = useAuth();
-  const { reportSleepTarget, reportScreenTarget, reportTasksTarget } = useUIStore();
+  const {
+    reportSleepTarget,
+    reportScreenTarget,
+    reportTasksTarget,
+    reportHabitsTarget,
+    reportAutopilotEnabled,
+    reportSleepTargetCurrent,
+    reportScreenTargetCurrent,
+    reportHabitsTargetCurrent,
+  } = useUIStore();
+
+  const sleepTarget = reportAutopilotEnabled ? reportSleepTargetCurrent : reportSleepTarget;
+  const screenTarget = reportAutopilotEnabled ? reportScreenTargetCurrent : reportScreenTarget;
+  const habitsTarget = reportAutopilotEnabled ? reportHabitsTargetCurrent : (reportHabitsTarget ?? 100);
+
   const bounds = useMemo(() => getMonthBounds(monthOffset), [monthOffset]);
   const dates = useMemo(() => dateRange(bounds.start, bounds.end), [bounds]);
   const prevDates = useMemo(() => dateRange(bounds.prevStart, bounds.prevEnd), [bounds]);
@@ -462,7 +513,7 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
     const prevAvgFinance = avg(prevDaysArr.map((d) => d.financeBalance));
 
     const { best, worst } = computeBestWorstDay(days);
-    const scores = computeWeekScore(days, prevDaysArr, reportSleepTarget, reportScreenTarget, reportTasksTarget);
+    const scores = computeWeekScore(days, prevDaysArr, sleepTarget, screenTarget, reportTasksTarget, habitsTarget);
 
     return {
       type: 'monthly' as const,

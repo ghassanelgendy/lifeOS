@@ -130,9 +130,19 @@ export default function SettingsPage() {
     reportSleepTarget,
     reportScreenTarget,
     reportTasksTarget,
+    reportHabitsTarget,
+    reportAutopilotEnabled,
+    reportSleepTargetCurrent,
+    reportScreenTargetCurrent,
+    reportHabitsTargetCurrent,
     setReportSleepTarget,
     setReportScreenTarget,
     setReportTasksTarget,
+    setReportHabitsTarget,
+    setReportAutopilotEnabled,
+    setReportSleepTargetCurrent,
+    setReportScreenTargetCurrent,
+    setReportHabitsTargetCurrent,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
@@ -1021,7 +1031,7 @@ export default function SettingsPage() {
                 Customize targets used to calculate your composite weekly and monthly report scores.
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
                   Sleep Target (hours)
@@ -1031,8 +1041,17 @@ export default function SettingsPage() {
                   min={1}
                   max={24}
                   value={reportSleepTarget}
-                  onChange={(e) => setReportSleepTarget(Number(e.target.value) || 8)}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 8;
+                    setReportSleepTarget(val);
+                    if (!reportAutopilotEnabled) setReportSleepTargetCurrent(val);
+                  }}
                 />
+                {reportAutopilotEnabled && (
+                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                    Current active: {reportSleepTargetCurrent}h
+                  </span>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -1043,8 +1062,38 @@ export default function SettingsPage() {
                   min={1}
                   max={24}
                   value={reportScreenTarget}
-                  onChange={(e) => setReportScreenTarget(Number(e.target.value) || 8)}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 8;
+                    setReportScreenTarget(val);
+                    if (!reportAutopilotEnabled) setReportScreenTargetCurrent(val);
+                  }}
                 />
+                {reportAutopilotEnabled && (
+                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                    Current active: {reportScreenTargetCurrent}h
+                  </span>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Habits Target (%)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={reportHabitsTarget}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 100;
+                    setReportHabitsTarget(val);
+                    if (!reportAutopilotEnabled) setReportHabitsTargetCurrent(val);
+                  }}
+                />
+                {reportAutopilotEnabled && (
+                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                    Current active: {reportHabitsTargetCurrent}%
+                  </span>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
@@ -1058,6 +1107,43 @@ export default function SettingsPage() {
                   onChange={(e) => setReportTasksTarget(Number(e.target.value) || 5)}
                 />
               </div>
+            </div>
+
+            {/* Autopilot Targets Option */}
+            <div className="mt-6 pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Target Autopilot</span>
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase">Smart Adjust</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                  When enabled, sleep, screen time, and habit targets will automatically adapt every Saturday to match your actual routine (adjusting halfway between your current target and actual performance) to keep goals realistic and progressive.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !reportAutopilotEnabled;
+                  setReportAutopilotEnabled(nextState);
+                  if (nextState) {
+                    // Initialize current targets to ultimate targets
+                    setReportSleepTargetCurrent(reportSleepTarget);
+                    setReportScreenTargetCurrent(reportScreenTarget);
+                    setReportHabitsTargetCurrent(reportHabitsTarget);
+                  }
+                }}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+                  reportAutopilotEnabled ? "bg-primary" : "bg-secondary"
+                )}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
+                    reportAutopilotEnabled ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
             </div>
           </div>
         </div>
