@@ -17,7 +17,7 @@ const DEFAULT_ACCOUNTS = ['Thndr', 'Fawry'];
 function filterToCurrentUser<T extends { user_id?: string | null }>(
   data: T[],
   currentUserId: string,
-  entityName: string
+  _entityName: string
 ): T[] {
   const own = data.filter((row) => row.user_id == null || row.user_id === currentUserId);
   if (own.length !== data.length) {

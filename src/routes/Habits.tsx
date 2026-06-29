@@ -692,7 +692,7 @@ export default function Habits() {
                   </tr>
                 </thead>
                 <tbody ref={desktopTableRef}>
-                  {groupAndSortHabits(habits).map(({ id, color, isDetox, habits: groupHabits }) => (
+                  {groupAndSortHabits(habits).map(({ id, color: _color, isDetox, habits: groupHabits }) => (
                         <React.Fragment key={id}>
                           {isDetox && (
                             <tr className="bg-transparent h-6">
@@ -821,7 +821,7 @@ export default function Habits() {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 uppercase tracking-wider">Pending</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3" ref={pendingListRef}>
-                    {groupAndSortHabits(scheduledTodayHabits.filter(h => !isHabitCompletedForDay(h.id, today))).map(({ id, color, isDetox, habits: groupHabits }) => (
+                    {groupAndSortHabits(scheduledTodayHabits.filter(h => !isHabitCompletedForDay(h.id, today))).map(({ id, color: _color, isDetox, habits: groupHabits }) => (
                       <React.Fragment key={id}>
                         {isDetox && (
                           <div className="col-span-full mt-2 mb-1">
@@ -829,7 +829,6 @@ export default function Habits() {
                           </div>
                         )}
                         {groupHabits.map((habit: Habit) => {
-                          const isCompleted = false;
                           const stats = getHabitStats(habit);
                           const detoxConfig = getDetoxConfig(habit);
                           const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
@@ -882,7 +881,6 @@ export default function Habits() {
                                     </span>
                                   )}
                                   {(() => {
-                                    const insight = habitInsights[habit.id];
                                     return habit.time ? (
                                       <span className="flex items-center gap-1 flex-shrink-0">
                                         <Clock size={12} />
@@ -907,7 +905,7 @@ export default function Habits() {
                 <div>
                   <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 mt-6 uppercase tracking-wider">Completed</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60" ref={completedListRef}>
-                    {groupAndSortHabits(scheduledTodayHabits.filter(h => isHabitCompletedForDay(h.id, today))).map(({ id, color, isDetox, habits: groupHabits }) => (
+                    {groupAndSortHabits(scheduledTodayHabits.filter(h => isHabitCompletedForDay(h.id, today))).map(({ id, color: _color, isDetox, habits: groupHabits }) => (
                       <React.Fragment key={id}>
                         {isDetox && (
                           <div className="col-span-full mt-2 mb-1">
@@ -915,8 +913,6 @@ export default function Habits() {
                           </div>
                         )}
                         {groupHabits.map((habit: Habit) => {
-                          const isCompleted = true;
-                          const stats = getHabitStats(habit);
                           const detoxConfig = getDetoxConfig(habit);
                           const isDetox = !!detoxConfig;
 

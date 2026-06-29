@@ -1,10 +1,7 @@
 import { DataCard } from '../DataCard';
 import { formatCurrency } from '../../lib/utils';
 import { formatMinutes, formatSeconds, aggregateWeekly } from '../../lib/analytics-utils';
-import { Sparkles, TrendingUp } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, Cell
-} from 'recharts';
+import { Sparkles } from 'lucide-react';
 
 interface AnalyticsOverviewProps {
   rangeDays: number;

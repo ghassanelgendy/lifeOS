@@ -15,9 +15,7 @@ import {
   Link2,
   RefreshCw,
   X,
-  Circle,
-  CheckCircle2,
-  Check
+  Circle
 } from 'lucide-react';
 import {
   format,
@@ -120,7 +118,6 @@ export default function CalendarPage() {
   const [newIcalUrl, setNewIcalUrl] = useState('');
   const [newIcalColor, setNewIcalColor] = useState('#3b82f6');
   const [newIcalName, setNewIcalName] = useState('');
-  const [taskFeedCopyStatus, setTaskFeedCopyStatus] = useState('');
   const createEvent = useCreateCalendarEvent();
   const updateEvent = useUpdateCalendarEvent();
   const deleteEvent = useDeleteCalendarEvent();
@@ -965,7 +962,6 @@ export default function CalendarPage() {
                         const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
                         const isIcal = 'isIcal' in event && event.isIcal;
                         const isIcalTask = isIcal && 'sourceType' in event && event.sourceType === 'task';
-                        const linkedTask = getTaskByEvent(event as ExtendedCalendarEvent);
                         return (
                           <div
                             key={event.id}

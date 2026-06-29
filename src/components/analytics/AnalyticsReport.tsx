@@ -169,7 +169,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
   const [chaosIndex, setChaosIndex] = useState(0);
   const [acceptedChallenges, setAcceptedChallenges] = useState<Record<number, boolean>>({});
   const [rerollAnim, setRerollAnim] = useState(false);
-  const [confetti, setConfetti] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
+  const [confetti, setConfetti] = useState<{ id: number; x: number; y: number; color: string; dx: number; dy: number }[]>([]);
 
   const triggerConfetti = (e: React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -177,7 +177,9 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
       id: Date.now() + i,
       x: rect.left + rect.width / 2 + (Math.random() - 0.5) * 40,
       y: rect.top + rect.height / 2 + (Math.random() - 0.5) * 40,
-      color: ['#ff007f', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff7f00'][Math.floor(Math.random() * 6)]
+      color: ['#ff007f', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff7f00'][Math.floor(Math.random() * 6)],
+      dx: (Math.random() - 0.5) * 200,
+      dy: -Math.random() * 150 - 50
     }));
     setConfetti((prev) => [...prev, ...newParticles]);
     setTimeout(() => {
@@ -676,8 +678,8 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                 left: p.x,
                 top: p.y,
                 backgroundColor: p.color,
-                '--dx': `${(Math.random() - 0.5) * 200}px`,
-                '--dy': `${-Math.random() * 150 - 50}px`,
+                '--dx': `${p.dx}px`,
+                '--dy': `${p.dy}px`,
                 animation: 'particle-fade 1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards'
               } as React.CSSProperties}
             />

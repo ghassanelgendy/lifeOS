@@ -6,7 +6,6 @@ import {
   type AnalyticsRangeDays,
   useAnalyticsDaily,
   useAnalyticsTop,
-  getRangeBounds,
 } from '../hooks/useAnalytics';
 import { useHabits, useHabitInsights, isHabitScheduledForDate } from '../hooks/useHabits';
 import { useQuery } from '@tanstack/react-query';
@@ -107,14 +106,6 @@ export default function Analytics() {
     setSelectedDay(date);
     setSelectedDaySource(source ?? null);
   };
-
-  const prevBounds = useMemo(() => {
-    const now = new Date();
-    const endPrev = new Date(now);
-    endPrev.setDate(endPrev.getDate() - rangeDays);
-    return getRangeBounds(rangeDays, endPrev);
-  }, [rangeDays]);
-
   const financeAgg = useMemo(() => {
     const rows = daily.finance.data ?? [];
     const incomeByDay = rows.map((r) => Number(r.income) || 0);

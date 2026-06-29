@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
@@ -19,6 +19,24 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
 
     const THRESHOLD = 80; // Pixels to pull to trigger refresh
     const MAX_PULL = 120; // Max visual pull distance
+
+    const refresh = useCallback(async () => {
+        setIsRefreshing(true);
+        setPullDistance(THRESHOLD); // Snap to threshold
+
+        try {
+            // Haptic feedback if available
+            if (navigator.vibrate) navigator.vibrate(50);
+
+            // Invalidate all queries
+            await queryClient.invalidateQueries();
+            // Artificial delay to show the spinner
+            await new Promise(resolve => setTimeout(resolve, 800));
+        } finally {
+            setIsRefreshing(false);
+            setPullDistance(0);
+        }
+    }, [queryClient, THRESHOLD]);
 
     useEffect(() => {
         // Add non-passive touch listeners to handle prevention of default scroll
@@ -74,25 +92,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [startY, pullDistance, isRefreshing]);
-
-    const refresh = async () => {
-        setIsRefreshing(true);
-        setPullDistance(THRESHOLD); // Snap to threshold
-
-        try {
-            // Haptic feedback if available
-            if (navigator.vibrate) navigator.vibrate(50);
-
-            // Invalidate all queries
-            await queryClient.invalidateQueries();
-            // Artificial delay to show the spinner
-            await new Promise(resolve => setTimeout(resolve, 800));
-        } finally {
-            setIsRefreshing(false);
-            setPullDistance(0);
-        }
-    };
+    }, [startY, pullDistance, isRefreshing, refresh]);
 
     return (
         <div

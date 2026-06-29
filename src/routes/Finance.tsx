@@ -114,6 +114,10 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 type FinanceTab = 'transactions' | 'banks' | 'investments';
 
+// QNB account filter (visible only when bank is QNB): debit 0050/**7893, credit ****1473
+const QNB_DEBIT = /0050|\*\*7893|7893/;
+const QNB_CREDIT = /1473|\*\*\*1473/;
+
 export default function Finance() {
   const [activeTab, setActiveTab] = useState<FinanceTab>('transactions');
   const { data: transactions = [], isLoading } = useTransactions();
@@ -140,11 +144,7 @@ export default function Finance() {
     if (!user?.id || banksLoading || banks.length > 0 || hasEnsuredDefaults.current) return;
     hasEnsuredDefaults.current = true;
     ensureDefaultBanks.mutate();
-  }, [user?.id, banksLoading, banks.length]);
-
-  // QNB account filter (visible only when bank is QNB): debit 0050/**7893, credit ****1473
-  const QNB_DEBIT = /0050|\*\*7893|7893/;
-  const QNB_CREDIT = /1473|\*\*\*1473/;
+  }, [user?.id, banksLoading, banks.length, ensureDefaultBanks]);
 
   // Ensure default investment accounts (Thndr, Fawry) exist once
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function Finance() {
     }
     hasEnsuredInvDefaults.current = true;
     ensureDefaultInvestmentAccounts.mutate();
-  }, [user?.id, invAccountsLoading, investmentAccounts.length, activeTab]);
+  }, [user?.id, invAccountsLoading, investmentAccounts.length, activeTab, ensureDefaultInvestmentAccounts]);
 
   const [selectedBank, setSelectedBank] = useState<string>(''); // '' = All (consolidated)
   const [selectedQNBAccount, setSelectedQNBAccount] = useState<'all' | 'debit' | 'credit'>('all'); // Only when bank is QNB

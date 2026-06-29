@@ -20,7 +20,6 @@ interface DayData {
 }
 
 const DOW_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const DOW_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function groupByDow(days: DayData[], key: keyof DayData): Map<number, number[]> {
   const map = new Map<number, number[]>();

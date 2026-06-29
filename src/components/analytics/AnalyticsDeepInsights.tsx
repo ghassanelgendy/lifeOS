@@ -18,7 +18,7 @@ interface AnalyticsDeepInsightsProps {
 
 export function AnalyticsDeepInsights({
   crossRelationships,
-  selectedRelId,
+  selectedRelId: _selectedRelId,
   setSelectedRelId,
   selectedRelationship,
   crossView,

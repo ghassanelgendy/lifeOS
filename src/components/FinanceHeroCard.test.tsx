@@ -5,7 +5,7 @@ import { CURRENCY_SYMBOL } from '../lib/utils';
 
 describe('FinanceHeroCard Component', () => {
   it('renders positive balance correctly', () => {
-    const { container } = render(
+    render(
       <FinanceHeroCard income={5000} expenses={2000} balance={3000} privacyMode={false} />
     );
     

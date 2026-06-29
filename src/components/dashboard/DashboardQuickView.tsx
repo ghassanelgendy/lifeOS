@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
@@ -413,8 +413,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     [quickViewHabits, today],
   );
 
-  const isHabitDoneToday = (habitId: string) =>
-    todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed);
+  const isHabitDoneToday = useCallback(
+    (habitId: string) => todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed),
+    [todayLogs, todayStr]
+  );
 
   const completedTodayPrayers = useMemo(
     () => prayerTracker.filter((p) => isPrayerStatusComplete(p.status)).length,
@@ -423,7 +425,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   const completedTodayStandard = useMemo(
     () => habitsDueToday.filter((h) => isHabitDoneToday(h.id)).length,
-    [habitsDueToday, todayLogs, todayStr],
+    [habitsDueToday, isHabitDoneToday],
   );
 
   const todayHabitTotal = 5 + habitsDueToday.length;
@@ -451,7 +453,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   const dueTodayIncompleteHabits = useMemo(
     () => habitsDueToday.filter((h) => !isHabitDoneToday(h.id)),
-    [habitsDueToday, todayLogs, todayStr],
+    [habitsDueToday, isHabitDoneToday],
   );
 
   const dueTodayBundleCount = useMemo(() => {
@@ -523,7 +525,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       otherPct: pct(adjustedOther),
       restPct: pct(rest),
     };
-  }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.otherMinutes, todaySleepMinutes]);
+  }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.otherMinutes, todaySleepMinutes, timelineBlocks]);
 
   const progressMarkerClusters = useMemo(() => {
     const dayMinutes = 24 * 60;
@@ -630,7 +632,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     }
 
     return clusters;
-  }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr, habitAverages]);
+  }, [completedTasks, habitsDueToday, prayerTimesList, prayerTracker, today, todayLogs, todayStr, upcomingItems]);
 
   const formatItemWhen = (item: (typeof upcomingItems)[0]) => {
     const isHabit = item.kind === 'habit';

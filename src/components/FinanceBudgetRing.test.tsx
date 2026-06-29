@@ -5,7 +5,7 @@ import { CURRENCY_SYMBOL } from '../lib/utils';
 
 describe('FinanceBudgetRing Component', () => {
   it('renders correctly when under budget', () => {
-    const { container } = render(
+    render(
       <FinanceBudgetRing totalBudget={1000} totalSpent={400} privacyMode={false} />
     );
     

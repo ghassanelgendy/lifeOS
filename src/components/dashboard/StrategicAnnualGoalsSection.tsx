@@ -46,7 +46,7 @@ function QuarterBlock({
       m.set(row.quarter, list);
     }
     return m;
-  }, [quarters, goal.id]);
+  }, [quarters]);
 
   return (
     <div className="mt-3 space-y-2 border-t border-border pt-3">

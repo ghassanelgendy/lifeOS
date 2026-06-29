@@ -114,8 +114,6 @@ export default function SettingsPage() {
     setDefaultTaskView,
     defaultTaskListId,
     setDefaultTaskListId,
-    habitsPrayerDefaultExpanded,
-    setHabitsPrayerDefaultExpanded,
     dashboardMode,
     setDashboardMode,
     pageWidgetOrder,
