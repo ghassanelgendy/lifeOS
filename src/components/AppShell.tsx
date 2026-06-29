@@ -138,8 +138,14 @@ export function AppShell() {
   const [activeToast, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
 
   useEffect(() => {
-    const localNotifiedWeekly = localStorage.getItem('local_notified_weekly_wrap');
-    const localNotifiedMonthly = localStorage.getItem('local_notified_monthly_wrap');
+    let localNotifiedWeekly: string | null = null;
+    let localNotifiedMonthly: string | null = null;
+    try {
+      localNotifiedWeekly = localStorage.getItem('local_notified_weekly_wrap');
+      localNotifiedMonthly = localStorage.getItem('local_notified_monthly_wrap');
+    } catch (e) {
+      console.warn("Storage read failed:", e);
+    }
 
     console.log("Wrapped check:", {
       isWeeklyWrapDay,
@@ -161,12 +167,27 @@ export function AppShell() {
     ) {
       setActiveToast('weekly');
       setLastNotifiedWeeklyWrap(weeklyWrapKey);
-      localStorage.setItem('local_notified_weekly_wrap', weeklyWrapKey);
+      try {
+        localStorage.setItem('local_notified_weekly_wrap', weeklyWrapKey);
+      } catch (e) {
+        console.warn("Storage write failed:", e);
+      }
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification("Weekly Wrapped is Ready!", {
-          body: "Check out your weekly summary, trends, and achievements in the Analytics tab!",
-          icon: "/web-app-manifest-192x192.png"
-        });
+        try {
+          new Notification("Weekly Wrapped is Ready!", {
+            body: "Check out your weekly summary, trends, and achievements in the Analytics tab!",
+            icon: "/web-app-manifest-192x192.png"
+          });
+        } catch {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((reg) => {
+              reg.showNotification("Weekly Wrapped is Ready!", {
+                body: "Check out your weekly summary, trends, and achievements in the Analytics tab!",
+                icon: "/web-app-manifest-192x192.png"
+              });
+            }).catch(() => {});
+          }
+        }
       }
     } else if (isMonthlyWrapDay && 
                !isWeeklyWrapDay &&
@@ -176,12 +197,27 @@ export function AppShell() {
     ) {
       setActiveToast('monthly');
       setLastNotifiedMonthlyWrap(monthlyWrapKey);
-      localStorage.setItem('local_notified_monthly_wrap', monthlyWrapKey);
+      try {
+        localStorage.setItem('local_notified_monthly_wrap', monthlyWrapKey);
+      } catch (e) {
+        console.warn("Storage write failed:", e);
+      }
       if ('Notification' in window && Notification.permission === 'granted') {
-        new Notification("Monthly Wrapped is Ready!", {
-          body: "Check out your monthly summary and insights in the Analytics tab!",
-          icon: "/web-app-manifest-192x192.png"
-        });
+        try {
+          new Notification("Monthly Wrapped is Ready!", {
+            body: "Check out your monthly summary and insights in the Analytics tab!",
+            icon: "/web-app-manifest-192x192.png"
+          });
+        } catch {
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.ready.then((reg) => {
+              reg.showNotification("Monthly Wrapped is Ready!", {
+                body: "Check out your monthly summary and insights in the Analytics tab!",
+                icon: "/web-app-manifest-192x192.png"
+              });
+            }).catch(() => {});
+          }
+        }
       }
     }
   }, [
