@@ -109,8 +109,10 @@ export default function CalendarPage() {
   const { subscriptionList, addUrl: addIcalUrl, removeUrl: removeIcalUrl, replaceUrls: replaceIcalUrls, setColor: setIcalColor, setName: setIcalName } = useIcalSubscriptions();
   const { data: icalEvents = [] } = useIcalSubscriptionEvents(calendarStart, calendarEnd, subscriptionList);
   const {
+    feed: taskCalendarFeed,
     feedUrl: taskCalendarFeedUrl,
     resetToken: resetTaskCalendarFeedToken,
+    updateFeed: updateTaskCalendarFeed,
     isLoading: isTaskCalendarFeedLoading,
     error: taskCalendarFeedError,
   } = useTaskCalendarFeed();
@@ -351,6 +353,7 @@ export default function CalendarPage() {
   };
 
   const isTaskCalendarFeedVisible = !!taskCalendarFeedUrl && subscriptionList.some((sub) => sub.url === taskCalendarFeedUrl);
+  const webcalFeedUrl = taskCalendarFeedUrl ? taskCalendarFeedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
   const handleShowTaskCalendarFeed = () => {
     if (!taskCalendarFeedUrl || isTaskCalendarFeedVisible) return;
     addIcalUrl(taskCalendarFeedUrl, '#a855f7', 'LifeOS feed');
@@ -360,7 +363,7 @@ export default function CalendarPage() {
     try {
       const parsed = new URL(url);
       const currentFeed = taskCalendarFeedUrl ? new URL(taskCalendarFeedUrl) : new URL('/api/calendar/tasks', window.location.origin);
-      return parsed.origin === currentFeed.origin && parsed.pathname === '/api/calendar/tasks';
+      return parsed.origin === currentFeed.origin && (parsed.pathname === currentFeed.pathname || parsed.pathname === '/api/calendar/tasks');
     } catch {
       return false;
     }
@@ -1106,27 +1109,44 @@ export default function CalendarPage() {
               </div>
             )}
 
-            {/* Task calendar feed */}
+            {/* LifeOS Calendar Feed */}
             <div className="mt-6 pt-4 border-t border-border">
               <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
                 <CalendarPlus size={12} />
-                Task calendar feed
+                LifeOS Calendar Feed
               </h4>
               <p className="text-xs text-muted-foreground mb-2">
-                Subscribe from Apple Calendar, Google Calendar, or Outlook. Tasks with a date appear in the feed; timed tasks use their duration.
+                Subscribe from Apple Calendar (iOS/macOS), Google Calendar, or Outlook. This feed dynamically includes your tasks (with due dates), active habits, and calendar events. Edits you make in LifeOS sync automatically.
               </p>
               {taskCalendarFeedError ? (
                 <p className="text-xs text-destructive">
-                  Task calendar link unavailable.
+                  Calendar feed link unavailable.
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <input
                     type="text"
                     value={isTaskCalendarFeedLoading ? 'Preparing link...' : taskCalendarFeedUrl}
                     readOnly
                     className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground"
                   />
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="feed-include-completed"
+                      className="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+                      checked={taskCalendarFeed?.include_completed ?? false}
+                      disabled={updateTaskCalendarFeed.isPending || isTaskCalendarFeedLoading}
+                      onChange={(e) => {
+                        updateTaskCalendarFeed.mutate({ include_completed: e.target.checked });
+                      }}
+                    />
+                    <label htmlFor="feed-include-completed" className="text-xs text-muted-foreground cursor-pointer select-none">
+                      Include completed items
+                    </label>
+                  </div>
+
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"
@@ -1138,6 +1158,16 @@ export default function CalendarPage() {
                       <Copy size={14} />
                       Copy link
                     </Button>
+                    {taskCalendarFeedUrl && (
+                      <a
+                        href={webcalFeedUrl}
+                        className="inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-colors border border-border bg-transparent hover:bg-secondary min-h-[44px] h-8 px-3 text-xs md:min-h-0"
+                        title="Subscribe directly in Apple Calendar / iOS Calendar"
+                      >
+                        <CalendarPlus size={14} />
+                        Subscribe (iOS/macOS)
+                      </a>
+                    )}
                     <Button
                       type="button"
                       variant="outline"

@@ -42,9 +42,8 @@ function generateToken(): string {
 
 function buildFeedUrl(token: string | undefined): string {
   if (!token || typeof window === 'undefined') return '';
-  const configuredOrigin = import.meta.env.VITE_PUBLIC_APP_URL?.replace(/\/$/, '');
-  const origin = configuredOrigin || window.location.origin;
-  return `${origin}/api/calendar/tasks?token=${encodeURIComponent(token)}`;
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.replace(/\/$/, '');
+  return `${supabaseUrl}/functions/v1/calendar-feed?token=${encodeURIComponent(token)}`;
 }
 
 function feedPayload(userId: string): Pick<TaskCalendarFeed, 'user_id' | 'token' | 'name' | 'time_zone' | 'include_completed'> {
@@ -101,10 +100,30 @@ export function useTaskCalendarFeed() {
     },
   });
 
+  const updateFeed = useMutation({
+    mutationFn: async (
+      updates: Partial<Pick<TaskCalendarFeed, 'name' | 'time_zone' | 'include_completed'>>
+    ): Promise<TaskCalendarFeed> => {
+      if (!user?.id) throw new Error('Not signed in');
+      const { data, error } = await supabase
+        .from('task_calendar_feeds')
+        .update(updates)
+        .eq('user_id', user.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      return data as TaskCalendarFeed;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id] });
+    },
+  });
+
   return {
     feed: query.data,
     feedUrl: buildFeedUrl(query.data?.token),
     resetToken,
+    updateFeed,
     isLoading: query.isLoading,
     error: query.error,
   };
