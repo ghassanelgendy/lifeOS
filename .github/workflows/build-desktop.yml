@@ -1,19 +1,16 @@
 name: Build Desktop Apps (Pake)
 
 on:
-  push:
-    branches:
-      - main
-  release:
-    types: [published]
+  schedule:
+    # Trigger at 10:00 PM (22:00) UTC+3 on the 29th of every month
+    # UTC+3 timezone means 10:00 PM local is 7:00 PM UTC (19:00)
+    - cron: '0 19 29 * *'
   workflow_dispatch: # Allows manual trigger for testing
 
 jobs:
   build:
     name: Build Desktop Application
     runs-on: ${{ matrix.os }}
-    permissions:
-      contents: write
     strategy:
       matrix:
         os: [windows-latest, macos-latest, ubuntu-22.04]
@@ -41,40 +38,77 @@ jobs:
 
       - name: Build Application with Pake
         env:
-          # Uses the PRODUCTION_URL repository variable, with the correct Vercel fallback
           APP_URL: ${{ vars.PRODUCTION_URL || 'https://life-os-tan.vercel.app/' }}
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
             pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray
+            mv lifeOS*.exe lifeOS.exe || true
+            mv lifeOS*.msi lifeOS.msi || true
+          elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
+            mv lifeOS*.dmg lifeOS.dmg || true
           else
             pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
+            mv lifeOS*.deb lifeOS.deb || true
+            mv lifeOS*.AppImage lifeOS.AppImage || true
           fi
 
-      - name: Upload Artifacts to Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.event.release.tag_name || 'latest' }}
-          name: ${{ github.event.release.name || 'Latest Desktop Build' }}
-          body: ${{ github.event.release.body || 'This is the latest automated desktop build of lifeOS, compiled on every push to main.' }}
-          prerelease: ${{ github.event.release.prerelease || true }}
-          files: |
-            *.exe
-            *.msi
-            *.dmg
-            *.deb
-            *.AppImage
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Artifacts to Actions (Backup)
+      - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: desktop-app-${{ matrix.os }}
           path: |
-            *.exe
-            *.msi
-            *.dmg
-            *.deb
-            *.AppImage
-          retention-days: 7
+            lifeOS.exe
+            lifeOS.msi
+            lifeOS.dmg
+            lifeOS.deb
+            lifeOS.AppImage
+          if-no-files-found: ignore
+          retention-days: 3
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+          merge-multiple: true
+
+      - name: Get current date
+        id: date
+        run: |
+          echo "tag=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
+          echo "tag_readable=$(date +'%B %d, %Y')" >> $GITHUB_OUTPUT
+
+      - name: Create Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.date.outputs.tag }}
+          name: lifeOS Desktop v${{ steps.date.outputs.tag }} (${{ steps.date.outputs.tag_readable }})
+          body: |
+            # 🌟 lifeOS Desktop Release - ${{ steps.date.outputs.tag_readable }}
+            
+            This is an automated monthly release of the lifeOS desktop application compiled using Pake.
+            
+            ### 📥 Download Links
+            
+            - 🍎 **macOS**: [Download DMG](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.dmg)
+            - 💻 **Windows**: [Download EXE](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.exe) | [Download MSI](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.msi)
+            - 🐧 **Linux**: [Download AppImage](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.AppImage) | [Download DEB](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.deb)
+            
+            ---
+            *Compiled automatically on the 29th of the month at 10:00 PM local time.*
+          prerelease: false
+          draft: false
+          files: release-artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

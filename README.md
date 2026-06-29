@@ -7,6 +7,21 @@
     <a href="https://life-os-tan.vercel.app"><b>✨ View Live Demo ✨</b></a>
   </p>
 
+  <p>
+    <b>📥 Download Desktop App:</b><br />
+    <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.dmg">
+      <img src="https://img.shields.io/badge/macOS-Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS DMG" />
+    </a>
+    <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.exe">
+      <img src="https://img.shields.io/badge/Windows-Download-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows EXE" />
+    </a>
+    <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.AppImage">
+      <img src="https://img.shields.io/badge/Linux-Download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download Linux AppImage" />
+    </a>
+    <br />
+    <small>Alternative formats: <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.msi">Windows MSI</a> | <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.deb">Linux DEB</a></small>
+  </p>
+
   ![Hero Mockup](./public/1.jpeg)
   
   <div>
