@@ -381,7 +381,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const { data: events, error: eventsError } = await supabase
     .from('calendar_events')
-    .select('id,title,type,start_time,end_time,all_day,description,location,recurrence,recurrence_end,created_at,updated_at')
+    .select('id,title,type,start_time,end_time,all_day,description,location,recurrence,recurrence_end,created_at')
     .eq('user_id', typedFeed.user_id)
     .order('start_time', { ascending: true });
 

@@ -195,7 +195,7 @@ Deno.serve(async (req: Request) => {
     // 3. Fetch Calendar Events
     const { data: events, error: eventsError } = await supabase
       .from('calendar_events')
-      .select('id, title, type, start_time, end_time, all_day, description, location, recurrence, recurrence_end, created_at, updated_at')
+      .select('id, title, type, start_time, end_time, all_day, description, location, recurrence, recurrence_end, created_at')
       .eq('user_id', userId);
 
     if (eventsError) throw eventsError;
@@ -346,9 +346,10 @@ Deno.serve(async (req: Request) => {
         
         // Check if habit is scheduled for this day
         let isScheduled = false;
-        if (habit.frequency === 'daily') {
+        const freq = (habit.frequency || '').toLowerCase();
+        if (freq === 'daily') {
           isScheduled = true;
-        } else if (habit.frequency === 'weekly') {
+        } else if (freq === 'weekly') {
           if (!habit.week_days || habit.week_days.length === 0) {
             isScheduled = true;
           } else {
