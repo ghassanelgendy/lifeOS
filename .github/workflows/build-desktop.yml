@@ -1,6 +1,9 @@
 name: Build Desktop Apps (Pake)
 
 on:
+  push:
+    branches:
+      - main
   schedule:
     # Trigger at 10:00 PM (22:00) UTC+3 on the 29th of every month
     # UTC+3 timezone means 10:00 PM local is 7:00 PM UTC (19:00)
@@ -83,31 +86,40 @@ jobs:
           path: release-artifacts
           merge-multiple: true
 
-      - name: Get current date
-        id: date
+      - name: Determine release parameters
+        id: params
+        shell: bash
         run: |
-          echo "tag=$(date +'%Y.%m.%d')" >> $GITHUB_OUTPUT
-          echo "tag_readable=$(date +'%B %d, %Y')" >> $GITHUB_OUTPUT
+          DATE_TAG=$(date +'%Y.%m.%d')
+          DATE_READABLE=$(date +'%B %d, %Y')
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "name=Latest Desktop Build" >> $GITHUB_OUTPUT
+            echo "prerelease=true" >> $GITHUB_OUTPUT
+            
+            echo "body<<EOF" >> $GITHUB_OUTPUT
+            echo "This is the latest automated rolling desktop build of lifeOS, compiled on every push to main." >> $GITHUB_OUTPUT
+            echo "For stable monthly releases, see the dated releases below." >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "tag=v${DATE_TAG}" >> $GITHUB_OUTPUT
+            echo "name=lifeOS Desktop v${DATE_TAG} (${DATE_READABLE})" >> $GITHUB_OUTPUT
+            echo "prerelease=false" >> $GITHUB_OUTPUT
+            
+            echo "body<<EOF" >> $GITHUB_OUTPUT
+            echo "# 🌟 lifeOS Desktop Release - ${DATE_READABLE}" >> $GITHUB_OUTPUT
+            echo "" >> $GITHUB_OUTPUT
+            echo "This is an automated monthly release of the lifeOS desktop application compiled using Pake." >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.date.outputs.tag }}
-          name: lifeOS Desktop v${{ steps.date.outputs.tag }} (${{ steps.date.outputs.tag_readable }})
-          body: |
-            # 🌟 lifeOS Desktop Release - ${{ steps.date.outputs.tag_readable }}
-            
-            This is an automated monthly release of the lifeOS desktop application compiled using Pake.
-            
-            ### 📥 Download Links
-            
-            - 🍎 **macOS**: [Download DMG](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.dmg)
-            - 💻 **Windows**: [Download EXE](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.exe) | [Download MSI](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.msi)
-            - 🐧 **Linux**: [Download AppImage](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.AppImage) | [Download DEB](https://github.com/${{ github.repository }}/releases/download/v${{ steps.date.outputs.tag }}/lifeOS.deb)
-            
-            ---
-            *Compiled automatically on the 29th of the month at 10:00 PM local time.*
-          prerelease: false
+          tag_name: ${{ steps.params.outputs.tag }}
+          name: ${{ steps.params.outputs.name }}
+          body: ${{ steps.params.outputs.body }}
+          prerelease: ${{ steps.params.outputs.prerelease == 'true' }}
           draft: false
           files: release-artifacts/*
         env:
