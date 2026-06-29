@@ -213,40 +213,6 @@ export default function Analytics() {
     enabled: !!user?.id && activePrayerHabits.length > 0,
   });
 
-  const prayerSummary = useMemo(() => {
-    if (!activePrayerHabits.length) return null;
-    const total = activePrayerHabits.length;
-    const logsByDate = new Map<string, Map<string, string>>();
-    for (const log of prayerLogsRange) {
-      const byPrayer = logsByDate.get(log.date) ?? new Map<string, string>();
-      byPrayer.set(log.prayer_habit_id, log.status);
-      logsByDate.set(log.date, byPrayer);
-    }
-    let doneDays = 0;
-    let totalSlots = 0;
-    const PRAYER_NAMES: Record<string, string> = {
-      Fajr: 'Fajr', Dhuhr: 'Dhuhr', Asr: 'Asr', Maghrib: 'Maghrib', Isha: 'Isha',
-    };
-    const dates = eachDateInclusive(daily.bounds.start, daily.bounds.end);
-    for (const date of dates) {
-      const byPrayer = logsByDate.get(date) ?? new Map();
-      for (const ph of activePrayerHabits) {
-        if (ph.created_at && ph.created_at.slice(0, 10) > date) continue;
-        totalSlots++;
-        const status = byPrayer.get(ph.id);
-        if (isPrayerStatusComplete(status as any)) doneDays++;
-      }
-    }
-    return {
-      total,
-      doneDays,
-      totalSlots,
-      adherencePct: totalSlots > 0 ? Math.round((doneDays / totalSlots) * 100) : 0,
-      prayerNames: activePrayerHabits.map((p) => PRAYER_NAMES[p.prayer_name] ?? p.prayer_name),
-      logsByDate,
-    };
-  }, [daily.bounds, activePrayerHabits, prayerLogsRange]);
-
   const missedByDate = useMemo(() => {
     const habitLogsByDate = new Map<string, Map<string, boolean>>();
     for (const log of habitLogsRange) {
@@ -777,7 +743,6 @@ export default function Analytics() {
             habitsAgg={habitsAgg}
             allHabits={allHabits}
             habitInsights={habitInsights}
-            prayerSummary={prayerSummary}
             daily={daily}
             missedByDate={missedByDate}
             rangeLabel={rangeLabel}

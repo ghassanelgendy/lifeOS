@@ -146,7 +146,7 @@ export function AnalyticsDeepInsights({
                             fontSize: 12,
                             padding: '10px 12px',
                           }}
-                          formatter={(value: unknown, name?: string) => [String(value), name ?? '']}
+                          formatter={(value: any, name: any) => [String(value), name ?? '']}
                           labelFormatter={(_, payload) => (payload?.[0]?.payload as { date?: string } | undefined)?.date ?? ''}
                         />
                         <Scatter

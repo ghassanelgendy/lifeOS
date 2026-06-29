@@ -614,7 +614,7 @@ export function useToggleTask() {
 
       return { previousTasks };
     },
-    onError: (err, newTodo, context: any) => {
+    onError: (_err, _newTodo, context: any) => {
       if (context?.previousTasks) {
         context.previousTasks.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);

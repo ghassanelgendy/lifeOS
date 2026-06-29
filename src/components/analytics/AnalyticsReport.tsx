@@ -226,15 +226,15 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
       setReportHabitsTargetPrevious(reportHabitsTargetCurrent);
 
       // Calculate next targets
-      const actualSleep = weeklyData.avgSleepMinutes / 60;
+      const actualSleep = (weeklyData.avgSleepMinutes ?? (reportSleepTargetCurrent * 60)) / 60;
       const rawNextSleep = reportSleepTargetCurrent + (actualSleep - reportSleepTargetCurrent) * 0.5;
       const nextSleep = Math.min(reportSleepTarget, rawNextSleep);
 
-      const actualScreen = weeklyData.avgScreenSeconds / 3600;
+      const actualScreen = (weeklyData.avgScreenSeconds ?? (reportScreenTargetCurrent * 3600)) / 3600;
       const rawNextScreen = reportScreenTargetCurrent + (actualScreen - reportScreenTargetCurrent) * 0.5;
       const nextScreen = Math.max(reportScreenTarget, rawNextScreen);
 
-      const rawNextHabits = reportHabitsTargetCurrent + (weeklyData.avgHabitsAdherence - reportHabitsTargetCurrent) * 0.5;
+      const rawNextHabits = reportHabitsTargetCurrent + ((weeklyData.avgHabitsAdherence ?? reportHabitsTargetCurrent) - reportHabitsTargetCurrent) * 0.5;
       const nextHabits = Math.min(reportHabitsTarget, rawNextHabits);
 
       const updatedSleep = Math.round(nextSleep * 10) / 10;
@@ -585,7 +585,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                   contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
                   itemStyle={{ color: 'var(--color-foreground)' }}
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}
-                  formatter={(v: number) => [`${v}%`, 'Adherence']}
+                  formatter={(v: any) => [`${v}%`, 'Adherence']}
                 />
                 <Bar dataKey="adherence" radius={[6, 6, 0, 0]}>
                   {data.habitsByDow.map((entry, i) => (

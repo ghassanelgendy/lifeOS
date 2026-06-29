@@ -912,7 +912,7 @@ export default function Finance() {
                       tickLine={false}
                     />
                     <Tooltip
-                      formatter={(value: number | undefined) => [formatCurrency(value ?? 0), 'Spent']}
+                      formatter={(value: any) => [formatCurrency(value ?? 0), 'Spent']}
                       contentStyle={{
                         backgroundColor: 'var(--color-card)',
                         border: '1px solid var(--color-border)',

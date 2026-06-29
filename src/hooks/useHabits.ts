@@ -374,7 +374,7 @@ export function useLogHabit() {
 
       return { previousLogs };
     },
-    onError: (err, newLog, context: any) => {
+    onError: (_err, _newLog, context: any) => {
       if (context?.previousLogs) {
         context.previousLogs.forEach(([queryKey, data]: [any, any]) => {
           queryClient.setQueryData(queryKey, data);

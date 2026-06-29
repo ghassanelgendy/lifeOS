@@ -377,7 +377,7 @@ export function usePrayerTracker(date: Date = new Date()) {
 
       return { previousLogs, todayKey };
     },
-    onError: (err, variables, context: any) => {
+    onError: (_err, _variables, context: any) => {
       if (context?.previousLogs) {
         queryClient.setQueryData(context.todayKey, context.previousLogs);
       }
