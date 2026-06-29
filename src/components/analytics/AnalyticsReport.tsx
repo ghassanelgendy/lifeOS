@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
   Moon, Monitor, CheckSquare, Flame, Wallet, Trophy, TrendingDown, TrendingUp,
@@ -12,6 +12,7 @@ import {
 import { cn, formatCurrency } from '../../lib/utils';
 import { useUIStore } from '../../stores/useUIStore';
 import { useWeeklyReport, useMonthlyReport, type ReportData } from '../../hooks/useReport';
+import { checkWrapStatus } from '../../lib/wrapHelpers';
 import { AnimatedCounter } from './AnimatedCounter';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -116,6 +117,19 @@ function ExpandableCard({ children, expandedContent, className, onClick, default
 
 // ── Main Component ───────────────────────────────────────────────────
 
+const CHAOS_SUGGESTIONS = [
+  { icon: '😴', title: 'Speed Sleeping', detail: "Sleep twice as fast for 4 hours. It's simple math. You'll wake up with 4 extra hours of free productivity." },
+  { icon: '🐢', title: 'Turtle Mail Courier', detail: "Tape your phone to a local turtle. When you feel the urge to check notifications, you'll have to hunt the turtle down first." },
+  { icon: '🧊', title: 'Cryo-Card Locking', detail: "Freeze your credit cards in a solid block of ice. If you want to make an impulse purchase, you have to wait 3 hours for it to melt." },
+  { icon: '🍜', title: 'Wet Noodle Motivation', detail: "Pay a friend to hide in your closet and gently slap a wet noodle against your arm every time you skip a habit." },
+  { icon: '🖨️', title: 'Analog Screen Scrolling', detail: "Print out your entire Instagram or TikTok feed on A4 paper and scroll through it manually using your thumb. Save 100% battery." },
+  { icon: '🥁', title: 'Boss Battle Marching Band', detail: "Hire a local high school marching band to play dramatic boss-level battle music behind you until you finish your tasks." },
+  { icon: '🏷️', title: 'Semantics Rebranding', detail: "Rename all your uncompleted habits to 'Detox Challenges'. That way, if you didn't do them, you successfully completed a detox!" },
+  { icon: '🎩', title: 'Monopoly Exchange Rate', detail: "Convert all your actual savings into Monopoly money. You'll instantly stop spending money on unnecessary items." },
+  { icon: '💣', title: 'Extreme Accountability', detail: "Email your boss saying you will delete production if you don't finish your task by 5 PM. High stakes productivity." },
+  { icon: '☕', title: 'Hard Mode Sleep Practice', detail: "Drink 4 double-shot espressos right before bed to practice falling asleep on extreme difficulty. True mastery." }
+];
+
 interface AnalyticsReportProps {
   onDismiss: () => void;
   isWeeklyWrapDay: boolean;
@@ -124,15 +138,134 @@ interface AnalyticsReportProps {
 }
 
 export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, onOpenDayDetails }: AnalyticsReportProps) {
-  const { privacyMode } = useUIStore();
+  const {
+    privacyMode,
+    reportSleepTarget,
+    reportScreenTarget,
+    reportHabitsTarget,
+    reportAutopilotEnabled,
+    reportSleepTargetCurrent,
+    reportScreenTargetCurrent,
+    reportHabitsTargetCurrent,
+    reportSleepTargetPrevious,
+    reportScreenTargetPrevious,
+    reportHabitsTargetPrevious,
+    lastAutopilotAdjustedWeek,
+    setReportSleepTargetCurrent,
+    setReportScreenTargetCurrent,
+    setReportHabitsTargetCurrent,
+    setReportSleepTargetPrevious,
+    setReportScreenTargetPrevious,
+    setReportHabitsTargetPrevious,
+    setLastAutopilotAdjustedWeek,
+  } = useUIStore();
+
   const bothDays = isWeeklyWrapDay && isMonthlyWrapDay;
   const [mode, setMode] = useState<'weekly' | 'monthly'>(isMonthlyWrapDay && !isWeeklyWrapDay ? 'monthly' : 'weekly');
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
 
+  const [gamePlanMode, setGamePlanMode] = useState<'constructive' | 'useless'>('constructive');
+  const [chaosIndex, setChaosIndex] = useState(0);
+  const [acceptedChallenges, setAcceptedChallenges] = useState<Record<number, boolean>>({});
+  const [rerollAnim, setRerollAnim] = useState(false);
+  const [confetti, setConfetti] = useState<{ id: number; x: number; y: number; color: string }[]>([]);
+
+  const triggerConfetti = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const newParticles = Array.from({ length: 30 }).map((_, i) => ({
+      id: Date.now() + i,
+      x: rect.left + rect.width / 2 + (Math.random() - 0.5) * 40,
+      y: rect.top + rect.height / 2 + (Math.random() - 0.5) * 40,
+      color: ['#ff007f', '#ff00ff', '#00ffff', '#00ff00', '#ffff00', '#ff7f00'][Math.floor(Math.random() * 6)]
+    }));
+    setConfetti((prev) => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setConfetti((prev) => prev.filter((p) => !newParticles.find((np) => np.id === p.id)));
+    }, 1000);
+  };
+
   const weeklyData = useWeeklyReport(weekOffset);
   const monthlyData = useMonthlyReport(monthOffset);
   const data: ReportData = mode === 'weekly' ? weeklyData : monthlyData;
+
+  const { weeklyWrapKey } = checkWrapStatus();
+
+  const sleepTarget = reportAutopilotEnabled
+    ? (mode === 'weekly' && weekOffset === 0
+        ? (lastAutopilotAdjustedWeek === weeklyWrapKey ? reportSleepTargetPrevious : reportSleepTargetCurrent)
+        : reportSleepTarget)
+    : reportSleepTarget;
+
+  const screenTarget = reportAutopilotEnabled
+    ? (mode === 'weekly' && weekOffset === 0
+        ? (lastAutopilotAdjustedWeek === weeklyWrapKey ? reportScreenTargetPrevious : reportScreenTargetCurrent)
+        : reportScreenTarget)
+    : reportScreenTarget;
+
+  const habitsTarget = reportAutopilotEnabled
+    ? (mode === 'weekly' && weekOffset === 0
+        ? (lastAutopilotAdjustedWeek === weeklyWrapKey ? reportHabitsTargetPrevious : reportHabitsTargetCurrent)
+        : (reportHabitsTarget ?? 100))
+    : (reportHabitsTarget ?? 100);
+
+  useEffect(() => {
+    if (
+      reportAutopilotEnabled &&
+      mode === 'weekly' &&
+      weekOffset === 0 &&
+      weeklyData &&
+      !weeklyData.isLoading &&
+      lastAutopilotAdjustedWeek !== weeklyWrapKey
+    ) {
+      // Save completed targets to Previous targets for consistency
+      setReportSleepTargetPrevious(reportSleepTargetCurrent);
+      setReportScreenTargetPrevious(reportScreenTargetCurrent);
+      setReportHabitsTargetPrevious(reportHabitsTargetCurrent);
+
+      // Calculate next targets
+      const actualSleep = weeklyData.avgSleepMinutes / 60;
+      const rawNextSleep = reportSleepTargetCurrent + (actualSleep - reportSleepTargetCurrent) * 0.5;
+      const nextSleep = Math.min(reportSleepTarget, rawNextSleep);
+
+      const actualScreen = weeklyData.avgScreenSeconds / 3600;
+      const rawNextScreen = reportScreenTargetCurrent + (actualScreen - reportScreenTargetCurrent) * 0.5;
+      const nextScreen = Math.max(reportScreenTarget, rawNextScreen);
+
+      const rawNextHabits = reportHabitsTargetCurrent + (weeklyData.avgHabitsAdherence - reportHabitsTargetCurrent) * 0.5;
+      const nextHabits = Math.min(reportHabitsTarget, rawNextHabits);
+
+      const updatedSleep = Math.round(nextSleep * 10) / 10;
+      const updatedScreen = Math.round(nextScreen * 10) / 10;
+      const updatedHabits = Math.round(nextHabits * 10) / 10;
+
+      // Update store
+      setReportSleepTargetCurrent(updatedSleep);
+      setReportScreenTargetCurrent(updatedScreen);
+      setReportHabitsTargetCurrent(updatedHabits);
+      setLastAutopilotAdjustedWeek(weeklyWrapKey);
+    }
+  }, [
+    mode,
+    weekOffset,
+    weeklyData,
+    reportAutopilotEnabled,
+    reportSleepTarget,
+    reportScreenTarget,
+    reportHabitsTarget,
+    reportSleepTargetCurrent,
+    reportScreenTargetCurrent,
+    reportHabitsTargetCurrent,
+    lastAutopilotAdjustedWeek,
+    weeklyWrapKey,
+    setReportSleepTargetCurrent,
+    setReportScreenTargetCurrent,
+    setReportHabitsTargetCurrent,
+    setReportSleepTargetPrevious,
+    setReportScreenTargetPrevious,
+    setReportHabitsTargetPrevious,
+    setLastAutopilotAdjustedWeek,
+  ]);
 
   const offset = mode === 'weekly' ? weekOffset : monthOffset;
   const setOffset = mode === 'weekly' ? setWeekOffset : setMonthOffset;
@@ -245,6 +378,9 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             <div className={cn('text-xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
               {data.avgSleepMinutes != null ? fmtMin(data.avgSleepMinutes) : '—'}
             </div>
+            <span className="text-[10px] text-muted-foreground block mt-0.5">
+              Target: {sleepTarget}h {reportAutopilotEnabled && " (Auto)"}
+            </span>
             <div className="mt-1"><DeltaBadge delta={data.sleepDelta} /></div>
           </ExpandableCard>
 
@@ -274,6 +410,9 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             <div className={cn('text-xl font-bold tabular-nums', privacyMode && 'blur-sm')}>
               {data.avgScreenSeconds != null ? fmtSec(data.avgScreenSeconds) : '—'}
             </div>
+            <span className="text-[10px] text-muted-foreground block mt-0.5">
+              Limit: {screenTarget}h {reportAutopilotEnabled && " (Auto)"}
+            </span>
             <div className="mt-1"><DeltaBadge delta={data.screenDelta} invert /></div>
           </ExpandableCard>
 
@@ -326,6 +465,9 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             <div className="text-xl font-bold tabular-nums">
               {data.avgHabitsAdherence != null ? <><AnimatedCounter value={data.avgHabitsAdherence} />%</> : '—'}
             </div>
+            <span className="text-[10px] text-muted-foreground block mt-0.5">
+              Target: {habitsTarget}% {reportAutopilotEnabled && " (Auto)"}
+            </span>
             <div className="mt-1"><DeltaBadge delta={data.habitsDelta} /></div>
           </ExpandableCard>
 
@@ -523,32 +665,133 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
       )}
 
       {/* ── Section 7: Game Plan ────────────────────────────────── */}
-      {data.suggestions.length > 0 && (
-        <Section delay={600}>
-          <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-card p-4">
-            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-              <Lightbulb size={14} className="text-primary" />
+      <Section delay={600}>
+        <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-card p-4 relative overflow-hidden">
+          {/* Confetti particles */}
+          {confetti.map((p) => (
+            <div
+              key={p.id}
+              className="fixed pointer-events-none z-[200] w-2 h-2 rounded-full"
+              style={{
+                left: p.x,
+                top: p.y,
+                backgroundColor: p.color,
+                '--dx': `${(Math.random() - 0.5) * 200}px`,
+                '--dy': `${-Math.random() * 150 - 50}px`,
+                animation: 'particle-fade 1s cubic-bezier(0.1, 0.8, 0.3, 1) forwards'
+              } as React.CSSProperties}
+            />
+          ))}
+          <style>{`
+            @keyframes particle-fade {
+              0% { transform: translate(0, 0) scale(1); opacity: 1; }
+              100% { transform: translate(var(--dx), var(--dy)) scale(0.3); opacity: 0; }
+            }
+          `}</style>
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+            <h3 className="text-sm font-semibold flex items-center gap-2">
+              <Lightbulb size={14} className="text-primary animate-pulse" />
               Game Plan for Next {mode === 'weekly' ? 'Week' : 'Month'}
             </h3>
-            <div className="space-y-2">
-              {data.suggestions.map((s, i) => (
-                <ExpandableCard
-                  key={i}
-                  defaultExpanded={false}
-                  expandedContent={
-                    <p className="text-xs text-muted-foreground leading-relaxed">{s.detail}</p>
-                  }
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-lg flex-shrink-0">{s.icon}</span>
-                    <p className="text-sm font-medium leading-snug">{s.title}</p>
-                  </div>
-                </ExpandableCard>
-              ))}
+            
+            {/* Toggle Switch */}
+            <div className="flex bg-secondary/50 rounded-lg p-0.5 border border-border/50 self-start sm:self-auto">
+              <button
+                onClick={() => setGamePlanMode('constructive')}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer",
+                  gamePlanMode === 'constructive' 
+                    ? "bg-card text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Constructive
+              </button>
+              <button
+                onClick={() => setGamePlanMode('useless')}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-semibold rounded-md transition-all cursor-pointer flex items-center gap-1",
+                  gamePlanMode === 'useless' 
+                    ? "bg-primary text-primary-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Useless Mode 🤪
+              </button>
             </div>
           </div>
-        </Section>
-      )}
+
+          {gamePlanMode === 'constructive' ? (
+            <div className="space-y-2">
+              {data.suggestions.length > 0 ? (
+                data.suggestions.map((s, i) => (
+                  <ExpandableCard
+                    key={i}
+                    defaultExpanded={false}
+                    expandedContent={
+                      <p className="text-xs text-muted-foreground leading-relaxed">{s.detail}</p>
+                    }
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="text-lg flex-shrink-0">{s.icon}</span>
+                      <p className="text-sm font-medium leading-snug">{s.title}</p>
+                    </div>
+                  </ExpandableCard>
+                ))
+              ) : (
+                <p className="text-xs text-muted-foreground italic">No suggestions generated for this period.</p>
+              )}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-5 flex flex-col items-center text-center relative overflow-hidden transition-all duration-300">
+              <div className="text-4xl mb-2 animate-bounce">{CHAOS_SUGGESTIONS[chaosIndex].icon}</div>
+              <h4 className="text-sm font-bold text-foreground mb-1">{CHAOS_SUGGESTIONS[chaosIndex].title}</h4>
+              <p className="text-xs text-muted-foreground max-w-sm mb-4 leading-relaxed font-medium">
+                {CHAOS_SUGGESTIONS[chaosIndex].detail}
+              </p>
+              
+              <div className="flex gap-2.5">
+                <button
+                  onClick={(e) => {
+                    triggerConfetti(e);
+                    setAcceptedChallenges((prev) => ({ ...prev, [chaosIndex]: true }));
+                  }}
+                  disabled={acceptedChallenges[chaosIndex]}
+                  className={cn(
+                    "px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer",
+                    acceptedChallenges[chaosIndex]
+                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 cursor-not-allowed"
+                      : "bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse"
+                  )}
+                >
+                  {acceptedChallenges[chaosIndex] ? (
+                    <>Accepted! 🏁</>
+                  ) : (
+                    <>Accept Challenge ⚡</>
+                  )}
+                </button>
+                <button
+                  onClick={() => {
+                    setRerollAnim(true);
+                    setTimeout(() => setRerollAnim(false), 600);
+                    setChaosIndex((prev) => (prev + 1) % CHAOS_SUGGESTIONS.length);
+                  }}
+                  className="px-3 py-2 bg-secondary text-foreground hover:bg-secondary/80 rounded-lg text-xs font-semibold border border-border transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span className={cn("inline-block", rerollAnim && "animate-spin")}>🎲</span> Reroll
+                </button>
+              </div>
+
+              {acceptedChallenges[chaosIndex] && (
+                <div className="text-[10px] text-emerald-400 mt-3 animate-pulse">
+                  Warning: LifeOS is not responsible for wet noodle injuries or escapee turtles.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </Section>
 
       {/* ── Section 8: Week Score ───────────────────────────────── */}
       <Section delay={700}>
