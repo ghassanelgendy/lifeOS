@@ -16,7 +16,8 @@ import {
   RefreshCw,
   X,
   Circle,
-  CheckCircle2
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import {
   format,
@@ -303,7 +304,36 @@ export default function CalendarPage() {
 
   // Merge app events with subscribed iCal events (each subscription has its own color)
   const allMergedEvents = useMemo(() => {
-    const icalWithColor = icalEvents.map((e) => ({ ...e, color: (e as { color?: string }).color ?? '#3b82f6' }));
+    const icalWithColor = icalEvents.map((e) => {
+      const title = e.title || '';
+      const t = title.toLowerCase();
+      const isPrayer = t.includes('fajr') || t.includes('dhuhr') || t.includes('asr') || t.includes('maghrib') || t.includes('isha') || t.includes('dhur');
+      
+      let color = (e as { color?: string }).color ?? '#3b82f6';
+      
+      if (e.icalUrl && (e.icalUrl.includes('calendar-feed') || e.icalUrl.includes('tasks'))) {
+        // This is the LifeOS feed! Custom colors per category
+        const itemType = e.xLifeOsItemType || '';
+        const isIcalTask = e.sourceType === 'task' || itemType === 'TASK';
+        const isIcalHabit = itemType === 'HABIT';
+        
+        if (isPrayer) {
+          color = '#9ca3af'; // Prayers: gray
+        } else if (isIcalTask) {
+          color = '#eab308'; // Tasks: yellow
+        } else if (isIcalHabit) {
+          color = '#a855f7'; // Habits: purple
+        } else {
+          color = '#3b82f6'; // Events: blue
+        }
+      } else {
+        // External subscription: if it's a prayer, still color it gray
+        if (isPrayer) {
+          color = '#9ca3af';
+        }
+      }
+      return { ...e, color };
+    });
     return [...events, ...icalWithColor].sort(
       (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime()
     );
@@ -340,23 +370,38 @@ export default function CalendarPage() {
     setNewIcalName('');
   };
 
-  const handleCopyTaskCalendarFeed = async () => {
-    if (!taskCalendarFeedUrl) return;
-    try {
-      if (!navigator.clipboard) throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(taskCalendarFeedUrl);
-      setTaskFeedCopyStatus('Copied');
-      window.setTimeout(() => setTaskFeedCopyStatus(''), 2000);
-    } catch {
-      setTaskFeedCopyStatus('Copy failed');
-    }
+  const [copiedFeedType, setCopiedFeedType] = useState<string | null>(null);
+
+  const getCategorizedFeedUrl = (type?: string) => {
+    if (!taskCalendarFeedUrl) return '';
+    return type ? `${taskCalendarFeedUrl}&type=${type}` : taskCalendarFeedUrl;
   };
 
-  const isTaskCalendarFeedVisible = !!taskCalendarFeedUrl && subscriptionList.some((sub) => sub.url === taskCalendarFeedUrl);
-  const webcalFeedUrl = taskCalendarFeedUrl ? taskCalendarFeedUrl.replace(/^https?:\/\//i, 'webcal://') : '';
-  const handleShowTaskCalendarFeed = () => {
-    if (!taskCalendarFeedUrl || isTaskCalendarFeedVisible) return;
-    addIcalUrl(taskCalendarFeedUrl, '#a855f7', 'LifeOS feed');
+  const getCategorizedWebcalUrl = (type?: string) => {
+    const url = getCategorizedFeedUrl(type);
+    return url ? url.replace(/^https?:\/\//i, 'webcal://') : '';
+  };
+
+  const handleCopyFeed = async (type?: string) => {
+    const url = getCategorizedFeedUrl(type);
+    if (!url) return;
+    try {
+      if (!navigator.clipboard) throw new Error('Clipboard unavailable');
+      await navigator.clipboard.writeText(url);
+      setCopiedFeedType(type || 'all');
+      window.setTimeout(() => setCopiedFeedType(null), 2000);
+    } catch {}
+  };
+
+  const isTaskCalendarFeedVisible = (type?: string) => {
+    const url = getCategorizedFeedUrl(type);
+    return !!url && subscriptionList.some((sub) => sub.url === url);
+  };
+
+  const handleShowTaskCalendarFeed = (type?: string, name?: string, color?: string) => {
+    const url = getCategorizedFeedUrl(type);
+    if (!url || isTaskCalendarFeedVisible(type)) return;
+    addIcalUrl(url, color || '#a855f7', name || 'LifeOS feed');
   };
 
   const isLifeOsTaskFeedUrl = (url: string) => {
@@ -692,7 +737,7 @@ export default function CalendarPage() {
           title: t.title,
           start,
           end,
-          color: '#a855f7',
+          color: '#eab308',
           isIcal: false,
           task: t,
         };
@@ -808,7 +853,11 @@ export default function CalendarPage() {
                       return (
                         <div key={`all-${event.id}`} className="flex items-center gap-2 rounded px-2 py-1" style={{ backgroundColor: `${color}25` }}>
                           <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-                          {isIcalTask ? <CheckSquare size={12} className="text-muted-foreground flex-shrink-0" /> : isIcal ? <Link2 size={12} className="text-muted-foreground flex-shrink-0" /> : null}
+                          {isIcalTask ? (
+                            <CheckSquare size={12} className="text-yellow-500 flex-shrink-0" />
+                          ) : isIcal ? (
+                            <Link2 size={12} className="text-muted-foreground flex-shrink-0" />
+                          ) : null}
                           <span className="text-sm truncate">{event.title}</span>
                         </div>
                       );
@@ -853,7 +902,11 @@ export default function CalendarPage() {
                         style={{ top: `${top}px`, height: `${height}px`, borderColor: `${item.color}80`, backgroundColor: `${item.color}22`, color: item.color }}
                       >
                         <div className="flex items-center gap-1">
-                          {item.type === 'task' || item.type === 'task-feed' ? <CheckSquare size={11} /> : <Circle size={10} />}
+                          {item.type === 'task' || item.type === 'task-feed' ? (
+                            <CheckSquare size={11} className="text-yellow-500" />
+                          ) : (
+                            <Circle size={10} />
+                          )}
                           <span className="font-medium truncate">{item.title}</span>
                         </div>
                         <div className="text-[10px] opacity-80 mt-0.5">
@@ -912,6 +965,7 @@ export default function CalendarPage() {
                         const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
                         const isIcal = 'isIcal' in event && event.isIcal;
                         const isIcalTask = isIcal && 'sourceType' in event && event.sourceType === 'task';
+                        const linkedTask = getTaskByEvent(event as ExtendedCalendarEvent);
                         return (
                           <div
                             key={event.id}
@@ -926,7 +980,7 @@ export default function CalendarPage() {
                             style={{ backgroundColor: `${color}30`, color }}
                           >
                             {'type' in event && event.type === 'Shift' && '🔶 '}
-                            {isIcalTask ? <CheckSquare size={8} className="inline mr-0.5 opacity-70" /> : isIcal && <Link2 size={8} className="inline mr-0.5 opacity-70" />}
+                            {isIcalTask ? <CheckSquare size={8} className="inline mr-0.5 text-yellow-500" /> : isIcal && <Link2 size={8} className="inline mr-0.5 opacity-70" />}
                             {event.title}
                           </div>
                         );
@@ -939,9 +993,9 @@ export default function CalendarPage() {
                             e.stopPropagation();
                             handleOpenTaskModal(task);
                           }}
-                          className="text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-purple-500/20 text-purple-400 cursor-pointer hover:opacity-80"
+                          className="text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 cursor-pointer hover:opacity-80"
                         >
-                          <CheckSquare size={8} />
+                          <CheckSquare size={8} className="text-yellow-500/80" />
                           {task.title}
                         </div>
                       ))}
@@ -999,7 +1053,7 @@ export default function CalendarPage() {
                             className="w-2 h-2 rounded-full flex-shrink-0"
                             style={{ backgroundColor: color }}
                           />
-                          {isIcalTask ? <CheckSquare size={12} className="text-muted-foreground flex-shrink-0" /> : isIcal && <Link2 size={12} className="text-muted-foreground flex-shrink-0" />}
+                          {isIcalTask ? <CheckSquare size={12} className="text-yellow-500 flex-shrink-0" /> : isIcal && <Link2 size={12} className="text-muted-foreground flex-shrink-0" />}
                           <span className="font-medium text-sm truncate">{event.title}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
@@ -1081,12 +1135,12 @@ export default function CalendarPage() {
                     className="p-3 rounded-lg border border-border hover:bg-secondary/20 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          {task.is_completed ? <CheckCircle2 size={12} className="text-green-500" /> : <CheckSquare size={12} className="text-purple-400" />}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2.5">
+                          <CheckSquare size={12} className="text-yellow-500 flex-shrink-0" />
                           <p className="text-sm font-medium truncate">{task.title}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-xs text-muted-foreground mt-1.5 ml-7">
                           {task.due_time
                             ? (() => {
                                 const start = getTaskStartDateTime(task);
@@ -1123,14 +1177,7 @@ export default function CalendarPage() {
                   Calendar feed link unavailable.
                 </p>
               ) : (
-                <div className="space-y-3">
-                  <input
-                    type="text"
-                    value={isTaskCalendarFeedLoading ? 'Preparing link...' : taskCalendarFeedUrl}
-                    readOnly
-                    className="w-full rounded-lg border border-border bg-background px-2 py-1.5 text-xs text-muted-foreground"
-                  />
-
+                <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1147,54 +1194,93 @@ export default function CalendarPage() {
                     </label>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => void handleCopyTaskCalendarFeed()}
-                      disabled={!taskCalendarFeedUrl}
-                    >
-                      <Copy size={14} />
-                      Copy link
-                    </Button>
-                    {taskCalendarFeedUrl && (
-                      <a
-                        href={webcalFeedUrl}
-                        className="inline-flex items-center justify-center gap-1.5 font-medium rounded-lg transition-colors border border-border bg-transparent hover:bg-secondary min-h-[44px] h-8 px-3 text-xs md:min-h-0"
-                        title="Subscribe directly in Apple Calendar / iOS Calendar"
+                  <div className="space-y-3">
+                    {[
+                      { type: undefined, name: 'All-in-One Feed', color: '#a855f7', label: 'Everything', desc: 'Combined tasks, habits, prayers, and events' },
+                      { type: 'prayers', name: 'Prayers Feed', color: '#9ca3af', label: '🕌 Prayers', desc: 'Prayer timings' },
+                      { type: 'tasks', name: 'Tasks Feed', color: '#eab308', label: '📝 Tasks', desc: 'Your due tasks' },
+                      { type: 'habits', name: 'Habits Feed', color: '#a855f7', label: '⏳ Habits', desc: 'Active habits (excluding prayers & detox)' },
+                      { type: 'events', name: 'Events Feed', color: '#3b82f6', label: '📅 Events', desc: 'Calendar events' },
+                    ].map((cfg) => {
+                      const feedUrl = getCategorizedFeedUrl(cfg.type);
+                      const webcalUrl = getCategorizedWebcalUrl(cfg.type);
+                      const isVisible = isTaskCalendarFeedVisible(cfg.type);
+                      const isCopied = copiedFeedType === (cfg.type || 'all');
+
+                      return (
+                        <div key={cfg.type || 'all'} className="p-3 rounded-lg border border-border bg-secondary/5 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+                              <span className="text-xs font-semibold">{cfg.label}</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">{cfg.desc}</span>
+                          </div>
+                          
+                          <input
+                            type="text"
+                            value={isTaskCalendarFeedLoading ? 'Preparing link...' : feedUrl}
+                            readOnly
+                            className="w-full rounded border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground select-all"
+                          />
+
+                          <div className="flex items-center gap-1.5 pt-1">
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="sm"
+                              className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0"
+                              onClick={() => void handleCopyFeed(cfg.type)}
+                              disabled={!feedUrl}
+                            >
+                              <Copy size={10} className="mr-1" />
+                              {isCopied ? 'Copied' : 'Copy'}
+                            </Button>
+                            {feedUrl && (
+                              <a
+                                href={webcalUrl}
+                                className="inline-flex items-center justify-center gap-1 font-medium rounded border border-border bg-transparent hover:bg-secondary h-7 px-2 text-[10px] min-h-[30px] md:min-h-0"
+                                title="Subscribe directly in Apple Calendar / iOS Calendar"
+                              >
+                                <CalendarPlus size={10} className="mr-1" />
+                                Subscribe
+                                </a>
+                              )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0"
+                                onClick={() => handleShowTaskCalendarFeed(cfg.type, cfg.name, cfg.color)}
+                                disabled={!feedUrl || isVisible}
+                              >
+                                <Link2 size={10} className="mr-1" />
+                                {isVisible ? 'Shown here' : 'Show here'}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0 text-muted-foreground hover:text-foreground"
+                        onClick={handleResetTaskCalendarFeed}
+                        disabled={resetTaskCalendarFeedToken.isPending || !taskCalendarFeedUrl}
+                        title="Create a new subscription link and disable the old one"
                       >
-                        <CalendarPlus size={14} />
-                        Subscribe (iOS/macOS)
-                      </a>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleShowTaskCalendarFeed}
-                      disabled={!taskCalendarFeedUrl || isTaskCalendarFeedVisible}
-                      title="Show this generated feed inside the LifeOS calendar"
-                    >
-                      <Link2 size={14} />
-                      {isTaskCalendarFeedVisible ? 'Shown here' : 'Show here'}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleResetTaskCalendarFeed}
-                      disabled={resetTaskCalendarFeedToken.isPending || !taskCalendarFeedUrl}
-                      title="Create a new subscription link and disable the old one"
-                    >
-                      <RefreshCw size={14} />
-                      Reset
-                    </Button>
-                    {taskFeedCopyStatus && (
-                      <span className="text-xs text-muted-foreground">{taskFeedCopyStatus}</span>
-                    )}
+                        <RefreshCw size={12} className="mr-1" />
+                        Reset All Feeds
+                      </Button>
+                      <span className="text-[10px] text-muted-foreground italic">
+                        Tip: Add 4 feeds to iOS to set custom colors
+                      </span>
+                    </div>
                   </div>
-                </div>
               )}
             </div>
 
@@ -1278,22 +1364,29 @@ export default function CalendarPage() {
             <div className="mt-6 pt-4 border-t border-border">
               <h4 className="text-xs font-medium text-muted-foreground mb-2">Legend</h4>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(EVENT_TYPE_COLORS).map(([type, color]) => (
-                  <div key={type} className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded"
-                      style={{ backgroundColor: color }}
-                    />
-                    <span className="text-xs">{type}</span>
-                  </div>
-                ))}
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded bg-purple-500" />
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#3b82f6' }} />
+                  <span className="text-xs">Event</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#f97316' }} />
+                  <span className="text-xs">Shift</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#ef4444' }} />
+                  <span className="text-xs">Deadline</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#a855f7' }} />
+                  <span className="text-xs">Habit / Reminder</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#eab308' }} />
                   <span className="text-xs">Task</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#64748b' }} />
-                  <span className="text-xs">iCal link</span>
+                  <div className="w-3 h-3 rounded" style={{ backgroundColor: '#9ca3af' }} />
+                  <span className="text-xs">Prayer</span>
                 </div>
               </div>
             </div>

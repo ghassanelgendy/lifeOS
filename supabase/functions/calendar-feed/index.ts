@@ -119,6 +119,38 @@ function zonedDateTimeToUtc(
   return utc;
 }
 
+function getUsualTimeForHabit(
+  habitId: string,
+  logs: Array<{ habit_id: string; completed_at?: string | null }>,
+  timeZone: string
+): string | null {
+  const habitLogs = logs.filter((l) => l.habit_id === habitId && l.completed_at);
+  if (habitLogs.length === 0) return null;
+
+  let totalSeconds = 0;
+  let count = 0;
+
+  for (const log of habitLogs) {
+    if (!log.completed_at) continue;
+    const utcDate = new Date(log.completed_at);
+    if (Number.isNaN(utcDate.getTime())) continue;
+    
+    const offsetMs = getTimeZoneOffsetMs(utcDate, timeZone);
+    const localDate = new Date(utcDate.getTime() + offsetMs);
+    
+    const seconds = localDate.getUTCHours() * 3600 + localDate.getUTCMinutes() * 60 + localDate.getUTCSeconds();
+    totalSeconds += seconds;
+    count++;
+  }
+
+  if (count === 0) return null;
+  const avgSeconds = Math.round(totalSeconds / count);
+  const h = Math.floor(avgSeconds / 3600);
+  const m = Math.floor((avgSeconds % 3600) / 60);
+  const s = avgSeconds % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
 function foldLine(line: string): string[] {
   if (line.length <= 73) return [line];
   const lines: string[] = [];
@@ -144,6 +176,11 @@ function sanitizeTimeZone(value: string | null | undefined): string {
   } catch {
     return 'UTC';
   }
+}
+
+function isPrayerTitle(title: string): boolean {
+  const t = (title || '').toLowerCase();
+  return t.includes('fajr') || t.includes('dhuhr') || t.includes('asr') || t.includes('maghrib') || t.includes('isha') || t.includes('dhur');
 }
 
 Deno.serve(async (req: Request) => {
@@ -178,57 +215,70 @@ Deno.serve(async (req: Request) => {
     const timeZone = sanitizeTimeZone(feed.time_zone);
     const includeCompleted = feed.include_completed;
 
-    // 2. Fetch Tasks with due dates
-    let tasksQuery = supabase
-      .from('tasks')
-      .select('id, title, description, due_date, due_time, duration_minutes, is_completed, is_wont_do, url, location, created_at, updated_at')
-      .eq('user_id', userId)
-      .not('due_date', 'is', null);
+    const feedType = url.searchParams.get('type') || '';
 
-    if (!includeCompleted) {
-      tasksQuery = tasksQuery.or('is_completed.is.false,is_completed.is.null');
+    // 2. Fetch Tasks with due dates
+    let tasks: any[] = [];
+    if (!feedType || feedType === 'tasks') {
+      let tasksQuery = supabase
+        .from('tasks')
+        .select('id, title, description, due_date, due_time, duration_minutes, is_completed, is_wont_do, url, location, created_at, updated_at')
+        .eq('user_id', userId)
+        .not('due_date', 'is', null);
+
+      if (!includeCompleted) {
+        tasksQuery = tasksQuery.or('is_completed.is.false,is_completed.is.null');
+      }
+
+      const { data, error } = await tasksQuery;
+      if (error) throw error;
+      tasks = data || [];
     }
 
-    const { data: tasks, error: tasksError } = await tasksQuery;
-    if (tasksError) throw tasksError;
-
     // 3. Fetch Calendar Events
-    const { data: events, error: eventsError } = await supabase
-      .from('calendar_events')
-      .select('id, title, type, start_time, end_time, all_day, description, location, recurrence, recurrence_end, created_at')
-      .eq('user_id', userId);
-
-    if (eventsError) throw eventsError;
+    let events: any[] = [];
+    if (!feedType || feedType === 'events') {
+      const { data, error } = await supabase
+        .from('calendar_events')
+        .select('id, title, type, start_time, end_time, all_day, description, location, recurrence, recurrence_end, created_at')
+        .eq('user_id', userId);
+      if (error) throw error;
+      events = data || [];
+    }
 
     // 4. Fetch Active Habits and logs for a 30-day window (today - 14 days to today + 14 days)
-    const { data: habits, error: habitsError } = await supabase
-      .from('habits')
-      .select('id, title, description, frequency, week_days, time, color, created_at, updated_at')
-      .eq('user_id', userId)
-      .eq('is_archived', false);
+    let habits: any[] = [];
+    let habitLogs: any[] = [];
+    if (!feedType || feedType === 'habits' || feedType === 'prayers') {
+      const { data: habitsData, error: habitsError } = await supabase
+        .from('habits')
+        .select('id, title, description, frequency, week_days, time, color, created_at, updated_at, detox_mode, habit_type')
+        .eq('user_id', userId)
+        .eq('is_archived', false);
 
-    if (habitsError) throw habitsError;
+      if (habitsError) throw habitsError;
+      habits = habitsData || [];
+
+      const today = new Date();
+      const startWindow = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
+      const endWindow = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+      const startWindowStr = startWindow.toISOString().slice(0, 10);
+      const endWindowStr = endWindow.toISOString().slice(0, 10);
+
+      const { data: logsData, error: logsError } = await supabase
+        .from('habit_logs')
+        .select('habit_id, date, completed, completed_at')
+        .eq('user_id', userId)
+        .gte('date', startWindowStr)
+        .lte('date', endWindowStr)
+        .eq('completed', true);
+
+      if (logsError) throw logsError;
+      habitLogs = logsData || [];
+    }
 
     const today = new Date();
-    const startWindow = new Date(today.getTime() - 14 * 24 * 60 * 60 * 1000);
-    const endWindow = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
-
-    const startWindowStr = startWindow.toISOString().slice(0, 10);
-    const endWindowStr = endWindow.toISOString().slice(0, 10);
-
-    const { data: habitLogs, error: habitLogsError } = await supabase
-      .from('habit_logs')
-      .select('habit_id, date, completed')
-      .eq('user_id', userId)
-      .gte('date', startWindowStr)
-      .lte('date', endWindowStr)
-      .eq('completed', true);
-
-    if (habitLogsError) throw habitLogsError;
-
-    const completedHabitLogSet = new Set(
-      (habitLogs || []).map((log) => `${log.habit_id}_${log.date}`)
-    );
 
     // 5. Build the iCalendar (.ics) content
     const nowStamp = formatUtcStamp(new Date().toISOString());
@@ -245,101 +295,114 @@ Deno.serve(async (req: Request) => {
     ];
 
     // Append Calendar Events
-    for (const event of events || []) {
-      const startDate = new Date(event.start_time);
-      const endDate = new Date(event.end_time);
-      if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) continue;
+    if (!feedType || feedType === 'events') {
+      for (const event of events || []) {
+        const startDate = new Date(event.start_time);
+        const endDate = new Date(event.end_time);
+        if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) continue;
 
-      icsLines.push('BEGIN:VEVENT');
-      icsLines.push(`UID:event-${event.id}@lifeos`);
-      icsLines.push(`DTSTAMP:${nowStamp}`);
-      icsLines.push(`LAST-MODIFIED:${formatUtcStamp(event.updated_at || event.created_at)}`);
-      
-      if (event.all_day) {
-        icsLines.push(`DTSTART;VALUE=DATE:${formatUtcDateTime(startDate).slice(0, 8)}`);
-        icsLines.push(`DTEND;VALUE=DATE:${formatUtcDateTime(endDate).slice(0, 8)}`);
-      } else {
-        icsLines.push(`DTSTART:${formatUtcDateTime(startDate)}`);
-        icsLines.push(`DTEND:${formatUtcDateTime(endDate > startDate ? endDate : new Date(startDate.getTime() + 45 * 60_000))}`);
-      }
-      
-      icsLines.push(`SUMMARY:${escapeText(event.title)}`);
-      icsLines.push(`CATEGORIES:${escapeText(event.type || 'LifeOS Event')}`);
-      if (event.description) icsLines.push(`DESCRIPTION:${escapeText(event.description)}`);
-      if (event.location) icsLines.push(`LOCATION:${escapeText(event.location)}`);
-
-      // Recurrence rule
-      if (event.recurrence && event.recurrence !== 'none') {
-        if (event.recurrence.startsWith('weekly:')) {
-          const dayNums = event.recurrence.split(':')[1].split(',').map(Number);
-          const icalDays = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-          const byDay = dayNums.map((d) => icalDays[d]).filter(Boolean).join(',');
-          let rrule = `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
-          if (event.recurrence_end) {
-            rrule += `;UNTIL=${formatUtcStamp(event.recurrence_end)}`;
-          }
-          icsLines.push(rrule);
+        icsLines.push('BEGIN:VEVENT');
+        icsLines.push(`UID:event-${event.id}@lifeos`);
+        icsLines.push(`DTSTAMP:${nowStamp}`);
+        icsLines.push(`LAST-MODIFIED:${formatUtcStamp(event.updated_at || event.created_at)}`);
+        
+        if (event.all_day) {
+          icsLines.push(`DTSTART;VALUE=DATE:${formatUtcDateTime(startDate).slice(0, 8)}`);
+          icsLines.push(`DTEND;VALUE=DATE:${formatUtcDateTime(endDate).slice(0, 8)}`);
         } else {
-          const freq = event.recurrence.toUpperCase();
-          if (['DAILY', 'WEEKLY', 'MONTHLY'].includes(freq)) {
-            let rrule = `RRULE:FREQ=${freq}`;
+          icsLines.push(`DTSTART:${formatUtcDateTime(startDate)}`);
+          icsLines.push(`DTEND:${formatUtcDateTime(endDate > startDate ? endDate : new Date(startDate.getTime() + 45 * 60_000))}`);
+        }
+        
+        icsLines.push(`SUMMARY:${escapeText(event.title)}`);
+        icsLines.push(`CATEGORIES:${escapeText(event.type || 'LifeOS Event')}`);
+        if (event.description) icsLines.push(`DESCRIPTION:${escapeText(event.description)}`);
+        if (event.location) icsLines.push(`LOCATION:${escapeText(event.location)}`);
+
+        // Recurrence rule
+        if (event.recurrence && event.recurrence !== 'none') {
+          if (event.recurrence.startsWith('weekly:')) {
+            const dayNums = event.recurrence.split(':')[1].split(',').map(Number);
+            const icalDays = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+            const byDay = dayNums.map((d) => icalDays[d]).filter(Boolean).join(',');
+            let rrule = `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
             if (event.recurrence_end) {
               rrule += `;UNTIL=${formatUtcStamp(event.recurrence_end)}`;
             }
             icsLines.push(rrule);
+          } else {
+            const freq = event.recurrence.toUpperCase();
+            if (['DAILY', 'WEEKLY', 'MONTHLY'].includes(freq)) {
+              let rrule = `RRULE:FREQ=${freq}`;
+              if (event.recurrence_end) {
+                rrule += `;UNTIL=${formatUtcStamp(event.recurrence_end)}`;
+              }
+              icsLines.push(rrule);
+            }
           }
         }
+        icsLines.push('END:VEVENT');
       }
-      icsLines.push('END:VEVENT');
     }
 
     // Append Tasks
-    for (const task of tasks || []) {
-      if (task.is_wont_do) continue;
-      const dateParts = parseDateParts(task.due_date);
-      if (!dateParts) continue;
+    if (!feedType || feedType === 'tasks') {
+      for (const task of tasks || []) {
+        if (task.is_wont_do) continue;
+        const dateParts = parseDateParts(task.due_date);
+        if (!dateParts) continue;
 
-      const timeParts = parseTimeParts(task.due_time);
-      icsLines.push('BEGIN:VEVENT');
-      icsLines.push(`UID:task-${task.id}@lifeos`);
-      icsLines.push(`DTSTAMP:${nowStamp}`);
-      icsLines.push(`LAST-MODIFIED:${formatUtcStamp(task.updated_at || task.created_at)}`);
+        const timeParts = parseTimeParts(task.due_time);
+        icsLines.push('BEGIN:VEVENT');
+        icsLines.push(`UID:task-${task.id}@lifeos`);
+        icsLines.push(`DTSTAMP:${nowStamp}`);
+        icsLines.push(`LAST-MODIFIED:${formatUtcStamp(task.updated_at || task.created_at)}`);
 
-      if (!timeParts) {
-        // All day event
-        const start = formatDateValue(dateParts);
-        const nextDay = new Date(Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day + 1));
-        const end = formatDateValue({
-          year: nextDay.getUTCFullYear(),
-          month: nextDay.getUTCMonth() + 1,
-          day: nextDay.getUTCDate(),
-        });
-        icsLines.push(`DTSTART;VALUE=DATE:${start}`);
-        icsLines.push(`DTEND;VALUE=DATE:${end}`);
-      } else {
-        // Timed event
-        const start = zonedDateTimeToUtc(dateParts, timeParts, timeZone);
-        if (!Number.isNaN(start.getTime())) {
-          const duration = Math.max(1, Number(task.duration_minutes || 45));
-          const end = new Date(start.getTime() + duration * 60_000);
-          icsLines.push(`DTSTART:${formatUtcDateTime(start)}`);
-          icsLines.push(`DTEND:${formatUtcDateTime(end)}`);
+        if (!timeParts) {
+          // All day event
+          const start = formatDateValue(dateParts);
+          const nextDay = new Date(Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day + 1));
+          const end = formatDateValue({
+            year: nextDay.getUTCFullYear(),
+            month: nextDay.getUTCMonth() + 1,
+            day: nextDay.getUTCDate(),
+          });
+          icsLines.push(`DTSTART;VALUE=DATE:${start}`);
+          icsLines.push(`DTEND;VALUE=DATE:${end}`);
+        } else {
+          // Timed event
+          const start = zonedDateTimeToUtc(dateParts, timeParts, timeZone);
+          if (!Number.isNaN(start.getTime())) {
+            const duration = Math.max(1, Number(task.duration_minutes || 45));
+            const end = new Date(start.getTime() + duration * 60_000);
+            icsLines.push(`DTSTART:${formatUtcDateTime(start)}`);
+            icsLines.push(`DTEND:${formatUtcDateTime(end)}`);
+          }
         }
-      }
 
-      const statusPrefix = task.is_completed ? '✓ ' : '';
-      icsLines.push(`SUMMARY:${escapeText(statusPrefix + task.title)}`);
-      icsLines.push('CATEGORIES:LifeOS Task');
-      icsLines.push('X-LIFEOS-ITEM-TYPE:TASK');
-      if (task.description) icsLines.push(`DESCRIPTION:${escapeText(task.description)}`);
-      if (task.location) icsLines.push(`LOCATION:${escapeText(task.location)}`);
-      const taskUrl = sanitizeUrl(task.url);
-      if (taskUrl) icsLines.push(`URL:${taskUrl}`);
-      icsLines.push('END:VEVENT');
+        icsLines.push(`SUMMARY:${escapeText(task.title)}`);
+        icsLines.push('CATEGORIES:LifeOS Task');
+        icsLines.push('X-LIFEOS-ITEM-TYPE:TASK');
+        if (task.description) icsLines.push(`DESCRIPTION:${escapeText(task.description)}`);
+        if (task.location) icsLines.push(`LOCATION:${escapeText(task.location)}`);
+        const taskUrl = sanitizeUrl(task.url);
+        if (taskUrl) icsLines.push(`URL:${taskUrl}`);
+        icsLines.push('END:VEVENT');
+      }
     }
 
     // Append Habits (generates instances for the 30-day window)
-    for (const habit of habits || []) {
+    if (!feedType || feedType === 'habits' || feedType === 'prayers') {
+      for (const habit of habits || []) {
+        const isPrayer = isPrayerTitle(habit.title);
+        if (feedType === 'habits' && isPrayer) continue;
+        if (feedType === 'prayers' && !isPrayer) continue;
+
+        // Skip detox habits
+        if (habit.detox_mode || habit.habit_type === 'detox') {
+          continue;
+        }
+
       for (let i = -14; i <= 14; i++) {
         const dateObj = new Date(today.getTime() + i * 24 * 60 * 60 * 1000);
         const dayOfWeek = dateObj.getDay(); // 0 is Sunday, 1 is Monday ... 6 is Saturday
@@ -364,18 +427,13 @@ Deno.serve(async (req: Request) => {
         const dy = String(dateObj.getDate()).padStart(2, '0');
         const dateStr = `${yr}-${mo}-${dy}`;
 
-        const isCompleted = completedHabitLogSet.has(`${habit.id}_${dateStr}`);
-        const isPast = dateStr < today.toISOString().slice(0, 10);
-        
-        let prefix = '⏳ ';
-        if (isCompleted) {
-          prefix = '✓ ';
-        } else if (isPast) {
-          prefix = '✗ ';
-        }
-
         const dateParts = { year: yr, month: dateObj.getMonth() + 1, day: dateObj.getDate() };
-        const timeParts = parseTimeParts(habit.time);
+        
+        let habitTime = habit.time;
+        if (!habitTime) {
+          habitTime = getUsualTimeForHabit(habit.id, habitLogs || [], timeZone);
+        }
+        const timeParts = parseTimeParts(habitTime);
 
         icsLines.push('BEGIN:VEVENT');
         icsLines.push(`UID:habit-${habit.id}-${dateStr}@lifeos`);
@@ -403,15 +461,16 @@ Deno.serve(async (req: Request) => {
           }
         }
 
-        icsLines.push(`SUMMARY:${escapeText(prefix + habit.title)}`);
+        icsLines.push(`SUMMARY:${escapeText(habit.title)}`);
         icsLines.push('CATEGORIES:LifeOS Habit');
         icsLines.push('X-LIFEOS-ITEM-TYPE:HABIT');
         if (habit.description) icsLines.push(`DESCRIPTION:${escapeText(habit.description)}`);
         icsLines.push('END:VEVENT');
       }
     }
+  }
 
-    icsLines.push('END:VCALENDAR');
+  icsLines.push('END:VCALENDAR');
     const icsContent = icsLines.flatMap(foldLine).join('\r\n');
 
     return new Response(icsContent, {

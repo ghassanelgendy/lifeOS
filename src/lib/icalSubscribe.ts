@@ -13,6 +13,7 @@ export interface IcalEvent {
   isIcal: true;
   icalUrl: string;
   sourceType?: 'event' | 'task';
+  xLifeOsItemType?: 'TASK' | 'HABIT' | 'EVENT';
 }
 
 const ICAL_CACHE_TTL_MS = 1000 * 30;
@@ -112,6 +113,8 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
   let uid = '';
   let sourceType: 'event' | 'task' = 'event';
 
+  let xLifeOsItemType: 'TASK' | 'HABIT' | 'EVENT' | undefined = undefined;
+
   for (const line of lines) {
     const property = parsePropertyLine(line);
     if (!property) continue;
@@ -120,7 +123,11 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
     else if (property.name === 'DESCRIPTION') description = decodeText(property.value);
     else if (property.name === 'LOCATION') location = decodeText(property.value);
     else if (property.name === 'CATEGORIES') categories = decodeText(property.value);
-    else if (property.name === 'X-LIFEOS-ITEM-TYPE' && property.value.toUpperCase() === 'TASK') sourceType = 'task';
+    else if (property.name === 'X-LIFEOS-ITEM-TYPE') {
+      const val = property.value.toUpperCase();
+      if (val === 'TASK') sourceType = 'task';
+      xLifeOsItemType = val as 'TASK' | 'HABIT' | 'EVENT';
+    }
     else if (property.name === 'STATUS') status = property.value;
     else if (property.name === 'UID') uid = property.value;
     else if (property.name === 'DTSTART') {
@@ -172,6 +179,7 @@ function parseVevent(block: string, icalUrl: string): IcalEvent | null {
     isIcal: true,
     icalUrl,
     sourceType,
+    xLifeOsItemType,
   };
 }
 
@@ -238,6 +246,7 @@ function parseVtodo(block: string, icalUrl: string): IcalEvent | null {
     isIcal: true,
     icalUrl,
     sourceType: 'task',
+    xLifeOsItemType: 'TASK',
   };
 }
 

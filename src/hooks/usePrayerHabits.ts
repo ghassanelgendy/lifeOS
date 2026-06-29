@@ -146,6 +146,7 @@ async function ensurePrayerRows(
           title: desiredTitle,
           description: `Daily ${prayerName} prayer`,
           frequency: 'Daily',
+          time: timeOnly,
           target_count: 1,
           adherence_weight: 1,
           color: '#8b5cf6',
@@ -179,6 +180,7 @@ async function ensurePrayerRows(
     await supabase.from('habits').update({
       title: desiredTitle,
       description: `Daily ${prayerName} prayer at ${displayTime}`,
+      time: timeOnly,
       color: '#8b5cf6',
     }).eq('id', existing.habit_id);
   }
