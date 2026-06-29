@@ -118,6 +118,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
+          # If it's a rolling release, delete the previous one first to avoid asset conflict/API issues
+          if [ "${{ steps.params.outputs.tag }}" = "latest" ]; then
+            gh release delete "latest" --yes --cleanup-tag || true
+          fi
+
           gh release create "${{ steps.params.outputs.tag }}" \
             --title "${{ steps.params.outputs.name }}" \
             --notes "${{ steps.params.outputs.body }}" \
@@ -126,5 +131,11 @@ jobs:
             --title "${{ steps.params.outputs.name }}" \
             --notes "${{ steps.params.outputs.body }}" \
             --prerelease="${{ steps.params.outputs.prerelease }}"
+          
+          # Delete any existing assets just in case gh release upload fails to overwrite
+          assets=$(gh release view "${{ steps.params.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null || true)
+          for asset in $assets; do
+            gh release delete-asset "${{ steps.params.outputs.tag }}" "$asset" --yes || true
+          done
           
           gh release upload "${{ steps.params.outputs.tag }}" release-artifacts/* --clobber
