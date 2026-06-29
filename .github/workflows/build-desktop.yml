@@ -114,13 +114,17 @@ jobs:
           fi
 
       - name: Create Release and Upload Assets
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: ${{ steps.params.outputs.tag }}
-          name: ${{ steps.params.outputs.name }}
-          body: ${{ steps.params.outputs.body }}
-          prerelease: ${{ steps.params.outputs.prerelease == 'true' }}
-          draft: false
-          files: release-artifacts/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          gh release create "${{ steps.params.outputs.tag }}" \
+            --title "${{ steps.params.outputs.name }}" \
+            --notes "${{ steps.params.outputs.body }}" \
+            --prerelease="${{ steps.params.outputs.prerelease }}" \
+            || gh release edit "${{ steps.params.outputs.tag }}" \
+            --title "${{ steps.params.outputs.name }}" \
+            --notes "${{ steps.params.outputs.body }}" \
+            --prerelease="${{ steps.params.outputs.prerelease }}"
+          
+          gh release upload "${{ steps.params.outputs.tag }}" release-artifacts/* --clobber
