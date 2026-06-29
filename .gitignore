@@ -48,3 +48,5 @@ dist.zip
 /scripts
 supabase/SUPABASE_ISSUE.MD
 supabase/current_db.sql
+supabase/.temp/cli-latest
+supabase/.temp/linked-project.json
