@@ -7,7 +7,9 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { queryClient } from './lib/queryClient';
 
 import { seedDatabase } from './db/seed';
-import { processOfflineQueue, isOnline } from './lib/offlineSync';
+import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
+import { checkAndApplyUpdates } from './lib/otaUpdater';
+import { setupDeepLinkListener, triggerHaptics } from './lib/nativeBridge';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
@@ -76,6 +78,55 @@ function AppInner() {
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
   useEffect(() => {
     if (isOnline()) seedDatabase();
+    
+    // Check and apply OTA updates on app startup (native platforms only)
+    void checkAndApplyUpdates();
+
+    // Setup Deep Link URL Scheme listener (e.g., lifeos://add-transaction)
+    setupDeepLinkListener((url) => {
+      console.log('Deep link received:', url);
+      try {
+        const parsedUrl = new URL(url);
+        // Handlers for deep link paths
+        if (parsedUrl.host === 'add-transaction') {
+          const params = new URLSearchParams(parsedUrl.search);
+          const amountStr = params.get('amount');
+          const amount = amountStr ? parseFloat(amountStr) : 0;
+          const category = (params.get('category') || 'other_expense') as any;
+          const description = params.get('description') || 'Shortcut Transaction';
+          const type = (params.get('type') || 'expense') as 'income' | 'expense';
+          const direction = type === 'income' ? 'In' : 'Out';
+
+          const date = new Date().toISOString().split('T')[0];
+          const time = new Date().toTimeString().split(' ')[0];
+
+          addToOfflineQueue({
+            entity: 'transactions',
+            op: 'create',
+            payload: {
+              type,
+              category,
+              amount,
+              description,
+              date,
+              time,
+              direction,
+              is_recurring: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          });
+
+          // Trigger native haptics success
+          void triggerHaptics('success');
+
+          // Invalidate React Query transactions cache so the new item shows immediately
+          void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        }
+      } catch (err) {
+        console.error('Failed to parse deep link URL:', err);
+      }
+    });
   }, []);
 
   useEffect(() => {

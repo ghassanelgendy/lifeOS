@@ -1,0 +1,39 @@
+name: Free OTA Deploy
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - run: pnpm install
+      - run: pnpm build
+
+      - name: Compress Web App Bundle
+        run: |
+          cd dist
+          zip -r ../update.zip .
+          cd ..
+
+      - name: Create Version Descriptor
+        run: |
+          echo "{\"version\": \"1.0.${{ github.run_number }}\", \"url\": \"${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/update.zip\"}" > version.json
+
+      - name: Upload Zip to Supabase Storage
+        run: |
+          curl -X POST -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          -H "Content-Type: application/zip" \
+          --data-binary "@update.zip" \
+          "${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/update.zip"
+
+      - name: Upload Version JSON to Supabase Storage
+        run: |
+          curl -X POST -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          -H "Content-Type: application/json" \
+          --data-binary "@version.json" \
+          "${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/version.json"
