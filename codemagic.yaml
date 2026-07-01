@@ -8,8 +8,9 @@ workflows:
     triggering:
       events:
         - push
-      branches:
-        - main
+      branch_patterns:
+        - pattern: 'main'
+        - pattern: 'feature/capacitor-ios'
     scripts:
       - name: Install dependencies
         script: |
