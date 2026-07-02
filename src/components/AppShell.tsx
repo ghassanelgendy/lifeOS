@@ -478,8 +478,11 @@ export function AppShell() {
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Mobile Header — safe area top for iOS standalone (notch/status bar) */}
         <header
-          className="md:hidden flex h-14 items-center justify-between border-b border-border px-4 bg-background shrink-0"
-          style={{ paddingTop: 'env(safe-area-inset-top)', minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}
+          className="md:hidden flex items-center justify-between border-b border-border px-4 bg-background shrink-0"
+          style={{ 
+            paddingTop: 'env(safe-area-inset-top)', 
+            height: 'calc(3.5rem + env(safe-area-inset-top))' 
+          }}
         >
           <button
             onClick={() => setMobileSidebarOpen(true)}
