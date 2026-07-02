@@ -85,5 +85,20 @@
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
     "workbox-routing": "^7.4.1"
+  },
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": [
+        "current",
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "cpu": [
+        "current",
+        "x64",
+        "arm64"
+      ]
+    }
   }
 }
