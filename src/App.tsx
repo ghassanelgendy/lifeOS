@@ -9,7 +9,8 @@ import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
-import { setupDeepLinkListener, triggerHaptics } from './lib/nativeBridge';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncLocalNotifications } from './lib/nativeBridge';
+import { useTasks } from './hooks/useTasks';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
@@ -70,14 +71,28 @@ function ThemeSync() {
     document.documentElement.setAttribute('data-accent', accentTheme);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
+    
+    // Sync native iOS status bar theme
+    void syncStatusBar(theme);
   }, [theme, accentTheme]);
   return null;
 }
 
 function AppInner() {
+  const { data: tasks } = useTasks();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+
+  useEffect(() => {
+    if (tasks) {
+      void syncLocalNotifications(tasks);
+    }
+  }, [tasks]);
+
   useEffect(() => {
     if (isOnline()) seedDatabase();
+    
+    // Initialize native features (Keyboard, Badge, Splash Screen)
+    void initializeNativeApp();
     
     // Check and apply OTA updates on app startup (native platforms only)
     void checkAndApplyUpdates();
