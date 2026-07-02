@@ -13,15 +13,19 @@ export async function checkAndApplyUpdates() {
     // 1. Notify CapacitorUpdater that the app loaded successfully (prevents automatic rollback)
     await CapacitorUpdater.notifyAppReady();
 
+    // Debug Alert to verify env vars are baked in
+    alert(`OTA Debug: VITE_SUPABASE_URL = "${SUPABASE_URL}"`);
+
     if (!SUPABASE_URL) {
-      console.warn('VITE_SUPABASE_URL is not set, skipping OTA update check');
+      alert('OTA Warning: VITE_SUPABASE_URL is empty! OTA updates are disabled.');
       return;
     }
 
     // 2. Fetch the version.json from Supabase Storage
+    alert(`OTA Debug: Fetching from ${VERSION_URL}`);
     const response = await fetch(VERSION_URL, { cache: 'no-store' });
     if (!response.ok) {
-      console.warn(`OTA update check failed: version.json returned HTTP ${response.status}`);
+      alert(`OTA Error: version.json returned HTTP ${response.status}`);
       return;
     }
 
@@ -48,6 +52,7 @@ export async function checkAndApplyUpdates() {
       console.log(`App is up-to-date. Current OTA version: ${currentVersion}`);
     }
   } catch (err) {
+    alert(`OTA Exception: ${err instanceof Error ? err.message : String(err)}`);
     console.error('OTA Update check failed:', err);
   }
 }
