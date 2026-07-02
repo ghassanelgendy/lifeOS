@@ -20,6 +20,8 @@ import {
   CircleSlash2,
   ArrowUpDown,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -57,9 +59,9 @@ import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurren
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
-  medium: { color: 'text-amber-500', icon: Flag, label: 'Medium' },
-  low: { color: 'text-blue-500', icon: Flag, label: 'Low' },
-  none: { color: 'text-muted-foreground', icon: Flag, label: 'None' },
+  medium: { color: 'text-muted-foreground/60', icon: Flag, label: 'Medium' },
+  low: { color: 'text-muted-foreground/40', icon: Flag, label: 'Low' },
+  none: { color: 'text-muted-foreground/20', icon: Flag, label: 'None' },
 };
 
 const RECURRENCE_OPTIONS: { value: TaskRecurrence; label: string }[] = [
@@ -159,6 +161,19 @@ export default function Tasks() {
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
   useConvertTaskToHabit(); // available for future use
+
+  useEffect(() => {
+    const handleTriggerAddTask = () => {
+      setSelectedTask(null);
+      setEditForm(getDefaultEditFormForNewTask());
+      setIsEditModalOpen(true);
+    };
+    window.addEventListener('app-trigger-add-task', handleTriggerAddTask);
+    return () => {
+      window.removeEventListener('app-trigger-add-task', handleTriggerAddTask);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
@@ -1472,16 +1487,16 @@ export default function Tasks() {
       return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
     }
     if (isToday(dueDate)) {
-      return { text: 'Today', className: 'text-blue-500' };
+      return { text: 'Today', className: 'text-muted-foreground' };
     }
     if (isTomorrow(dueDate)) {
-      return { text: 'Tomorrow', className: 'text-amber-500' };
+      return { text: 'Tomorrow', className: 'text-muted-foreground' };
     }
     return { text: format(dueDate, 'MMM d'), className: 'text-muted-foreground' };
   };
 
   return (
-    <div className="flex flex-1 min-h-0 -m-4 md:-m-6 relative">
+    <div className="flex flex-1 min-h-0 -m-4 md:-m-6 relative bg-background">
       {/* Mobile Sidebar Backdrop */}
       {showListsSidebar && (
         <div
@@ -1493,7 +1508,7 @@ export default function Tasks() {
       {/* Sidebar - Fixed overlay on mobile; space above bottom bar so content isn't cut */}
       <aside
         className={cn(
-          "flex flex-col border-r border-border bg-card transition-all duration-300 shrink-0",
+          "flex flex-col border-r border-white/10 bg-[#f9f9f9]/40 dark:bg-[#1c1c1e]/60 backdrop-blur-xl transition-all duration-300 shrink-0",
           "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
           "h-[100dvh] md:h-full md:min-h-full",
           "overflow-hidden",
@@ -1732,7 +1747,7 @@ export default function Tasks() {
             >
               <ListTodo size={20} />
             </button>
-            <h1 className="text-2xl font-bold">{getViewTitle()}</h1>
+            <h1 className="text-2xl font-bold md:block hidden">{getViewTitle()}</h1>
             {activeView === 'today' && overdueTasks.length > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-xs font-medium">
                 {overdueTasks.length} overdue
@@ -1743,7 +1758,7 @@ export default function Tasks() {
             <button
               type="button"
               onClick={cycleSortMode}
-              className="h-9 w-9 rounded-full border border-border bg-card/70 hover:bg-secondary transition-colors flex items-center justify-center"
+              className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90"
               title={`Sort: ${currentSortOption.label} (press S to cycle)`}
               aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
             >
@@ -1754,9 +1769,14 @@ export default function Tasks() {
                 {sortFeedback}
               </span>
             )}
-            <Button onClick={handleOpenNewTaskSheet} className="p-2" aria-label="Add task">
-              <Plus size={22} />
-            </Button>
+            <button
+              onClick={handleOpenNewTaskSheet}
+              className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all md:flex hidden items-center justify-center"
+              aria-label="Add task"
+              type="button"
+            >
+              <Plus size={18} className="text-primary" />
+            </button>
           </div>
         </header>
 
@@ -2210,79 +2230,127 @@ export default function Tasks() {
             </form>
           )}
 
-          {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
-          <div className="space-y-1">
-            {mainTasksToRender.map((task) => {
-              const isHabitTask = task.id.startsWith('habit-');
-              return (
-                <SwipeableRow
-                  key={task.id}
-                  onDone={() => handleTaskToggle(task)}
-                  onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
-                  onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
-                  onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                  showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
+          {/* Tasks - Apple Inset Grouped List style */}
+          {mainTasksToRender.length > 0 && (
+            <div className="liquid-glass-card overflow-hidden shadow-sm">
+              <motion.div layout className="flex flex-col bg-transparent">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  {mainTasksToRender.map((task, index) => {
+                    const isHabitTask = task.id.startsWith('habit-');
+                    const isLast = index === mainTasksToRender.length - 1 && isAddingTask;
+                    return (
+                      <motion.div
+                        key={task.id}
+                        layout
+                        initial={{ opacity: 0, y: 15 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ type: "spring", stiffness: 420, damping: 35 }}
+                      >
+                        <SwipeableRow
+                          onDone={() => handleTaskToggle(task)}
+                          onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
+                          onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
+                          onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                          showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
+                          flat={true}
+                        >
+                          <TaskItem
+                            task={task}
+                            tags={tags}
+                            onToggle={() => handleTaskToggle(task)}
+                            onEdit={() => {
+                              if (!isHabitTask) handleEditTask(task);
+                            }}
+                            onDelete={() => {
+                              if (!isHabitTask) deleteTask.mutate(task.id);
+                            }}
+                            onWontDo={() => {
+                              if (!isHabitTask) handleMarkWontDo(task);
+                            }}
+                            formatDueDate={formatDueDate}
+                            isLast={isLast}
+                          />
+                        </SwipeableRow>
+                      </motion.div>
+                    );
+                  })}
+                </AnimatePresence>
+              </motion.div>
+
+              {/* Integrated New Task button as the final row */}
+              {!isAddingTask && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddingTask(true);
+                    requestAnimationFrame(() => quickAddRef.current?.focus());
+                  }}
+                  className="flex items-center gap-2.5 px-4 py-4 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors w-full active:bg-white/5 select-none text-left"
                 >
-                  <TaskItem
-                    task={task}
-                    tags={tags}
-                    onToggle={() => handleTaskToggle(task)}
-                    onEdit={() => {
-                      if (!isHabitTask) handleEditTask(task);
-                    }}
-                    onDelete={() => {
-                      if (!isHabitTask) deleteTask.mutate(task.id);
-                    }}
-                    onWontDo={() => {
-                      if (!isHabitTask) handleMarkWontDo(task);
-                    }}
-                    formatDueDate={formatDueDate}
-                  />
-                </SwipeableRow>
-              );
-            })}
-          </div>
+                  <Plus size={16} />
+                  <span>New Task</span>
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Completed section */}
           {activeView !== 'completed' && activeView !== 'wontdo' && completedDisplayTasks.length > 0 && (
             <div className="mt-6">
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+                type="button"
               >
                 {showCompleted ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
-                <div className="mt-2 space-y-1 opacity-60">
-                  {completedTasksToRender.slice(0, 10).map((task) => {
-                    const isHabitTask = task.id.startsWith('habit-');
-                    return (
-                      <SwipeableRow
-                        key={task.id}
-                        onDone={() => handleTaskToggle(task)}
-                        onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
-                        onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                        showPostpone={false}
-                      >
-                        <TaskItem
-                          task={task}
-                          tags={tags}
-                          onToggle={() => handleTaskToggle(task)}
-                          onEdit={() => {
-                            if (!isHabitTask) handleEditTask(task);
-                          }}
-                          onDelete={() => {
-                            if (!isHabitTask) deleteTask.mutate(task.id);
-                          }}
-                          onWontDo={() => {
-                            if (!isHabitTask) handleMarkWontDo(task);
-                          }}
-                          formatDueDate={formatDueDate}
-                        />
-                      </SwipeableRow>
-                    );
-                  })}
+                <div className="liquid-glass-card overflow-hidden shadow-sm">
+                  <motion.div layout className="flex flex-col bg-transparent opacity-60">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {completedTasksToRender.slice(0, 10).map((task, index) => {
+                        const isHabitTask = task.id.startsWith('habit-');
+                        const isLast = index === completedTasksToRender.slice(0, 10).length - 1;
+                        return (
+                          <motion.div
+                            key={task.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 420, damping: 35 }}
+                          >
+                            <SwipeableRow
+                              onDone={() => handleTaskToggle(task)}
+                              onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
+                              onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                              showPostpone={false}
+                              flat={true}
+                            >
+                              <TaskItem
+                                task={task}
+                                tags={tags}
+                                onToggle={() => handleTaskToggle(task)}
+                                onEdit={() => {
+                                  if (!isHabitTask) handleEditTask(task);
+                                }}
+                                onDelete={() => {
+                                  if (!isHabitTask) deleteTask.mutate(task.id);
+                                }}
+                                onWontDo={() => {
+                                  if (!isHabitTask) handleMarkWontDo(task);
+                                }}
+                                formatDueDate={formatDueDate}
+                                isLast={isLast}
+                              />
+                            </SwipeableRow>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </motion.div>
                 </div>
               )}
             </div>
@@ -2293,41 +2361,57 @@ export default function Tasks() {
             <div className="mt-6">
               <button
                 onClick={() => setShowWontDo(!showWontDo)}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
+                type="button"
               >
                 {showWontDo ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span>Won't do ({wontDoTasksToRender.length})</span>
               </button>
               {showWontDo && (
-                <div className="mt-2 space-y-1 opacity-70">
-                  {wontDoTasksToRender.slice(0, 20).map((task) => {
-                    const isHabitTask = task.id.startsWith('habit-');
-                    return (
-                      <SwipeableRow
-                        key={task.id}
-                        onDone={() => handleTaskToggle(task)}
-                        onWontDo={undefined}
-                        onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                        showPostpone={false}
-                      >
-                        <TaskItem
-                          task={task}
-                          tags={tags}
-                          onToggle={() => handleTaskToggle(task)}
-                          onEdit={() => {
-                            if (!isHabitTask) handleEditTask(task);
-                          }}
-                          onDelete={() => {
-                            if (!isHabitTask) deleteTask.mutate(task.id);
-                          }}
-                          onWontDo={() => {
-                            if (!isHabitTask) handleMarkWontDo(task);
-                          }}
-                          formatDueDate={formatDueDate}
-                        />
-                      </SwipeableRow>
-                    );
-                  })}
+                <div className="liquid-glass-card overflow-hidden shadow-sm">
+                  <motion.div layout className="flex flex-col bg-transparent opacity-70">
+                    <AnimatePresence mode="popLayout" initial={false}>
+                      {wontDoTasksToRender.slice(0, 20).map((task, index) => {
+                        const isHabitTask = task.id.startsWith('habit-');
+                        const isLast = index === wontDoTasksToRender.slice(0, 20).length - 1;
+                        return (
+                          <motion.div
+                            key={task.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 420, damping: 35 }}
+                          >
+                            <SwipeableRow
+                              onDone={() => handleTaskToggle(task)}
+                              onWontDo={undefined}
+                              onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                              showPostpone={false}
+                              flat={true}
+                            >
+                              <TaskItem
+                                task={task}
+                                tags={tags}
+                                onToggle={() => handleTaskToggle(task)}
+                                onEdit={() => {
+                                  if (!isHabitTask) handleEditTask(task);
+                                }}
+                                onDelete={() => {
+                                  if (!isHabitTask) deleteTask.mutate(task.id);
+                                }}
+                                onWontDo={() => {
+                                  if (!isHabitTask) handleMarkWontDo(task);
+                                }}
+                                formatDueDate={formatDueDate}
+                                isLast={isLast}
+                              />
+                            </SwipeableRow>
+                          </motion.div>
+                        );
+                      })}
+                    </AnimatePresence>
+                  </motion.div>
                 </div>
               )}
             </div>
@@ -2542,37 +2626,53 @@ interface TaskItemProps {
   onDelete: () => void;
   onWontDo: () => void;
   formatDueDate: (task: Task) => { text: string; className: string };
+  isLast?: boolean;
 }
 
-function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate }: TaskItemProps) {
+function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate, isLast }: TaskItemProps) {
+  const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority];
   const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
 
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Success feedback on task check, standard light tap on reopen
+    if (task.is_completed) {
+      void triggerLightTap();
+    } else {
+      void triggerSuccessTap();
+    }
+    onToggle();
+  };
+
   return (
     <div
       className={cn(
-        "task-item group flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all duration-150 ease-out cursor-pointer",
-        task.is_completed && "opacity-50"
+        "task-item group flex items-start gap-3.5 px-4 bg-transparent active:scale-[0.99] active:bg-white/5 transition-all duration-150 ease-out cursor-pointer select-none",
+        task.is_completed && "opacity-45"
       )}
       onClick={() => {
         if (!task.id.startsWith('habit-')) {
+          void triggerLightTap();
           onEdit();
         }
       }}
     >
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
+        onClick={handleToggleClick}
+        onTouchStart={() => {
+          if (!task.is_completed) void triggerSuccessTap();
+          else void triggerLightTap();
         }}
         className={cn(
-          "w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+          "w-5 h-5 mt-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
           task.is_completed
-            ? "bg-green-500 border-green-500"
+            ? "bg-green-500 border-green-500 scale-105"
             : "border-muted-foreground hover:border-foreground"
         )}
+        type="button"
       >
         <svg
           className={cn(
@@ -2586,18 +2686,18 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             d="M4 8.5 7 11 12 5"
             fill="none"
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </svg>
       </button>
 
-      <div className="flex-1 min-w-0">
+      <div className={cn("flex-1 min-w-0 py-4", !isLast && "border-b border-white/10")}>
         <div className="flex items-center gap-2">
           <span className={cn(
-            "font-medium",
-            task.is_completed && "line-through text-muted-foreground"
+            "font-medium tracking-tight text-[15px]",
+            task.is_completed && "line-through text-muted-foreground font-normal"
           )}>
             {task.title}
           </span>
@@ -2614,7 +2714,6 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
           )}
         </div>
-
 
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {dueInfo.text && (
@@ -2635,30 +2734,6 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
           ))}
         </div>
       </div>
-
-      {!task.id.startsWith('habit-') && (
-        <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onWontDo();
-            }}
-            className="p-1.5 rounded hover:bg-zinc-500/20 text-muted-foreground hover:text-zinc-300 transition-all"
-            title="Mark as won't do"
-          >
-            <CircleSlash2 size={14} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      )}
     </div>
   );
 }

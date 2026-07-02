@@ -7,7 +7,14 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { queryClient } from './lib/queryClient';
 
 import { seedDatabase } from './db/seed';
-import { processOfflineQueue, isOnline } from './lib/offlineSync';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from './lib/supabase';
+import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
+import { checkAndApplyUpdates } from './lib/otaUpdater';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners } from './lib/nativeBridge';
+import { useTasks } from './hooks/useTasks';
+import { useHabits } from './hooks/useHabits';
+import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
@@ -68,14 +75,100 @@ function ThemeSync() {
     document.documentElement.setAttribute('data-accent', accentTheme);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
+    
+    // Sync native iOS status bar theme
+    void syncStatusBar(theme);
   }, [theme, accentTheme]);
   return null;
 }
 
 function AppInner() {
+  const { user } = useAuth();
+  const { data: tasks } = useTasks();
+  const { data: habits } = useHabits();
+  const { data: events } = useCalendarEvents();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+
+  const lat = useUIStore((s) => s.prayerLatitude);
+  const lng = useUIStore((s) => s.prayerLongitude);
+
+  const { data: prayerSettings } = useQuery({
+    queryKey: ['local-push-prayer-settings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_notification_settings')
+        .select('*, prayer_habit:prayer_habits(prayer_name)')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  useEffect(() => {
+    if (!tasks || !habits || !events) return;
+    // Use [] fallback for prayerSettings so tasks/habits/events are scheduled
+    // immediately without waiting on prayer settings to finish loading
+    void syncAllLocalNotifications(tasks, habits, events, prayerSettings ?? [], lat, lng);
+  }, [tasks, habits, events, prayerSettings, lat, lng]);
+
   useEffect(() => {
     if (isOnline()) seedDatabase();
+    
+    // Initialize native features (Keyboard, Badge, Splash Screen, Notification Permissions)
+    void initializeNativeApp();
+
+    // Wire up notification quick-action listeners (Done, Postpone, Snooze, Late)
+    setupNotificationActionListeners(supabase, queryClient);
+    
+    // Check and apply OTA updates on app startup (native platforms only)
+    void checkAndApplyUpdates();
+
+    // Setup Deep Link URL Scheme listener (e.g., lifeos://add-transaction)
+    setupDeepLinkListener((url) => {
+      console.log('Deep link received:', url);
+      try {
+        const parsedUrl = new URL(url);
+        // Handlers for deep link paths
+        if (parsedUrl.host === 'add-transaction') {
+          const params = new URLSearchParams(parsedUrl.search);
+          const amountStr = params.get('amount');
+          const amount = amountStr ? parseFloat(amountStr) : 0;
+          const category = (params.get('category') || 'other_expense') as any;
+          const description = params.get('description') || 'Shortcut Transaction';
+          const type = (params.get('type') || 'expense') as 'income' | 'expense';
+          const direction = type === 'income' ? 'In' : 'Out';
+
+          const date = new Date().toISOString().split('T')[0];
+          const time = new Date().toTimeString().split(' ')[0];
+
+          addToOfflineQueue({
+            entity: 'transactions',
+            op: 'create',
+            payload: {
+              type,
+              category,
+              amount,
+              description,
+              date,
+              time,
+              direction,
+              is_recurring: false,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            }
+          });
+
+          // Trigger native haptics success
+          void triggerHaptics('success');
+
+          // Invalidate React Query transactions cache so the new item shows immediately
+          void queryClient.invalidateQueries({ queryKey: ['transactions'] });
+        }
+      } catch (err) {
+        console.error('Failed to parse deep link URL:', err);
+      }
+    });
   }, []);
 
   useEffect(() => {

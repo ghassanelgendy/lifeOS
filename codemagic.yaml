@@ -1,0 +1,54 @@
+workflows:
+  ios-build:
+    name: iOS Unsigned Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      groups:
+        - lifeos
+      node: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+      # Only build when native files actually change — skip OTA-only pushes
+      cancel_previous_builds: true
+    when:
+      changeset:
+        includes:
+          - 'ios/**'
+          - 'android/**'
+          - 'capacitor.config.*'
+          - 'package.json'
+          - 'codemagic.yaml'
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm install -g pnpm
+          pnpm install
+      - name: Build web application
+        script: |
+          pnpm build
+      - name: Sync Capacitor iOS project
+        script: |
+          pnpm cap add ios || true
+          pnpm cap sync ios
+      - name: Compile iOS app (Unsigned)
+        script: |
+          xcodebuild -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            clean build
+      - name: Package IPA
+        script: |
+          mkdir -p build/ios/Payload
+          cp -r ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/App.app build/ios/Payload/
+          cd build/ios
+          zip -r lifeOS.ipa Payload
+    artifacts:
+      - build/ios/*.ipa

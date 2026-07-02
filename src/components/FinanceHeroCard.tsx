@@ -15,19 +15,18 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
 
   return (
     <div
-      className="rounded-3xl p-5 relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
-        boxShadow: `0 0 0 1px ${isOverspending ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.08)'}, inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 40px rgba(0,0,0,0.4)`,
-      }}
+      className={cn(
+        "liquid-glass-card p-5 relative overflow-hidden transition-all duration-300",
+        isOverspending ? "border-red-500/25" : "border-green-500/25"
+      )}
     >
       {/* Ambient glow */}
       <div
         className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full blur-3xl"
         style={{
           background: isOverspending
-            ? 'radial-gradient(circle, rgba(239,68,68,0.14), transparent 70%)'
-            : 'radial-gradient(circle, rgba(34,197,94,0.10), transparent 70%)',
+            ? 'radial-gradient(circle, rgba(239,68,68,0.18), transparent 70%)'
+            : 'radial-gradient(circle, rgba(34,197,94,0.14), transparent 70%)',
         }}
       />
 
@@ -73,7 +72,7 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
 
       {/* Income / Expenses columns */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-background/40 rounded-2xl p-3">
+        <div className="bg-black/15 dark:bg-white/5 rounded-2xl p-3 border border-white/5">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
             <span className="text-[11px] text-muted-foreground">Income</span>
@@ -82,7 +81,7 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
             {formatCurrency(income)}
           </p>
         </div>
-        <div className="bg-background/40 rounded-2xl p-3">
+        <div className="bg-black/15 dark:bg-white/5 rounded-2xl p-3 border border-white/5">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
             <span className="text-[11px] text-muted-foreground">Expenses</span>
@@ -95,7 +94,7 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
 
       {/* Progress bar */}
       <div className="space-y-1.5">
-        <div className="h-2 rounded-full bg-border overflow-hidden">
+        <div className="h-2 rounded-full bg-white/5 overflow-hidden border border-white/5">
           <div
             className="h-full rounded-full"
             style={{

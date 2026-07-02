@@ -43,8 +43,11 @@ import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
 import { Link } from 'react-router-dom';
+import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
+import { sendTestNotification } from '../lib/nativeBridge';
+import { Capacitor } from '@capacitor/core';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -83,6 +86,7 @@ const SETTINGS_NAV = [
   { id: 'habits', label: 'Habits' },
   { id: 'privacy', label: 'Privacy & analytics' },
   { id: 'data', label: 'Data & backup' },
+  { id: 'logs', label: 'System logs' },
   { id: 'about', label: 'About' },
 ] as const;
 
@@ -90,6 +94,12 @@ type LayoutWidgetPage = 'dashboard' | 'habits' | 'sleep';
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
+  const [localLogs, setLocalLogs] = useState<SystemLog[]>([]);
+
+  useEffect(() => {
+    setLocalLogs(getSystemLogs());
+  }, []);
+
   const {
     privacyMode,
     togglePrivacyMode,
@@ -150,6 +160,7 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [localNotifStatus, setLocalNotifStatus] = useState<string | null>(null);
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
@@ -268,14 +279,13 @@ export default function SettingsPage() {
 
   // Toggle nav item in mobile bar
   const handleToggleNavItem = (href: string) => {
-    if (mobileNavItems.includes(href)) {
-      // Don't allow removing Settings - it should always be accessible
-      if (href === '/settings') return;
-      setMobileNavItems(mobileNavItems.filter(item => item !== href));
+    const cleanNavItems = mobileNavItems.filter(item => item !== '/settings');
+    if (cleanNavItems.includes(href)) {
+      setMobileNavItems(cleanNavItems.filter(item => item !== href));
     } else {
-      // Max 5 items
-      if (mobileNavItems.length >= 5) return;
-      setMobileNavItems([...mobileNavItems, href]);
+      // Max 5 visible items
+      if (cleanNavItems.length >= 5) return;
+      setMobileNavItems([...cleanNavItems, href]);
     }
   };
 
@@ -322,7 +332,7 @@ export default function SettingsPage() {
 
         <div className="flex-1 min-w-0 space-y-10">
       {/* Account */}
-      <section id="settings-account" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-account" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Account</h2>
         </div>
@@ -342,7 +352,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Appearance */}
-      <section id="settings-appearance" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-appearance" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Appearance</h2>
         </div>
@@ -411,7 +421,7 @@ export default function SettingsPage() {
 
       <div id="settings-defaults" className="space-y-10 scroll-mt-20">
       {/* Default Pages */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Default Pages</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -495,7 +505,7 @@ export default function SettingsPage() {
 
     <div id="settings-layout" className="space-y-10 scroll-mt-20">
       {/* Page Widgets */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Page Widgets</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -568,7 +578,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Desktop Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Desktop Sidebar</h2>
         </div>
@@ -635,7 +645,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Mobile Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Mobile Navigation</h2>
         </div>
@@ -645,15 +655,15 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium">Bottom Bar Items</p>
               <p className="text-sm text-muted-foreground">
-                Choose which items to show (max 5). Settings is always included.
+                Choose which items to show in the mobile bottom navigation bar (max 5).
               </p>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => item.href !== '/settings').map((item) => {
               const isSelected = mobileNavItems.includes(item.href);
-              const isSettings = item.href === '/settings';
-              const canToggle = !isSettings && (isSelected || mobileNavItems.length < 5);
+              const activeCount = mobileNavItems.filter(item => item !== '/settings').length;
+              const canToggle = isSelected || activeCount < 5;
 
               return (
                 <button
@@ -666,8 +676,7 @@ export default function SettingsPage() {
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground",
                     canToggle && "hover:border-primary/50 cursor-pointer",
-                    !canToggle && !isSettings && "opacity-50 cursor-not-allowed",
-                    isSettings && "opacity-75"
+                    !canToggle && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <item.icon size={16} />
@@ -678,14 +687,14 @@ export default function SettingsPage() {
             })}
           </div>
           <p className="text-xs text-muted-foreground">
-            {mobileNavItems.length}/5 items selected
+            {mobileNavItems.filter(item => item !== '/settings').length}/5 items selected
           </p>
         </div>
       </section>
       </div>
 
       {/* Task reminders (push notifications) */}
-      <section id="settings-notifications" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-notifications" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Notifications</h2>
         </div>
@@ -753,6 +762,39 @@ export default function SettingsPage() {
             </p>
           )}
 
+          {/* Local notification test — only shown on native iOS/Android */}
+          {Capacitor.isNativePlatform() && (
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div className="flex items-center gap-3">
+                <Bell size={20} />
+                <div>
+                  <p className="font-medium">Local Notifications (Native)</p>
+                  <p className="text-sm text-muted-foreground">
+                    Scheduled on-device for tasks, habits & prayers. Tap Test to fire one in 5s.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  sendTestNotification()
+                    .then(() => setLocalNotifStatus('✅ Check in 5 sec!'))
+                    .catch((e) => setLocalNotifStatus(`❌ ${e?.message ?? 'Failed'}`))
+                }
+              >
+                Test
+              </Button>
+            </div>
+          )}
+          {localNotifStatus && (
+            <p className={cn(
+              'text-sm px-3 py-2 rounded-lg',
+              localNotifStatus.startsWith('❌') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+            )}>
+              {localNotifStatus}
+            </p>
+          )}
+
           {/* Prayer reminders */}
           <div className="flex items-center justify-between pt-4 border-t border-border">
             <div className="flex items-center gap-3">
@@ -799,7 +841,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Prayer times location */}
-      <section id="settings-prayer" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-prayer" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Prayer times</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -905,7 +947,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Archived habits management */}
-      <section id="settings-habits" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-habits" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Archived Habits</h2>
           <p className="text-sm text-muted-foreground mt-1">Restore habits hidden from the Habits page.</p>
@@ -935,7 +977,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Privacy */}
-      <section id="settings-privacy" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-privacy" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Privacy & analytics</h2>
         </div>
@@ -1148,7 +1190,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Data Management */}
-      <section id="settings-data" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-data" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Data Management</h2>
         </div>
@@ -1228,9 +1270,74 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+      {/* System Logs */}
+      <section id="settings-logs" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold">System Logs</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                const logs = getSystemLogs();
+                const logText = logs.map(l => `[${l.timestamp}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+                navigator.clipboard.writeText(logText);
+                alert('Logs copied to clipboard!');
+              }}
+            >
+              Copy Logs
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                clearSystemLogs();
+                setLocalLogs([]);
+              }}
+            >
+              Clear Logs
+            </Button>
+          </div>
+        </div>
+        <div className="p-4 space-y-2">
+          <div className="h-48 overflow-y-auto border border-border rounded-lg bg-black/40 p-3 font-mono text-xs space-y-1.5 scroll-thin">
+            {localLogs.length === 0 ? (
+              <span className="text-muted-foreground italic">No logs available</span>
+            ) : (
+              localLogs.map((log, i) => (
+                <div key={i} className="flex gap-2 items-start leading-relaxed select-text">
+                  <span className="text-muted-foreground shrink-0">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                  <span
+                    className={cn(
+                      "font-bold shrink-0 uppercase text-[9px] px-1 py-0.5 rounded",
+                      log.type === 'error'
+                        ? "bg-red-500/10 text-red-400 border border-red-500/25"
+                        : log.type === 'warn'
+                        ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/25"
+                        : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/25"
+                    )}
+                  >
+                    {log.type}
+                  </span>
+                  <span className={cn(
+                    log.type === 'error' ? 'text-red-300' : log.type === 'warn' ? 'text-yellow-300' : 'text-foreground'
+                  )}>
+                    {log.message}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Logs contain internal system checks, OTA updates history, and native sync event logs.
+          </p>
+        </div>
+      </section>
 
       {/* About */}
-      <section id="settings-about" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-about" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">About</h2>
         </div>

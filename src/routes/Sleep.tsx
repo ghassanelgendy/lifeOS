@@ -203,8 +203,8 @@ export default function Sleep() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-2">
+      {/* Header - Desktop only */}
+      <div className="hidden md:flex items-center justify-between mb-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Sleep</h1>
           <p className="text-muted-foreground">Track your sleep quality and patterns</p>
@@ -212,12 +212,12 @@ export default function Sleep() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+        <div className="liquid-glass-card p-8 text-center text-muted-foreground">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
           Loading sleep data...
         </div>
       ) : !active ? (
-        <div className="rounded-xl border border-border bg-card p-8 text-center text-muted-foreground">
+        <div className="liquid-glass-card p-8 text-center text-muted-foreground">
           <Moon className="mx-auto mb-2" size={28} />
           <p className="text-sm">No sleep sessions yet.</p>
           <p className="text-xs mt-1">Start tracking your sleep to see insights here.</p>
@@ -226,36 +226,36 @@ export default function Sleep() {
         sleepOrder.filter(visible).map((sectionId) => {
           if (sectionId === 'score') {
             return (
-              <div key="score" className="rounded-xl border border-border bg-card p-4 md:p-6">
+              <div key="score" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
                 <div className="flex flex-col md:flex-row gap-8 items-center justify-between">
                   <div className="flex-1 space-y-6">
                     <div>
                       <div className="flex items-center gap-2 text-muted-foreground mb-2">
                         <Moon size={20} className="text-primary" />
-                        <h2 className="text-sm font-semibold uppercase tracking-wider">
+                        <h2 className="text-xs font-semibold uppercase tracking-wider">
                           Last Night
                         </h2>
                       </div>
-                      <p className={cn("text-6xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
+                      <p className={cn("text-5xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
                         {formatDuration(active.sleepMinutes)}
                       </p>
-                      <p className="text-lg text-muted-foreground mt-3 font-medium">
+                      <p className="text-sm text-muted-foreground mt-3 font-medium">
                         {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
                       </p>
                     </div>
                     
-                    <div className="flex items-center gap-6 pt-4 border-t border-border/50">
+                    <div className="flex items-center gap-6 pt-4 border-t border-white/5">
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Efficiency</p>
-                        <p className="text-xl font-bold">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Efficiency</p>
+                        <p className="text-lg font-bold">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Wakes</p>
-                        <p className="text-xl font-bold">{active.wakeCount}</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Wakes</p>
+                        <p className="text-lg font-bold">{active.wakeCount}</p>
                       </div>
                       <div>
-                        <p className="text-sm text-muted-foreground mb-1">Deep</p>
-                        <p className="text-xl font-bold">{formatDuration(active.deepMinutes)}</p>
+                        <p className="text-xs text-muted-foreground mb-0.5">Deep</p>
+                        <p className="text-lg font-bold">{formatDuration(active.deepMinutes)}</p>
                       </div>
                     </div>
                   </div>
@@ -279,7 +279,14 @@ export default function Sleep() {
                         />
                         <Tooltip 
                           formatter={(v: any) => `${v ?? 0} min`} 
-                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.1)' }}
+                          contentStyle={{ 
+                            backgroundColor: 'rgba(30, 30, 30, 0.45)', 
+                            backdropFilter: 'blur(10px)',
+                            border: '1px solid rgba(255, 255, 255, 0.08)', 
+                            borderRadius: '16px',
+                            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
+                            color: 'white'
+                          }}
                         />
                       </PieChart>
                     </ResponsiveContainer>
@@ -297,15 +304,15 @@ export default function Sleep() {
             const thirtyDayAvg = monthly.length > 0 ? Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length) / 60 * 10) / 10 : 0;
             
             return (
-              <div key="weekly" className="rounded-xl border border-border bg-card p-4 md:p-6">
+              <div key="weekly" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
                 <div className="flex items-start justify-between mb-8">
                   <div>
                     <h2 className="text-lg font-semibold">30-Day Overview</h2>
                     <p className="text-sm text-muted-foreground mt-1">Your sleep trends over the last 30 days</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-muted-foreground">30d Average</p>
-                    <p className={cn("text-2xl font-bold", privacyMode && "blur-sm")}>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider">30d Average</p>
+                    <p className={cn("text-2xl font-black text-foreground tracking-tighter leading-none mt-1.5", privacyMode && "blur-sm")}>
                       {monthly.length > 0 ? formatDuration(Math.round(thirtyDayAvg * 60)) : '0h 0m'}
                     </p>
                   </div>
@@ -321,53 +328,51 @@ export default function Sleep() {
                   `}</style>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={bars} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.5} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                       <XAxis
                         dataKey="day"
-                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                        stroke="hsl(var(--border))"
+                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)' }}
                         tickLine={false}
                         axisLine={false}
                         dy={10}
                       />
                       <YAxis
-                        tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                        stroke="hsl(var(--border))"
+                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)' }}
                         tickLine={false}
                         axisLine={false}
                         dx={-10}
                       />
                       <Tooltip 
-                        cursor={{ fill: 'hsl(var(--secondary))', opacity: 0.5, radius: 8 }}
+                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
                         formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
                         contentStyle={{
-                          backgroundColor: 'hsl(var(--card))',
-                          border: '1px solid hsl(var(--border))',
-                          borderRadius: '12px',
+                          backgroundColor: 'rgba(30, 30, 30, 0.45)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid rgba(255,255,255,0.08)',
+                          borderRadius: '16px',
                           color: 'hsl(var(--foreground))',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)'
                         }}
                       />
                       <ReferenceLine 
                         y={thirtyDayAvg} 
-                        stroke="hsl(var(--muted-foreground))" 
+                        stroke="rgba(255,255,255,0.25)" 
                         strokeDasharray="3 3" 
-                        opacity={0.5} 
                       />
                       <Bar
                         dataKey="sleep"
-                        radius={[6, 6, 6, 6]}
-                        className="fill-primary/80"
-                        barSize={32}
+                        radius={[4, 4, 4, 4]}
+                        className="fill-primary/65"
+                        barSize={18}
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 
                 {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake && (
-                  <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-between text-sm">
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Typical Window</span>
-                    <span className="font-medium">
+                    <span className="font-semibold text-foreground">
                       {format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – {format(weeklyAvgWindow.avgWake, 'h:mm a')}
                     </span>
                   </div>
@@ -378,9 +383,9 @@ export default function Sleep() {
 
           if (sectionId === 'timeline') {
             return (
-              <div key="timeline" className="rounded-2xl border border-border/50 bg-card p-6">
+              <div key="timeline" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
                 <h2 className="text-lg font-semibold mb-6">Sleep Stages Timeline</h2>
-                <div className="h-20 rounded-xl overflow-hidden flex bg-secondary/50 ring-1 ring-inset ring-border/50">
+                <div className="h-20 rounded-xl overflow-hidden flex bg-black/15 dark:bg-white/5 ring-1 ring-inset ring-white/5">
                   {active.segments.map((seg, idx) => (
                     <div
                       key={`${seg.started_at}-${idx}`}
@@ -393,14 +398,14 @@ export default function Sleep() {
                     />
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-sm text-muted-foreground mt-4 font-medium">
+                <div className="flex items-center justify-between text-xs text-muted-foreground mt-4 font-semibold">
                   <span>{format(active.bedtime, 'h:mm a')}</span>
                   <span>{format(active.waketime, 'h:mm a')}</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border/50">
+                <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/5">
                   {Object.entries(STAGE_COLORS).map(([name, color]) => (
-                    <div key={name} className="flex items-center gap-2 text-sm font-medium">
-                      <span className="w-3 h-3 rounded-full shadow-sm" style={{ background: color }} />
+                    <div key={name} className="flex items-center gap-2 text-xs font-semibold">
+                      <span className="w-2.5 h-2.5 rounded-full shadow-sm animate-pulse" style={{ background: color }} />
                       <span className="text-foreground">{name}</span>
                     </div>
                   ))}
@@ -453,24 +458,26 @@ export default function Sleep() {
 
           if (sectionId === 'sessions') {
             return (
-              <div key="sessions" className="rounded-xl border border-border bg-card p-4 md:p-6">
+              <div key="sessions" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold">Recent Sessions</h2>
-                  <div className="flex bg-secondary/50 rounded-lg p-1">
+                  <div className="flex bg-black/10 dark:bg-white/5 border border-white/5 rounded-xl p-0.5">
                     <button
+                      type="button"
                       onClick={() => setSessionLimit(7)}
                       className={cn(
-                        "text-xs px-3 py-1.5 rounded-md transition-colors",
-                        sessionLimit === 7 ? "bg-card shadow-sm text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                        "text-xs px-3 py-1 rounded-lg font-semibold transition-all select-none transform-gpu active:scale-98",
+                        sessionLimit === 7 ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       7d
                     </button>
                     <button
+                      type="button"
                       onClick={() => setSessionLimit(30)}
                       className={cn(
-                        "text-xs px-3 py-1.5 rounded-md transition-colors",
-                        sessionLimit === 30 ? "bg-card shadow-sm text-foreground font-medium" : "text-muted-foreground hover:text-foreground"
+                        "text-xs px-3 py-1 rounded-lg font-semibold transition-all select-none transform-gpu active:scale-98",
+                        sessionLimit === 30 ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       30d
@@ -480,23 +487,24 @@ export default function Sleep() {
                 <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 -mr-2">
                   {sessions.slice(0, sessionLimit).map((s) => (
                     <button
+                      type="button"
                       key={s.key}
                       onClick={() => setSelectedSession(s)}
                       className={cn(
-                        "w-full text-left rounded-xl border border-border/50 bg-card/50 p-4 transition-all hover:bg-secondary/80",
-                        s.key === active?.key && "ring-2 ring-inset ring-primary bg-primary/5 border-transparent"
+                        "w-full text-left rounded-xl border border-white/5 bg-black/10 dark:bg-white/5 p-4 transition-all hover:bg-black/20 dark:hover:bg-white/10",
+                        s.key === active?.key && "ring-1 ring-inset ring-primary/45 bg-primary/10 border-transparent"
                       )}
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="font-medium text-foreground">{format(parseISO(s.date), 'EEE, MMM d')}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="font-semibold text-foreground text-sm">{format(parseISO(s.date), 'EEE, MMM d')}</p>
+                          <p className="text-[11px] text-muted-foreground mt-1 font-medium">
                             {format(s.bedtime, 'h:mm a')} → {format(s.waketime, 'h:mm a')}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-foreground">{formatDuration(s.sleepMinutes)}</p>
-                          <p className="text-xs text-muted-foreground">Efficiency: {pct(s.sleepMinutes, s.totalMinutes)}%</p>
+                          <p className="text-sm font-bold text-foreground">{formatDuration(s.sleepMinutes)}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Efficiency: {pct(s.sleepMinutes, s.totalMinutes)}%</p>
                         </div>
                       </div>
                     </button>
@@ -518,12 +526,12 @@ export default function Sleep() {
       >
         {selectedSession && (
           <div className="space-y-6 pt-4">
-            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+            <div className="liquid-glass-card p-5 md:p-6">
               <div className="flex flex-col gap-6">
                 <div>
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <Moon size={20} className="text-primary" />
-                    <h2 className="text-sm font-semibold uppercase tracking-wider">Duration</h2>
+                    <h2 className="text-xs font-semibold uppercase tracking-wider">Duration</h2>
                   </div>
                   <p className={cn("text-5xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
                     {formatDuration(selectedSession.sleepMinutes)}
@@ -533,7 +541,7 @@ export default function Sleep() {
                   </p>
                 </div>
                 
-                <div className="flex items-center gap-4 pt-4 border-t border-border/50">
+                <div className="flex items-center gap-4 pt-4 border-t border-white/5">
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Efficiency</p>
                     <p className="text-lg font-bold">{pct(selectedSession.sleepMinutes, selectedSession.totalMinutes)}%</p>
@@ -546,9 +554,9 @@ export default function Sleep() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-4 md:p-6">
+            <div className="liquid-glass-card p-5 md:p-6">
               <h2 className="text-lg font-semibold mb-6">Sleep Stages Timeline</h2>
-              <div className="h-20 rounded-xl overflow-hidden flex bg-secondary/50 ring-1 ring-inset ring-border/50">
+              <div className="h-20 rounded-xl overflow-hidden flex bg-black/15 dark:bg-white/5 ring-1 ring-inset ring-white/5">
                 {selectedSession.segments.map((seg, idx) => (
                   <div
                     key={`${seg.started_at}-${idx}`}
@@ -561,14 +569,14 @@ export default function Sleep() {
                   />
                 ))}
               </div>
-              <div className="flex items-center justify-between text-sm text-muted-foreground mt-4 font-medium">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mt-4 font-semibold">
                 <span>{format(selectedSession.bedtime, 'h:mm a')}</span>
                 <span>{format(selectedSession.waketime, 'h:mm a')}</span>
               </div>
-              <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border/50">
+              <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/5">
                 {Object.entries(STAGE_COLORS).map(([name, color]) => (
-                  <div key={name} className="flex items-center gap-2 text-sm font-medium">
-                    <span className="w-3 h-3 rounded-full shadow-sm" style={{ background: color }} />
+                  <div key={name} className="flex items-center gap-2 text-xs font-semibold">
+                    <span className="w-2.5 h-2.5 rounded-full shadow-sm animate-pulse" style={{ background: color }} />
                     <span className="text-foreground">{name}</span>
                   </div>
                 ))}

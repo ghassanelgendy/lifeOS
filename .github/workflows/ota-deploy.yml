@@ -1,0 +1,110 @@
+name: OTA Deploy
+
+# Triggers on every push to main — uploads a new web bundle to Supabase Storage.
+# The native iOS app fetches this on startup and hot-reloads without a sideload.
+# Only triggers a Codemagic native build when native files actually change.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  ota:
+    name: Build & Upload OTA Bundle
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web bundle
+        run: pnpm build
+
+      - name: Zip the bundle
+        run: |
+          cd dist
+          zip -r ../update.zip .
+          cd ..
+          echo "Bundle size: $(du -sh update.zip | cut -f1)"
+
+      - name: Generate version.json
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          BUNDLE_NAME="update-${VERSION}.zip"
+          BUNDLE_URL="${{ secrets.VITE_SUPABASE_URL }}/storage/v1/object/public/app-updates/${BUNDLE_NAME}"
+          echo "{\"version\":\"${VERSION}\",\"url\":\"${BUNDLE_URL}\",\"commit\":\"${{ github.sha }}\",\"message\":\"${{ github.event.head_commit.message }}\"}" > version.json
+          cat version.json
+
+      - name: Upload bundle zip to Supabase Storage
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          BUNDLE_NAME="update-${VERSION}.zip"
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "x-upsert: true" \
+            -H "Content-Type: application/zip" \
+            --data-binary "@update.zip" \
+            "${{ secrets.VITE_SUPABASE_URL }}/storage/v1/object/app-updates/${BUNDLE_NAME}"
+          echo "✅ Uploaded ${BUNDLE_NAME}"
+
+      - name: Upload version.json to Supabase Storage
+        run: |
+          curl -fsSL -X POST \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "x-upsert: true" \
+            -H "Content-Type: application/json" \
+            --data-binary "@version.json" \
+            "${{ secrets.VITE_SUPABASE_URL }}/storage/v1/object/app-updates/version.json"
+          echo "✅ version.json updated"
+
+  # Native build ONLY when iOS/Capacitor files change — not on every push
+  native-build-check:
+    name: Trigger Native Build If Needed
+    runs-on: ubuntu-latest
+    outputs:
+      needs_native: ${{ steps.check.outputs.needs_native }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check if native rebuild is needed
+        id: check
+        run: |
+          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          echo "Changed files:"
+          echo "$CHANGED"
+          # Trigger native build if any of these change:
+          if echo "$CHANGED" | grep -qE "^(ios/|android/|capacitor\.config|package\.json|codemagic\.yaml)"; then
+            echo "needs_native=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Native rebuild required"
+          else
+            echo "needs_native=false" >> $GITHUB_OUTPUT
+            echo "✅ OTA-only deploy (no native rebuild needed)"
+          fi
+
+  notify:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [ota, native-build-check]
+    steps:
+      - name: Print deploy summary
+        run: |
+          echo "OTA bundle deployed: version 1.0.${{ github.run_number }}"
+          echo "Native rebuild needed: ${{ needs.native-build-check.outputs.needs_native }}"
+          if [ "${{ needs.native-build-check.outputs.needs_native }}" = "true" ]; then
+            echo "👉 Run a Codemagic build manually — native files changed."
+          else
+            echo "👍 Your sideloaded app will auto-update on next launch."
+          fi

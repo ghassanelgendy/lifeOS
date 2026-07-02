@@ -699,6 +699,19 @@ export default function Finance() {
     setDeleteInvestmentId(id);
   };
 
+  // Listen for mobile header "+" button clicks
+  useEffect(() => {
+    const handleHeaderPlus = () => {
+      if (activeTab === 'investments') {
+        handleOpenInvestmentModal();
+      } else {
+        handleOpenModal();
+      }
+    };
+    window.addEventListener('app-trigger-add-finance', handleHeaderPlus);
+    return () => window.removeEventListener('app-trigger-add-finance', handleHeaderPlus);
+  }, [activeTab, investmentAccounts]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -709,8 +722,8 @@ export default function Finance() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header - Desktop only */}
+      <div className="hidden md:flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Finance</h1>
           <p className="text-muted-foreground">Track income, expenses, and budgets</p>
@@ -727,38 +740,23 @@ export default function Finance() {
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex p-1 bg-secondary/50 rounded-xl">
-        <button
-          type="button"
-          onClick={() => setActiveTab('transactions')}
-          className={cn(
-            'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-            activeTab === 'transactions' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          Transactions
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('banks')}
-          className={cn(
-            'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-            activeTab === 'banks' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          Banks
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('investments')}
-          className={cn(
-            'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-            activeTab === 'investments' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          Investments
-        </button>
+      {/* Tabs - iOS Segmented Control Track */}
+      <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 gap-1">
+        {(['transactions', 'banks', 'investments'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98',
+              activeTab === tab
+                ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
       </div>
 
       {/* Transactions tab */}
@@ -845,47 +843,27 @@ export default function Finance() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart card with iOS-style graph type selector */}
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-sm overflow-hidden">
+        <div className="liquid-glass-card p-5 overflow-hidden">
           {/* iOS-style segmented control */}
-          <div className="flex p-1 bg-secondary/50 rounded-xl mb-4">
-            <button
-              type="button"
-              onClick={() => setGraphType('category')}
-              className={cn(
-                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-                graphType === 'category'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              By category
-            </button>
-            <button
-              type="button"
-              onClick={() => setGraphType('overtime')}
-              className={cn(
-                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-                graphType === 'overtime'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Over time
-            </button>
-            {selectedBank === '' && (
-              <button
-                type="button"
-                onClick={() => setGraphType('accounts')}
-                className={cn(
-                  'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-                  graphType === 'accounts'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                By account
-              </button>
-            )}
+          <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 gap-1 mb-4">
+            {(['category', 'overtime', 'accounts'] as const).map((type) => {
+              if (type === 'accounts' && selectedBank !== '') return null;
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setGraphType(type)}
+                  className={cn(
+                    'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98',
+                    graphType === type
+                      ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {type === 'category' ? 'By Category' : type === 'overtime' ? 'Over Time' : 'By Account'}
+                </button>
+              );
+            })}
           </div>
 
           <div
@@ -907,25 +885,24 @@ export default function Finance() {
                       type="category"
                       dataKey="name"
                       width={92}
-                      tick={{ fontSize: 13, fill: 'var(--color-muted-foreground)' }}
+                      tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip
                       formatter={(value: any) => [formatCurrency(value ?? 0), 'Spent']}
                       contentStyle={{
-                        backgroundColor: 'var(--color-card)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 12,
-                        fontSize: 14,
-                        padding: '10px 14px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        color: '#ffffff',
+                        backgroundColor: 'var(--color-popover)',
+                        borderColor: 'var(--color-border)',
+                        borderRadius: '12px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
+                        fontSize: 13,
                       }}
                       cursor={false}
                       itemStyle={{ paddingTop: 4 }}
                     />
-                    <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={24}>
+                    <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={16}>
                       {chartData.map((entry, index) => (
                         <Cell key={`bar-${index}`} fill={entry.color} />
                       ))}
@@ -948,18 +925,18 @@ export default function Finance() {
                   >
                     <defs>
                       <linearGradient id="incomeGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgb(34, 197, 94)" stopOpacity={0.35} />
+                        <stop offset="0%" stopColor="rgb(34, 197, 94)" stopOpacity={0.25} />
                         <stop offset="100%" stopColor="rgb(34, 197, 94)" stopOpacity={0} />
                       </linearGradient>
                       <linearGradient id="expenseGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="rgb(239, 68, 68)" stopOpacity={0.35} />
+                        <stop offset="0%" stopColor="rgb(239, 68, 68)" stopOpacity={0.25} />
                         <stop offset="100%" stopColor="rgb(239, 68, 68)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" opacity={0.5} vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
                     <XAxis
                       dataKey="label"
-                      tick={{ fontSize: 12, fill: 'var(--color-muted-foreground)' }}
+                      tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
                       axisLine={false}
                       tickLine={false}
                     />
@@ -972,12 +949,12 @@ export default function Finance() {
                     <Tooltip
                       cursor={false}
                       contentStyle={{
-                        backgroundColor: 'var(--color-card)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 12,
+                        backgroundColor: 'var(--color-popover)',
+                        borderColor: 'var(--color-border)',
+                        borderRadius: '12px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
                         fontSize: 13,
-                        padding: '10px 14px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                       }}
                       formatter={(value, name) => [
                         formatCurrency(typeof value === 'number' ? value : 0),
@@ -1009,24 +986,24 @@ export default function Finance() {
                       type="category"
                       dataKey="name"
                       width={88}
-                      tick={{ fontSize: 13, fill: 'var(--color-muted-foreground)' }}
+                      tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip
                       cursor={false}
                       contentStyle={{
-                        backgroundColor: 'var(--color-card)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 12,
+                        backgroundColor: 'var(--color-popover)',
+                        borderColor: 'var(--color-border)',
+                        borderRadius: '12px',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
                         fontSize: 13,
-                        padding: '10px 14px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                       }}
                       formatter={(value) => [formatCurrency(typeof value === 'number' ? value : 0), 'Balance']}
                       labelFormatter={(label) => label === '—' ? 'No bank' : label}
                     />
-                    <Bar dataKey="balance" radius={[0, 6, 6, 0]} maxBarSize={24} fill="var(--color-primary)" />
+                    <Bar dataKey="balance" radius={[0, 4, 4, 0]} maxBarSize={16} fill="var(--color-primary)" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -1039,31 +1016,36 @@ export default function Finance() {
         </div>
 
         {/* Category List – iOS style */}
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-6 shadow-sm">
+        <div className="liquid-glass-card p-5">
           <h2 className="text-lg font-semibold mb-4">By Category</h2>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {chartData.length > 0 ? (
               chartData.map((item) => (
-                  <div key={item.name} className="flex items-center gap-3">
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: item.color }}
-                    />
-                    <span className="flex-1 text-sm">{item.name}</span>
-                    <span className={cn("font-medium tabular-nums", privacyMode && "blur-sm")}>
+                <div key={item.name} className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                        style={{ backgroundColor: item.color }}
+                      />
+                      <span className="font-semibold">{item.name}</span>
+                    </div>
+                    <span className={cn("font-semibold tabular-nums text-muted-foreground", privacyMode && "blur-sm")}>
                       {formatCurrency(item.value)}
                     </span>
-                    <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
-                      <div
-                        className="h-full rounded-full transition-all"
-                        style={{
-                          width: `${totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0}%`,
-                          backgroundColor: item.color
-                        }}
-                      />
-                    </div>
                   </div>
-                ))
+                  {/* Glass Progress Bar */}
+                  <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden relative border border-white/5">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${totalExpenses > 0 ? (item.value / totalExpenses) * 100 : 0}%`,
+                        backgroundColor: item.color
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
             ) : (
               <p className="text-center text-muted-foreground py-8">No expenses recorded</p>
             )}
@@ -1072,13 +1054,7 @@ export default function Finance() {
       </div>
 
       {/* Recent / All Transactions */}
-      <div
-        className="rounded-2xl overflow-hidden"
-        style={{
-          background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.25)',
-        }}
-      >
+      <div className="liquid-glass-card overflow-hidden">
         <div className="px-4 pt-4 pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-base font-bold text-foreground">
@@ -1096,7 +1072,7 @@ export default function Finance() {
             <button
               type="button"
               onClick={() => handleOpenModal()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-400 bg-sky-400/10 ring-1 ring-sky-400/20 hover:bg-sky-400/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-sky-400 bg-sky-400/10 border border-sky-400/20 hover:bg-sky-400/20 transition-colors"
             >
               <Plus size={12} />
               Add Transaction
@@ -1104,7 +1080,7 @@ export default function Finance() {
             <button
               type="button"
               onClick={() => handleOpenCorrectionSheet()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-amber-200 bg-amber-500/10 ring-1 ring-amber-500/20 hover:bg-amber-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-amber-200 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition-colors"
             >
               <Edit2 size={12} />
               Correction
@@ -1112,18 +1088,18 @@ export default function Finance() {
           </div>
         </div>
         {viewAllTransactions && (
-          <div className="px-4 pb-3 border-b border-border flex flex-wrap items-center gap-2">
+          <div className="px-4 pb-3 border-b border-white/5 flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">Filter:</span>
-            <div className="flex p-0.5 bg-secondary/50 rounded-lg">
+            <div className="flex p-0.5 rounded-lg bg-black/10 dark:bg-white/5 border border-white/5 gap-0.5">
               {(['all', 'month', 'day'] as const).map((mode) => (
                 <button
                   key={mode}
                   type="button"
                   onClick={() => setDateFilterMode(mode)}
                   className={cn(
-                    'px-2.5 py-1 rounded-md text-xs font-medium transition-colors',
+                    'px-2.5 py-1 rounded-md text-xs font-semibold transition-all whitespace-nowrap',
                     dateFilterMode === mode
-                      ? 'bg-background text-foreground shadow-sm'
+                      ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -1136,7 +1112,7 @@ export default function Finance() {
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground"
+                className="bg-black/15 dark:bg-white/5 border border-white/5 rounded-lg px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none cursor-pointer"
               />
             )}
             {dateFilterMode === 'day' && (
@@ -1144,7 +1120,7 @@ export default function Finance() {
                 type="date"
                 value={filterDay}
                 onChange={(e) => setFilterDay(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-foreground"
+                className="bg-black/15 dark:bg-white/5 border border-white/5 rounded-lg px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none cursor-pointer"
               />
             )}
             <Input
@@ -1152,7 +1128,7 @@ export default function Finance() {
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:w-auto sm:min-w-[180px] text-xs"
+              className="w-full sm:w-auto sm:min-w-[180px] bg-black/15 dark:bg-white/5 border-white/5 text-xs h-7 min-h-7"
             />
             <span className="text-xs text-muted-foreground">
               {displayedTransactions.length} tx
@@ -1523,35 +1499,35 @@ export default function Finance() {
 
       {/* Banks tab */}
       {activeTab === 'banks' && (
-        <div className="rounded-2xl border border-border bg-card p-4 md:p-6 overflow-hidden">
-          <h2 className="text-lg font-semibold mb-4">Your Banks</h2>
+        <div className="liquid-glass-card p-5 overflow-hidden">
+          <h2 className="text-lg font-semibold mb-2">Your Banks</h2>
           <p className="text-sm text-muted-foreground mb-4">Cash In, Cash Out, and Cashflow per bank (current month).</p>
-          <div className="space-y-2">
+          <div className="space-y-3">
             {bankOptions.length === 0 && !banksLoading && (
               <p className="text-sm text-muted-foreground">No banks yet. Add a transaction and select a bank to create one.</p>
             )}
             {bankOptions.map((bankName) => {
               const stats = perBankStats[bankName] ?? { cashIn: 0, cashOut: 0, cashflow: 0 };
               return (
-                <div key={bankName} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-4 rounded-lg bg-secondary/30">
-                  <span className="font-medium shrink-0 w-24">{bankName}</span>
+                <div key={bankName} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3.5 px-4 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5">
+                  <span className="font-semibold text-sm shrink-0 w-24">{bankName}</span>
                   <div className="flex flex-wrap gap-4 sm:ml-auto">
                     <div>
-                      <span className="text-xs text-muted-foreground">Cash In</span>
-                      <p className={cn("font-semibold tabular-nums text-green-500", privacyMode && "blur-sm")}>
+                      <span className="text-[10px] text-muted-foreground">Cash In</span>
+                      <p className={cn("font-semibold tabular-nums text-green-500 text-sm", privacyMode && "blur-sm")}>
                         {formatCurrency(stats.cashIn)}
                       </p>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground">Cash Out</span>
-                      <p className={cn("font-semibold tabular-nums text-red-500", privacyMode && "blur-sm")}>
+                      <span className="text-[10px] text-muted-foreground">Cash Out</span>
+                      <p className={cn("font-semibold tabular-nums text-red-500 text-sm", privacyMode && "blur-sm")}>
                         {formatCurrency(stats.cashOut)}
                       </p>
                     </div>
                     <div>
-                      <span className="text-xs text-muted-foreground">Cashflow</span>
+                      <span className="text-[10px] text-muted-foreground">Cashflow</span>
                       <p className={cn(
-                        "font-semibold tabular-nums",
+                        "font-semibold tabular-nums text-sm",
                         stats.cashflow >= 0 ? "text-green-500" : "text-red-500",
                         privacyMode && "blur-sm"
                       )}>
@@ -1575,7 +1551,7 @@ export default function Finance() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-end gap-1.5 mb-1 min-w-0">
+              <div className="flex items-center justify-end gap-1.5 mb-2 min-w-0">
                 <Wallet className="size-3.5 text-muted-foreground shrink-0 opacity-80" aria-hidden />
                 <Select
                   aria-label="Investment account"
@@ -1589,20 +1565,20 @@ export default function Finance() {
                 />
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm text-muted-foreground">Income</p>
+                <div className="liquid-glass-card p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Income</p>
                   <p className={cn("text-2xl font-bold text-green-500 tabular-nums", privacyMode && "blur-sm")}>
                     {formatCurrency(investmentBreakdown.totalIncome)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm text-muted-foreground">Expenses</p>
+                <div className="liquid-glass-card p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Expenses</p>
                   <p className={cn("text-2xl font-bold text-red-500 tabular-nums", privacyMode && "blur-sm")}>
                     {formatCurrency(investmentBreakdown.totalExpense)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border bg-card p-4">
-                  <p className="text-sm text-muted-foreground">Balance</p>
+                <div className="liquid-glass-card p-4">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Balance</p>
                   <p className={cn(
                     "text-2xl font-bold tabular-nums",
                     investmentBreakdown.balance >= 0 ? "text-green-500" : "text-red-500",
@@ -1612,14 +1588,14 @@ export default function Finance() {
                   </p>
                 </div>
               </div>
-              <div className="rounded-2xl border border-border bg-card overflow-hidden">
-                <div className="p-4 border-b border-border">
-                  <h2 className="font-semibold">Investment Transactions</h2>
-                  <p className="text-sm text-muted-foreground">Thndr and Fawry — separate from your main finances</p>
+              <div className="liquid-glass-card overflow-hidden">
+                <div className="p-4 border-b border-white/5">
+                  <h2 className="font-semibold text-sm">Investment Transactions</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Thndr and Fawry — separate from your main finances</p>
                 </div>
-                <div className="divide-y divide-border">
+                <div className="divide-y divide-white/[0.04]">
                   {filteredInvestmentTransactions.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">No investment transactions yet.</div>
+                    <div className="p-8 text-center text-muted-foreground text-sm">No investment transactions yet.</div>
                   ) : (
                     filteredInvestmentTransactions.map((tx) => {
                       const account = investmentAccounts.find((a) => a.id === tx.account_id);
@@ -1627,32 +1603,32 @@ export default function Finance() {
                         ? INCOME_CATEGORIES.find((c) => c.value === tx.category)?.label
                         : EXPENSE_CATEGORIES.find((c) => c.value === tx.category)?.label;
                       return (
-                        <div key={tx.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20">
+                        <div key={tx.id} className="p-4 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
                           <div className={cn(
-                            "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                            "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
                             tx.type === 'income' ? "bg-green-500/10" : "bg-red-500/10"
                           )}>
                             {tx.type === 'income' ? <ArrowUpRight className="text-green-500" size={18} /> : <ArrowDownRight className="text-red-500" size={18} />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{tx.description || catLabel}</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="font-medium text-sm truncate">{tx.description || catLabel}</div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
                               {format(new Date(tx.date), 'MMM d')} · {account?.name ?? '—'}
                             </div>
                           </div>
                           <div className="text-right flex items-center gap-2">
                             <span className={cn(
-                              "font-medium tabular-nums",
+                              "font-semibold text-sm tabular-nums",
                               tx.type === 'income' ? "text-green-500" : "text-red-500",
                               privacyMode && "blur-sm"
                             )}>
                               {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                             </span>
-                            <button onClick={() => handleOpenInvestmentModal(tx)} className="p-1.5 rounded hover:bg-secondary" title="Edit">
-                              <Edit2 size={14} />
+                            <button onClick={() => handleOpenInvestmentModal(tx)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Edit">
+                              <Edit2 size={13} />
                             </button>
-                            <button onClick={() => handleDeleteInvestment(tx.id)} className="p-1.5 rounded hover:bg-destructive/20 text-destructive" title="Delete">
-                              <Trash2 size={14} />
+                            <button onClick={() => handleDeleteInvestment(tx.id)} className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Delete">
+                              <Trash2 size={13} />
                             </button>
                           </div>
                         </div>

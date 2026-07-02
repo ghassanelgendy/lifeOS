@@ -15,6 +15,7 @@ interface SwipeableRowProps {
   onDelete?: () => void;
   showPostpone?: boolean;
   className?: string;
+  flat?: boolean;
 }
 
 export function SwipeableRow({
@@ -24,6 +25,7 @@ export function SwipeableRow({
   onPostpone,
   showPostpone = true,
   className,
+  flat = false,
 }: SwipeableRowProps) {
   const [offset, setOffset] = useState(0);
   const startX = useRef(0);
@@ -65,15 +67,25 @@ export function SwipeableRow({
 
   return (
     <div
-      className={cn('relative overflow-hidden rounded-xl', className)}
+      className={cn(
+        flat ? 'relative overflow-hidden' : 'relative overflow-hidden rounded-xl',
+        className
+      )}
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
     >
-      {/* Background actions - no outline so they don't show through */}
-      <div className="absolute inset-y-0 right-0 flex items-stretch rounded-r-xl overflow-hidden">
+      {/* Background actions - no outline so they don't show through. Hide when offset is 0 to support flat transparent bg */}
+      <div
+        className={cn(
+          "absolute inset-y-0 right-0 flex items-stretch overflow-hidden",
+          flat ? "" : "rounded-r-xl",
+          flat && offset === 0 ? "opacity-0 pointer-events-none" : "opacity-100"
+        )}
+        style={flat ? { transition: 'opacity 150ms ease-out' } : undefined}
+      >
         {onDone && (
           <button
             type="button"
@@ -120,7 +132,14 @@ export function SwipeableRow({
 
       {/* Foreground (main content) - solid bg, border, overflow-hidden so no outline bleeds through */}
       <div
-        className="relative z-10 bg-card border border-border rounded-xl transition-transform duration-150 ease-out shadow-sm overflow-hidden"
+        className={cn(
+          "relative z-10 transition-transform duration-150 ease-out overflow-hidden",
+          flat
+            ? offset > 0
+              ? "bg-secondary"
+              : "bg-transparent"
+            : "bg-card border border-border rounded-xl shadow-sm"
+        )}
         style={{ transform: `translateX(-${offset}px)` }}
       >
         {children}

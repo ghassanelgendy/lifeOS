@@ -46,6 +46,13 @@ body {
   --color-gray-900: #18181b;
   --color-gray-950: #09090b;
   --radius-xl: 0.75rem;
+  --radius-ios-squircle: 28px;
+  --radius-ios-squircle-sm: 14px;
+  --radius-ios-squircle-lg: 38px;
+  --color-ios-glass-light: rgba(255, 255, 255, 0.45);
+  --color-ios-glass-dark: rgba(20, 20, 22, 0.65);
+  --color-ios-border-light: rgba(255, 255, 255, 0.42);
+  --color-ios-border-dark: rgba(255, 255, 255, 0.08);
 }
 
 /* Light theme overrides (applied when html has class "light") */
@@ -292,11 +299,6 @@ html.light[data-accent="amber"] {
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    /* Safe area for iOS notch and home indicator when installed as PWA */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
   }
 
   /* Prevent iOS zoom on input focus - all inputs must be at least 16px on mobile */
@@ -433,4 +435,42 @@ html.light[data-accent="amber"] {
 }
 .report-ring-fill {
   animation: report-ring-fill 1.2s ease-out forwards;
+}
+
+/* iOS Liquid Glass Card styles */
+.liquid-glass-card {
+  position: relative;
+  border-radius: var(--radius-ios-squircle);
+  overflow: hidden;
+  border: 1px solid var(--color-ios-border-light);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04), inset 0 1px 1px var(--color-ios-border-light);
+  z-index: 1;
+}
+
+.dark .liquid-glass-card {
+  border: 1px solid var(--color-ios-border-dark);
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.25), inset 0 1px 0px var(--color-ios-border-dark);
+}
+
+.liquid-glass-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-ios-glass-light);
+  backdrop-filter: blur(28px) saturate(210%);
+  -webkit-backdrop-filter: blur(28px) saturate(210%);
+  filter: url(#liquid-glass-refraction);
+}
+
+.dark .liquid-glass-card::before {
+  background: var(--color-ios-glass-dark);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+}
+
+/* iOS 26 Liquid resets to avoid 'webby' hover states */
+button, a {
+  -webkit-tap-highlight-color: transparent !important;
+  outline: none !important;
 }
