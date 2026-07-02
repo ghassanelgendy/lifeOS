@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { useAuth } from '../contexts/AuthContext';
+import { triggerHaptics } from '../lib/nativeBridge';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
 import {
   idbSaveTasks,
@@ -592,6 +593,12 @@ export function useToggleTask() {
       return updatedTask;
     },
     onMutate: async (id: string) => {
+      // Trigger instant native haptics
+      const tasks = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined) ?? [];
+      const task = tasks.find((t) => t.id === id);
+      const isCompleting = task ? !task.is_completed : true;
+      void triggerHaptics(isCompleting ? 'success' : 'light');
+
       await queryClient.cancelQueries({ queryKey: TASKS_KEY });
       const previousTasks = queryClient.getQueriesData({ queryKey: TASKS_KEY });
 

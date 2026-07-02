@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { triggerHaptics } from '../lib/nativeBridge';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
@@ -343,6 +344,9 @@ export function useLogHabit() {
       return result as HabitLog;
     },
     onMutate: async ({ habitId, date, completed, note }) => {
+      // Trigger native haptics instantly on user tap
+      void triggerHaptics(completed ? 'success' : 'light');
+
       await queryClient.cancelQueries({ queryKey: HABIT_LOGS_KEY });
       const previousLogs = queryClient.getQueriesData({ queryKey: HABIT_LOGS_KEY });
       const dateOnly = (date || '').split('T')[0];

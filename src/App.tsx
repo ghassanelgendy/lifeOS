@@ -7,10 +7,14 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { queryClient } from './lib/queryClient';
 
 import { seedDatabase } from './db/seed';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from './lib/supabase';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
-import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncLocalNotifications } from './lib/nativeBridge';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
+import { useHabits } from './hooks/useHabits';
+import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
@@ -79,14 +83,33 @@ function ThemeSync() {
 }
 
 function AppInner() {
+  const { user } = useAuth();
   const { data: tasks } = useTasks();
+  const { data: habits } = useHabits();
+  const { data: events } = useCalendarEvents();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
 
+  const lat = useUIStore((s) => s.prayerLatitude);
+  const lng = useUIStore((s) => s.prayerLongitude);
+
+  const { data: prayerSettings } = useQuery({
+    queryKey: ['local-push-prayer-settings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_notification_settings')
+        .select('*, prayer_habit:prayer_habits(prayer_name)')
+        .eq('user_id', user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
   useEffect(() => {
-    if (tasks) {
-      void syncLocalNotifications(tasks);
+    if (tasks && habits && events && prayerSettings) {
+      void syncAllLocalNotifications(tasks, habits, events, prayerSettings, lat, lng);
     }
-  }, [tasks]);
+  }, [tasks, habits, events, prayerSettings, lat, lng]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();

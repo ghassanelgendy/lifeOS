@@ -316,11 +316,10 @@ export function AppShell() {
       const deltaX = t.clientX - touchStart.current.x;
       const deltaY = t.clientY - touchStart.current.y;
 
-      const isFromLeftEdge = touchStart.current.x < SWIPE_EDGE_PX;
       const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
 
-      // Lock vertical scrolling only if touch originates from left edge (sidebar swipe)
-      if (isFromLeftEdge && isHorizontalSwipe && Math.abs(deltaX) > 5) {
+      // Lock vertical scrolling only if touch is horizontal swipe to the right
+      if (isHorizontalSwipe && deltaX > 8) {
         if (e.cancelable) {
           e.preventDefault();
         }
@@ -331,8 +330,10 @@ export function AppShell() {
       if (!touchStart.current) return;
       const t = e.changedTouches[0];
       const deltaX = t.clientX - touchStart.current.x;
+      const deltaY = t.clientY - touchStart.current.y;
 
-      if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 30) {
+      // Ensure it was a horizontal swipe to the right with decent distance (e.g. > 50px)
+      if (deltaX > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
         setMobileSidebarOpen(true);
       }
       touchStart.current = null;
@@ -580,31 +581,23 @@ export function AppShell() {
         >
           <PullToRefresh>
             <div className="relative w-full h-full overflow-hidden flex flex-col">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                  key={location.pathname}
-                  initial={{ x: slideDirection * 60, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -slideDirection * 60, opacity: 0 }}
-                  transition={{
-                    type: "spring",
-                    stiffness: 380,
-                    damping: 32,
-                    mass: 0.9
-                  }}
-                  className={cn(
-                    "flex flex-col p-4 md:p-6 w-full",
-                    "pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6",
-                    isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
-                  )}
-                  style={{
-                    backfaceVisibility: 'hidden',
-                    WebkitFontSmoothing: 'subpixel-antialiased',
-                  }}
-                >
-                  <Outlet />
-                </motion.div>
-              </AnimatePresence>
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.12, ease: "easeOut" }}
+                className={cn(
+                  "flex flex-col p-4 md:p-6 w-full flex-1",
+                  "pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6",
+                  isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
+                )}
+                style={{
+                  backfaceVisibility: 'hidden',
+                  WebkitFontSmoothing: 'subpixel-antialiased',
+                }}
+              >
+                <Outlet />
+              </motion.div>
             </div>
           </PullToRefresh>
           <FocusSessionManager />
