@@ -67,8 +67,12 @@ export async function syncStatusBar(theme: 'light' | 'dark') {
 export async function initializeNativeApp() {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    // 1. Hide Keyboard Accessory Bar (prevents the gray 'prev/next/done' bar)
-    await Keyboard.setAccessoryBarVisible({ visible: false });
+    // 1. Hide Keyboard Accessory Bar (prevents the gray 'prev/next/done' bar on iOS)
+    try {
+      await Keyboard.setAccessoryBarVisible({ visible: false });
+    } catch {
+      // Non-fatal: plugin may not be available on all configurations
+    }
 
     // 2. Request Badge permissions and clear badge count
     const badgePermissions = await Badge.checkPermissions();
