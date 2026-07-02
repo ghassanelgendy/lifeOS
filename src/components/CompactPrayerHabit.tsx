@@ -42,12 +42,12 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
   const percentage = totalCount > 0 ? Math.round((prayedCount / totalCount) * 100) : 0;
 
   const shell = embedded
-    ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
+    ? 'bg-transparent p-0 h-full flex flex-col min-h-0'
     : 'rounded-xl border border-border bg-card p-4 h-full flex flex-col';
 
   if (isLoading) {
     return (
-      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-4' : 'rounded-xl border border-border bg-card p-4'}>
+      <div className={embedded ? 'bg-transparent p-4' : 'rounded-xl border border-border bg-card p-4'}>
         <div className="flex items-center justify-center h-16">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground" />
         </div>
@@ -60,10 +60,10 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
       {/* Compact View */}
       <div
         onClick={() => setIsExpanded(!isExpanded)}
-        className="flex items-center justify-between cursor-pointer hover:bg-secondary/20 rounded-lg p-3 -m-3 transition-colors"
+        className="flex items-center justify-between cursor-pointer hover:bg-white/5 rounded-lg p-3 -m-3 transition-colors"
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-primary/10 text-primary flex-shrink-0">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary/10 text-primary flex-shrink-0">
             <MoonStar size={20} />
           </div>
           <div className="flex-1 min-w-0">
@@ -90,17 +90,18 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
 
       {/* Expanded View */}
       {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border flex-1 min-h-0">
-          <div className="grid grid-rows-5 gap-3 h-full">
-            {tracker.map((item) => {
+        <div className="mt-4 pt-2 border-t border-white/10 flex-1 min-h-0">
+          <div className="flex flex-col h-full">
+            {tracker.map((item, index) => {
               const prayerTime = times.find((t) => t.name === item.prayerName)?.time;
               const Icon = getIcon(item.prayerName);
+              const isLast = index === tracker.length - 1;
               return (
-                <div key={item.prayerName} className="rounded-lg border border-border p-3 bg-secondary/20 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between gap-2 mb-2">
+                <div key={item.prayerName} className={cn("py-3.5 flex flex-col justify-between gap-2.5", !isLast && "border-b border-white/10")}>
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <Icon size={16} className="text-primary" />
-                      <p className="font-medium text-sm">{item.prayerName}</p>
+                      <p className="font-semibold text-sm">{item.prayerName}</p>
                       {item.status === 'Prayed' && <CheckCircle2 size={14} className="text-green-500" />}
                       {item.status === 'Late' && <Clock3 size={14} className="text-amber-500" />}
                       {item.status === 'Missed' && <XCircle size={14} className="text-red-500" />}
@@ -122,8 +123,8 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                           togglePrayerStatus(item, status);
                         }}
                         className={cn(
-                          "text-xs px-2 py-1.5 rounded border transition-colors",
-                          item.status === status ? meta.className : "border-border text-muted-foreground hover:bg-secondary"
+                          "text-xs px-2.5 py-1.5 rounded-lg border transition-colors",
+                          item.status === status ? meta.className : "border-white/10 text-muted-foreground hover:bg-white/5"
                         )}
                       >
                         {meta.label}

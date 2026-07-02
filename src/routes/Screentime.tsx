@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 import { cn } from '../lib/utils';
 import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
@@ -546,27 +546,30 @@ import { useUIStore } from '../stores/useUIStore';
 
     return (
       <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-        {/* Header */}
-        <div>
+        {/* Header - Desktop only (mobile header is handled by AppShell) */}
+        <div className="hidden md:block">
           <h1 className="text-3xl font-bold tracking-tight">Screen Time</h1>
           <p className="text-muted-foreground">
             Track your digital usage across devices
           </p>
         </div>
 
-        {/* Period selector + day filter */}
-        <div className="overflow-x-auto -mx-4 px-4">
-          <div className="flex items-center gap-2 min-w-max">
+        {/* Period selector - iOS Segmented Control Track */}
+        <div className="overflow-x-auto -mx-4 px-4 scrollbar-none">
+          <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 min-w-max gap-1">
             {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p) => (
               <button
                 key={p}
+                type="button"
                 onClick={() => {
                   setPeriod(p);
                   if (p === 'week') setWeekStart(format(startOfWeek(today), 'yyyy-MM-dd'));
                 }}
                 className={cn(
-                  'px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap flex-shrink-0',
-                  period === p ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                  'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 select-none transform-gpu active:scale-98',
+                  period === p 
+                    ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.02]' 
+                    : 'text-muted-foreground hover:text-foreground'
                 )}
               >
                 {p === 'today'
@@ -581,59 +584,54 @@ import { useUIStore } from '../stores/useUIStore';
                           ? 'Last Month'
                           : p === '30days'
                             ? 'Last 30 Days'
-                            : 'Date range'}
+                            : 'Custom Range'}
               </button>
             ))}
-            {period === 'custom' && (
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 flex-shrink-0">
-                <Calendar className="text-muted-foreground shrink-0" size={18} aria-hidden />
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="screentime-custom-start" className="text-xs font-medium text-muted-foreground">
-                    Start
-                  </label>
-                  <input
-                    id="screentime-custom-start"
-                    type="date"
-                    value={customStartDate}
-                    max={todayStr}
-                    onChange={(e) => {
-                      setCustomStartDate(e.target.value);
-                      setPeriod('custom');
-                    }}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <span className="hidden sm:inline text-muted-foreground self-end pb-2" aria-hidden>
-                  –
-                </span>
-                <div className="flex flex-col gap-1">
-                  <label htmlFor="screentime-custom-end" className="text-xs font-medium text-muted-foreground">
-                    End
-                  </label>
-                  <input
-                    id="screentime-custom-end"
-                    type="date"
-                    value={customEndDate}
-                    max={todayStr}
-                    onChange={(e) => {
-                      setCustomEndDate(e.target.value);
-                      setPeriod('custom');
-                    }}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  {(() => {
-                    const lo = customStartDate <= customEndDate ? customStartDate : customEndDate;
-                    const hi = customStartDate <= customEndDate ? customEndDate : customStartDate;
-                    const n = differenceInCalendarDays(parseISO(hi), parseISO(lo)) + 1;
-                    return `${n} day${n === 1 ? '' : 's'}`;
-                  })()}
-                </span>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Custom Range Inputs - iOS Glass Treatment */}
+        {period === 'custom' && (
+          <div className="liquid-glass-card p-4 flex flex-wrap items-center gap-4 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2">
+              <Calendar className="text-primary shrink-0" size={18} />
+              <span className="text-sm font-semibold">Custom Range</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 bg-black/15 dark:bg-white/5 rounded-lg px-3 py-1.5 border border-white/5 shadow-inner">
+                <label htmlFor="screentime-custom-start" className="text-xs text-muted-foreground">Start</label>
+                <input
+                  id="screentime-custom-start"
+                  type="date"
+                  value={customStartDate}
+                  max={todayStr}
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="bg-transparent text-xs font-medium focus:outline-none text-foreground border-0 p-0 cursor-pointer"
+                />
+              </div>
+              <span className="text-muted-foreground text-sm" aria-hidden>–</span>
+              <div className="flex items-center gap-2 bg-black/15 dark:bg-white/5 rounded-lg px-3 py-1.5 border border-white/5 shadow-inner">
+                <label htmlFor="screentime-custom-end" className="text-xs text-muted-foreground">End</label>
+                <input
+                  id="screentime-custom-end"
+                  type="date"
+                  value={customEndDate}
+                  max={todayStr}
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="bg-transparent text-xs font-medium focus:outline-none text-foreground border-0 p-0 cursor-pointer"
+                />
+              </div>
+              <span className="text-xs font-semibold bg-primary/10 text-primary px-3 py-1 rounded-full border border-primary/20">
+                {(() => {
+                  const lo = customStartDate <= customEndDate ? customStartDate : customEndDate;
+                  const hi = customStartDate <= customEndDate ? customEndDate : customStartDate;
+                  const n = differenceInCalendarDays(parseISO(hi), parseISO(lo)) + 1;
+                  return `${n} day${n === 1 ? '' : 's'}`;
+                })()}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Tiny indicator: which devices pushed and when (date + time, 12h AM/PM) */}
         {(deviceLastPush.windowsLast || deviceLastPush.iosLast) && (
@@ -667,7 +665,7 @@ import { useUIStore } from '../stores/useUIStore';
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-blue-500/10">
                 <Monitor className="text-blue-500" size={20} />
@@ -683,11 +681,9 @@ import { useUIStore } from '../stores/useUIStore';
               <span>windows: {privacyMode ? '•••' : formatDurationMinutes(Math.round(windowsSeconds / 60))}</span>
               <span>IOS: {privacyMode ? '•••' : formatDurationMinutes(Math.round(iosSeconds / 60))}</span>
             </div>
-           
-          
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-purple-500/10">
                 <RefreshCw className="text-purple-500" size={20} />
@@ -732,7 +728,7 @@ import { useUIStore } from '../stores/useUIStore';
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-purple-500/10">
                 <TrendingUp className="text-purple-500" size={20} />
@@ -754,7 +750,7 @@ import { useUIStore } from '../stores/useUIStore';
             </p>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-green-500/10">
                 <Monitor className="text-green-500" size={20} />
@@ -778,7 +774,7 @@ import { useUIStore } from '../stores/useUIStore';
 
         {/* 7-Day Average */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">7-Day Average</h2>
               {trend !== 0 && (
@@ -798,7 +794,7 @@ import { useUIStore } from '../stores/useUIStore';
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">7-Day Avg Switches</h2>
             </div>
@@ -820,19 +816,21 @@ import { useUIStore } from '../stores/useUIStore';
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Daily usage: stacked bar by iOS / Windows */}
           {chartData.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="liquid-glass-card p-5">
               <h2 className="text-lg font-semibold mb-4">Daily usage by device</h2>
               <p className="text-sm text-muted-foreground mb-2">Minutes per day (iOS & Windows)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
-                  <XAxis dataKey="dateLabel" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="dateLabel" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                      boxShadow: 'none',
+                      backgroundColor: 'var(--color-popover)',
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
                     }}
                     cursor={false}
                     formatter={(value, name) => [formatDurationMinutes(Number(value) ?? 0), platformLabel(String(name ?? ''))]}
@@ -841,8 +839,8 @@ import { useUIStore } from '../stores/useUIStore';
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.dateLabel}
                   />
                   <Legend formatter={(value) => platformLabel(value)} />
-                  <Bar dataKey="windows" name="windows" stackId="usage" fill={accentShades.base} isAnimationActive={false} />
-                  <Bar dataKey="ios" name="IOS" stackId="usage" fill={accentShades.light} isAnimationActive={false} />
+                  <Bar dataKey="windows" name="windows" fill={accentShades.base} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="ios" name="IOS" fill={accentShades.light} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -850,7 +848,7 @@ import { useUIStore } from '../stores/useUIStore';
 
           {/* Usage trend: two overlapping lines (iOS + Windows), same x-axis = days/weeks/months */}
           {chartData.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-6">
+            <div className="liquid-glass-card p-5">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div>
                   <h2 className="text-lg font-semibold">Usage trend (iOS vs Windows)</h2>
@@ -882,15 +880,27 @@ import { useUIStore } from '../stores/useUIStore';
                 )}
               </div>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <XAxis dataKey="dateLabel" />
-                  <YAxis />
+                <AreaChart data={chartData}>
+                  <defs>
+                    <linearGradient id="colorWindows" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={accentShades.base} stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor={accentShades.base} stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorIos" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={accentShades.light} stopOpacity={0.25}/>
+                      <stop offset="95%" stopColor={accentShades.light} stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="dateLabel" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                      boxShadow: 'none',
+                      backgroundColor: 'var(--color-popover)',
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
                     }}
                     cursor={false}
                     formatter={(value, name) => [formatDurationMinutes(Number(value) ?? 0), platformLabel(String(name ?? ''))]}
@@ -899,98 +909,76 @@ import { useUIStore } from '../stores/useUIStore';
                     labelFormatter={(_, payload) => payload?.[0]?.payload?.dateLabel}
                   />
                   <Legend formatter={(value) => platformLabel(value)} />
-                  <Line type="monotone" dataKey="windows" name="windows" stroke={accentShades.base} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
-                  <Line type="monotone" dataKey="ios" name="IOS" stroke={accentShades.light} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
-                </LineChart>
+                  <Area type="monotone" dataKey="windows" name="windows" stroke={accentShades.base} strokeWidth={2} dot={{ r: 3 }} fillOpacity={1} fill="url(#colorWindows)" connectNulls isAnimationActive={false} />
+                  <Area type="monotone" dataKey="ios" name="IOS" stroke={accentShades.light} strokeWidth={2} dot={{ r: 3 }} fillOpacity={1} fill="url(#colorIos)" connectNulls isAnimationActive={false} />
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
 
           {/* Category Breakdown */}
           {categoryBreakdown.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
-              <h2 className="text-lg font-semibold mb-4">Time by Category</h2>
-              <p className="text-sm text-muted-foreground mb-4">
+            <div className="liquid-glass-card p-5 lg:col-span-2">
+              <h2 className="text-lg font-semibold mb-2">Time by Category</h2>
+              <p className="text-sm text-muted-foreground mb-5">
                 Breakdown of screen time by app category ({formatDurationMinutes(categoryBreakdown.reduce((sum, c) => sum + c.totalMinutes, 0))} total)
               </p>
-              <ResponsiveContainer width="100%" height={Math.max(300, categoryBreakdown.length * 50)}>
-                <BarChart 
-                  data={categoryBreakdown} 
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
-                >
-                  <XAxis 
-                    type="number" 
-                    label={{ 
-                      value: categoryBreakdown.length > 0 && categoryBreakdown[0].useHours ? 'Hours' : 'Minutes', 
-                      position: 'insideBottom', 
-                      offset: -5 
-                    }}
-                    tickFormatter={(value) => {
-                      const useHours = categoryBreakdown.length > 0 && categoryBreakdown[0].useHours;
-                      return useHours ? `${value}h` : `${value}m`;
-                    }}
-                  />
-                  <YAxis 
-                    type="category" 
-                    dataKey="category" 
-                    width={110}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--color-card)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                      boxShadow: 'none',
-                    }}
-                    cursor={false}
-                    formatter={(value: any, name: any, item: any) => {
-                      const numValue = Number(value) ?? 0;
-                      const payload = item?.payload;
-                      const useHours = payload?.useHours;
-                      
-                      if (useHours) {
-                        // Convert hours back to minutes for display
-                        const minutes = name === 'IOS' ? payload?.iosMinutes : payload?.windowsMinutes || 0;
-                        return [`${formatDurationMinutes(minutes)}`, platformLabel(String(name ?? ''))];
-                      } else {
-                        return [`${formatDurationMinutes(numValue)}`, platformLabel(String(name ?? ''))];
-                      }
-                    }}
-                    labelFormatter={(label, payload) => {
-                      const data = payload?.[0]?.payload;
-                      if (data) {
-                        return `${data.category} (${data.percentage}%)`;
-                      }
-                      return label;
-                    }}
-                    itemStyle={{ color: 'var(--color-foreground)' }}
-                    labelStyle={{ color: 'var(--color-muted-foreground)' }}
-                  />
-                  <Legend formatter={(value) => platformLabel(value)} />
-                  <Bar dataKey="ios" name="IOS" stackId="category" fill={accentShades.light} isAnimationActive={false} />
-                  <Bar dataKey="windows" name="windows" stackId="category" fill={accentShades.base} isAnimationActive={false} />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-4">
+                {categoryBreakdown.map((cat, idx) => (
+                  <div key={idx} className="space-y-1.5">
+                    <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{cat.category}</span>
+                        <span className="text-xs text-muted-foreground">({cat.percentage}%)</span>
+                      </div>
+                      <span className="font-semibold tabular-nums text-muted-foreground">
+                        {cat.totalHours > 0 ? `${Math.floor(cat.totalMinutes / 60)}h ${cat.totalMinutes % 60}m` : `${cat.totalMinutes}m`}
+                      </span>
+                    </div>
+                    {/* Glass Progress Bar */}
+                    <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden relative border border-white/5">
+                      {/* Windows Segment */}
+                      <div 
+                        className="h-full bg-primary absolute left-0 top-0 transition-all duration-500 rounded-l-full"
+                        style={{ width: `${(cat.windowsMinutes / Math.max(1, cat.totalMinutes)) * cat.percentage}%` }}
+                      />
+                      {/* iOS Segment */}
+                      <div 
+                        className="h-full bg-primary/40 absolute top-0 transition-all duration-500 rounded-r-full"
+                        style={{ 
+                          left: `${(cat.windowsMinutes / Math.max(1, cat.totalMinutes)) * cat.percentage}%`,
+                          width: `${(cat.iosMinutes / Math.max(1, cat.totalMinutes)) * cat.percentage}%` 
+                        }}
+                      />
+                    </div>
+                    {/* Device Details Subtext */}
+                    <div className="flex justify-between text-[10px] text-muted-foreground/80 px-0.5">
+                      <span>Windows: {formatDurationMinutes(cat.windowsMinutes)}</span>
+                      <span>iOS: {formatDurationMinutes(cat.iosMinutes)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Weekly Pattern */}
           {weeklyPattern.some(d => d.hours > 0) && (
-            <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
+            <div className="liquid-glass-card p-5 lg:col-span-2">
               <h2 className="text-lg font-semibold mb-4">Weekly Pattern</h2>
               <p className="text-sm text-muted-foreground mb-4">Average hours per day of week (iOS vs Windows)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={weeklyPattern}>
-                  <XAxis dataKey="day" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'var(--color-card)', 
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                      boxShadow: 'none'
+                      backgroundColor: 'var(--color-popover)', 
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
                     }}
                     cursor={false}
                     formatter={(value, name) => [`${typeof value === 'number' ? value.toFixed(1) : 0}h`, platformLabel(String(name ?? ''))]}
@@ -998,8 +986,8 @@ import { useUIStore } from '../stores/useUIStore';
                     labelStyle={{ color: 'var(--color-muted-foreground)' }}
                   />
                   <Legend formatter={(value) => platformLabel(value)} />
-                  <Bar dataKey="ios" name="IOS" fill={accentShades.light} isAnimationActive={false} />
-                  <Bar dataKey="windows" name="windows" fill={accentShades.base} isAnimationActive={false} />
+                  <Bar dataKey="ios" name="IOS" fill={accentShades.light} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                  <Bar dataKey="windows" name="windows" fill={accentShades.base} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1007,26 +995,28 @@ import { useUIStore } from '../stores/useUIStore';
 
           {/* Peak Hours */}
           {peakHoursData ? (
-            <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
+            <div className="liquid-glass-card p-5 lg:col-span-2">
               <h2 className="text-lg font-semibold mb-4">Peak Hours</h2>
               <p className="text-sm text-muted-foreground mb-4">Estimated based on activity timestamps</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={peakHoursData}>
-                  <XAxis dataKey="label" interval={2} />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="label" interval={2} tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
+                  <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: 'var(--color-card)', 
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '0.5rem',
-                      boxShadow: 'none'
+                      backgroundColor: 'var(--color-popover)', 
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '12px',
+                      backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
                     }}
                     cursor={false}
                     formatter={(value) => [`${typeof value === 'number' ? value : 0}m`, 'Minutes']}
                     itemStyle={{ color: 'var(--color-foreground)' }}
                     labelStyle={{ color: 'var(--color-muted-foreground)' }}
                   />
-                  <Bar dataKey="minutes" fill={accentShades.light} isAnimationActive={false} />
+                  <Bar dataKey="minutes" fill={accentShades.light} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-xs text-muted-foreground mt-2">
@@ -1034,7 +1024,7 @@ import { useUIStore } from '../stores/useUIStore';
               </p>
             </div>
           ) : (
-            <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
+            <div className="liquid-glass-card p-5 lg:col-span-2">
               <h2 className="text-lg font-semibold mb-2">Peak Hours</h2>
               <p className="text-sm text-muted-foreground">
                 Hourly data not available. Enable hourly tracking in your PC tracker to see peak usage hours throughout the day.
@@ -1045,8 +1035,8 @@ import { useUIStore } from '../stores/useUIStore';
 
         {/* Apps (with source/platform) — See more shows all */}
         {allAppsSorted.length > 0 && (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="p-6 border-b border-border space-y-4">
+          <div className="liquid-glass-card overflow-hidden">
+            <div className="p-6 border-b border-white/10 space-y-4 bg-transparent">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h2 className="text-lg font-semibold">Apps</h2>
@@ -1107,17 +1097,21 @@ import { useUIStore } from '../stores/useUIStore';
                 )}
               </div>
             </div>
-            <div className="divide-y divide-border">
-              {appsToShow.length > 0 ? appsToShow.map((app, idx) => (
-                <div key={idx} className="p-4 hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Monitor size={18} className="text-primary" />
-                      </div>
+            <div className="flex flex-col bg-transparent">
+              {appsToShow.length > 0 ? appsToShow.map((app, idx) => {
+                const isLast = idx === appsToShow.length - 1;
+                return (
+                  <div key={idx} className="flex items-center gap-3.5 px-4 bg-transparent hover:bg-white/5 active:bg-white/5 transition-all select-none">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 my-3.5">
+                      <Monitor size={18} className="text-primary" />
+                    </div>
+                    <div className={cn(
+                      "flex-1 flex items-center justify-between min-w-0 py-3.5",
+                      !isLast && "border-b border-white/10"
+                    )}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium truncate">{app.app_name}</p>
+                          <p className="font-medium truncate text-[15px]">{app.app_name}</p>
                           {app.platformLabel && (
                             <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium text-secondary-foreground shrink-0">
                               {app.platformLabel}
@@ -1129,15 +1123,15 @@ import { useUIStore } from '../stores/useUIStore';
                           {screentimeUiPlatform(app.platform) !== 'ios' && ` · ${app.session_count} sessions`}
                         </p>
                       </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-4">
-                      <p className={cn('font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                        {app.hours > 0 ? `${app.hours}h ${app.remainingMinutes}m` : `${app.minutes}m`}
-                      </p>
+                      <div className="text-right flex-shrink-0 ml-4">
+                        <p className={cn('font-bold tabular-nums text-[15px]', privacyMode && 'blur-sm')}>
+                          {app.hours > 0 ? `${app.hours}h ${app.remainingMinutes}m` : `${app.minutes}m`}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )) : (
+                );
+              }) : (
                 <div className="p-8 text-center text-muted-foreground text-sm">
                   No apps match &quot;{appSearchQuery}&quot;. Try another search or clear the filter.
                 </div>
@@ -1148,33 +1142,37 @@ import { useUIStore } from '../stores/useUIStore';
 
         {/* Top Websites (with source/platform) */}
         {topWebsites.length > 0 && (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            <div className="p-6 border-b border-border">
+          <div className="liquid-glass-card overflow-hidden">
+            <div className="p-6 border-b border-white/10 bg-transparent">
               <h2 className="text-lg font-semibold">Top Websites</h2>
               <p className="text-sm text-muted-foreground">Source (iOS, Windows) shown per site</p>
             </div>
-            <div className="divide-y divide-border">
-              {topWebsites.map((site, idx) => (
-                <div key={idx} className="p-4 hover:bg-secondary/30 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      {site.favicon_url ? (
-                        <img
-                          src={site.favicon_url}
-                          alt=""
-                          className="w-10 h-10 rounded-lg flex-shrink-0"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                          <Globe size={18} className="text-green-500" />
-                        </div>
-                      )}
+            <div className="flex flex-col bg-transparent">
+              {topWebsites.map((site, idx) => {
+                const isLast = idx === topWebsites.length - 1;
+                return (
+                  <div key={idx} className="flex items-center gap-3.5 px-4 bg-transparent hover:bg-white/5 active:bg-white/5 transition-all select-none">
+                    {site.favicon_url ? (
+                      <img
+                        src={site.favicon_url}
+                        alt=""
+                        className="w-10 h-10 rounded-lg flex-shrink-0 my-3.5"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0 my-3.5">
+                        <Globe size={18} className="text-green-500" />
+                      </div>
+                    )}
+                    <div className={cn(
+                      "flex-1 flex items-center justify-between min-w-0 py-3.5",
+                      !isLast && "border-b border-white/10"
+                    )}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-medium truncate">{site.domain}</p>
+                          <p className="font-medium truncate text-[15px]">{site.domain}</p>
                           {site.platformLabel && (
                             <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-xs font-medium text-secondary-foreground shrink-0">
                               {site.platformLabel}
@@ -1183,22 +1181,22 @@ import { useUIStore } from '../stores/useUIStore';
                         </div>
                         <p className="text-sm text-muted-foreground">{site.session_count} sessions</p>
                       </div>
-                    </div>
-                    <div className="text-right flex-shrink-0 ml-4">
-                      <p className={cn('font-bold tabular-nums', privacyMode && 'blur-sm')}>
-                        {site.hours > 0 ? `${site.hours}h ${site.remainingMinutes}m` : `${site.minutes}m`}
-                      </p>
+                      <div className="text-right flex-shrink-0 ml-4">
+                        <p className={cn('font-bold tabular-nums text-[15px]', privacyMode && 'blur-sm')}>
+                          {site.hours > 0 ? `${site.hours}h ${site.remainingMinutes}m` : `${site.minutes}m`}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Insights — at the end */}
         {!isLoading && (totalSeconds > 0 || summariesForDisplay.length > 0) && (
-          <div className="rounded-xl border border-border bg-card p-6">
+          <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-2 mb-3">
               <Lightbulb className="text-amber-500" size={20} />
               <h2 className="text-lg font-semibold">Insights</h2>

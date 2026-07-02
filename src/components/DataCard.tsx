@@ -24,7 +24,7 @@ export function DataCard({ title, value, trend, data, unit, invertTrend = false 
   const isNegativeTrend = invertTrend ? (trend && trend > 0) : (trend && trend < 0);
 
   return (
-    <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700">
+    <div className="liquid-glass-card p-4 shadow-sm transition-all hover:border-white/10">
       <div className="flex justify-between items-start">
         <div>
           <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</h3>

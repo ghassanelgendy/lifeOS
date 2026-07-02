@@ -123,26 +123,97 @@ async function ensurePrayerRows(
   userId: string,
   times: { name: string; time: Date }[]
 ): Promise<void> {
+  // Query both with user's ID and null user_id just in case some legacy rows lack it
   const { data: existingHabits, error: prayerHabitsErr } = await supabase
     .from('prayer_habits')
     .select('*')
-    .eq('user_id', userId);
+    .or(`user_id.eq.${userId},user_id.is.null`);
   if (prayerHabitsErr) throw prayerHabitsErr;
 
-  const byName = new Map<PrayerName, PrayerHabit>();
-  ((existingHabits || []) as PrayerHabit[]).forEach((row) => byName.set(row.prayer_name, row));
+  const habitsList = (existingHabits || []) as PrayerHabit[];
 
+  // Group prayer habits by name to identify duplicates
+  const byName = new Map<PrayerName, PrayerHabit[]>();
+  habitsList.forEach((row) => {
+    const list = byName.get(row.prayer_name) || [];
+    list.push(row);
+    byName.set(row.prayer_name, list);
+  });
+
+  const finalByName = new Map<PrayerName, PrayerHabit>();
+
+  for (const prayerName of PRAYER_NAMES) {
+    const list = byName.get(prayerName) || [];
+    if (list.length > 0) {
+      // Sort to keep the best one (prefer non-null user_id, then oldest created_at)
+      list.sort((a, b) => {
+        if (a.user_id && !b.user_id) return -1;
+        if (!a.user_id && b.user_id) return 1;
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+
+      const keep = list[0];
+      finalByName.set(prayerName, keep);
+
+      // If the kept one has a null user_id, update it to the active user's ID
+      if (!keep.user_id) {
+        await supabase
+          .from('prayer_habits')
+          .update({ user_id: userId })
+          .eq('id', keep.id);
+        keep.user_id = userId;
+      }
+
+      // Delete all duplicates of this prayer habit
+      const duplicates = list.slice(1);
+      if (duplicates.length > 0) {
+        const dupIds = duplicates.map((d) => d.id);
+        const dupHabitIds = duplicates.map((d) => d.habit_id);
+
+        await supabase.from('prayer_habits').delete().in('id', dupIds);
+        await supabase.from('habits').delete().in('id', dupHabitIds);
+      }
+    }
+  }
+
+  // Clean up any stray/duplicate habits in the habits table that are not linked in prayer_habits
+  const { data: allUserHabits } = await supabase
+    .from('habits')
+    .select('id, title')
+    .eq('user_id', userId)
+    .eq('is_archived', false);
+
+  if (allUserHabits) {
+    const prayerHabitIds = new Set(Array.from(finalByName.values()).map((ph) => ph.habit_id));
+    const PRAYER_PREFIXES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+    for (const habit of allUserHabits) {
+      const title = (habit.title ?? '').trim();
+      const isPrayerTitle = PRAYER_PREFIXES.some(
+        (name) => title === name || title.startsWith(`${name} `) || title.startsWith(`${name}(`)
+      );
+
+      if (isPrayerTitle && !prayerHabitIds.has(habit.id)) {
+        // Delete the duplicate or unlinked prayer habit in the habits table
+        await supabase.from('habits').delete().eq('id', habit.id);
+      }
+    }
+  }
+
+  // Now verify and ensure that all five prayers exist and are updated
   for (const prayerName of PRAYER_NAMES) {
     const prayerTime = times.find((t) => t.name === prayerName)?.time;
     const timeOnly = prayerTime ? toTimeOnly(prayerTime) : null;
     const displayTime = prayerTime ? format(prayerTime, 'h:mm a') : 'time';
     const desiredTitle = `${prayerName} (${displayTime})`;
-    const existing = byName.get(prayerName);
+    const existing = finalByName.get(prayerName);
 
     if (!existing) {
+      // Insert new habit, passing user_id explicitly
       const { data: createdHabit, error: createHabitErr } = await supabase
         .from('habits')
         .insert({
+          user_id: userId,
           title: desiredTitle,
           description: `Daily ${prayerName} prayer`,
           frequency: 'Daily',
@@ -156,9 +227,11 @@ async function ensurePrayerRows(
         .single();
       if (createHabitErr) throw createHabitErr;
 
+      // Insert new prayer_habit, passing user_id explicitly
       const { data: prayerHabit, error: createPrayerHabitErr } = await supabase
         .from('prayer_habits')
         .insert({
+          user_id: userId,
           prayer_name: prayerName,
           habit_id: createdHabit.id,
           default_time: timeOnly,
@@ -167,22 +240,22 @@ async function ensurePrayerRows(
         .select('*')
         .single();
       if (createPrayerHabitErr) throw createPrayerHabitErr;
-      byName.set(prayerName, prayerHabit as PrayerHabit);
-      continue;
-    }
+      
+      finalByName.set(prayerName, prayerHabit as PrayerHabit);
+    } else {
+      const updates: Record<string, unknown> = {};
+      if (timeOnly && existing.default_time !== timeOnly) updates.default_time = timeOnly;
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('prayer_habits').update(updates).eq('id', existing.id);
+      }
 
-    const updates: Record<string, unknown> = {};
-    if (timeOnly && existing.default_time !== timeOnly) updates.default_time = timeOnly;
-    if (Object.keys(updates).length > 0) {
-      await supabase.from('prayer_habits').update(updates).eq('id', existing.id);
+      await supabase.from('habits').update({
+        title: desiredTitle,
+        description: `Daily ${prayerName} prayer at ${displayTime}`,
+        time: timeOnly,
+        color: '#8b5cf6',
+      }).eq('id', existing.habit_id);
     }
-
-    await supabase.from('habits').update({
-      title: desiredTitle,
-      description: `Daily ${prayerName} prayer at ${displayTime}`,
-      time: timeOnly,
-      color: '#8b5cf6',
-    }).eq('id', existing.habit_id);
   }
 }
 

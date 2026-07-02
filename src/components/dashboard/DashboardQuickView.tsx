@@ -3,6 +3,8 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Flame, Monitor, Moon, Sparkles, ArrowRight } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
@@ -148,17 +150,35 @@ function DueTodayRow({
   color?: string;
   onClick?: () => void;
 }) {
+  const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
+  const handleRowClick = (e: React.MouseEvent) => {
+    if (onClick) {
+      void triggerLightTap();
+      onClick();
+    }
+  };
+
+  const handleCheckboxClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onToggle) {
+      if (done) {
+        void triggerLightTap();
+      } else {
+        void triggerSuccessTap();
+      }
+      onToggle();
+    }
+  };
   return (
     <div
-      onClick={onClick}
+      onClick={handleRowClick}
       className={cn(
-        'task-item group flex items-stretch gap-3 rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
-        'transition-all duration-200 hover:border-border hover:shadow-md',
-        onClick && 'cursor-pointer',
-        done && (kind === 'prayer' ? 'opacity-75 border-slate-500/20 bg-slate-500/5' : 'opacity-75 border-primary/20 bg-primary/5'),
+        'group flex items-center gap-3.5 py-4 px-4 sm:px-5 bg-transparent select-none cursor-pointer',
+        'active:scale-[0.99] active:bg-secondary/20 transition-all duration-150',
+        done && 'opacity-55'
       )}
     >
       {showToggle && onToggle ? (
@@ -168,21 +188,18 @@ function DueTodayRow({
           aria-checked={done}
           aria-label={label}
           disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
+          onClick={handleCheckboxClick}
+          onTouchStart={() => {
+            if (!done) void triggerSuccessTap();
+            else void triggerLightTap();
           }}
           className={cn(
-            'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+            'relative flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 active:scale-90',
             done
               ? kind === 'prayer'
-                ? 'border-slate-500 bg-slate-500 text-slate-50 shadow-inner shadow-slate-500/20'
-                : 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
-              : kind === 'prayer'
-                ? 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-slate-500/50 hover:bg-accent/40 active:scale-95'
-                : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95',
-            busy && 'pointer-events-none opacity-50',
+                ? 'border-slate-500 bg-slate-500 text-slate-50'
+                : 'border-primary bg-primary text-primary-foreground'
+              : 'border-muted-foreground/35 bg-background/50 hover:border-primary/50'
           )}
         >
           <div className="relative flex h-full w-full items-center justify-center">
@@ -197,13 +214,13 @@ function DueTodayRow({
             />
             <svg
               className={cn(
-                "task-checkmark absolute transition-opacity duration-300",
+                "task-checkmark size-4.5 absolute transition-opacity duration-300",
                 done ? "task-checkmark--active opacity-100" : "opacity-0"
               )}
               viewBox="0 0 16 16"
               fill="none"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
@@ -213,42 +230,32 @@ function DueTodayRow({
         </button>
       ) : (
         <div
-          className={cn(
-            'mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/20 bg-muted/30',
-          )}
+          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/20"
           aria-hidden
         >
-          <div className="size-4 text-muted-foreground/50" />
+          <div className="size-2.5 rounded-full bg-muted-foreground/30" />
         </div>
       )}
 
-      <div className="min-w-0 flex-1 pt-0.5">
-        <div className="flex flex-wrap items-center gap-2 gap-y-1">
-          <span
-            className={cn(
-              'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-              !color && kind === 'prayer' && 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
-              !color && kind === 'task' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-              !color && kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-              !color && kind === 'event' && 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
-            )}
-            style={color ? { backgroundColor: `${color}26`, color: color } : undefined}
-          >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
             {kindLabel}
           </span>
-          {done && (
-            <span className={cn("text-[10px] font-medium uppercase tracking-wide", kind === 'prayer' ? "text-slate-500 dark:text-slate-400" : "text-primary")}>Done</span>
-          )}
         </div>
         <p
           className={cn(
-            'mt-1 text-sm font-semibold leading-snug tracking-tight break-words',
-            done && 'line-through decoration-muted-foreground/60',
+            'text-[14px] font-semibold text-foreground leading-snug break-words mt-0.5',
+            done && 'line-through text-muted-foreground/60',
           )}
         >
           {title}
         </p>
-        {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{subtitle}</p> : null}
+        {subtitle ? (
+          <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
+            {subtitle}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -277,7 +284,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const lastNightSleep = useLastNightSleepMinutes();
   const todaySleepMinutes = useSleepMinutesForDay(today);
   const { avgBedtimeMinutes } = useSleepMetrics(7);
-  
+
   const startOfDayStr = format(subDays(today, 1), 'yyyy-MM-dd') + 'T00:00:00.000Z';
   const endOfDayStr = format(today, 'yyyy-MM-dd') + 'T23:59:59.999Z';
   const { data: sleepSegments = [] } = useSleepStages(startOfDayStr, endOfDayStr);
@@ -308,23 +315,23 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     const packStats = (stats: any[]) => {
       const validStats = stats.filter(s => s.last_active_at && s.total_time_seconds > 0);
       validStats.sort((a, b) => new Date(b.last_active_at).getTime() - new Date(a.last_active_at).getTime());
-      
+
       const packed: TimeSegment[] = [];
       let nextAllowedEnd = dayStartMs + 86400000;
 
       for (const stat of validStats) {
         const targetEnd = new Date(stat.last_active_at).getTime();
         const durationMs = stat.total_time_seconds * 1000;
-        
+
         let ed = Math.min(targetEnd, nextAllowedEnd);
         let st = ed - durationMs;
-        
+
         // Prevent shifting before the start of the day if possible, though it just gets clipped anyway
         nextAllowedEnd = st;
-        
+
         const overlapStart = Math.max(st, dayStartMs);
         const overlapEnd = Math.min(ed, dayStartMs + 86400000);
-        
+
         if (overlapEnd > overlapStart) {
           packed.push({
             start: (overlapStart - dayStartMs) / 60000,
@@ -476,7 +483,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     const rawUsed = pc + phone + other;
 
 
-    
+
     // Use the mathematically exact overlap computed from the timeline blocks
     const exactOverlapMinutes = Math.round(timelineBlocks.overlap.reduce((sum, b) => sum + (b.end - b.start), 0));
     const overlapDisplay = exactOverlapMinutes;
@@ -557,7 +564,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
     for (const task of completedTasks) {
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
-      
+
       const isCalendarEvent = !!(task.calendar_source_key || task.calendar_event_id);
       const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
       rawMarkers.push({
@@ -576,17 +583,17 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         const parsedStart = parseISO(item.start_time);
         if (!isToday(parsedStart)) continue;
         const parsedEnd = parseISO(item.end_time || item.start_time);
-        
+
         const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
         const eventIdToCheck = item.originalId || item.id.replace('event-', '');
         const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
-        const linkedTask = completedTasks.find((t) => 
+        const linkedTask = completedTasks.find((t) =>
           (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
           t.due_date === eventDateToCheck
         );
         const isManuallyDone = !!linkedTask?.is_completed;
         const isAutoDone = parsedEnd < today;
-        
+
         // Add auto-done events if they haven't been manually toggled yet
         if (!isManuallyDone && isAutoDone) {
           const minutes = parsedEnd.getHours() * 60 + parsedEnd.getMinutes();
@@ -652,13 +659,13 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       if (!item.allDay) {
         return `${pct}% · ${whenStr}`;
       }
-      
+
       let prefix = isToday(parseISO(item.start_time)) ? '' : format(parseISO(item.start_time), 'EEE, MMM d · ');
-      
+
       if (hasUsualTime && insight?.usualTimeLabel) {
         return `${pct}% · ${prefix}${insight.usualTimeLabel.replace(/^Usually\s+/i, '')}`;
       }
-      
+
       return `${pct}% · ${prefix}Any time`;
     }
 
@@ -759,7 +766,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   tasksDueTodayOnly.forEach((t) => {
     addedKeys.add(`task-${t.id}`);
 
-    
+
     const minutes = t.due_time ? (timeStringToMinutes(t.due_time) ?? null) : null;
     const sortTime = minutes !== null ? getTodayTimestamp(minutes) : Infinity;
 
@@ -791,15 +798,15 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   habitsDueToday.forEach((h) => {
     addedKeys.add(`habit-${h.id}`);
     const done = isHabitDoneToday(h.id);
-    
+
     const insight = habitInsights[h.id];
     const pct = insight ? insight.adherencePct : 0;
     const hasUsualTime = insight && insight.eventCount > 0 && insight.usualTimeLabel !== 'No usual time yet';
-    
+
     let timeStr = 'Any time';
     let minutes: number | null = null;
     let isAnytime = true;
-    
+
     if (done) {
       const log = todayLogs.find((l) => l.habit_id === h.id && l.date === todayStr && l.completed);
       if (log && log.completed_at) {
@@ -879,15 +886,15 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
       const eventIdToCheck = item.originalId || item.id.replace('event-', '');
       const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
-      linkedTask = completedTasks.find((t) => 
+      linkedTask = completedTasks.find((t) =>
         (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
         t.due_date === eventDateToCheck
-      ) 
-        || todayTasks.find((t) => 
+      )
+        || todayTasks.find((t) =>
           (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
           t.due_date === eventDateToCheck
         )
-        || overdueTasks.find((t) => 
+        || overdueTasks.find((t) =>
           (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
           t.due_date === eventDateToCheck
         );
@@ -941,23 +948,23 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
                   : isEvent
                     ? async () => {
-                        if (linkedTask) {
-                          await toggleTask.mutateAsync(linkedTask.id);
-                        } else {
-                          const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-                          await createTask.mutateAsync({
-                            title: item.title,
-                            is_completed: true,
-                            priority: 'none',
-                            due_date: format(parsedStart, 'yyyy-MM-dd'),
-                            due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
-                            calendar_source_key: eventKey,
-                            calendar_event_id: item.type === 'ical' ? null : (item.originalId || item.id.replace('event-', '')),
-                            tag_ids: [],
-                            recurrence: 'none',
-                          });
-                        }
+                      if (linkedTask) {
+                        await toggleTask.mutateAsync(linkedTask.id);
+                      } else {
+                        const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+                        await createTask.mutateAsync({
+                          title: item.title,
+                          is_completed: true,
+                          priority: 'none',
+                          due_date: format(parsedStart, 'yyyy-MM-dd'),
+                          due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
+                          calendar_source_key: eventKey,
+                          calendar_event_id: item.type === 'ical' ? null : (item.originalId || item.id.replace('event-', '')),
+                          tag_ids: [],
+                          recurrence: 'none',
+                        });
                       }
+                    }
                     : undefined
             }
           />
@@ -1205,27 +1212,29 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           <h2 id="qv-due-today-heading" className="font-semibold text-base sm:text-lg tracking-tight">
             Due today
           </h2>
-          <div className="flex flex-wrap items-center gap-2 shrink-0 text-xs">
-            <Link to="/calendar" className={QV_LINK_PILL}>
-              Calendar
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-            <Link to="/tasks" className={QV_LINK_PILL}>
-              Tasks
-              <ArrowRight className={QV_LINK_ARROW} aria-hidden />
-            </Link>
-          </div>
         </div>
 
-        <div className="p-4 sm:p-5">
+        <div className="p-0">
           {!hasDueTodayContent ? (
             <p className="text-sm text-muted-foreground text-center py-6">Nothing due today. Enjoy the calm.</p>
           ) : (
-            <div className="space-y-2">
-              <ul ref={parent} className="space-y-2">
-                {timelineItems.map((item) => item.element)}
-              </ul>
-            </div>
+            <motion.ul layout className="flex flex-col bg-transparent">
+              <AnimatePresence mode="popLayout" initial={false}>
+                {timelineItems.map((item) => (
+                  <motion.li
+                    key={item.key}
+                    layout
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 450, damping: 35 }}
+                    className="border-b border-white/10 last:border-b-0"
+                  >
+                    {item.element}
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </motion.ul>
           )}
         </div>
       </section>

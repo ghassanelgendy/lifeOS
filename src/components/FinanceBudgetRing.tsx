@@ -16,13 +16,7 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
   const strokeDashoffset = circumference - (pct / 100) * circumference;
 
   return (
-    <div
-      className="rounded-2xl p-5"
-      style={{
-        background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
-        boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04), 0 6px 24px rgba(0,0,0,0.25)',
-      }}
-    >
+    <div className="liquid-glass-card p-5">
       <p className="text-sm font-semibold text-foreground mb-4">Budget</p>
       <div className="flex items-center gap-6">
         {/* Donut ring */}
@@ -33,7 +27,7 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
               cy="50"
               r={radius}
               fill="none"
-              stroke="var(--color-border)"
+              stroke="rgba(255,255,255,0.06)"
               strokeWidth="10"
             />
             <circle
@@ -65,7 +59,7 @@ export function FinanceBudgetRing({ totalBudget, totalSpent, privacyMode }: Fina
               {formatCurrency(totalSpent)}
             </p>
           </div>
-          <div className="h-px bg-border" />
+          <div className="h-px bg-white/10" />
           <div>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Remaining</p>
             <p

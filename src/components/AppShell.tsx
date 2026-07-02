@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles } from 'lucide-react';
+import { Menu, X, Settings, Sparkles, Plus } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
@@ -124,6 +124,29 @@ export function AppShell() {
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
   const isOnTasks = location.pathname === '/tasks';
+  const showHeaderPlusButton = location.pathname === '/tasks' || location.pathname === '/habits' || location.pathname === '/finance' || location.pathname === '/calendar';
+
+  const handleHeaderPlusClick = useCallback(() => {
+    if (location.pathname === '/tasks') {
+      window.dispatchEvent(new CustomEvent('app-trigger-add-task'));
+    } else if (location.pathname === '/habits') {
+      window.dispatchEvent(new CustomEvent('app-trigger-add-habit'));
+    } else if (location.pathname === '/finance') {
+      window.dispatchEvent(new CustomEvent('app-trigger-add-finance'));
+    } else if (location.pathname === '/calendar') {
+      window.dispatchEvent(new CustomEvent('app-trigger-add-calendar'));
+    }
+  }, [location.pathname]);
+
+  const getActiveTitle = useCallback(() => {
+    if (location.pathname === '/' || location.pathname === '/dashboard') {
+      return 'Dashboard';
+    }
+    const item = NAV_ITEMS.find(
+      (n) => n.href !== '/' && (location.pathname === n.href || location.pathname.startsWith(n.href + '/'))
+    );
+    return item ? item.label : 'lifeOS';
+  }, [location.pathname]);
 
   const prevPathRef = useRef<string>(location.pathname);
   const prevIndexRef = useRef<number>(currentIndex);
@@ -296,10 +319,8 @@ export function AppShell() {
       const isFromLeftEdge = touchStart.current.x < SWIPE_EDGE_PX;
       const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
 
-      // Lock vertical scrolling completely:
-      // 1. Instantly if touch originates from the left edge (sidebar swipe)
-      // 2. If center-swiping horizontally (tab slider)
-      if (isFromLeftEdge || (isHorizontalSwipe && Math.abs(deltaX) > 5)) {
+      // Lock vertical scrolling only if touch originates from left edge (sidebar swipe)
+      if (isFromLeftEdge && isHorizontalSwipe && Math.abs(deltaX) > 5) {
         if (e.cancelable) {
           e.preventDefault();
         }
@@ -310,35 +331,9 @@ export function AppShell() {
       if (!touchStart.current) return;
       const t = e.changedTouches[0];
       const deltaX = t.clientX - touchStart.current.x;
-      const deltaY = t.clientY - touchStart.current.y;
-      const w = window.innerWidth;
 
       if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 30) {
         setMobileSidebarOpen(true);
-        touchStart.current = null;
-        return;
-      }
-
-      if (isOnTasks) {
-        touchStart.current = null;
-        return;
-      }
-
-      if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_MIN_DELTA) {
-        touchStart.current = null;
-        return;
-      }
-
-      const startRatio = touchStart.current.x / w;
-      if (startRatio < CENTER_SWIPE_MIN || startRatio > CENTER_SWIPE_MAX) {
-        touchStart.current = null;
-        return;
-      }
-
-      if (deltaX > SWIPE_MIN_DELTA && currentIndex > 0) {
-        navigate(mobileNavigationMapped[currentIndex - 1].href);
-      } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigationMapped.length - 1) {
-        navigate(mobileNavigationMapped[currentIndex + 1].href);
       }
       touchStart.current = null;
     };
@@ -455,11 +450,11 @@ export function AppShell() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-border bg-card transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col border-r border-white/10 bg-[#f9f9f9]/40 dark:bg-[#1c1c1e]/60 backdrop-blur-xl transition-all duration-300 ease-in-out",
           isSidebarCollapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="flex h-14 items-center justify-between px-4 border-b border-border">
+        <div className="flex h-14 items-center justify-between px-4 border-b border-white/10">
           {!isSidebarCollapsed && <span className="text-xl font-bold tracking-tight">LifeOS</span>}
           <button
             onClick={toggleSidebar}
@@ -499,7 +494,7 @@ export function AppShell() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-4 border-t border-white/10">
           {showWrappedTakeover ? (
             <NavLink
               to="/analytics"
@@ -560,10 +555,20 @@ export function AppShell() {
             initial={{ opacity: 0, y: -2 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="font-bold text-base tracking-tight select-none"
+            className="font-bold text-base tracking-tight select-none font-sans"
           >
-            lifeOS
+            {getActiveTitle()}
           </motion.span>
+
+          {showHeaderPlusButton && (
+            <button
+              onClick={handleHeaderPlusClick}
+              className="absolute right-3 w-9 h-9 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-primary/20 transition-all touch-manipulation"
+              aria-label="Add"
+            >
+              <Plus size={20} className="text-primary" />
+            </button>
+          )}
         </header>
 
         <OfflineBanner />
