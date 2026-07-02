@@ -27,7 +27,7 @@ workflows:
           pnpm cap sync ios
       - name: Compile iOS app (Unsigned)
         script: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
+          xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
             -sdk iphoneos \
             -configuration Release \
