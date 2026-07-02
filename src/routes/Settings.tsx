@@ -1235,6 +1235,7 @@ export default function SettingsPage() {
             </Button>
           </div>
         </div>
+      </section>
       {/* System Logs */}
       <section id="settings-logs" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border flex items-center justify-between">
