@@ -4,24 +4,6 @@ settings:
   autoInstallPeers: false
   excludeLinksFromLockfile: false
 
-catalogs:
-  default:
-    '@tanstack/react-query':
-      specifier: 5.101.2
-      version: 5.101.2
-    '@types/node':
-      specifier: ^26.0.1
-      version: 26.0.1
-    drizzle-orm:
-      specifier: ^0.45.2
-      version: 0.45.2
-    tsx:
-      specifier: ^4.22.4
-      version: 4.22.4
-    zod:
-      specifier: ^4.4.3
-      version: 4.4.3
-
 overrides:
   esbuild>@esbuild/darwin-x64: '-'
   esbuild>@esbuild/freebsd-arm64: '-'
@@ -170,9 +152,6 @@ importers:
       adhan:
         specifier: ^4.4.4
         version: 4.4.4
-      capacitor-native-pull-to-refresh:
-        specifier: ^0.3.0
-        version: 0.3.0(@capacitor/core@8.4.1)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -272,10 +251,10 @@ importers:
         version: 5.8.22(rollup@4.61.1)
       '@vitejs/plugin-legacy':
         specifier: ^8.1.0
-        version: 8.1.0(terser@5.48.0)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 8.1.0(terser@5.48.0)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))
       '@vitejs/plugin-react':
         specifier: ^6.0.3
-        version: 6.0.3(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 6.0.3(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))
       eslint:
         specifier: ^10.6.0
         version: 10.6.0(jiti@2.7.0)
@@ -308,13 +287,13 @@ importers:
         version: 8.59.1(eslint@10.6.0(jiti@2.7.0))(typescript@6.0.3)
       vite:
         specifier: ^8.1.0
-        version: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+        version: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)
       vite-plugin-pwa:
         specifier: ^1.3.0
-        version: 1.3.0(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 1.3.0(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))
       vitest:
         specifier: ^4.1.9
-        version: 4.1.9(@edge-runtime/vm@3.2.0)(@types/node@26.0.1)(jsdom@29.1.1)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+        version: 4.1.9(@edge-runtime/vm@3.2.0)(@types/node@26.0.1)(jsdom@29.1.1)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))
       workbox-core:
         specifier: ^7.4.1
         version: 7.4.1
@@ -2597,11 +2576,6 @@ packages:
 
   caniuse-lite@1.0.30001799:
     resolution: {integrity: sha512-hG1bReV+OUU+MOqK4t/ZWI0tZOyz3rqS9XuhOUz1cIcbwBKjOyJEJuw9ER5JuNyqxNk8u/JUVbGibBOL1yrjFw==}
-
-  capacitor-native-pull-to-refresh@0.3.0:
-    resolution: {integrity: sha512-R+PhYOUVU6Ouz4f9HYfapNB+m1cn7w6sfGMKM3SldEL7vI76bplsOEURdZhKXfgALfPsfDV3p2wZmEsRrTB6Ng==}
-    peerDependencies:
-      '@capacitor/core': ^5.0.0
 
   chai@6.2.2:
     resolution: {integrity: sha512-NUPRluOfOiTKBKvWPtSD4PhFvWCqOi0BGStNWs57X9js7XGTprSmFoz5F0tWhR4WPjNeR9jXqdC7/UpSJTnlRg==}
@@ -7178,7 +7152,7 @@ snapshots:
       json-schema-to-ts: 1.6.4
       ts-morph: 12.0.0
 
-  '@vitejs/plugin-legacy@8.1.0(terser@5.48.0)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@vitejs/plugin-legacy@8.1.0(terser@5.48.0)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))':
     dependencies:
       '@babel/core': 7.29.7
       '@babel/plugin-transform-dynamic-import': 7.29.7(@babel/core@7.29.7)
@@ -7193,14 +7167,14 @@ snapshots:
       regenerator-runtime: 0.14.1
       systemjs: 6.15.1
       terser: 5.48.0
-      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@6.0.3(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@vitejs/plugin-react@6.0.3(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
-      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)
 
   '@vitest/expect@4.1.9':
     dependencies:
@@ -7211,13 +7185,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.1.0
 
-  '@vitest/mocker@4.1.9(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))':
+  '@vitest/mocker@4.1.9(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))':
     dependencies:
       '@vitest/spy': 4.1.9
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)
 
   '@vitest/pretty-format@4.1.9':
     dependencies:
@@ -7443,10 +7417,6 @@ snapshots:
       get-intrinsic: 1.3.0
 
   caniuse-lite@1.0.30001799: {}
-
-  capacitor-native-pull-to-refresh@0.3.0(@capacitor/core@8.4.1):
-    dependencies:
-      '@capacitor/core': 8.4.1
 
   chai@6.2.2: {}
 
@@ -9609,19 +9579,19 @@ snapshots:
       d3-time: 3.1.0
       d3-timer: 3.0.1
 
-  vite-plugin-pwa@1.3.0(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)):
+  vite-plugin-pwa@1.3.0(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)):
     dependencies:
       debug: 4.4.3
       pretty-bytes: 6.1.1
       tinyglobby: 0.2.17
-      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)
       workbox-build: 7.4.1
       workbox-window: 7.4.1
     transitivePeerDependencies:
       - '@types/babel__core'
       - supports-color
 
-  vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0):
+  vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0):
     dependencies:
       lightningcss: 1.32.0
       picomatch: 4.0.4
@@ -9634,13 +9604,12 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.7.0
       terser: 5.48.0
-      tsx: 4.22.4
-      yaml: 2.9.0
+      tsx: 4.21.0
 
-  vitest@4.1.9(@edge-runtime/vm@3.2.0)(@types/node@26.0.1)(jsdom@29.1.1)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)):
+  vitest@4.1.9(@edge-runtime/vm@3.2.0)(@types/node@26.0.1)(jsdom@29.1.1)(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)):
     dependencies:
       '@vitest/expect': 4.1.9
-      '@vitest/mocker': 4.1.9(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0))
+      '@vitest/mocker': 4.1.9(vite@8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0))
       '@vitest/pretty-format': 4.1.9
       '@vitest/runner': 4.1.9
       '@vitest/snapshot': 4.1.9
@@ -9657,7 +9626,7 @@ snapshots:
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tinyrainbow: 3.1.0
-      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.22.4)(yaml@2.9.0)
+      vite: 8.1.0(@types/node@26.0.1)(esbuild@0.27.3)(jiti@2.7.0)(terser@5.48.0)(tsx@4.21.0)
       why-is-node-running: 2.3.0
     optionalDependencies:
       '@edge-runtime/vm': 3.2.0

@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import { Capacitor } from '@capacitor/core';
 
 interface PullToRefreshProps {
     children: React.ReactNode;
@@ -17,16 +19,20 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const THRESHOLD = 80; // Pixels to pull to trigger refresh
-    const MAX_PULL = 120; // Max visual pull distance
+    const THRESHOLD = 65; // Pixels to pull to trigger refresh
+    const MAX_PULL = 90; // Max visual pull distance
 
     const refresh = useCallback(async () => {
         setIsRefreshing(true);
-        setPullDistance(THRESHOLD); // Snap to threshold
+        setPullDistance(THRESHOLD);
 
         try {
-            // Haptic feedback if available
-            if (navigator.vibrate) navigator.vibrate(50);
+            // Trigger native iOS light haptic mechanical feedback
+            if (Capacitor.isNativePlatform()) {
+                void Haptics.impact({ style: ImpactStyle.Light });
+            } else if (navigator.vibrate) {
+                navigator.vibrate(40);
+            }
 
             // Invalidate all queries
             await queryClient.invalidateQueries();
@@ -44,12 +50,10 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
         if (!container) return;
 
         const handleTouchStart = (e: TouchEvent) => {
-            // Don't trigger when touching a dialog/modal (e.g. pulling dialog down to close)
             const target = e.target as Node;
             if (target && document.body.contains(target) && (target as Element).closest?.('[data-lifeos-modal]')) {
                 return;
             }
-            // Only enable pull if at the top of the container
             if (container.scrollTop <= 0) {
                 setStartY(e.touches[0].clientY);
             }
@@ -62,14 +66,13 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
             const currentY = e.touches[0].clientY;
             const diff = currentY - startY;
 
-            // Only handle downward pull and if we are at the top
             if (diff > 0 && container.scrollTop <= 0) {
-                // Prevent document/body overscroll so the LifeOS header doesn't get dragged (iOS)
                 if (e.cancelable) {
                     e.preventDefault();
                 }
 
-                const resistance = diff * 0.5;
+                // Physics rubber-banding: logarithmic-like power curve
+                const resistance = Math.pow(diff, 0.8) * 1.6;
                 setPullDistance(Math.min(resistance, MAX_PULL));
             }
         };
@@ -94,31 +97,44 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
         };
     }, [startY, pullDistance, isRefreshing, refresh]);
 
+    // Calculate scale and rotation based on pull distance
+    const pullRatio = Math.min(pullDistance / THRESHOLD, 1);
+
     return (
         <div
             ref={containerRef}
             data-lifeos-scroll-root
             className="h-full min-h-0 overflow-auto relative no-scrollbar overscroll-contain"
         >
-            {/* Refresh indicator in fixed top area - content does NOT move */}
+            {/* Playful Floating Spinner Container */}
             <div
-                className="absolute top-0 left-0 right-0 flex justify-center items-center pointer-events-none z-50 h-12"
-                style={{ transform: `translateY(${Math.min(pullDistance, 48) - 48}px)` }}
+                className="absolute top-0 left-0 right-0 flex justify-center items-center pointer-events-none z-50"
+                style={{ 
+                    height: '52px',
+                    opacity: pullRatio,
+                    transform: `translateY(${Math.min(pullDistance - 44, 4)}px) scale(${0.4 + pullRatio * 0.6})`,
+                    transition: startY === null ? 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' : 'none'
+                }}
             >
-                <div className={cn(
-                    "bg-card border border-border rounded-full p-2 shadow-sm flex items-center justify-center transition-opacity",
-                    pullDistance > 10 ? "opacity-100" : "opacity-0"
-                )}>
-                    <Loader2
-                        size={20}
-                        className={cn("text-primary", isRefreshing && "animate-spin")}
-                        style={{ transform: `rotate(${pullDistance * 2}deg)` }}
-                    />
-                </div>
+                <Loader2
+                    size={22}
+                    className={cn(isRefreshing && "animate-spin")}
+                    style={{ 
+                        color: 'var(--color-primary)',
+                        transform: isRefreshing ? undefined : `rotate(${pullDistance * 4.5}deg)`,
+                        transition: isRefreshing ? 'none' : 'transform 0.1s ease-out'
+                    }}
+                />
             </div>
 
-            {/* Content: on Tasks, h-full constrains to viewport so sidebar spans to bottom; elsewhere min-h-full allows scroll */}
-            <div className={cn("relative", isTasks ? "h-full" : "min-h-full")}>
+            {/* Elastic content container that slides down and springs back */}
+            <div 
+                className={cn("relative origin-top will-change-transform", isTasks ? "h-full" : "min-h-full")}
+                style={{
+                    transform: `translateY(${pullDistance}px)`,
+                    transition: startY === null ? 'transform 0.45s cubic-bezier(0.25, 1, 0.3, 1.18)' : 'none'
+                }}
+            >
                 {children}
             </div>
         </div>
