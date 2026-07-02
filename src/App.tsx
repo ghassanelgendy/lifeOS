@@ -11,7 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from './lib/supabase';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
-import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications } from './lib/nativeBridge';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
 import { useHabits } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
@@ -106,16 +106,20 @@ function AppInner() {
   });
 
   useEffect(() => {
-    if (tasks && habits && events && prayerSettings) {
-      void syncAllLocalNotifications(tasks, habits, events, prayerSettings, lat, lng);
-    }
+    if (!tasks || !habits || !events) return;
+    // Use [] fallback for prayerSettings so tasks/habits/events are scheduled
+    // immediately without waiting on prayer settings to finish loading
+    void syncAllLocalNotifications(tasks, habits, events, prayerSettings ?? [], lat, lng);
   }, [tasks, habits, events, prayerSettings, lat, lng]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();
     
-    // Initialize native features (Keyboard, Badge, Splash Screen)
+    // Initialize native features (Keyboard, Badge, Splash Screen, Notification Permissions)
     void initializeNativeApp();
+
+    // Wire up notification quick-action listeners (Done, Postpone, Snooze, Late)
+    setupNotificationActionListeners(supabase, queryClient);
     
     // Check and apply OTA updates on app startup (native platforms only)
     void checkAndApplyUpdates();

@@ -70,14 +70,50 @@ export async function initializeNativeApp() {
     // 1. Hide Keyboard Accessory Bar (prevents the gray 'prev/next/done' bar)
     await Keyboard.setAccessoryBarVisible({ visible: false });
 
-    // 2. Clear application badge and ask for permissions
-    const permissions = await Badge.checkPermissions();
-    if (permissions.display !== 'granted') {
+    // 2. Request Badge permissions and clear badge count
+    const badgePermissions = await Badge.checkPermissions();
+    if (badgePermissions.display !== 'granted') {
       await Badge.requestPermissions();
     }
     await Badge.clear();
 
-    // 3. Hide splash screen after app is fully loaded
+    // 3. Request Local Notifications permission once at startup
+    const notifPermissions = await LocalNotifications.checkPermissions();
+    if (notifPermissions.display !== 'granted') {
+      await LocalNotifications.requestPermissions();
+    }
+
+    // 4. Register notification action types for quick-action long-press on iOS/Android
+    await LocalNotifications.registerActionTypes({
+      types: [
+        {
+          // Tasks: mark done or postpone by 1 hour
+          id: 'task-actions',
+          actions: [
+            { id: 'done', title: '✅ Done' },
+            { id: 'postpone', title: '⏰ Postpone 1h' },
+          ],
+        },
+        {
+          // Habits: single done action
+          id: 'habit-actions',
+          actions: [
+            { id: 'done', title: '✅ Done' },
+          ],
+        },
+        {
+          // Prayers: done, I prayed late, or snooze 5 mins
+          id: 'prayer-actions',
+          actions: [
+            { id: 'done', title: '✅ Prayed' },
+            { id: 'late', title: '🟡 Late' },
+            { id: 'snooze5', title: '⏰ +5 mins' },
+          ],
+        },
+      ],
+    });
+
+    // 5. Hide splash screen after app is fully loaded
     await SplashScreen.hide();
   } catch (e) {
     console.error('Native initialization failed', e);
@@ -190,12 +226,11 @@ export async function syncAllLocalNotifications(
 ) {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    let hasPermission = await LocalNotifications.checkPermissions();
+    // Permission is requested once at app startup (initializeNativeApp).
+    // Here we only check — if not yet granted we bail silently.
+    const hasPermission = await LocalNotifications.checkPermissions();
     if (hasPermission.display !== 'granted') {
-      hasPermission = await LocalNotifications.requestPermissions();
-    }
-    if (hasPermission.display !== 'granted') {
-      console.warn('[LocalNotifications] Permission not granted');
+      console.warn('[LocalNotifications] Permission not granted – skipping sync');
       return;
     }
 
@@ -211,38 +246,40 @@ export async function syncAllLocalNotifications(
       body: string;
       at: Date;
       extra?: Record<string, any>;
+      actionTypeId?: string;
     }> = [];
 
     // 1. Sync Tasks (Cap at 20)
+    // Helper: parse "YYYY-MM-DD" + "HH:MM" into a safe local Date
+    function taskTriggerDate(due_date: string, due_time?: string | null, early_reminder_minutes?: number | null): Date {
+      const [y, mo, d] = due_date.split('T')[0].split('-').map(Number);
+      let h = 9, m = 0; // default to 9am if no specific time
+      if (due_time && /^\d{2}:\d{2}$/.test(due_time)) {
+        const [th, tm] = due_time.split(':').map(Number);
+        h = th; m = tm;
+      }
+      const date = new Date(y, mo - 1, d, h, m, 0);
+      if (early_reminder_minutes) {
+        date.setTime(date.getTime() - early_reminder_minutes * 60000);
+      }
+      return date;
+    }
+
     const taskReminders = tasks
       .filter((task) => {
         if (task.is_completed || task.is_wont_do) return false;
         if (!task.due_date || !task.reminders_enabled) return false;
-        
-        const datePart = task.due_date.split('T')[0];
-        const timePart = task.due_time && /^\d{2}:\d{2}$/.test(task.due_time) ? `${task.due_time}:00` : '00:00:00';
-        let triggerTime = new Date(`${datePart}T${timePart}`).getTime();
-
-        if (task.early_reminder_minutes) {
-          triggerTime -= task.early_reminder_minutes * 60000;
-        }
-        return triggerTime > nowMs;
+        const triggerAt = taskTriggerDate(task.due_date, task.due_time, task.early_reminder_minutes);
+        return triggerAt.getTime() > nowMs;
       })
-      .map((task) => {
-        const datePart = task.due_date.split('T')[0];
-        const timePart = task.due_time && /^\d{2}:\d{2}$/.test(task.due_time) ? `${task.due_time}:00` : '00:00:00';
-        let triggerAt = new Date(`${datePart}T${timePart}`);
-        if (task.early_reminder_minutes) {
-          triggerAt = new Date(triggerAt.getTime() - task.early_reminder_minutes * 60000);
-        }
-        return {
-          id: hashCode('task-' + task.id),
-          title: 'Task Reminder',
-          body: task.title,
-          at: triggerAt,
-          extra: { taskId: task.id }
-        };
-      })
+      .map((task) => ({
+        id: hashCode('task-' + task.id),
+        title: '📋 Task Reminder',
+        body: task.title,
+        at: taskTriggerDate(task.due_date, task.due_time, task.early_reminder_minutes),
+        extra: { taskId: task.id },
+        actionTypeId: 'task-actions'
+      }))
       .sort((a, b) => a.at.getTime() - b.at.getTime())
       .slice(0, 20);
 
@@ -266,10 +303,11 @@ export async function syncAllLocalNotifications(
         if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
           habitReminders.push({
             id: hashCode(`habit-${habit.id}-${dateString}`),
-            title: 'Habit Reminder',
+            title: '🌱 Habit Reminder',
             body: `Don't forget to: ${habit.title}`,
             at: triggerAt,
-            extra: { habitId: habit.id, date: dateString }
+            extra: { habitId: habit.id, date: dateString },
+            actionTypeId: 'habit-actions'
           });
         }
       }
@@ -333,10 +371,11 @@ export async function syncAllLocalNotifications(
             if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
               prayerAlerts.push({
                 id: hashCode(`prayer-${prayer.name}-${dateString}`),
-                title: `Time to pray ${prayer.name}`,
-                body: `Daily ${prayer.name} prayer is due`,
+                title: `🕌 ${prayer.name} Prayer`,
+                body: `Time for ${prayer.name}`,
                 at: triggerAt,
-                extra: { prayerName: prayer.name, date: dateString }
+                extra: { prayerName: prayer.name, date: dateString },
+                actionTypeId: 'prayer-actions'
               });
             }
           }
@@ -366,7 +405,8 @@ export async function syncAllLocalNotifications(
           body: n.body,
           schedule: { at: n.at },
           extra: n.extra,
-          sound: 'default'
+          sound: 'default',
+          ...(n.actionTypeId ? { actionTypeId: n.actionTypeId } : {})
         }))
       });
       console.log(`[LocalNotifications] Synced ${finalUpcoming.length} active reminders (${scheduleList.length} new)`);
@@ -374,4 +414,109 @@ export async function syncAllLocalNotifications(
   } catch (e) {
     console.error('[LocalNotifications] Sync failed:', e);
   }
+}
+
+// Send a test notification in 5 seconds — verifies local notifications are working
+export async function sendTestNotification(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) {
+    alert('Local notifications only work in the native iOS/Android app.');
+    return;
+  }
+  try {
+    const perms = await LocalNotifications.checkPermissions();
+    if (perms.display !== 'granted') {
+      await LocalNotifications.requestPermissions();
+    }
+    const fireAt = new Date(Date.now() + 5000);
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: 999999,
+        title: '🔔 Test Notification',
+        body: 'lifeOS notifications are working! ✅',
+        schedule: { at: fireAt },
+        sound: 'default',
+        actionTypeId: 'task-actions',
+      }]
+    });
+    console.log('[LocalNotifications] Test notification scheduled for 5s from now');
+  } catch (e) {
+    console.error('[LocalNotifications] Test notification failed:', e);
+    throw e;
+  }
+}
+
+// Helper: reschedule a notification N minutes later (used for Postpone/Snooze actions)
+export async function rescheduleNotificationSnooze(
+  id: number,
+  minutes: number,
+  title: string,
+  body: string,
+  actionTypeId?: string
+): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const at = new Date(Date.now() + minutes * 60000);
+    await LocalNotifications.schedule({
+      notifications: [{ id, title, body, schedule: { at }, sound: 'default', ...(actionTypeId ? { actionTypeId } : {}) }]
+    });
+  } catch (e) {
+    console.error('[LocalNotifications] Snooze failed:', e);
+  }
+}
+
+// Wire up quick-action listeners (Done / Postpone / Snooze / Late).
+// Call once at app startup with access to supabase + react-query client.
+export function setupNotificationActionListeners(supabaseClient: any, queryClient: any) {
+  if (!Capacitor.isNativePlatform()) return;
+
+  LocalNotifications.addListener('localNotificationActionPerformed', async (result) => {
+    const { actionId, notification } = result;
+    const extra = notification.extra ?? {};
+    console.log(`[LocalNotifications] Action "${actionId}"`, extra);
+
+    // TASK: Done or Postpone 1h
+    if (extra.taskId) {
+      if (actionId === 'done') {
+        await supabaseClient.from('tasks')
+          .update({ is_completed: true, completed_at: new Date().toISOString() })
+          .eq('id', extra.taskId);
+        void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      } else if (actionId === 'postpone') {
+        void rescheduleNotificationSnooze(
+          notification.id + 100000,
+          60,
+          notification.title ?? '📋 Task Reminder',
+          notification.body ?? '',
+          'task-actions'
+        );
+      }
+    }
+
+    // HABIT: Done
+    if (extra.habitId && extra.date) {
+      if (actionId === 'done') {
+        await supabaseClient.from('habit_logs')
+          .upsert({ habit_id: extra.habitId, date: extra.date, status: 'done', created_at: new Date().toISOString() });
+        void queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+        void queryClient.invalidateQueries({ queryKey: ['habits'] });
+      }
+    }
+
+    // PRAYER: Done, Late, or Snooze +5m
+    if (extra.prayerName && extra.date) {
+      if (actionId === 'done' || actionId === 'late') {
+        await supabaseClient.from('prayer_logs')
+          .upsert({ prayer_name: extra.prayerName, date: extra.date, status: actionId, created_at: new Date().toISOString() });
+        void queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
+      } else if (actionId === 'snooze5') {
+        void rescheduleNotificationSnooze(
+          notification.id + 200000,
+          5,
+          notification.title ?? '🕌 Prayer',
+          notification.body ?? '',
+          'prayer-actions'
+        );
+      }
+    }
+  });
 }

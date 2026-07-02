@@ -164,12 +164,15 @@ export default function Tasks() {
 
   useEffect(() => {
     const handleTriggerAddTask = () => {
-      handleOpenNewTaskSheet();
+      setSelectedTask(null);
+      setEditForm(getDefaultEditFormForNewTask());
+      setIsEditModalOpen(true);
     };
     window.addEventListener('app-trigger-add-task', handleTriggerAddTask);
     return () => {
       window.removeEventListener('app-trigger-add-task', handleTriggerAddTask);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);

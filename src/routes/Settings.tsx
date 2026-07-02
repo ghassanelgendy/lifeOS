@@ -46,6 +46,8 @@ import { Link } from 'react-router-dom';
 import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
+import { sendTestNotification } from '../lib/nativeBridge';
+import { Capacitor } from '@capacitor/core';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -158,6 +160,7 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [localNotifStatus, setLocalNotifStatus] = useState<string | null>(null);
   const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
@@ -756,6 +759,39 @@ export default function SettingsPage() {
               )}
             >
               {pushStatus}
+            </p>
+          )}
+
+          {/* Local notification test — only shown on native iOS/Android */}
+          {Capacitor.isNativePlatform() && (
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div className="flex items-center gap-3">
+                <Bell size={20} />
+                <div>
+                  <p className="font-medium">Local Notifications (Native)</p>
+                  <p className="text-sm text-muted-foreground">
+                    Scheduled on-device for tasks, habits & prayers. Tap Test to fire one in 5s.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  sendTestNotification()
+                    .then(() => setLocalNotifStatus('✅ Check in 5 sec!'))
+                    .catch((e) => setLocalNotifStatus(`❌ ${e?.message ?? 'Failed'}`))
+                }
+              >
+                Test
+              </Button>
+            </div>
+          )}
+          {localNotifStatus && (
+            <p className={cn(
+              'text-sm px-3 py-2 rounded-lg',
+              localNotifStatus.startsWith('❌') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+            )}>
+              {localNotifStatus}
             </p>
           )}
 

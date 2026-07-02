@@ -583,6 +583,38 @@ export function TaskDetailsContent({
           </>
         )}
         <Divider />
+        {/* Standalone Reminders Enabled toggle — prominently visible */}
+        <div className="flex items-center min-h-[52px] px-4 py-3">
+          <Bell size={20} className={cn('shrink-0 mr-3', form.reminders_enabled ? 'text-primary' : 'text-muted-foreground')} aria-hidden />
+          <span className="text-sm font-medium text-foreground flex-1">Reminders</span>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={!!form.reminders_enabled}
+            aria-label="Toggle reminders"
+            className={cn(
+              'w-12 h-7 rounded-full transition-colors relative shrink-0',
+              form.reminders_enabled ? 'bg-primary' : 'bg-muted'
+            )}
+            onClick={() => {
+              setForm((prev) => {
+                const nextRemindersEnabled = !prev.reminders_enabled;
+                return {
+                  ...prev,
+                  reminders_enabled: nextRemindersEnabled,
+                  early_reminder_minutes: nextRemindersEnabled ? (prev.early_reminder_minutes ?? 0) : null,
+                };
+              });
+            }}
+          >
+            <span
+              className={cn(
+                'absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all duration-200',
+                form.reminders_enabled ? 'left-6' : 'left-1'
+              )}
+            />
+          </button>
+        </div>
         <div className="flex items-center min-h-[52px] px-4 py-3 hover:bg-secondary/10 transition-colors">
           <button
             type="button"
