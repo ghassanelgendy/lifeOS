@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
-export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/planner', '/calendar'];
+export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/calendar'];
 export const DEFAULT_DESKTOP_NAV = [
   '/dashboard',
   '/tasks',

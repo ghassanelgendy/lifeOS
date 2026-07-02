@@ -20,6 +20,8 @@ import {
   CircleSlash2,
   ArrowUpDown,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -2211,37 +2213,47 @@ export default function Tasks() {
           )}
 
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
-          <div className="space-y-1">
-            {mainTasksToRender.map((task) => {
-              const isHabitTask = task.id.startsWith('habit-');
-              return (
-                <SwipeableRow
-                  key={task.id}
-                  onDone={() => handleTaskToggle(task)}
-                  onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
-                  onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
-                  onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                  showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
-                >
-                  <TaskItem
-                    task={task}
-                    tags={tags}
-                    onToggle={() => handleTaskToggle(task)}
-                    onEdit={() => {
-                      if (!isHabitTask) handleEditTask(task);
-                    }}
-                    onDelete={() => {
-                      if (!isHabitTask) deleteTask.mutate(task.id);
-                    }}
-                    onWontDo={() => {
-                      if (!isHabitTask) handleMarkWontDo(task);
-                    }}
-                    formatDueDate={formatDueDate}
-                  />
-                </SwipeableRow>
-              );
-            })}
-          </div>
+          <motion.div layout className="space-y-1.5">
+            <AnimatePresence mode="popLayout" initial={false}>
+              {mainTasksToRender.map((task) => {
+                const isHabitTask = task.id.startsWith('habit-');
+                return (
+                  <motion.div
+                    key={task.id}
+                    layout
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 35 }}
+                  >
+                    <SwipeableRow
+                      onDone={() => handleTaskToggle(task)}
+                      onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
+                      onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
+                      onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                      showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
+                    >
+                      <TaskItem
+                        task={task}
+                        tags={tags}
+                        onToggle={() => handleTaskToggle(task)}
+                        onEdit={() => {
+                          if (!isHabitTask) handleEditTask(task);
+                        }}
+                        onDelete={() => {
+                          if (!isHabitTask) deleteTask.mutate(task.id);
+                        }}
+                        onWontDo={() => {
+                          if (!isHabitTask) handleMarkWontDo(task);
+                        }}
+                        formatDueDate={formatDueDate}
+                      />
+                    </SwipeableRow>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </motion.div>
 
           {/* Completed section */}
           {activeView !== 'completed' && activeView !== 'wontdo' && completedDisplayTasks.length > 0 && (
@@ -2249,41 +2261,52 @@ export default function Tasks() {
               <button
                 onClick={() => setShowCompleted(!showCompleted)}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
               >
                 {showCompleted ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
-                <div className="mt-2 space-y-1 opacity-60">
-                  {completedTasksToRender.slice(0, 10).map((task) => {
-                    const isHabitTask = task.id.startsWith('habit-');
-                    return (
-                      <SwipeableRow
-                        key={task.id}
-                        onDone={() => handleTaskToggle(task)}
-                        onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
-                        onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                        showPostpone={false}
-                      >
-                        <TaskItem
-                          task={task}
-                          tags={tags}
-                          onToggle={() => handleTaskToggle(task)}
-                          onEdit={() => {
-                            if (!isHabitTask) handleEditTask(task);
-                          }}
-                          onDelete={() => {
-                            if (!isHabitTask) deleteTask.mutate(task.id);
-                          }}
-                          onWontDo={() => {
-                            if (!isHabitTask) handleMarkWontDo(task);
-                          }}
-                          formatDueDate={formatDueDate}
-                        />
-                      </SwipeableRow>
-                    );
-                  })}
-                </div>
+                <motion.div layout className="mt-2 space-y-1.5 opacity-60">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {completedTasksToRender.slice(0, 10).map((task) => {
+                      const isHabitTask = task.id.startsWith('habit-');
+                      return (
+                        <motion.div
+                          key={task.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 420, damping: 35 }}
+                        >
+                          <SwipeableRow
+                            onDone={() => handleTaskToggle(task)}
+                            onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
+                            onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                            showPostpone={false}
+                          >
+                            <TaskItem
+                              task={task}
+                              tags={tags}
+                              onToggle={() => handleTaskToggle(task)}
+                              onEdit={() => {
+                                if (!isHabitTask) handleEditTask(task);
+                              }}
+                              onDelete={() => {
+                                if (!isHabitTask) deleteTask.mutate(task.id);
+                              }}
+                              onWontDo={() => {
+                                if (!isHabitTask) handleMarkWontDo(task);
+                              }}
+                              formatDueDate={formatDueDate}
+                            />
+                          </SwipeableRow>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </motion.div>
               )}
             </div>
           )}
@@ -2294,41 +2317,52 @@ export default function Tasks() {
               <button
                 onClick={() => setShowWontDo(!showWontDo)}
                 className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                type="button"
               >
                 {showWontDo ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                 <span>Won't do ({wontDoTasksToRender.length})</span>
               </button>
               {showWontDo && (
-                <div className="mt-2 space-y-1 opacity-70">
-                  {wontDoTasksToRender.slice(0, 20).map((task) => {
-                    const isHabitTask = task.id.startsWith('habit-');
-                    return (
-                      <SwipeableRow
-                        key={task.id}
-                        onDone={() => handleTaskToggle(task)}
-                        onWontDo={undefined}
-                        onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                        showPostpone={false}
-                      >
-                        <TaskItem
-                          task={task}
-                          tags={tags}
-                          onToggle={() => handleTaskToggle(task)}
-                          onEdit={() => {
-                            if (!isHabitTask) handleEditTask(task);
-                          }}
-                          onDelete={() => {
-                            if (!isHabitTask) deleteTask.mutate(task.id);
-                          }}
-                          onWontDo={() => {
-                            if (!isHabitTask) handleMarkWontDo(task);
-                          }}
-                          formatDueDate={formatDueDate}
-                        />
-                      </SwipeableRow>
-                    );
-                  })}
-                </div>
+                <motion.div layout className="mt-2 space-y-1.5 opacity-70">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    {wontDoTasksToRender.slice(0, 20).map((task) => {
+                      const isHabitTask = task.id.startsWith('habit-');
+                      return (
+                        <motion.div
+                          key={task.id}
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95 }}
+                          transition={{ type: "spring", stiffness: 420, damping: 35 }}
+                        >
+                          <SwipeableRow
+                            onDone={() => handleTaskToggle(task)}
+                            onWontDo={undefined}
+                            onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
+                            showPostpone={false}
+                          >
+                            <TaskItem
+                              task={task}
+                              tags={tags}
+                              onToggle={() => handleTaskToggle(task)}
+                              onEdit={() => {
+                                if (!isHabitTask) handleEditTask(task);
+                              }}
+                              onDelete={() => {
+                                if (!isHabitTask) deleteTask.mutate(task.id);
+                              }}
+                              onWontDo={() => {
+                                if (!isHabitTask) handleMarkWontDo(task);
+                              }}
+                              formatDueDate={formatDueDate}
+                            />
+                          </SwipeableRow>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </motion.div>
               )}
             </div>
           )}
@@ -2545,34 +2579,49 @@ interface TaskItemProps {
 }
 
 function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate }: TaskItemProps) {
+  const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority];
   const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
 
+  const handleToggleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Success feedback on task check, standard light tap on reopen
+    if (task.is_completed) {
+      void triggerLightTap();
+    } else {
+      void triggerSuccessTap();
+    }
+    onToggle();
+  };
+
   return (
     <div
       className={cn(
-        "task-item group flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all duration-150 ease-out cursor-pointer",
-        task.is_completed && "opacity-50"
+        "task-item group flex items-start gap-3 p-3.5 rounded-[16px] border border-transparent hover:border-border hover:bg-card/45 backdrop-blur-md active:scale-[0.98] transition-all duration-150 ease-out cursor-pointer select-none",
+        task.is_completed ? "opacity-45 bg-secondary/10" : "bg-card/20 shadow-sm"
       )}
       onClick={() => {
         if (!task.id.startsWith('habit-')) {
+          void triggerLightTap();
           onEdit();
         }
       }}
     >
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onToggle();
+        onClick={handleToggleClick}
+        onTouchStart={() => {
+          if (!task.is_completed) void triggerSuccessTap();
+          else void triggerLightTap();
         }}
         className={cn(
-          "w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+          "w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
           task.is_completed
-            ? "bg-green-500 border-green-500"
+            ? "bg-green-500 border-green-500 scale-105"
             : "border-muted-foreground hover:border-foreground"
         )}
+        type="button"
       >
         <svg
           className={cn(
@@ -2586,7 +2635,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             d="M4 8.5 7 11 12 5"
             fill="none"
             stroke="white"
-            strokeWidth="2"
+            strokeWidth="2.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -2596,8 +2645,8 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <span className={cn(
-            "font-medium",
-            task.is_completed && "line-through text-muted-foreground"
+            "font-medium tracking-tight text-[15px]",
+            task.is_completed && "line-through text-muted-foreground font-normal"
           )}>
             {task.title}
           </span>
@@ -2614,7 +2663,6 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
           )}
         </div>
-
 
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {dueInfo.text && (
@@ -2641,19 +2689,25 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
           <button
             onClick={(e) => {
               e.stopPropagation();
+              void triggerLightTap();
               onWontDo();
             }}
-            className="p-1.5 rounded hover:bg-zinc-500/20 text-muted-foreground hover:text-zinc-300 transition-all"
+            onTouchStart={() => void triggerLightTap()}
+            className="p-1.5 rounded hover:bg-zinc-500/20 text-muted-foreground hover:text-zinc-300 transition-all active:scale-90"
             title="Mark as won't do"
+            type="button"
           >
             <CircleSlash2 size={14} />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
+              void triggerLightTap();
               onDelete();
             }}
-            className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all"
+            onTouchStart={() => void triggerLightTap()}
+            className="p-1.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all active:scale-90"
+            type="button"
           >
             <Trash2 size={14} />
           </button>

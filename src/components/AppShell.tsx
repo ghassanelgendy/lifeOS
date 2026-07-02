@@ -2,11 +2,11 @@ import { Menu, X, Settings, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
 import { OfflineBanner } from './OfflineBanner';
-import { AppFooter } from './AppFooter';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
 import { NAV_ITEMS, type NavItem } from './navItems';
@@ -70,7 +70,7 @@ function MobileNavLink({
   );
 }
 
-const SWIPE_EDGE_PX = 24;
+const SWIPE_EDGE_PX = 40;
 const SWIPE_MIN_DELTA = 50;
 const CENTER_SWIPE_MIN = 0.25;
 const CENTER_SWIPE_MAX = 0.75;
@@ -94,6 +94,8 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [showTabBar, setShowTabBar] = useState(true);
+  const lastScrollTop = useRef(0);
 
   const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus();
 
@@ -104,18 +106,9 @@ export function AppShell() {
   }, [isWeeklyWrapDay, isMonthlyWrapDay, lastViewedWeeklyWrap, lastViewedMonthlyWrap, weeklyWrapKey, monthlyWrapKey]);
 
   const mobileNavigationMapped = useMemo(() => {
-    const rawItems = NAV_ITEMS.filter(item => mobileNavItems.includes(item.href));
-    return rawItems.map(item => {
-      if (item.href === '/settings' && showWrappedTakeover) {
-        return {
-          label: isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap',
-          icon: Sparkles,
-          href: '/analytics'
-        };
-      }
-      return item;
-    });
-  }, [mobileNavItems, showWrappedTakeover, isWeeklyWrapDay, isMonthlyWrapDay]);
+    const rawItems = NAV_ITEMS.filter(item => item.href !== '/settings' && mobileNavItems.includes(item.href));
+    return rawItems;
+  }, [mobileNavItems]);
 
   const desktopNavigation = useMemo(() => {
     const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings');
@@ -243,59 +236,122 @@ export function AppShell() {
     setSlideDirection(dir);
   }, [location.pathname, currentIndex]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const t = e.touches[0];
-    touchStart.current = { x: t.clientX, y: t.clientY };
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (!target || typeof target.hasAttribute !== 'function' || !target.hasAttribute('data-lifeos-scroll-root')) {
+        return;
+      }
+
+      const scrollTop = target.scrollTop;
+      
+      // Always show full size at the top of the page
+      if (scrollTop <= 10) {
+        setShowTabBar(true);
+        lastScrollTop.current = scrollTop;
+        return;
+      }
+
+      const diff = scrollTop - lastScrollTop.current;
+
+      // React quickly (6px threshold) to scrolling direction changes
+      if (Math.abs(diff) > 6) {
+        if (diff > 0) {
+          setShowTabBar(false); // Scroll down -> shrink
+        } else {
+          setShowTabBar(true);  // Scroll up -> expand
+        }
+        lastScrollTop.current = scrollTop;
+      }
+    };
+
+    document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    return () => {
+      document.removeEventListener('scroll', handleScroll, { capture: true });
+    };
   }, []);
 
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStart.current) return;
-    const t = e.touches[0];
-    const deltaX = t.clientX - touchStart.current.x;
-    const deltaY = t.clientY - touchStart.current.y;
-    const horizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 15;
-    const fromLeftEdge = touchStart.current.x < SWIPE_EDGE_PX;
-    if (horizontalSwipe && fromLeftEdge) {
-      e.preventDefault();
-    }
-  }, []);
+  // Automatically restore tab bar to full size on route changes
+  useEffect(() => {
+    setShowTabBar(true);
+  }, [location.pathname]);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStart.current) return;
-    const t = e.changedTouches[0];
-    const deltaX = t.clientX - touchStart.current.x;
-    const deltaY = t.clientY - touchStart.current.y;
-    const w = window.innerWidth;
+  const gestureContainerRef = useRef<HTMLDivElement>(null);
 
-    // Swipe from left edge on ANY page → open mobile sidebar
-    if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 30) {
-      setMobileSidebarOpen(true);
-      touchStart.current = null;
-      return;
-    }
+  useEffect(() => {
+    const container = gestureContainerRef.current;
+    if (!container) return;
 
-    // On Tasks page, disable horizontal tab navigation so task swipe actions work smoothly
-    if (isOnTasks) {
-      touchStart.current = null;
-      return;
-    }
+    const onTouchStart = (e: TouchEvent) => {
+      const t = e.touches[0];
+      touchStart.current = { x: t.clientX, y: t.clientY };
+    };
 
-    // Swipe from center → navigate tabs (only if mostly horizontal)
-    if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_MIN_DELTA) {
+    const onTouchMove = (e: TouchEvent) => {
+      if (!touchStart.current) return;
+      const t = e.touches[0];
+      const deltaX = t.clientX - touchStart.current.x;
+      const deltaY = t.clientY - touchStart.current.y;
+
+      const isFromLeftEdge = touchStart.current.x < SWIPE_EDGE_PX;
+      const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+
+      // Lock vertical scrolling completely:
+      // 1. Instantly if touch originates from the left edge (sidebar swipe)
+      // 2. If center-swiping horizontally (tab slider)
+      if (isFromLeftEdge || (isHorizontalSwipe && Math.abs(deltaX) > 5)) {
+        if (e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      if (!touchStart.current) return;
+      const t = e.changedTouches[0];
+      const deltaX = t.clientX - touchStart.current.x;
+      const deltaY = t.clientY - touchStart.current.y;
+      const w = window.innerWidth;
+
+      if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 30) {
+        setMobileSidebarOpen(true);
+        touchStart.current = null;
+        return;
+      }
+
+      if (isOnTasks) {
+        touchStart.current = null;
+        return;
+      }
+
+      if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_MIN_DELTA) {
+        touchStart.current = null;
+        return;
+      }
+
+      const startRatio = touchStart.current.x / w;
+      if (startRatio < CENTER_SWIPE_MIN || startRatio > CENTER_SWIPE_MAX) {
+        touchStart.current = null;
+        return;
+      }
+
+      if (deltaX > SWIPE_MIN_DELTA && currentIndex > 0) {
+        navigate(mobileNavigationMapped[currentIndex - 1].href);
+      } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigationMapped.length - 1) {
+        navigate(mobileNavigationMapped[currentIndex + 1].href);
+      }
       touchStart.current = null;
-      return;
-    }
-    const startRatio = touchStart.current.x / w;
-    if (startRatio < CENTER_SWIPE_MIN || startRatio > CENTER_SWIPE_MAX) {
-      touchStart.current = null;
-      return;
-    }
-    if (deltaX > SWIPE_MIN_DELTA && currentIndex > 0) {
-      navigate(mobileNavigationMapped[currentIndex - 1].href);
-    } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigationMapped.length - 1) {
-      navigate(mobileNavigationMapped[currentIndex + 1].href);
-    }
-    touchStart.current = null;
+    };
+
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchmove', onTouchMove, { passive: false });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchmove', onTouchMove);
+      container.removeEventListener('touchend', onTouchEnd);
+    };
   }, [isOnTasks, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
 
   return (
@@ -497,38 +553,57 @@ export function AppShell() {
           >
             <Menu size={22} />
           </button>
-          <span className="font-bold text-base tracking-tight">lifeOS</span>
+          
+          {/* Pro-Tip: Native logo subtle fade-in on load or route changes */}
+          <motion.span
+            key={location.pathname}
+            initial={{ opacity: 0, y: -2 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="font-bold text-base tracking-tight select-none"
+          >
+            lifeOS
+          </motion.span>
         </header>
 
         <OfflineBanner />
 
         {/* Only this content area scrolls; header/sidebar/bottom bar are fixed */}
         <div
+          ref={gestureContainerRef}
           className="flex-1 flex flex-col min-h-0 overflow-hidden relative"
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
         >
           <PullToRefresh>
-          <div
-            key={location.pathname}
-            className={cn(
-              "flex flex-col p-4 md:p-6 section-slide-in",
-              "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
-              isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
-            )}
-            style={
-              {
-                '--section-dx': slideDirection === 1 ? '25%' : slideDirection === -1 ? '-25%' : '0',
-              } as React.CSSProperties
-            }
-          >
-            <Outlet />
-          </div>
-        </PullToRefresh>
-        <AppFooter />
-        <FocusSessionManager />
-        <FocusPiPWindow />
+            <div className="relative w-full h-full overflow-hidden flex flex-col">
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.div
+                  key={location.pathname}
+                  initial={{ x: slideDirection * 60, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -slideDirection * 60, opacity: 0 }}
+                  transition={{
+                    type: "spring",
+                    stiffness: 380,
+                    damping: 32,
+                    mass: 0.9
+                  }}
+                  className={cn(
+                    "flex flex-col p-4 md:p-6 w-full",
+                    "pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6",
+                    isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
+                  )}
+                  style={{
+                    backfaceVisibility: 'hidden',
+                    WebkitFontSmoothing: 'subpixel-antialiased',
+                  }}
+                >
+                  <Outlet />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </PullToRefresh>
+          <FocusSessionManager />
+          <FocusPiPWindow />
 
         {/* Wrap Toast Notification */}
         {activeToast && (
@@ -580,9 +655,29 @@ export function AppShell() {
         <LiquidTabBar
           tabs={mobileNavigationMapped}
           activeTabHref={location.pathname}
-          onTabClick={(href) => navigate(href)}
+          onTabClick={(href) => {
+            setShowTabBar(true);
+            if (location.pathname === href) {
+              const scrollRoot = document.querySelector('[data-lifeos-scroll-root]');
+              if (scrollRoot) {
+                scrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+            } else {
+              navigate(href);
+            }
+          }}
           showDotForHref={(href) => href === '/analytics' && showWrappedTakeover}
+          isVisible={showTabBar}
         />
+        {/* Global SVG Displacement Filter for iOS Liquid Glass cards */}
+        <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }} xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="liquid-glass-refraction">
+              <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="1" result="noise" />
+              <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
+          </defs>
+        </svg>
       </main>
     </div>
   );

@@ -1,7 +1,12 @@
 import { cn, formatTime12h } from '../lib/utils';
 import { useSyncStatus } from '../hooks/useSyncStatus';
+import { Capacitor } from '@capacitor/core';
 
 export function AppFooter() {
+  if (Capacitor.isNativePlatform()) {
+    return null;
+  }
+
   const { online, queueLength, lastSyncAt } = useSyncStatus();
 
   let syncLabel: string | null = null;
@@ -52,4 +57,3 @@ export function AppFooter() {
     </footer>
   );
 }
-

@@ -1051,11 +1051,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           Today
         </h2>
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-          <div className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-75">
+          <div className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-75">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider truncate">Due today</p>
             <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1 text-primary">{dueTodayBundleCount}</p>
           </div>
-          <Link to="/habits" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
+          <Link to="/habits" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
               <Flame className="size-3.5 text-orange-500 shrink-0" />
               Habits
@@ -1065,14 +1065,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <span className="text-base sm:text-lg font-medium text-muted-foreground/60 ml-1">/ {todayHabitTotal}</span>
             </p>
           </Link>
-          <Link to="/screentime" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
+          <Link to="/screentime" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
               <Monitor className="size-3.5 text-sky-500 shrink-0" />
               Screen
             </p>
             <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
           </Link>
-          <Link to="/sleep" className="group flex flex-col justify-center rounded-2xl bg-card p-4 sm:p-5 min-w-0 shadow-sm border border-border/50 hover:shadow-md hover:border-border transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-200">
+          <Link to="/sleep" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-200">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
               <Moon className="size-3.5 text-indigo-400 shrink-0" />
               Sleep
@@ -1084,7 +1084,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </div>
 
         <div className="mt-3 sm:mt-4">
-          <div className="rounded-2xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm">
+          <div className="liquid-glass-card p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
@@ -1198,7 +1198,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       </section>
 
       <section
-        className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-150"
+        className="liquid-glass-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-150"
         aria-labelledby="qv-due-today-heading"
       >
         <div className="border-b border-border bg-muted/30 px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between gap-2">

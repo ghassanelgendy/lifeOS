@@ -276,14 +276,13 @@ export default function SettingsPage() {
 
   // Toggle nav item in mobile bar
   const handleToggleNavItem = (href: string) => {
-    if (mobileNavItems.includes(href)) {
-      // Don't allow removing Settings - it should always be accessible
-      if (href === '/settings') return;
-      setMobileNavItems(mobileNavItems.filter(item => item !== href));
+    const cleanNavItems = mobileNavItems.filter(item => item !== '/settings');
+    if (cleanNavItems.includes(href)) {
+      setMobileNavItems(cleanNavItems.filter(item => item !== href));
     } else {
-      // Max 5 items
-      if (mobileNavItems.length >= 5) return;
-      setMobileNavItems([...mobileNavItems, href]);
+      // Max 5 visible items
+      if (cleanNavItems.length >= 5) return;
+      setMobileNavItems([...cleanNavItems, href]);
     }
   };
 
@@ -330,7 +329,7 @@ export default function SettingsPage() {
 
         <div className="flex-1 min-w-0 space-y-10">
       {/* Account */}
-      <section id="settings-account" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-account" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Account</h2>
         </div>
@@ -350,7 +349,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Appearance */}
-      <section id="settings-appearance" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-appearance" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Appearance</h2>
         </div>
@@ -419,7 +418,7 @@ export default function SettingsPage() {
 
       <div id="settings-defaults" className="space-y-10 scroll-mt-20">
       {/* Default Pages */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Default Pages</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -503,7 +502,7 @@ export default function SettingsPage() {
 
     <div id="settings-layout" className="space-y-10 scroll-mt-20">
       {/* Page Widgets */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Page Widgets</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -576,7 +575,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Desktop Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Desktop Sidebar</h2>
         </div>
@@ -643,7 +642,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Mobile Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <section className="liquid-glass-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Mobile Navigation</h2>
         </div>
@@ -653,15 +652,15 @@ export default function SettingsPage() {
             <div>
               <p className="font-medium">Bottom Bar Items</p>
               <p className="text-sm text-muted-foreground">
-                Choose which items to show (max 5). Settings is always included.
+                Choose which items to show in the mobile bottom navigation bar (max 5).
               </p>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter((item) => item.href !== '/settings').map((item) => {
               const isSelected = mobileNavItems.includes(item.href);
-              const isSettings = item.href === '/settings';
-              const canToggle = !isSettings && (isSelected || mobileNavItems.length < 5);
+              const activeCount = mobileNavItems.filter(item => item !== '/settings').length;
+              const canToggle = isSelected || activeCount < 5;
 
               return (
                 <button
@@ -674,8 +673,7 @@ export default function SettingsPage() {
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground",
                     canToggle && "hover:border-primary/50 cursor-pointer",
-                    !canToggle && !isSettings && "opacity-50 cursor-not-allowed",
-                    isSettings && "opacity-75"
+                    !canToggle && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <item.icon size={16} />
@@ -686,14 +684,14 @@ export default function SettingsPage() {
             })}
           </div>
           <p className="text-xs text-muted-foreground">
-            {mobileNavItems.length}/5 items selected
+            {mobileNavItems.filter(item => item !== '/settings').length}/5 items selected
           </p>
         </div>
       </section>
       </div>
 
       {/* Task reminders (push notifications) */}
-      <section id="settings-notifications" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-notifications" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Notifications</h2>
         </div>
@@ -807,7 +805,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Prayer times location */}
-      <section id="settings-prayer" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-prayer" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Prayer times</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -913,7 +911,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Archived habits management */}
-      <section id="settings-habits" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-habits" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Archived Habits</h2>
           <p className="text-sm text-muted-foreground mt-1">Restore habits hidden from the Habits page.</p>
@@ -943,7 +941,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Privacy */}
-      <section id="settings-privacy" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-privacy" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Privacy & analytics</h2>
         </div>
@@ -1156,7 +1154,7 @@ export default function SettingsPage() {
       </section>
 
       {/* Data Management */}
-      <section id="settings-data" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-data" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Data Management</h2>
         </div>
@@ -1237,7 +1235,7 @@ export default function SettingsPage() {
         </div>
       </section>
       {/* System Logs */}
-      <section id="settings-logs" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-logs" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <h2 className="font-semibold">System Logs</h2>
           <div className="flex gap-2">
@@ -1303,7 +1301,7 @@ export default function SettingsPage() {
       </section>
 
       {/* About */}
-      <section id="settings-about" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+      <section id="settings-about" className="liquid-glass-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">About</h2>
         </div>

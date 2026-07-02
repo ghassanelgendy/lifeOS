@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { Haptics, ImpactStyle } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
+import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
+import { useNativeInteraction } from '../hooks/useNativeInteraction';
 
 export interface LiquidTab {
   href: string;
@@ -14,6 +13,7 @@ interface LiquidTabBarProps {
   activeTabHref: string;
   onTabClick: (href: string, e: React.MouseEvent) => void;
   showDotForHref?: (href: string) => boolean;
+  isVisible?: boolean;
 }
 
 export default function LiquidTabBar({
@@ -21,81 +21,34 @@ export default function LiquidTabBar({
   activeTabHref,
   onTabClick,
   showDotForHref,
+  isVisible = true,
 }: LiquidTabBarProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicatorStyles, setIndicatorStyles] = useState({ left: '6px', width: '0px' });
-
-  // 1. Unified Haptic Feedback Engine
-  const triggerHaptic = async () => {
-    if (!Capacitor.isNativePlatform()) return;
-    try {
-      await Haptics.impact({ style: ImpactStyle.Light });
-    } catch (e) {
-      console.log('Haptic skipped:', e);
-    }
-  };
-
-  // 2. Geometric Calculation Engine
-  const updateIndicatorPosition = () => {
-    const activeIndex = tabs.findIndex(
-      (tab) =>
-        tab.href === '/'
-          ? activeTabHref === '/'
-          : activeTabHref === tab.href || activeTabHref.startsWith(tab.href + '/')
-    );
-    
-    if (activeIndex >= 0) {
-      const activeTabElement = tabRefs.current[activeIndex];
-      if (activeTabElement && containerRef.current) {
-        const elementWidth = activeTabElement.offsetWidth;
-        const targetLeftPosition = activeTabElement.offsetLeft + 2;
-        const targetWidth = elementWidth - 4;
-
-        setIndicatorStyles({
-          left: `${targetLeftPosition}px`,
-          width: `${targetWidth}px`,
-        });
-      }
-    }
-  };
-
-  // 3. Keep layout synchronized during tab changes or layout updates
-  useEffect(() => {
-    updateIndicatorPosition();
-  }, [activeTabHref, tabs]);
-
-  // 4. Window and Viewport Resize Adaptive Protection
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      updateIndicatorPosition();
-    });
-
-    resizeObserver.observe(container);
-    return () => resizeObserver.disconnect();
-  }, [activeTabHref, tabs]);
+  const { triggerSelectionChange } = useNativeInteraction();
 
   const handleTabClick = (tabHref: string, e: React.MouseEvent) => {
-    void triggerHaptic();
+    // Trigger lightweight iOS selection haptic when switching tabs
+    const isActive = tabHref === '/'
+      ? activeTabHref === '/'
+      : activeTabHref === tabHref || activeTabHref.startsWith(tabHref + '/');
+    if (!isActive) {
+      void triggerSelectionChange();
+    }
     onTabClick(tabHref, e);
   };
 
   return (
     <>
-      {/* 5. Component Styles Injector */}
+      {/* Component Styles Injector */}
       <style>{`
         .liquid-tab-bar-container {
           position: fixed;
           bottom: calc(16px + env(safe-area-inset-bottom));
           left: 50%;
-          transform: translateX(-50%);
+          transform: translateX(-50%) translateY(0) scale(1);
           width: 92%;
           max-width: 440px;
-          height: 64px;
-          border-radius: 32px;
+          height: 68px;
+          border-radius: 34px;
           background: rgba(255, 255, 255, 0.45);
           backdrop-filter: blur(25px) saturate(200%);
           -webkit-backdrop-filter: blur(25px) saturate(200%);
@@ -107,6 +60,15 @@ export default function LiquidTabBar({
           z-index: 49;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
+          transition: transform 0.4s cubic-bezier(0.25, 1, 0.3, 1), opacity 0.35s ease, background-color 0.2s ease;
+          will-change: transform, opacity;
+        }
+
+        .liquid-tab-bar-container.shrunk {
+          transform: translateX(-50%) translateY(calc(12px + env(safe-area-inset-bottom) * 0.3)) scale(0.75);
+          opacity: 0.55;
+          backdrop-filter: blur(15px) saturate(160%);
+          -webkit-backdrop-filter: blur(15px) saturate(160%);
         }
 
         .dark .liquid-tab-bar-container {
@@ -117,21 +79,16 @@ export default function LiquidTabBar({
 
         .active-indicator {
           position: absolute;
-          height: 52px;
-          border-radius: 26px;
+          inset: 6px 4px;
+          border-radius: 28px;
           background: rgba(255, 255, 255, 0.75);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
           z-index: 1;
-          transition: all 0.35s cubic-bezier(0.25, 1, 0.33, 1);
         }
 
         .dark .active-indicator {
           background: rgba(255, 255, 255, 0.1);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
-        }
-
-        .liquid-tab-bar-container:active .active-indicator {
-          transform: scaleX(0.97);
         }
 
         .tab-item-btn {
@@ -147,11 +104,7 @@ export default function LiquidTabBar({
           z-index: 2;
           cursor: pointer;
           color: #8e8e93;
-          transition: color 0.2s ease, transform 0.1s ease;
-        }
-
-        .tab-item-btn:active {
-          transform: scale(0.95);
+          transition: color 0.2s ease;
         }
 
         .tab-item-btn.active {
@@ -161,23 +114,14 @@ export default function LiquidTabBar({
         .tab-item-btn .icon-wrapper {
           font-size: 22px;
           display: inline-block;
-          transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           position: relative;
-        }
-
-        .tab-item-btn.active .icon-wrapper {
-          transform: scale(1.15);
+          z-index: 3;
         }
       `}</style>
 
-      {/* 6. Layout Shell Render */}
-      <nav className="liquid-tab-bar-container" ref={containerRef}>
-        <div 
-          className="active-indicator" 
-          style={{ left: indicatorStyles.left, width: indicatorStyles.width }}
-        />
-        
-        {tabs.map((tab, idx) => {
+      {/* Layout Shell Render */}
+      <nav className={cn("liquid-tab-bar-container", !isVisible && "shrunk")}>
+        {tabs.map((tab) => {
           const isActive = tab.href === '/'
             ? activeTabHref === '/'
             : activeTabHref === tab.href || activeTabHref.startsWith(tab.href + '/');
@@ -187,12 +131,29 @@ export default function LiquidTabBar({
           return (
             <button
               key={tab.href}
-              ref={(el) => { tabRefs.current[idx] = el; }}
               className={cn("tab-item-btn", isActive && "active")}
               onClick={(e) => handleTabClick(tab.href, e)}
               type="button"
             >
-              <div className="icon-wrapper">
+              {/* Framer Motion Liquid Active indicator */}
+              {isActive && (
+                <motion.div
+                  layoutId="active-indicator-pill"
+                  className="active-indicator"
+                  transition={{
+                    type: "spring",
+                    stiffness: 380,
+                    damping: 30,
+                    mass: 0.8
+                  }}
+                />
+              )}
+
+              <motion.div 
+                className="icon-wrapper"
+                animate={{ scale: isActive ? 1.15 : 1 }}
+                transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              >
                 <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
                 {showDot && (
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
@@ -200,7 +161,7 @@ export default function LiquidTabBar({
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                   </span>
                 )}
-              </div>
+              </motion.div>
             </button>
           );
         })}
