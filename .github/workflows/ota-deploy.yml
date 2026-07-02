@@ -20,7 +20,7 @@ jobs:
 
       - name: Create Version Descriptor
         run: |
-          echo "{\"version\": \"1.0.${{ github.run_number }}\", \"url\": \"${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/update.zip\"}" > version.json
+          echo "{\"version\": \"1.0.${{ github.run_number }}\", \"url\": \"${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/update-1.0.${{ github.run_number }}.zip\"}" > version.json
 
       - name: Upload Zip to Supabase Storage
         run: |
@@ -28,7 +28,7 @@ jobs:
           -H "x-upsert: true" \
           -H "Content-Type: application/zip" \
           --data-binary "@update.zip" \
-          "${{ secrets.SUPABASE_URL }}/storage/v1/object/app-updates/update.zip"
+          "${{ secrets.SUPABASE_URL }}/storage/v1/object/app-updates/update-1.0.${{ github.run_number }}.zip"
 
       - name: Upload Version JSON to Supabase Storage
         run: |
