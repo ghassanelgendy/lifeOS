@@ -51,12 +51,12 @@ function MobileNavLink({
       end={item.href === '/'}
       onClick={handleClick}
       className={({ isActive: active }) => cn(
-        "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150 relative",
-        active ? "text-foreground" : "text-muted-foreground"
+        "flex flex-col items-center justify-center w-full h-full active:scale-95 transition-all duration-100 relative transform-gpu",
+        active ? "text-primary font-semibold" : "text-muted-foreground/80"
       )}
     >
       <div className="relative">
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+        <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
         {showDot && (
           <span className="absolute -top-1 -right-1 flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -64,7 +64,7 @@ function MobileNavLink({
           </span>
         )}
       </div>
-      <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
+      <span className="text-[10px] mt-0.5 tracking-tight">{item.label}</span>
     </NavLink>
   );
 }
@@ -570,13 +570,13 @@ export function AppShell() {
 
         {/* Mobile Bottom Tab Bar */}
         <nav 
-          className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
+          className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/80 backdrop-blur-md z-50"
           style={{
-            paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
-            height: 'calc(64px + env(safe-area-inset-bottom))'
+            paddingBottom: 'env(safe-area-inset-bottom)',
+            height: 'calc(49px + env(safe-area-inset-bottom))'
           }}
         >
-          <div className="flex justify-around items-center h-16">
+          <div className="flex justify-around items-center h-[49px]">
             {mobileNavigationMapped.map((item) => {
               const isAnalytics = item.href === '/analytics';
               const showDot = isAnalytics && showWrappedTakeover;
