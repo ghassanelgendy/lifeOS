@@ -52,7 +52,7 @@ function MobileNavLink({
       onClick={handleClick}
       className={({ isActive: active }) => cn(
         "flex flex-col items-center justify-center w-full h-full active:scale-95 transition-all duration-100 relative transform-gpu",
-        active ? "text-primary font-semibold" : "text-muted-foreground/80"
+        active ? "text-[#007AFF] dark:text-[#0A84FF] font-medium" : "text-[#8E8E93]"
       )}
     >
       <div className="relative">
@@ -64,7 +64,7 @@ function MobileNavLink({
           </span>
         )}
       </div>
-      <span className="text-[10px] mt-0.5 tracking-tight">{item.label}</span>
+      <span className="text-[10px] mt-0.5 tracking-tight font-medium">{item.label}</span>
     </NavLink>
   );
 }
@@ -570,7 +570,7 @@ export function AppShell() {
 
         {/* Mobile Bottom Tab Bar */}
         <nav 
-          className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/80 backdrop-blur-md z-50"
+          className="md:hidden fixed bottom-0 left-0 right-0 border-t border-[#3C3C43]/20 dark:border-[#545458]/60 bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-lg z-50"
           style={{
             paddingBottom: 'env(safe-area-inset-bottom)',
             height: 'calc(49px + env(safe-area-inset-bottom))'

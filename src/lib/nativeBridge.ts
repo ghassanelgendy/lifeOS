@@ -96,8 +96,12 @@ function hashCode(str: string): number {
 export async function syncLocalNotifications(tasks: any[]) {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    const hasPermission = await LocalNotifications.checkPermissions();
+    let hasPermission = await LocalNotifications.checkPermissions();
     if (hasPermission.display !== 'granted') {
+      hasPermission = await LocalNotifications.requestPermissions();
+    }
+    if (hasPermission.display !== 'granted') {
+      console.warn('[LocalNotifications] Permission not granted');
       return;
     }
 

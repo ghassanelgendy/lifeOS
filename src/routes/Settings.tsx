@@ -43,6 +43,7 @@ import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
 import { Link } from 'react-router-dom';
+import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 
@@ -83,6 +84,7 @@ const SETTINGS_NAV = [
   { id: 'habits', label: 'Habits' },
   { id: 'privacy', label: 'Privacy & analytics' },
   { id: 'data', label: 'Data & backup' },
+  { id: 'logs', label: 'System logs' },
   { id: 'about', label: 'About' },
 ] as const;
 
@@ -90,6 +92,12 @@ type LayoutWidgetPage = 'dashboard' | 'habits' | 'sleep';
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
+  const [localLogs, setLocalLogs] = useState<SystemLog[]>([]);
+
+  useEffect(() => {
+    setLocalLogs(getSystemLogs());
+  }, []);
+
   const {
     privacyMode,
     togglePrivacyMode,
@@ -1226,6 +1234,70 @@ export default function SettingsPage() {
               Delete
             </Button>
           </div>
+        </div>
+      {/* System Logs */}
+      <section id="settings-logs" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold">System Logs</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                const logs = getSystemLogs();
+                const logText = logs.map(l => `[${l.timestamp}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+                navigator.clipboard.writeText(logText);
+                alert('Logs copied to clipboard!');
+              }}
+            >
+              Copy Logs
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                clearSystemLogs();
+                setLocalLogs([]);
+              }}
+            >
+              Clear Logs
+            </Button>
+          </div>
+        </div>
+        <div className="p-4 space-y-2">
+          <div className="h-48 overflow-y-auto border border-border rounded-lg bg-black/40 p-3 font-mono text-xs space-y-1.5 scroll-thin">
+            {localLogs.length === 0 ? (
+              <span className="text-muted-foreground italic">No logs available</span>
+            ) : (
+              localLogs.map((log, i) => (
+                <div key={i} className="flex gap-2 items-start leading-relaxed select-text">
+                  <span className="text-muted-foreground shrink-0">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                  <span
+                    className={cn(
+                      "font-bold shrink-0 uppercase text-[9px] px-1 py-0.5 rounded",
+                      log.type === 'error'
+                        ? "bg-red-500/10 text-red-400 border border-red-500/25"
+                        : log.type === 'warn'
+                        ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/25"
+                        : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/25"
+                    )}
+                  >
+                    {log.type}
+                  </span>
+                  <span className={cn(
+                    log.type === 'error' ? 'text-red-300' : log.type === 'warn' ? 'text-yellow-300' : 'text-foreground'
+                  )}>
+                    {log.message}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Logs contain internal system checks, OTA updates history, and native sync event logs.
+          </p>
         </div>
       </section>
 

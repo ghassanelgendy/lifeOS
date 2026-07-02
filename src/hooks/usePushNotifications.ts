@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 import {
   isPushSupported,
   isVapidConfigured,
@@ -13,20 +15,35 @@ const PUSH_KEY = ['push-notifications'];
 
 export function usePushNotifications() {
   const queryClient = useQueryClient();
+  const isNative = Capacitor.isNativePlatform();
 
-  const supported = isPushSupported();
-  const vapidConfigured = isVapidConfigured();
+  const supported = isNative ? true : isPushSupported();
+  const vapidConfigured = isNative ? true : isVapidConfigured();
 
   const { data: permission } = useQuery({
     queryKey: [...PUSH_KEY, 'permission'],
-    queryFn: getNotificationPermission,
-    initialData: () =>
-      typeof Notification !== 'undefined' ? Notification.permission : ('denied' as NotificationPermission),
+    queryFn: async () => {
+      if (isNative) {
+        const perm = await LocalNotifications.checkPermissions();
+        return perm.display === 'granted' ? 'granted' : perm.display === 'denied' ? 'denied' : 'default';
+      }
+      return getNotificationPermission();
+    },
+    initialData: () => {
+      if (isNative) return 'default' as NotificationPermission;
+      return typeof Notification !== 'undefined' ? Notification.permission : ('denied' as NotificationPermission);
+    },
     staleTime: 60_000,
   });
 
   const enableMutation = useMutation({
     mutationFn: async () => {
+      if (isNative) {
+        const perm = await LocalNotifications.requestPermissions();
+        if (perm.display !== 'granted') throw new Error('Notification permission denied');
+        return true;
+      }
+
       if (!supported || !vapidConfigured) throw new Error('Push not supported or VAPID not configured');
       const perm = await requestNotificationPermission();
       if (perm !== 'granted') throw new Error('Notification permission denied');
@@ -55,6 +72,12 @@ export function usePushNotifications() {
 
   const disableMutation = useMutation({
     mutationFn: async () => {
+      if (isNative) {
+        // Cancel scheduled notifications
+        await LocalNotifications.cancel({ notifications: [] });
+        return true;
+      }
+
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
@@ -73,6 +96,22 @@ export function usePushNotifications() {
 
   const testNotificationMutation = useMutation({
     mutationFn: async () => {
+      if (isNative) {
+        // Trigger a test local notification instantly
+        await LocalNotifications.schedule({
+          notifications: [
+            {
+              id: 9999,
+              title: 'Test Notification',
+              body: 'Native iOS local reminders are configured correctly!',
+              schedule: { at: new Date(Date.now() + 1000) },
+              sound: 'default'
+            }
+          ]
+        });
+        return true;
+      }
+
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (!sub) throw new Error('No subscription found');
