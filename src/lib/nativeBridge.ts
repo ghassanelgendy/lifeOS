@@ -90,24 +90,24 @@ export async function initializeNativeApp() {
           // Tasks: mark done or postpone by 1 hour
           id: 'task-actions',
           actions: [
-            { id: 'done', title: '✅ Done' },
-            { id: 'postpone', title: '⏰ Postpone 1h' },
+            { id: 'done', title: 'Done' },
+            { id: 'postpone', title: 'Postpone 1h' },
           ],
         },
         {
           // Habits: single done action
           id: 'habit-actions',
           actions: [
-            { id: 'done', title: '✅ Done' },
+            { id: 'done', title: 'Done' },
           ],
         },
         {
           // Prayers: done, I prayed late, or snooze 5 mins
           id: 'prayer-actions',
           actions: [
-            { id: 'done', title: '✅ Prayed' },
-            { id: 'late', title: '🟡 Late' },
-            { id: 'snooze5', title: '⏰ +5 mins' },
+            { id: 'done', title: 'Prayed' },
+            { id: 'late', title: 'Late' },
+            { id: 'snooze5', title: '+5 mins' },
           ],
         },
       ],
@@ -274,7 +274,7 @@ export async function syncAllLocalNotifications(
       })
       .map((task) => ({
         id: hashCode('task-' + task.id),
-        title: '📋 Task Reminder',
+        title: 'Task Reminder',
         body: task.title,
         at: taskTriggerDate(task.due_date, task.due_time, task.early_reminder_minutes),
         extra: { taskId: task.id },
@@ -288,22 +288,22 @@ export async function syncAllLocalNotifications(
     // 2. Sync Habits (Cap at 15)
     const activeHabits = habits.filter(h => h.notify_enabled && !h.is_archived && h.habit_type !== 'detox');
     const habitReminders: typeof upcomingList = [];
-    
+
     for (let i = 0; i <= 7; i++) {
       const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
       const dateString = format(targetDate, 'yyyy-MM-dd');
-      
+
       for (const habit of activeHabits) {
         if (!isHabitScheduledForDate(habit, targetDate)) continue;
-        
+
         const rawTime = habit.notify_time || habit.time || '09:00';
         const [h, m] = rawTime.split(':').map(Number);
         const triggerAt = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), h, m, 0);
-        
+
         if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
           habitReminders.push({
             id: hashCode(`habit-${habit.id}-${dateString}`),
-            title: '🌱 Habit Reminder',
+            title: 'Habit Reminder',
             body: `Don't forget to: ${habit.title}`,
             at: triggerAt,
             extra: { habitId: habit.id, date: dateString },
@@ -337,7 +337,7 @@ export async function syncAllLocalNotifications(
     // 4. Sync Prayer Alerts (Cap at 14)
     const prayerAlerts: typeof upcomingList = [];
     const enabledSettings = prayerSettings.filter(s => s.enabled);
-    
+
     if (enabledSettings.length > 0 && lat && lng) {
       const coords = new Coordinates(lat, lng);
       const params = CalculationMethod.MuslimWorldLeague();
@@ -346,7 +346,7 @@ export async function syncAllLocalNotifications(
       for (let i = 0; i <= 7; i++) {
         const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
         const dateString = format(targetDate, 'yyyy-MM-dd');
-        
+
         try {
           const times = new PrayerTimes(coords, targetDate, params);
           const dailyPrayers = [
@@ -365,13 +365,13 @@ export async function syncAllLocalNotifications(
             if (!baseTime) continue;
 
             const triggerAt = new Date(baseTime.getTime() + (setting.offset_minutes || 0) * 60000);
-            
+
             if (isInQuietHours(triggerAt, setting.quiet_hours_start, setting.quiet_hours_end)) continue;
 
             if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
               prayerAlerts.push({
                 id: hashCode(`prayer-${prayer.name}-${dateString}`),
-                title: `🕌 ${prayer.name} Prayer`,
+                title: `${prayer.name} Prayer`,
                 body: `Time for ${prayer.name}`,
                 at: triggerAt,
                 extra: { prayerName: prayer.name, date: dateString },
@@ -379,7 +379,7 @@ export async function syncAllLocalNotifications(
               });
             }
           }
-        } catch {}
+        } catch { }
       }
     }
     prayerAlerts.sort((a, b) => a.at.getTime() - b.at.getTime());
@@ -431,8 +431,8 @@ export async function sendTestNotification(): Promise<void> {
     await LocalNotifications.schedule({
       notifications: [{
         id: 999999,
-        title: '🔔 Test Notification',
-        body: 'lifeOS notifications are working! ✅',
+        title: 'Test Notification',
+        body: 'lifeOS notifications are working!',
         schedule: { at: fireAt },
         sound: 'default',
         actionTypeId: 'task-actions',
@@ -471,51 +471,87 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
 
   LocalNotifications.addListener('localNotificationActionPerformed', async (result) => {
     const { actionId, notification } = result;
-    const extra = notification.extra ?? {};
-    console.log(`[LocalNotifications] Action "${actionId}"`, extra);
+
+    // iOS sometimes delivers extra as a JSON string — parse defensively
+    let extra: Record<string, any> = {};
+    try {
+      const raw = notification.extra;
+      if (typeof raw === 'string') {
+        extra = JSON.parse(raw);
+      } else if (raw && typeof raw === 'object') {
+        extra = raw as Record<string, any>;
+      }
+    } catch {
+      extra = {};
+    }
+
+    console.log(`[LocalNotifications] Action "${actionId}"`, JSON.stringify(extra));
 
     // TASK: Done or Postpone 1h
     if (extra.taskId) {
       if (actionId === 'done') {
-        await supabaseClient.from('tasks')
-          .update({ is_completed: true, completed_at: new Date().toISOString() })
-          .eq('id', extra.taskId);
-        void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        try {
+          await supabaseClient.from('tasks')
+            .update({ is_completed: true, completed_at: new Date().toISOString() })
+            .eq('id', extra.taskId);
+          void queryClient.invalidateQueries({ queryKey: ['tasks'] });
+          console.log('[Notif] Task marked done:', extra.taskId);
+        } catch (e) {
+          console.error('[Notif] Failed to complete task:', e);
+        }
       } else if (actionId === 'postpone') {
-        void rescheduleNotificationSnooze(
-          notification.id + 100000,
-          60,
-          notification.title ?? '📋 Task Reminder',
-          notification.body ?? '',
-          'task-actions'
-        );
+        try {
+          void rescheduleNotificationSnooze(
+            (notification.id + 100000) % 2147483647,
+            60,
+            notification.title ?? 'Task Reminder',
+            notification.body ?? '',
+            'task-actions'
+          );
+        } catch (e) {
+          console.error('[Notif] Failed to postpone task:', e);
+        }
       }
     }
 
     // HABIT: Done
     if (extra.habitId && extra.date) {
       if (actionId === 'done') {
-        await supabaseClient.from('habit_logs')
-          .upsert({ habit_id: extra.habitId, date: extra.date, status: 'done', created_at: new Date().toISOString() });
-        void queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
-        void queryClient.invalidateQueries({ queryKey: ['habits'] });
+        try {
+          await supabaseClient.from('habit_logs')
+            .upsert({ habit_id: extra.habitId, date: extra.date, status: 'done', created_at: new Date().toISOString() });
+          void queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+          void queryClient.invalidateQueries({ queryKey: ['habits'] });
+          console.log('[Notif] Habit logged done:', extra.habitId, extra.date);
+        } catch (e) {
+          console.error('[Notif] Failed to log habit:', e);
+        }
       }
     }
 
     // PRAYER: Done, Late, or Snooze +5m
     if (extra.prayerName && extra.date) {
       if (actionId === 'done' || actionId === 'late') {
-        await supabaseClient.from('prayer_logs')
-          .upsert({ prayer_name: extra.prayerName, date: extra.date, status: actionId, created_at: new Date().toISOString() });
-        void queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
+        try {
+          await supabaseClient.from('prayer_logs')
+            .upsert({ prayer_name: extra.prayerName, date: extra.date, status: actionId, created_at: new Date().toISOString() });
+          void queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
+          console.log('[Notif] Prayer logged:', extra.prayerName, actionId);
+        } catch (e) {
+          console.error('[Notif] Failed to log prayer:', e);
+        }
       } else if (actionId === 'snooze5') {
-        void rescheduleNotificationSnooze(
-          notification.id + 200000,
-          5,
-          notification.title ?? '🕌 Prayer',
-          notification.body ?? '',
-          'prayer-actions'
-        );
+        try {
+          void rescheduleNotificationSnooze(
+            (notification.id + 200000) % 2147483647,
+            5,
+            notification.title ?? 'Prayer',
+            notification.body ?? '',
+            'prayer-actions'
+          );
+        } catch (e) {
+          console.error('[Notif] Failed to snooze prayer:', e);
+        }
       }
     }
   });

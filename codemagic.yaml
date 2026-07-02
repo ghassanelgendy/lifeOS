@@ -12,7 +12,17 @@ workflows:
         - push
       branch_patterns:
         - pattern: 'main'
-        - pattern: 'feature/capacitor-ios'
+          include: true
+      # Only build when native files actually change — skip OTA-only pushes
+      cancel_previous_builds: true
+    when:
+      changeset:
+        includes:
+          - 'ios/**'
+          - 'android/**'
+          - 'capacitor.config.*'
+          - 'package.json'
+          - 'codemagic.yaml'
     scripts:
       - name: Install dependencies
         script: |
@@ -21,7 +31,7 @@ workflows:
       - name: Build web application
         script: |
           pnpm build
-      - name: Set up Capacitor iOS project
+      - name: Sync Capacitor iOS project
         script: |
           pnpm cap add ios || true
           pnpm cap sync ios
