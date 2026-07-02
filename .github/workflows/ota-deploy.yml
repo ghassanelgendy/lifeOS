@@ -25,13 +25,15 @@ jobs:
       - name: Upload Zip to Supabase Storage
         run: |
           curl -X POST -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          -H "x-upsert: true" \
           -H "Content-Type: application/zip" \
           --data-binary "@update.zip" \
-          "${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/update.zip"
+          "${{ secrets.SUPABASE_URL }}/storage/v1/object/app-updates/update.zip"
 
       - name: Upload Version JSON to Supabase Storage
         run: |
           curl -X POST -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          -H "x-upsert: true" \
           -H "Content-Type: application/json" \
           --data-binary "@version.json" \
-          "${{ secrets.SUPABASE_URL }}/storage/v1/object/public/app-updates/version.json"
+          "${{ secrets.SUPABASE_URL }}/storage/v1/object/app-updates/version.json"
