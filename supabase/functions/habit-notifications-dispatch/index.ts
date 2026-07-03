@@ -396,11 +396,18 @@ Deno.serve(async (req: Request) => {
             throw insertError;
           }
 
+          const isAr = /[\u0600-\u06FF]/.test(candidate.habit.title);
+          const titleText = isAr 
+            ? `يلا عشان دة وقت: ${candidate.habit.title}` 
+            : `Time to focus on: ${candidate.habit.title}`;
+
           const payload = JSON.stringify({
             kind: 'habit',
             habitId: candidate.habit.id,
-            title: `⏰ ${candidate.habit.title}`,
-            body: `Time for "${candidate.habit.title}"`,
+            title: titleText,
+            body: isAr 
+              ? `حان وقت القيام بعادة "${candidate.habit.title}"` 
+              : `Time for your habit "${candidate.habit.title}"`,
             route: '/habits',
           });
 

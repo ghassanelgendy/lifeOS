@@ -13,7 +13,7 @@ import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineS
 import { checkAndApplyUpdates } from './lib/otaUpdater';
 import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
-import { useHabits } from './hooks/useHabits';
+import { useHabits, useTodayHabitLogs } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -97,8 +97,25 @@ function AppInner() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('prayer_notification_settings')
-        .select('*, prayer_habit:prayer_habits(prayer_name)')
+        .select('*, prayer_habit:prayer_habits(*)')
         .eq('user_id', user!.id);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  const { data: todayHabitLogs = [] } = useTodayHabitLogs();
+
+  const todayStr = new Date().toLocaleDateString('en-CA');
+  const { data: todayPrayerLogs = [] } = useQuery({
+    queryKey: ['today-prayer-logs-for-notifs', user?.id, todayStr],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('prayer_logs')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('date', todayStr);
       if (error) throw error;
       return data;
     },
@@ -109,8 +126,17 @@ function AppInner() {
     if (!tasks || !habits || !events) return;
     // Use [] fallback for prayerSettings so tasks/habits/events are scheduled
     // immediately without waiting on prayer settings to finish loading
-    void syncAllLocalNotifications(tasks, habits, events, prayerSettings ?? [], lat, lng);
-  }, [tasks, habits, events, prayerSettings, lat, lng]);
+    void syncAllLocalNotifications(
+      tasks,
+      habits,
+      events,
+      prayerSettings ?? [],
+      lat,
+      lng,
+      todayHabitLogs,
+      todayPrayerLogs
+    );
+  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();

@@ -192,7 +192,18 @@ Deno.serve(async (req: Request) => {
             throw insertError;
           }
 
-          const payload = JSON.stringify({ taskId: task.id, title: task.title });
+          const isAr = /[\u0600-\u06FF]/.test(task.title);
+          const titleText = isAr
+            ? `يلا عشان وراك مهمة: ${task.title}`
+            : `Ready to tackle: ${task.title}`;
+
+          const payload = JSON.stringify({ 
+            taskId: task.id, 
+            title: titleText,
+            body: isAr
+              ? `تذكير بمهمة: ${task.title}`
+              : `Reminder for task: ${task.title}`
+          });
           let anySuccess = false;
           for (const sub of userSubs) {
             try {

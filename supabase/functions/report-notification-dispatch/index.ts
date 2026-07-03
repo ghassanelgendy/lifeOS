@@ -162,7 +162,7 @@ Deno.serve(async (req: Request) => {
                 if (!insertError) {
                   const payload = JSON.stringify({
                     reportType: 'weekly',
-                    title: '📊 Your Weekly Wrap is Ready',
+                    title: 'Your Weekly Wrap is Ready',
                     body: 'See how your week went and plan for next week!',
                   });
                   let anySuccess = false;
@@ -223,7 +223,7 @@ Deno.serve(async (req: Request) => {
                 if (!insertError) {
                   const payload = JSON.stringify({
                     reportType: 'monthly',
-                    title: '✨ Your Monthly Wrap is Ready',
+                    title: 'Your Monthly Wrap is Ready',
                     body: 'Discover your top trends and stats for this month!',
                   });
                   let anySuccess = false;

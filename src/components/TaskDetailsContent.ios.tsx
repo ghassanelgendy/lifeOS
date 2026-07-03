@@ -276,7 +276,12 @@ export function TaskDetailsContent({
                 ...prev,
                 title: raw,
                 ...(parsed.date && { due_date: parsed.date, date_enabled: true }),
-                ...(parsed.time && { due_time: parsed.time, time_enabled: true }),
+                ...(parsed.time && { 
+                  due_time: parsed.time, 
+                  time_enabled: true,
+                  reminders_enabled: true,
+                  early_reminder_minutes: prev.early_reminder_minutes ?? 0
+                }),
                 ...(parsed.priority != null && { priority: parsed.priority }),
                 ...(resolvedListId ? { list_id: resolvedListId } : listFromTags ? { list_id: listFromTags } : {}),
                 ...(tagTokenNames.length > 0 ? { tag_ids: matchedTagIds } : {}),
@@ -413,7 +418,12 @@ export function TaskDetailsContent({
               <input
                 type="time"
                 value={form.due_time ?? ''}
-                onChange={(e) => setForm((prev) => ({ ...prev, due_time: e.target.value }))}
+                onChange={(e) => setForm((prev) => ({ 
+                  ...prev, 
+                  due_time: e.target.value,
+                  reminders_enabled: e.target.value ? true : prev.reminders_enabled,
+                  early_reminder_minutes: e.target.value ? (prev.early_reminder_minutes ?? 0) : prev.early_reminder_minutes
+                }))}
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Time"
               />
