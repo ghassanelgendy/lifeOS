@@ -29,7 +29,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Build web bundle
-        run: pnpm build
+        run: pnpm build:ios
 
       - name: Zip the bundle
         run: |

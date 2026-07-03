@@ -30,7 +30,7 @@ workflows:
           pnpm install
       - name: Build web application
         script: |
-          pnpm build
+          pnpm build:ios
       - name: Sync Capacitor iOS project
         script: |
           pnpm cap add ios || true
