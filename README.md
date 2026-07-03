@@ -9,13 +9,13 @@
 
   <p>
     <b>📥 Download Desktop App:</b><br />
-    <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.dmg">
+    <a href="https://github.com/ghassanelgendy/lifeOS/releases/download/v2026.06.29/lifeOS.dmg">
       <img src="https://img.shields.io/badge/macOS-Download-000000?style=for-the-badge&logo=apple&logoColor=white" alt="Download macOS DMG" />
     </a>
     <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.msi">
       <img src="https://img.shields.io/badge/Windows-Download-0078d4?style=for-the-badge&logo=windows&logoColor=white" alt="Download Windows MSI" />
     </a>
-    <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.AppImage">
+    <a href="https://github.com/ghassanelgendy/lifeOS/releases/download/v2026.06.29/lifeOS.AppImage">
       <img src="https://img.shields.io/badge/Linux-Download-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download Linux AppImage" />
     </a>
   </p>

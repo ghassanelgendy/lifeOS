@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -184,12 +184,14 @@ function AppInner() {
     return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
+  const Router = import.meta.env.MODE === 'pake' ? HashRouter : BrowserRouter;
+
   return (
     <>
       <UserAppSettingsBridge />
       <ThemeSync />
       <Analytics />
-      <BrowserRouter>
+      <Router>
         <FaviconSync />
         <Routes>
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
@@ -215,7 +217,7 @@ function AppInner() {
             </Route>
           </Route>
         </Routes>
-      </BrowserRouter>
+      </Router>
     </>
   );
 }
