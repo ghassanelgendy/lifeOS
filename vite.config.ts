@@ -3,21 +3,44 @@ import react from '@vitejs/plugin-react'
 import legacy from '@vitejs/plugin-legacy'
 import { VitePWA } from 'vite-plugin-pwa'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import fs from 'node:fs'
+import path from 'node:path'
 
 const isIos6Legacy = process.env.IOS6_LEGACY === '1'
 
 // https://vite.dev/config/
-function platformResolvePlugin(platform: 'ios' | 'web'): PluginOption {
+function platformResolvePlugin(platform: 'ios' | 'web' | 'pake'): PluginOption {
   return {
     name: 'platform-resolve',
     enforce: 'pre',
     resolveId(source, importer) {
       if (source.endsWith('.platform')) {
-        const resolved = source.replace('.platform', `.${platform}`);
+        let resolvedPlatform = platform;
+        if (platform === 'pake' && importer) {
+          const importerDir = path.dirname(importer);
+          const relativePath = source.replace('.platform', '.pake.tsx');
+          const pakeFile = path.resolve(importerDir, relativePath);
+          const relativePathTs = source.replace('.platform', '.pake.ts');
+          const pakeFileTs = path.resolve(importerDir, relativePathTs);
+
+          if (!fs.existsSync(pakeFile) && !fs.existsSync(pakeFileTs)) {
+            resolvedPlatform = 'web';
+          }
+        }
+        const resolved = source.replace('.platform', `.${resolvedPlatform}`);
         return this.resolve(resolved, importer, { skipSelf: true });
       }
       if (source.endsWith('index.css')) {
-        const resolved = source.replace('index.css', `index.${platform}.css`);
+        let resolvedPlatform = platform;
+        if (platform === 'pake' && importer) {
+          const importerDir = path.dirname(importer);
+          const relativePath = source.replace('index.css', 'index.pake.css');
+          const pakeFile = path.resolve(importerDir, relativePath);
+          if (!fs.existsSync(pakeFile)) {
+            resolvedPlatform = 'web';
+          }
+        }
+        const resolved = source.replace('index.css', `index.${resolvedPlatform}.css`);
         return this.resolve(resolved, importer, { skipSelf: true });
       }
       return null;
@@ -27,7 +50,7 @@ function platformResolvePlugin(platform: 'ios' | 'web'): PluginOption {
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const platform = mode === 'ios' ? 'ios' : 'web';
+  const platform = mode === 'ios' ? 'ios' : mode === 'pake' ? 'pake' : 'web';
   console.log(`[Vite Platform Build] Mode: ${mode} -> Target Platform: ${platform}`);
 
   return {

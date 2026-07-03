@@ -393,21 +393,29 @@ export function AppShell() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-border bg-card transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col border-r border-border/40 bg-card/60 backdrop-blur-xl transition-all duration-300 ease-in-out select-none overflow-hidden",
           isSidebarCollapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="flex h-14 items-center justify-between px-4 border-b border-border">
-          {!isSidebarCollapsed && <span className="text-xl font-bold tracking-tight">LifeOS</span>}
+        <div className="flex h-14 items-center justify-between px-4">
+          {!isSidebarCollapsed && (
+            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase pl-2">
+              LifeOS
+            </span>
+          )}
           <button
             onClick={toggleSidebar}
-            className="p-1 hover:bg-secondary rounded-md transition-colors"
+            className={cn(
+              "p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors text-muted-foreground hover:text-foreground",
+              isSidebarCollapsed && "mx-auto"
+            )}
+            title={isSidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
           >
-            {isSidebarCollapsed ? <Menu size={20} /> : <X size={20} />}
+            <Menu size={16} />
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 gap-1 flex flex-col px-2">
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 gap-[2px] flex flex-col px-2">
           {desktopNavigation.map((item) => {
             const isAnalytics = item.href === '/analytics';
             const showDot = isAnalytics && showWrappedTakeover;
@@ -417,58 +425,91 @@ export function AppShell() {
                 to={item.href}
                 end={item.href === '/'}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-secondary hover:text-foreground relative",
-                  isActive ? "bg-secondary text-foreground" : "text-muted-foreground",
-                  isSidebarCollapsed && "justify-center px-2"
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-normal transition-all duration-150 relative",
+                  "hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground",
+                  isActive 
+                    ? "bg-black/[0.04] dark:bg-white/[0.06] text-foreground font-medium" 
+                    : "text-muted-foreground",
+                  isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
                 )}
               >
-                <div className="relative">
-                  <item.icon size={20} />
-                  {showDot && (
-                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                    </span>
-                  )}
-                </div>
-                {!isSidebarCollapsed && <span>{item.label}</span>}
+                {({ isActive }) => (
+                  <>
+                    {/* Fluent UI active indicator */}
+                    {isActive && (
+                      <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
+                    )}
+                    <div className="relative flex items-center justify-center shrink-0">
+                      <item.icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+                      {showDot && (
+                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                        </span>
+                      )}
+                    </div>
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
+                  </>
+                )}
               </NavLink>
             );
           })}
         </nav>
 
-        <div className="p-4 border-t border-border">
+        <div className="p-2 border-t border-border/40 flex flex-col gap-[2px]">
           {showWrappedTakeover ? (
             <NavLink
               to="/analytics"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors relative border border-primary/20 bg-primary/5 text-primary",
-                isActive ? "bg-primary text-primary-foreground" : "",
-                isSidebarCollapsed && "justify-center px-2"
+                "flex items-center gap-3 w-full rounded-[4px] px-3 py-2 text-xs font-medium border transition-all duration-100 relative",
+                "border-primary/20 dark:border-primary/30 bg-primary/[0.06] dark:bg-primary/[0.1] text-primary hover:bg-primary/[0.1] dark:hover:bg-primary/[0.15] shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
+                isActive ? "bg-primary/[0.15] dark:bg-primary/[0.2] border-primary/45" : "",
+                isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
               )}
             >
-              <Sparkles size={28} className="shrink-0 text-primary animate-pulse" />
-              {!isSidebarCollapsed && (
-                <span className="font-semibold text-primary">
-                  {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
-                </span>
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
+                  )}
+                  <div className="relative flex items-center justify-center shrink-0">
+                    <Sparkles size={16} className="shrink-0 text-primary animate-pulse" />
+                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                    </span>
+                  </div>
+                  {!isSidebarCollapsed && (
+                    <span className="font-semibold text-primary">
+                      {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
+                    </span>
+                  )}
+                </>
               )}
-              <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-              </span>
             </NavLink>
           ) : (
             <NavLink
               to="/settings"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors",
-                isActive ? "bg-secondary text-foreground" : "text-muted-foreground",
-                isSidebarCollapsed && "justify-center px-2"
+                "flex items-center gap-3 w-full rounded-md px-3 py-2 text-[13px] font-normal transition-all duration-150 relative",
+                "hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground",
+                isActive 
+                  ? "bg-black/[0.04] dark:bg-white/[0.06] text-foreground font-medium" 
+                  : "text-muted-foreground",
+                isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
               )}
             >
-              <Settings size={28} />
-              {!isSidebarCollapsed && <span>Settings</span>}
+              {({ isActive }) => (
+                <>
+                  {isActive && (
+                    <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
+                  )}
+                  <div className="relative flex items-center justify-center shrink-0">
+                    <Settings size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+                  </div>
+                  {!isSidebarCollapsed && <span>Settings</span>}
+                </>
+              )}
             </NavLink>
           )}
         </div>

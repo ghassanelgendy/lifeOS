@@ -128,15 +128,15 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
 
   const shell = embedded
     ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
-    : 'rounded-xl border border-border bg-card p-4 md:p-6 h-full flex flex-col';
+    : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-4 md:p-6 h-full flex flex-col shadow-sm';
 
   const isLoading = isLogsLoading || isHabitsLoading;
 
   if (isLoading) {
     return (
-      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-6 h-full flex flex-col' : 'rounded-xl border border-border bg-card p-6 h-full flex flex-col'}>
+      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-6 h-full flex flex-col' : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-6 h-full flex flex-col shadow-sm'}>
         <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
       </div>
     );
@@ -172,14 +172,14 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
             </>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex p-0.5 bg-black/[0.04] dark:bg-white/[0.06] rounded-[4px] border border-black/5 dark:border-white/5 select-none shrink-0">
           <button
             onClick={() => setView('weekly')}
             className={cn(
-              "px-3 py-1.5 text-sm rounded-lg border transition-colors",
+              "px-3 py-1 text-xs font-medium rounded-[3px] transition-all duration-150 cursor-pointer",
               view === 'weekly'
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:bg-secondary"
+                ? "bg-white dark:bg-[#2d2d2d] text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)] border-b border-black/[0.04]"
+                : "text-muted-foreground hover:text-foreground hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
             )}
           >
             Weekly
@@ -187,10 +187,10 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
           <button
             onClick={() => setView('monthly')}
             className={cn(
-              "px-3 py-1.5 text-sm rounded-lg border transition-colors",
+              "px-3 py-1 text-xs font-medium rounded-[3px] transition-all duration-150 cursor-pointer",
               view === 'monthly'
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:bg-secondary"
+                ? "bg-white dark:bg-[#2d2d2d] text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)] border-b border-black/[0.04]"
+                : "text-muted-foreground hover:text-foreground hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
             )}
           >
             Monthly

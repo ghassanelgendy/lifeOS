@@ -22,7 +22,44 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "./*.platform": [
+        "./src/*.pake",
+        "./src/*.web",
+        "./src/hooks/*.pake",
+        "./src/hooks/*.web",
+        "./src/components/*.pake",
+        "./src/components/*.web",
+        "./src/components/ui/*.pake",
+        "./src/components/ui/*.web",
+        "./src/components/dashboard/*.pake",
+        "./src/components/dashboard/*.web",
+        "./src/routes/*.pake",
+        "./src/routes/*.web"
+      ],
+      "../*.platform": [
+        "./src/*.pake",
+        "./src/*.web",
+        "./src/hooks/*.pake",
+        "./src/hooks/*.web",
+        "./src/components/*.pake",
+        "./src/components/*.web",
+        "./src/routes/*.pake",
+        "./src/routes/*.web"
+      ],
+      "../../*.platform": [
+        "./src/*.pake",
+        "./src/*.web",
+        "./src/hooks/*.pake",
+        "./src/hooks/*.web",
+        "./src/components/*.pake",
+        "./src/components/*.web",
+        "./src/routes/*.pake",
+        "./src/routes/*.web"
+      ]
+    }
   },
   "include": ["src"],
   "exclude": ["src/db", "**/*.test.ts", "src/sw.ts"]
