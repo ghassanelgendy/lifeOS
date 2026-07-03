@@ -175,9 +175,9 @@ function DueTodayRow({
     <div
       onClick={onClick}
       className={cn(
-        'group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 bg-card border-border shadow-sm',
+        'group flex items-start gap-4 p-3.5 transition-all duration-150 bg-transparent border-b border-border last:border-b-0',
         onClick && 'cursor-pointer',
-        done ? 'opacity-60 bg-card/60' : 'hover:border-border hover:shadow-md'
+        done && 'opacity-65'
       )}
     >
       {showToggle && onToggle ? (
@@ -1233,19 +1233,20 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 transition-opacity duration-200",
                         activeTooltip === marker.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
                       )}>
-                        <Card className="p-2 shadow-lg border-border bg-card whitespace-nowrap">
-                          <Text size={100} weight="semibold" className="block">{marker.name}</Text>
-                          <Text size={100} className="text-muted-foreground mt-0.5 uppercase font-medium">{marker.timeStr}</Text>
-                        </Card>
+                          <div className="px-2.5 py-1.5 shadow-lg border border-border bg-card rounded-md whitespace-nowrap flex items-center gap-1.5">
+                            <Text size={100} weight="semibold" className="text-foreground">{marker.name}</Text>
+                            <span className="text-border text-[10px]">•</span>
+                            <Text size={100} className="text-muted-foreground uppercase font-medium">{marker.timeStr}</Text>
+                          </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ))}
 
-              {/* Red current time indicator line */}
+              {/* Current time indicator line */}
               <span
-                className="pointer-events-none absolute inset-y-0 w-1 -translate-x-1/2 bg-brand-primary shadow-[0_0_8px_rgba(0,120,212,0.8)]"
+                className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 bg-brand-primary"
                 style={{ left: screenChart.nowPct }}
                 aria-hidden
               />

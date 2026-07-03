@@ -54,7 +54,7 @@ import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
-import { Checkbox } from '@fluentui/react-components';
+import { Checkbox, Button as FluentButton } from '@fluentui/react-components';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -1492,7 +1492,7 @@ export default function Tasks() {
       )}
 
       {/* Sidebar - Fixed overlay on mobile; space above bottom bar so content isn't cut */}
-      <aside
+      <div
         className={cn(
           "flex flex-col border-r border-border bg-card transition-all duration-300 shrink-0",
           "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
@@ -1729,7 +1729,7 @@ export default function Tasks() {
             )}
           </div>
         </div>
-      </aside>
+      </div>
 
       {/* Main Content - swipe from left edge to open sidebar on mobile */}
       <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
@@ -1750,23 +1750,23 @@ export default function Tasks() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
+            <FluentButton
               onClick={cycleSortMode}
-              className="h-9 w-9 rounded-full border border-border bg-card/70 hover:bg-secondary transition-colors flex items-center justify-center"
+              icon={<ArrowUpDown size={16} className="text-muted-foreground" />}
               title={`Sort: ${currentSortOption.label} (press S to cycle)`}
               aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
-            >
-              <ArrowUpDown size={16} className="text-muted-foreground" />
-            </button>
+            />
             {sortFeedback && (
               <span className="text-xs text-muted-foreground bg-secondary/70 border border-border px-2 py-1 rounded-lg whitespace-nowrap">
                 {sortFeedback}
               </span>
             )}
-            <Button onClick={handleOpenNewTaskSheet} className="p-2" aria-label="Add task">
-              <Plus size={22} />
-            </Button>
+            <FluentButton
+              appearance="primary"
+              onClick={handleOpenNewTaskSheet}
+              icon={<Plus size={20} />}
+              aria-label="Add task"
+            />
           </div>
         </header>
 
@@ -2563,7 +2563,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
   return (
     <div
       className={cn(
-        "task-item group flex items-start gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all duration-150 ease-out cursor-pointer",
+        "task-item group flex items-start gap-3 p-3 rounded-md cursor-pointer w-full bg-transparent",
         task.is_completed && "opacity-50"
       )}
       onClick={() => {

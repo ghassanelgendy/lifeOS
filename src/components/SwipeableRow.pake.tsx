@@ -65,7 +65,7 @@ export function SwipeableRow({
 
   return (
     <div
-      className={cn('relative overflow-hidden rounded-md bg-card border border-border hover:bg-black/5 dark:hover:bg-white/5 transition-colors', className)}
+      className={cn('relative overflow-hidden rounded-md', className)}
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -118,9 +118,8 @@ export function SwipeableRow({
         )}
       </div>
 
-      {/* Foreground (main content) - solid bg, border, overflow-hidden so no outline bleeds through */}
       <div
-        className="relative z-10 bg-card border border-border rounded-xl transition-transform duration-150 ease-out shadow-sm overflow-hidden"
+        className="relative z-10 bg-card border border-border rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150 ease-out shadow-sm overflow-hidden"
         style={{ transform: `translateX(-${offset}px)` }}
       >
         {children}

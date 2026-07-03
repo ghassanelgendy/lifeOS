@@ -46,6 +46,7 @@ body {
   --color-gray-900: #18181b;
   --color-gray-950: #09090b;
   --radius-xl: 0.75rem;
+  --color-brand-primary: #0078d4; /* Fluent UI brand blue */
 }
 
 /* Light theme overrides (applied when html has class "light") */
@@ -443,10 +444,16 @@ html.light[data-accent="amber"] {
   font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
   
   /* Fluent UI Color Variables & Corner Radii adjustments */
-  --radius-xl: 4px; /* Fluent UI standard radius is 4px */
-  --radius-2xl: 8px; /* Fluent UI uses 8px for larger containers/menus */
-  --radius-lg: 4px;
+  --radius-xl: 8px; /* Fluent UI uses 8px for cards/controls */
+  --radius-2xl: 12px; /* Fluent UI uses 12px for larger containers/menus */
+  --radius-lg: 8px;
   --radius-md: 4px;
+
+  /* Fluent UI Native Border Radius Tokens Override */
+  --borderRadiusSmall: 4px;
+  --borderRadiusMedium: 8px;
+  --borderRadiusLarge: 12px;
+  --borderRadiusXLarge: 16px;
 
   /* Fluent UI Light Theme Overrides */
   --color-background: hsl(0 0% 95.3%); /* #f3f3f3 */
@@ -505,37 +512,35 @@ html.light[data-accent="amber"] {
 /* Acrylic/Mica styling for Fluent UI Sidebar & Headers */
 .pake-platform aside {
   background-color: var(--color-background) !important;
-  backdrop-filter: blur(30px) saturate(125%) !important;
-  -webkit-backdrop-filter: blur(30px) saturate(125%) !important;
   border-right: 1px solid var(--color-border) !important;
 }
 
 .dark.pake-platform aside {
-  background-color: rgba(32, 32, 32, 0.75) !important;
-  border-right: 1px solid var(--color-border) !important;
+  background-color: #202020 !important; /* Native Win11 dark sidebar background */
+  border-right: 1px solid #2d2d2d !important;
 }
 
 /* Fluent UI Cards & Elevation Shadows */
 .pake-platform .bg-card,
 .pake-platform [class*="bg-card"] {
-  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
   box-shadow: 0px 1px 3px rgba(0, 0, 0, 0.04), 0px 1px 2px rgba(0, 0, 0, 0.02) !important;
 }
 
 .dark.pake-platform .bg-card,
 .dark.pake-platform [class*="bg-card"] {
-  background-color: rgba(43, 43, 43, 0.6) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.16) !important;
+  background-color: #2b2b2b !important; /* Solid Win11 dark card surface */
+  border: 1px solid #3c3c3c !important; /* Solid clear card borders */
+  box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Custom subtle hover states for cards matching Fluent buttons */
 .pake-platform .bg-card:hover {
-  border-color: rgba(0, 0, 0, 0.12) !important;
-  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  background-color: #ffffff !important;
 }
 
 .dark.pake-platform .bg-card:hover {
-  border-color: rgba(255, 255, 255, 0.1) !important;
-  background-color: rgba(48, 48, 48, 0.7) !important;
+  border-color: #4c4c4c !important;
+  background-color: #323232 !important; /* Solid hover state */
 }
