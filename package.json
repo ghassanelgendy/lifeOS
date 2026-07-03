@@ -10,7 +10,9 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:ios": "vite --mode ios",
     "build": "vite build",
+    "build:ios": "vite build --mode ios",
     "lint": "eslint src",
     "preview": "vite preview",
     "test": "vitest run",
