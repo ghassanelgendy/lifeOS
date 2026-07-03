@@ -1493,7 +1493,7 @@ export default function Tasks() {
       {/* Sidebar - Fixed overlay on mobile; space above bottom bar so content isn't cut */}
       <aside
         className={cn(
-          "flex flex-col border-r border-border bg-background transition-all duration-300 shrink-0",
+          "flex flex-col border-r border-border bg-card transition-all duration-300 shrink-0",
           "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
           "h-[100dvh] md:h-full md:min-h-full",
           "overflow-hidden",
@@ -1509,11 +1509,15 @@ export default function Tasks() {
               key={list.id}
               onClick={() => { setActiveView(list.viewType as ViewType); setActiveListId(null); setActiveTagId(null); }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-                activeView === list.viewType ? list.colorClass : "hover:bg-secondary text-muted-foreground"
+                "w-full flex items-center gap-3 px-3 py-2 rounded-md text-base md:text-[13px] font-normal transition-all relative overflow-hidden",
+                "hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground",
+                activeView === list.viewType && "bg-black/5 dark:bg-white/[0.08] text-foreground font-semibold"
               )}
             >
-              <list.icon size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
+              {activeView === list.viewType && (
+                <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-brand-primary" />
+              )}
+              <list.icon size={16} strokeWidth={activeView === list.viewType ? 2.2 : 1.8} className={cn("shrink-0", activeView === list.viewType ? list.colorClass.split(' ').find(c => c.startsWith('text-')) : "")} />
               <span className="flex-1 min-w-0 text-left">{list.label}</span>
               <span className="text-sm md:text-xs shrink-0">
                 {list.id === 'today' && list.getCount(todayTasks, overdueTasks)}
@@ -1550,8 +1554,9 @@ export default function Tasks() {
               <div
                 key={list.id}
                 className={cn(
-                  "w-full flex items-center gap-1 rounded-xl pr-1 transition-colors",
-                  activeView === 'list' && activeListId === list.id ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
+                  "w-full flex items-center gap-1 rounded-md pr-1 transition-all relative overflow-hidden",
+                  "hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground",
+                  activeView === 'list' && activeListId === list.id && "bg-black/5 dark:bg-white/[0.08] text-foreground font-semibold"
                 )}
                 onTouchStart={() => {
                   if (!isTouchDevice) return;
@@ -1582,9 +1587,12 @@ export default function Tasks() {
                       setActiveListActionsId((prev) => (prev === list.id ? null : list.id));
                     }
                   }}
-                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3 text-base md:text-sm font-medium"
+                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2 text-base md:text-[13px] font-normal"
                 >
-                  <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
+                  {activeView === 'list' && activeListId === list.id && (
+                    <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-brand-primary" />
+                  )}
+                  <div className="w-3 h-3 rounded shrink-0" style={{ backgroundColor: list.color }} />
                   <span className="flex-1 min-w-0 text-left break-words">{list.name}</span>
                   <span className="text-sm md:text-xs shrink-0">{activeListCounts.get(list.id) ?? 0}</span>
                 </button>
@@ -1641,8 +1649,9 @@ export default function Tasks() {
               <div
                 key={tag.id}
                 className={cn(
-                  "w-full flex items-center gap-1 rounded-xl pr-1 transition-colors",
-                  activeView === 'tag' && activeTagId === tag.id ? "bg-secondary text-foreground" : "hover:bg-secondary text-muted-foreground"
+                  "w-full flex items-center gap-1 rounded-md pr-1 transition-all relative overflow-hidden",
+                  "hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground",
+                  activeView === 'tag' && activeTagId === tag.id && "bg-black/5 dark:bg-white/[0.08] text-foreground font-semibold"
                 )}
                 onTouchStart={() => {
                   if (!isTouchDevice) return;
@@ -1673,11 +1682,11 @@ export default function Tasks() {
                       setActiveTagActionsId((prev) => (prev === tag.id ? null : tag.id));
                     }
                   }}
-                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3 text-base md:text-sm font-medium"
+                  className="flex-1 min-w-0 flex items-center gap-3 px-3 py-2 text-base md:text-[13px] rounded-md transition-colors"
                 >
-                  <TagIcon size={18} className="shrink-0 md:w-[14px] md:h-[14px]" style={{ color: tag.color }} />
-                  <span className="flex-1 min-w-0 text-left break-words">{tag.name}</span>
-                  <span className="text-sm md:text-xs shrink-0">{activeTagCounts.get(tag.id) ?? 0}</span>
+                  <TagIcon size={16} className="shrink-0" style={{ color: tag.color }} />
+                  <span className="flex-1 min-w-0 text-left truncate">{tag.name}</span>
+                  <span className="text-xs shrink-0 opacity-70">{activeTagCounts.get(tag.id) ?? 0}</span>
                 </button>
                 {activeTagActionsId === tag.id && (
                   <>
