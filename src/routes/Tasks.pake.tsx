@@ -54,6 +54,7 @@ import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
+import { Checkbox } from '@fluentui/react-components';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -2571,36 +2572,16 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
         }
       }}
     >
-      <button
-        onClick={(e) => {
+      <Checkbox
+        checked={task.is_completed}
+        shape="circular"
+        onChange={(e, data) => {
           e.stopPropagation();
           onToggle();
         }}
-        className={cn(
-          "w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
-          task.is_completed
-            ? "bg-green-500 border-green-500"
-            : "border-muted-foreground hover:border-foreground"
-        )}
-      >
-        <svg
-          className={cn(
-            "task-checkmark",
-            task.is_completed && "task-checkmark--active"
-          )}
-          viewBox="0 0 16 16"
-        >
-          <path
-            className="task-checkmark__check"
-            d="M4 8.5 7 11 12 5"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
+        className="mr-2 shrink-0 pointer-events-auto"
+        size="large"
+      />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">

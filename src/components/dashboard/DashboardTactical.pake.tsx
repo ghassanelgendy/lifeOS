@@ -24,6 +24,7 @@ import { useCategoryBreakdown } from '../../hooks/useFinance';
 import { useProjects } from '../../hooks/useProjects';
 import { useUIStore, DASHBOARD_WIDGET_IDS } from '../../stores/useUIStore';
 import { PrayerTimesWidget } from '../PrayerTimesWidget';
+import { Card, Text } from '@fluentui/react-components';
 
 import { useScreentimeMetrics, useTodayScreentime } from '../../hooks/useScreentime';
 import { useSleepMetrics } from '../../hooks/useSleep';
@@ -69,34 +70,30 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
         const firstOfPrayerQuickstats = visibleIds.find(id => id === 'prayer' || id === 'quickstats');
         const quickstatsColumn = (
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
-              <p className="text-2xl font-bold mt-1">{activeProjects}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Body Fat</p>
-              <p className={cn(
-                "text-2xl font-bold mt-1 tabular-nums",
-                metrics.pbf.current < 18 ? "text-green-500" : metrics.pbf.current > 25 ? "text-red-500" : "text-amber-500",
-                privacyMode && "blur-sm"
-              )}>
+            <Card className="p-4" appearance="subtle">
+              <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Active Projects</Text>
+              <Text size={600} weight="bold" className="mt-1">{activeProjects}</Text>
+            </Card>
+            <Card className="p-4" appearance="subtle">
+              <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Body Fat</Text>
+              <Text size={600} weight="bold" className={cn("mt-1 tabular-nums", metrics.pbf.current < 18 ? "text-green-500" : metrics.pbf.current > 25 ? "text-red-500" : "text-amber-500", privacyMode && "blur-sm")}>
                 {hasHealthData ? `${metrics.pbf.current}%` : '-'}
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">BMR</p>
-              <p className={cn("text-2xl font-bold mt-1 tabular-nums", privacyMode && "blur-sm")}>
+              </Text>
+            </Card>
+            <Card className="p-4" appearance="subtle">
+              <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">BMR</Text>
+              <Text size={600} weight="bold" className={cn("mt-1 tabular-nums", privacyMode && "blur-sm")}>
                 {hasHealthData ? `${metrics.bmr.current}` : '-'}
-              </p>
-              <p className="text-xs text-muted-foreground">kcal/day</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Expenses</p>
-              <p className={cn("text-2xl font-bold mt-1 text-red-500 tabular-nums", privacyMode && "blur-sm")}>
+              </Text>
+              <Text size={200} className="text-muted-foreground">kcal/day</Text>
+            </Card>
+            <Card className="p-4" appearance="subtle">
+              <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Expenses</Text>
+              <Text size={600} weight="bold" className={cn("mt-1 text-red-500 tabular-nums", privacyMode && "blur-sm")}>
                 {formatCurrency(totalExpenses)}
-              </p>
-              <p className="text-xs text-muted-foreground">{format(today, 'MMMM')}</p>
-            </div>
+              </Text>
+              <Text size={200} className="text-muted-foreground">{format(today, 'MMMM')}</Text>
+            </Card>
           </div>
         );
         const prayerQuickstatsRow = (
@@ -122,34 +119,30 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
                 isAlone ? 'grid-cols-1' : 'grid-cols-2'
               )}
             >
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
-                <p className="text-2xl font-bold mt-1">{activeProjects}</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Body Fat</p>
-                <p className={cn(
-                  "text-2xl font-bold mt-1 tabular-nums",
-                  metrics.pbf.current < 18 ? "text-green-500" : metrics.pbf.current > 25 ? "text-red-500" : "text-amber-500",
-                  privacyMode && "blur-sm"
-                )}>
+              <Card className="p-4" appearance="subtle">
+                <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Active Projects</Text>
+                <Text size={600} weight="bold" className="mt-1">{activeProjects}</Text>
+              </Card>
+              <Card className="p-4" appearance="subtle">
+                <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Body Fat</Text>
+                <Text size={600} weight="bold" className={cn("mt-1 tabular-nums", metrics.pbf.current < 18 ? "text-green-500" : metrics.pbf.current > 25 ? "text-red-500" : "text-amber-500", privacyMode && "blur-sm")}>
                   {hasHealthData ? `${metrics.pbf.current}%` : '-'}
-                </p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">BMR</p>
-                <p className={cn("text-2xl font-bold mt-1 tabular-nums", privacyMode && "blur-sm")}>
+                </Text>
+              </Card>
+              <Card className="p-4" appearance="subtle">
+                <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">BMR</Text>
+                <Text size={600} weight="bold" className={cn("mt-1 tabular-nums", privacyMode && "blur-sm")}>
                   {hasHealthData ? `${metrics.bmr.current}` : '-'}
-                </p>
-                <p className="text-xs text-muted-foreground">kcal/day</p>
-              </div>
-              <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Expenses</p>
-                <p className={cn("text-2xl font-bold mt-1 text-red-500 tabular-nums", privacyMode && "blur-sm")}>
+                </Text>
+                <Text size={200} className="text-muted-foreground">kcal/day</Text>
+              </Card>
+              <Card className="p-4" appearance="subtle">
+                <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Expenses</Text>
+                <Text size={600} weight="bold" className={cn("mt-1 text-red-500 tabular-nums", privacyMode && "blur-sm")}>
                   {formatCurrency(totalExpenses)}
-                </p>
-                <p className="text-xs text-muted-foreground">{format(today, 'MMMM')}</p>
-              </div>
+                </Text>
+                <Text size={200} className="text-muted-foreground">{format(today, 'MMMM')}</Text>
+              </Card>
             </div>
           );
         }
