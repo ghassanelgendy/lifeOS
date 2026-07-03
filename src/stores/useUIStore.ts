@@ -107,6 +107,8 @@ interface UIState {
   setTheme: (theme: 'dark' | 'light') => void;
   accentTheme: AccentTheme;
   setAccentTheme: (accent: AccentTheme) => void;
+  platformUIOverride: 'auto' | 'web' | 'pake';
+  setPlatformUIOverride: (override: 'auto' | 'web' | 'pake') => void;
 
   // Mobile Navigation Customization
   mobileNavItems: string[];
@@ -208,6 +210,7 @@ export type PersistedUiSlice = {
   prayerLocationLabel: string;
   theme: 'dark' | 'light';
   accentTheme: AccentTheme;
+  platformUIOverride: 'auto' | 'web' | 'pake';
   mobileNavItems: string[];
   desktopNavOrder: string[];
   desktopNavVisible: Record<string, boolean>;
@@ -319,6 +322,8 @@ export const useUIStore = create<UIState>()(
       setTheme: (theme) => set({ theme }),
       accentTheme: 'zinc',
       setAccentTheme: (accentTheme) => set({ accentTheme }),
+      platformUIOverride: 'auto',
+      setPlatformUIOverride: (platformUIOverride) => set({ platformUIOverride }),
 
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,

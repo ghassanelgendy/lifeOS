@@ -111,6 +111,8 @@ export default function SettingsPage() {
     setTheme,
     accentTheme,
     setAccentTheme,
+    platformUIOverride,
+    setPlatformUIOverride,
     mobileNavItems,
     setMobileNavItems,
     desktopNavOrder,
@@ -415,6 +417,23 @@ export default function SettingsPage() {
                 );
               })}
             </div>
+          </div>
+
+          {/* Platform UI Override */}
+          <div className="pt-4 border-t border-border">
+            <p className="font-medium mb-1">Platform UI Theme</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Force the layout and styling to resemble either a web application or a native desktop app, or let it detect automatically.
+            </p>
+            <select
+              value={platformUIOverride}
+              onChange={(e) => setPlatformUIOverride(e.target.value as 'auto' | 'web' | 'pake')}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="auto">Auto (Detect desktop wrapper)</option>
+              <option value="web">Web UI Style</option>
+              <option value="pake">Desktop (Fluent UI) Style</option>
+            </select>
           </div>
         </div>
       </section>

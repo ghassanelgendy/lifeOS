@@ -62,6 +62,7 @@ function UserAppSettingsBridge() {
 function ThemeSync() {
   const theme = useUIStore((s) => s.theme);
   const accentTheme = useUIStore((s) => s.accentTheme);
+  const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
     document.documentElement.classList.add(theme);
@@ -70,7 +71,7 @@ function ThemeSync() {
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
 
     // Detect if running inside Pake/Tauri desktop wrapper
-    const isPake = typeof window !== 'undefined' && (
+    const detectPake = typeof window !== 'undefined' && (
       '__TAURI__' in window || 
       'pake' in window || 
       (window as any).pake === true ||
@@ -81,12 +82,15 @@ function ThemeSync() {
       // WKWebView (macOS/Linux Tauri/Pake)
       (!!(window as any).webkit?.messageHandlers?.ipc)
     );
+
+    const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && detectPake);
+
     if (isPake) {
       document.documentElement.classList.add('pake-platform');
     } else {
       document.documentElement.classList.remove('pake-platform');
     }
-  }, [theme, accentTheme]);
+  }, [theme, accentTheme, platformUIOverride]);
   return null;
 }
 
