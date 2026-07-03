@@ -175,13 +175,10 @@ function DueTodayRow({
     <div
       onClick={onClick}
       className={cn(
-        'group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200',
+        'group flex items-start gap-4 p-4 rounded-xl border transition-all duration-200 bg-card border-border shadow-sm',
         onClick && 'cursor-pointer',
-        done ? 'opacity-60 bg-black/10 dark:bg-white/5' : 'bg-black/20 dark:bg-white/10'
+        done ? 'opacity-60 bg-card/60' : 'hover:border-border hover:shadow-md'
       )}
-      style={{
-        borderColor: 'var(--colorNeutralStroke1)',
-      }}
     >
       {showToggle && onToggle ? (
         <button
@@ -252,20 +249,20 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       const baseTheme = isDark ? webDarkTheme : webLightTheme;
       setTheme({
         ...baseTheme,
-        // High-contrast solid backgrounds to prevent washing out
-        colorNeutralBackground1: isDark ? '#121214' : '#f8f9fa', 
-        colorNeutralBackground3: isDark ? '#1a1a1e' : '#ffffff', 
+        // Match the background surfaces precisely
+        colorNeutralBackground1: 'transparent', 
+        colorNeutralBackground3: isDark ? 'rgba(43, 43, 43, 0.6)' : 'rgba(255, 255, 255, 0.7)', 
         
-        // High-visibility border lines
-        colorNeutralStroke1: isDark ? '#3a3a3f' : '#d1d1d6', 
-        colorNeutralStroke2: isDark ? '#2e2e33' : '#e5e5ea', 
+        // Match border colors and styling
+        colorNeutralStroke1: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)', 
+        colorNeutralStroke2: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', 
 
-        // Bright high-contrast text colors
-        colorNeutralForeground1: isDark ? '#ffffff' : '#000000', 
-        colorNeutralForeground2: isDark ? '#f1f1f1' : '#1c1c1e', 
-        colorNeutralForeground3: isDark ? '#b0b0b8' : '#636366', 
+        // Match text styles
+        colorNeutralForeground1: isDark ? '#ffffff' : '#111111', 
+        colorNeutralForeground2: isDark ? '#e0e0e0' : '#2f2f2f', 
+        colorNeutralForeground3: isDark ? '#b3b3b3' : '#595959', 
         
-        // Brand/Accent
+        // Brand styling
         colorBrandBackground: '#0078d4',
         colorBrandForeground1: isDark ? '#479ef5' : '#005a9e',
         colorBrandForeground2: isDark ? '#2890f5' : '#0078d4',
@@ -1080,7 +1077,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <Card
-              className="p-4 flex flex-col justify-center"
+              className="p-4 flex flex-col justify-center rounded-xl"
               style={{
                 backgroundColor: 'var(--colorNeutralBackground3)',
                 borderColor: 'var(--colorNeutralStroke1)',
@@ -1098,7 +1095,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
             <Link to="/habits" className="no-underline">
               <Card
-                className="p-4 flex flex-col justify-center hover:bg-neutral-hover/10 transition-colors duration-150"
+                className="p-4 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
                 style={{
                   backgroundColor: 'var(--colorNeutralBackground3)',
                   borderColor: 'var(--colorNeutralStroke1)',
@@ -1119,7 +1116,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
             <Link to="/screentime" className="no-underline">
               <Card
-                className="p-4 flex flex-col justify-center hover:bg-neutral-hover/10 transition-colors duration-150"
+                className="p-4 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
                 style={{
                   backgroundColor: 'var(--colorNeutralBackground3)',
                   borderColor: 'var(--colorNeutralStroke1)',
@@ -1139,7 +1136,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
             <Link to="/sleep" className="no-underline">
               <Card
-                className="p-4 flex flex-col justify-center hover:bg-neutral-hover/10 transition-colors duration-150"
+                className="p-4 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
                 style={{
                   backgroundColor: 'var(--colorNeutralBackground3)',
                   borderColor: 'var(--colorNeutralStroke1)',
@@ -1160,7 +1157,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
           {/* Time Tracking Widget */}
           <Card
-            className="p-5"
+            className="p-5 rounded-xl"
             style={{
               backgroundColor: 'var(--colorNeutralBackground3)',
               borderColor: 'var(--colorNeutralStroke1)',
@@ -1275,7 +1272,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         {/* Due Today Timeline Items */}
         <section aria-labelledby="qv-due-today-heading">
           <Card
-            className="overflow-hidden"
+            className="overflow-hidden rounded-xl"
             style={{
               backgroundColor: 'var(--colorNeutralBackground3)',
               borderColor: 'var(--colorNeutralStroke1)',
