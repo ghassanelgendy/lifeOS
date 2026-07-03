@@ -46,14 +46,14 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.os }}" = "windows-latest" ]; then
-            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray
+            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --inject scripts/pake-inject.js
             mv [lL]ife[oO][sS]*.exe lifeOS.exe || true
             mv [lL]ife[oO][sS]*.msi lifeOS.msi || true
           elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
+            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray --inject scripts/pake-inject.js
             mv [lL]ife[oO][sS]*.dmg lifeOS.dmg || true
           else
-            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray
+            pake "${{ env.APP_URL }}" --name "lifeOS" --icon public/icon-main.png --hide-title-bar --show-system-tray --inject scripts/pake-inject.js
             mv [lL]ife[oO][sS]*.deb lifeOS.deb || true
             mv [lL]ife[oO][sS]*.AppImage lifeOS.AppImage || true
           fi

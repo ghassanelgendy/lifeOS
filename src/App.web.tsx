@@ -73,8 +73,13 @@ function ThemeSync() {
     const isPake = typeof window !== 'undefined' && (
       '__TAURI__' in window || 
       'pake' in window || 
+      (window as any).pake === true ||
       navigator.userAgent.includes('Pake') ||
-      ('__TAURI_METADATA__' in window)
+      ('__TAURI_METADATA__' in window) ||
+      // WebView2 (Windows Tauri/Pake)
+      (!!(window as any).chrome && !!(window as any).chrome.webview) ||
+      // WKWebView (macOS/Linux Tauri/Pake)
+      (!!(window as any).webkit?.messageHandlers?.ipc)
     );
     if (isPake) {
       document.documentElement.classList.add('pake-platform');
