@@ -65,7 +65,7 @@ export function SwipeableRow({
 
   return (
     <div
-      className={cn('relative overflow-hidden rounded-md', className)}
+      className={cn('relative overflow-hidden w-full', className)}
       style={{ touchAction: 'pan-y' }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -73,7 +73,7 @@ export function SwipeableRow({
       onTouchCancel={handleTouchEnd}
     >
       {/* Background actions - no outline so they don't show through */}
-      <div className="absolute inset-y-0 right-0 flex items-stretch rounded-r-md overflow-hidden">
+      <div className="absolute inset-y-0 right-0 flex items-stretch overflow-hidden">
         {onDone && (
           <button
             type="button"
@@ -119,7 +119,7 @@ export function SwipeableRow({
       </div>
 
       <div
-        className="relative z-10 bg-card border border-border rounded-md hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150 ease-out shadow-sm overflow-hidden"
+        className="relative z-10 bg-background border-b border-border hover:bg-black/5 dark:hover:bg-white/5 transition-all duration-150 ease-out overflow-hidden"
         style={{ transform: `translateX(-${offset}px)` }}
       >
         {children}
