@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
+import { triggerHaptics } from '../lib/nativeBridge';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -229,6 +230,40 @@ export default function Tasks() {
   // New state for displaying highlighted date/time
   const [highlightedDate, setHighlightedDate] = useState<string | undefined>(undefined);
   const [highlightedTime, setHighlightedTime] = useState<string | undefined>(undefined);
+
+  // 3D Haptic Touch Context Menu State
+  const [contextMenuTask, setContextMenuTask] = useState<Task | null>(null);
+  const longPressTimeout = useRef<number | null>(null);
+  const isLongPressActive = useRef(false);
+
+  const startPress = (task: Task) => {
+    isLongPressActive.current = false;
+    if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
+    longPressTimeout.current = window.setTimeout(() => {
+      isLongPressActive.current = true;
+      void triggerHaptics('medium');
+      setContextMenuTask(task);
+    }, 450);
+  };
+
+  const endPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
+    if (longPressTimeout.current) {
+      window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = null;
+    }
+    if (isLongPressActive.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressActive.current = false;
+      return;
+    }
+    // Normal tap action
+    const isHabitTask = task.id.startsWith('habit-');
+    if (!isHabitTask) {
+      void triggerLightTap();
+      handleEditTask(task);
+    }
+  };
 
   const TAGS_VISIBLE_COLLAPSED = 4;
   const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
@@ -2252,13 +2287,28 @@ export default function Tasks() {
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ type: "spring", stiffness: 420, damping: 35 }}
                       >
-                        <SwipeableRow
-                          onDone={() => handleTaskToggle(task)}
-                          onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
-                          onPostpone={isHabitTask ? undefined : () => handlePostponeTask(task)}
-                          onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                          showPostpone={!isHabitTask && !!(task.due_date || task.due_time)}
-                          flat={true}
+                        <div
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onMouseDown={() => startPress(task)}
+                          onMouseUp={(e) => endPress(task, e)}
+                          onMouseLeave={() => {
+                            if (longPressTimeout.current) {
+                              window.clearTimeout(longPressTimeout.current);
+                              longPressTimeout.current = null;
+                            }
+                          }}
+                          onTouchStart={() => startPress(task)}
+                          onTouchEnd={(e) => endPress(task, e)}
+                          onTouchCancel={() => {
+                            if (longPressTimeout.current) {
+                              window.clearTimeout(longPressTimeout.current);
+                              longPressTimeout.current = null;
+                            }
+                          }}
+                          className="w-full"
                         >
                           <TaskItem
                             task={task}
@@ -2276,7 +2326,7 @@ export default function Tasks() {
                             formatDueDate={formatDueDate}
                             isLast={isLast}
                           />
-                        </SwipeableRow>
+                        </div>
                       </motion.div>
                     );
                   })}
@@ -2327,12 +2377,28 @@ export default function Tasks() {
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 420, damping: 35 }}
                           >
-                            <SwipeableRow
-                              onDone={() => handleTaskToggle(task)}
-                              onWontDo={isHabitTask ? undefined : () => handleMarkWontDo(task)}
-                              onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                              showPostpone={false}
-                              flat={true}
+                            <div
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              onMouseDown={() => startPress(task)}
+                              onMouseUp={(e) => endPress(task, e)}
+                              onMouseLeave={() => {
+                                if (longPressTimeout.current) {
+                                  window.clearTimeout(longPressTimeout.current);
+                                  longPressTimeout.current = null;
+                                }
+                              }}
+                              onTouchStart={() => startPress(task)}
+                              onTouchEnd={(e) => endPress(task, e)}
+                              onTouchCancel={() => {
+                                if (longPressTimeout.current) {
+                                  window.clearTimeout(longPressTimeout.current);
+                                  longPressTimeout.current = null;
+                                }
+                              }}
+                              className="w-full"
                             >
                               <TaskItem
                                 task={task}
@@ -2350,7 +2416,7 @@ export default function Tasks() {
                                 formatDueDate={formatDueDate}
                                 isLast={isLast}
                               />
-                            </SwipeableRow>
+                            </div>
                           </motion.div>
                         );
                       })}
@@ -2388,12 +2454,28 @@ export default function Tasks() {
                             exit={{ opacity: 0, scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 420, damping: 35 }}
                           >
-                            <SwipeableRow
-                              onDone={() => handleTaskToggle(task)}
-                              onWontDo={undefined}
-                              onDelete={isHabitTask ? undefined : () => deleteTask.mutate(task.id)}
-                              showPostpone={false}
-                              flat={true}
+                            <div
+                              onContextMenu={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                              onMouseDown={() => startPress(task)}
+                              onMouseUp={(e) => endPress(task, e)}
+                              onMouseLeave={() => {
+                                if (longPressTimeout.current) {
+                                  window.clearTimeout(longPressTimeout.current);
+                                  longPressTimeout.current = null;
+                                }
+                              }}
+                              onTouchStart={() => startPress(task)}
+                              onTouchEnd={(e) => endPress(task, e)}
+                              onTouchCancel={() => {
+                                if (longPressTimeout.current) {
+                                  window.clearTimeout(longPressTimeout.current);
+                                  longPressTimeout.current = null;
+                                }
+                              }}
+                              className="w-full"
                             >
                               <TaskItem
                                 task={task}
@@ -2411,7 +2493,7 @@ export default function Tasks() {
                                 formatDueDate={formatDueDate}
                                 isLast={isLast}
                               />
-                            </SwipeableRow>
+                            </div>
                           </motion.div>
                         );
                       })}
@@ -2621,6 +2703,175 @@ export default function Tasks() {
         }}
         isLoading={deleteTag.isPending}
       />
+
+      {/* 3D Haptic Touch Context Menu Overlay */}
+      <AnimatePresence>
+        {contextMenuTask && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Backdrop with premium blur and fade-in */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md"
+              onClick={() => {
+                void triggerHaptics('light');
+                setContextMenuTask(null);
+              }}
+            />
+
+            {/* Menu Container */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 15 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none"
+            >
+              {/* Task Preview Card (Glassmorphism) */}
+              <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className={cn(
+                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                    contextMenuTask.is_completed ? "bg-green-500 border-green-500" : "border-muted-foreground"
+                  )}>
+                    {contextMenuTask.is_completed && (
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "font-semibold text-foreground text-[16px] leading-snug tracking-tight",
+                      contextMenuTask.is_completed && "line-through text-muted-foreground font-normal"
+                    )}>
+                      {contextMenuTask.title}
+                    </p>
+                    {contextMenuTask.description && (
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                        {contextMenuTask.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Priority, Recurrence & Due Date badge */}
+                {(contextMenuTask.due_date || contextMenuTask.priority !== 'none' || contextMenuTask.recurrence !== 'none') && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-black/5 dark:border-white/5">
+                    {contextMenuTask.priority !== 'none' && (
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary",
+                        PRIORITY_CONFIG[contextMenuTask.priority].color
+                      )}>
+                        <Flag size={10} fill="currentColor" />
+                        {PRIORITY_CONFIG[contextMenuTask.priority].label}
+                      </span>
+                    )}
+                    {contextMenuTask.due_date && (
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary",
+                        formatDueDate(contextMenuTask).className
+                      )}>
+                        <CalendarIcon size={10} />
+                        {formatDueDate(contextMenuTask).text}
+                        {contextMenuTask.due_time && ` ${formatTime12h(contextMenuTask.due_time)}`}
+                      </span>
+                    )}
+                    {contextMenuTask.recurrence !== 'none' && (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary text-muted-foreground">
+                        <Repeat size={10} />
+                        {RECURRENCE_OPTIONS.find(o => o.value === contextMenuTask.recurrence)?.label}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Options Menu (iOS styled rounded stack) */}
+              <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
+                {/* Complete / Reopen Action */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    void triggerHaptics(contextMenuTask.is_completed ? 'light' : 'success');
+                    handleTaskToggle(contextMenuTask);
+                    setContextMenuTask(null);
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                >
+                  <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
+                  <CheckCircle2 size={16} className="text-muted-foreground" />
+                </button>
+
+                {/* Postpone Action (if has due date) */}
+                {!contextMenuTask.id.startsWith('habit-') && !!(contextMenuTask.due_date || contextMenuTask.due_time) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void triggerHaptics('light');
+                      handlePostponeTask(contextMenuTask);
+                      setContextMenuTask(null);
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                  >
+                    <span>Postpone 1 Hour</span>
+                    <Clock size={16} className="text-muted-foreground" />
+                  </button>
+                )}
+
+                {/* Edit Action */}
+                {!contextMenuTask.id.startsWith('habit-') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void triggerHaptics('light');
+                      setContextMenuTask(null);
+                      setTimeout(() => {
+                        handleEditTask(contextMenuTask);
+                      }, 150);
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                  >
+                    <span>Edit Details...</span>
+                    <Edit2 size={16} className="text-muted-foreground" />
+                  </button>
+                )}
+
+                {/* Won't Do Action */}
+                {!contextMenuTask.id.startsWith('habit-') && !contextMenuTask.is_completed && !(contextMenuTask.is_wont_do ?? (contextMenuTask.description || '').includes('[WONT_DO]')) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void triggerHaptics('light');
+                      handleMarkWontDo(contextMenuTask);
+                      setContextMenuTask(null);
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                  >
+                    <span>Won't Do</span>
+                    <CircleSlash2 size={16} className="text-muted-foreground" />
+                  </button>
+                )}
+
+                {/* Delete Action (Red) */}
+                {!contextMenuTask.id.startsWith('habit-') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void triggerHaptics('heavy');
+                      deleteTask.mutate(contextMenuTask.id);
+                      setContextMenuTask(null);
+                    }}
+                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors"
+                  >
+                    <span>Delete Task</span>
+                    <Trash2 size={16} className="text-red-500" />
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -2667,18 +2918,16 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
         "task-item group flex items-start gap-3.5 px-4 bg-transparent active:scale-[0.99] active:bg-white/5 transition-all duration-150 ease-out cursor-pointer select-none",
         task.is_completed && "opacity-45"
       )}
-      onClick={() => {
-        if (!task.id.startsWith('habit-')) {
-          void triggerLightTap();
-          onEdit();
-        }
-      }}
     >
       <button
         onClick={handleToggleClick}
-        onTouchStart={() => {
+        onTouchStart={(e) => {
+          e.stopPropagation();
           if (!task.is_completed) void triggerSuccessTap();
           else void triggerLightTap();
+        }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
         }}
         className={cn(
           "w-5 h-5 mt-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
