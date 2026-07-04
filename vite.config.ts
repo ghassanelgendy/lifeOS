@@ -54,6 +54,7 @@ export default defineConfig(({ mode }) => {
   console.log(`[Vite Platform Build] Mode: ${mode} -> Target Platform: ${platform}`);
 
   return {
+    base: platform === 'pake' ? './' : '/',
     clearScreen: false,
     envPrefix: ['VITE_'],
     publicDir: 'public',
