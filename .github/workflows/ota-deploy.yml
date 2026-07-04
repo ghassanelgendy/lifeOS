@@ -1,16 +1,25 @@
 name: OTA Deploy
 
-# Triggers on every push to main — uploads a new web bundle to Supabase Storage.
+# Triggers only on tag push (e.g. v1.0.1) or manual workflow dispatch.
+# Uploads a new web bundle to Supabase Storage.
 # The native iOS app fetches this on startup and hot-reloads without a sideload.
-# Only triggers a Codemagic native build when native files actually change.
 on:
   push:
-    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 1.0.1)'
+        required: false
+        type: string
 
 jobs:
   ota:
     name: Build & Upload OTA Bundle
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
     env:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
@@ -24,6 +33,20 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Determine Version
+        id: get_version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
@@ -40,16 +63,14 @@ jobs:
 
       - name: Generate version.json
         run: |
-          VERSION="1.0.${{ github.run_number }}"
-          BUNDLE_NAME="update-${VERSION}.zip"
+          BUNDLE_NAME="update-${{ env.VERSION }}.zip"
           BUNDLE_URL="${{ secrets.VITE_SUPABASE_URL }}/storage/v1/object/public/app-updates/${BUNDLE_NAME}"
-          echo "{\"version\":\"${VERSION}\",\"url\":\"${BUNDLE_URL}\",\"commit\":\"${{ github.sha }}\",\"message\":\"${{ github.event.head_commit.message }}\"}" > version.json
+          echo "{\"version\":\"${{ env.VERSION }}\",\"url\":\"${BUNDLE_URL}\",\"commit\":\"${{ github.sha }}\",\"message\":\"${{ github.event.head_commit.message }}\"}" > version.json
           cat version.json
 
       - name: Upload bundle zip to Supabase Storage
         run: |
-          VERSION="1.0.${{ github.run_number }}"
-          BUNDLE_NAME="update-${VERSION}.zip"
+          BUNDLE_NAME="update-${{ env.VERSION }}.zip"
           curl -fsSL -X POST \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "x-upsert: true" \
@@ -82,7 +103,12 @@ jobs:
       - name: Check if native rebuild is needed
         id: check
         run: |
-          CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          # Use HEAD~1 check if fetch succeeded, else default to false
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            CHANGED=$(git diff --name-only HEAD~1 HEAD)
+          else
+            CHANGED=""
+          fi
           echo "Changed files:"
           echo "$CHANGED"
           # Trigger native build if any of these change:
@@ -101,7 +127,7 @@ jobs:
     steps:
       - name: Print deploy summary
         run: |
-          echo "OTA bundle deployed: version 1.0.${{ github.run_number }}"
+          echo "OTA bundle deployed: version ${{ needs.ota.outputs.version }}"
           echo "Native rebuild needed: ${{ needs.native-build-check.outputs.needs_native }}"
           if [ "${{ needs.native-build-check.outputs.needs_native }}" = "true" ]; then
             echo "👉 Run a Codemagic build manually — native files changed."

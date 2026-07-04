@@ -1,6 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import { addSystemLog } from './logger';
+import packageJson from '../../package.json';
 
 const CURRENT_VERSION_KEY = 'lifeos_local_ota_version';
 // We use the supabase URL defined in env variables
@@ -30,7 +31,7 @@ export async function checkAndApplyUpdates() {
     }
 
     const latest = await response.json();
-    const currentVersion = localStorage.getItem(CURRENT_VERSION_KEY) || '1.0.0';
+    const currentVersion = localStorage.getItem(CURRENT_VERSION_KEY) || packageJson.version;
     addSystemLog(`OTA check: Latest version = ${latest?.version}, Local version = ${currentVersion}`, 'info');
 
     if (latest && latest.version && latest.url && latest.version !== currentVersion) {

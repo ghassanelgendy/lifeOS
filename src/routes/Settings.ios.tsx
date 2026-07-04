@@ -21,6 +21,7 @@ import {
   MapPin,
   Loader2,
 } from 'lucide-react';
+import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
 import {
   useUIStore,
@@ -1365,7 +1366,7 @@ export default function SettingsPage() {
                 <Info size={20} />
                 <div>
                   <p className="font-medium">LifeOS</p>
-                  <p className="text-sm text-muted-foreground">Version 1.0.0</p>
+                  <p className="text-sm text-muted-foreground">Version {packageJson.version}</p>
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">

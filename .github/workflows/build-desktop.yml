@@ -1,20 +1,23 @@
 name: Build Desktop Apps (Pake)
 
+# Triggers only on tag push (e.g. v1.0.1) or manual workflow dispatch.
 on:
   push:
-    branches:
-      - main
-      - feat/unified-ui
-  schedule:
-    # Trigger at 10:00 PM (22:00) UTC+3 on the 29th of every month
-    # UTC+3 timezone means 10:00 PM local is 7:00 PM UTC (19:00)
-    - cron: '0 19 29 * *'
-  workflow_dispatch: # Allows manual trigger for testing
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version override (e.g. 1.0.1)'
+        required: false
+        type: string
 
 jobs:
   build:
     name: Build Desktop Application
     runs-on: windows-latest
+    outputs:
+      app_version: ${{ steps.get_version.outputs.version }}
 
     steps:
       - name: Checkout repository
@@ -28,6 +31,20 @@ jobs:
         with:
           node-version: 20
           cache: pnpm
+
+      - name: Determine Version
+        id: get_version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
@@ -53,8 +70,7 @@ jobs:
       - name: Build Application with Pake
         shell: bash
         run: |
-          VERSION="1.0.${{ github.run_number }}"
-          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --hide-on-close --inject scripts/pake-inject.js --iterative-build --use-local-file --app-version "$VERSION"
+          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --hide-on-close --inject scripts/pake-inject.js --iterative-build --use-local-file --app-version "${{ env.VERSION }}"
           mv [lL]ife[oO][sS]*.exe lifeOS.exe || true
           mv [lL]ife[oO][sS]*.msi lifeOS.msi || true
 
@@ -62,7 +78,7 @@ jobs:
         env:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          APP_VERSION: 1.0.${{ github.run_number }}
+          APP_VERSION: ${{ env.VERSION }}
         run: node scripts/generate-tauri-updater.js
 
       - name: Upload Desktop Artifacts
@@ -97,39 +113,23 @@ jobs:
         id: params
         shell: bash
         run: |
-          DATE_TAG=$(date +'%Y.%m.%d')
+          VERSION="${{ needs.build.outputs.app_version }}"
           DATE_READABLE=$(date +'%B %d, %Y')
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo "tag=latest" >> $GITHUB_OUTPUT
-            echo "name=Latest Desktop Build" >> $GITHUB_OUTPUT
-            echo "prerelease=true" >> $GITHUB_OUTPUT
-            
-            echo "body<<EOF" >> $GITHUB_OUTPUT
-            echo "This is the latest automated rolling desktop build of lifeOS, compiled on every push to main." >> $GITHUB_OUTPUT
-            echo "For stable monthly releases, see the dated releases below." >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          else
-            echo "tag=v${DATE_TAG}" >> $GITHUB_OUTPUT
-            echo "name=lifeOS Desktop v${DATE_TAG} (${DATE_READABLE})" >> $GITHUB_OUTPUT
-            echo "prerelease=false" >> $GITHUB_OUTPUT
-            
-            echo "body<<EOF" >> $GITHUB_OUTPUT
-            echo "# 🌟 lifeOS Desktop Release - ${DATE_READABLE}" >> $GITHUB_OUTPUT
-            echo "" >> $GITHUB_OUTPUT
-            echo "This is an automated monthly release of the lifeOS desktop application compiled using Pake." >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
-          fi
+          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "name=lifeOS v${VERSION} (${DATE_READABLE})" >> $GITHUB_OUTPUT
+          echo "prerelease=false" >> $GITHUB_OUTPUT
+          
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "# 🌟 lifeOS Release v${VERSION} - ${DATE_READABLE}" >> $GITHUB_OUTPUT
+          echo "" >> $GITHUB_OUTPUT
+          echo "This is an automated release of the lifeOS application." >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create Release and Upload Assets
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          # If it's a rolling release, delete the previous one first to avoid asset conflict/API issues
-          if [ "${{ steps.params.outputs.tag }}" = "latest" ]; then
-            gh release delete "latest" --yes --cleanup-tag || true
-          fi
-
           gh release create "${{ steps.params.outputs.tag }}" \
             --title "${{ steps.params.outputs.name }}" \
             --notes "${{ steps.params.outputs.body }}" \
