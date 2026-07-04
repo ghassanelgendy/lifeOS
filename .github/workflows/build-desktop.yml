@@ -1,20 +1,21 @@
-name: Build Desktop Apps (Pake)
+name: Build & Release Desktop (Pake)
 
-# Triggers only on tag push (e.g. v1.0.1) or manual workflow dispatch.
+# Triggers on version tag push only (e.g. v1.0.3, v2.0.0).
+# Each tag push creates/updates a GitHub Release with the built MSI + changelog.
 on:
   push:
     tags:
-      - 'v*'
+      - 'v[0-9]*.[0-9]*.[0-9]*'
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version override (e.g. 1.0.1)'
+        description: 'Version override (e.g. 1.2.0) — leave blank to read from package.json'
         required: false
         type: string
 
 jobs:
   build:
-    name: Build Desktop Application
+    name: Build Windows MSI
     runs-on: windows-latest
     outputs:
       app_version: ${{ steps.get_version.outputs.version }}
@@ -22,6 +23,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # full history needed for changelog generation
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -45,6 +48,7 @@ jobs:
           fi
           echo "VERSION=${VERSION}" >> $GITHUB_ENV
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "✅ Building version: ${VERSION}"
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
@@ -59,18 +63,34 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: '~/.cargo -> ~/.cargo'
+
       - name: Install Pake CLI
         run: npm install -g pake-cli
 
-      - name: Patch Pake configuration for updater
+      - name: Patch Pake configuration (updater endpoint + version)
         env:
           TAURI_PUBLIC_KEY: ${{ secrets.TAURI_PUBLIC_KEY }}
+          APP_VERSION: ${{ env.VERSION }}
         run: node scripts/patch-pake-config.js
 
       - name: Build Application with Pake
         shell: bash
         run: |
-          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --hide-on-close --inject scripts/pake-inject.js --iterative-build --use-local-file --app-version "${{ env.VERSION }}"
+          pake dist/index.html \
+            --name "lifeOS" \
+            --icon public/icon-main.ico \
+            --hide-title-bar \
+            --show-system-tray \
+            --hide-on-close \
+            --inject scripts/pake-inject.js \
+            --iterative-build \
+            --use-local-file \
+            --app-version "${{ env.VERSION }}"
+          # Normalise output file names (Pake may produce various casings)
           mv [lL]ife[oO][sS]*.exe lifeOS.exe || true
           mv [lL]ife[oO][sS]*.msi lifeOS.msi || true
 
@@ -91,10 +111,10 @@ jobs:
             lifeOS.msi.zip
             updater.json
           if-no-files-found: error
-          retention-days: 3
+          retention-days: 7
 
   release:
-    name: Create GitHub Release
+    name: Publish GitHub Release
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -102,47 +122,66 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
-      - name: Download all artifacts
+      - name: Download build artifacts
         uses: actions/download-artifact@v8
         with:
           path: release-artifacts
           merge-multiple: true
 
-      - name: Determine release parameters
-        id: params
+      - name: Generate Changelog
+        id: changelog
         shell: bash
         run: |
-          VERSION="${{ needs.build.outputs.app_version }}"
+          VERSION="v${{ needs.build.outputs.app_version }}"
           DATE_READABLE=$(date +'%B %d, %Y')
-          echo "tag=v${VERSION}" >> $GITHUB_OUTPUT
-          echo "name=lifeOS v${VERSION} (${DATE_READABLE})" >> $GITHUB_OUTPUT
-          echo "prerelease=false" >> $GITHUB_OUTPUT
-          
-          echo "body<<EOF" >> $GITHUB_OUTPUT
-          echo "# 🌟 lifeOS Release v${VERSION} - ${DATE_READABLE}" >> $GITHUB_OUTPUT
-          echo "" >> $GITHUB_OUTPUT
-          echo "This is an automated release of the lifeOS application." >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Create Release and Upload Assets
+          # Find the previous release tag to diff against
+          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${VERSION}$" | head -1)
+          echo "Previous tag: ${PREV_TAG:-none}"
+
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges -30)
+          fi
+
+          # Build changelog body
+          {
+            echo "body<<CHANGELOG_EOF"
+            echo "# lifeOS ${VERSION} — ${DATE_READABLE}"
+            echo ""
+            echo "## What's Changed"
+            echo ""
+            if [ -n "$COMMITS" ]; then
+              echo "$COMMITS"
+            else
+              echo "- No notable changes"
+            fi
+            echo ""
+            if [ -n "$PREV_TAG" ]; then
+              echo "**Full diff:** [\`${PREV_TAG}..${VERSION}\`](https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${VERSION})"
+            fi
+            echo "CHANGELOG_EOF"
+          } >> $GITHUB_OUTPUT
+
+          echo "tag=${VERSION}" >> $GITHUB_OUTPUT
+          echo "name=lifeOS ${VERSION} (${DATE_READABLE})" >> $GITHUB_OUTPUT
+
+      - name: Create or update GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          gh release create "${{ steps.params.outputs.tag }}" \
-            --title "${{ steps.params.outputs.name }}" \
-            --notes "${{ steps.params.outputs.body }}" \
-            --prerelease="${{ steps.params.outputs.prerelease }}" \
-            || gh release edit "${{ steps.params.outputs.tag }}" \
-            --title "${{ steps.params.outputs.name }}" \
-            --notes "${{ steps.params.outputs.body }}" \
-            --prerelease="${{ steps.params.outputs.prerelease }}"
-          
-          # Delete any existing assets just in case gh release upload fails to overwrite
-          assets=$(gh release view "${{ steps.params.outputs.tag }}" --json assets --jq '.assets[].name' 2>/dev/null || true)
-          for asset in $assets; do
-            gh release delete-asset "${{ steps.params.outputs.tag }}" "$asset" --yes || true
-          done
-          
-          gh release upload "${{ steps.params.outputs.tag }}" release-artifacts/* --clobber
+          TAG="${{ steps.changelog.outputs.tag }}"
+
+          # Delete existing release for this tag if it exists (allows re-running)
+          gh release delete "$TAG" --yes 2>/dev/null || true
+
+          gh release create "$TAG" \
+            --title "${{ steps.changelog.outputs.name }}" \
+            --notes "${{ steps.changelog.outputs.body }}" \
+            --latest \
+            release-artifacts/*

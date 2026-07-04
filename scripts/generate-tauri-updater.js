@@ -59,9 +59,9 @@ const updaterJson = {
   notes: `Rolling automated build for commit ${process.env.GITHUB_SHA || 'unknown'}`,
   pub_date: date,
   platforms: {
-    "windows-x86_64": {
+    'windows-x86_64': {
       signature: signature,
-      url: "https://github.com/ghassanelgendy/lifeOS/releases/download/latest/lifeOS.msi.zip"
+      url: `https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS.msi.zip`
     }
   }
 };
