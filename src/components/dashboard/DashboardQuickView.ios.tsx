@@ -1616,29 +1616,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       </section>
 
       {/* 3D Haptic Touch Context Menu Overlay */}
-      <AnimatePresence>
-        {contextMenuEntry && (() => {
-          const isTask = contextMenuEntry.kind === 'task' || (contextMenuEntry.id && !contextMenuEntry.id.startsWith('habit-') && !contextMenuEntry.id.startsWith('event-') && !contextMenuEntry.id.startsWith('prayer-'));
-          const isHabit = contextMenuEntry.kind === 'habit';
-          const isEvent = contextMenuEntry.kind === 'event';
-          const isPrayer = contextMenuEntry.kind === 'prayer';
-
-          const parsedStart = isEvent && contextMenuEntry.start_time ? parseISO(contextMenuEntry.start_time) : null;
-          const eventKey = isEvent ? (contextMenuEntry.type === 'ical' ? `ical:${contextMenuEntry.id.replace('event-', '')}` : `event:${contextMenuEntry.id.replace('event-', '')}`) : '';
-          const eventIdToCheck = isEvent ? (contextMenuEntry.originalId || contextMenuEntry.id.replace('event-', '')) : '';
-          const eventDateToCheck = isEvent && parsedStart ? format(parsedStart, 'yyyy-MM-dd') : '';
-          const linkedTask = isEvent ? (completedTasks.find((t) =>
-            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
-            t.due_date === eventDateToCheck
-          ) || todayTasks.find((t) =>
-            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
-            t.due_date === eventDateToCheck
-          ) || overdueTasks.find((t) =>
-            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
-            t.due_date === eventDateToCheck
-          )) : null;
-
-      {/* 3D Haptic Touch Context Menu Overlay */}
       {createPortal(
         <AnimatePresence>
           {contextMenuEntry && contextMenuDetails && (
