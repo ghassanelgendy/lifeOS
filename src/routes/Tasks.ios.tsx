@@ -166,6 +166,7 @@ export default function Tasks() {
   const deleteTag = useDeleteTag();
   useConvertTaskToHabit(); // available for future use
   const createSubtask = useCreateSubtask();
+  const { triggerLightTap } = useNativeInteraction();
 
   useEffect(() => {
     const handleTriggerAddTask = () => {
@@ -1950,45 +1951,63 @@ export default function Tasks() {
       {/* Main Content - swipe from left edge to open sidebar on mobile */}
       <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowListsSidebar(!showListsSidebar)}
-              className="p-2 rounded-lg hover:bg-secondary transition-colors md:hidden"
-            >
-              <ListTodo size={20} />
-            </button>
-            <h1 className="text-2xl font-bold md:block hidden">{getViewTitle()}</h1>
+        <header className="flex items-center p-4 border-b border-border gap-2">
+          {/* Mobile: list icon on left */}
+          <button
+            onClick={() => setShowListsSidebar(!showListsSidebar)}
+            className="p-2 rounded-lg hover:bg-secondary transition-colors md:hidden shrink-0"
+          >
+            <ListTodo size={20} />
+          </button>
+
+          {/* Desktop title */}
+          <h1 className="text-2xl font-bold md:block hidden shrink-0">{getViewTitle()}</h1>
+
+          {/* Mobile: center title that fills the gap between the two icon buttons */}
+          <div className="flex-1 min-w-0 flex flex-col items-center md:hidden">
+            <span className="text-[15px] font-semibold text-foreground truncate leading-tight">
+              {getViewTitle()}
+            </span>
             {activeView === 'today' && overdueTasks.length > 0 && (
-              <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-xs font-medium">
+              <span className="text-[11px] font-medium text-red-500 mt-0.5">
                 {overdueTasks.length} overdue
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={cycleSortMode}
-              className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90"
-              title={`Sort: ${currentSortOption.label} (press S to cycle)`}
-              aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
-            >
-              <ArrowUpDown size={16} className="text-muted-foreground" />
-            </button>
-            {sortFeedback && (
-              <span className="text-xs text-muted-foreground bg-secondary/70 border border-border px-2 py-1 rounded-lg whitespace-nowrap">
-                {sortFeedback}
-              </span>
-            )}
-            <button
-              onClick={handleOpenNewTaskSheet}
-              className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all md:flex hidden items-center justify-center"
-              aria-label="Add task"
-              type="button"
-            >
-              <Plus size={18} className="text-primary" />
-            </button>
-          </div>
+
+          {/* Desktop: overdue badge */}
+          {activeView === 'today' && overdueTasks.length > 0 && (
+            <span className="md:flex hidden px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-xs font-medium shrink-0">
+              {overdueTasks.length} overdue
+            </span>
+          )}
+
+          {/* Spacer on desktop */}
+          <div className="md:flex hidden flex-1" />
+
+          {/* Sort button */}
+          <button
+            type="button"
+            onClick={cycleSortMode}
+            className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90 shrink-0"
+            title={`Sort: ${currentSortOption.label} (press S to cycle)`}
+            aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
+          >
+            <ArrowUpDown size={16} className="text-muted-foreground" />
+          </button>
+          {sortFeedback && (
+            <span className="text-xs text-muted-foreground bg-secondary/70 border border-border px-2 py-1 rounded-lg whitespace-nowrap shrink-0">
+              {sortFeedback}
+            </span>
+          )}
+          <button
+            onClick={handleOpenNewTaskSheet}
+            className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all md:flex hidden items-center justify-center shrink-0"
+            aria-label="Add task"
+            type="button"
+          >
+            <Plus size={18} className="text-primary" />
+          </button>
         </header>
 
         {/* Task List - swipe L/R at top to change view (Today/Week/Upcoming) on mobile */}
