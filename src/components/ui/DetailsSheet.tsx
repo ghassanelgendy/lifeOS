@@ -42,6 +42,8 @@ export function DetailsSheet({
   const [dragY, setDragY] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
+  // Visual viewport offset — keeps sheet above keyboard on iOS
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const onConfirmRef = useRef(onConfirm);
   onConfirmRef.current = onConfirm;
@@ -52,6 +54,32 @@ export function DetailsSheet({
   const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
+
+  // Track visual viewport to handle iOS keyboard push
+  useEffect(() => {
+    if (!isIOS || !isOpen) {
+      setKeyboardOffset(0);
+      return;
+    }
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const onResize = () => {
+      // When keyboard opens, visualViewport.height < window.innerHeight
+      const offset = window.innerHeight - vv.offsetTop - vv.height;
+      setKeyboardOffset(Math.max(0, offset));
+    };
+
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+      setKeyboardOffset(0);
+    };
+  }, [isIOS, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -72,7 +100,7 @@ export function DetailsSheet({
       document.addEventListener('keydown', handleKeyDown);
 
       if (!isPake) {
-        // Lock the main content scroll (PullToRefresh container) so opening from deep in the list doesn't jump
+        // Lock the main content scroll so opening from deep in the list doesn't jump
         const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
         if (scrollRoot) {
           scrollPositionRef.current = scrollRoot.scrollTop;
@@ -117,7 +145,7 @@ export function DetailsSheet({
     setScrolled(!!el && el.scrollTop > 2);
   };
 
-  // Reset content scroll when sheet opens so header and top content are visible
+  // Reset content scroll when sheet opens
   useEffect(() => {
     if (isOpen && sheetVisible) {
       const t = requestAnimationFrame(() => {
@@ -185,18 +213,21 @@ export function DetailsSheet({
       aria-modal="true"
       aria-labelledby="details-sheet-title"
     >
-      {/* Sheet anchored to bottom of viewport — same position whether opened from top or deep in list */}
+      {/* Sheet panel — raised above keyboard via `bottom` when keyboard is open */}
       <div
         className={cn(
-          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
-          isIOS 
-            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10' 
+          'absolute left-0 right-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
+          isIOS
+            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
             : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
           height: '92dvh',
           maxHeight: 'calc(100dvh - env(safe-area-inset-top))',
           paddingBottom: 'env(safe-area-inset-bottom)',
+          // Shift up by keyboard height so the sheet stays fully visible
+          bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : 0,
+          willChange: 'transform, bottom',
           transform: dragY > 0
             ? `translateY(${dragY}px)`
             : sheetVisible
@@ -204,11 +235,11 @@ export function DetailsSheet({
               : 'translateY(100%)',
           transition: dragY > 0
             ? 'none'
-            : 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease-out',
+            : `transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), bottom 0.2s ease-out, opacity 0.28s ease-out`,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Sticky header: close (left), title (center), confirm (right) */}
+        {/* Sticky header */}
         <header
           className={cn(
             'sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0',

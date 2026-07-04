@@ -29,6 +29,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
   const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
@@ -53,6 +54,28 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
 
     return () => window.clearTimeout(timer);
   }, [isOpen, isPake]);
+
+  // Track visual viewport to handle iOS keyboard push
+  useEffect(() => {
+    if (!isIOS || !isOpen) {
+      setKeyboardOffset(0);
+      return;
+    }
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const offset = window.innerHeight - vv.offsetTop - vv.height;
+      setKeyboardOffset(Math.max(0, offset));
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener('resize', onResize);
+      vv.removeEventListener('scroll', onResize);
+      setKeyboardOffset(0);
+    };
+  }, [isIOS, isOpen]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -170,8 +193,12 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
         )}
         style={{
           transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
-          transition: dragY > 0 ? 'none' : undefined,
-          marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+          transition: dragY > 0 ? 'none' : 'transform 0.2s ease-out',
+          // On iOS, shift up by keyboard height so modal stays visible
+          marginBottom: keyboardOffset > 0
+            ? `${keyboardOffset + 8}px`
+            : 'max(0.5rem, env(safe-area-inset-bottom))',
+          willChange: 'transform, margin-bottom',
         }}
         onClick={(e) => e.stopPropagation()}
       >
