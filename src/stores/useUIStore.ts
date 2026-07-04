@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
-export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/planner', '/calendar'];
+export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/calendar'];
 export const DEFAULT_DESKTOP_NAV = [
   '/dashboard',
   '/tasks',
@@ -107,6 +107,8 @@ interface UIState {
   setTheme: (theme: 'dark' | 'light') => void;
   accentTheme: AccentTheme;
   setAccentTheme: (accent: AccentTheme) => void;
+  platformUIOverride: 'auto' | 'web' | 'pake';
+  setPlatformUIOverride: (override: 'auto' | 'web' | 'pake') => void;
 
   // Mobile Navigation Customization
   mobileNavItems: string[];
@@ -208,6 +210,7 @@ export type PersistedUiSlice = {
   prayerLocationLabel: string;
   theme: 'dark' | 'light';
   accentTheme: AccentTheme;
+  platformUIOverride: 'auto' | 'web' | 'pake';
   mobileNavItems: string[];
   desktopNavOrder: string[];
   desktopNavVisible: Record<string, boolean>;
@@ -245,7 +248,7 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       // Sidebar
-      isSidebarCollapsed: false,
+      isSidebarCollapsed: true,
       toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
       isMobileSidebarOpen: false,
@@ -319,6 +322,8 @@ export const useUIStore = create<UIState>()(
       setTheme: (theme) => set({ theme }),
       accentTheme: 'zinc',
       setAccentTheme: (accentTheme) => set({ accentTheme }),
+      platformUIOverride: 'auto',
+      setPlatformUIOverride: (platformUIOverride) => set({ platformUIOverride }),
 
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,

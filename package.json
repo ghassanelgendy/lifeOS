@@ -10,7 +10,12 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:ios": "vite --mode ios",
+    "dev:pake": "vite --mode pake",
     "build": "vite build",
+    "build:ios": "vite build --mode ios",
+    "build:pake": "vite build --mode pake",
+    "pake:local": "pnpm build:pake && pnpm exec pake dist/index.html --name \"lifeOS\" --icon public/icon-main.ico --hide-title-bar --show-system-tray --inject scripts/pake-inject.js --iterative-build --use-local-file --debug && copy node_modules\\.pnpm\\pake-cli@3.13.0\\node_modules\\pake-cli\\src-tauri\\target\\x86_64-pc-windows-msvc\\debug\\pake-lifeos.exe lifeOS.exe",
     "lint": "eslint src",
     "preview": "vite preview",
     "test": "vitest run",
@@ -19,6 +24,23 @@
     "icons:apple": "node scripts/generate-apple-touch-icons.mjs"
   },
   "dependencies": {
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/device": "^8.0.2",
+    "@capacitor/dialog": "^8.0.1",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.4.1",
+    "@capacitor/keyboard": "^8.0.5",
+    "@capacitor/local-notifications": "^8.2.0",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/push-notifications": "^8.1.1",
+    "@capacitor/share": "^8.0.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
+    "@capawesome/capacitor-badge": "^8.0.2",
+    "@capgo/capacitor-updater": "^8.50.1",
+    "@fluentui/react-components": "^9.74.3",
+    "@fluentui/react-icons": "^2.0.331",
     "@formkit/auto-animate": "^0.9.0",
     "@sqlite.org/sqlite-wasm": "^3.51.2-build6",
     "@supabase/supabase-js": "^2.108.2",
@@ -30,6 +52,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",
+    "framer-motion": "catalog:",
     "kysely": "^0.29.2",
     "lucide-react": "^1.22.0",
     "moment": "^2.30.1",
@@ -47,6 +70,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/dom": "^10.4.1",
@@ -67,6 +91,7 @@
     "eslint-plugin-react-refresh": "^0.5.3",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",
+    "pake-cli": "^3.13.0",
     "postcss": "^8.5.16",
     "sharp": "^0.35.2",
     "tailwindcss": "^4.3.0",
@@ -78,5 +103,20 @@
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
     "workbox-routing": "^7.4.1"
+  },
+  "pnpm": {
+    "supportedArchitectures": {
+      "os": [
+        "current",
+        "darwin",
+        "linux",
+        "win32"
+      ],
+      "cpu": [
+        "current",
+        "x64",
+        "arm64"
+      ]
+    }
   }
 }

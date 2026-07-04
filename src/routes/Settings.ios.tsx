@@ -1,0 +1,1408 @@
+import { useState, useEffect } from 'react';
+import {
+  Shield,
+  Download,
+  Upload,
+  Trash2,
+  Moon,
+  Sun,
+  Database,
+  Info,
+  RefreshCw,
+  Smartphone,
+  Check,
+  Bell,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
+  LogOut,
+  User,
+  RotateCcw,
+  MapPin,
+  Loader2,
+} from 'lucide-react';
+import { cn } from '../lib/utils';
+import {
+  useUIStore,
+  DASHBOARD_MODES,
+  DASHBOARD_MODE_LABELS,
+  PAGE_WIDGET_DEFAULTS,
+  DEFAULT_DESKTOP_NAV,
+  ACCENT_THEMES,
+  ACCENT_THEME_LABELS,
+  type AccentTheme,
+  type DashboardMode,
+} from '../stores/useUIStore';
+import { useAuth } from '../contexts/AuthContext';
+import { useTaskLists } from '../hooks/useTasks';
+import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
+import { dbUtils } from '../db/database';
+import { resetDatabase } from '../db/seed';
+import { Button, ConfirmSheet, Input } from '../components/ui';
+import { NAV_ITEMS } from '../components/navItems';
+import { usePushNotifications } from '../hooks/usePushNotifications';
+import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
+import { Link } from 'react-router-dom';
+import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
+import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
+import type { GeocodeHit } from '../lib/prayerGeocoding';
+import { sendTestNotification } from '../lib/nativeBridge';
+import { Capacitor } from '@capacitor/core';
+
+const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
+  prayer: 'Prayer times',
+  stats: 'Stats (Weight, Muscle, Habits, Balance)',
+  overdue: 'Overdue tasks',
+  events: 'Upcoming events',
+  quickstats: 'Quick stats (Projects, Body fat, BMR, Expenses)',
+  habits: "Today's habits",
+  magic_week: 'Magic Week Report',
+};
+
+const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
+  dashboard: DASHBOARD_WIDGET_LABELS,
+  habits: {
+    stats: 'Stats cards',
+    prayer: 'Prayer tracking',
+    weekly: 'This week',
+    today: "Today's habits",
+  },
+  sleep: {
+    score: 'Score summary',
+    timeline: 'Sleep timeline',
+    metrics: 'Metrics cards',
+    weekly: 'Weekly bars',
+    sessions: 'Sessions list',
+  },
+};
+
+const SETTINGS_NAV = [
+  { id: 'account', label: 'Account' },
+  { id: 'appearance', label: 'Appearance' },
+  { id: 'defaults', label: 'App defaults' },
+  { id: 'layout', label: 'Layout & widgets' },
+  { id: 'notifications', label: 'Notifications' },
+  { id: 'prayer', label: 'Prayer times' },
+  { id: 'habits', label: 'Habits' },
+  { id: 'privacy', label: 'Privacy & analytics' },
+  { id: 'data', label: 'Data & backup' },
+  { id: 'logs', label: 'System logs' },
+  { id: 'about', label: 'About' },
+] as const;
+
+type LayoutWidgetPage = 'dashboard' | 'habits' | 'sleep';
+
+export default function SettingsPage() {
+  const { user, signOut } = useAuth();
+  const [localLogs, setLocalLogs] = useState<SystemLog[]>([]);
+
+  useEffect(() => {
+    setLocalLogs(getSystemLogs());
+  }, []);
+
+  const {
+    privacyMode,
+    togglePrivacyMode,
+    analyticsShowTips,
+    setAnalyticsShowTips,
+    showWrappedReport,
+    setShowWrappedReport,
+    theme,
+    setTheme,
+    accentTheme,
+    setAccentTheme,
+    platformUIOverride,
+    setPlatformUIOverride,
+    mobileNavItems,
+    setMobileNavItems,
+    desktopNavOrder,
+    desktopNavVisible,
+    toggleDesktopNavItem,
+    moveDesktopNavItem,
+    resetDesktopNavItems,
+    defaultTab,
+    setDefaultTab,
+    defaultTaskView,
+    setDefaultTaskView,
+    defaultTaskListId,
+    setDefaultTaskListId,
+    dashboardMode,
+    setDashboardMode,
+    pageWidgetOrder,
+    pageWidgetVisible,
+    togglePageWidget,
+    movePageWidget,
+    resetPageWidgets,
+    prayerLocationMode,
+    setPrayerLocationMode,
+    prayerLocationLabel,
+    setPrayerLocation,
+    reportSleepTarget,
+    reportScreenTarget,
+    reportTasksTarget,
+    reportHabitsTarget,
+    reportAutopilotEnabled,
+    reportSleepTargetCurrent,
+    reportScreenTargetCurrent,
+    reportHabitsTargetCurrent,
+    setReportSleepTarget,
+    setReportScreenTarget,
+    setReportTasksTarget,
+    setReportHabitsTarget,
+    setReportAutopilotEnabled,
+    setReportSleepTargetCurrent,
+    setReportScreenTargetCurrent,
+    setReportHabitsTargetCurrent,
+  } = useUIStore();
+  const { data: taskLists = [] } = useTaskLists();
+  const { data: archivedHabits = [] } = useArchivedHabits();
+  const unarchiveHabit = useUnarchiveHabit();
+  const push = usePushNotifications();
+  const prayerNotif = usePrayerNotificationSettings();
+  const [exportStatus, setExportStatus] = useState<string | null>(null);
+  const [importStatus, setImportStatus] = useState<string | null>(null);
+  const [pushStatus, setPushStatus] = useState<string | null>(null);
+  const [localNotifStatus, setLocalNotifStatus] = useState<string | null>(null);
+  const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
+  const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
+  const [prayerCityQuery, setPrayerCityQuery] = useState('');
+  const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
+  const [prayerCityLoading, setPrayerCityLoading] = useState(false);
+  const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
+  const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (prayerLocationMode !== 'city') {
+      setPrayerCityHits([]);
+      return;
+    }
+    const q = prayerCityQuery.trim();
+    if (q.length < 2) {
+      setPrayerCityHits([]);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      setPrayerCityLoading(true);
+      searchCities(q)
+        .then(setPrayerCityHits)
+        .catch(() => setPrayerCityHits([]))
+        .finally(() => setPrayerCityLoading(false));
+    }, 400);
+    return () => window.clearTimeout(t);
+  }, [prayerCityQuery, prayerLocationMode]);
+
+  const handlePrayerDeviceLocation = () => {
+    if (!navigator.geolocation) {
+      setPrayerGeoError('Geolocation is not supported in this browser.');
+      return;
+    }
+    setPrayerGeoLoading(true);
+    setPrayerGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const la = pos.coords.latitude;
+        const ln = pos.coords.longitude;
+        try {
+          const label = await reverseGeocodeLabel(la, ln);
+          setPrayerLocation(la, ln, label);
+        } catch {
+          setPrayerGeoError('Could not resolve city name.');
+        } finally {
+          setPrayerGeoLoading(false);
+        }
+      },
+      (err) => {
+        setPrayerGeoLoading(false);
+        setPrayerGeoError(err?.message || 'Could not read device location.');
+      },
+      { enableHighAccuracy: false, timeout: 20000, maximumAge: 300_000 }
+    );
+  };
+
+  // Export data
+  const handleExport = () => {
+    try {
+      const data = dbUtils.exportAll();
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lifeos-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setExportStatus('Data exported successfully!');
+      setTimeout(() => setExportStatus(null), 3000);
+    } catch {
+      setExportStatus('Export failed. Please try again.');
+      setTimeout(() => setExportStatus(null), 3000);
+    }
+  };
+
+  // Import data
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      try {
+        const text = await file.text();
+        const success = dbUtils.importAll(text);
+        if (success) {
+          setImportStatus('Data imported successfully! Refreshing...');
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          setImportStatus('Import failed. Invalid file format.');
+          setTimeout(() => setImportStatus(null), 3000);
+        }
+      } catch {
+        setImportStatus('Import failed. Please check the file.');
+        setTimeout(() => setImportStatus(null), 3000);
+      }
+    };
+    input.click();
+  };
+
+  // Reset data
+  const handleReset = async () => {
+    setConfirmAction('reset');
+  };
+
+  // Clear all data
+  const handleClearAll = () => {
+    setConfirmAction('clear');
+  };
+
+  // Toggle nav item in mobile bar
+  const handleToggleNavItem = (href: string) => {
+    const cleanNavItems = mobileNavItems.filter(item => item !== '/settings');
+    if (cleanNavItems.includes(href)) {
+      setMobileNavItems(cleanNavItems.filter(item => item !== href));
+    } else {
+      // Max 5 visible items
+      if (cleanNavItems.length >= 5) return;
+      setMobileNavItems([...cleanNavItems, href]);
+    }
+  };
+
+  const scrollToSettingsSection = (id: (typeof SETTINGS_NAV)[number]['id']) => {
+    document.getElementById(`settings-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const desktopNavCandidates = NAV_ITEMS.filter((item) => item.href !== '/settings');
+  const desktopNavOrderedHrefs = desktopNavOrder.length
+    ? [...desktopNavOrder, ...DEFAULT_DESKTOP_NAV.filter((href) => !desktopNavOrder.includes(href))]
+    : [...DEFAULT_DESKTOP_NAV];
+  const desktopNavSettingItems = desktopNavOrderedHrefs
+    .map((href) => desktopNavCandidates.find((item) => item.href === href))
+    .filter((item, index, items): item is (typeof NAV_ITEMS)[number] => !!item && items.findIndex((candidate) => candidate?.href === item.href) === index);
+
+  return (
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-6xl mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <p className="text-muted-foreground">Manage your app preferences and data</p>
+        {user ? (
+          <p className="text-xs text-muted-foreground mt-2">
+            Signed-in preferences (theme, layout, prayer location, etc.) sync to your account automatically.
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 lg:items-start">
+        <nav
+          aria-label="Settings sections"
+          className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 lg:w-52 shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto border-b border-border lg:border-b-0 lg:pr-2"
+        >
+          {SETTINGS_NAV.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => scrollToSettingsSection(id)}
+              className="text-left text-sm px-3 py-2 rounded-lg whitespace-nowrap lg:whitespace-normal text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors shrink-0 lg:shrink"
+            >
+              {label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="flex-1 min-w-0 space-y-10">
+      {/* Account */}
+      <section id="settings-account" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Account</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <User size={20} className="text-muted-foreground" />
+            <div>
+              <p className="font-medium">{user?.email ?? '—'}</p>
+              <p className="text-sm text-muted-foreground">Signed in with Supabase Auth</p>
+            </div>
+          </div>
+          <Button variant="outline" onClick={() => signOut()} className="gap-2">
+            <LogOut size={18} />
+            Sign out
+          </Button>
+        </div>
+      </section>
+
+      {/* Appearance */}
+      <section id="settings-appearance" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Appearance</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Theme Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+              <div>
+                <p className="font-medium">Theme</p>
+                <p className="text-sm text-muted-foreground">Switch between light and dark mode</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
+              <button
+                onClick={() => setTheme('light')}
+                className={cn(
+                  "px-3 py-1.5 rounded text-sm font-medium transition-colors",
+                  theme === 'light' ? "bg-background shadow" : "hover:bg-background/50"
+                )}
+              >
+                <Sun size={16} />
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={cn(
+                  "px-3 py-1.5 rounded text-sm font-medium transition-colors",
+                  theme === 'dark' ? "bg-background shadow" : "hover:bg-background/50"
+                )}
+              >
+                <Moon size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Accent color */}
+          <div className="pt-2 border-t border-border">
+            <p className="font-medium mb-2">Accent color</p>
+            <p className="text-sm text-muted-foreground mb-3">Choose a color for buttons, links, and focus rings</p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {ACCENT_THEMES.map((accent) => {
+                const isSelected = accentTheme === accent;
+                const swatchColor = accent === 'zinc' ? 'hsl(240 4% 46%)' : accent === 'blue' ? 'hsl(217 91% 60%)' : accent === 'green' ? 'hsl(142 71% 45%)' : accent === 'violet' ? 'hsl(258 90% 66%)' : accent === 'rose' ? 'hsl(350 89% 60%)' : 'hsl(38 92% 50%)';
+                return (
+                  <button
+                    key={accent}
+                    type="button"
+                    onClick={() => setAccentTheme(accent as AccentTheme)}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 p-2.5 rounded-lg border-2 transition-colors",
+                      isSelected ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <span
+                      className="w-8 h-8 rounded-full shrink-0 border-2 border-white/20 shadow-inner"
+                      style={{ backgroundColor: swatchColor }}
+                    />
+                    <span className="text-xs font-medium">{ACCENT_THEME_LABELS[accent as AccentTheme]}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Platform UI Override */}
+          <div className="pt-4 border-t border-border">
+            <p className="font-medium mb-1">Platform UI Theme</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              Force the layout and styling to resemble either a web application or a native desktop app, or let it detect automatically.
+            </p>
+            <select
+              value={platformUIOverride}
+              onChange={(e) => setPlatformUIOverride(e.target.value as 'auto' | 'web' | 'pake')}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="auto">Auto (Detect desktop wrapper)</option>
+              <option value="web">Web UI Style</option>
+              <option value="pake">Desktop (Fluent UI) Style</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <div id="settings-defaults" className="space-y-10 scroll-mt-20">
+      {/* Default Pages */}
+      <section className="liquid-glass-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Default Pages</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Choose the default page when opening the app and the default todo list.
+          </p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <p className="font-medium mb-2">Default tab</p>
+            <p className="text-sm text-muted-foreground mb-2">Opening the app will show this page first</p>
+            <select
+              value={defaultTab}
+              onChange={(e) => setDefaultTab(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              {NAV_ITEMS.filter((n) => n.href !== '/settings').map((item) => {
+                const val = item.href.slice(1);
+                return (
+                  <option key={item.href} value={val}>
+                    {item.label}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+          <div>
+            <p className="font-medium mb-2">Default Tasks view</p>
+            <p className="text-sm text-muted-foreground mb-2">When opening Tasks, show this view by default (works on mobile too)</p>
+            <select
+              value={(defaultTaskView ?? defaultTaskListId) ?? ''}
+              onChange={(e) => {
+                const v = e.target.value || null;
+                setDefaultTaskView(v);
+                setDefaultTaskListId(v);
+              }}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Today (default)</option>
+              <optgroup label="Smart lists">
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="upcoming">Upcoming</option>
+                <option value="all">All Tasks</option>
+                <option value="completed">Completed</option>
+              </optgroup>
+              {taskLists.length > 0 && (
+                <optgroup label="My lists">
+                  {taskLists.map((list) => (
+                    <option key={list.id} value={list.id}>
+                      {list.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+          </div>
+          <div className="rounded-lg border border-transparent p-1 -m-1">
+            <p className="font-medium mb-2">Default dashboard view</p>
+            <p className="text-sm text-muted-foreground mb-2">
+              Which layout opens when you go to Dashboard. Syncs across devices when signed in.
+            </p>
+            <label htmlFor="settings-dashboard-mode" className="sr-only">
+              Default dashboard view
+            </label>
+            <select
+              id="settings-dashboard-mode"
+              value={dashboardMode}
+              onChange={(e) => setDashboardMode(e.target.value as DashboardMode)}
+              className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              {DASHBOARD_MODES.map((mode) => (
+                <option key={mode} value={mode}>
+                  {DASHBOARD_MODE_LABELS[mode]}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div id="settings-layout" className="space-y-10 scroll-mt-20">
+      {/* Page Widgets */}
+      <section className="liquid-glass-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Page Widgets</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Choose which sections to show and in what order per page. Habits layout applies on desktop only. Dashboard widgets apply to the <span className="font-medium text-foreground">Tactical</span> dashboard only (not Quick View, Strategic, or Annual Review).
+          </p>
+        </div>
+        <div className="p-4 space-y-2">
+          <div className="flex items-center justify-between pb-2">
+            <select
+              value={selectedWidgetPage}
+              onChange={(e) => setSelectedWidgetPage(e.target.value as LayoutWidgetPage)}
+              className="px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="dashboard">Dashboard</option>
+              <option value="habits">Habits</option>
+              <option value="sleep">Sleep</option>
+            </select>
+            <Button variant="outline" size="sm" onClick={() => resetPageWidgets(selectedWidgetPage)}>
+              <RotateCcw size={14} />
+              Reset
+            </Button>
+          </div>
+
+          {(pageWidgetOrder?.[selectedWidgetPage]?.length ? pageWidgetOrder[selectedWidgetPage] : (PAGE_WIDGET_DEFAULTS[selectedWidgetPage] ?? [])).map((id, index) => {
+            const visible = pageWidgetVisible?.[selectedWidgetPage]?.[id] !== false;
+            const label = PAGE_WIDGET_LABELS[selectedWidgetPage]?.[id] ?? id;
+            const currentLen = (pageWidgetOrder?.[selectedWidgetPage]?.length ?? PAGE_WIDGET_DEFAULTS[selectedWidgetPage]?.length ?? 0);
+            return (
+              <div
+                key={id}
+                className={cn(
+                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                  visible ? "border-border bg-card" : "border-border/50 bg-secondary/20 opacity-75"
+                )}
+              >
+                <GripVertical size={16} className="text-muted-foreground flex-shrink-0" />
+                <label className="flex-1 flex items-center gap-2 cursor-pointer min-h-[44px]">
+                  <input
+                    type="checkbox"
+                    checked={visible}
+                    onChange={() => togglePageWidget(selectedWidgetPage, id)}
+                    className="rounded border-border"
+                  />
+                  <span className="font-medium">{label}</span>
+                </label>
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => movePageWidget(selectedWidgetPage, id, 'up')}
+                    disabled={index === 0}
+                    className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                    title="Move up"
+                  >
+                    <ChevronUp size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => movePageWidget(selectedWidgetPage, id, 'down')}
+                    disabled={index === currentLen - 1}
+                    className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                    title="Move down"
+                  >
+                    <ChevronDown size={18} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Desktop Navigation */}
+      <section className="liquid-glass-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Desktop Sidebar</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div>
+            <p className="font-medium">Sidebar Items</p>
+            <p className="text-sm text-muted-foreground">
+              Choose which pages show in the desktop sidebar and in what order. Settings stays available separately at the bottom.
+            </p>
+          </div>
+          <div className="flex items-center justify-end">
+            <Button variant="outline" size="sm" onClick={resetDesktopNavItems}>
+              <RotateCcw size={14} />
+              Reset
+            </Button>
+          </div>
+          <div className="space-y-2">
+            {desktopNavSettingItems.map((item, index) => {
+              const visible = desktopNavVisible[item.href] !== false;
+              return (
+                <div
+                  key={item.href}
+                  className={cn(
+                    "flex items-center gap-3 p-3 rounded-lg border transition-colors",
+                    visible ? "border-border bg-card" : "border-border/50 bg-secondary/20 opacity-75"
+                  )}
+                >
+                  <GripVertical size={16} className="text-muted-foreground flex-shrink-0" />
+                  <label className="flex-1 flex items-center gap-2 cursor-pointer min-h-[44px]">
+                    <input
+                      type="checkbox"
+                      checked={visible}
+                      onChange={() => toggleDesktopNavItem(item.href)}
+                      className="rounded border-border"
+                    />
+                    <item.icon size={16} className="text-muted-foreground" />
+                    <span className="font-medium">{item.label}</span>
+                  </label>
+                  <div className="flex flex-col gap-0.5">
+                    <button
+                      type="button"
+                      onClick={() => moveDesktopNavItem(item.href, 'up')}
+                      disabled={index === 0}
+                      className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                      title="Move up"
+                    >
+                      <ChevronUp size={18} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveDesktopNavItem(item.href, 'down')}
+                      disabled={index === desktopNavSettingItems.length - 1}
+                      className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
+                      title="Move down"
+                    >
+                      <ChevronDown size={18} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Mobile Navigation */}
+      <section className="liquid-glass-card overflow-hidden">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Mobile Navigation</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <Smartphone size={20} />
+            <div>
+              <p className="font-medium">Bottom Bar Items</p>
+              <p className="text-sm text-muted-foreground">
+                Choose which items to show in the mobile bottom navigation bar (max 5).
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {NAV_ITEMS.filter((item) => item.href !== '/settings').map((item) => {
+              const isSelected = mobileNavItems.includes(item.href);
+              const activeCount = mobileNavItems.filter(item => item !== '/settings').length;
+              const canToggle = isSelected || activeCount < 5;
+
+              return (
+                <button
+                  key={item.href}
+                  onClick={() => canToggle && handleToggleNavItem(item.href)}
+                  disabled={!canToggle}
+                  className={cn(
+                    "flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-all",
+                    isSelected
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground",
+                    canToggle && "hover:border-primary/50 cursor-pointer",
+                    !canToggle && "opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  <item.icon size={16} />
+                  <span className="flex-1 text-left">{item.label}</span>
+                  {isSelected && <Check size={14} className="text-green-500" />}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {mobileNavItems.filter(item => item !== '/settings').length}/5 items selected
+          </p>
+        </div>
+      </section>
+      </div>
+
+      {/* Task reminders (push notifications) */}
+      <section id="settings-notifications" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Notifications</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Bell size={20} />
+              <div>
+                <p className="font-medium">Task reminders</p>
+                <p className="text-sm text-muted-foreground">
+                  Get notified when a task is due (date-only at 12:00 AM, or at set time). Add lifeOS to Home Screen for iOS.
+                </p>
+              </div>
+            </div>
+            {push.supported && push.vapidConfigured ? (
+              <div className="flex items-center gap-2">
+                {push.isEnabled ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => push.sendTestNotification()
+                        .then(() => setPushStatus('Test sent!'))
+                        .catch((e) => {
+                          setPushStatus(e?.message ?? 'Test failed');
+                        })
+                      }
+                      disabled={push.isSendingTest}
+                      title="Send a generic test notification now"
+                    >
+                      {push.isSendingTest ? 'Sending...' : 'Test'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => push.disable().then(() => setPushStatus('Reminders off')).catch(() => setPushStatus('Failed to disable'))}
+                      disabled={push.isDisabling}
+                    >
+                      {push.isDisabling ? '...' : 'Disable'}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    onClick={() =>
+                      push.enable().then(() => setPushStatus('Reminders on')).catch((e) => setPushStatus(e?.message ?? 'Failed to enable'))
+                    }
+                    disabled={push.isEnabling}
+                  >
+                    {push.isEnabling ? '...' : 'Enable'}
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {!push.supported ? 'Not supported in this browser.' : !push.vapidConfigured ? 'Server not configured (VAPID key).' : ''}
+              </p>
+            )}
+          </div>
+          {pushStatus && (
+            <p
+              className={cn(
+                'text-sm px-3 py-2 rounded-lg',
+                pushStatus.includes('Failed') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+              )}
+            >
+              {pushStatus}
+            </p>
+          )}
+
+          {/* Local notification test — only shown on native iOS/Android */}
+          {Capacitor.isNativePlatform() && (
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div className="flex items-center gap-3">
+                <Bell size={20} />
+                <div>
+                  <p className="font-medium">Local Notifications (Native)</p>
+                  <p className="text-sm text-muted-foreground">
+                    Scheduled on-device for tasks, habits & prayers. Tap Test to fire one in 5s.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() =>
+                  sendTestNotification()
+                    .then(() => setLocalNotifStatus('✅ Check in 5 sec!'))
+                    .catch((e) => setLocalNotifStatus(`❌ ${e?.message ?? 'Failed'}`))
+                }
+              >
+                Test
+              </Button>
+            </div>
+          )}
+          {localNotifStatus && (
+            <p className={cn(
+              'text-sm px-3 py-2 rounded-lg',
+              localNotifStatus.startsWith('❌') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+            )}>
+              {localNotifStatus}
+            </p>
+          )}
+
+          {/* Prayer reminders */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Bell size={20} />
+              <div>
+                <p className="font-medium">Prayer reminders</p>
+                <p className="text-sm text-muted-foreground">
+                  Get notified at each prayer time (Fajr, Dhuhr, Asr, Maghrib, Isha). Enable push above first, then turn on here. You can choose which prayers and quiet hours in <Link to="/habits" className="text-primary underline">Habits</Link>.
+                </p>
+              </div>
+            </div>
+            {push.supported && push.vapidConfigured && push.isEnabled ? (
+              prayerNotif.isLoading ? (
+                <span className="text-sm text-muted-foreground">Loading...</span>
+              ) : prayerNotif.prayerHabitsCount === 0 ? (
+                <Link to="/habits">
+                  <Button variant="outline">Set up in Habits</Button>
+                </Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                  {prayerNotif.allEnabled ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => prayerNotif.setAllEnabled(false)}
+                      disabled={prayerNotif.isUpdating}
+                    >
+                      {prayerNotif.isUpdating ? '...' : 'Turn off'}
+                    </Button>
+                  ) : (
+                    <Button
+                      onClick={() => prayerNotif.setAllEnabled(true)}
+                      disabled={prayerNotif.isUpdating}
+                    >
+                      {prayerNotif.isUpdating ? '...' : 'Turn on'}
+                    </Button>
+                  )}
+                </div>
+              )
+            ) : (
+              <p className="text-sm text-muted-foreground">Enable push above first.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Prayer times location */}
+      <section id="settings-prayer" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Prayer times</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Prayer times on the dashboard and Habits use this place. The line below is what you see in the app (city name, not coordinates).
+          </p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-start gap-2 text-sm min-w-0">
+            <MapPin className="shrink-0 mt-0.5 text-muted-foreground" size={18} />
+            <div className="min-w-0">
+              <p className="font-medium text-foreground">Current place</p>
+              <p className="text-muted-foreground break-words">{prayerLocationLabel}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-sm font-medium">Set location</p>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="prayer-location-mode"
+                className="rounded border-border"
+                checked={prayerLocationMode === 'device'}
+                onChange={() => {
+                  setPrayerLocationMode('device');
+                  setPrayerGeoError(null);
+                }}
+              />
+              Use device location (GPS)
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <input
+                type="radio"
+                name="prayer-location-mode"
+                className="rounded border-border"
+                checked={prayerLocationMode === 'city'}
+                onChange={() => {
+                  setPrayerLocationMode('city');
+                  setPrayerGeoError(null);
+                }}
+              />
+              Search for a city
+            </label>
+          </div>
+
+          {prayerLocationMode === 'device' && (
+            <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-3">
+              <p className="text-sm text-muted-foreground">
+                Your browser will ask for permission. Coordinates are saved on this device and turned into a city name when possible.
+              </p>
+              <Button type="button" onClick={handlePrayerDeviceLocation} disabled={prayerGeoLoading}>
+                {prayerGeoLoading ? (
+                  <>
+                    <Loader2 className="animate-spin mr-2 inline" size={16} />
+                    Getting location…
+                  </>
+                ) : (
+                  'Update from device'
+                )}
+              </Button>
+              {prayerGeoError ? <p className="text-sm text-red-400">{prayerGeoError}</p> : null}
+            </div>
+          )}
+
+          {prayerLocationMode === 'city' && (
+            <div className="space-y-2 rounded-lg border border-border bg-secondary/20 p-3">
+              <Input
+                label="City"
+                value={prayerCityQuery}
+                onChange={(e) => setPrayerCityQuery(e.target.value)}
+                placeholder="e.g. Cairo, Istanbul, London"
+              />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground min-h-[1rem]">
+                {prayerCityLoading ? (
+                  <>
+                    <Loader2 className="animate-spin shrink-0" size={14} />
+                    Searching…
+                  </>
+                ) : null}
+              </div>
+              {prayerCityHits.length > 0 && (
+                <ul className="max-h-48 overflow-y-auto rounded-lg border border-border divide-y divide-border bg-background">
+                  {prayerCityHits.map((hit, i) => (
+                    <li key={`${hit.lat}-${hit.lng}-${i}`}>
+                      <button
+                        type="button"
+                        className="w-full text-left px-3 py-2.5 text-sm hover:bg-secondary/80 transition-colors"
+                        onClick={() => {
+                          setPrayerLocation(hit.lat, hit.lng, hit.label);
+                          setPrayerCityQuery('');
+                          setPrayerCityHits([]);
+                        }}
+                      >
+                        {hit.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Archived habits management */}
+      <section id="settings-habits" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Archived Habits</h2>
+          <p className="text-sm text-muted-foreground mt-1">Restore habits hidden from the Habits page.</p>
+        </div>
+        <div className="p-4 space-y-2">
+          {archivedHabits.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No archived habits.</p>
+          ) : (
+            archivedHabits.map((habit) => (
+              <div key={habit.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                <div className="min-w-0">
+                  <p className="font-medium truncate">{habit.title}</p>
+                  <p className="text-xs text-muted-foreground">{habit.frequency} · {habit.target_count}x</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => unarchiveHabit.mutate(habit.id)}
+                  disabled={unarchiveHabit.isPending}
+                >
+                  Restore
+                </Button>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      {/* Privacy */}
+      <section id="settings-privacy" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Privacy & analytics</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Privacy Mode */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield size={20} />
+              <div>
+                <p className="font-medium">Privacy Mode</p>
+                <p className="text-sm text-muted-foreground">Blur sensitive data like numbers and amounts</p>
+              </div>
+            </div>
+            <button
+              onClick={togglePrivacyMode}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors",
+                privacyMode ? "bg-green-500" : "bg-secondary"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                  privacyMode ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
+          </div>
+
+          {/* Analytics Tips */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Info size={20} />
+              <div>
+                <p className="font-medium">Analytics tips</p>
+                <p className="text-sm text-muted-foreground">Show explanations for each Analytics section</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setAnalyticsShowTips(!analyticsShowTips)}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors",
+                analyticsShowTips ? "bg-green-500" : "bg-secondary"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                  analyticsShowTips ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
+          </div>
+
+          {/* Show Wrapped Report */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Info size={20} />
+              <div>
+                <p className="font-medium">
+                  {showWrappedReport ? "Wrap Report: Always Show" : "Wrap Report: Scheduled"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {showWrappedReport
+                    ? "Show wrap report even if it's not Saturday or the last day of the month"
+                    : "Show only on the last 2 days of the week (Sat-Sun) or the last 3 days of the month"}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowWrappedReport(!showWrappedReport)}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors",
+                showWrappedReport ? "bg-green-500" : "bg-secondary"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                  showWrappedReport ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
+          </div>
+
+          {/* Report Targets */}
+          <div className="pt-4 border-t border-border space-y-4">
+            <div>
+              <p className="font-medium">Report Targets</p>
+              <p className="text-sm text-muted-foreground">
+                Customize targets used to calculate your composite weekly and monthly report scores.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Sleep Target (hours)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={reportSleepTarget}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 8;
+                    setReportSleepTarget(val);
+                    if (!reportAutopilotEnabled) setReportSleepTargetCurrent(val);
+                  }}
+                />
+                {reportAutopilotEnabled && (
+                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                    Current active: {reportSleepTargetCurrent}h
+                  </span>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Screen Time Limit (hours)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={24}
+                  value={reportScreenTarget}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 8;
+                    setReportScreenTarget(val);
+                    if (!reportAutopilotEnabled) setReportScreenTargetCurrent(val);
+                  }}
+                />
+                {reportAutopilotEnabled && (
+                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                    Current active: {reportScreenTargetCurrent}h
+                  </span>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Habits Target (%)
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={reportHabitsTarget}
+                  onChange={(e) => {
+                    const val = Number(e.target.value) || 100;
+                    setReportHabitsTarget(val);
+                    if (!reportAutopilotEnabled) setReportHabitsTargetCurrent(val);
+                  }}
+                />
+                {reportAutopilotEnabled && (
+                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                    Current active: {reportHabitsTargetCurrent}%
+                  </span>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Daily Tasks Target
+                </label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={reportTasksTarget}
+                  onChange={(e) => setReportTasksTarget(Number(e.target.value) || 5)}
+                />
+              </div>
+            </div>
+
+            {/* Autopilot Targets Option */}
+            <div className="mt-6 pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Target Autopilot</span>
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase">Smart Adjust</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                  When enabled, sleep, screen time, and habit targets will automatically adapt every Saturday to match your actual routine (adjusting halfway between your current target and actual performance) to keep goals realistic and progressive.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const nextState = !reportAutopilotEnabled;
+                  setReportAutopilotEnabled(nextState);
+                  if (nextState) {
+                    // Initialize current targets to ultimate targets
+                    setReportSleepTargetCurrent(reportSleepTarget);
+                    setReportScreenTargetCurrent(reportScreenTarget);
+                    setReportHabitsTargetCurrent(reportHabitsTarget);
+                  }
+                }}
+                className={cn(
+                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
+                  reportAutopilotEnabled ? "bg-primary" : "bg-secondary"
+                )}
+              >
+                <span
+                  className={cn(
+                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
+                    reportAutopilotEnabled ? "translate-x-5" : "translate-x-0"
+                  )}
+                />
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Data Management */}
+      <section id="settings-data" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Data Management</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          {/* Export */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Download size={20} />
+              <div>
+                <p className="font-medium">Export Data</p>
+                <p className="text-sm text-muted-foreground">Download all your data as JSON</p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleExport}>
+              Export
+            </Button>
+          </div>
+
+          {exportStatus && (
+            <p className={cn(
+              "text-sm px-3 py-2 rounded-lg",
+              exportStatus.includes('success') ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+            )}>
+              {exportStatus}
+            </p>
+          )}
+
+          {/* Import */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Upload size={20} />
+              <div>
+                <p className="font-medium">Import Data</p>
+                <p className="text-sm text-muted-foreground">Restore from a backup file</p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleImport}>
+              Import
+            </Button>
+          </div>
+
+          {importStatus && (
+            <p className={cn(
+              "text-sm px-3 py-2 rounded-lg",
+              importStatus.includes('success') ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+            )}>
+              {importStatus}
+            </p>
+          )}
+
+          {/* Reset */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <RefreshCw size={20} />
+              <div>
+                <p className="font-medium">Reset to Demo Data</p>
+                <p className="text-sm text-muted-foreground">Clear all data and restore sample content</p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleReset}>
+              Reset
+            </Button>
+          </div>
+
+          {/* Clear All */}
+          <div className="flex items-center justify-between pt-4 border-t border-border">
+            <div className="flex items-center gap-3">
+              <Trash2 size={20} className="text-destructive" />
+              <div>
+                <p className="font-medium text-destructive">Delete All Data</p>
+                <p className="text-sm text-muted-foreground">Permanently remove all your data</p>
+              </div>
+            </div>
+            <Button variant="destructive" onClick={handleClearAll}>
+              Delete
+            </Button>
+          </div>
+        </div>
+      </section>
+      {/* System Logs */}
+      <section id="settings-logs" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <h2 className="font-semibold">System Logs</h2>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                const logs = getSystemLogs();
+                const logText = logs.map(l => `[${l.timestamp}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+                navigator.clipboard.writeText(logText);
+                alert('Logs copied to clipboard!');
+              }}
+            >
+              Copy Logs
+            </Button>
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => {
+                clearSystemLogs();
+                setLocalLogs([]);
+              }}
+            >
+              Clear Logs
+            </Button>
+          </div>
+        </div>
+        <div className="p-4 space-y-2">
+          <div className="h-48 overflow-y-auto border border-border rounded-lg bg-black/40 p-3 font-mono text-xs space-y-1.5 scroll-thin">
+            {localLogs.length === 0 ? (
+              <span className="text-muted-foreground italic">No logs available</span>
+            ) : (
+              localLogs.map((log, i) => (
+                <div key={i} className="flex gap-2 items-start leading-relaxed select-text">
+                  <span className="text-muted-foreground shrink-0">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                  <span
+                    className={cn(
+                      "font-bold shrink-0 uppercase text-[9px] px-1 py-0.5 rounded",
+                      log.type === 'error'
+                        ? "bg-red-500/10 text-red-400 border border-red-500/25"
+                        : log.type === 'warn'
+                        ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/25"
+                        : "bg-zinc-500/10 text-zinc-400 border border-zinc-500/25"
+                    )}
+                  >
+                    {log.type}
+                  </span>
+                  <span className={cn(
+                    log.type === 'error' ? 'text-red-300' : log.type === 'warn' ? 'text-yellow-300' : 'text-foreground'
+                  )}>
+                    {log.message}
+                  </span>
+                </div>
+              ))
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Logs contain internal system checks, OTA updates history, and native sync event logs.
+          </p>
+        </div>
+      </section>
+
+      {/* About */}
+      <section id="settings-about" className="liquid-glass-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">About</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <Info size={20} />
+            <div>
+              <p className="font-medium">LifeOS</p>
+              <p className="text-sm text-muted-foreground">Version 1.0.0</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            A local-first, privacy-centric life dashboard for tracking your health, habits, academics, and finances.
+            All data is stored locally in your browser.
+          </p>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <Database size={14} />
+            <span>Data stored in browser localStorage</span>
+          </div>
+        </div>
+      </section>
+        </div>
+      </div>
+
+      <ConfirmSheet
+        isOpen={confirmAction === 'reset'}
+        title="Reset to Demo Data"
+        message="This will delete ALL your data and restore default sample data. This action cannot be undone."
+        confirmLabel="Reset"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={async () => {
+          await resetDatabase();
+          window.location.reload();
+        }}
+      />
+      <ConfirmSheet
+        isOpen={confirmAction === 'clear'}
+        title="Delete All Data"
+        message="This will permanently delete ALL your data. This action cannot be undone."
+        confirmLabel="Delete"
+        onCancel={() => setConfirmAction(null)}
+        onConfirm={() => {
+          dbUtils.clearAll();
+          window.location.reload();
+        }}
+      />
+    </div>
+  );
+}

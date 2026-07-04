@@ -554,7 +554,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                 <div
                   key={i}
                   className={cn(
-                    'rounded-lg p-3 border-l-4 bg-secondary/20',
+                    'rounded-lg p-3 border-0 border-l-4 bg-secondary/20',
                     Math.abs(o.z) > 2 ? 'border-red-500' : 'border-amber-500'
                   )}
                 >
@@ -582,6 +582,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                 <XAxis dataKey="dow" tick={{ fontSize: 11 }} stroke="currentColor" className="text-muted-foreground" />
                 <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} stroke="currentColor" className="text-muted-foreground" />
                 <Tooltip
+                  cursor={false}
                   contentStyle={{ background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 12, color: 'var(--color-foreground)' }}
                   itemStyle={{ color: 'var(--color-foreground)' }}
                   labelStyle={{ color: 'var(--color-muted-foreground)' }}

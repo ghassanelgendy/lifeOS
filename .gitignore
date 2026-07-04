@@ -45,8 +45,9 @@ dist.zip
 /src-tauri
 /UIWebViewWrapper
 /public/ios6-lite
-/scripts
+/scripts/node_modules
 supabase/SUPABASE_ISSUE.MD
 supabase/current_db.sql
 supabase/.temp/cli-latest
 supabase/.temp/linked-project.json
+/lifeOS-main
