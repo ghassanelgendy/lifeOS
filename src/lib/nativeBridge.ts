@@ -270,7 +270,7 @@ export async function syncAllLocalNotifications(
     function taskTriggerDate(due_date: string, due_time?: string | null, early_reminder_minutes?: number | null): Date {
       const [y, mo, d] = due_date.split('T')[0].split('-').map(Number);
       let h = 9, m = 0; // default to 9am if no specific time
-      if (due_time && /^\d{2}:\d{2}$/.test(due_time)) {
+      if (due_time && /^\d{1,2}:\d{2}(:\d{2})?$/.test(due_time)) {
         const [th, tm] = due_time.split(':').map(Number);
         h = th; m = tm;
       }
