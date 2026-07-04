@@ -151,7 +151,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-xl border border-border bg-card overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-black/5 dark:border-white/5 bg-white/40 dark:bg-black/25 backdrop-blur-md overflow-hidden', className)}>
       {children}
     </div>
   );
@@ -315,7 +315,7 @@ export function TaskDetailsContent({
             value={form.description ?? ''}
             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
             rows={3}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[80px]"
+            className="w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[80px]"
             aria-label="Notes"
           />
           <div className="relative">
@@ -325,7 +325,7 @@ export function TaskDetailsContent({
               placeholder="Add link"
               value={form.url ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))}
-              className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-border bg-background text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               aria-label="Link"
             />
           </div>
@@ -374,7 +374,7 @@ export function TaskDetailsContent({
                 type="date"
                 value={form.due_date ?? ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, due_date: e.target.value }))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Date"
               />
             </div>
@@ -436,7 +436,7 @@ export function TaskDetailsContent({
                   reminders_enabled: e.target.value ? true : prev.reminders_enabled,
                   early_reminder_minutes: e.target.value ? (prev.early_reminder_minutes ?? 0) : prev.early_reminder_minutes
                 }))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Time"
               />
             </div>
@@ -519,7 +519,7 @@ export function TaskDetailsContent({
                   min={1}
                   value={form.recurrence_interval ?? 1}
                   onChange={(e) => setForm((prev) => ({ ...prev, recurrence_interval: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -567,7 +567,7 @@ export function TaskDetailsContent({
                   type="date"
                   value={form.recurrence_end ?? ''}
                   onChange={(e) => setForm((prev) => ({ ...prev, recurrence_end: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -579,7 +579,7 @@ export function TaskDetailsContent({
                   min={1}
                   value={form.recurrence_count ?? 1}
                   onChange={(e) => setForm((prev) => ({ ...prev, recurrence_count: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -901,7 +901,7 @@ export function TaskDetailsContent({
                   placeholder="Add subtask..."
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex-1 rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <Button
                   type="submit"
@@ -1052,7 +1052,7 @@ export function TaskDetailsContent({
                 placeholder="Search or add location"
                 value={form.location ?? ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Location"
               />
             </div>
