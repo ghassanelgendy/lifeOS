@@ -153,6 +153,7 @@ function DueTodayRow({
   onClick?: () => void;
 }) {
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
+  const touchToggledRef = useRef(false);
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
@@ -165,12 +166,14 @@ function DueTodayRow({
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onToggle) {
-      if (done) {
-        void triggerLightTap();
-      } else {
-        void triggerSuccessTap();
-      }
+    // onTouchEnd already handled toggle; skip the synthesized click
+    if (touchToggledRef.current) {
+      touchToggledRef.current = false;
+      return;
+    }
+    if (onToggle && !busy) {
+      if (done) void triggerLightTap();
+      else void triggerSuccessTap();
       onToggle();
     }
   };
@@ -191,9 +194,20 @@ function DueTodayRow({
           aria-label={label}
           disabled={busy}
           onClick={handleCheckboxClick}
-          onTouchStart={() => {
+          onTouchStart={(e) => {
+            // Stop the parent wrapper's startPress from capturing this touch
+            e.stopPropagation();
             if (!done) void triggerSuccessTap();
             else void triggerLightTap();
+          }}
+          onTouchEnd={(e) => {
+            // Toggle immediately on release — more responsive than synthesized click
+            e.preventDefault();
+            e.stopPropagation();
+            if (onToggle && !busy) {
+              touchToggledRef.current = true;
+              onToggle();
+            }
           }}
           className={cn(
             'relative flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 active:scale-90',
