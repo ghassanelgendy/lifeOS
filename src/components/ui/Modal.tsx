@@ -29,7 +29,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
+  // ponytail: svh already excludes iOS keyboard — no JS tracking needed
 
   const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
   const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
@@ -55,27 +55,6 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
     return () => window.clearTimeout(timer);
   }, [isOpen, isPake]);
 
-  // Track visual viewport to handle iOS keyboard push
-  useEffect(() => {
-    if (!isIOS || !isOpen) {
-      setKeyboardOffset(0);
-      return;
-    }
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const onResize = () => {
-      const offset = window.innerHeight - vv.offsetTop - vv.height;
-      setKeyboardOffset(Math.max(0, offset));
-    };
-    vv.addEventListener('resize', onResize);
-    vv.addEventListener('scroll', onResize);
-    onResize();
-    return () => {
-      vv.removeEventListener('resize', onResize);
-      vv.removeEventListener('scroll', onResize);
-      setKeyboardOffset(0);
-    };
-  }, [isIOS, isOpen]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -171,11 +150,11 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
       className={cn(
         "fixed inset-0 z-[110] flex items-end sm:items-center justify-center modal-backdrop-ios",
         isIOS ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-sm",
-        "min-h-[100dvh] sm:min-h-0",
+        "min-h-[100svh] sm:min-h-0",
         "sm:p-4 sm:bg-background/80"
       )}
       style={{ 
-        height: '100dvh',
+        height: '100svh',
         overscrollBehavior: 'contain'
       }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
@@ -187,18 +166,15 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           isIOS 
             ? "liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10" 
             : "bg-card border border-border rounded-[24px]",
-          "max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
+          "max-h-[calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
           "min-h-0",
           className
         )}
         style={{
           transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
-          transition: dragY > 0 ? 'none' : 'transform 0.2s ease-out',
-          // On iOS, shift up by keyboard height so modal stays visible
-          marginBottom: keyboardOffset > 0
-            ? `${keyboardOffset + 8}px`
-            : 'max(0.5rem, env(safe-area-inset-bottom))',
-          willChange: 'transform, margin-bottom',
+          transition: dragY > 0 ? 'none' : 'transform 0.36s cubic-bezier(0.32, 0.72, 0, 1)',
+          marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+          willChange: 'transform',
         }}
         onClick={(e) => e.stopPropagation()}
       >

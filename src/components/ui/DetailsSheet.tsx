@@ -42,8 +42,6 @@ export function DetailsSheet({
   const [dragY, setDragY] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [sheetVisible, setSheetVisible] = useState(false);
-  // Visual viewport offset — keeps sheet above keyboard on iOS
-  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const onConfirmRef = useRef(onConfirm);
   onConfirmRef.current = onConfirm;
@@ -54,32 +52,7 @@ export function DetailsSheet({
   const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
-
-  // Track visual viewport to handle iOS keyboard push
-  useEffect(() => {
-    if (!isIOS || !isOpen) {
-      setKeyboardOffset(0);
-      return;
-    }
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const onResize = () => {
-      // When keyboard opens, visualViewport.height < window.innerHeight
-      const offset = window.innerHeight - vv.offsetTop - vv.height;
-      setKeyboardOffset(Math.max(0, offset));
-    };
-
-    vv.addEventListener('resize', onResize);
-    vv.addEventListener('scroll', onResize);
-    onResize();
-
-    return () => {
-      vv.removeEventListener('resize', onResize);
-      vv.removeEventListener('scroll', onResize);
-      setKeyboardOffset(0);
-    };
-  }, [isIOS, isOpen]);
+  // ponytail: svh (small viewport height) already excludes the iOS keyboard — no JS tracking needed
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -207,35 +180,31 @@ export function DetailsSheet({
         isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
-      style={{ height: '100dvh', overscrollBehavior: 'contain' }}
+      style={{ height: '100svh', overscrollBehavior: 'contain' }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
       role="dialog"
       aria-modal="true"
       aria-labelledby="details-sheet-title"
     >
-      {/* Sheet panel — raised above keyboard via `bottom` when keyboard is open */}
+      {/* Sheet panel anchored to bottom — svh already excludes keyboard so bottom:0 is correct */}
       <div
         className={cn(
-          'absolute left-0 right-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
+          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
           isIOS
             ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
             : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
-          height: '92dvh',
-          maxHeight: 'calc(100dvh - env(safe-area-inset-top))',
+          height: '92svh',
+          maxHeight: 'calc(100svh - env(safe-area-inset-top))',
           paddingBottom: 'env(safe-area-inset-bottom)',
-          // Shift up by keyboard height so the sheet stays fully visible
-          bottom: keyboardOffset > 0 ? `${keyboardOffset}px` : 0,
-          willChange: 'transform, bottom',
+          willChange: 'transform',
           transform: dragY > 0
             ? `translateY(${dragY}px)`
             : sheetVisible
               ? 'translateY(0)'
               : 'translateY(100%)',
-          transition: dragY > 0
-            ? 'none'
-            : `transform 0.38s cubic-bezier(0.32, 0.72, 0, 1), bottom 0.2s ease-out, opacity 0.28s ease-out`,
+          transition: dragY > 0 ? 'none' : 'transform 0.36s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
