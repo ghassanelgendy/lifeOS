@@ -45,12 +45,25 @@ jobs:
       - name: Install Pake CLI
         run: npm install -g pake-cli
 
+      - name: Patch Pake configuration for updater
+        env:
+          TAURI_PUBLIC_KEY: ${{ secrets.TAURI_PUBLIC_KEY }}
+        run: node scripts/patch-pake-config.js
+
       - name: Build Application with Pake
         shell: bash
         run: |
-          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --hide-on-close --inject scripts/pake-inject.js --iterative-build --use-local-file
+          VERSION="1.0.${{ github.run_number }}"
+          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --hide-on-close --inject scripts/pake-inject.js --iterative-build --use-local-file --app-version "$VERSION"
           mv [lL]ife[oO][sS]*.exe lifeOS.exe || true
           mv [lL]ife[oO][sS]*.msi lifeOS.msi || true
+
+      - name: Generate updater.json and sign MSI zip
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          APP_VERSION: 1.0.${{ github.run_number }}
+        run: node scripts/generate-tauri-updater.js
 
       - name: Upload Desktop Artifacts
         uses: actions/upload-artifact@v7
@@ -59,6 +72,8 @@ jobs:
           path: |
             lifeOS.exe
             lifeOS.msi
+            lifeOS.msi.zip
+            updater.json
           if-no-files-found: error
           retention-days: 3
 
