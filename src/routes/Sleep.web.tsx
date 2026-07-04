@@ -340,6 +340,8 @@ export default function Sleep() {
                       <Tooltip 
                         cursor={{ fill: 'hsl(var(--secondary))', opacity: 0.5, radius: 8 }}
                         formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
+                        itemStyle={{ color: 'hsl(var(--foreground))' }}
+                        labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
                         contentStyle={{
                           backgroundColor: 'hsl(var(--card))',
                           border: '1px solid hsl(var(--border))',

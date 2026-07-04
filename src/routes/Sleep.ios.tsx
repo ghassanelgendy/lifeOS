@@ -345,6 +345,8 @@ export default function Sleep() {
                       <Tooltip 
                         cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
                         formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
+                        itemStyle={{ color: 'hsl(var(--foreground))' }}
+                        labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
                         contentStyle={{
                           backgroundColor: 'rgba(30, 30, 30, 0.45)',
                           backdropFilter: 'blur(10px)',
