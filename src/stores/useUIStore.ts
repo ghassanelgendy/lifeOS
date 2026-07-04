@@ -248,7 +248,7 @@ export const useUIStore = create<UIState>()(
   persist(
     (set) => ({
       // Sidebar
-      isSidebarCollapsed: false,
+      isSidebarCollapsed: true,
       toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
       isMobileSidebarOpen: false,
