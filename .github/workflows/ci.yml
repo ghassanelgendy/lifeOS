@@ -99,13 +99,13 @@ jobs:
 
       - name: Start Dev Server
         run: |
-          pnpm dev &
-          npx wait-on http://localhost:5173
+          pnpm dev --host 127.0.0.1 &
+          npx wait-on http://127.0.0.1:5173
 
       - name: OWASP ZAP Baseline Scan
         uses: zaproxy/action-baseline@v0.15.0
         with:
-          target: 'http://localhost:5173'
+          target: 'http://127.0.0.1:5173'
           fail_action: false # Do not fail the pipeline on ZAP warnings (DAST often throws false positives locally)
           cmd_options: '-a'
           allow_issue_writing: false
