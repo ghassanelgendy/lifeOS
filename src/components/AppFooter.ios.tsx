@@ -3,11 +3,11 @@ import { useSyncStatus } from '../hooks/useSyncStatus';
 import { Capacitor } from '@capacitor/core';
 
 export function AppFooter() {
+  const { online, queueLength, lastSyncAt } = useSyncStatus();
+
   if (Capacitor.isNativePlatform()) {
     return null;
   }
-
-  const { online, queueLength, lastSyncAt } = useSyncStatus();
 
   let syncLabel: string | null = null;
   if (queueLength > 0) {
