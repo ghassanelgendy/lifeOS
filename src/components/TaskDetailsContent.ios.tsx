@@ -14,7 +14,11 @@ import {
   MessageCircle,
   ChevronRight,
   Link as LinkIcon,
+  Trash2,
+  Plus,
 } from 'lucide-react';
+import { Button } from './ui';
+import type { Task } from '../types/schema';
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -89,7 +93,10 @@ interface TaskDetailsContentProps {
   setForm: (u: Partial<TaskDetailsFormState> | ((prev: TaskDetailsFormState) => TaskDetailsFormState)) => void;
   taskLists: TaskList[];
   tags: Tag[];
-  subtaskCount: number;
+  subtasks?: Task[];
+  onAddSubtask?: (title: string) => void;
+  onToggleSubtask?: (subtask: Task) => void;
+  onDeleteSubtask?: (id: string) => void;
   recurrenceOptions: { value: TaskRecurrence; label: string }[];
   recurrenceEndOptions: { value: TaskRecurrenceEndType; label: string }[];
   weekdayOptions: { value: number; label: string }[];
@@ -159,7 +166,10 @@ export function TaskDetailsContent({
   setForm,
   taskLists,
   tags,
-  subtaskCount,
+  subtasks = [],
+  onAddSubtask,
+  onToggleSubtask,
+  onDeleteSubtask,
   recurrenceOptions,
   recurrenceEndOptions,
   weekdayOptions: _weekdayOptions,
@@ -205,6 +215,8 @@ export function TaskDetailsContent({
   type PickerKey = 'repeat' | 'repeatEnd' | 'earlyReminder' | 'list' | 'tags' | 'priority' | null;
   const [openPicker, setOpenPicker] = useState<PickerKey>(null);
   const [parseHints, setParseHints] = useState<string[]>([]);
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
 
   const closePicker = () => setOpenPicker(null);
 
@@ -805,12 +817,105 @@ export function TaskDetailsContent({
           </div>
         )}
         <Divider />
-        <div className="flex items-center gap-3 min-h-[52px] px-4 py-3">
+        {/* Subtasks Section */}
+        <button
+          type="button"
+          onClick={() => setIsSubtasksExpanded(!isSubtasksExpanded)}
+          className="flex items-center gap-3 min-h-[52px] px-4 py-3 w-full text-left hover:bg-secondary/30 active:bg-secondary/50 transition-colors"
+          aria-expanded={isSubtasksExpanded}
+        >
           <ListChecks size={20} className="text-muted-foreground shrink-0" aria-hidden />
           <span className="text-sm font-medium text-foreground flex-1">Subtasks</span>
-          <span className="text-sm font-medium text-primary">{subtaskCount}</span>
-          <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
-        </div>
+          <span className="text-sm font-medium text-primary">
+            {subtasks.length > 0 ? `${subtasks.filter(s => s.is_completed).length}/${subtasks.length}` : '0'}
+          </span>
+          <ChevronRight
+            size={18}
+            className={cn("text-muted-foreground shrink-0 transition-transform", isSubtasksExpanded && "rotate-90")}
+            aria-hidden
+          />
+        </button>
+
+        {isSubtasksExpanded && (
+          <div className="px-4 pb-4 pt-1 border-t border-border space-y-3">
+            {/* Subtask list */}
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {subtasks.map((sub) => (
+                <div key={sub.id} className="flex items-center justify-between gap-2 py-0.5">
+                  <label className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={sub.is_completed}
+                      onChange={() => onToggleSubtask?.(sub)}
+                      className="rounded border-border text-primary focus:ring-0 w-4.5 h-4.5"
+                    />
+                    <span className={cn(
+                      "text-sm font-medium truncate",
+                      sub.is_completed && "line-through text-muted-foreground font-normal"
+                    )}>
+                      {sub.title}
+                    </span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteSubtask?.(sub.id)}
+                    className="p-1 text-muted-foreground hover:text-red-500 rounded transition-colors"
+                    aria-label="Delete subtask"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              ))}
+              {subtasks.length === 0 && (
+                <p className="text-xs text-muted-foreground">No subtasks yet. Add one below!</p>
+              )}
+            </div>
+
+            {/* Subtask progress bar */}
+            {subtasks.length > 0 && (
+              <div className="w-full bg-secondary/60 rounded-full h-1 overflow-hidden">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full"
+                  style={{
+                    width: `${Math.round(
+                      (subtasks.filter((s) => s.is_completed).length / subtasks.length) * 100
+                    )}%`,
+                  }}
+                />
+              </div>
+            )}
+
+            {/* Subtask Add Form */}
+            {form.title && ( // Only show if task exists (has title)
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!newSubtaskTitle.trim()) return;
+                  onAddSubtask?.(newSubtaskTitle.trim());
+                  setNewSubtaskTitle('');
+                }}
+                className="flex items-center gap-2"
+              >
+                <input
+                  type="text"
+                  placeholder="Add subtask..."
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  disabled={!newSubtaskTitle.trim()}
+                  className="h-8 py-0 px-3 flex items-center justify-center shrink-0"
+                >
+                  <Plus size={14} className="mr-1" />
+                  Add
+                </Button>
+              </form>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Section 5 — Integrations */}

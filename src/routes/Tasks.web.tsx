@@ -45,6 +45,8 @@ import {
   useUpdateTag,
   useDeleteTag,
   useConvertTaskToHabit,
+  useTaskWithSubtasks,
+  useCreateSubtask,
 } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent } from '../hooks/useCalendar';
@@ -159,6 +161,7 @@ export default function Tasks() {
   const updateTag = useUpdateTag();
   const deleteTag = useDeleteTag();
   useConvertTaskToHabit(); // available for future use
+  const createSubtask = useCreateSubtask();
 
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
@@ -169,6 +172,8 @@ export default function Tasks() {
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { data: selectedTaskWithSubtasks } = useTaskWithSubtasks(selectedTask?.id || '');
+  const subtasks = selectedTaskWithSubtasks?.subtasks || [];
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDate, setNewTaskDate] = useState('');
@@ -2360,7 +2365,10 @@ export default function Tasks() {
           setForm={setEditForm}
           taskLists={taskLists}
           tags={tags}
-          subtaskCount={selectedTask ? allTasks.filter((t) => t.parent_id === selectedTask.id).length : 0}
+          subtasks={subtasks}
+          onAddSubtask={(title) => createSubtask.mutate({ parentId: selectedTask!.id, title })}
+          onToggleSubtask={(subtask) => toggleTask.mutate(subtask.id)}
+          onDeleteSubtask={(id) => deleteTask.mutate(id)}
           recurrenceOptions={RECURRENCE_OPTIONS}
           recurrenceEndOptions={RECURRENCE_END_OPTIONS}
           weekdayOptions={WEEKDAY_OPTIONS}
@@ -2550,6 +2558,12 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
   const priorityConfig = PRIORITY_CONFIG[task.priority];
   const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
 
+  const subtasks = task.subtasks || [];
+  const hasSubtasks = subtasks.length > 0;
+  const completedCount = subtasks.filter((s) => s.is_completed).length;
+  const totalCount = subtasks.length;
+  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
     <div
       className={cn(
@@ -2594,7 +2608,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
       </button>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={cn(
             "font-medium",
             task.is_completed && "line-through text-muted-foreground"
@@ -2613,7 +2627,21 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
           {isWontDo && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
           )}
+          {hasSubtasks && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0">
+              {completedCount}/{totalCount} ({percentage}%)
+            </span>
+          )}
         </div>
+
+        {hasSubtasks && (
+          <div className="w-full bg-secondary/60 rounded-full h-1 mt-1.5 overflow-hidden">
+            <div 
+              className="bg-primary h-full transition-all duration-300 rounded-full" 
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+        )}
 
 
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">

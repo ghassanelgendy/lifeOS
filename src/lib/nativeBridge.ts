@@ -514,6 +514,7 @@ async function upsertPrayerLogWithHabitSyncDirect(
     habitId: string;
     date: string;
     status: 'done' | 'late';
+    userId?: string;
   }
 ) {
   const nowIso = new Date().toISOString();
@@ -549,6 +550,7 @@ async function upsertPrayerLogWithHabitSyncDirect(
         date: input.date,
         status: input.status,
         prayed_at: nowIso,
+        ...(input.userId ? { user_id: input.userId } : {})
       })
       .select('id')
       .single();
@@ -585,6 +587,7 @@ async function upsertPrayerLogWithHabitSyncDirect(
         date: input.date,
         completed,
         source: 'prayer',
+        ...(input.userId ? { user_id: input.userId } : {})
       })
       .select('id')
       .single();
@@ -621,6 +624,15 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
     }
 
     console.log(`[LocalNotifications] Action "${actionId}"`, JSON.stringify(extra));
+
+    // Ensure session is loaded before queries run
+    let userId: string | undefined;
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      userId = session?.user?.id;
+    } catch (e) {
+      console.error('[Notif] Failed to get user session:', e);
+    }
 
     // TASK: Done or Postpone 1h
     if (extra.taskId) {
@@ -678,7 +690,8 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
                 habit_id: extra.habitId,
                 date: dateOnly,
                 completed: true,
-                completed_at: new Date().toISOString()
+                completed_at: new Date().toISOString(),
+                ...(userId ? { user_id: userId } : {})
               });
           }
 
@@ -713,6 +726,7 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
             habitId: extra.habitId,
             date: extra.date,
             status: actionId as 'done' | 'late',
+            userId
           });
 
           void queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });

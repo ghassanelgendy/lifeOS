@@ -211,7 +211,7 @@ export function useTasks() {
       try {
         const q = supabase
           .from('tasks')
-          .select('*')
+          .select('*, subtasks:tasks(id, is_completed)')
           .is('parent_id', null)
           .order('is_completed', { ascending: true })
           .order('due_date', { ascending: true, nullsFirst: false });
@@ -236,7 +236,7 @@ export function useTasksByList(listId: string) {
   return useQuery({
     queryKey: [...TASKS_KEY, 'list', listId, user?.id],
     queryFn: async () => {
-      const q = supabase.from('tasks').select('*').eq('list_id', listId).is('parent_id', null);
+      const q = supabase.from('tasks').select('*, subtasks:tasks(id, is_completed)').eq('list_id', listId).is('parent_id', null);
       if (user?.id) q.eq('user_id', user.id);
       const { data, error } = await q;
       if (error) throw error;
@@ -251,7 +251,7 @@ export function useTasksByProject(projectId: string) {
   return useQuery({
     queryKey: [...TASKS_KEY, 'project', projectId, user?.id],
     queryFn: async () => {
-      const q = supabase.from('tasks').select('*').eq('project_id', projectId).is('parent_id', null);
+      const q = supabase.from('tasks').select('*, subtasks:tasks(id, is_completed)').eq('project_id', projectId).is('parent_id', null);
       if (user?.id) q.eq('user_id', user.id);
       const { data, error } = await q;
       if (error) throw error;
@@ -266,7 +266,7 @@ export function useTasksByTag(tagId: string) {
   return useQuery({
     queryKey: [...TASKS_KEY, 'tag', tagId, user?.id],
     queryFn: async () => {
-      const q = supabase.from('tasks').select('*').contains('tag_ids', [tagId]).is('parent_id', null);
+      const q = supabase.from('tasks').select('*, subtasks:tasks(id, is_completed)').contains('tag_ids', [tagId]).is('parent_id', null);
       if (user?.id) q.eq('user_id', user.id);
       const { data, error } = await q;
       if (error) throw error;
@@ -284,7 +284,7 @@ export function useOverdueTasks() {
       const today = new Date().toISOString().split('T')[0];
       const q = supabase
         .from('tasks')
-        .select('*')
+        .select('*, subtasks:tasks(id, is_completed)')
         .lt('due_date', today)
         .eq('is_completed', false)
         .is('parent_id', null);
@@ -305,7 +305,7 @@ export function useTodayTasks() {
       const today = new Date().toISOString().split('T')[0];
       const q = supabase
         .from('tasks')
-        .select('*')
+        .select('*, subtasks:tasks(id, is_completed)')
         .eq('due_date', today)
         .eq('is_completed', false)
         .is('parent_id', null);
@@ -330,7 +330,7 @@ export function useUpcomingTasks(days: number = 7) {
       const end = toDateOnly(future);
       const q = supabase
         .from('tasks')
-        .select('*')
+        .select('*, subtasks:tasks(id, is_completed)')
         .gte('due_date', start)
         .lte('due_date', end)
         .eq('is_completed', false)
@@ -360,7 +360,7 @@ export function useWeekTasks() {
       sunday.setHours(23, 59, 59, 999);
       const q = supabase
         .from('tasks')
-        .select('*')
+        .select('*, subtasks:tasks(id, is_completed)')
         .gte('due_date', toDateOnly(monday))
         .lte('due_date', toDateOnly(sunday))
         .eq('is_completed', false)
@@ -381,7 +381,7 @@ export function useCompletedTasks() {
     queryFn: async () => {
       const q = supabase
         .from('tasks')
-        .select('*')
+        .select('*, subtasks:tasks(id, is_completed)')
         .eq('is_completed', true)
         .is('parent_id', null)
         .order('completed_at', { ascending: false })
@@ -532,13 +532,25 @@ export function useToggleTask() {
         const newCompleted = !task.is_completed;
         const payload = { is_completed: newCompleted, is_wont_do: false, completed_at: newCompleted ? new Date().toISOString() : null };
         addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload });
-        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) =>
-          (old ?? []).map((t) =>
+        
+        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => {
+          let list = (old ?? []).map((t) =>
             t.id === id ? { ...t, ...payload, updated_at: new Date().toISOString() } : t
-          )
-        );
+          );
+          const updatedT = list.find(t => t.id === id);
+          if (updatedT?.parent_id) {
+            const siblings = list.filter(t => t.parent_id === updatedT.parent_id);
+            const allDone = siblings.length > 0 && siblings.every(s => s.is_completed);
+            list = list.map(t => t.id === updatedT.parent_id ? { ...t, is_completed: allDone, completed_at: allDone ? new Date().toISOString() : null } : t);
+          } else {
+            list = list.map(t => t.parent_id === id ? { ...t, is_completed: newCompleted, completed_at: newCompleted ? new Date().toISOString() : null } : t);
+          }
+          return list;
+        });
+
         return { ...task, ...payload } as Task;
       }
+
       const { data: task } = await supabase
         .from('tasks')
         .select('*')
@@ -546,6 +558,23 @@ export function useToggleTask() {
         .single();
       if (!task) throw new Error('Task not found');
       const newCompleted = !task.is_completed;
+
+      if (!task.parent_id) {
+        const { data: subtasks } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('parent_id', id);
+        if (subtasks && subtasks.length > 0) {
+          await supabase
+            .from('tasks')
+            .update({
+              is_completed: newCompleted,
+              completed_at: newCompleted ? new Date().toISOString() : null,
+            })
+            .in('id', subtasks.map((s: any) => s.id));
+        }
+      }
+
       const { data: updated, error } = await supabase
         .from('tasks')
         .update({
@@ -559,6 +588,21 @@ export function useToggleTask() {
       if (error) throw error;
 
       const updatedTask = updated as Task;
+
+      if (updatedTask.parent_id) {
+        const { data: siblings } = await supabase
+          .from('tasks')
+          .select('id, is_completed')
+          .eq('parent_id', updatedTask.parent_id);
+        const allCompleted = siblings && siblings.length > 0 && siblings.every((s: any) => s.is_completed);
+        await supabase
+          .from('tasks')
+          .update({
+            is_completed: allCompleted,
+            completed_at: allCompleted ? new Date().toISOString() : null,
+          })
+          .eq('id', updatedTask.parent_id);
+      }
       if (newCompleted && updatedTask.recurrence !== 'none') {
         const next = computeNextRecurrence(updatedTask);
         if (next) {

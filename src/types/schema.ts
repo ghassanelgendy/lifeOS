@@ -345,6 +345,7 @@ export interface Task {
   // Subtasks
   parent_id?: string; // FK to parent Task (for subtasks)
   subtask_order?: number;
+  subtasks?: Array<{ id: string; is_completed: boolean }>;
   // Integrations
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;

@@ -30,7 +30,7 @@ export function usePushNotifications() {
       return getNotificationPermission();
     },
     initialData: () => {
-      if (isNative) return 'default' as NotificationPermission;
+      if (isNative) return undefined;
       return typeof Notification !== 'undefined' ? Notification.permission : ('denied' as NotificationPermission);
     },
     staleTime: 60_000,

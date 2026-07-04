@@ -17,6 +17,7 @@ import { useHabits, useTodayHabitLogs } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { usePushNotifications } from './hooks/usePushNotifications';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
 import { FaviconSync } from './components/FaviconSync';
@@ -45,6 +46,9 @@ const persister = createSyncStoragePersister({
   throttleTime: 1000,
 });
 const PERSIST_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+// Wire up notification quick-action listeners as early as possible on app bundle load
+setupNotificationActionListeners(supabase, queryClient);
 
 function ProtectedRoute() {
   const { user, loading } = useAuth();
@@ -88,6 +92,7 @@ function AppInner() {
   const { data: habits } = useHabits();
   const { data: events } = useCalendarEvents();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+  const { isEnabled: isPushEnabled } = usePushNotifications();
 
   const lat = useUIStore((s) => s.prayerLatitude);
   const lng = useUIStore((s) => s.prayerLongitude);
@@ -136,16 +141,13 @@ function AppInner() {
       todayHabitLogs,
       todayPrayerLogs
     );
-  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs]);
+  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();
     
     // Initialize native features (Keyboard, Badge, Splash Screen, Notification Permissions)
     void initializeNativeApp();
-
-    // Wire up notification quick-action listeners (Done, Postpone, Snooze, Late)
-    setupNotificationActionListeners(supabase, queryClient);
     
     // Check and apply OTA updates on app startup (native platforms only)
     void checkAndApplyUpdates();
