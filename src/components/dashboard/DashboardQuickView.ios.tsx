@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
@@ -513,6 +514,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             window.clearTimeout(longPressTimeout.current);
             longPressTimeout.current = null;
           }
+          pressEntryRef.current = null;
         }
       }
       return;
@@ -521,18 +523,24 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     e.preventDefault();
     const elem = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elem) {
-      hoveredMenuActionRef.current = null;
-      setHoveredMenuAction(null);
+      if (hoveredMenuActionRef.current !== null) {
+        hoveredMenuActionRef.current = null;
+        setHoveredMenuAction(null);
+      }
       return;
     }
     const btn = elem.closest('[data-menu-action]');
     if (btn) {
       const action = btn.getAttribute('data-menu-action');
-      hoveredMenuActionRef.current = action;
-      setHoveredMenuAction(action);
+      if (hoveredMenuActionRef.current !== action) {
+        hoveredMenuActionRef.current = action;
+        setHoveredMenuAction(action);
+      }
     } else {
-      hoveredMenuActionRef.current = null;
-      setHoveredMenuAction(null);
+      if (hoveredMenuActionRef.current !== null) {
+        hoveredMenuActionRef.current = null;
+        setHoveredMenuAction(null);
+      }
     }
   };
 
@@ -1597,7 +1605,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           const title = contextMenuEntry.title || contextMenuEntry.label || '';
           const description = contextMenuEntry.description || '';
 
-          return (
+          return createPortal(
             <div data-context-menu="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
               <motion.div
                 initial={{ opacity: 0 }}
@@ -1716,7 +1724,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   )}
                 </div>
               </motion.div>
-            </div>
+            </div>,
+            document.body
           );
         })()}
       </AnimatePresence>

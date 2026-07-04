@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Plus,
   Calendar as CalendarIcon,
@@ -291,6 +292,7 @@ export default function Tasks() {
             window.clearTimeout(longPressTimeout.current);
             longPressTimeout.current = null;
           }
+          pressTaskRef.current = null;
         }
       }
       return;
@@ -300,18 +302,24 @@ export default function Tasks() {
     e.preventDefault();
     const elem = document.elementFromPoint(touch.clientX, touch.clientY);
     if (!elem) {
-      hoveredMenuActionRef.current = null;
-      setHoveredMenuAction(null);
+      if (hoveredMenuActionRef.current !== null) {
+        hoveredMenuActionRef.current = null;
+        setHoveredMenuAction(null);
+      }
       return;
     }
     const btn = elem.closest('[data-menu-action]');
     if (btn) {
       const action = btn.getAttribute('data-menu-action');
-      hoveredMenuActionRef.current = action;
-      setHoveredMenuAction(action);
+      if (hoveredMenuActionRef.current !== action) {
+        hoveredMenuActionRef.current = action;
+        setHoveredMenuAction(action);
+      }
     } else {
-      hoveredMenuActionRef.current = null;
-      setHoveredMenuAction(null);
+      if (hoveredMenuActionRef.current !== null) {
+        hoveredMenuActionRef.current = null;
+        setHoveredMenuAction(null);
+      }
     }
   };
 
@@ -2864,7 +2872,7 @@ export default function Tasks() {
 
       {/* 3D Haptic Touch Context Menu Overlay */}
       <AnimatePresence>
-        {contextMenuTask && (
+        {contextMenuTask && createPortal(
           <div data-context-menu="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop with premium blur and fade-in */}
             <motion.div
@@ -3048,7 +3056,8 @@ export default function Tasks() {
                 )}
               </div>
             </motion.div>
-          </div>
+          </div>,
+          document.body
         )}
       </AnimatePresence>
     </div>
