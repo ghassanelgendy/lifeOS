@@ -8,6 +8,17 @@ const CURRENT_VERSION_KEY = 'lifeos_local_ota_version';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VERSION_URL = `${SUPABASE_URL}/storage/v1/object/public/app-updates/version.json`;
 
+function resolveOtaBundleUrl(url: string): string | null {
+  const raw = url.trim();
+  if (!raw) return null;
+
+  try {
+    return new URL(raw, VERSION_URL).toString();
+  } catch {
+    return null;
+  }
+}
+
 export async function checkAndApplyUpdates() {
   if (!Capacitor.isNativePlatform()) return;
 
@@ -35,17 +46,23 @@ export async function checkAndApplyUpdates() {
     addSystemLog(`OTA check: Latest version = ${latest?.version}, Local version = ${currentVersion}`, 'info');
 
     if (latest && latest.version && latest.url && latest.version !== currentVersion) {
+      const bundleUrl = resolveOtaBundleUrl(latest.url);
+      if (!bundleUrl) {
+        addSystemLog(`OTA check: Invalid bundle URL in manifest: ${String(latest.url)}`, 'error');
+        return;
+      }
+
       addSystemLog(`OTA check: New update found (${latest.version}). Downloading...`, 'info');
       
       // 3. Download the zip bundle
       const updateBundle = await CapacitorUpdater.download({
-        url: latest.url,
+        url: bundleUrl,
         version: latest.version,
       });
       addSystemLog(`OTA check: Download completed. Setting active bundle...`, 'info');
 
       // 4. Set the new version as active, which reloads the webview
-      await CapacitorUpdater.set(updateBundle);
+      await CapacitorUpdater.set({ id: updateBundle.id });
       
       // 5. Save the updated version locally
       localStorage.setItem(CURRENT_VERSION_KEY, latest.version);
