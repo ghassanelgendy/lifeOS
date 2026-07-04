@@ -222,6 +222,7 @@ export default function Tasks() {
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [listToDeleteId, setListToDeleteId] = useState<string | null>(null);
   const [tagToDeleteId, setTagToDeleteId] = useState<string | null>(null);
+  const [taskToDeleteId, setTaskToDeleteId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showWontDo, setShowWontDo] = useState(false);
   const listLongPressTimer = useRef<number | null>(null);
@@ -234,10 +235,12 @@ export default function Tasks() {
   // 3D Haptic Touch Context Menu State
   const [contextMenuTask, setContextMenuTask] = useState<Task | null>(null);
   const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
-  const hasMovedRef = useRef(false);
   const longPressTimeout = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const activeTouchId = useRef<number | null>(null);
+  const pressTaskRef = useRef<Task | null>(null);
+  const hoveredMenuActionRef = useRef<string | null>(null);
 
   const executeMenuAction = (action: string, task: Task) => {
     switch (action) {
@@ -268,120 +271,135 @@ export default function Tasks() {
       case 'delete':
         if (!task.id.startsWith('habit-')) {
           void triggerHaptics('heavy');
-          deleteTask.mutate(task.id);
+          setTaskToDeleteId(task.id);
         }
         break;
     }
   };
 
-  useEffect(() => {
-    if (contextMenuTask) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.overscrollBehavior = 'none';
-      hasMovedRef.current = false;
+  const handleGlobalTouchMove = (e: TouchEvent) => {
+    const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId.current);
+    if (!touch) return;
+
+    if (!isLongPressActive.current) {
+      if (touchStartPos.current) {
+        const dx = touch.clientX - touchStartPos.current.x;
+        const dy = touch.clientY - touchStartPos.current.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 15) {
+          if (longPressTimeout.current) {
+            window.clearTimeout(longPressTimeout.current);
+            longPressTimeout.current = null;
+          }
+        }
+      }
+      return;
+    }
+
+    // Long press is active, track element under finger
+    e.preventDefault();
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!elem) {
+      hoveredMenuActionRef.current = null;
       setHoveredMenuAction(null);
-
-      const handleTouchMoveGlobal = (e: TouchEvent) => {
-        // Prevent default scrolling/pull-to-refresh
-        e.preventDefault();
-
-        const touch = e.touches[0];
-
-        // Track displacement to set hasMovedRef
-        if (touchStartPos.current) {
-          const dx = touch.clientX - touchStartPos.current.x;
-          const dy = touch.clientY - touchStartPos.current.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist > 15) {
-            hasMovedRef.current = true;
-          }
-        }
-
-        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (!elem) {
-          setHoveredMenuAction(null);
-          return;
-        }
-        const btn = elem.closest('[data-menu-action]');
-        if (btn) {
-          const action = btn.getAttribute('data-menu-action');
-          setHoveredMenuAction(action);
-        } else {
-          setHoveredMenuAction(null);
-        }
-      };
-
-      const handleTouchEndGlobal = (e: TouchEvent) => {
-        const touch = e.changedTouches[0];
-        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
-        const btn = elem?.closest('[data-menu-action]');
-        const action = btn?.getAttribute('data-menu-action');
-
-        if (action) {
-          e.preventDefault();
-          e.stopPropagation();
-          executeMenuAction(action, contextMenuTask);
-          setContextMenuTask(null);
-          setHoveredMenuAction(null);
-        } else {
-          // If we released outside any button:
-          // Check if we dragged/slid or if we tapped outside the menu container
-          const isOutside = !elem?.closest('[data-context-menu-container="true"]');
-          if (hasMovedRef.current || isOutside) {
-            e.preventDefault();
-            e.stopPropagation();
-            setContextMenuTask(null);
-            setHoveredMenuAction(null);
-          }
-        }
-      };
-
-      document.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false });
-      document.addEventListener('touchend', handleTouchEndGlobal, { passive: false });
-
-      return () => {
-        document.body.style.overflow = '';
-        document.body.style.overscrollBehavior = '';
-        document.removeEventListener('touchmove', handleTouchMoveGlobal);
-        document.removeEventListener('touchend', handleTouchEndGlobal);
-      };
+      return;
     }
-  }, [contextMenuTask]);
-
-  const startPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
-    isLongPressActive.current = false;
-    if (e.type === 'touchstart') {
-      const te = e as React.TouchEvent;
-      touchStartPos.current = {
-        x: te.touches[0].clientX,
-        y: te.touches[0].clientY,
-      };
+    const btn = elem.closest('[data-menu-action]');
+    if (btn) {
+      const action = btn.getAttribute('data-menu-action');
+      hoveredMenuActionRef.current = action;
+      setHoveredMenuAction(action);
     } else {
-      touchStartPos.current = null;
+      hoveredMenuActionRef.current = null;
+      setHoveredMenuAction(null);
     }
-
-    if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
-    longPressTimeout.current = window.setTimeout(() => {
-      isLongPressActive.current = true;
-      void triggerHaptics('medium');
-      setContextMenuTask(task);
-    }, 450);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartPos.current || !longPressTimeout.current) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStartPos.current.x;
-    const dy = touch.clientY - touchStartPos.current.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    // If scrolled more than 10px, cancel the context menu trigger
-    if (distance > 10) {
+  const handleGlobalTouchEnd = (e: TouchEvent) => {
+    const endedTouch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId.current);
+    if (!endedTouch) return;
+
+    // Clean up listeners
+    document.removeEventListener('touchmove', handleGlobalTouchMove);
+    document.removeEventListener('touchend', handleGlobalTouchEnd);
+    document.removeEventListener('touchcancel', handleGlobalTouchEnd);
+
+    if (longPressTimeout.current) {
       window.clearTimeout(longPressTimeout.current);
       longPressTimeout.current = null;
     }
+
+    const wasLongPress = isLongPressActive.current;
+    if (wasLongPress) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressActive.current = false;
+
+      const action = hoveredMenuActionRef.current;
+      const task = pressTaskRef.current;
+      if (action && task) {
+        executeMenuAction(action, task);
+        setContextMenuTask(null);
+        setHoveredMenuAction(null);
+      } else {
+        const elem = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
+        const isOutside = !elem?.closest('[data-context-menu-container="true"]');
+        if (isOutside) {
+          setContextMenuTask(null);
+          setHoveredMenuAction(null);
+        }
+      }
+      activeTouchId.current = null;
+      return;
+    }
+
+    // Normal tap: triggered if user released before long-press timeout
+    if (pressTaskRef.current) {
+      const task = pressTaskRef.current;
+      const isHabitTask = task.id.startsWith('habit-');
+      if (!isHabitTask) {
+        void triggerLightTap();
+        handleEditTask(task);
+      }
+    }
+    activeTouchId.current = null;
   };
 
-  const endPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
+  const startPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
+    isLongPressActive.current = false;
+    pressTaskRef.current = task;
+    hoveredMenuActionRef.current = null;
+    setHoveredMenuAction(null);
+
+    if (e.type === 'touchstart') {
+      const te = e as React.TouchEvent;
+      const touch = te.touches[0];
+      activeTouchId.current = touch.identifier;
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+
+      if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = window.setTimeout(() => {
+        isLongPressActive.current = true;
+        void triggerHaptics('medium');
+        setContextMenuTask(task);
+      }, 450);
+
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+      document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
+      document.addEventListener('touchcancel', handleGlobalTouchEnd, { passive: false });
+    } else {
+      // Mouse events
+      touchStartPos.current = null;
+      if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = window.setTimeout(() => {
+        isLongPressActive.current = true;
+        void triggerHaptics('medium');
+        setContextMenuTask(task);
+      }, 450);
+    }
+  };
+
+  const endPressMouse = (task: Task, e: React.MouseEvent) => {
     if (longPressTimeout.current) {
       window.clearTimeout(longPressTimeout.current);
       longPressTimeout.current = null;
@@ -392,13 +410,23 @@ export default function Tasks() {
       isLongPressActive.current = false;
       return;
     }
-    // Normal tap action
     const isHabitTask = task.id.startsWith('habit-');
     if (!isHabitTask) {
       void triggerLightTap();
       handleEditTask(task);
     }
   };
+
+  useEffect(() => {
+    if (contextMenuTask) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.overscrollBehavior = '';
+      };
+    }
+  }, [contextMenuTask]);
 
   const TAGS_VISIBLE_COLLAPSED = 4;
   const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
@@ -2428,7 +2456,7 @@ export default function Tasks() {
                             e.stopPropagation();
                           }}
                           onMouseDown={(e) => startPress(task, e)}
-                          onMouseUp={(e) => endPress(task, e)}
+                          onMouseUp={(e) => endPressMouse(task, e)}
                           onMouseLeave={() => {
                             if (longPressTimeout.current) {
                               window.clearTimeout(longPressTimeout.current);
@@ -2436,14 +2464,6 @@ export default function Tasks() {
                             }
                           }}
                           onTouchStart={(e) => startPress(task, e)}
-                          onTouchMove={handleTouchMove}
-                          onTouchEnd={(e) => endPress(task, e)}
-                          onTouchCancel={() => {
-                            if (longPressTimeout.current) {
-                              window.clearTimeout(longPressTimeout.current);
-                              longPressTimeout.current = null;
-                            }
-                          }}
                           className="w-full"
                         >
                           <TaskItem
@@ -2454,7 +2474,7 @@ export default function Tasks() {
                               if (!isHabitTask) handleEditTask(task);
                             }}
                             onDelete={() => {
-                              if (!isHabitTask) deleteTask.mutate(task.id);
+                              if (!isHabitTask) setTaskToDeleteId(task.id);
                             }}
                             onWontDo={() => {
                               if (!isHabitTask) handleMarkWontDo(task);
@@ -2519,7 +2539,7 @@ export default function Tasks() {
                                 e.stopPropagation();
                               }}
                               onMouseDown={(e) => startPress(task, e)}
-                              onMouseUp={(e) => endPress(task, e)}
+                              onMouseUp={(e) => endPressMouse(task, e)}
                               onMouseLeave={() => {
                                 if (longPressTimeout.current) {
                                   window.clearTimeout(longPressTimeout.current);
@@ -2527,14 +2547,6 @@ export default function Tasks() {
                                 }
                               }}
                               onTouchStart={(e) => startPress(task, e)}
-                              onTouchMove={handleTouchMove}
-                              onTouchEnd={(e) => endPress(task, e)}
-                              onTouchCancel={() => {
-                                if (longPressTimeout.current) {
-                                  window.clearTimeout(longPressTimeout.current);
-                                  longPressTimeout.current = null;
-                                }
-                              }}
                               className="w-full"
                             >
                               <TaskItem
@@ -2545,7 +2557,7 @@ export default function Tasks() {
                                   if (!isHabitTask) handleEditTask(task);
                                 }}
                                 onDelete={() => {
-                                  if (!isHabitTask) deleteTask.mutate(task.id);
+                                  if (!isHabitTask) setTaskToDeleteId(task.id);
                                 }}
                                 onWontDo={() => {
                                   if (!isHabitTask) handleMarkWontDo(task);
@@ -2597,7 +2609,7 @@ export default function Tasks() {
                                 e.stopPropagation();
                               }}
                               onMouseDown={(e) => startPress(task, e)}
-                              onMouseUp={(e) => endPress(task, e)}
+                              onMouseUp={(e) => endPressMouse(task, e)}
                               onMouseLeave={() => {
                                 if (longPressTimeout.current) {
                                   window.clearTimeout(longPressTimeout.current);
@@ -2605,14 +2617,6 @@ export default function Tasks() {
                                 }
                               }}
                               onTouchStart={(e) => startPress(task, e)}
-                              onTouchMove={handleTouchMove}
-                              onTouchEnd={(e) => endPress(task, e)}
-                              onTouchCancel={() => {
-                                if (longPressTimeout.current) {
-                                  window.clearTimeout(longPressTimeout.current);
-                                  longPressTimeout.current = null;
-                                }
-                              }}
                               className="w-full"
                             >
                               <TaskItem
@@ -2623,7 +2627,7 @@ export default function Tasks() {
                                   if (!isHabitTask) handleEditTask(task);
                                 }}
                                 onDelete={() => {
-                                  if (!isHabitTask) deleteTask.mutate(task.id);
+                                  if (!isHabitTask) setTaskToDeleteId(task.id);
                                 }}
                                 onWontDo={() => {
                                   if (!isHabitTask) handleMarkWontDo(task);
@@ -2841,6 +2845,22 @@ export default function Tasks() {
         }}
         isLoading={deleteTag.isPending}
       />
+      <ConfirmSheet
+        isOpen={!!taskToDeleteId}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete"
+        onCancel={() => setTaskToDeleteId(null)}
+        onConfirm={() => {
+          if (!taskToDeleteId) return;
+          deleteTask.mutate(taskToDeleteId, {
+            onSuccess: () => {
+              setTaskToDeleteId(null);
+            },
+          });
+        }}
+        isLoading={deleteTask.isPending}
+      />
 
       {/* 3D Haptic Touch Context Menu Overlay */}
       <AnimatePresence>
@@ -3014,7 +3034,7 @@ export default function Tasks() {
                     data-menu-action="delete"
                     onClick={() => {
                       void triggerHaptics('heavy');
-                      deleteTask.mutate(contextMenuTask.id);
+                      setTaskToDeleteId(contextMenuTask.id);
                       setContextMenuTask(null);
                     }}
                     className={cn(
