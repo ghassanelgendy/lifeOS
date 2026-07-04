@@ -1077,7 +1077,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <Card
-              className="p-4 flex flex-col justify-center rounded-xl"
+              className="p-4 flex flex-col justify-center rounded-xl h-full"
               style={{
                 backgroundColor: 'var(--colorNeutralBackground3)',
                 borderColor: 'var(--colorNeutralStroke1)',
@@ -1085,17 +1085,17 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 borderStyle: 'solid'
               }}
             >
-              <Text size={200} weight="semibold" className="uppercase text-muted-foreground truncate">
+              <p className="text-xs font-semibold uppercase text-muted-foreground truncate m-0">
                 Due Today
-              </Text>
-              <Text className="text-3xl font-black mt-2 text-brand-primary tabular-nums">
+              </p>
+              <p className="text-3xl font-black mt-2 mb-0 text-brand-primary tabular-nums">
                 {dueTodayBundleCount}
-              </Text>
+              </p>
             </Card>
 
-            <Link to="/habits" className="no-underline">
+            <Link to="/habits" className="flex flex-col h-full no-underline">
               <Card
-                className="p-4 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
+                className="p-4 flex-1 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
                 style={{
                   backgroundColor: 'var(--colorNeutralBackground3)',
                   borderColor: 'var(--colorNeutralStroke1)',
@@ -1103,20 +1103,20 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   borderStyle: 'solid'
                 }}
               >
-                <Text size={200} weight="semibold" className="uppercase text-muted-foreground flex items-center gap-1.5 truncate">
+                <p className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate m-0">
                   <Fire24Regular className="text-orange-500 w-4 h-4 shrink-0" />
                   Habits
-                </Text>
-                <Text className="text-3xl font-black mt-2 tabular-nums">
+                </p>
+                <p className="text-3xl font-black mt-2 mb-0 text-foreground tabular-nums">
                   {todayHabitCompleted}
-                  <span className="text-lg font-medium text-muted-foreground ml-1">/ {todayHabitTotal}</span>
-                </Text>
+                  <span className="text-muted-foreground ml-1">/ {todayHabitTotal}</span>
+                </p>
               </Card>
             </Link>
 
-            <Link to="/screentime" className="no-underline">
+            <Link to="/screentime" className="flex flex-col h-full no-underline">
               <Card
-                className="p-4 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
+                className="p-4 flex-1 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
                 style={{
                   backgroundColor: 'var(--colorNeutralBackground3)',
                   borderColor: 'var(--colorNeutralStroke1)',
@@ -1124,19 +1124,19 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   borderStyle: 'solid'
                 }}
               >
-                <Text size={200} weight="semibold" className="uppercase text-muted-foreground flex items-center gap-1.5 truncate">
+                <p className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate m-0">
                   <Desktop24Regular className="text-sky-500 w-4 h-4 shrink-0" />
                   Screen
-                </Text>
-                <Text className={cn('text-3xl font-black mt-2 tabular-nums', privacyMode && 'blur-sm')}>
+                </p>
+                <p className={cn('text-3xl font-black mt-2 mb-0 text-foreground tabular-nums', privacyMode && 'blur-sm')}>
                   {screenLabel}
-                </Text>
+                </p>
               </Card>
             </Link>
 
-            <Link to="/sleep" className="no-underline">
+            <Link to="/sleep" className="flex flex-col h-full no-underline">
               <Card
-                className="p-4 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
+                className="p-4 flex-1 flex flex-col justify-center rounded-xl hover:bg-neutral-hover/10 transition-colors duration-150"
                 style={{
                   backgroundColor: 'var(--colorNeutralBackground3)',
                   borderColor: 'var(--colorNeutralStroke1)',
@@ -1144,13 +1144,13 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   borderStyle: 'solid'
                 }}
               >
-                <Text size={200} weight="semibold" className="uppercase text-muted-foreground flex items-center gap-1.5 truncate">
+                <p className="text-xs font-semibold uppercase text-muted-foreground flex items-center gap-1.5 truncate m-0">
                   <WeatherMoon24Regular className="text-indigo-400 w-4 h-4 shrink-0" />
                   Sleep
-                </Text>
-                <Text className={cn('text-3xl font-black mt-2 tabular-nums', privacyMode && 'blur-sm')}>
+                </p>
+                <p className={cn('text-3xl font-black mt-2 mb-0 text-foreground tabular-nums', privacyMode && 'blur-sm')}>
                   {formatSleepMinutes(lastNightSleep)}
-                </Text>
+                </p>
               </Card>
             </Link>
           </div>

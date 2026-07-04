@@ -1069,7 +1069,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             </p>
             <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1">
               {todayHabitCompleted}
-              <span className="text-base sm:text-lg font-medium text-muted-foreground/60 ml-1">/ {todayHabitTotal}</span>
+              <span className="text-muted-foreground/60 ml-1">/ {todayHabitTotal}</span>
             </p>
           </Link>
           <Link to="/screentime" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
