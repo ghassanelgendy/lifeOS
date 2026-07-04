@@ -71,7 +71,7 @@ function ThemeSync() {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
 
-    const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && import.meta.env.MODE === 'pake');
+    const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
 
     if (isPake) {
       document.documentElement.classList.add('pake-platform');

@@ -49,7 +49,7 @@ export function DetailsSheet({
   confirmDisabledRef.current = confirmDisabled;
 
   const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
-  const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && import.meta.env.MODE === 'pake');
+  const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
 
