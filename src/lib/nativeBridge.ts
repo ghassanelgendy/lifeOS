@@ -8,6 +8,7 @@ import { Share } from '@capacitor/share';
 import { Badge } from '@capawesome/capacitor-badge';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Coordinates, CalculationMethod, PrayerTimes, Madhab } from 'adhan';
+import { addSystemLog } from './logger';
 
 // Trigger device haptics
 export async function triggerHaptics(style: 'light' | 'medium' | 'heavy' | 'success' | 'error' = 'medium') {
@@ -67,6 +68,7 @@ export async function syncStatusBar(theme: 'light' | 'dark') {
 export async function initializeNativeApp() {
   if (!Capacitor.isNativePlatform()) return;
   try {
+    addSystemLog('initializeNativeApp: Starting native app initialization', 'info');
     // 1. Hide Keyboard Accessory Bar (prevents the gray 'prev/next/done' bar on iOS)
     try {
       await Keyboard.setAccessoryBarVisible({ visible: false });
@@ -83,8 +85,10 @@ export async function initializeNativeApp() {
 
     // 3. Request Local Notifications permission once at startup
     const notifPermissions = await LocalNotifications.checkPermissions();
+    addSystemLog(`initializeNativeApp: checkPermissions display = ${notifPermissions.display}`, 'info');
     if (notifPermissions.display !== 'granted') {
-      await LocalNotifications.requestPermissions();
+      const req = await LocalNotifications.requestPermissions();
+      addSystemLog(`initializeNativeApp: requestPermissions display = ${req.display}`, 'info');
     }
 
     // 4. Register notification action types for quick-action long-press on iOS/Android
@@ -116,10 +120,12 @@ export async function initializeNativeApp() {
         },
       ],
     });
+    addSystemLog('initializeNativeApp: Action types registered successfully', 'info');
 
     // 5. Hide splash screen after app is fully loaded
     await SplashScreen.hide();
-  } catch (e) {
+  } catch (e: any) {
+    addSystemLog(`initializeNativeApp failed: ${e?.message || e}`, 'error');
     console.error('Native initialization failed', e);
   }
 }
@@ -233,10 +239,9 @@ export async function syncAllLocalNotifications(
 ) {
   if (!Capacitor.isNativePlatform()) return;
   try {
-    // Permission is requested once at app startup (initializeNativeApp).
-    // Here we only check — if not yet granted we bail silently.
     const hasPermission = await LocalNotifications.checkPermissions();
     if (hasPermission.display !== 'granted') {
+      addSystemLog(`syncAllLocalNotifications: Notification permission not granted (status = ${hasPermission.display}). Skipping sync.`, 'warn');
       console.warn('[LocalNotifications] Permission not granted – skipping sync');
       return;
     }
@@ -420,20 +425,16 @@ export async function syncAllLocalNotifications(
     upcomingList.push(...prayerAlerts.slice(0, 14));
 
     const finalUpcoming = upcomingList.sort((a, b) => a.at.getTime() - b.at.getTime());
-    const upcomingIds = new Set(finalUpcoming.map((n) => n.id));
 
-    const cancelIds = pending.notifications
-      .filter((n) => !upcomingIds.has(n.id))
-      .map((n) => ({ id: n.id }));
-
-    if (cancelIds.length > 0) {
-      await LocalNotifications.cancel({ notifications: cancelIds });
+    // Clear all pending notifications first to prevent stale dates/rescheduling bugs
+    if (pending.notifications.length > 0) {
+      const idsToCancel = pending.notifications.map((n) => ({ id: n.id }));
+      await LocalNotifications.cancel({ notifications: idsToCancel });
     }
 
-    const scheduleList = finalUpcoming.filter((n) => !pendingIds.has(n.id));
-    if (scheduleList.length > 0) {
+    if (finalUpcoming.length > 0) {
       await LocalNotifications.schedule({
-        notifications: scheduleList.map((n) => ({
+        notifications: finalUpcoming.map((n) => ({
           id: n.id,
           title: n.title,
           body: n.body,
@@ -443,9 +444,13 @@ export async function syncAllLocalNotifications(
           ...(n.actionTypeId ? { actionTypeId: n.actionTypeId } : {})
         }))
       });
-      console.log(`[LocalNotifications] Synced ${finalUpcoming.length} active reminders (${scheduleList.length} new)`);
+      addSystemLog(`syncAllLocalNotifications: Successfully scheduled ${finalUpcoming.length} notifications (cleared ${pending.notifications.length} old ones)`, 'info');
+      console.log(`[LocalNotifications] Synced ${finalUpcoming.length} active reminders`);
+    } else {
+      addSystemLog(`syncAllLocalNotifications: No upcoming notifications to schedule (cleared ${pending.notifications.length} old ones)`, 'info');
     }
-  } catch (e) {
+  } catch (e: any) {
+    addSystemLog(`syncAllLocalNotifications failed: ${e?.message || e}`, 'error');
     console.error('[LocalNotifications] Sync failed:', e);
   }
 }
@@ -457,25 +462,27 @@ export async function sendTestNotification(): Promise<void> {
     return;
   }
   try {
+    addSystemLog('sendTestNotification: Starting test notification trigger', 'info');
     const perms = await LocalNotifications.checkPermissions();
     if (perms.display !== 'granted') {
-      await LocalNotifications.requestPermissions();
+      const req = await LocalNotifications.requestPermissions();
+      addSystemLog(`sendTestNotification: requestPermissions status = ${req.display}`, 'info');
     }
     const fireAt = new Date(Date.now() + 5000);
+    addSystemLog(`sendTestNotification: Scheduling test notification for ${fireAt.toISOString()}`, 'info');
     await LocalNotifications.schedule({
       notifications: [{
         id: 999999,
         title: 'Test Notification',
         body: 'lifeOS notifications are working!',
         schedule: { at: fireAt },
-        sound: 'default',
-        actionTypeId: 'task-actions',
+        sound: 'default'
       }]
     });
-    console.log('[LocalNotifications] Test notification scheduled for 5s from now');
-  } catch (e) {
-    console.error('[LocalNotifications] Test notification failed:', e);
-    throw e;
+    addSystemLog('sendTestNotification: Scheduled successfully', 'info');
+  } catch (e: any) {
+    addSystemLog(`sendTestNotification failed: ${e?.message || e}`, 'error');
+    console.error('Test notification failed', e);
   }
 }
 
@@ -490,6 +497,7 @@ export async function rescheduleNotificationSnooze(
 ): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
+    addSystemLog(`rescheduleNotificationSnooze: Snoozing notif id = ${id} by ${minutes} minutes`, 'info');
     const at = new Date(Date.now() + minutes * 60000);
     await LocalNotifications.schedule({
       notifications: [{ 
@@ -502,7 +510,8 @@ export async function rescheduleNotificationSnooze(
         ...(extra ? { extra } : {})
       }]
     });
-  } catch (e) {
+  } catch (e: any) {
+    addSystemLog(`rescheduleNotificationSnooze failed: ${e?.message || e}`, 'error');
     console.error('[LocalNotifications] Snooze failed:', e);
   }
 }
