@@ -9,6 +9,7 @@ import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { useTransactionsRealtime } from './hooks/useFinance';
+import { usePakeLocalNotifications } from './hooks/usePakeLocalNotifications';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
@@ -96,6 +97,7 @@ function ThemeSync() {
 
 function AppInner() {
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+  usePakeLocalNotifications(); // Run Pake local notifications engine in the background
   useEffect(() => {
     if (isOnline()) seedDatabase();
   }, []);

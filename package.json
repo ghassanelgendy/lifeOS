@@ -15,7 +15,7 @@
     "build": "vite build",
     "build:ios": "vite build --mode ios",
     "build:pake": "vite build --mode pake",
-    "pake:local": "pnpm build:pake && pnpm exec pake dist/index.html --name \"lifeOS\" --icon public/icon-main.ico --hide-title-bar --show-system-tray --inject scripts/pake-inject.js --iterative-build --use-local-file --debug && copy node_modules\\.pnpm\\pake-cli@3.13.0\\node_modules\\pake-cli\\src-tauri\\target\\x86_64-pc-windows-msvc\\debug\\pake-lifeos.exe lifeOS.exe",
+    "pake:local": "pnpm build:pake && pnpm exec pake dist/index.html --name \"lifeOS\" --icon public/icon-main.ico --hide-title-bar --show-system-tray --hide-on-close --inject scripts/pake-inject.js --iterative-build --use-local-file --debug && copy node_modules\\.pnpm\\pake-cli@3.13.0\\node_modules\\pake-cli\\src-tauri\\target\\x86_64-pc-windows-msvc\\debug\\pake-lifeos.exe lifeOS.exe",
     "lint": "eslint src",
     "preview": "vite preview",
     "test": "vitest run",
