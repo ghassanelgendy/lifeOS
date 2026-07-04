@@ -233,22 +233,117 @@ export default function Tasks() {
 
   // 3D Haptic Touch Context Menu State
   const [contextMenuTask, setContextMenuTask] = useState<Task | null>(null);
+  const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
+  const hasMovedRef = useRef(false);
   const longPressTimeout = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+
+  const executeMenuAction = (action: string, task: Task) => {
+    switch (action) {
+      case 'toggle':
+        void triggerHaptics(task.is_completed ? 'light' : 'success');
+        handleTaskToggle(task);
+        break;
+      case 'postpone':
+        if (!task.id.startsWith('habit-') && !!(task.due_date || task.due_time)) {
+          void triggerHaptics('light');
+          handlePostponeTask(task);
+        }
+        break;
+      case 'edit':
+        if (!task.id.startsWith('habit-')) {
+          void triggerHaptics('light');
+          setTimeout(() => {
+            handleEditTask(task);
+          }, 150);
+        }
+        break;
+      case 'wontdo':
+        if (!task.id.startsWith('habit-') && !task.is_completed && !(task.is_wont_do ?? (task.description || '').includes('[WONT_DO]'))) {
+          void triggerHaptics('light');
+          handleMarkWontDo(task);
+        }
+        break;
+      case 'delete':
+        if (!task.id.startsWith('habit-')) {
+          void triggerHaptics('heavy');
+          deleteTask.mutate(task.id);
+        }
+        break;
+    }
+  };
 
   useEffect(() => {
     if (contextMenuTask) {
       document.body.style.overflow = 'hidden';
       document.body.style.overscrollBehavior = 'none';
-      const preventDefault = (e: TouchEvent) => {
+      hasMovedRef.current = false;
+      setHoveredMenuAction(null);
+
+      const handleTouchMoveGlobal = (e: TouchEvent) => {
+        // Prevent default scrolling/pull-to-refresh
         e.preventDefault();
+
+        const touch = e.touches[0];
+
+        // Track displacement to set hasMovedRef
+        if (touchStartPos.current) {
+          const dx = touch.clientX - touchStartPos.current.x;
+          const dy = touch.clientY - touchStartPos.current.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist > 15) {
+            hasMovedRef.current = true;
+          }
+        }
+
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        if (!elem) {
+          setHoveredMenuAction(null);
+          return;
+        }
+        const btn = elem.closest('[data-menu-action]');
+        if (btn) {
+          const action = btn.getAttribute('data-menu-action');
+          setHoveredMenuAction(action);
+        } else {
+          setHoveredMenuAction(null);
+        }
       };
-      document.addEventListener('touchmove', preventDefault, { passive: false });
+
+      const handleTouchEndGlobal = (e: TouchEvent) => {
+        const touch = e.changedTouches[0];
+        const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+        const btn = elem?.closest('[data-menu-action]');
+        const action = btn?.getAttribute('data-menu-action');
+
+        if (action) {
+          e.preventDefault();
+          e.stopPropagation();
+          executeMenuAction(action, contextMenuTask);
+          setContextMenuTask(null);
+          setHoveredMenuAction(null);
+        } else {
+          // If we released outside any button:
+          // Check if we dragged/slid or if we tapped outside the menu container
+          const isOutside = !elem?.closest('[data-context-menu-container="true"]');
+          if (hasMovedRef.current || isOutside) {
+            e.preventDefault();
+            e.stopPropagation();
+            setContextMenuTask(null);
+            setHoveredMenuAction(null);
+          }
+        }
+      };
+
+      document.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false });
+      document.addEventListener('touchend', handleTouchEndGlobal, { passive: false });
+
       return () => {
         document.body.style.overflow = '';
         document.body.style.overscrollBehavior = '';
-        document.removeEventListener('touchmove', preventDefault);
+        document.removeEventListener('touchmove', handleTouchMoveGlobal);
+        document.removeEventListener('touchend', handleTouchEndGlobal);
       };
     }
   }, [contextMenuTask]);
@@ -2750,7 +2845,7 @@ export default function Tasks() {
       {/* 3D Haptic Touch Context Menu Overlay */}
       <AnimatePresence>
         {contextMenuTask && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div data-context-menu="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop with premium blur and fade-in */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -2765,6 +2860,7 @@ export default function Tasks() {
 
             {/* Menu Container */}
             <motion.div
+              data-context-menu-container="true"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 15 }}
@@ -2834,12 +2930,16 @@ export default function Tasks() {
                 {/* Complete / Reopen Action */}
                 <button
                   type="button"
+                  data-menu-action="toggle"
                   onClick={() => {
                     void triggerHaptics(contextMenuTask.is_completed ? 'light' : 'success');
                     handleTaskToggle(contextMenuTask);
                     setContextMenuTask(null);
                   }}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                  className={cn(
+                    "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                    hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                  )}
                 >
                   <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
                   <CheckCircle2 size={16} className="text-muted-foreground" />
@@ -2849,12 +2949,16 @@ export default function Tasks() {
                 {!contextMenuTask.id.startsWith('habit-') && !!(contextMenuTask.due_date || contextMenuTask.due_time) && (
                   <button
                     type="button"
+                    data-menu-action="postpone"
                     onClick={() => {
                       void triggerHaptics('light');
                       handlePostponeTask(contextMenuTask);
                       setContextMenuTask(null);
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                      hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                    )}
                   >
                     <span>Postpone 1 Hour</span>
                     <Clock size={16} className="text-muted-foreground" />
@@ -2865,6 +2969,7 @@ export default function Tasks() {
                 {!contextMenuTask.id.startsWith('habit-') && (
                   <button
                     type="button"
+                    data-menu-action="edit"
                     onClick={() => {
                       void triggerHaptics('light');
                       setContextMenuTask(null);
@@ -2872,7 +2977,10 @@ export default function Tasks() {
                         handleEditTask(contextMenuTask);
                       }, 150);
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                      hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                    )}
                   >
                     <span>Edit Details...</span>
                     <Edit2 size={16} className="text-muted-foreground" />
@@ -2883,12 +2991,16 @@ export default function Tasks() {
                 {!contextMenuTask.id.startsWith('habit-') && !contextMenuTask.is_completed && !(contextMenuTask.is_wont_do ?? (contextMenuTask.description || '').includes('[WONT_DO]')) && (
                   <button
                     type="button"
+                    data-menu-action="wontdo"
                     onClick={() => {
                       void triggerHaptics('light');
                       handleMarkWontDo(contextMenuTask);
                       setContextMenuTask(null);
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors"
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                      hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                    )}
                   >
                     <span>Won't Do</span>
                     <CircleSlash2 size={16} className="text-muted-foreground" />
@@ -2899,12 +3011,16 @@ export default function Tasks() {
                 {!contextMenuTask.id.startsWith('habit-') && (
                   <button
                     type="button"
+                    data-menu-action="delete"
                     onClick={() => {
                       void triggerHaptics('heavy');
                       deleteTask.mutate(contextMenuTask.id);
                       setContextMenuTask(null);
                     }}
-                    className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors"
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
+                      hoveredMenuAction === 'delete' && "bg-red-500/10"
+                    )}
                   >
                     <span>Delete Task</span>
                     <Trash2 size={16} className="text-red-500" />

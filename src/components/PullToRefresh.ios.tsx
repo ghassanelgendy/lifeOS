@@ -62,6 +62,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
         const handleTouchMove = (e: TouchEvent) => {
             if (startY === null) return;
             if (isRefreshing) return;
+            if (document.querySelector('[data-context-menu="true"]')) return;
 
             const currentY = e.touches[0].clientY;
             const diff = currentY - startY;
