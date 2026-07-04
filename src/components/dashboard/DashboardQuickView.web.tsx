@@ -718,6 +718,16 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             showToggle={lastPrayerCanTick}
             label={`Mark ${lastPrayerSlot.name} as prayed`}
             onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
+            onClick={() => onSelectEntry({
+              id: `prayer-${lastPrayerSlot.name}`,
+              title: `${lastPrayerSlot.name} prayer`,
+              label: `${lastPrayerSlot.name} prayer`,
+              kind: 'prayer',
+              done: lastPrayerDone,
+              prayerName: lastPrayerSlot.name,
+              prayedAt: lastPrayerTrackerItem?.prayedAt,
+              scheduledAt: lastPrayerSlot.time.toISOString(),
+            })}
           />
         </li>
       ),

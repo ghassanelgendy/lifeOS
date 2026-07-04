@@ -29,6 +29,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
+  const [sheetVisible, setSheetVisible] = useState(false);
   // ponytail: svh already excludes iOS keyboard — no JS tracking needed
 
   const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
@@ -62,50 +63,39 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
     };
 
     if (isOpen && !isPake) {
-      // Save current scroll position BEFORE any changes
-      scrollPositionRef.current = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
-      
-      // Lock body and html scroll while maintaining scroll position
+      setSheetVisible(false);
       document.addEventListener('keydown', handleEscape);
-      
-      const body = document.body;
-      const html = document.documentElement;
-      
-      // Store original styles
-      const originalBodyOverflow = body.style.overflow;
-      const originalBodyPosition = body.style.position;
-      const originalBodyTop = body.style.top;
-      const originalBodyLeft = body.style.left;
-      const originalBodyRight = body.style.right;
-      const originalBodyWidth = body.style.width;
-      const originalHtmlOverflow = html.style.overflow;
-      
-      // Lock scrolling - prevent scroll jump by fixing position
-      const scrollY = window.scrollY;
-      body.style.position = 'fixed';
-      body.style.top = `-${scrollY}px`;
-      body.style.left = '0';
-      body.style.right = '0';
-      body.style.width = '100%';
-      body.style.overflow = 'hidden';
-      html.style.overflow = 'hidden';
+
+      const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
+      if (scrollRoot) {
+        scrollPositionRef.current = scrollRoot.scrollTop;
+        scrollRoot.style.overflow = 'hidden';
+      } else {
+        scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+        const body = document.body;
+        const html = document.documentElement;
+        body.style.overflow = 'hidden';
+        html.style.overflow = 'hidden';
+      }
+
+      const t = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setSheetVisible(true));
+      });
       
       return () => {
+        cancelAnimationFrame(t);
         document.removeEventListener('keydown', handleEscape);
-        
-        // Restore original styles
-        body.style.position = originalBodyPosition;
-        body.style.top = originalBodyTop;
-        body.style.left = originalBodyLeft;
-        body.style.right = originalBodyRight;
-        body.style.width = originalBodyWidth;
-        body.style.overflow = originalBodyOverflow;
-        html.style.overflow = originalHtmlOverflow;
-        
-        // Restore scroll position AFTER styles are restored
-        requestAnimationFrame(() => {
-          window.scrollTo(0, scrollPositionRef.current);
-        });
+        const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
+        if (scrollRoot) {
+          scrollRoot.style.overflow = '';
+          scrollRoot.scrollTop = scrollPositionRef.current;
+        } else {
+          const body = document.body;
+          const html = document.documentElement;
+          body.style.overflow = '';
+          html.style.overflow = '';
+          requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+        }
       };
     }
 
@@ -148,13 +138,13 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
       ref={overlayRef}
       data-lifeos-modal
       className={cn(
-        "fixed inset-0 z-[110] flex items-end sm:items-center justify-center modal-backdrop-ios",
-        isIOS ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-sm",
-        "sm:p-4 sm:bg-background/80"
+        'fixed inset-0 z-[110] font-sans text-foreground transition-opacity duration-300',
+        isIOS ? 'bg-black/35 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
+        sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{
+        height: '100dvh',
         overscrollBehavior: 'contain',
-        // Push content below status bar
         paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
       }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
@@ -162,24 +152,27 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
       <div
         ref={panelRef}
         className={cn(
-          "relative w-full max-w-lg shadow-2xl modal-sheet-ios flex flex-col overflow-hidden",
+          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl modal-sheet-ios overflow-hidden',
           isIOS
-            ? "liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10"
-            : "bg-card border border-border rounded-[24px]",
-          "max-h-full sm:max-h-[85vh]",
-          "min-h-0",
+            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
+            : 'bg-card border border-border rounded-[24px]',
           className
         )}
         style={{
-          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          maxHeight: '92dvh',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+          transform: dragY > 0
+            ? `translateY(${dragY}px)`
+            : sheetVisible
+              ? 'translateY(0)'
+              : 'translateY(100%)',
           transition: dragY > 0 ? 'none' : 'transform 0.36s cubic-bezier(0.32, 0.72, 0, 1)',
-          marginBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
           willChange: 'transform',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
-          className="shrink-0"
+          className="shrink-0 sticky top-0 z-10"
           onTouchStart={(e) => {
             if (!swipeToClose || window.innerWidth >= 640) return;
             touchStartYRef.current = e.touches[0].clientY;
@@ -205,17 +198,17 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
         >
           <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
           <div className={cn(
-            "flex items-center justify-between p-4",
-            isIOS ? "border-b border-black/5 dark:border-white/10 bg-transparent" : "border-b border-border bg-card"
+            'flex items-center justify-between p-4',
+            isIOS ? 'border-b border-black/5 dark:border-white/10 bg-transparent' : 'border-b border-border bg-card'
           )}>
             <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
             <button
               onClick={onClose}
               className={cn(
-                "p-1 rounded-full transition-all touch-manipulation absolute right-3 top-3 active:scale-95",
-                isIOS 
-                  ? "text-muted-foreground hover:text-foreground hover:bg-white/10" 
-                  : "hover:bg-secondary text-foreground"
+                'p-1 rounded-full transition-all touch-manipulation absolute right-3 top-3 active:scale-95',
+                isIOS
+                  ? 'text-muted-foreground hover:text-foreground hover:bg-white/10'
+                  : 'hover:bg-secondary text-foreground'
               )}
             >
               <X size={20} />
@@ -223,11 +216,12 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           </div>
         </div>
         <div
-          className="p-4 overflow-y-auto overflow-x-hidden min-h-0 flex-1 overscroll-contain overscroll-y-auto min-w-0"
+          className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden min-h-0 overscroll-contain overscroll-y-auto min-w-0"
           style={{
             WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+            padding: '1rem',
             paddingBottom: 'calc(1rem + max(env(safe-area-inset-bottom), 0px))',
-            touchAction: 'pan-y'
           }}
         >
           <div className="min-w-0">

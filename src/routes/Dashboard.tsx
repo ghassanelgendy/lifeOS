@@ -1,5 +1,5 @@
 import { format, parseISO, startOfWeek, subWeeks, endOfWeek, addHours } from 'date-fns';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useUIStore, DASHBOARD_MODE_LABELS, type DashboardMode } from '../stores/useUIStore';
 import { DashboardTactical } from '../components/dashboard/DashboardTactical';
 import { DashboardQuickView } from '../components/dashboard/DashboardQuickView';
@@ -13,9 +13,62 @@ import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Edit2 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import type { PrayerName } from '../types/schema';
+
+type PrayerHadith = {
+  text: string;
+  source: string;
+};
+
+const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+const PRAYER_HADITHS: Record<PrayerName, PrayerHadith[]> = {
+  Fajr: [
+    {
+      text: 'رَكْعَتَا الْفَجْرِ خَيْرٌ مِنَ الدُّنْيَا وَمَا فِيهَا',
+      source: 'صحيح مسلم',
+    },
+  ],
+  Dhuhr: [
+    {
+      text: 'إِذَا اشْتَدَّ الْحَرُّ فَأَبْرِدُوا بِالصَّلَاةِ، فَإِنَّ شِدَّةَ الْحَرِّ مِنْ فَيْحِ جَهَنَّمَ',
+      source: 'صحيح البخاري ومسلم',
+    },
+  ],
+  Asr: [
+    {
+      text: 'مَنْ صَلَّى الْبَرْدَيْنِ دَخَلَ الْجَنَّةَ',
+      source: 'صحيح البخاري ومسلم',
+    },
+  ],
+  Maghrib: [
+    {
+      text: 'صَلُّوا قَبْلَ الْمَغْرِبِ، صَلُّوا قَبْلَ الْمَغْرِبِ',
+      source: 'صحيح البخاري',
+    },
+  ],
+  Isha: [
+    {
+      text: 'مَنْ صَلَّى الْعِشَاءَ فِي جَمَاعَةٍ فَكَأَنَّمَا قَامَ نِصْفَ اللَّيْلِ',
+      source: 'صحيح مسلم',
+    },
+  ],
+};
+
+function getPrayerNameFromEntry(entry: any): PrayerName | null {
+  const candidate = String(entry?.prayerName || entry?.label || entry?.title || entry?.id || '');
+  return PRAYER_NAMES.find((name) => candidate.toLowerCase().includes(name.toLowerCase())) ?? null;
+}
+
+function pickRandomPrayerHadith(prayerName: PrayerName): PrayerHadith | null {
+  const options = PRAYER_HADITHS[prayerName];
+  if (!options?.length) return null;
+  return options[Math.floor(Math.random() * options.length)] ?? null;
+}
 
 function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateEntry?: (updated: any) => void }) {
   const isHabit = entry.kind === 'habit' || ('frequency' in entry);
+  const isPrayer = entry.kind === 'prayer' || String(entry.id || '').startsWith('prayer-');
   const habitId = entry.entityId || entry.id;
   const navigate = useNavigate();
 
@@ -100,6 +153,11 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
 
   // ponytail: Query all logs for this habit to compute detailed weekly averages and history
   const { data: allLogs = [] } = useHabitLogs(isHabit ? habitId : '');
+  const prayerName = useMemo(() => (isPrayer ? getPrayerNameFromEntry(entry) : null), [entry, isPrayer]);
+  const prayerHadith = useMemo(
+    () => (prayerName ? pickRandomPrayerHadith(prayerName) : null),
+    [prayerName, entry.id]
+  );
 
   if (isHabit) {
     const adherence = insight?.adherencePct ?? 0;
@@ -183,6 +241,54 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
             <p className="text-sm mt-1 whitespace-pre-wrap text-muted-foreground leading-relaxed">{entry.description}</p>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (isPrayer) {
+    const displayPrayerName = prayerName ?? 'Prayer';
+    const prayerStatus = entry.done ? 'Prayed' : 'Pending';
+    const prayerMoment = entry.prayedAt || entry.scheduledAt;
+    const prayerTimeLabel = prayerMoment ? format(parseISO(prayerMoment), 'p') : null;
+
+    return (
+      <div className="space-y-4 py-2 text-foreground font-sans">
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Prayer Details</span>
+          <span
+            className={cn(
+              'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border',
+              entry.done
+                ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                : 'bg-muted/40 text-muted-foreground border-border'
+            )}
+          >
+            {prayerStatus}
+          </span>
+        </div>
+
+        <div className={cardClassName}>
+          <p className="text-xs text-muted-foreground uppercase font-semibold">Prayer</p>
+          <p className="text-sm font-semibold mt-1">{displayPrayerName}</p>
+        </div>
+
+        {prayerTimeLabel && (
+          <div className={cardClassName}>
+            <p className="text-xs text-muted-foreground uppercase font-semibold">Time</p>
+            <p className="text-sm font-semibold mt-1">{prayerTimeLabel}</p>
+          </div>
+        )}
+
+        <div className={cn(cardClassName, 'text-right')} dir="rtl">
+          <p className="text-base leading-8 font-semibold whitespace-pre-wrap">
+            {prayerHadith?.text || 'لا توجد ملاحظة إضافية متاحة لهذه الصلاة الآن.'}
+          </p>
+          {prayerHadith?.source && (
+            <p className="mt-2 text-[11px] text-muted-foreground leading-none">
+              {prayerHadith.source}
+            </p>
+          )}
+        </div>
       </div>
     );
   }
