@@ -2,6 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useUIStore } from '../../stores/useUIStore';
+import { Capacitor } from '@capacitor/core';
+import {
+  Dialog,
+  DialogSurface,
+  DialogTitle,
+  DialogBody,
+  DialogContent,
+  Button as FluentButton,
+} from '@fluentui/react-components';
+import { Dismiss24Regular } from '@fluentui/react-icons';
 
 interface ModalProps {
   isOpen: boolean;
@@ -19,8 +30,22 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
   const touchStartYRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
 
+  const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
+  const detectPake = typeof window !== 'undefined' && (
+    '__TAURI__' in window || 
+    'pake' in window || 
+    (window as any).pake === true ||
+    navigator.userAgent.includes('Pake') ||
+    '__TAURI_METADATA__' in window ||
+    (!!(window as any).chrome && !!(window as any).chrome.webview) ||
+    (!!(window as any).webkit?.messageHandlers?.ipc)
+  );
+  const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && detectPake);
+
+  const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
+
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || isPake) return;
     const timer = window.setTimeout(() => {
       const root = panelRef.current;
       if (!root) return;
@@ -36,14 +61,14 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [isOpen]);
+  }, [isOpen, isPake]);
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
 
-    if (isOpen) {
+    if (isOpen && !isPake) {
       // Save current scroll position BEFORE any changes
       scrollPositionRef.current = window.scrollY || window.pageYOffset || document.documentElement.scrollTop;
       
@@ -94,16 +119,44 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, isPake]);
 
   if (!isOpen) return null;
+
+  if (isPake) {
+    const pakeDialog = (
+      <Dialog open={isOpen} onOpenChange={(_, data) => { if (!data.open) onClose(); }}>
+        <DialogSurface style={{ maxWidth: '600px', width: '100%', padding: '16px' }} className="font-sans text-foreground bg-card border border-border shadow-2xl">
+          <DialogBody>
+            <DialogTitle
+              action={
+                <FluentButton
+                  appearance="subtle"
+                  aria-label="close"
+                  icon={<Dismiss24Regular />}
+                  onClick={onClose}
+                />
+              }
+            >
+              {title}
+            </DialogTitle>
+            <DialogContent style={{ padding: '12px 0 0 0' }}>
+              {children}
+            </DialogContent>
+          </DialogBody>
+        </DialogSurface>
+      </Dialog>
+    );
+    return createPortal(pakeDialog, document.body);
+  }
 
   return createPortal(
     <div
       ref={overlayRef}
       data-lifeos-modal
       className={cn(
-        "fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm modal-backdrop-ios",
+        "fixed inset-0 z-[110] flex items-end sm:items-center justify-center modal-backdrop-ios",
+        isIOS ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-sm",
         "min-h-[100dvh] sm:min-h-0",
         "sm:p-4 sm:bg-background/80"
       )}
@@ -116,9 +169,10 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
       <div
         ref={panelRef}
         className={cn(
-          "relative w-full max-w-lg bg-card border border-border shadow-2xl modal-sheet-ios",
-          "rounded-[24px]",
-          "flex flex-col border border-border overflow-hidden",
+          "relative w-full max-w-lg shadow-2xl modal-sheet-ios flex flex-col overflow-hidden",
+          isIOS 
+            ? "liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10" 
+            : "bg-card border border-border rounded-[24px]",
           "max-h-[calc(100dvh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
           "min-h-0",
           className
@@ -156,11 +210,19 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           style={{ touchAction: 'none' }}
         >
           <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
-          <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className={cn(
+            "flex items-center justify-between p-4",
+            isIOS ? "border-b border-black/5 dark:border-white/10 bg-transparent" : "border-b border-border bg-card"
+          )}>
             <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
             <button
               onClick={onClose}
-              className="p-1 rounded-md hover:bg-secondary transition-colors touch-manipulation absolute right-3 top-3"
+              className={cn(
+                "p-1 rounded-full transition-all touch-manipulation absolute right-3 top-3 active:scale-95",
+                isIOS 
+                  ? "text-muted-foreground hover:text-foreground hover:bg-white/10" 
+                  : "hover:bg-secondary text-foreground"
+              )}
             >
               <X size={20} />
             </button>

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Button } from './Button';
+import { Capacitor } from '@capacitor/core';
 
 interface ConfirmSheetProps {
   isOpen: boolean;
@@ -77,6 +78,8 @@ export function ConfirmSheet({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onCancel]);
 
+  const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
+
   if (!isOpen) return null;
 
   const sheetContent = (
@@ -85,7 +88,8 @@ export function ConfirmSheet({
       data-lifeos-modal
       data-lifeos-confirm-sheet
       className={cn(
-        'fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm transition-opacity duration-300 font-sans text-foreground',
+        'fixed inset-0 z-[110] transition-opacity duration-300 font-sans text-foreground',
+        isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{ height: '100dvh', overscrollBehavior: 'contain' }}
@@ -96,8 +100,10 @@ export function ConfirmSheet({
     >
       <div
         className={cn(
-          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto bg-card shadow-2xl flex flex-col min-h-0',
-          'rounded-[24px] border border-border overflow-hidden'
+          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
+          isIOS 
+            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10' 
+            : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
           maxHeight: '92dvh',
@@ -114,7 +120,10 @@ export function ConfirmSheet({
         onClick={(e) => e.stopPropagation()}
       >
         <header
-          className="sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 bg-card border-b border-border"
+          className={cn(
+            "sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 border-b",
+            isIOS ? "bg-transparent border-black/5 dark:border-white/10" : "bg-card border-border"
+          )}
           onTouchStart={(e) => {
             if (window.innerWidth >= 640) return;
             touchStartYRef.current = e.touches[0].clientY;
@@ -142,10 +151,13 @@ export function ConfirmSheet({
           <button
             type="button"
             onClick={() => !isLoading && onCancel()}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation -ml-1"
+            className={cn(
+              "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors touch-manipulation -ml-1 active:scale-95",
+              isIOS ? "text-muted-foreground hover:text-foreground hover:bg-white/10" : "hover:bg-secondary text-foreground"
+            )}
             aria-label="Close"
           >
-            <X size={22} className="text-foreground" />
+            <X size={22} />
           </button>
           <h2 id="confirm-sheet-title" className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12">
             {title}

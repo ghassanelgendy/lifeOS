@@ -2,6 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useUIStore } from '../../stores/useUIStore';
+import { Capacitor } from '@capacitor/core';
+import {
+  OverlayDrawer,
+  DrawerHeader,
+  DrawerHeaderTitle,
+  DrawerBody,
+  Button as FluentButton,
+} from '@fluentui/react-components';
+import { Dismiss24Regular, Checkmark24Regular } from '@fluentui/react-icons';
 
 interface DetailsSheetProps {
   isOpen: boolean;
@@ -38,6 +48,20 @@ export function DetailsSheet({
   const confirmDisabledRef = useRef(confirmDisabled);
   confirmDisabledRef.current = confirmDisabled;
 
+  const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
+  const detectPake = typeof window !== 'undefined' && (
+    '__TAURI__' in window || 
+    'pake' in window || 
+    (window as any).pake === true ||
+    navigator.userAgent.includes('Pake') ||
+    '__TAURI_METADATA__' in window ||
+    (!!(window as any).chrome && !!(window as any).chrome.webview) ||
+    (!!(window as any).webkit?.messageHandlers?.ipc)
+  );
+  const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && detectPake);
+
+  const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -56,17 +80,19 @@ export function DetailsSheet({
       setSheetVisible(false);
       document.addEventListener('keydown', handleKeyDown);
 
-      // Lock the main content scroll (PullToRefresh container) so opening from deep in the list doesn't jump
-      const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
-      if (scrollRoot) {
-        scrollPositionRef.current = scrollRoot.scrollTop;
-        scrollRoot.style.overflow = 'hidden';
-      } else {
-        scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
-        const body = document.body;
-        const html = document.documentElement;
-        body.style.overflow = 'hidden';
-        html.style.overflow = 'hidden';
+      if (!isPake) {
+        // Lock the main content scroll (PullToRefresh container) so opening from deep in the list doesn't jump
+        const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
+        if (scrollRoot) {
+          scrollPositionRef.current = scrollRoot.scrollTop;
+          scrollRoot.style.overflow = 'hidden';
+        } else {
+          scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+          const body = document.body;
+          const html = document.documentElement;
+          body.style.overflow = 'hidden';
+          html.style.overflow = 'hidden';
+        }
       }
 
       const t = requestAnimationFrame(() => {
@@ -76,21 +102,24 @@ export function DetailsSheet({
       return () => {
         cancelAnimationFrame(t);
         document.removeEventListener('keydown', handleKeyDown);
-        if (scrollRoot) {
-          scrollRoot.style.overflow = '';
-          scrollRoot.scrollTop = scrollPositionRef.current;
-        } else {
-          const body = document.body;
-          const html = document.documentElement;
-          body.style.overflow = '';
-          html.style.overflow = '';
-          requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+        if (!isPake) {
+          const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
+          if (scrollRoot) {
+            scrollRoot.style.overflow = '';
+            scrollRoot.scrollTop = scrollPositionRef.current;
+          } else {
+            const body = document.body;
+            const html = document.documentElement;
+            body.style.overflow = '';
+            html.style.overflow = '';
+            requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+          }
         }
       };
     }
     setSheetVisible(false);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  }, [isOpen, isPake]);
 
   const handleScroll = () => {
     const el = contentRef.current;
@@ -109,13 +138,54 @@ export function DetailsSheet({
 
   if (!isOpen) return null;
 
+  if (isPake) {
+    const pakeDrawer = (
+      <OverlayDrawer
+        position="end"
+        open={isOpen}
+        onOpenChange={(_, data) => { if (!data.open) onClose(); }}
+        style={{ width: '450px', maxWidth: '100vw' }}
+        className="font-sans text-foreground bg-card border-l border-border shadow-2xl"
+      >
+        <DrawerHeader>
+          <DrawerHeaderTitle
+            action={
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <FluentButton
+                  appearance="primary"
+                  aria-label="save"
+                  icon={<Checkmark24Regular />}
+                  onClick={onConfirm}
+                  disabled={confirmDisabled}
+                />
+                <FluentButton
+                  appearance="subtle"
+                  aria-label="close"
+                  icon={<Dismiss24Regular />}
+                  onClick={onClose}
+                />
+              </div>
+            }
+          >
+            {title}
+          </DrawerHeaderTitle>
+        </DrawerHeader>
+        <DrawerBody style={{ padding: '16px 20px 60px 20px' }}>
+          {children}
+        </DrawerBody>
+      </OverlayDrawer>
+    );
+    return createPortal(pakeDrawer, document.body);
+  }
+
   const sheetContent = (
     <div
       ref={overlayRef}
       data-lifeos-details-sheet
       data-lifeos-modal
       className={cn(
-        'fixed inset-0 z-[110] bg-black/50 backdrop-blur-sm transition-opacity duration-300 font-sans text-foreground',
+        'fixed inset-0 z-[110] transition-opacity duration-300 font-sans text-foreground',
+        isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{ height: '100dvh', overscrollBehavior: 'contain' }}
@@ -127,8 +197,10 @@ export function DetailsSheet({
       {/* Sheet anchored to bottom of viewport — same position whether opened from top or deep in list */}
       <div
         className={cn(
-          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto bg-card shadow-2xl flex flex-col min-h-0',
-          'rounded-[24px] border border-border overflow-hidden',
+          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
+          isIOS 
+            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10' 
+            : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
           height: '92dvh',
@@ -148,8 +220,9 @@ export function DetailsSheet({
         {/* Sticky header: close (left), title (center), confirm (right) */}
         <header
           className={cn(
-            'sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 bg-card',
-            stickyHeaderDivider && scrolled && 'border-b border-border'
+            'sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0',
+            isIOS ? 'bg-transparent' : 'bg-card',
+            stickyHeaderDivider && scrolled && (isIOS ? 'border-b border-black/5 dark:border-white/10' : 'border-b border-border')
           )}
           onTouchStart={(e) => {
             if (window.innerWidth >= 640) return;
@@ -178,10 +251,13 @@ export function DetailsSheet({
           <button
             type="button"
             onClick={onClose}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg hover:bg-secondary transition-colors touch-manipulation -ml-1"
+            className={cn(
+              "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors touch-manipulation -ml-1 active:scale-95",
+              isIOS ? "text-muted-foreground hover:text-foreground hover:bg-white/10" : "hover:bg-secondary text-foreground"
+            )}
             aria-label="Close"
           >
-            <X size={22} className="text-foreground" />
+            <X size={22} />
           </button>
           <h1 id="details-sheet-title" className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12">
             {title}
@@ -190,7 +266,12 @@ export function DetailsSheet({
             type="button"
             onClick={onConfirm}
             disabled={confirmDisabled}
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors touch-manipulation"
+            className={cn(
+              "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg disabled:opacity-50 disabled:pointer-events-none transition-colors touch-manipulation active:scale-95",
+              isIOS
+                ? "bg-white/10 hover:bg-white/20 text-primary border border-white/10"
+                : "bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
             aria-label="Save"
           >
             <Check size={22} />
