@@ -152,17 +152,21 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
         isIOS ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-sm",
         "sm:p-4 sm:bg-background/80"
       )}
-      style={{ overscrollBehavior: 'contain' }}
+      style={{
+        overscrollBehavior: 'contain',
+        // Push content below status bar
+        paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
+      }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
       <div
         ref={panelRef}
         className={cn(
           "relative w-full max-w-lg shadow-2xl modal-sheet-ios flex flex-col overflow-hidden",
-          isIOS 
-            ? "liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10" 
+          isIOS
+            ? "liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10"
             : "bg-card border border-border rounded-[24px]",
-          "max-h-[calc(100%-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
+          "max-h-full sm:max-h-[85vh]",
           "min-h-0",
           className
         )}

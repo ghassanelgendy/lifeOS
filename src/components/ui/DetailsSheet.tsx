@@ -198,17 +198,18 @@ export function DetailsSheet({
       aria-modal="true"
       aria-labelledby="details-sheet-title"
     >
-      {/* Sheet panel anchored to bottom — svh already excludes keyboard so bottom:0 is correct */}
+      {/* Sheet panel: top pinned below status bar, bottom pinned to screen bottom */}
       <div
         className={cn(
-          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
+          'absolute left-0 right-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
           isIOS
             ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
             : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
-          // Fill from bottom up to just below the safe-area-inset-top
-          height: 'calc(100% - env(safe-area-inset-top) - 8px)',
+          // Pin to bottom; top bound ensures we never overlap the status bar
+          bottom: 0,
+          top: 'calc(env(safe-area-inset-top) + 8px)',
           paddingBottom: 'env(safe-area-inset-bottom)',
           willChange: 'transform',
           transform: dragY > 0
