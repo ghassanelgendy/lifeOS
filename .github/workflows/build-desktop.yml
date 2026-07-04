@@ -48,7 +48,7 @@ jobs:
       - name: Build Application with Pake
         shell: bash
         run: |
-          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --inject scripts/pake-inject.js
+          pake dist/index.html --name "lifeOS" --icon public/icon-main.ico --hide-title-bar --show-system-tray --inject scripts/pake-inject.js --iterative-build --use-local-file
           mv [lL]ife[oO][sS]*.exe lifeOS.exe || true
           mv [lL]ife[oO][sS]*.msi lifeOS.msi || true
 
