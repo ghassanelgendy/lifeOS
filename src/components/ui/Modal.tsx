@@ -20,10 +20,11 @@ interface ModalProps {
   title: string;
   children: React.ReactNode;
   className?: string;
+  panelStyle?: React.CSSProperties;
   swipeToClose?: boolean;
 }
 
-export function Modal({ isOpen, onClose, title, children, className, swipeToClose = true }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className, panelStyle, swipeToClose = true }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
@@ -168,6 +169,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
               : 'translateY(100%)',
           transition: dragY > 0 ? 'none' : 'transform 0.36s cubic-bezier(0.32, 0.72, 0, 1)',
           willChange: 'transform',
+          ...panelStyle,
         }}
         onClick={(e) => e.stopPropagation()}
       >
