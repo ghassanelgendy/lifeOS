@@ -287,7 +287,7 @@ export default function Tasks() {
         const dx = touch.clientX - touchStartPos.current.x;
         const dy = touch.clientY - touchStartPos.current.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 15) {
+        if (dist > 25) {
           if (longPressTimeout.current) {
             window.clearTimeout(longPressTimeout.current);
             longPressTimeout.current = null;
@@ -2872,8 +2872,8 @@ export default function Tasks() {
 
       {/* 3D Haptic Touch Context Menu Overlay */}
       <AnimatePresence>
-        {contextMenuTask && createPortal(
-          <div data-context-menu="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        {contextMenuTask && (
+          <div data-context-menu="true" key="tasks-context-menu" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             {/* Backdrop with premium blur and fade-in */}
             <motion.div
               initial={{ opacity: 0 }}
@@ -2926,16 +2926,18 @@ export default function Tasks() {
                   <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-black/5 dark:border-white/5">
                     {contextMenuTask.priority !== 'none' && (
                       <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary",
-                        PRIORITY_CONFIG[contextMenuTask.priority].color
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
+                        contextMenuTask.priority === 'high' ? "bg-red-500/10 text-red-500" :
+                        contextMenuTask.priority === 'medium' ? "bg-orange-500/10 text-orange-500" :
+                        "bg-blue-500/10 text-blue-500"
                       )}>
-                        <Flag size={10} fill="currentColor" />
-                        {PRIORITY_CONFIG[contextMenuTask.priority].label}
+                        <Flag size={10} />
+                        {contextMenuTask.priority.toUpperCase()}
                       </span>
                     )}
                     {contextMenuTask.due_date && (
                       <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary",
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
                         formatDueDate(contextMenuTask).className
                       )}>
                         <CalendarIcon size={10} />
@@ -3056,8 +3058,7 @@ export default function Tasks() {
                 )}
               </div>
             </motion.div>
-          </div>,
-          document.body
+          </div>
         )}
       </AnimatePresence>
     </div>
