@@ -54,7 +54,22 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
             if (target && document.body.contains(target) && (target as Element).closest?.('[data-lifeos-modal]')) {
                 return;
             }
-            if (container.scrollTop <= 0) {
+
+            // Check if any scrollable parent is currently scrolled down
+            let isParentScrolled = false;
+            let el = e.target as HTMLElement | null;
+            while (el && el !== container) {
+                const style = window.getComputedStyle(el);
+                const overflowY = style.overflowY;
+                const isScrollable = overflowY === 'auto' || overflowY === 'scroll';
+                if (isScrollable && el.scrollTop > 0.5) {
+                    isParentScrolled = true;
+                    break;
+                }
+                el = el.parentElement;
+            }
+
+            if (!isParentScrolled && container.scrollTop <= 0) {
                 setStartY(e.touches[0].clientY);
             }
         };
@@ -67,7 +82,21 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
             const currentY = e.touches[0].clientY;
             const diff = currentY - startY;
 
-            if (diff > 0 && container.scrollTop <= 0) {
+            // Verify if any parent scrollable container is currently scrolled down
+            let isParentScrolled = false;
+            let el = e.target as HTMLElement | null;
+            while (el && el !== container) {
+                const style = window.getComputedStyle(el);
+                const overflowY = style.overflowY;
+                const isScrollable = overflowY === 'auto' || overflowY === 'scroll';
+                if (isScrollable && el.scrollTop > 0.5) {
+                    isParentScrolled = true;
+                    break;
+                }
+                el = el.parentElement;
+            }
+
+            if (diff > 0 && !isParentScrolled && container.scrollTop <= 0) {
                 if (e.cancelable) {
                     e.preventDefault();
                 }
@@ -75,6 +104,10 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                 // Physics rubber-banding: logarithmic-like power curve
                 const resistance = Math.pow(diff, 0.8) * 1.6;
                 setPullDistance(Math.min(resistance, MAX_PULL));
+            } else {
+                if (pullDistance > 0) {
+                    setPullDistance(0);
+                }
             }
         };
 
