@@ -1639,133 +1639,136 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           )) : null;
 
       {/* 3D Haptic Touch Context Menu Overlay */}
-      <AnimatePresence>
-        {contextMenuEntry && contextMenuDetails && (
-          <div
-            key="dashboard-context-menu"
-            data-context-menu="true"
-            className="fixed inset-0 z-[999] flex items-center justify-center p-4"
-          >
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md touch-none"
-              onClick={() => {
-                void triggerHaptics('light');
-                setContextMenuEntry(null);
-              }}
-            />
-
-            <motion.div
-              data-context-menu-container="true"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 15 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
+      {createPortal(
+        <AnimatePresence>
+          {contextMenuEntry && contextMenuDetails && (
+            <div
+              key="dashboard-context-menu"
+              data-context-menu="true"
+              className="fixed inset-0 z-[999] flex items-center justify-center p-4"
             >
-              <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                    contextMenuDetails.isCompleted ? "bg-green-500 border-green-500" : "border-muted-foreground"
-                  )}>
-                    {contextMenuDetails.isCompleted && (
-                      <Check className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-semibold text-foreground text-[16px] leading-snug tracking-tight",
-                      contextMenuDetails.isCompleted && "line-through text-muted-foreground font-normal"
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md touch-none"
+                onClick={() => {
+                  void triggerHaptics('light');
+                  setContextMenuEntry(null);
+                }}
+              />
+
+              <motion.div
+                data-context-menu-container="true"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
+              >
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                      contextMenuDetails.isCompleted ? "bg-green-500 border-green-500" : "border-muted-foreground"
                     )}>
-                      {contextMenuDetails.title}
-                    </p>
-                    {contextMenuDetails.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
-                        {contextMenuDetails.description}
+                      {contextMenuDetails.isCompleted && (
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "font-semibold text-foreground text-[16px] leading-snug tracking-tight",
+                        contextMenuDetails.isCompleted && "line-through text-muted-foreground font-normal"
+                      )}>
+                        {contextMenuDetails.title}
                       </p>
-                    )}
+                      {contextMenuDetails.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                          {contextMenuDetails.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
-                <button
-                  type="button"
-                  data-menu-action="toggle"
-                  onClick={() => {
-                    executeMenuAction('toggle', contextMenuEntry);
-                    setContextMenuEntry(null);
-                  }}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                    hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
+                  <button
+                    type="button"
+                    data-menu-action="toggle"
+                    onClick={() => {
+                      executeMenuAction('toggle', contextMenuEntry);
+                      setContextMenuEntry(null);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                      hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                    )}
+                  >
+                    <span>{contextMenuDetails.isCompleted ? 'Mark Uncompleted' : 'Mark Completed'}</span>
+                    <CheckCircle2 size={16} className="text-muted-foreground" />
+                  </button>
+
+                  {contextMenuDetails.isTask && (
+                    <button
+                      type="button"
+                      data-menu-action="postpone"
+                      onClick={() => {
+                        executeMenuAction('postpone', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Postpone 1 Hour</span>
+                      <Clock size={16} className="text-muted-foreground" />
+                    </button>
                   )}
-                >
-                  <span>{contextMenuDetails.isCompleted ? 'Mark Uncompleted' : 'Mark Completed'}</span>
-                  <CheckCircle2 size={16} className="text-muted-foreground" />
-                </button>
 
-                {contextMenuDetails.isTask && (
-                  <button
-                    type="button"
-                    data-menu-action="postpone"
-                    onClick={() => {
-                      executeMenuAction('postpone', contextMenuEntry);
-                      setContextMenuEntry(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
-                    )}
-                  >
-                    <span>Postpone 1 Hour</span>
-                    <Clock size={16} className="text-muted-foreground" />
-                  </button>
-                )}
+                  {!contextMenuDetails.isPrayer && (
+                    <button
+                      type="button"
+                      data-menu-action="edit"
+                      onClick={() => {
+                        executeMenuAction('edit', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>{contextMenuDetails.isHabit ? 'View Insights...' : 'View Details...'}</span>
+                      <Edit2 size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
 
-                {!contextMenuDetails.isPrayer && (
-                  <button
-                    type="button"
-                    data-menu-action="edit"
-                    onClick={() => {
-                      executeMenuAction('edit', contextMenuEntry);
-                      setContextMenuEntry(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
-                    )}
-                  >
-                    <span>{contextMenuDetails.isHabit ? 'View Insights...' : 'View Details...'}</span>
-                    <Edit2 size={16} className="text-muted-foreground" />
-                  </button>
-                )}
-
-                {contextMenuDetails.isTask && (
-                  <button
-                    type="button"
-                    data-menu-action="delete"
-                    onClick={() => {
-                      executeMenuAction('delete', contextMenuEntry);
-                      setContextMenuEntry(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
-                      hoveredMenuAction === 'delete' && "bg-red-500/15"
-                    )}
-                  >
-                    <span>Delete Task</span>
-                    <Trash2 size={16} className="text-red-500" />
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                  {contextMenuDetails.isTask && (
+                    <button
+                      type="button"
+                      data-menu-action="delete"
+                      onClick={() => {
+                        executeMenuAction('delete', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
+                        hoveredMenuAction === 'delete' && "bg-red-500/15"
+                      )}
+                    >
+                      <span>Delete Task</span>
+                      <Trash2 size={16} className="text-red-500" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }

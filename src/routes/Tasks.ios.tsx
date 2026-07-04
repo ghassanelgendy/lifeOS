@@ -2871,196 +2871,199 @@ export default function Tasks() {
       />
 
       {/* 3D Haptic Touch Context Menu Overlay */}
-      <AnimatePresence>
-        {contextMenuTask && (
-          <div data-context-menu="true" key="tasks-context-menu" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Backdrop with premium blur and fade-in */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md touch-none"
-              onClick={() => {
-                void triggerHaptics('light');
-                setContextMenuTask(null);
-              }}
-            />
+      {createPortal(
+        <AnimatePresence>
+          {contextMenuTask && (
+            <div data-context-menu="true" key="tasks-context-menu" className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+              {/* Backdrop with premium blur and fade-in */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md touch-none"
+                onClick={() => {
+                  void triggerHaptics('light');
+                  setContextMenuTask(null);
+                }}
+              />
 
-            {/* Menu Container */}
-            <motion.div
-              data-context-menu-container="true"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.92, y: 15 }}
-              transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
-            >
-              {/* Task Preview Card (Glassmorphism) */}
-              <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
-                    contextMenuTask.is_completed ? "bg-green-500 border-green-500" : "border-muted-foreground"
-                  )}>
-                    {contextMenuTask.is_completed && (
-                      <Check className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-semibold text-foreground text-[16px] leading-snug tracking-tight",
-                      contextMenuTask.is_completed && "line-through text-muted-foreground font-normal"
+              {/* Menu Container */}
+              <motion.div
+                data-context-menu-container="true"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
+              >
+                {/* Task Preview Card (Glassmorphism) */}
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                      contextMenuTask.is_completed ? "bg-green-500 border-green-500" : "border-muted-foreground"
                     )}>
-                      {contextMenuTask.title}
-                    </p>
-                    {contextMenuTask.description && (
-                      <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
-                        {contextMenuTask.description}
+                      {contextMenuTask.is_completed && (
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "font-semibold text-foreground text-[16px] leading-snug tracking-tight",
+                        contextMenuTask.is_completed && "line-through text-muted-foreground font-normal"
+                      )}>
+                        {contextMenuTask.title}
                       </p>
-                    )}
+                      {contextMenuTask.description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                          {contextMenuTask.description}
+                        </p>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Priority, Recurrence & Due Date badge */}
+                  {(contextMenuTask.due_date || contextMenuTask.priority !== 'none' || contextMenuTask.recurrence !== 'none') && (
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-black/5 dark:border-white/5">
+                      {contextMenuTask.priority !== 'none' && (
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
+                          contextMenuTask.priority === 'high' ? "bg-red-500/10 text-red-500" :
+                          contextMenuTask.priority === 'medium' ? "bg-orange-500/10 text-orange-500" :
+                          "bg-blue-500/10 text-blue-500"
+                        )}>
+                          <Flag size={10} />
+                          {contextMenuTask.priority.toUpperCase()}
+                        </span>
+                      )}
+                      {contextMenuTask.due_date && (
+                        <span className={cn(
+                          "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
+                          formatDueDate(contextMenuTask).className
+                        )}>
+                          <CalendarIcon size={10} />
+                          {formatDueDate(contextMenuTask).text}
+                          {contextMenuTask.due_time && ` ${formatTime12h(contextMenuTask.due_time)}`}
+                        </span>
+                      )}
+                      {contextMenuTask.recurrence !== 'none' && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary text-muted-foreground">
+                          <Repeat size={10} />
+                          {RECURRENCE_OPTIONS.find(o => o.value === contextMenuTask.recurrence)?.label}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                {/* Priority, Recurrence & Due Date badge */}
-                {(contextMenuTask.due_date || contextMenuTask.priority !== 'none' || contextMenuTask.recurrence !== 'none') && (
-                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-black/5 dark:border-white/5">
-                    {contextMenuTask.priority !== 'none' && (
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
-                        contextMenuTask.priority === 'high' ? "bg-red-500/10 text-red-500" :
-                        contextMenuTask.priority === 'medium' ? "bg-orange-500/10 text-orange-500" :
-                        "bg-blue-500/10 text-blue-500"
-                      )}>
-                        <Flag size={10} />
-                        {contextMenuTask.priority.toUpperCase()}
-                      </span>
+                {/* Options Menu (iOS styled rounded stack) */}
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
+                  {/* Complete / Reopen Action */}
+                  <button
+                    type="button"
+                    data-menu-action="toggle"
+                    onClick={() => {
+                      void triggerHaptics(contextMenuTask.is_completed ? 'light' : 'success');
+                      handleTaskToggle(contextMenuTask);
+                      setContextMenuTask(null);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                      hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
                     )}
-                    {contextMenuTask.due_date && (
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
-                        formatDueDate(contextMenuTask).className
-                      )}>
-                        <CalendarIcon size={10} />
-                        {formatDueDate(contextMenuTask).text}
-                        {contextMenuTask.due_time && ` ${formatTime12h(contextMenuTask.due_time)}`}
-                      </span>
-                    )}
-                    {contextMenuTask.recurrence !== 'none' && (
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1 bg-secondary text-muted-foreground">
-                        <Repeat size={10} />
-                        {RECURRENCE_OPTIONS.find(o => o.value === contextMenuTask.recurrence)?.label}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+                  >
+                    <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
+                    <CheckCircle2 size={16} className="text-muted-foreground" />
+                  </button>
 
-              {/* Options Menu (iOS styled rounded stack) */}
-              <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
-                {/* Complete / Reopen Action */}
-                <button
-                  type="button"
-                  data-menu-action="toggle"
-                  onClick={() => {
-                    void triggerHaptics(contextMenuTask.is_completed ? 'light' : 'success');
-                    handleTaskToggle(contextMenuTask);
-                    setContextMenuTask(null);
-                  }}
-                  className={cn(
-                    "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                    hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                  {/* Postpone Action (if has due date) */}
+                  {!contextMenuTask.id.startsWith('habit-') && !!(contextMenuTask.due_date || contextMenuTask.due_time) && (
+                    <button
+                      type="button"
+                      data-menu-action="postpone"
+                      onClick={() => {
+                        void triggerHaptics('light');
+                        handlePostponeTask(contextMenuTask);
+                        setContextMenuTask(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Postpone 1 Hour</span>
+                      <Clock size={16} className="text-muted-foreground" />
+                    </button>
                   )}
-                >
-                  <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
-                  <CheckCircle2 size={16} className="text-muted-foreground" />
-                </button>
 
-                {/* Postpone Action (if has due date) */}
-                {!contextMenuTask.id.startsWith('habit-') && !!(contextMenuTask.due_date || contextMenuTask.due_time) && (
-                  <button
-                    type="button"
-                    data-menu-action="postpone"
-                    onClick={() => {
-                      void triggerHaptics('light');
-                      handlePostponeTask(contextMenuTask);
-                      setContextMenuTask(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
-                    )}
-                  >
-                    <span>Postpone 1 Hour</span>
-                    <Clock size={16} className="text-muted-foreground" />
-                  </button>
-                )}
+                  {/* Edit Action */}
+                  {!contextMenuTask.id.startsWith('habit-') && (
+                    <button
+                      type="button"
+                      data-menu-action="edit"
+                      onClick={() => {
+                        void triggerHaptics('light');
+                        setContextMenuTask(null);
+                        setTimeout(() => {
+                          handleEditTask(contextMenuTask);
+                        }, 150);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Edit Details...</span>
+                      <Edit2 size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
 
-                {/* Edit Action */}
-                {!contextMenuTask.id.startsWith('habit-') && (
-                  <button
-                    type="button"
-                    data-menu-action="edit"
-                    onClick={() => {
-                      void triggerHaptics('light');
-                      setContextMenuTask(null);
-                      setTimeout(() => {
-                        handleEditTask(contextMenuTask);
-                      }, 150);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
-                    )}
-                  >
-                    <span>Edit Details...</span>
-                    <Edit2 size={16} className="text-muted-foreground" />
-                  </button>
-                )}
+                  {/* Won't Do Action */}
+                  {!contextMenuTask.id.startsWith('habit-') && !contextMenuTask.is_completed && !(contextMenuTask.is_wont_do ?? (contextMenuTask.description || '').includes('[WONT_DO]')) && (
+                    <button
+                      type="button"
+                      data-menu-action="wontdo"
+                      onClick={() => {
+                        void triggerHaptics('light');
+                        handleMarkWontDo(contextMenuTask);
+                        setContextMenuTask(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Won't Do</span>
+                      <CircleSlash2 size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
 
-                {/* Won't Do Action */}
-                {!contextMenuTask.id.startsWith('habit-') && !contextMenuTask.is_completed && !(contextMenuTask.is_wont_do ?? (contextMenuTask.description || '').includes('[WONT_DO]')) && (
-                  <button
-                    type="button"
-                    data-menu-action="wontdo"
-                    onClick={() => {
-                      void triggerHaptics('light');
-                      handleMarkWontDo(contextMenuTask);
-                      setContextMenuTask(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
-                    )}
-                  >
-                    <span>Won't Do</span>
-                    <CircleSlash2 size={16} className="text-muted-foreground" />
-                  </button>
-                )}
-
-                {/* Delete Action (Red) */}
-                {!contextMenuTask.id.startsWith('habit-') && (
-                  <button
-                    type="button"
-                    data-menu-action="delete"
-                    onClick={() => {
-                      void triggerHaptics('heavy');
-                      setTaskToDeleteId(contextMenuTask.id);
-                      setContextMenuTask(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
-                      hoveredMenuAction === 'delete' && "bg-red-500/10"
-                    )}
-                  >
-                    <span>Delete Task</span>
-                    <Trash2 size={16} className="text-red-500" />
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                  {/* Delete Action (Red) */}
+                  {!contextMenuTask.id.startsWith('habit-') && (
+                    <button
+                      type="button"
+                      data-menu-action="delete"
+                      onClick={() => {
+                        void triggerHaptics('heavy');
+                        setTaskToDeleteId(contextMenuTask.id);
+                        setContextMenuTask(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
+                        hoveredMenuAction === 'delete' && "bg-red-500/10"
+                      )}
+                    >
+                      <span>Delete Task</span>
+                      <Trash2 size={16} className="text-red-500" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
