@@ -71,20 +71,7 @@ function ThemeSync() {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
 
-    // Detect if running inside Pake/Tauri desktop wrapper
-    const detectPake = typeof window !== 'undefined' && (
-      '__TAURI__' in window || 
-      'pake' in window || 
-      (window as any).pake === true ||
-      navigator.userAgent.includes('Pake') ||
-      ('__TAURI_METADATA__' in window) ||
-      // WebView2 (Windows Tauri/Pake)
-      (!!(window as any).chrome && !!(window as any).chrome.webview) ||
-      // WKWebView (macOS/Linux Tauri/Pake)
-      (!!(window as any).webkit?.messageHandlers?.ipc)
-    );
-
-    const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && detectPake);
+    const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && import.meta.env.MODE === 'pake');
 
     if (isPake) {
       document.documentElement.classList.add('pake-platform');

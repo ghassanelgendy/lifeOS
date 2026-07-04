@@ -91,12 +91,7 @@ export function usePakeLocalNotifications() {
   const { data: todayHabitLogs = [] } = useTodayHabitLogs();
   const { data: habitAverages = {} } = useHabitAverages();
 
-  const isPake = typeof window !== 'undefined' && (
-    'pake' in window || 
-    (window as any).pake === true ||
-    navigator.userAgent.includes('Pake') ||
-    '__TAURI__' in window
-  );
+  const isPake = import.meta.env.MODE === 'pake';
 
   const shownNotifsRef = useRef<Set<string>>(new Set());
 

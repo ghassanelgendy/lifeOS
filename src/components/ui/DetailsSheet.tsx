@@ -49,16 +49,7 @@ export function DetailsSheet({
   confirmDisabledRef.current = confirmDisabled;
 
   const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
-  const detectPake = typeof window !== 'undefined' && (
-    '__TAURI__' in window || 
-    'pake' in window || 
-    (window as any).pake === true ||
-    navigator.userAgent.includes('Pake') ||
-    '__TAURI_METADATA__' in window ||
-    (!!(window as any).chrome && !!(window as any).chrome.webview) ||
-    (!!(window as any).webkit?.messageHandlers?.ipc)
-  );
-  const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && detectPake);
+  const isPake = platformUIOverride === 'pake' || (platformUIOverride === 'auto' && import.meta.env.MODE === 'pake');
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
 
