@@ -235,15 +235,55 @@ export default function Tasks() {
   const [contextMenuTask, setContextMenuTask] = useState<Task | null>(null);
   const longPressTimeout = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
 
-  const startPress = (task: Task) => {
+  useEffect(() => {
+    if (contextMenuTask) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      const preventDefault = (e: TouchEvent) => {
+        e.preventDefault();
+      };
+      document.addEventListener('touchmove', preventDefault, { passive: false });
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.overscrollBehavior = '';
+        document.removeEventListener('touchmove', preventDefault);
+      };
+    }
+  }, [contextMenuTask]);
+
+  const startPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
     isLongPressActive.current = false;
+    if (e.type === 'touchstart') {
+      const te = e as React.TouchEvent;
+      touchStartPos.current = {
+        x: te.touches[0].clientX,
+        y: te.touches[0].clientY,
+      };
+    } else {
+      touchStartPos.current = null;
+    }
+
     if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
     longPressTimeout.current = window.setTimeout(() => {
       isLongPressActive.current = true;
       void triggerHaptics('medium');
       setContextMenuTask(task);
     }, 450);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStartPos.current || !longPressTimeout.current) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartPos.current.x;
+    const dy = touch.clientY - touchStartPos.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    // If scrolled more than 10px, cancel the context menu trigger
+    if (distance > 10) {
+      window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = null;
+    }
   };
 
   const endPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
@@ -2292,7 +2332,7 @@ export default function Tasks() {
                             e.preventDefault();
                             e.stopPropagation();
                           }}
-                          onMouseDown={() => startPress(task)}
+                          onMouseDown={(e) => startPress(task, e)}
                           onMouseUp={(e) => endPress(task, e)}
                           onMouseLeave={() => {
                             if (longPressTimeout.current) {
@@ -2300,7 +2340,8 @@ export default function Tasks() {
                               longPressTimeout.current = null;
                             }
                           }}
-                          onTouchStart={() => startPress(task)}
+                          onTouchStart={(e) => startPress(task, e)}
+                          onTouchMove={handleTouchMove}
                           onTouchEnd={(e) => endPress(task, e)}
                           onTouchCancel={() => {
                             if (longPressTimeout.current) {
@@ -2382,7 +2423,7 @@ export default function Tasks() {
                                 e.preventDefault();
                                 e.stopPropagation();
                               }}
-                              onMouseDown={() => startPress(task)}
+                              onMouseDown={(e) => startPress(task, e)}
                               onMouseUp={(e) => endPress(task, e)}
                               onMouseLeave={() => {
                                 if (longPressTimeout.current) {
@@ -2390,7 +2431,8 @@ export default function Tasks() {
                                   longPressTimeout.current = null;
                                 }
                               }}
-                              onTouchStart={() => startPress(task)}
+                              onTouchStart={(e) => startPress(task, e)}
+                              onTouchMove={handleTouchMove}
                               onTouchEnd={(e) => endPress(task, e)}
                               onTouchCancel={() => {
                                 if (longPressTimeout.current) {
@@ -2459,7 +2501,7 @@ export default function Tasks() {
                                 e.preventDefault();
                                 e.stopPropagation();
                               }}
-                              onMouseDown={() => startPress(task)}
+                              onMouseDown={(e) => startPress(task, e)}
                               onMouseUp={(e) => endPress(task, e)}
                               onMouseLeave={() => {
                                 if (longPressTimeout.current) {
@@ -2467,7 +2509,8 @@ export default function Tasks() {
                                   longPressTimeout.current = null;
                                 }
                               }}
-                              onTouchStart={() => startPress(task)}
+                              onTouchStart={(e) => startPress(task, e)}
+                              onTouchMove={handleTouchMove}
                               onTouchEnd={(e) => endPress(task, e)}
                               onTouchCancel={() => {
                                 if (longPressTimeout.current) {
@@ -2713,7 +2756,7 @@ export default function Tasks() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md"
+              className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md touch-none"
               onClick={() => {
                 void triggerHaptics('light');
                 setContextMenuTask(null);
@@ -2726,7 +2769,7 @@ export default function Tasks() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 15 }}
               transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-              className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none"
+              className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
             >
               {/* Task Preview Card (Glassmorphism) */}
               <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
