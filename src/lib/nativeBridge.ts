@@ -235,7 +235,8 @@ export async function syncAllLocalNotifications(
   lat: number,
   lng: number,
   todayHabitLogs: any[] = [],
-  todayPrayerLogs: any[] = []
+  todayPrayerLogs: any[] = [],
+  habitAverages: Record<string, number> = {}
 ) {
   if (!Capacitor.isNativePlatform()) return;
   try {
@@ -323,8 +324,19 @@ export async function syncAllLocalNotifications(
         );
         if (isCompletedToday && dateString === todayStr) continue;
 
-        const rawTime = habit.notify_time || habit.time || '09:00';
-        const [h, m] = rawTime.split(':').map(Number);
+        let h = 9, m = 0;
+        const rawTime = habit.notify_time || habit.time;
+        if (rawTime) {
+          const [th, tm] = rawTime.split(':').map(Number);
+          if (!Number.isNaN(th) && !Number.isNaN(tm)) {
+            h = th;
+            m = tm;
+          }
+        } else if (habitAverages && typeof habitAverages[habit.id] === 'number') {
+          const avgMinutes = habitAverages[habit.id];
+          h = Math.floor(avgMinutes / 60);
+          m = avgMinutes % 60;
+        }
         const triggerAt = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), h, m, 0);
 
         if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {

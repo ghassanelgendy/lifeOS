@@ -13,7 +13,7 @@ import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineS
 import { checkAndApplyUpdates } from './lib/otaUpdater';
 import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
-import { useHabits, useTodayHabitLogs } from './hooks/useHabits';
+import { useHabits, useTodayHabitLogs, useHabitAverages } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -111,6 +111,7 @@ function AppInner() {
   });
 
   const { data: todayHabitLogs = [] } = useTodayHabitLogs();
+  const { data: habitAverages = {} } = useHabitAverages();
 
   const todayStr = new Date().toLocaleDateString('en-CA');
   const { data: todayPrayerLogs = [] } = useQuery({
@@ -139,9 +140,10 @@ function AppInner() {
       lat,
       lng,
       todayHabitLogs,
-      todayPrayerLogs
+      todayPrayerLogs,
+      habitAverages
     );
-  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled]);
+  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled, habitAverages]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();
