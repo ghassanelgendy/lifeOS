@@ -35,15 +35,17 @@ export function AppFooter() {
         <Text size={100} className="text-muted-foreground">Made with ❤️ by Ghassan</Text>
       </div>
       <div className="flex items-center gap-3">
-        <a
-          href="https://github.com/ghassanelgendy/lifeOS"
-          target="_blank"
-          rel="noreferrer"
-          className="underline-offset-2 hover:underline text-muted-foreground no-underline"
-        >
-          GitHub repo
-        </a>
-        <div className="flex items-center gap-1 text-[11px]">
+        <Text size={100}>
+          <a
+            href="https://github.com/ghassanelgendy/lifeOS"
+            target="_blank"
+            rel="noreferrer"
+            className="underline-offset-2 hover:underline text-muted-foreground no-underline"
+          >
+            GitHub repo
+          </a>
+        </Text>
+        <div className="flex items-center gap-1">
           <span
             className={cn(
               'w-2 h-2 rounded-full',
