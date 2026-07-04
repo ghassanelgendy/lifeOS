@@ -2221,7 +2221,7 @@ export default function Tasks() {
           )}
 
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
-          <div className="space-y-0 border-t border-border">
+          <div className="space-y-1">
             {mainTasksToRender.map((task) => {
               const isHabitTask = task.id.startsWith('habit-');
               return (
@@ -2256,7 +2256,7 @@ export default function Tasks() {
                 <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
-                <div className="mt-2 space-y-0 border-t border-border opacity-60">
+                <div className="mt-2 space-y-1 opacity-60">
                   {completedTasksToRender.slice(0, 10).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (
@@ -2294,8 +2294,8 @@ export default function Tasks() {
                 <span>Won't do ({wontDoTasksToRender.length})</span>
               </button>
               {showWontDo && (
-                <div className="mt-2 space-y-0 border-t border-border opacity-70">
-                  {wontDoTasksToRender.slice(0, 20).map((task) => {
+                <div className="mt-2 space-y-1 opacity-70">
+                  {wontDoTasksToRender.slice(0, 10).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (
                       <TaskItem
