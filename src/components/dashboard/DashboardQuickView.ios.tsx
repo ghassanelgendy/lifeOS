@@ -1,12 +1,13 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
-import { format, isToday, parseISO, subDays } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight } from 'lucide-react';
+import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
-import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
+import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask, useDeleteTask, useUpdateTask } from '../../hooks/useTasks';
+import { triggerHaptics } from '../../lib/nativeBridge';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
@@ -384,6 +385,273 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const { tracker: prayerTracker, togglePrayerStatus, isLoading: prayerLoading } = usePrayerTracker(today);
   const { times: prayerTimesList } = usePrayerTimes();
 
+  // 3D Haptic Touch Context Menu State
+  const [contextMenuEntry, setContextMenuEntry] = useState<any | null>(null);
+  const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
+  const longPressTimeout = useRef<number | null>(null);
+  const isLongPressActive = useRef(false);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const activeTouchId = useRef<number | null>(null);
+  const pressEntryRef = useRef<any | null>(null);
+  const hoveredMenuActionRef = useRef<string | null>(null);
+
+  const deleteTask = useDeleteTask();
+  const updateTask = useUpdateTask();
+
+  const handlePostponeTask = (task: Task) => {
+    const datePart = task.due_date?.split('T')[0] ?? '';
+    const timePart = task.due_time && /^\d{1,2}:\d{2}(:\d{2})?$/.test(task.due_time)
+      ? (task.due_time.length === 5 ? `${task.due_time}:00` : task.due_time)
+      : '00:00:00';
+    const d = datePart ? new Date(`${datePart}T${timePart}`) : new Date();
+    const dueDate = Number.isNaN(d.getTime()) ? new Date() : d;
+    const next = addHours(dueDate, 1);
+    updateTask.mutate({
+      id: task.id,
+      data: {
+        due_date: next.toISOString().split('T')[0],
+        due_time: format(next, 'HH:mm'),
+      },
+    });
+  };
+
+  const executeMenuAction = (action: string, entry: any) => {
+    const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));
+    const isHabit = entry.kind === 'habit';
+    const isEvent = entry.kind === 'event';
+    const isPrayer = entry.kind === 'prayer';
+
+    switch (action) {
+      case 'toggle':
+        if (isTask) {
+          const taskId = entry.entityId || entry.id;
+          void triggerHaptics(entry.done || entry.is_completed ? 'light' : 'success');
+          toggleTask.mutate(taskId);
+        } else if (isHabit) {
+          const habitId = entry.entityId || entry.id;
+          const done = isHabitDoneToday(habitId);
+          void triggerHaptics(done ? 'light' : 'success');
+          logHabit.mutate({ habitId, date: todayStr, completed: !done });
+        } else if (isEvent) {
+          const parsedStart = parseISO(entry.start_time);
+          const eventKey = entry.type === 'ical' ? `ical:${entry.id.replace('event-', '')}` : `event:${entry.id.replace('event-', '')}`;
+          const eventIdToCheck = entry.originalId || entry.id.replace('event-', '');
+          const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
+          const linkedTask = completedTasks.find((t) =>
+            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+            t.due_date === eventDateToCheck
+          ) || todayTasks.find((t) =>
+            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+            t.due_date === eventDateToCheck
+          ) || overdueTasks.find((t) =>
+            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+            t.due_date === eventDateToCheck
+          );
+
+          void triggerHaptics(linkedTask?.is_completed ? 'light' : 'success');
+          if (linkedTask) {
+            toggleTask.mutate(linkedTask.id);
+          } else {
+            createTask.mutate({
+              title: entry.title,
+              is_completed: true,
+              priority: 'none',
+              due_date: format(parsedStart, 'yyyy-MM-dd'),
+              due_time: entry.allDay ? undefined : format(parsedStart, 'HH:mm'),
+              calendar_source_key: eventKey,
+              calendar_event_id: entry.type === 'ical' ? null : (entry.originalId || entry.id.replace('event-', '')),
+              tag_ids: [],
+              recurrence: 'none',
+            });
+          }
+        } else if (isPrayer) {
+          const prayerName = entry.id.replace('prayer-', '');
+          void triggerHaptics(entry.done ? 'light' : 'success');
+          togglePrayerStatus(prayerName);
+        }
+        break;
+      case 'postpone':
+        if (isTask) {
+          const taskId = entry.entityId || entry.id;
+          const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId);
+          if (taskObj) {
+            handlePostponeTask(taskObj);
+          }
+        }
+        break;
+      case 'edit':
+        void triggerHaptics('light');
+        if (isTask) {
+          const taskId = entry.entityId || entry.id;
+          const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+          onSelectEntry(taskObj || entry);
+        } else {
+          onSelectEntry(entry);
+        }
+        break;
+      case 'delete':
+        if (isTask) {
+          const taskId = entry.entityId || entry.id;
+          void triggerHaptics('heavy');
+          deleteTask.mutate(taskId);
+        }
+        break;
+    }
+  };
+
+  const handleGlobalTouchMove = (e: TouchEvent) => {
+    const touch = Array.from(e.touches).find(t => t.identifier === activeTouchId.current);
+    if (!touch) return;
+
+    if (!isLongPressActive.current) {
+      if (touchStartPos.current) {
+        const dx = touch.clientX - touchStartPos.current.x;
+        const dy = touch.clientY - touchStartPos.current.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist > 15) {
+          if (longPressTimeout.current) {
+            window.clearTimeout(longPressTimeout.current);
+            longPressTimeout.current = null;
+          }
+        }
+      }
+      return;
+    }
+
+    e.preventDefault();
+    const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+    if (!elem) {
+      hoveredMenuActionRef.current = null;
+      setHoveredMenuAction(null);
+      return;
+    }
+    const btn = elem.closest('[data-menu-action]');
+    if (btn) {
+      const action = btn.getAttribute('data-menu-action');
+      hoveredMenuActionRef.current = action;
+      setHoveredMenuAction(action);
+    } else {
+      hoveredMenuActionRef.current = null;
+      setHoveredMenuAction(null);
+    }
+  };
+
+  const handleGlobalTouchEnd = (e: TouchEvent) => {
+    const endedTouch = Array.from(e.changedTouches).find(t => t.identifier === activeTouchId.current);
+    if (!endedTouch) return;
+
+    document.removeEventListener('touchmove', handleGlobalTouchMove);
+    document.removeEventListener('touchend', handleGlobalTouchEnd);
+    document.removeEventListener('touchcancel', handleGlobalTouchEnd);
+
+    if (longPressTimeout.current) {
+      window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = null;
+    }
+
+    const wasLongPress = isLongPressActive.current;
+    if (wasLongPress) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressActive.current = false;
+
+      const action = hoveredMenuActionRef.current;
+      const entry = pressEntryRef.current;
+      if (action && entry) {
+        executeMenuAction(action, entry);
+        setContextMenuEntry(null);
+        setHoveredMenuAction(null);
+      } else {
+        const elem = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
+        const isOutside = !elem?.closest('[data-context-menu-container="true"]');
+        if (isOutside) {
+          setContextMenuEntry(null);
+          setHoveredMenuAction(null);
+        }
+      }
+      activeTouchId.current = null;
+      return;
+    }
+
+    if (pressEntryRef.current) {
+      const entry = pressEntryRef.current;
+      const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));
+      if (isTask) {
+        const taskId = entry.entityId || entry.id;
+        const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+        onSelectEntry(taskObj || entry);
+      } else {
+        onSelectEntry(entry);
+      }
+    }
+    activeTouchId.current = null;
+  };
+
+  const startPress = (entry: any, e: React.TouchEvent | React.MouseEvent) => {
+    isLongPressActive.current = false;
+    pressEntryRef.current = entry;
+    hoveredMenuActionRef.current = null;
+    setHoveredMenuAction(null);
+
+    if (e.type === 'touchstart') {
+      const te = e as React.TouchEvent;
+      const touch = te.touches[0];
+      activeTouchId.current = touch.identifier;
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+
+      if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = window.setTimeout(() => {
+        isLongPressActive.current = true;
+        void triggerHaptics('medium');
+        setContextMenuEntry(entry);
+      }, 450);
+
+      document.addEventListener('touchmove', handleGlobalTouchMove, { passive: false });
+      document.addEventListener('touchend', handleGlobalTouchEnd, { passive: false });
+      document.addEventListener('touchcancel', handleGlobalTouchEnd, { passive: false });
+    } else {
+      touchStartPos.current = null;
+      if (longPressTimeout.current) window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = window.setTimeout(() => {
+        isLongPressActive.current = true;
+        void triggerHaptics('medium');
+        setContextMenuEntry(entry);
+      }, 450);
+    }
+  };
+
+  const endPressMouse = (entry: any, e: React.MouseEvent) => {
+    if (longPressTimeout.current) {
+      window.clearTimeout(longPressTimeout.current);
+      longPressTimeout.current = null;
+    }
+    if (isLongPressActive.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      isLongPressActive.current = false;
+      return;
+    }
+    const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));
+    if (isTask) {
+      const taskId = entry.entityId || entry.id;
+      const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+      onSelectEntry(taskObj || entry);
+    } else {
+      onSelectEntry(entry);
+    }
+  };
+
+  useEffect(() => {
+    if (contextMenuEntry) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+      return () => {
+        document.body.style.overflow = '';
+        document.body.style.overscrollBehavior = '';
+      };
+    }
+  }, [contextMenuEntry]);
+
   const quickViewHabits = useMemo(() => habits.filter(isHabitShownInQuickView), [habits]);
   const { data: habitInsights = {} } = useHabitInsights(quickViewHabits);
   // Derive a habitId -> average minutes map from insights (same data the Habits page uses)
@@ -712,20 +980,29 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       sortTime: lastPrayerSlot.time.getTime(),
       element: (
         <li key="prayer-current">
-          <DueTodayRow
-            kind="prayer"
-            title={`${lastPrayerSlot.name} prayer`}
-            subtitle={
-              lastPrayerTrackerItem?.prayedAt
-                ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
-                : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
-            }
-            done={lastPrayerDone}
-            busy={prayerLoading}
-            showToggle={lastPrayerCanTick}
-            label={`Mark ${lastPrayerSlot.name} as prayed`}
-            onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
-          />
+          <div
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onMouseDown={(e) => startPress({ id: `prayer-${lastPrayerSlot.name}`, label: `${lastPrayerSlot.name} prayer`, done: lastPrayerDone, kind: 'prayer' }, e)}
+            onMouseUp={(e) => endPressMouse({ id: `prayer-${lastPrayerSlot.name}`, label: `${lastPrayerSlot.name} prayer`, done: lastPrayerDone, kind: 'prayer' }, e)}
+            onMouseLeave={() => { if (longPressTimeout.current) { window.clearTimeout(longPressTimeout.current); longPressTimeout.current = null; } }}
+            onTouchStart={(e) => startPress({ id: `prayer-${lastPrayerSlot.name}`, label: `${lastPrayerSlot.name} prayer`, done: lastPrayerDone, kind: 'prayer' }, e)}
+            className="w-full"
+          >
+            <DueTodayRow
+              kind="prayer"
+              title={`${lastPrayerSlot.name} prayer`}
+              subtitle={
+                lastPrayerTrackerItem?.prayedAt
+                  ? `${lastPrayerTrackerItem.status === 'Late' ? 'Late' : 'Prayed'} · ${format(parseISO(lastPrayerTrackerItem.prayedAt), 'h:mm a')}`
+                  : `At ${format(lastPrayerSlot.time, 'h:mm a')}`
+              }
+              done={lastPrayerDone}
+              busy={prayerLoading}
+              showToggle={lastPrayerCanTick}
+              label={`Mark ${lastPrayerSlot.name} as prayed`}
+              onToggle={lastPrayerTrackerItem ? () => togglePrayerStatus(lastPrayerTrackerItem, 'Prayed') : undefined}
+            />
+          </div>
         </li>
       ),
     });
@@ -743,21 +1020,30 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       sortTime: parseDueForSort(t),
       element: (
         <li key={`task-${t.id}`}>
-          <DueTodayRow
-            kind="task"
-            title={t.title}
-            subtitle={
-              t.due_date
-                ? `Overdue · ${format(parseISO(t.due_date.includes('T') ? t.due_date : `${t.due_date}T12:00:00`), 'MMM d')}${t.due_time && t.due_time.length >= 5 ? ` · ${format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a')}` : ''}`
-                : 'Overdue'
-            }
-            done={false}
-            busy={toggleTask.isPending}
-            showToggle
-            label={`Complete overdue task ${t.title}`}
-            onToggle={() => toggleTask.mutate(t.id)}
-            onClick={() => onSelectEntry({ ...t, kind: 'task' })}
-          />
+          <div
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onMouseDown={(e) => startPress(t, e)}
+            onMouseUp={(e) => endPressMouse(t, e)}
+            onMouseLeave={() => { if (longPressTimeout.current) { window.clearTimeout(longPressTimeout.current); longPressTimeout.current = null; } }}
+            onTouchStart={(e) => startPress(t, e)}
+            className="w-full"
+          >
+            <DueTodayRow
+              kind="task"
+              title={t.title}
+              subtitle={
+                t.due_date
+                  ? `Overdue · ${format(parseISO(t.due_date.includes('T') ? t.due_date : `${t.due_date}T12:00:00`), 'MMM d')}${t.due_time && t.due_time.length >= 5 ? ` · ${format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a')}` : ''}`
+                  : 'Overdue'
+              }
+              done={false}
+              busy={toggleTask.isPending}
+              showToggle
+              label={`Complete overdue task ${t.title}`}
+              onToggle={() => toggleTask.mutate(t.id)}
+              onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            />
+          </div>
         </li>
       ),
     });
@@ -779,17 +1065,26 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       sortTime,
       element: (
         <li key={`task-${t.id}`}>
-          <DueTodayRow
-            kind="task"
-            title={t.title}
-            subtitle={t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time'}
-            done={false}
-            busy={toggleTask.isPending}
-            showToggle
-            label={`Complete task ${t.title}`}
-            onToggle={() => toggleTask.mutate(t.id)}
-            onClick={() => onSelectEntry({ ...t, kind: 'task' })}
-          />
+          <div
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onMouseDown={(e) => startPress(t, e)}
+            onMouseUp={(e) => endPressMouse(t, e)}
+            onMouseLeave={() => { if (longPressTimeout.current) { window.clearTimeout(longPressTimeout.current); longPressTimeout.current = null; } }}
+            onTouchStart={(e) => startPress(t, e)}
+            className="w-full"
+          >
+            <DueTodayRow
+              kind="task"
+              title={t.title}
+              subtitle={t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time'}
+              done={false}
+              busy={toggleTask.isPending}
+              showToggle
+              label={`Complete task ${t.title}`}
+              onToggle={() => toggleTask.mutate(t.id)}
+              onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            />
+          </div>
         </li>
       ),
     });
@@ -842,18 +1137,27 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       sortTime,
       element: (
         <li key={`habit-${h.id}`}>
-          <DueTodayRow
-            kind="habit"
-            title={h.title}
-            subtitle={subtitle}
-            done={done}
-            busy={logHabit.isPending}
-            showToggle
-            label={`Log habit ${h.title}`}
-            color={h.color}
-            onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
-            onClick={() => onSelectEntry({ ...h, kind: 'habit', entityId: h.id })}
-          />
+          <div
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onMouseDown={(e) => startPress({ ...h, kind: 'habit', entityId: h.id }, e)}
+            onMouseUp={(e) => endPressMouse({ ...h, kind: 'habit', entityId: h.id }, e)}
+            onMouseLeave={() => { if (longPressTimeout.current) { window.clearTimeout(longPressTimeout.current); longPressTimeout.current = null; } }}
+            onTouchStart={(e) => startPress({ ...h, kind: 'habit', entityId: h.id }, e)}
+            className="w-full"
+          >
+            <DueTodayRow
+              kind="habit"
+              title={h.title}
+              subtitle={subtitle}
+              done={done}
+              busy={logHabit.isPending}
+              showToggle
+              label={`Log habit ${h.title}`}
+              color={h.color}
+              onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
+              onClick={() => onSelectEntry({ ...h, kind: 'habit', entityId: h.id })}
+            />
+          </div>
         </li>
       ),
     });
@@ -931,43 +1235,52 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       sortTime,
       element: (
         <li key={item.id}>
-          <DueTodayRow
-            kind={item.kind as DueKind}
-            title={item.title}
-            subtitle={subtitle}
-            done={isDone}
-            busy={isTask ? toggleTask.isPending : isHabit ? logHabit.isPending : (toggleTask.isPending || createTask.isPending)}
-            showToggle={showToggle}
-            label={isTask ? `Complete task ${item.title}` : isHabit ? `Log habit ${item.title}` : isEvent ? `Complete event ${item.title}` : ''}
-            color={item.color}
-            onClick={() => onSelectEntry(item)}
-            onToggle={
-              isTask && item.entityId
-                ? () => toggleTask.mutate(item.entityId!)
-                : isHabit && item.entityId
-                  ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
-                  : isEvent
-                    ? async () => {
-                      if (linkedTask) {
-                        await toggleTask.mutateAsync(linkedTask.id);
-                      } else {
-                        const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-                        await createTask.mutateAsync({
-                          title: item.title,
-                          is_completed: true,
-                          priority: 'none',
-                          due_date: format(parsedStart, 'yyyy-MM-dd'),
-                          due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
-                          calendar_source_key: eventKey,
-                          calendar_event_id: item.type === 'ical' ? null : (item.originalId || item.id.replace('event-', '')),
-                          tag_ids: [],
-                          recurrence: 'none',
-                        });
+          <div
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onMouseDown={(e) => startPress(item, e)}
+            onMouseUp={(e) => endPressMouse(item, e)}
+            onMouseLeave={() => { if (longPressTimeout.current) { window.clearTimeout(longPressTimeout.current); longPressTimeout.current = null; } }}
+            onTouchStart={(e) => startPress(item, e)}
+            className="w-full"
+          >
+            <DueTodayRow
+              kind={item.kind as DueKind}
+              title={item.title}
+              subtitle={subtitle}
+              done={isDone}
+              busy={isTask ? toggleTask.isPending : isHabit ? logHabit.isPending : (toggleTask.isPending || createTask.isPending)}
+              showToggle={showToggle}
+              label={isTask ? `Complete task ${item.title}` : isHabit ? `Log habit ${item.title}` : isEvent ? `Complete event ${item.title}` : ''}
+              color={item.color}
+              onClick={() => onSelectEntry(item)}
+              onToggle={
+                isTask && item.entityId
+                  ? () => toggleTask.mutate(item.entityId!)
+                  : isHabit && item.entityId
+                    ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
+                    : isEvent
+                      ? async () => {
+                        if (linkedTask) {
+                          await toggleTask.mutateAsync(linkedTask.id);
+                        } else {
+                          const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+                          await createTask.mutateAsync({
+                            title: item.title,
+                            is_completed: true,
+                            priority: 'none',
+                            due_date: format(parsedStart, 'yyyy-MM-dd'),
+                            due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
+                            calendar_source_key: eventKey,
+                            calendar_event_id: item.type === 'ical' ? null : (item.originalId || item.id.replace('event-', '')),
+                            tag_ids: [],
+                            recurrence: 'none',
+                          });
+                        }
                       }
-                    }
-                    : undefined
-            }
-          />
+                      : undefined
+              }
+            />
+          </div>
         </li>
       ),
     });
@@ -991,17 +1304,26 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       sortTime,
       element: (
         <li key={key}>
-          <DueTodayRow
-            kind="task"
-            title={t.title}
-            subtitle={t.completed_at ? format(parseISO(t.completed_at), 'h:mm a') : (t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time')}
-            done={true}
-            busy={toggleTask.isPending}
-            showToggle
-            label={`Complete task ${t.title}`}
-            onToggle={() => toggleTask.mutate(t.id)}
-            onClick={() => onSelectEntry({ ...t, kind: 'task' })}
-          />
+          <div
+            onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onMouseDown={(e) => startPress(t, e)}
+            onMouseUp={(e) => endPressMouse(t, e)}
+            onMouseLeave={() => { if (longPressTimeout.current) { window.clearTimeout(longPressTimeout.current); longPressTimeout.current = null; } }}
+            onTouchStart={(e) => startPress(t, e)}
+            className="w-full"
+          >
+            <DueTodayRow
+              kind="task"
+              title={t.title}
+              subtitle={t.completed_at ? format(parseISO(t.completed_at), 'h:mm a') : (t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time')}
+              done={true}
+              busy={toggleTask.isPending}
+              showToggle
+              label={`Complete task ${t.title}`}
+              onToggle={() => toggleTask.mutate(t.id)}
+              onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            />
+          </div>
         </li>
       ),
     });
@@ -1238,6 +1560,166 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           )}
         </div>
       </section>
+
+      {/* 3D Haptic Touch Context Menu Overlay */}
+      <AnimatePresence>
+        {contextMenuEntry && (() => {
+          const isTask = contextMenuEntry.kind === 'task' || (contextMenuEntry.id && !contextMenuEntry.id.startsWith('habit-') && !contextMenuEntry.id.startsWith('event-') && !contextMenuEntry.id.startsWith('prayer-'));
+          const isHabit = contextMenuEntry.kind === 'habit';
+          const isEvent = contextMenuEntry.kind === 'event';
+          const isPrayer = contextMenuEntry.kind === 'prayer';
+
+          const parsedStart = isEvent && contextMenuEntry.start_time ? parseISO(contextMenuEntry.start_time) : null;
+          const eventKey = isEvent ? (contextMenuEntry.type === 'ical' ? `ical:${contextMenuEntry.id.replace('event-', '')}` : `event:${contextMenuEntry.id.replace('event-', '')}`) : '';
+          const eventIdToCheck = isEvent ? (contextMenuEntry.originalId || contextMenuEntry.id.replace('event-', '')) : '';
+          const eventDateToCheck = isEvent && parsedStart ? format(parsedStart, 'yyyy-MM-dd') : '';
+          const linkedTask = isEvent ? (completedTasks.find((t) =>
+            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+            t.due_date === eventDateToCheck
+          ) || todayTasks.find((t) =>
+            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+            t.due_date === eventDateToCheck
+          ) || overdueTasks.find((t) =>
+            (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+            t.due_date === eventDateToCheck
+          )) : null;
+
+          const isCompleted = isTask
+            ? contextMenuEntry.is_completed || contextMenuEntry.done
+            : isHabit
+              ? isHabitDoneToday(contextMenuEntry.entityId || contextMenuEntry.id)
+              : isEvent
+                ? !!(linkedTask?.is_completed)
+                : isPrayer
+                  ? contextMenuEntry.done
+                  : false;
+
+          const title = contextMenuEntry.title || contextMenuEntry.label || '';
+          const description = contextMenuEntry.description || '';
+
+          return (
+            <div data-context-menu="true" className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/45 dark:bg-black/60 backdrop-blur-md touch-none"
+                onClick={() => {
+                  void triggerHaptics('light');
+                  setContextMenuEntry(null);
+                }}
+              />
+
+              <motion.div
+                data-context-menu-container="true"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.92, y: 15 }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
+              >
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
+                      isCompleted ? "bg-green-500 border-green-500" : "border-muted-foreground"
+                    )}>
+                      {isCompleted && (
+                        <Check className="w-3.5 h-3.5 text-white" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "font-semibold text-foreground text-[16px] leading-snug tracking-tight",
+                        isCompleted && "line-through text-muted-foreground font-normal"
+                      )}>
+                        {title}
+                      </p>
+                      {description && (
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-3">
+                          {description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
+                  <button
+                    type="button"
+                    data-menu-action="toggle"
+                    onClick={() => {
+                      executeMenuAction('toggle', contextMenuEntry);
+                      setContextMenuEntry(null);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                      hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                    )}
+                  >
+                    <span>{isCompleted ? 'Mark Uncompleted' : 'Mark Completed'}</span>
+                    <CheckCircle2 size={16} className="text-muted-foreground" />
+                  </button>
+
+                  {isTask && (
+                    <button
+                      type="button"
+                      data-menu-action="postpone"
+                      onClick={() => {
+                        executeMenuAction('postpone', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Postpone 1 Hour</span>
+                      <Clock size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
+
+                  {!isPrayer && (
+                    <button
+                      type="button"
+                      data-menu-action="edit"
+                      onClick={() => {
+                        executeMenuAction('edit', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>{isHabit ? 'View Insights...' : 'View Details...'}</span>
+                      <Edit2 size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
+
+                  {isTask && (
+                    <button
+                      type="button"
+                      data-menu-action="delete"
+                      onClick={() => {
+                        executeMenuAction('delete', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
+                        hoveredMenuAction === 'delete' && "bg-red-500/15"
+                      )}
+                    >
+                      <span>Delete Task</span>
+                      <Trash2 size={16} className="text-red-500" />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
+      </AnimatePresence>
     </div>
   );
 }

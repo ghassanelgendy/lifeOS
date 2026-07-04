@@ -12,11 +12,20 @@ import { useCalendarEvents, useUpdateCalendarEvent } from '../hooks/useCalendar'
 import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Edit2 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateEntry?: (updated: any) => void }) {
   const isHabit = entry.kind === 'habit' || ('frequency' in entry);
   const habitId = entry.entityId || entry.id;
   const navigate = useNavigate();
+
+  const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
+  const cardClassName = isIOS 
+    ? "rounded-xl border border-black/5 dark:border-white/5 bg-white/40 dark:bg-black/25 backdrop-blur-md p-3"
+    : "rounded-xl border border-border bg-card p-3";
+  const inputClassName = isIOS
+    ? "w-full rounded-xl border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+    : "w-full rounded-xl border border-border bg-card p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50";
 
   const { data: fullHabit } = useHabit(isHabit ? habitId : '');
   const { data: taskLists = [] } = useTaskLists();
@@ -130,19 +139,19 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
     return (
       <div className="space-y-4 py-2 text-foreground font-sans">
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Adherence</p>
             <p className="text-xl font-bold mt-1 text-emerald-500">{adherence}%</p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Usual Time</p>
             <p className="text-sm font-semibold mt-1 truncate">{usualTime.replace(/^Usually\s+/i, '')}</p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Last Completed</p>
             <p className="text-sm font-semibold mt-1 truncate">{lastDone}</p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Best Day</p>
             <p className="text-sm font-semibold mt-1 truncate">{bestDay.replace(/^Most often\s+/i, '')}</p>
           </div>
@@ -150,26 +159,26 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
         
         {/* Weekly Stats Grid */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Weekly Avg</p>
             <p className="text-lg font-bold mt-1 text-primary">{weeklyAverageFormatted}x</p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">This Week</p>
             <p className="text-lg font-bold mt-1 text-primary">{currentWeekCount} times</p>
           </div>
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Last Week</p>
             <p className="text-lg font-bold mt-1 text-primary">{lastWeekCount} times</p>
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className={cardClassName}>
           <p className="text-xs text-muted-foreground uppercase font-semibold">Total Completions (90d)</p>
           <p className="text-sm font-semibold mt-1">{totalCount} times</p>
         </div>
         {entry.description && (
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Description</p>
             <p className="text-sm mt-1 whitespace-pre-wrap text-muted-foreground leading-relaxed">{entry.description}</p>
           </div>
@@ -236,19 +245,19 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
 
         <div className="grid grid-cols-2 gap-3">
           {formattedDate && (
-            <div className="rounded-xl border border-border bg-card p-3">
+            <div className={cardClassName}>
               <p className="text-xs text-muted-foreground uppercase font-semibold">Due Date</p>
               <p className="text-sm font-semibold mt-1 truncate">{formattedDate}</p>
             </div>
           )}
-          <div className={cn("rounded-xl border border-border bg-card p-3", !formattedDate && "col-span-2")}>
+          <div className={cn(cardClassName, !formattedDate && "col-span-2")}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Due Time</p>
             <p className="text-sm font-semibold mt-1 truncate">{formattedTime}</p>
           </div>
         </div>
 
         {list && (
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">List</p>
             <p className="text-sm font-semibold mt-1.5 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: list.color }} />
@@ -258,7 +267,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
         )}
 
         {priority && priority !== 'none' && (
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Priority</p>
             <span className={cn(
               "inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold mt-1.5 border",
@@ -270,7 +279,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
         )}
 
         {matchedTags.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Tags</p>
             <div className="flex flex-wrap gap-1.5">
               {matchedTags.map(tag => (
@@ -287,7 +296,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
           </div>
         )}
 
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className={cardClassName}>
           <p className="text-xs text-muted-foreground uppercase font-semibold">Notes</p>
           <p className="text-sm mt-1 whitespace-pre-wrap text-muted-foreground leading-relaxed">
             {taskDescription || 'No description or notes added.'}
@@ -316,7 +325,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
             <label className="text-xs text-muted-foreground uppercase font-semibold">Title</label>
             <input
               type="text"
-              className="w-full rounded-xl border border-border bg-card p-3 font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={cn(inputClassName, "font-semibold")}
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
               placeholder="Event Title"
@@ -324,11 +333,11 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-border bg-card p-3">
+            <div className={cardClassName}>
               <p className="text-xs text-muted-foreground uppercase font-semibold">Date</p>
               <p className="text-sm font-semibold mt-1">{dateStr}</p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-3">
+            <div className={cardClassName}>
               <p className="text-xs text-muted-foreground uppercase font-semibold">Time</p>
               <p className="text-sm font-semibold mt-1">{start}{end ? ` - ${end}` : ''}</p>
             </div>
@@ -338,7 +347,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
             <label className="text-xs text-muted-foreground uppercase font-semibold">Location</label>
             <input
               type="text"
-              className="w-full rounded-xl border border-border bg-card p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className={cn(inputClassName, "text-sm")}
               value={editLocation}
               onChange={(e) => setEditLocation(e.target.value)}
               placeholder="Location"
@@ -348,7 +357,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
           <div className="space-y-2">
             <label className="text-xs text-muted-foreground uppercase font-semibold">Description</label>
             <textarea
-              className="w-full rounded-xl border border-border bg-card p-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 min-h-[100px]"
+              className={cn(inputClassName, "text-sm min-h-[100px]")}
               value={editDescription}
               onChange={(e) => setEditDescription(e.target.value)}
               placeholder="Description"
@@ -388,20 +397,20 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
           )}
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className={cardClassName}>
           <p className="text-xs text-muted-foreground uppercase font-semibold">Date</p>
           <p className="text-sm font-semibold mt-1">{dateStr}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className={cardClassName}>
           <p className="text-xs text-muted-foreground uppercase font-semibold">Time</p>
           <p className="text-sm font-semibold mt-1">{start}{end ? ` - ${end}` : ''}</p>
         </div>
-        <div className="rounded-xl border border-border bg-card p-3">
+        <div className={cardClassName}>
           <p className="text-xs text-muted-foreground uppercase font-semibold">Location</p>
           <p className="text-sm font-semibold mt-1 text-muted-foreground">{location}</p>
         </div>
         {description && (
-          <div className="rounded-xl border border-border bg-card p-3">
+          <div className={cardClassName}>
             <p className="text-xs text-muted-foreground uppercase font-semibold">Description</p>
             <p className="text-sm mt-1 whitespace-pre-wrap text-muted-foreground leading-relaxed">{description}</p>
           </div>
