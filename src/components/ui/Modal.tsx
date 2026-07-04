@@ -150,13 +150,9 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
       className={cn(
         "fixed inset-0 z-[110] flex items-end sm:items-center justify-center modal-backdrop-ios",
         isIOS ? "bg-black/35 backdrop-blur-md" : "bg-black/50 backdrop-blur-sm",
-        "min-h-[100svh] sm:min-h-0",
         "sm:p-4 sm:bg-background/80"
       )}
-      style={{ 
-        height: '100svh',
-        overscrollBehavior: 'contain'
-      }}
+      style={{ overscrollBehavior: 'contain' }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
     >
       <div
@@ -166,7 +162,7 @@ export function Modal({ isOpen, onClose, title, children, className, swipeToClos
           isIOS 
             ? "liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10" 
             : "bg-card border border-border rounded-[24px]",
-          "max-h-[calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
+          "max-h-[calc(100%-env(safe-area-inset-top)-env(safe-area-inset-bottom)-0.5rem)] sm:max-h-[85vh]",
           "min-h-0",
           className
         )}

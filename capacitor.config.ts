@@ -20,6 +20,12 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       showSpinner: false,
       backgroundColor: "#09090b"
+    },
+    Keyboard: {
+      // Don't shrink the webview when keyboard opens — CSS svh units handle it
+      resize: "none",
+      style: "dark",
+      resizeOnFullScreen: false
     }
   }
 };

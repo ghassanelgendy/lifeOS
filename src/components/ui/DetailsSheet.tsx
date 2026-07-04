@@ -53,6 +53,18 @@ export function DetailsSheet({
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
   // ponytail: svh (small viewport height) already excludes the iOS keyboard — no JS tracking needed
+  // Since Capacitor Keyboard.resize=none, we scroll the focused element into view ourselves
+  useEffect(() => {
+    if (!isIOS || !isOpen) return;
+    const onFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (!target || !contentRef.current?.contains(target)) return;
+      // Small delay lets the keyboard animation start before scrolling
+      setTimeout(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 120);
+    };
+    document.addEventListener('focusin', onFocusIn);
+    return () => document.removeEventListener('focusin', onFocusIn);
+  }, [isIOS, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -180,7 +192,7 @@ export function DetailsSheet({
         isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
-      style={{ height: '100svh', overscrollBehavior: 'contain' }}
+      style={{ overscrollBehavior: 'contain' }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
       role="dialog"
       aria-modal="true"
@@ -195,8 +207,8 @@ export function DetailsSheet({
             : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
-          height: '92svh',
-          maxHeight: 'calc(100svh - env(safe-area-inset-top))',
+          // Fill from bottom up to just below the safe-area-inset-top
+          height: 'calc(100% - env(safe-area-inset-top) - 8px)',
           paddingBottom: 'env(safe-area-inset-bottom)',
           willChange: 'transform',
           transform: dragY > 0
