@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
-import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search, ChevronDown, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, AreaChart, Area } from 'recharts';
 import { cn } from '../lib/utils';
 import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
@@ -17,6 +18,12 @@ import { useQueryClient } from '@tanstack/react-query';
     return `${mins}m`;
   }
 
+  const BROWSER_APP_NAMES = ['safari', 'chrome', 'msedge', 'firefox', 'browser', 'opera', 'brave', 'arc'];
+  function isBrowserApp(name: string): boolean {
+    const norm = (name || '').toLowerCase().trim();
+    return BROWSER_APP_NAMES.some(b => norm.includes(b));
+  }
+
   type ViewPeriod = 'today' | 'yesterday' | 'week' | 'month' | 'lastMonth' | '30days' | 'custom';
 
   export default function Screentime() {
@@ -24,6 +31,7 @@ import { useQueryClient } from '@tanstack/react-query';
     const today = new Date();
     const todayStr = format(today, 'yyyy-MM-dd');
   const [period, setPeriod] = useState<ViewPeriod>('today');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [customStartDate, setCustomStartDate] = useState(todayStr);
   const [customEndDate, setCustomEndDate] = useState(todayStr);
   const [showAllApps, setShowAllApps] = useState(false);
@@ -196,10 +204,16 @@ import { useQueryClient } from '@tanstack/react-query';
         byCategory.set(category, existing);
       });
 
+      const hasIOSBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'ios' && isBrowserApp(s.app_name));
+      const hasWindowsBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'windows' && isBrowserApp(s.app_name));
+
       const webCategory = 'Web domains';
       websitesForDisplay.forEach((stat) => {
         const bucket = screentimeUiPlatform(stat.platform);
         if (!bucket) return;
+        if (bucket === 'ios' && hasIOSBrowser) return; // skip websites if browser is counted
+        if (bucket === 'windows' && hasWindowsBrowser) return; // skip websites if browser is counted
+        
         const existing = byCategory.get(webCategory) || { ios: 0, windows: 0 };
         if (bucket === 'ios') existing.ios += stat.total_time_seconds;
         else existing.windows += stat.total_time_seconds;
@@ -274,17 +288,26 @@ import { useQueryClient } from '@tanstack/react-query';
         platformLabel: platformLabel(site.platform),
       }));
 
-    // Total = app + domain (browser) time per device; Windows tracker often records sites separately from app rows.
+     // Total = app + domain (browser) time per device (deduplicated to avoid double counting browser and websites)
     const { totalSeconds, totalMinutes, totalHours, remainingMinutes, iosSeconds, windowsSeconds } = useMemo(() => {
       let ios = 0;
       let win = 0;
-      const add = (platform: string | null | undefined, seconds: number) => {
+      
+      const hasIOSBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'ios' && isBrowserApp(s.app_name));
+      const hasWindowsBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'windows' && isBrowserApp(s.app_name));
+
+      const add = (platform: string | null | undefined, seconds: number, isWebsite: boolean) => {
         const b = screentimeUiPlatform(platform);
-        if (b === 'ios') ios += seconds;
-        else if (b === 'windows') win += seconds;
+        if (b === 'ios') {
+          if (isWebsite && hasIOSBrowser) return; // skip websites if browser is counted
+          ios += seconds;
+        } else if (b === 'windows') {
+          if (isWebsite && hasWindowsBrowser) return; // skip websites if browser is counted
+          win += seconds;
+        }
       };
-      statsForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds));
-      websitesForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds));
+      statsForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds, false));
+      websitesForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds, true));
       const total = ios + win;
       const mins = Math.round(total / 60);
       return {
@@ -301,19 +324,37 @@ import { useQueryClient } from '@tanstack/react-query';
     const chartData = useMemo(() => {
       const byDate = new Map<string, { ios: number; windows: number }>();
 
-      const bump = (dateRaw: string, platform: string | null | undefined, seconds: number) => {
+      // Pre-calculate which dates have browser apps for iOS/Windows to avoid double counting
+      const browserDatesIOS = new Set<string>();
+      const browserDatesWindows = new Set<string>();
+      appStats.forEach(stat => {
+        const d = screentimeDateKey(stat.date);
+        const b = screentimeUiPlatform(stat.platform);
+        if (d && b && isBrowserApp(stat.app_name)) {
+          if (b === 'ios') browserDatesIOS.add(d);
+          else if (b === 'windows') browserDatesWindows.add(d);
+        }
+      });
+
+      const bump = (dateRaw: string, platform: string | null | undefined, seconds: number, isWebsite: boolean) => {
         const d = screentimeDateKey(dateRaw);
         if (!d) return;
         const b = screentimeUiPlatform(platform);
         if (!b) return;
+
+        if (isWebsite) {
+          if (b === 'ios' && browserDatesIOS.has(d)) return;
+          if (b === 'windows' && browserDatesWindows.has(d)) return;
+        }
+
         const existing = byDate.get(d) || { ios: 0, windows: 0 };
         if (b === 'ios') existing.ios += seconds;
         else existing.windows += seconds;
         byDate.set(d, existing);
       };
 
-      appStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds));
-      websiteStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds));
+      appStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds, false));
+      websiteStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds, true));
 
       let minDate: string;
       let maxDate: string;
@@ -565,52 +606,96 @@ import { useQueryClient } from '@tanstack/react-query';
             Track your digital usage across devices
           </p>
         </div>
-
-        {/* Period selector - iOS Segmented Control Track */}
-        <div className="flex items-center gap-2">
-          <div className="overflow-x-auto flex-1 scrollbar-none">
-            <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 min-w-max gap-1">
-            {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => {
-                  setPeriod(p);
-                  if (p === 'week') setWeekStart(format(startOfWeek(today), 'yyyy-MM-dd'));
-                }}
-                className={cn(
-                  'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap flex-shrink-0 select-none transform-gpu active:scale-98',
-                  period === p 
-                    ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.02]' 
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {p === 'today'
+        {/* Period Selector - iOS 26 Inline Accordion Dropdown */}
+        <div className="flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="liquid-glass-card flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all select-none border-0 shadow-sm transform-gpu active:scale-98 cursor-pointer"
+            >
+              <Calendar className="text-primary relative z-10" size={16} />
+              <span className="relative z-10">
+                {period === 'today'
                   ? 'Today'
-                  : p === 'yesterday'
+                  : period === 'yesterday'
                     ? 'Yesterday'
-                    : p === 'week'
+                    : period === 'week'
                       ? 'This Week'
-                      : p === 'month'
+                      : period === 'month'
                         ? 'This Month'
-                        : p === 'lastMonth'
+                        : period === 'lastMonth'
                           ? 'Last Month'
-                          : p === '30days'
+                          : period === '30days'
                             ? 'Last 30 Days'
                             : 'Custom Range'}
-              </button>
-            ))}
-            </div>
+              </span>
+              <ChevronDown className="text-muted-foreground ml-1 transition-transform duration-200 relative z-10" size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none' }} />
+            </button>
+
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              aria-label="Refresh screentime data"
+              className="liquid-glass-card shrink-0 p-2 text-muted-foreground hover:text-foreground active:scale-95 transition-all disabled:opacity-50 border-0 cursor-pointer"
+            >
+              <RefreshCw size={15} className={cn("relative z-10", isRefreshing && "animate-spin")} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            aria-label="Refresh screentime data"
-            className="shrink-0 p-2 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 text-muted-foreground hover:text-foreground active:scale-95 transition-all disabled:opacity-50"
-          >
-            <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
-          </button>
+
+          <AnimatePresence>
+            {dropdownOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
+                className="w-full max-w-xs overflow-hidden"
+              >
+                <div className="liquid-glass-card mt-2 divide-y divide-black/[0.04] dark:divide-white/[0.04] border-0">
+                  {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p, index) => {
+                    const isSelected = period === p;
+                    const label = p === 'today'
+                      ? 'Today'
+                      : p === 'yesterday'
+                        ? 'Yesterday'
+                        : p === 'week'
+                          ? 'This Week'
+                          : p === 'month'
+                            ? 'This Month'
+                            : p === 'lastMonth'
+                              ? 'Last Month'
+                              : p === '30days'
+                                ? 'Last 30 Days'
+                                : 'Custom Range';
+                    
+                    return (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => {
+                          setPeriod(p);
+                          if (p === 'week') setWeekStart(format(startOfWeek(today), 'yyyy-MM-dd'));
+                          setDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
+                          isSelected 
+                            ? "text-primary bg-primary/5" 
+                            : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                          index !== 6 && "border-b border-black/[0.04] dark:border-white/[0.04]"
+                        )}
+                      >
+                        <span>{label}</span>
+                        {isSelected && <Check className="text-primary" size={16} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Custom Range Inputs - iOS Glass Treatment */}

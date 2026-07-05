@@ -1989,21 +1989,31 @@ export default function Tasks() {
           {/* Spacer on desktop */}
           <div className="md:flex hidden flex-1" />
 
-          {/* Sort button */}
-          <button
-            type="button"
-            onClick={cycleSortMode}
-            className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90 shrink-0"
-            title={`Sort: ${currentSortOption.label} (press S to cycle)`}
-            aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
-          >
-            <ArrowUpDown size={16} className="text-muted-foreground" />
-          </button>
-          {sortFeedback && (
-            <span className="text-xs text-muted-foreground bg-secondary/70 border border-border px-2 py-1 rounded-lg whitespace-nowrap shrink-0">
-              {sortFeedback}
-            </span>
-          )}
+          {/* Sort button & feedback container */}
+          <div className="relative flex items-center justify-center shrink-0">
+            <AnimatePresence>
+              {sortFeedback && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.95, x: 10 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, x: 10 }}
+                  transition={{ type: 'spring', duration: 0.25, stiffness: 450, damping: 28 }}
+                  className="absolute right-full mr-2 text-xs text-muted-foreground bg-secondary/80 dark:bg-[#1c1c1e]/85 backdrop-blur-md border border-border dark:border-white/10 px-2.5 py-1 rounded-lg whitespace-nowrap z-10 shadow-sm pointer-events-none"
+                >
+                  {sortFeedback}
+                </motion.span>
+              )}
+            </AnimatePresence>
+            <button
+              type="button"
+              onClick={cycleSortMode}
+              className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90"
+              title={`Sort: ${currentSortOption.label} (press S to cycle)`}
+              aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
+            >
+              <ArrowUpDown size={16} className="text-muted-foreground" />
+            </button>
+          </div>
           <button
             onClick={handleOpenNewTaskSheet}
             className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all md:flex hidden items-center justify-center shrink-0"

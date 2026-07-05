@@ -20,8 +20,11 @@ import {
   Code2,
   TrendingUp as TrendingUpIcon,
   Wallet,
+  ChevronDown,
+  Check,
   type LucideIcon,
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   BarChart,
   Bar,
@@ -159,6 +162,8 @@ export default function Finance() {
 
   const [selectedBank, setSelectedBank] = useState<string>(''); // '' = All (consolidated)
   const [selectedQNBAccount, setSelectedQNBAccount] = useState<'all' | 'debit' | 'credit'>('all'); // Only when bank is QNB
+  const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
+  const [qnbDropdownOpen, setQnbDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedInvestmentAccount, setSelectedInvestmentAccount] = useState<string>(''); // '' = All
   const filteredInvestmentTransactions =
@@ -791,36 +796,141 @@ export default function Finance() {
             <ChevronRight size={16} />
           </button>
         </div>
-        <div className="flex items-center justify-center sm:justify-end gap-1.5 min-w-0">
-          <Wallet className="size-3.5 text-muted-foreground shrink-0 opacity-80" aria-hidden />
-          <Select
-            aria-label="Bank or consolidated view"
-            value={selectedBank}
-            onChange={(e) => {
-              setSelectedBank(e.target.value);
-              if (e.target.value !== 'QNB') setSelectedQNBAccount('all');
-            }}
-            options={[
-              { value: '', label: 'Consolidated' },
-              ...bankOptions.map((name) => ({ value: name, label: name })),
-            ]}
-            title="All banks combined"
-            className="h-8 min-h-8 py-0 text-xs leading-tight px-2 w-auto min-w-[6.5rem] max-w-[min(11rem,calc(100vw-5rem))]"
-          />
-          {selectedBank === 'QNB' && (
-            <Select
-              aria-label="QNB card"
-              value={selectedQNBAccount}
-              onChange={(e) => setSelectedQNBAccount(e.target.value as 'all' | 'debit' | 'credit')}
-              options={[
-                { value: 'all', label: 'All cards' },
-                { value: 'debit', label: 'Debit' },
-                { value: 'credit', label: 'Credit' },
-              ]}
-              title="Debit: 0050/**7893 · Credit: ****1473"
-              className="h-8 min-h-8 py-0 text-xs leading-tight px-2 w-auto min-w-[5.5rem] max-w-[min(9rem,calc(100vw-6rem))]"
-            />
-          )}
+        <div className="flex flex-col items-center sm:items-end gap-2 w-full sm:w-auto">
+          <div className="flex items-center justify-center sm:justify-end gap-1.5 min-w-0">
+            <button
+              type="button"
+              onClick={() => {
+                setBankDropdownOpen(!bankDropdownOpen);
+                setQnbDropdownOpen(false);
+              }}
+              className="liquid-glass-card flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all select-none border-0 shadow-sm transform-gpu active:scale-98 cursor-pointer min-h-8"
+              title="All banks combined"
+            >
+              <Wallet className="size-3.5 text-primary relative z-10 shrink-0 opacity-80" aria-hidden />
+              <span className="relative z-10 whitespace-nowrap truncate max-w-[100px]">
+                {selectedBank === '' ? 'Consolidated' : selectedBank}
+              </span>
+              <ChevronDown className="text-muted-foreground ml-0.5 transition-transform duration-200 relative z-10 shrink-0" size={12} style={{ transform: bankDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+            </button>
+
+            {selectedBank === 'QNB' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setQnbDropdownOpen(!qnbDropdownOpen);
+                  setBankDropdownOpen(false);
+                }}
+                className="liquid-glass-card flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all select-none border-0 shadow-sm transform-gpu active:scale-98 cursor-pointer min-h-8"
+                title="Debit: 0050/**7893 · Credit: ****1473"
+              >
+                <span className="relative z-10 whitespace-nowrap">
+                  {selectedQNBAccount === 'all' ? 'All cards' : selectedQNBAccount === 'debit' ? 'Debit' : 'Credit'}
+                </span>
+                <ChevronDown className="text-muted-foreground ml-0.5 transition-transform duration-200 relative z-10 shrink-0" size={12} style={{ transform: qnbDropdownOpen ? 'rotate(180deg)' : 'none' }} />
+              </button>
+            )}
+          </div>
+
+          <AnimatePresence>
+            {bankDropdownOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
+                className="w-full max-w-[192px] overflow-hidden"
+              >
+                <div className="liquid-glass-card mt-2 divide-y divide-black/[0.04] dark:divide-white/[0.04] border-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBank('');
+                      setSelectedQNBAccount('all');
+                      setBankDropdownOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
+                      selectedBank === '' 
+                        ? "text-primary bg-primary/5" 
+                        : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                      bankOptions.length > 0 && "border-b border-black/[0.04] dark:border-white/[0.04]"
+                    )}
+                  >
+                    <span>Consolidated</span>
+                    {selectedBank === '' && <Check className="text-primary" size={14} />}
+                  </button>
+                  
+                  {bankOptions.map((name, index) => {
+                    const isSelected = selectedBank === name;
+                    return (
+                      <button
+                        key={name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedBank(name);
+                          if (name !== 'QNB') setSelectedQNBAccount('all');
+                          setBankDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
+                          isSelected 
+                            ? "text-primary bg-primary/5" 
+                            : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                          index !== bankOptions.length - 1 && "border-b border-black/[0.04] dark:border-white/[0.04]"
+                        )}
+                      >
+                        <span className="truncate">{name}</span>
+                        {isSelected && <Check className="text-primary" size={14} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {qnbDropdownOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
+                className="w-full max-w-[128px] overflow-hidden"
+              >
+                <div className="liquid-glass-card mt-2 divide-y divide-black/[0.04] dark:divide-white/[0.04] border-0">
+                  {([
+                    { value: 'all', label: 'All cards' },
+                    { value: 'debit', label: 'Debit' },
+                    { value: 'credit', label: 'Credit' }
+                  ] as const).map((opt, index) => {
+                    const isSelected = selectedQNBAccount === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedQNBAccount(opt.value);
+                          setQnbDropdownOpen(false);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
+                          isSelected 
+                            ? "text-primary bg-primary/5" 
+                            : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                          index !== 2 && "border-b border-black/[0.04] dark:border-white/[0.04]"
+                        )}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="text-primary" size={14} />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 

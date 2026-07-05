@@ -16,6 +16,12 @@ import { useUIStore } from '../stores/useUIStore';
     return `${mins}m`;
   }
 
+  const BROWSER_APP_NAMES = ['safari', 'chrome', 'msedge', 'firefox', 'browser', 'opera', 'brave', 'arc'];
+  function isBrowserApp(name: string): boolean {
+    const norm = (name || '').toLowerCase().trim();
+    return BROWSER_APP_NAMES.some(b => norm.includes(b));
+  }
+
   type ViewPeriod = 'today' | 'yesterday' | 'week' | 'month' | 'lastMonth' | '30days' | 'custom';
 
   export default function Screentime() {
@@ -187,10 +193,16 @@ import { useUIStore } from '../stores/useUIStore';
         byCategory.set(category, existing);
       });
 
+      const hasIOSBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'ios' && isBrowserApp(s.app_name));
+      const hasWindowsBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'windows' && isBrowserApp(s.app_name));
+
       const webCategory = 'Web domains';
       websitesForDisplay.forEach((stat) => {
         const bucket = screentimeUiPlatform(stat.platform);
         if (!bucket) return;
+        if (bucket === 'ios' && hasIOSBrowser) return; // skip websites if browser is counted
+        if (bucket === 'windows' && hasWindowsBrowser) return; // skip websites if browser is counted
+        
         const existing = byCategory.get(webCategory) || { ios: 0, windows: 0 };
         if (bucket === 'ios') existing.ios += stat.total_time_seconds;
         else existing.windows += stat.total_time_seconds;
@@ -265,17 +277,26 @@ import { useUIStore } from '../stores/useUIStore';
         platformLabel: platformLabel(site.platform),
       }));
 
-    // Total = app + domain (browser) time per device; Windows tracker often records sites separately from app rows.
+     // Total = app + domain (browser) time per device (deduplicated to avoid double counting browser and websites)
     const { totalSeconds, totalMinutes, totalHours, remainingMinutes, iosSeconds, windowsSeconds } = useMemo(() => {
       let ios = 0;
       let win = 0;
-      const add = (platform: string | null | undefined, seconds: number) => {
+      
+      const hasIOSBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'ios' && isBrowserApp(s.app_name));
+      const hasWindowsBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'windows' && isBrowserApp(s.app_name));
+
+      const add = (platform: string | null | undefined, seconds: number, isWebsite: boolean) => {
         const b = screentimeUiPlatform(platform);
-        if (b === 'ios') ios += seconds;
-        else if (b === 'windows') win += seconds;
+        if (b === 'ios') {
+          if (isWebsite && hasIOSBrowser) return; // skip websites if browser is counted
+          ios += seconds;
+        } else if (b === 'windows') {
+          if (isWebsite && hasWindowsBrowser) return; // skip websites if browser is counted
+          win += seconds;
+        }
       };
-      statsForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds));
-      websitesForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds));
+      statsForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds, false));
+      websitesForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds, true));
       const total = ios + win;
       const mins = Math.round(total / 60);
       return {
@@ -292,19 +313,37 @@ import { useUIStore } from '../stores/useUIStore';
     const chartData = useMemo(() => {
       const byDate = new Map<string, { ios: number; windows: number }>();
 
-      const bump = (dateRaw: string, platform: string | null | undefined, seconds: number) => {
+      // Pre-calculate which dates have browser apps for iOS/Windows to avoid double counting
+      const browserDatesIOS = new Set<string>();
+      const browserDatesWindows = new Set<string>();
+      appStats.forEach(stat => {
+        const d = screentimeDateKey(stat.date);
+        const b = screentimeUiPlatform(stat.platform);
+        if (d && b && isBrowserApp(stat.app_name)) {
+          if (b === 'ios') browserDatesIOS.add(d);
+          else if (b === 'windows') browserDatesWindows.add(d);
+        }
+      });
+
+      const bump = (dateRaw: string, platform: string | null | undefined, seconds: number, isWebsite: boolean) => {
         const d = screentimeDateKey(dateRaw);
         if (!d) return;
         const b = screentimeUiPlatform(platform);
         if (!b) return;
+
+        if (isWebsite) {
+          if (b === 'ios' && browserDatesIOS.has(d)) return;
+          if (b === 'windows' && browserDatesWindows.has(d)) return;
+        }
+
         const existing = byDate.get(d) || { ios: 0, windows: 0 };
         if (b === 'ios') existing.ios += seconds;
         else existing.windows += seconds;
         byDate.set(d, existing);
       };
 
-      appStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds));
-      websiteStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds));
+      appStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds, false));
+      websiteStats.forEach((stat) => bump(stat.date, stat.platform, stat.total_time_seconds, true));
 
       let minDate: string;
       let maxDate: string;
