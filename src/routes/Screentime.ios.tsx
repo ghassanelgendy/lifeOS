@@ -6,6 +6,7 @@ import { cn } from '../lib/utils';
 import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
+import { useQueryClient } from '@tanstack/react-query';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -29,6 +30,14 @@ import { useUIStore } from '../stores/useUIStore';
   const [weekStart, setWeekStart] = useState<string>(() => format(startOfWeek(today), 'yyyy-MM-dd'));
   const [platformFilter, setPlatformFilter] = useState<'all' | 'ios' | 'windows'>('all');
   const [appSearchQuery, setAppSearchQuery] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const queryClient = useQueryClient();
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({ queryKey: ['screentime'] });
+    setIsRefreshing(false);
+  };
 
   const getDateRange = (): { start: string; end: string } => {
     switch (period) {
@@ -555,8 +564,9 @@ import { useUIStore } from '../stores/useUIStore';
         </div>
 
         {/* Period selector - iOS Segmented Control Track */}
-        <div className="overflow-x-auto -mx-4 px-4 scrollbar-none">
-          <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 min-w-max gap-1">
+        <div className="flex items-center gap-2">
+          <div className="overflow-x-auto flex-1 scrollbar-none">
+            <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 min-w-max gap-1">
             {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p) => (
               <button
                 key={p}
@@ -587,7 +597,17 @@ import { useUIStore } from '../stores/useUIStore';
                             : 'Custom Range'}
               </button>
             ))}
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            aria-label="Refresh screentime data"
+            className="shrink-0 p-2 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 text-muted-foreground hover:text-foreground active:scale-95 transition-all disabled:opacity-50"
+          >
+            <RefreshCw size={15} className={isRefreshing ? 'animate-spin' : ''} />
+          </button>
         </div>
 
         {/* Custom Range Inputs - iOS Glass Treatment */}
