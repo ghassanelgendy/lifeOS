@@ -202,6 +202,8 @@ async function ensurePrayerRows(
   }
 }
 
+let lastSyncedDateWeb: string | null = null;
+
 export function usePrayerTracker(date: Date = new Date()) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -219,7 +221,10 @@ export function usePrayerTracker(date: Date = new Date()) {
 
   useEffect(() => {
     if (!user?.id || !timesSignature) return;
+    if (lastSyncedDateWeb === dateStr) return; // Prevent duplicate daily syncs in this session
+
     void ensurePrayerRows(user.id, timesRef.current).then(() => {
+      lastSyncedDateWeb = dateStr;
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
     }).catch(() => {});
@@ -237,6 +242,7 @@ export function usePrayerTracker(date: Date = new Date()) {
       return (data ?? []) as JoinedPrayerHabit[];
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 60, // 1 hour (almost static)
   });
 
   const logsQuery = useQuery({
@@ -251,6 +257,7 @@ export function usePrayerTracker(date: Date = new Date()) {
       return (data ?? []) as PrayerLog[];
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const weeklyQuery = useQuery({
@@ -269,6 +276,7 @@ export function usePrayerTracker(date: Date = new Date()) {
       return (data ?? []) as PrayerLog[];
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 15, // 15 minutes
   });
 
   const settingsQuery = useQuery({
@@ -282,6 +290,7 @@ export function usePrayerTracker(date: Date = new Date()) {
       return (data ?? []) as PrayerNotificationSetting[];
     },
     enabled: !!user?.id,
+    staleTime: 1000 * 60 * 60, // 1 hour (almost static)
   });
 
   const tracker = useMemo<PrayerTrackerItem[]>(() => {

@@ -151,8 +151,8 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
       return fetchAllAppStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: isTodayOnly ? 1000 * 60 * 1 : 1000 * 60 * 30, // 1 minute for today, 30 minutes for history
-    refetchInterval: isTodayOnly ? 1000 * 60 * 5 : false, // 5 minutes for today, never for history
+    staleTime: isTodayOnly ? 1000 * 60 * 15 : 1000 * 60 * 30, // 15 minutes for today, 30 minutes for history
+    refetchInterval: false, // Rely on manual refresh/focus
     refetchIntervalInBackground: false, // Never refetch in background
   });
 }
@@ -170,8 +170,8 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
       return fetchAllWebsiteStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: isTodayOnly ? 1000 * 60 * 1 : 1000 * 60 * 30, // 1 minute for today, 30 minutes for history
-    refetchInterval: isTodayOnly ? 1000 * 60 * 5 : false, // 5 minutes for today, never for history
+    staleTime: isTodayOnly ? 1000 * 60 * 15 : 1000 * 60 * 30, // 15 minutes for today, 30 minutes for history
+    refetchInterval: false, // Rely on manual refresh/focus
     refetchIntervalInBackground: false, // Never refetch in background
   });
 }
@@ -189,8 +189,8 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
       return fetchAllDailySummaries(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: isTodayOnly ? 1000 * 60 * 1 : 1000 * 60 * 30, // 1 minute for today, 30 minutes for history
-    refetchInterval: isTodayOnly ? 1000 * 60 * 5 : false, // 5 minutes for today, never for history
+    staleTime: isTodayOnly ? 1000 * 60 * 15 : 1000 * 60 * 30, // 15 minutes for today, 30 minutes for history
+    refetchInterval: false, // Rely on manual refresh/focus
     refetchIntervalInBackground: false, // Never refetch in background
   });
 }

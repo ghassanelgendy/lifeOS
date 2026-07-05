@@ -256,10 +256,13 @@ export function useHabitAverages() {
       const habitIds = habits?.map(h => h.id) || [];
       if (habitIds.length === 0) return {};
       
+      const startDateStr = toDateOnly(subDays(new Date(), 30));
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('habit_id, completed_at, created_at')
+        .select('habit_id, completed_at')
         .eq('completed', true)
+        .not('completed_at', 'is', null)
+        .gte('date', startDateStr)
         .in('habit_id', habitIds);
         
       if (error || !data) {
@@ -270,8 +273,7 @@ export function useHabitAverages() {
       const counts: Record<string, number> = {};
       
       data.forEach(log => {
-         // Some logs might not have completed_at (older ones), fallback to created_at
-         const timestamp = (log as any).completed_at || log.created_at;
+         const timestamp = log.completed_at;
          if (!timestamp) return;
          const d = new Date(timestamp);
          const minutes = d.getHours() * 60 + d.getMinutes();

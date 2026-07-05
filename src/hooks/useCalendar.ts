@@ -174,9 +174,9 @@ export function useIcalSubscriptionEvents(
     },
     enabled: subscriptions.length > 0 && !!startDate && !!endDate,
     staleTime: 1000 * 60 * 15, // 15 minutes
-    refetchInterval: 1000 * 60 * 30, // 30 minutes
+    refetchInterval: false, // Rely on manual refresh/focus
     refetchIntervalInBackground: false, // Never refetch in background
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 }
 
