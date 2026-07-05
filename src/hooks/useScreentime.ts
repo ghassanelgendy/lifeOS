@@ -21,7 +21,7 @@ function isPcLockApp(stat: Pick<ScreentimeAppStat, 'app_name' | 'source' | 'plat
 async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
   const { data, count, error } = await supabase
     .from('screentime_daily_app_stats')
-    .select('id, date, source, platform, app_name, category, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at', { count: 'exact' })
+    .select('id, date, source, platform, app_name, category, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at, updated_at', { count: 'exact' })
     .eq('user_id', userId)
     .gte('date', startDate)
     .lte('date', endDate)
@@ -39,7 +39,7 @@ async function fetchAllAppStats(userId: string, startDate: string, endDate: stri
       promises.push(
         supabase
           .from('screentime_daily_app_stats')
-          .select('id, date, source, platform, app_name, category, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
+          .select('id, date, source, platform, app_name, category, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at, updated_at')
           .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate)
@@ -61,7 +61,7 @@ async function fetchAllAppStats(userId: string, startDate: string, endDate: stri
 async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
   const { data, count, error } = await supabase
     .from('screentime_daily_website_stats')
-    .select('id, date, source, platform, domain, favicon_url, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at', { count: 'exact' })
+    .select('id, date, source, platform, domain, favicon_url, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at, updated_at', { count: 'exact' })
     .eq('user_id', userId)
     .gte('date', startDate)
     .lte('date', endDate)
@@ -79,7 +79,7 @@ async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: 
       promises.push(
         supabase
           .from('screentime_daily_website_stats')
-          .select('id, date, source, platform, domain, favicon_url, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
+          .select('id, date, source, platform, domain, favicon_url, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at, updated_at')
           .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate)
@@ -141,6 +141,9 @@ async function fetchAllDailySummaries(userId: string, startDate: string, endDate
 // Get app stats for a date range
 export function useScreentimeAppStats(startDate: string, endDate: string) {
   const { user } = useAuth();
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const isTodayOnly = startDate === endDate && startDate === today;
+
   return useQuery({
     queryKey: [...QUERY_KEY, 'apps', startDate, endDate, user?.id],
     queryFn: async () => {
@@ -148,15 +151,18 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
       return fetchAllAppStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: 0,
-    refetchInterval: 30000,
-    refetchIntervalInBackground: true,
+    staleTime: isTodayOnly ? 1000 * 60 * 1 : 1000 * 60 * 30, // 1 minute for today, 30 minutes for history
+    refetchInterval: isTodayOnly ? 1000 * 60 * 5 : false, // 5 minutes for today, never for history
+    refetchIntervalInBackground: false, // Never refetch in background
   });
 }
 
 // Get website stats for a date range
 export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
   const { user } = useAuth();
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const isTodayOnly = startDate === endDate && startDate === today;
+
   return useQuery({
     queryKey: [...QUERY_KEY, 'websites', startDate, endDate, user?.id],
     queryFn: async () => {
@@ -164,15 +170,18 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
       return fetchAllWebsiteStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: 0,
-    refetchInterval: 30000,
-    refetchIntervalInBackground: true,
+    staleTime: isTodayOnly ? 1000 * 60 * 1 : 1000 * 60 * 30, // 1 minute for today, 30 minutes for history
+    refetchInterval: isTodayOnly ? 1000 * 60 * 5 : false, // 5 minutes for today, never for history
+    refetchIntervalInBackground: false, // Never refetch in background
   });
 }
 
 // Get daily summaries (switches) for a date range
 export function useScreentimeDailySummaries(startDate: string, endDate: string) {
   const { user } = useAuth();
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const isTodayOnly = startDate === endDate && startDate === today;
+
   return useQuery({
     queryKey: [...QUERY_KEY, 'summaries', startDate, endDate, user?.id],
     queryFn: async () => {
@@ -180,9 +189,9 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
       return fetchAllDailySummaries(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: 0,
-    refetchInterval: 30000,
-    refetchIntervalInBackground: true,
+    staleTime: isTodayOnly ? 1000 * 60 * 1 : 1000 * 60 * 30, // 1 minute for today, 30 minutes for history
+    refetchInterval: isTodayOnly ? 1000 * 60 * 5 : false, // 5 minutes for today, never for history
+    refetchIntervalInBackground: false, // Never refetch in background
   });
 }
 
@@ -218,10 +227,14 @@ export function useTodayScreentime() {
     return acc;
   }, [] as ScreentimeWebsiteStat[]);
   
-  // App + domain rows (Windows tracker often attributes browser time to domains, not the browser app row).
+  const BROWSER_APP_NAMES = ['safari', 'chrome', 'msedge', 'firefox', 'browser', 'opera', 'brave', 'arc'];
+  const isBrowserApp = (name: string) => BROWSER_APP_NAMES.some(b => (name || '').toLowerCase().includes(b));
+  const hasBrowserApp = aggregatedApps.some(a => isBrowserApp(a.app_name));
+
+  // App + domain rows (deduplicated to avoid double counting browser and website times)
   const totalSeconds =
     aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0) +
-    aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
+    (hasBrowserApp ? 0 : aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0));
   
   const totalMinutes = Math.round(totalSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
@@ -249,8 +262,13 @@ export function useTodayScreentime() {
   };
 
   const deviceSeconds = { pc: 0, phone: 0, other: 0 };
-  for (const stat of [...aggregatedApps, ...aggregatedWebsites]) {
+  for (const stat of aggregatedApps) {
     deviceSeconds[classifyDevice(stat.source, stat.platform)] += stat.total_time_seconds || 0;
+  }
+  if (!hasBrowserApp) {
+    for (const stat of aggregatedWebsites) {
+      deviceSeconds[classifyDevice(stat.source, stat.platform)] += stat.total_time_seconds || 0;
+    }
   }
 
   return {
@@ -312,6 +330,16 @@ export function useScreentimeMetrics(days: number = 30) {
     websiteMap.set(stat.domain, current + stat.total_time_seconds);
   });
   
+  // Pre-calculate which dates have browser apps
+  const browserDates = new Set<string>();
+  appStats.forEach(stat => {
+    const dayKey = screentimeDateKey(stat.date);
+    const BROWSER_APP_NAMES = ['safari', 'chrome', 'msedge', 'firefox', 'browser', 'opera', 'brave', 'arc'];
+    if (dayKey && BROWSER_APP_NAMES.some(b => (stat.app_name || '').toLowerCase().includes(b))) {
+      browserDates.add(dayKey);
+    }
+  });
+
   // Per-day: total app time and "top app" vs "other apps" (meaningful split; no apps vs websites).
   dailyAppAggregates.forEach((appMap, date) => {
     const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
@@ -329,7 +357,10 @@ export function useScreentimeMetrics(days: number = 30) {
     const existing = dailyStats.get(date) || { apps: 0, websites: 0, total: 0, switches: 0, topApp: 0, otherApps: 0 };
     const webSum = Array.from(websiteMap.values()).reduce((sum, val) => sum + val, 0);
     existing.websites += webSum;
-    existing.total += webSum;
+    // Only add website sum to daily total if no browser app was active on that day
+    if (!browserDates.has(date)) {
+      existing.total += webSum;
+    }
     dailyStats.set(date, existing);
   });
 

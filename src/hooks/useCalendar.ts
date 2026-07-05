@@ -173,9 +173,9 @@ export function useIcalSubscriptionEvents(
       return events.sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
     },
     enabled: subscriptions.length > 0 && !!startDate && !!endDate,
-    staleTime: 0,
-    refetchInterval: 1000 * 30,
-    refetchIntervalInBackground: true,
+    staleTime: 1000 * 60 * 15, // 15 minutes
+    refetchInterval: 1000 * 60 * 30, // 30 minutes
+    refetchIntervalInBackground: false, // Never refetch in background
     refetchOnWindowFocus: true,
   });
 }
