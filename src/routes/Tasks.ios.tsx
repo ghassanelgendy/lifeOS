@@ -362,6 +362,10 @@ export default function Tasks() {
       return;
     }
 
+    // Prevent the browser's synthetic click event from firing on the newly opened modal/sheet overlay
+    e.preventDefault();
+    e.stopPropagation();
+
     // Normal tap: triggered if user released before long-press timeout
     if (pressTaskRef.current) {
       const task = pressTaskRef.current;

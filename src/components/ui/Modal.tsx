@@ -39,7 +39,7 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
 
   useEffect(() => {
-    if (!isOpen || isPake) return;
+    if (!isOpen || isPake || isIOS) return;
     const timer = window.setTimeout(() => {
       const root = panelRef.current;
       if (!root) return;
@@ -160,7 +160,9 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
           className
         )}
         style={{
-          maxHeight: '92dvh',
+          position: 'absolute',
+          bottom: 'var(--keyboard-height, 0px)',
+          maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom)',
           transform: dragY > 0
             ? `translateY(${dragY}px)`
@@ -181,7 +183,6 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
           }}
           onTouchMove={(e) => {
             if (!swipeToClose || window.innerWidth >= 640 || touchStartYRef.current == null) return;
-            e.preventDefault(); // Ensure the swipe only affects the sheet when starting from the title.
             const delta = e.touches[0].clientY - touchStartYRef.current;
             setDragY(Math.max(0, delta));
           }}

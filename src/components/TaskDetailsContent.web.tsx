@@ -222,7 +222,9 @@ export function TaskDetailsContent({
 
   const titleInputRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
-    // Automatically focus title input when modal/sheet is opened
+    // Automatically focus title input when modal/sheet is opened, except on iOS
+    const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && window.navigator && /iPad|iPhone|iPod/.test(window.navigator.userAgent));
+    if (isIOS) return;
     titleInputRef.current?.focus();
   }, []);
 

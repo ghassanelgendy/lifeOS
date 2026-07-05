@@ -106,6 +106,7 @@ export function ConfirmSheet({
             : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
+          position: 'absolute',
           maxHeight: '92dvh',
           paddingBottom: 'env(safe-area-inset-bottom)',
           transform: dragY > 0
@@ -131,7 +132,6 @@ export function ConfirmSheet({
           onTouchMove={(e) => {
             if (window.innerWidth >= 640) return;
             if (touchStartYRef.current == null) return;
-            e.preventDefault();
             const delta = e.touches[0].clientY - touchStartYRef.current;
             setDragY(Math.max(0, delta));
           }}

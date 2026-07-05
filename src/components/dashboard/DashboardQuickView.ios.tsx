@@ -641,6 +641,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       return;
     }
 
+    // Prevent the browser's synthetic click event from firing on the newly opened modal overlay
+    e.preventDefault();
+    e.stopPropagation();
+
     if (pressEntryRef.current) {
       const entry = pressEntryRef.current;
       const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));
@@ -1047,7 +1051,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isAnytime: false,
       sortTime: lastPrayerSlot.time.getTime(),
       element: (
-        <li key="prayer-current">
+        <div key="prayer-current" className="w-full">
           <div
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => startPress({ id: `prayer-${lastPrayerSlot.name}`, label: `${lastPrayerSlot.name} prayer`, done: lastPrayerDone, kind: 'prayer' }, e)}
@@ -1081,7 +1085,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               })}
             />
           </div>
-        </li>
+        </div>
       ),
     });
   }
@@ -1097,7 +1101,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isAnytime: false,
       sortTime: parseDueForSort(t),
       element: (
-        <li key={`task-${t.id}`}>
+        <div key={`task-${t.id}`} className="w-full">
           <div
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => startPress(t, e)}
@@ -1122,7 +1126,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               onClick={() => onSelectEntry({ ...t, kind: 'task' })}
             />
           </div>
-        </li>
+        </div>
       ),
     });
   });
@@ -1142,7 +1146,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isAnytime: !t.due_time,
       sortTime,
       element: (
-        <li key={`task-${t.id}`}>
+        <div key={`task-${t.id}`} className="w-full">
           <div
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => startPress(t, e)}
@@ -1163,7 +1167,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               onClick={() => onSelectEntry({ ...t, kind: 'task' })}
             />
           </div>
-        </li>
+        </div>
       ),
     });
   });
@@ -1214,7 +1218,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isAnytime,
       sortTime,
       element: (
-        <li key={`habit-${h.id}`}>
+        <div key={`habit-${h.id}`} className="w-full">
           <div
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => startPress({ ...h, kind: 'habit', entityId: h.id }, e)}
@@ -1236,7 +1240,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               onClick={() => onSelectEntry({ ...h, kind: 'habit', entityId: h.id })}
             />
           </div>
-        </li>
+        </div>
       ),
     });
   });
@@ -1312,7 +1316,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isAnytime,
       sortTime,
       element: (
-        <li key={item.id}>
+        <div key={item.id} className="w-full">
           <div
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => startPress(item, e)}
@@ -1359,7 +1363,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               }
             />
           </div>
-        </li>
+        </div>
       ),
     });
   });
@@ -1381,7 +1385,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isAnytime: false,
       sortTime,
       element: (
-        <li key={key}>
+        <div key={key} className="w-full">
           <div
             onContextMenu={(e) => { e.preventDefault(); e.stopPropagation(); }}
             onMouseDown={(e) => startPress(t, e)}
@@ -1402,7 +1406,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               onClick={() => onSelectEntry({ ...t, kind: 'task' })}
             />
           </div>
-        </li>
+        </div>
       ),
     });
   });

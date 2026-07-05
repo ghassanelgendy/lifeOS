@@ -138,8 +138,30 @@ jobs:
           VERSION="v${{ needs.build.outputs.app_version }}"
           DATE_READABLE=$(date +'%B %d, %Y')
 
-          # Find the previous release tag to diff against
-          PREV_TAG=$(git tag --sort=-version:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | grep -v "^${VERSION}$" | head -1)
+          # Find the previous release tag to diff against (ignores date-based tags, sorts semver correctly)
+          PREV_TAG=$(VERSION="${VERSION}" node -e '
+            const { execSync } = require("child_process");
+            const tags = execSync("git tag").toString().split("\n")
+              .map(t => t.trim())
+              .filter(t => /^v\d+\.\d+\.\d+$/.test(t));
+            tags.sort((a, b) => {
+              const parse = t => t.slice(1).split(".").map(Number);
+              const [aMaj, aMin, aPat] = parse(a);
+              const [bMaj, bMin, bPat] = parse(b);
+              if (aMaj !== bMaj) return bMaj - aMaj;
+              if (aMin !== bMin) return bMin - aMin;
+              return bPat - aPat;
+            });
+            const version = process.env.VERSION;
+            const currentIndex = tags.indexOf(version);
+            let prevTag = "";
+            if (currentIndex !== -1 && currentIndex + 1 < tags.length) {
+              prevTag = tags[currentIndex + 1];
+            } else if (tags.length > 0) {
+              prevTag = tags.find(t => t !== version) || "";
+            }
+            console.log(prevTag);
+          ')
           echo "Previous tag: ${PREV_TAG:-none}"
 
           if [ -n "$PREV_TAG" ]; then

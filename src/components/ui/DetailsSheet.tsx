@@ -207,8 +207,9 @@ export function DetailsSheet({
             : 'rounded-[24px] border border-border bg-card shadow-2xl'
         )}
         style={{
+          position: 'absolute',
           // Pin to bottom; top bound ensures we never overlap the status bar
-          bottom: 0,
+          bottom: 'var(--keyboard-height, 0px)',
           top: 'calc(env(safe-area-inset-top) + 8px)',
           paddingBottom: 'env(safe-area-inset-bottom)',
           willChange: 'transform',
@@ -235,7 +236,6 @@ export function DetailsSheet({
           onTouchMove={(e) => {
             if (window.innerWidth >= 640) return;
             if (touchStartYRef.current == null) return;
-            e.preventDefault();
             const delta = e.touches[0].clientY - touchStartYRef.current;
             setDragY(Math.max(0, delta));
           }}

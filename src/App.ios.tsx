@@ -5,6 +5,8 @@ import { useUIStore } from './stores/useUIStore';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { queryClient } from './lib/queryClient';
+import { Keyboard } from '@capacitor/keyboard';
+import { Capacitor } from '@capacitor/core';
 
 import { seedDatabase } from './db/seed';
 import { useQuery } from '@tanstack/react-query';
@@ -199,6 +201,31 @@ function AppInner() {
         console.error('Failed to parse deep link URL:', err);
       }
     });
+
+    let showListener: any;
+    let hideListener: any;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        showListener = Keyboard.addListener('keyboardWillShow', (info) => {
+          document.documentElement.style.setProperty('--keyboard-height', `${info.keyboardHeight}px`);
+        });
+
+        hideListener = Keyboard.addListener('keyboardWillHide', () => {
+          document.documentElement.style.setProperty('--keyboard-height', '0px');
+          // Reset viewport scroll to fix iOS shifted webview bug
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+        });
+      } catch (e) {
+        console.error('Keyboard listeners registration failed:', e);
+      }
+    }
+
+    return () => {
+      showListener?.remove();
+      hideListener?.remove();
+    };
   }, []);
 
   useEffect(() => {
