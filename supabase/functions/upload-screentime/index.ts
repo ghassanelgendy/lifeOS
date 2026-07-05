@@ -638,11 +638,15 @@ Deno.serve(async (req: Request) => {
 
     // Root-level upload timestamp for iOS Shortcut (do not affect aggregation)
     const payloadRecord = toRecord(payload);
-    const uploadDateRaw = firstString(payloadRecord, ['upload_date', 'uploadDate', 'date']);
+    const uploadDateRaw = firstString(payloadRecord, ['uploaded_date', 'upload_date', 'uploadDate', 'date']);
     const uploadTimeRaw = firstString(payloadRecord, ['upload_time', 'uploadTime', 'time']);
     const upload_date = uploadDateRaw ? parseDateToDateString(uploadDateRaw) : null;
     const upload_time = uploadTimeRaw ? uploadTimeRaw.trim() : null;
-    const uploaded_at = uploadDateRaw ? buildUploadedAt(uploadDateRaw, uploadTimeRaw) : null;
+    // Fall back to server received_at when the shortcut doesn't send an upload date,
+    // so last_active_at is always populated with a real timestamp.
+    const uploaded_at = uploadDateRaw
+      ? buildUploadedAt(uploadDateRaw, uploadTimeRaw)
+      : received_at;
     const debugEnabled = payload.debug === true;
 
     const normalizedSnapshots = Array.isArray(payload.snapshots) ? [...payload.snapshots] : [];

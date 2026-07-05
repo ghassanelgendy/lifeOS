@@ -361,7 +361,7 @@ import { useQueryClient } from '@tanstack/react-query';
         created_at?: string;
       }) => {
         const ts = s.last_active_at || s.last_seen_at || s.updated_at || s.created_at;
-        return ts ? new Date(ts).getTime() : new Date(s.date + 'T23:59:59').getTime();
+        return ts ? new Date(ts).getTime() : null;
       };
       const pickLatest = (stat: {
         last_active_at?: string | null;
@@ -370,7 +370,7 @@ import { useQueryClient } from '@tanstack/react-query';
         created_at?: string;
         date: string;
       }) =>
-        stat.updated_at || stat.last_active_at || stat.last_seen_at || stat.created_at || stat.date + 'T23:59:59';
+        stat.updated_at || stat.last_active_at || stat.last_seen_at || stat.created_at || null;
       const consider = (stat: {
         platform?: string | null;
         last_active_at?: string | null;
@@ -382,8 +382,11 @@ import { useQueryClient } from '@tanstack/react-query';
         const b = screentimeUiPlatform(stat.platform);
         if (!b) return;
         const t = toTime(stat);
-        if (b === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = pickLatest(stat);
-        if (b === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = pickLatest(stat);
+        if (t === null) return; // skip entries with no real timestamp
+        const picked = pickLatest(stat);
+        if (!picked) return;
+        if (b === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = picked;
+        if (b === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = picked;
       };
       appStats.forEach(consider);
       websiteStats.forEach(consider);

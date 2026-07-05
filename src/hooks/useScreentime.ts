@@ -148,7 +148,9 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
       return fetchAllAppStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always fetch fresh — iOS uploads happen outside the app
+    staleTime: 0,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -162,7 +164,9 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
       return fetchAllWebsiteStats(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always fetch fresh — iOS uploads happen outside the app
+    staleTime: 0,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
   });
 }
 
@@ -176,7 +180,9 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
       return fetchAllDailySummaries(user.id, startDate, endDate);
     },
     enabled: !!user?.id,
-    staleTime: 0, // Always fetch fresh — iOS uploads happen outside the app
+    staleTime: 0,
+    refetchInterval: 30000,
+    refetchIntervalInBackground: true,
   });
 }
 
