@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
@@ -233,167 +234,100 @@ export function useTasks() {
 }
 
 export function useTasksByList(listId: string) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'list', listId, user?.id],
-    queryFn: async () => {
-      const q = supabase.from('tasks').select('*, subtasks:tasks(id, is_completed)').eq('list_id', listId).is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!listId && !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!listId || !allTasks) return [];
+    return allTasks.filter((t) => t.list_id === listId);
+  }, [allTasks, listId]);
+  return { ...rest, data: tasks };
 }
 
 export function useTasksByProject(projectId: string) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'project', projectId, user?.id],
-    queryFn: async () => {
-      const q = supabase.from('tasks').select('*, subtasks:tasks(id, is_completed)').eq('project_id', projectId).is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!projectId && !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!projectId || !allTasks) return [];
+    return allTasks.filter((t) => t.project_id === projectId);
+  }, [allTasks, projectId]);
+  return { ...rest, data: tasks };
 }
 
 export function useTasksByTag(tagId: string) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'tag', tagId, user?.id],
-    queryFn: async () => {
-      const q = supabase.from('tasks').select('*, subtasks:tasks(id, is_completed)').contains('tag_ids', [tagId]).is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!tagId && !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!tagId || !allTasks) return [];
+    return allTasks.filter((t) => t.tag_ids?.includes(tagId));
+  }, [allTasks, tagId]);
+  return { ...rest, data: tasks };
 }
 
 export function useOverdueTasks() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'overdue', user?.id],
-    queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const q = supabase
-        .from('tasks')
-        .select('*, subtasks:tasks(id, is_completed)')
-        .lt('due_date', today)
-        .eq('is_completed', false)
-        .is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!allTasks) return [];
+    const today = new Date().toISOString().split('T')[0];
+    return allTasks.filter((t) => t.due_date && t.due_date < today && !t.is_completed);
+  }, [allTasks]);
+  return { ...rest, data: tasks };
 }
 
 export function useTodayTasks() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'today', user?.id],
-    queryFn: async () => {
-      const today = new Date().toISOString().split('T')[0];
-      const q = supabase
-        .from('tasks')
-        .select('*, subtasks:tasks(id, is_completed)')
-        .eq('due_date', today)
-        .eq('is_completed', false)
-        .is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!allTasks) return [];
+    const today = new Date().toISOString().split('T')[0];
+    return allTasks.filter((t) => t.due_date === today && !t.is_completed);
+  }, [allTasks]);
+  return { ...rest, data: tasks };
 }
 
 export function useUpcomingTasks(days: number = 7) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'upcoming', days, user?.id],
-    queryFn: async () => {
-      const today = new Date();
-      const future = new Date(today);
-      future.setDate(future.getDate() + days);
-      const start = toDateOnly(today);
-      const end = toDateOnly(future);
-      const q = supabase
-        .from('tasks')
-        .select('*, subtasks:tasks(id, is_completed)')
-        .gte('due_date', start)
-        .lte('due_date', end)
-        .eq('is_completed', false)
-        .is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!allTasks) return [];
+    const today = new Date();
+    const future = new Date(today);
+    future.setDate(future.getDate() + days);
+    const start = toDateOnly(today);
+    const end = toDateOnly(future);
+    return allTasks.filter((t) => t.due_date && t.due_date >= start && t.due_date <= end && !t.is_completed);
+  }, [allTasks, days]);
+  return { ...rest, data: tasks };
 }
 
 export function useWeekTasks() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'week', user?.id],
-    queryFn: async () => {
-      const today = new Date();
-      const monday = new Date(today);
-      const dayOfWeek = today.getDay();
-      const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      monday.setDate(today.getDate() + diff);
-      monday.setHours(0, 0, 0, 0);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      const q = supabase
-        .from('tasks')
-        .select('*, subtasks:tasks(id, is_completed)')
-        .gte('due_date', toDateOnly(monday))
-        .lte('due_date', toDateOnly(sunday))
-        .eq('is_completed', false)
-        .is('parent_id', null);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!allTasks) return [];
+    const today = new Date();
+    const monday = new Date(today);
+    const dayOfWeek = today.getDay();
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    monday.setDate(today.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    sunday.setHours(23, 59, 59, 999);
+    const start = toDateOnly(monday);
+    const end = toDateOnly(sunday);
+    return allTasks.filter((t) => t.due_date && t.due_date >= start && t.due_date <= end && !t.is_completed);
+  }, [allTasks]);
+  return { ...rest, data: tasks };
 }
 
 export function useCompletedTasks() {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: [...TASKS_KEY, 'completed', user?.id],
-    queryFn: async () => {
-      const q = supabase
-        .from('tasks')
-        .select('*, subtasks:tasks(id, is_completed)')
-        .eq('is_completed', true)
-        .is('parent_id', null)
-        .order('completed_at', { ascending: false })
-        .limit(50);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Task[];
-    },
-    enabled: !!user?.id,
-  });
+  const { data: allTasks, ...rest } = useTasks();
+  const tasks = useMemo(() => {
+    if (!allTasks) return [];
+    return allTasks
+      .filter((t) => t.is_completed)
+      .sort((a, b) => {
+        const dateA = a.completed_at ? new Date(a.completed_at).getTime() : 0;
+        const dateB = b.completed_at ? new Date(b.completed_at).getTime() : 0;
+        return dateB - dateA;
+      })
+      .slice(0, 50);
+  }, [allTasks]);
+  return { ...rest, data: tasks };
 }
 
 // ========================
