@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
@@ -212,13 +212,18 @@ export function usePrayerTracker(date: Date = new Date()) {
     [times]
   );
 
+  const timesRef = useRef(times);
+  useEffect(() => {
+    timesRef.current = times;
+  }, [times]);
+
   useEffect(() => {
     if (!user?.id || !timesSignature) return;
-    void ensurePrayerRows(user.id, times).then(() => {
+    void ensurePrayerRows(user.id, timesRef.current).then(() => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
     }).catch(() => {});
-  }, [user?.id, timesSignature, times, queryClient, dateStr]);
+  }, [user?.id, timesSignature, queryClient, dateStr]);
 
   const habitsQuery = useQuery({
     queryKey: [...QUERY_KEY, user?.id, 'habits'],
@@ -502,7 +507,7 @@ export function usePrayerNotificationSettings() {
   const timezone = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC';
 
   const { data: prayerHabits = [], isLoading: habitsLoading } = useQuery({
-    queryKey: [...QUERY_KEY, user?.id, 'habits'],
+    queryKey: [...QUERY_KEY, user?.id, 'notification-habits'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('prayer_habits')

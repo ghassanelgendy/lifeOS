@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Coordinates, CalculationMethod, PrayerTimes, Madhab } from 'adhan';
 import { useUIStore } from '../stores/useUIStore';
 
@@ -67,16 +67,18 @@ export function usePrayerTimes() {
     return () => clearInterval(interval);
   }, [prayerTimes, lat, lng]);
 
-  const formattedTimes: PrayerTimeData[] = prayerTimes
-    ? [
-        { name: 'Fajr', time: prayerTimes.fajr, isNext: nextPrayer === 'fajr' },
-        { name: 'Sunrise', time: prayerTimes.sunrise, isNext: nextPrayer === 'sunrise' },
-        { name: 'Dhuhr', time: prayerTimes.dhuhr, isNext: nextPrayer === 'dhuhr' },
-        { name: 'Asr', time: prayerTimes.asr, isNext: nextPrayer === 'asr' },
-        { name: 'Maghrib', time: prayerTimes.maghrib, isNext: nextPrayer === 'maghrib' },
-        { name: 'Isha', time: prayerTimes.isha, isNext: nextPrayer === 'isha' },
-      ]
-    : [];
+  const formattedTimes: PrayerTimeData[] = useMemo(() => {
+    return prayerTimes
+      ? [
+          { name: 'Fajr', time: prayerTimes.fajr, isNext: nextPrayer === 'fajr' },
+          { name: 'Sunrise', time: prayerTimes.sunrise, isNext: nextPrayer === 'sunrise' },
+          { name: 'Dhuhr', time: prayerTimes.dhuhr, isNext: nextPrayer === 'dhuhr' },
+          { name: 'Asr', time: prayerTimes.asr, isNext: nextPrayer === 'asr' },
+          { name: 'Maghrib', time: prayerTimes.maghrib, isNext: nextPrayer === 'maghrib' },
+          { name: 'Isha', time: prayerTimes.isha, isNext: nextPrayer === 'isha' },
+        ]
+      : [];
+  }, [prayerTimes, nextPrayer]);
 
   return {
     times: formattedTimes,
