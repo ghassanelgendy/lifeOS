@@ -20,6 +20,10 @@ type JoinedPrayerHabit = PrayerHabit & {
   habit?: { id: string; title: string; color: string } | null;
 };
 
+type PrayerHabitWithHabit = PrayerHabit & {
+  habit?: { id: string; title: string; description: string | null; time: string | null; color: string } | null;
+};
+
 export type PrayerTrackerItem = {
   prayerName: PrayerName;
   prayerHabitId: string;
@@ -126,11 +130,11 @@ async function ensurePrayerRows(
   // Query both with user's ID and null user_id just in case some legacy rows lack it
   const { data: existingHabits, error: prayerHabitsErr } = await supabase
     .from('prayer_habits')
-    .select('*')
+    .select('*, habit:habits(id, title, description, time, color)')
     .or(`user_id.eq.${userId},user_id.is.null`);
   if (prayerHabitsErr) throw prayerHabitsErr;
 
-  const habitsList = (existingHabits || []) as PrayerHabit[];
+  const habitsList = (existingHabits || []) as PrayerHabitWithHabit[];
 
   // Group prayer habits by name to identify duplicates
   const byName = new Map<PrayerName, PrayerHabit[]>();
@@ -140,7 +144,7 @@ async function ensurePrayerRows(
     byName.set(row.prayer_name, list);
   });
 
-  const finalByName = new Map<PrayerName, PrayerHabit>();
+  const finalByName = new Map<PrayerName, PrayerHabitWithHabit>();
 
   for (const prayerName of PRAYER_NAMES) {
     const list = byName.get(prayerName) || [];
@@ -241,7 +245,7 @@ async function ensurePrayerRows(
         .single();
       if (createPrayerHabitErr) throw createPrayerHabitErr;
       
-      finalByName.set(prayerName, prayerHabit as PrayerHabit);
+      finalByName.set(prayerName, prayerHabit as PrayerHabitWithHabit);
     } else {
       const updates: Record<string, unknown> = {};
       if (timeOnly && existing.default_time !== timeOnly) updates.default_time = timeOnly;
@@ -249,12 +253,24 @@ async function ensurePrayerRows(
         await supabase.from('prayer_habits').update(updates).eq('id', existing.id);
       }
 
-      await supabase.from('habits').update({
-        title: desiredTitle,
-        description: `Daily ${prayerName} prayer at ${displayTime}`,
-        time: timeOnly,
-        color: '#8b5cf6',
-      }).eq('id', existing.habit_id);
+      const currentHabit = existing.habit;
+      const currentTitle = currentHabit?.title;
+      const currentDesc = currentHabit?.description;
+      const currentTime = currentHabit?.time;
+      const currentColor = currentHabit?.color;
+
+      const desiredDesc = `Daily ${prayerName} prayer at ${displayTime}`;
+      const desiredColor = '#8b5cf6';
+
+      const habitUpdates: Record<string, unknown> = {};
+      if (desiredTitle !== currentTitle) habitUpdates.title = desiredTitle;
+      if (desiredDesc !== currentDesc) habitUpdates.description = desiredDesc;
+      if (timeOnly !== currentTime) habitUpdates.time = timeOnly;
+      if (desiredColor !== currentColor) habitUpdates.color = desiredColor;
+
+      if (Object.keys(habitUpdates).length > 0) {
+        await supabase.from('habits').update(habitUpdates).eq('id', existing.habit_id);
+      }
     }
   }
 }

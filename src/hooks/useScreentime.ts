@@ -21,7 +21,7 @@ function isPcLockApp(stat: Pick<ScreentimeAppStat, 'app_name' | 'source' | 'plat
 async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
   const { data, count, error } = await supabase
     .from('screentime_daily_app_stats')
-    .select('*', { count: 'exact' })
+    .select('id, date, source, platform, app_name, category, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at', { count: 'exact' })
     .eq('user_id', userId)
     .gte('date', startDate)
     .lte('date', endDate)
@@ -39,7 +39,7 @@ async function fetchAllAppStats(userId: string, startDate: string, endDate: stri
       promises.push(
         supabase
           .from('screentime_daily_app_stats')
-          .select('*')
+          .select('id, date, source, platform, app_name, category, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
           .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate)
@@ -61,7 +61,7 @@ async function fetchAllAppStats(userId: string, startDate: string, endDate: stri
 async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
   const { data, count, error } = await supabase
     .from('screentime_daily_website_stats')
-    .select('*', { count: 'exact' })
+    .select('id, date, source, platform, domain, favicon_url, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at', { count: 'exact' })
     .eq('user_id', userId)
     .gte('date', startDate)
     .lte('date', endDate)
@@ -79,7 +79,7 @@ async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: 
       promises.push(
         supabase
           .from('screentime_daily_website_stats')
-          .select('*')
+          .select('id, date, source, platform, domain, favicon_url, total_time_seconds, session_count, first_seen_at, last_seen_at, last_active_at')
           .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate)
@@ -101,7 +101,7 @@ async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: 
 async function fetchAllDailySummaries(userId: string, startDate: string, endDate: string): Promise<ScreentimeDailySummary[]> {
   const { data, count, error } = await supabase
     .from('screentime_daily_summary')
-    .select('*', { count: 'exact' })
+    .select('id, date, source, platform, total_switches, total_apps', { count: 'exact' })
     .eq('user_id', userId)
     .gte('date', startDate)
     .lte('date', endDate)
@@ -119,7 +119,7 @@ async function fetchAllDailySummaries(userId: string, startDate: string, endDate
       promises.push(
         supabase
           .from('screentime_daily_summary')
-          .select('*')
+          .select('id, date, source, platform, total_switches, total_apps')
           .eq('user_id', userId)
           .gte('date', startDate)
           .lte('date', endDate)
@@ -265,8 +265,10 @@ export function useTodayScreentime() {
 
 // Get screentime metrics for last N days
 export function useScreentimeMetrics(days: number = 30) {
+  // Ensure we fetch at least 14 days so we can calculate the 7-day trend (last 7 days vs previous 7 days)
+  const queryDays = Math.max(14, days);
   const endDate = format(new Date(), 'yyyy-MM-dd');
-  const startDate = format(subDays(new Date(), days), 'yyyy-MM-dd');
+  const startDate = format(subDays(new Date(), queryDays), 'yyyy-MM-dd');
   
   const { data: appStats = [], isLoading: appsLoading } = useScreentimeAppStats(startDate, endDate);
   const { data: websiteStats = [], isLoading: websitesLoading } = useScreentimeWebsiteStats(startDate, endDate);
@@ -367,7 +369,7 @@ export function useScreentimeMetrics(days: number = 30) {
   const todaySwitches = history.length > 0 ? (history[history.length - 1]?.switches || 0) : 0;
 
   return {
-    history,
+    history: history.slice(-days), // return only the requested range of history to the UI
     avg7Days,
     trend,
     avgSwitches7Days,

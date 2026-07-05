@@ -1224,16 +1224,15 @@ Deno.serve(async (req: Request) => {
       const batchSize = 500;
       for (let i = 0; i < mergedAppRows.length; i += batchSize) {
         const batch = mergedAppRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('screentime_daily_app_stats')
-          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' })
-          .select() as { data: any[] | null; error: { message: string } | null };
+          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' });
 
         if (error) {
           console.error(`Error inserting app stats batch ${Math.floor(i / batchSize) + 1}:`, error);
           appErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
         } else {
-          appInserted += Array.isArray(data) ? data.length : 0;
+          appInserted += batch.length;
         }
       }
     }
@@ -1242,16 +1241,15 @@ Deno.serve(async (req: Request) => {
       const batchSize = 500;
       for (let i = 0; i < mergedWebsiteRows.length; i += batchSize) {
         const batch = mergedWebsiteRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('screentime_daily_website_stats')
-          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' })
-          .select() as { data: any[] | null; error: { message: string } | null };
+          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' });
 
         if (error) {
           console.error(`Error inserting website stats batch ${Math.floor(i / batchSize) + 1}:`, error);
           websiteErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
         } else {
-          websiteInserted += Array.isArray(data) ? data.length : 0;
+          websiteInserted += batch.length;
         }
       }
     }
@@ -1260,16 +1258,15 @@ Deno.serve(async (req: Request) => {
       const batchSize = 500;
       for (let i = 0; i < mergedSummaryRows.length; i += batchSize) {
         const batch = mergedSummaryRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('screentime_daily_summary')
-          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' })
-          .select() as { data: any[] | null; error: { message: string } | null };
+          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' });
 
         if (error) {
           console.error(`Error inserting summary batch ${Math.floor(i / batchSize) + 1}:`, error);
           summaryErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
         } else {
-          summaryInserted += Array.isArray(data) ? data.length : 0;
+          summaryInserted += batch.length;
         }
       }
     }

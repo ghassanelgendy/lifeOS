@@ -20,6 +20,10 @@ type JoinedPrayerHabit = PrayerHabit & {
   habit?: { id: string; title: string; color: string } | null;
 };
 
+type PrayerHabitWithHabit = PrayerHabit & {
+  habit?: { id: string; title: string; description: string | null; time: string | null; color: string } | null;
+};
+
 export type PrayerTrackerItem = {
   prayerName: PrayerName;
   prayerHabitId: string;
@@ -125,12 +129,12 @@ async function ensurePrayerRows(
 ): Promise<void> {
   const { data: existingHabits, error: prayerHabitsErr } = await supabase
     .from('prayer_habits')
-    .select('*')
+    .select('*, habit:habits(id, title, description, time, color)')
     .eq('user_id', userId);
   if (prayerHabitsErr) throw prayerHabitsErr;
 
-  const byName = new Map<PrayerName, PrayerHabit>();
-  ((existingHabits || []) as PrayerHabit[]).forEach((row) => byName.set(row.prayer_name, row));
+  const byName = new Map<PrayerName, PrayerHabitWithHabit>();
+  ((existingHabits || []) as PrayerHabitWithHabit[]).forEach((row) => byName.set(row.prayer_name, row));
 
   for (const prayerName of PRAYER_NAMES) {
     const prayerTime = times.find((t) => t.name === prayerName)?.time;
@@ -167,7 +171,7 @@ async function ensurePrayerRows(
         .select('*')
         .single();
       if (createPrayerHabitErr) throw createPrayerHabitErr;
-      byName.set(prayerName, prayerHabit as PrayerHabit);
+      byName.set(prayerName, prayerHabit as PrayerHabitWithHabit);
       continue;
     }
 
@@ -177,12 +181,24 @@ async function ensurePrayerRows(
       await supabase.from('prayer_habits').update(updates).eq('id', existing.id);
     }
 
-    await supabase.from('habits').update({
-      title: desiredTitle,
-      description: `Daily ${prayerName} prayer at ${displayTime}`,
-      time: timeOnly,
-      color: '#8b5cf6',
-    }).eq('id', existing.habit_id);
+    const currentHabit = existing.habit;
+    const currentTitle = currentHabit?.title;
+    const currentDesc = currentHabit?.description;
+    const currentTime = currentHabit?.time;
+    const currentColor = currentHabit?.color;
+
+    const desiredDesc = `Daily ${prayerName} prayer at ${displayTime}`;
+    const desiredColor = '#8b5cf6';
+
+    const habitUpdates: Record<string, unknown> = {};
+    if (desiredTitle !== currentTitle) habitUpdates.title = desiredTitle;
+    if (desiredDesc !== currentDesc) habitUpdates.description = desiredDesc;
+    if (timeOnly !== currentTime) habitUpdates.time = timeOnly;
+    if (desiredColor !== currentColor) habitUpdates.color = desiredColor;
+
+    if (Object.keys(habitUpdates).length > 0) {
+      await supabase.from('habits').update(habitUpdates).eq('id', existing.habit_id);
+    }
   }
 }
 

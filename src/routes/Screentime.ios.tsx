@@ -77,7 +77,7 @@ import { useUIStore } from '../stores/useUIStore';
     const { data: websiteStats = [], isLoading: websitesLoading } = useScreentimeWebsiteStats(start, end);
     const { data: summaries = [], isLoading: summariesLoading } = useScreentimeDailySummaries(start, end);
     const todayData = useTodayScreentime();
-    const { avg7Days, trend, avgSwitches7Days } = useScreentimeMetrics(30);
+    const { avg7Days, trend, avgSwitches7Days } = useScreentimeMetrics(14);
 
     const isLoading = appsLoading || websitesLoading || summariesLoading;
 
