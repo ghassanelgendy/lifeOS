@@ -18,7 +18,7 @@ const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY');
 const DEFAULT_HABIT_NOTIFY_MINUTE = 9 * 60;
 const DISPATCH_WINDOW_MINUTES = 2;
 const INFERRED_TIME_BUCKET_MINUTES = 15;
-const LOOKBACK_DAYS = 180;
+const LOOKBACK_DAYS = 30;
 
 // Prayer names to exclude by title prefix (belt-and-suspenders guard alongside prayer_habits linkage)
 const PRAYER_PREFIXES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -227,37 +227,38 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { data: subscriptionRows, error: subscriptionError } = await (supabase
+    // First: get timezone→user_id mapping only (no credentials yet = smaller response).
+    const { data: tzRows, error: tzRowsError } = await (supabase
       .from('push_subscriptions')
-      .select('endpoint, p256dh, auth, timezone, user_id') as any)
+      .select('timezone, user_id') as any)
       .not('user_id', 'is', null);
 
-    if (subscriptionError) throw subscriptionError;
+    if (tzRowsError) throw tzRowsError;
 
-    const subscriptions = ((subscriptionRows ?? []) as PushSubscriptionRow[])
-      .filter((sub) => sub.user_id && sub.endpoint && sub.p256dh && sub.auth);
+    const allTzRows = ((tzRows ?? []) as PushSubscriptionRow[]).filter((sub) => sub.user_id);
 
-    if (!subscriptions.length) {
+    if (!allTzRows.length) {
       return new Response(JSON.stringify({ ok: true, results: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const subscriptionsByTimezone = new Map<string, PushSubscriptionRow[]>();
-    for (const sub of subscriptions) {
+    // Build timezone → user_ids map (deduped)
+    const userIdsByTimezone = new Map<string, string[]>();
+    for (const sub of allTzRows) {
       const timezone = sub.timezone?.trim() || 'UTC';
-      if (!subscriptionsByTimezone.has(timezone)) subscriptionsByTimezone.set(timezone, []);
-      subscriptionsByTimezone.get(timezone)!.push(sub);
+      if (!userIdsByTimezone.has(timezone)) userIdsByTimezone.set(timezone, []);
+      userIdsByTimezone.get(timezone)!.push(sub.user_id!);
     }
 
     const now = new Date();
     const lookbackStartIso = new Date(now.getTime() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const results: Array<{ timezone: string; due: number; sent: number }> = [];
 
-    for (const [timezone, timezoneSubscriptions] of subscriptionsByTimezone.entries()) {
+    for (const [timezone, tzUserIds] of userIdsByTimezone.entries()) {
       try {
         const local = toLocalDateTime(now, timezone);
-        const userIds = [...new Set(timezoneSubscriptions.map((sub) => sub.user_id!).filter(Boolean))];
+        const userIds = [...new Set(tzUserIds.filter(Boolean))];
         if (!userIds.length) continue;
 
         const [{ data: habitsRows, error: habitsError }, { data: prayerHabitRows, error: prayerHabitError }] = await Promise.all([
@@ -370,8 +371,18 @@ Deno.serve(async (req: Request) => {
 
         if (!unnotifiedCandidates.length) continue;
 
+        // Lazily fetch full subscription credentials only for users with due habits.
+        const dueUserIds = [...new Set(unnotifiedCandidates.map((c) => c.habit.user_id))];
+        const { data: subRows, error: subRowsError } = await (supabase
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth, user_id') as any)
+          .in('user_id', dueUserIds);
+
+        if (subRowsError) throw subRowsError;
+
         const subscriptionsByUser = new Map<string, PushSubscriptionRow[]>();
-        for (const sub of timezoneSubscriptions) {
+        for (const sub of ((subRows ?? []) as PushSubscriptionRow[])) {
+          if (!sub.user_id || !sub.endpoint || !sub.p256dh || !sub.auth) continue;
           const uid = sub.user_id!;
           if (!subscriptionsByUser.has(uid)) subscriptionsByUser.set(uid, []);
           subscriptionsByUser.get(uid)!.push(sub);

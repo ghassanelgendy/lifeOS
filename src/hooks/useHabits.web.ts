@@ -202,7 +202,7 @@ export function useHabitLogs(habitId: string) {
       
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('*')
+        .select('id, habit_id, user_id, date, completed, note, source, completed_at')
         .eq('habit_id', habitId)
         .order('date', { ascending: false });
       if (error) throw error;
@@ -230,7 +230,7 @@ export function useTodayHabitLogs() {
       
       const { data, error } = await supabase
         .from('habit_logs')
-        .select('*')
+        .select('id, habit_id, user_id, date, completed, note, source, completed_at')
         .eq('date', today)
         .in('habit_id', habitIds);
       if (error) throw error;

@@ -83,78 +83,104 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { data: subscriptionRows, error: subscriptionError } = await supabase
+    // Fetch only unique timezones first (light query), then per-timezone task queries,
+    // and finally only fetch subscriptions for users who have tasks due.
+    const { data: timezoneRows, error: timezoneError } = await supabase
       .from('push_subscriptions')
-      .select('endpoint, p256dh, auth, timezone, user_id')
+      .select('timezone, user_id')
       .not('user_id', 'is', null);
 
-    if (subscriptionError) throw subscriptionError;
+    if (timezoneError) throw timezoneError;
 
-    const subscriptions = ((subscriptionRows ?? []) as any[])
-      .filter((sub) => sub.user_id && sub.endpoint && sub.p256dh && sub.auth);
+    const timezoneRows2 = ((timezoneRows ?? []) as any[]).filter((r) => r.user_id);
 
-    if (!subscriptions.length) {
+    if (!timezoneRows2.length) {
       return new Response(JSON.stringify({ ok: true, results: [] }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const subscriptionsByTimezone = new Map<string, any[]>();
-    for (const sub of subscriptions) {
-      const timezone = sub.timezone?.trim() || 'UTC';
-      if (!subscriptionsByTimezone.has(timezone)) subscriptionsByTimezone.set(timezone, []);
-      subscriptionsByTimezone.get(timezone)!.push(sub);
+    // Build timezone → userIds map (no subscription keys fetched yet)
+    const userIdsByTimezone = new Map<string, string[]>();
+    for (const row of timezoneRows2) {
+      const tz = (row.timezone as string | null)?.trim() || 'UTC';
+      if (!userIdsByTimezone.has(tz)) userIdsByTimezone.set(tz, []);
+      userIdsByTimezone.get(tz)!.push(row.user_id as string);
     }
 
     const results: any[] = [];
 
-    for (const [tz, timezoneSubscriptions] of subscriptionsByTimezone.entries()) {
+    for (const [tz, tzUserIds] of userIdsByTimezone.entries()) {
       try {
         const now = new Date();
-        let taskList: any[] = [];
-
-        // For each early offset E: reminder fires when (due - E) = now in TZ, i.e. due = now + E in TZ.
-        // So we compute (targetDate, targetTime) = now + E minutes formatted in tz, and query tasks with that due and early_reminder_minutes = E.
-        for (const E of EARLY_OFFSETS) {
+        // Build all candidate (date, time) pairs for all offsets in this TZ.
+        // One batched query instead of 6 separate queries.
+        type Candidate = { E: number; targetDate: string; targetTime: string; targetTimeSec: string };
+        const candidates: Candidate[] = EARLY_OFFSETS.map((E) => {
           const target = new Date(now.getTime() + E * 60 * 1000);
           const targetDate = formatInTz(target, tz, 'date');
           const targetTime = formatInTz(target, tz, 'time');
+          return { E, targetDate, targetTime, targetTimeSec: `${targetTime}:00` };
+        });
 
-          let q = supabase
-            .from('tasks')
-            .select('id, title, user_id, due_date, due_time, reminders_enabled, early_reminder_minutes')
-            .eq('is_completed', false)
-            .eq('is_wont_do', false)
-            .eq('reminders_enabled', true)
-            .eq('due_date', targetDate)
-            .in('due_time', [targetTime, `${targetTime}:00`])
-            .is('parent_id', null);
+        // Collect unique (date, time) values across all offsets.
+        const uniqueDates = [...new Set(candidates.map((c) => c.targetDate))];
+        const uniqueTimes = [...new Set(candidates.flatMap((c) => [c.targetTime, c.targetTimeSec]))];
+        const uniqueUserIds = [...new Set(tzUserIds)];
 
-          if (E !== 0) {
-            q = q.eq('early_reminder_minutes', E);
-          }
+        const { data: allTasks, error: allTasksError } = await supabase
+          .from('tasks')
+          .select('id, title, user_id, due_date, due_time, reminders_enabled, early_reminder_minutes')
+          .eq('is_completed', false)
+          .eq('is_wont_do', false)
+          .eq('reminders_enabled', true)
+          .in('due_date', uniqueDates)
+          .in('due_time', uniqueTimes)
+          .in('user_id', uniqueUserIds)
+          .is('parent_id', null);
 
-          const { data: tasks, error: tasksError } = await q;
+        if (allTasksError) {
+          console.error(`Error querying tasks for ${tz}:`, allTasksError);
+          continue;
+        }
 
-          if (tasksError) {
-            console.error(`Error querying tasks for ${tz} E=${E}:`, tasksError);
-            continue;
-          }
-          const raw = (tasks as any[]) || [];
+        // Match tasks to their offset candidate and deduplicate.
+        const taskIdSeen = new Set<string>();
+        const taskList: any[] = [];
+        for (const { E, targetDate, targetTime, targetTimeSec } of candidates) {
+          const raw = ((allTasks as any[]) || []).filter((t: any) =>
+            t.due_date === targetDate &&
+            (t.due_time === targetTime || t.due_time === targetTimeSec)
+          );
           const toAdd = E === 0
             ? raw.filter((t: any) => t.early_reminder_minutes == null || t.early_reminder_minutes === 0)
-            : raw;
+            : raw.filter((t: any) => t.early_reminder_minutes === E);
           for (const t of toAdd) {
-            if (!taskList.find((x) => x.id === t.id)) taskList.push(t);
+            if (!taskIdSeen.has(t.id)) {
+              taskIdSeen.add(t.id);
+              taskList.push(t);
+            }
           }
         }
 
         if (taskList.length === 0) continue;
 
+        // Lazily fetch subscriptions ONLY for users who have due tasks — not the full table.
+        const dueUserIds = [...new Set(taskList.map((t: any) => t.user_id).filter(Boolean))];
+        const { data: subRows, error: subError } = await supabase
+          .from('push_subscriptions')
+          .select('endpoint, p256dh, auth, user_id')
+          .in('user_id', dueUserIds);
+
+        if (subError) {
+          console.error(`Error fetching subscriptions for ${tz}:`, subError);
+          continue;
+        }
+
         // Group subscriptions by user_id
         const subsByUser = new Map<string, any[]>();
-        for (const sub of timezoneSubscriptions) {
-          if (sub.user_id) {
+        for (const sub of ((subRows ?? []) as any[])) {
+          if (sub.user_id && sub.endpoint && sub.p256dh && sub.auth) {
             const list = subsByUser.get(sub.user_id) || [];
             list.push(sub);
             subsByUser.set(sub.user_id, list);
