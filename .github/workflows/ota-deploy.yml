@@ -62,10 +62,21 @@ jobs:
           echo "Bundle size: $(du -sh update.zip | cut -f1)"
 
       - name: Generate version.json
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           BUNDLE_NAME="update-${{ env.VERSION }}.zip"
           BUNDLE_URL="${{ secrets.VITE_SUPABASE_URL }}/storage/v1/object/public/app-updates/${BUNDLE_NAME}"
-          echo "{\"version\":\"${{ env.VERSION }}\",\"url\":\"${BUNDLE_URL}\",\"commit\":\"${{ github.sha }}\",\"message\":\"${{ github.event.head_commit.message }}\"}" > version.json
+          node -e '
+            const fs = require("fs");
+            const data = {
+              version: process.env.VERSION,
+              url: process.argv[1],
+              commit: process.env.GITHUB_SHA,
+              message: process.env.COMMIT_MESSAGE || ""
+            };
+            fs.writeFileSync("version.json", JSON.stringify(data));
+          ' "$BUNDLE_URL"
           cat version.json
 
       - name: Upload bundle zip to Supabase Storage
