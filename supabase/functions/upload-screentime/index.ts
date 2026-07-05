@@ -643,10 +643,14 @@ Deno.serve(async (req: Request) => {
     const upload_date = uploadDateRaw ? parseDateToDateString(uploadDateRaw) : null;
     const upload_time = uploadTimeRaw ? uploadTimeRaw.trim() : null;
     // Fall back to server received_at when the shortcut doesn't send an upload date,
-    // so last_active_at is always populated with a real timestamp.
-    const uploaded_at = uploadDateRaw
-      ? buildUploadedAt(uploadDateRaw, uploadTimeRaw)
-      : received_at;
+    // or when the buildUploadedAt format returns null (e.g. 12-hour format "4:30 PM").
+    let uploaded_at = received_at;
+    if (uploadDateRaw) {
+      const parsed = buildUploadedAt(uploadDateRaw, uploadTimeRaw);
+      if (parsed) {
+        uploaded_at = parsed;
+      }
+    }
     const debugEnabled = payload.debug === true;
 
     const normalizedSnapshots = Array.isArray(payload.snapshots) ? [...payload.snapshots] : [];
@@ -1118,6 +1122,7 @@ Deno.serve(async (req: Request) => {
         if (!existing) continue;
         
         const existingTime = existing.total_time_seconds || 0;
+        const existingSessions = existing.session_count || 0;
         
         // If duration hasn't grown since the last upload, the app hasn't been used.
         // We MUST preserve the existing last_active_at so it doesn't artificially jump forward.
@@ -1130,8 +1135,13 @@ Deno.serve(async (req: Request) => {
         }
         
         row.total_time_seconds = Math.max(row.total_time_seconds, existingTime);
-        row.session_count = Math.max(row.session_count, existing.session_count || 0);
+        row.session_count = Math.max(row.session_count, existingSessions);
         row.first_seen_at = minIso(row.first_seen_at, existing.first_seen_at || null);
+
+        // Optimization: Skip upserting if data hasn't changed to save DB write usage
+        if (row.total_time_seconds === existingTime && row.session_count === existingSessions) {
+          row._unchanged = true;
+        }
       }
     }
 
@@ -1166,6 +1176,7 @@ Deno.serve(async (req: Request) => {
         if (!existing) continue;
         
         const existingTime = existing.total_time_seconds || 0;
+        const existingSessions = existing.session_count || 0;
         
         // If duration hasn't grown since the last upload, the website hasn't been used.
         // We MUST preserve the existing last_active_at so it doesn't artificially jump forward.
@@ -1178,8 +1189,13 @@ Deno.serve(async (req: Request) => {
         }
         
         row.total_time_seconds = Math.max(row.total_time_seconds, existingTime);
-        row.session_count = Math.max(row.session_count, existing.session_count || 0);
+        row.session_count = Math.max(row.session_count, existingSessions);
         row.first_seen_at = minIso(row.first_seen_at, existing.first_seen_at || null);
+
+        // Optimization: Skip upserting if data hasn't changed to save DB write usage
+        if (row.total_time_seconds === existingTime && row.session_count === existingSessions) {
+          row._unchanged = true;
+        }
       }
     }
 
@@ -1212,8 +1228,16 @@ Deno.serve(async (req: Request) => {
       for (const row of mergedSummaryRows) {
         const existing = existingSummaryByDate.get(row.date);
         if (!existing) continue;
-        row.total_switches = Math.max(row.total_switches, existing.total_switches || 0);
-        row.total_apps = Math.max(row.total_apps, existing.total_apps || 0);
+        const existingSwitches = existing.total_switches || 0;
+        const existingApps = existing.total_apps || 0;
+
+        row.total_switches = Math.max(row.total_switches, existingSwitches);
+        row.total_apps = Math.max(row.total_apps, existingApps);
+
+        // Optimization: Skip upserting if data hasn't changed to save DB write usage
+        if (row.total_switches === existingSwitches && row.total_apps === existingApps) {
+          row._unchanged = true;
+        }
       }
     }
 
@@ -1225,52 +1249,70 @@ Deno.serve(async (req: Request) => {
     const summaryErrors: string[] = [];
 
     if (mergedAppRows.length > 0) {
-      const batchSize = 500;
-      for (let i = 0; i < mergedAppRows.length; i += batchSize) {
-        const batch = mergedAppRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
-        const { error } = await supabase
-          .from('screentime_daily_app_stats')
-          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' });
+      const rowsToUpsert = isCumulative ? mergedAppRows.filter(r => !r._unchanged) : mergedAppRows;
+      if (rowsToUpsert.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < rowsToUpsert.length; i += batchSize) {
+          const batch = rowsToUpsert.slice(i, i + batchSize).map(r => {
+            const { _unchanged, ...clean } = r;
+            return { ...clean, updated_at: received_at };
+          });
+          const { error } = await supabase
+            .from('screentime_daily_app_stats')
+            .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,app_name' });
 
-        if (error) {
-          console.error(`Error inserting app stats batch ${Math.floor(i / batchSize) + 1}:`, error);
-          appErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
-        } else {
-          appInserted += batch.length;
+          if (error) {
+            console.error(`Error inserting app stats batch ${Math.floor(i / batchSize) + 1}:`, error);
+            appErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
+          } else {
+            appInserted += batch.length;
+          }
         }
       }
     }
 
     if (mergedWebsiteRows.length > 0) {
-      const batchSize = 500;
-      for (let i = 0; i < mergedWebsiteRows.length; i += batchSize) {
-        const batch = mergedWebsiteRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
-        const { error } = await supabase
-          .from('screentime_daily_website_stats')
-          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' });
+      const rowsToUpsert = isCumulative ? mergedWebsiteRows.filter(r => !r._unchanged) : mergedWebsiteRows;
+      if (rowsToUpsert.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < rowsToUpsert.length; i += batchSize) {
+          const batch = rowsToUpsert.slice(i, i + batchSize).map(r => {
+            const { _unchanged, ...clean } = r;
+            return { ...clean, updated_at: received_at };
+          });
+          const { error } = await supabase
+            .from('screentime_daily_website_stats')
+            .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform,domain' });
 
-        if (error) {
-          console.error(`Error inserting website stats batch ${Math.floor(i / batchSize) + 1}:`, error);
-          websiteErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
-        } else {
-          websiteInserted += batch.length;
+          if (error) {
+            console.error(`Error inserting website stats batch ${Math.floor(i / batchSize) + 1}:`, error);
+            websiteErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
+          } else {
+            websiteInserted += batch.length;
+          }
         }
       }
     }
 
     if (mergedSummaryRows.length > 0) {
-      const batchSize = 500;
-      for (let i = 0; i < mergedSummaryRows.length; i += batchSize) {
-        const batch = mergedSummaryRows.slice(i, i + batchSize).map(r => ({ ...r, updated_at: received_at }));
-        const { error } = await supabase
-          .from('screentime_daily_summary')
-          .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' });
+      const rowsToUpsert = isCumulative ? mergedSummaryRows.filter(r => !r._unchanged) : mergedSummaryRows;
+      if (rowsToUpsert.length > 0) {
+        const batchSize = 500;
+        for (let i = 0; i < rowsToUpsert.length; i += batchSize) {
+          const batch = rowsToUpsert.slice(i, i + batchSize).map(r => {
+            const { _unchanged, ...clean } = r;
+            return { ...clean, updated_at: received_at };
+          });
+          const { error } = await supabase
+            .from('screentime_daily_summary')
+            .upsert(batch, { onConflict: 'user_id,date,source,device_id,platform' });
 
-        if (error) {
-          console.error(`Error inserting summary batch ${Math.floor(i / batchSize) + 1}:`, error);
-          summaryErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
-        } else {
-          summaryInserted += batch.length;
+          if (error) {
+            console.error(`Error inserting summary batch ${Math.floor(i / batchSize) + 1}:`, error);
+            summaryErrors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${error.message}`);
+          } else {
+            summaryInserted += batch.length;
+          }
         }
       }
     }
