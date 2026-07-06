@@ -10,12 +10,10 @@ export const DEFAULT_DESKTOP_NAV = [
   '/habits',
   '/calendar',
   '/notes',
-  '/planner',
   '/health',
   '/screentime',
   '/sleep',
   '/analytics',
-  '/academics',
   '/finance',
 ];
 

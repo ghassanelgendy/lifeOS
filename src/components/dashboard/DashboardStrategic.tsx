@@ -1,13 +1,11 @@
 import { useMemo } from 'react';
 import { format, subDays } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { ArrowRight, FolderKanban, LineChart as LineChartIcon } from 'lucide-react';
+import { ArrowRight, LineChart as LineChartIcon } from 'lucide-react';
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { useProjects } from '../../hooks/useProjects';
 import { useAnalyticsDailyRange } from '../../hooks/useAnalytics';
 import { useUIStore, type StrategicHorizonDays } from '../../stores/useUIStore';
 import { cn } from '../../lib/utils';
-import { StrategicGoalsBrief } from './StrategicGoalsBrief';
 
 function horizonBounds(days: StrategicHorizonDays) {
   const end = new Date();
@@ -24,11 +22,8 @@ const HORIZON_OPTIONS: { value: StrategicHorizonDays; label: string }[] = [
 export function DashboardStrategic() {
   const strategicHorizonDays = useUIStore((s) => s.strategicHorizonDays);
   const setStrategicHorizonDays = useUIStore((s) => s.setStrategicHorizonDays);
-  const { data: projects = [] } = useProjects();
   const { start, end } = horizonBounds(strategicHorizonDays);
   const { habits, tasks } = useAnalyticsDailyRange(start, end);
-
-  const activeProjects = useMemo(() => projects.filter((p) => p.status === 'Active'), [projects]);
 
   const habitChartData = useMemo(() => {
     const rows = habits.data ?? [];
@@ -74,40 +69,7 @@ export function DashboardStrategic() {
         </div>
       </div>
 
-      <StrategicGoalsBrief />
 
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FolderKanban className="text-amber-500" size={18} />
-            <h2 className="font-semibold">Active projects</h2>
-          </div>
-          <Link to="/academics" className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
-            Academics & projects <ArrowRight size={12} />
-          </Link>
-        </div>
-        <div className="p-4">
-          {activeProjects.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No active projects.</p>
-          ) : (
-            <ul className="space-y-2">
-              {activeProjects.slice(0, 8).map((p) => (
-                <li
-                  key={p.id}
-                  className="flex items-center justify-between gap-3 p-3 rounded-lg bg-secondary/30 border border-border/50"
-                >
-                  <span className="font-medium text-sm truncate">{p.title}</span>
-                  {p.target_date && (
-                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                      Target {format(new Date(p.target_date), 'MMM d, yyyy')}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <section className="rounded-xl border border-border bg-card p-4">

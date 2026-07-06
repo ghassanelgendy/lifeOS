@@ -355,21 +355,7 @@ Deno.serve(async (req: Request) => {
 
         if (!dueCandidates.length) continue;
 
-        const { data: existingLogs, error: existingLogsError } = await (supabase
-          .from('notification_delivery_logs')
-          .select('idempotency_key') as any)
-          .in('idempotency_key', dueCandidates.map((candidate) => candidate.idempotencyKey));
-
-        if (existingLogsError) throw existingLogsError;
-
-        const existingKeys = new Set(
-          ((existingLogs ?? []) as Array<{ idempotency_key: string }>).map((row) => row.idempotency_key),
-        );
-        const unnotifiedCandidates = dueCandidates.filter(
-          (candidate) => !existingKeys.has(candidate.idempotencyKey),
-        );
-
-        if (!unnotifiedCandidates.length) continue;
+        const unnotifiedCandidates = dueCandidates;
 
         // Lazily fetch full subscription credentials only for users with due habits.
         const dueUserIds = [...new Set(unnotifiedCandidates.map((c) => c.habit.user_id))];
@@ -392,20 +378,6 @@ Deno.serve(async (req: Request) => {
         for (const candidate of unnotifiedCandidates) {
           const userSubscriptions = subscriptionsByUser.get(candidate.habit.user_id) ?? [];
           if (!userSubscriptions.length) continue;
-
-          const { error: insertError } = await supabase.from('notification_delivery_logs').insert({
-            user_id: candidate.habit.user_id,
-            source_type: 'habit',
-            source_id: candidate.habit.id,
-            scheduled_for: now.toISOString(),
-            status: 'pending',
-            idempotency_key: candidate.idempotencyKey,
-          });
-
-          if (insertError) {
-            if ((insertError as any).code === '23505') continue;
-            throw insertError;
-          }
 
           const isAr = /[\u0600-\u06FF]/.test(candidate.habit.title);
           const titleText = isAr 
@@ -438,15 +410,6 @@ Deno.serve(async (req: Request) => {
               }
             }
           }
-
-          await supabase
-            .from('notification_delivery_logs')
-            .update({
-              status: anySuccess ? 'sent' : 'failed',
-              sent_at: anySuccess ? new Date().toISOString() : null,
-              error: anySuccess ? null : 'No valid subscriptions',
-            })
-            .eq('idempotency_key', candidate.idempotencyKey);
         }
 
         results.push({ timezone, due: unnotifiedCandidates.length, sent });

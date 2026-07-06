@@ -15,15 +15,6 @@ export interface InBodyScan {
   updated_at: string;
 }
 
-export interface WellnessLog {
-  id: string;
-  date: string; // ISO-8601 date (YYYY-MM-DD)
-  sleep_hours: number;
-  screen_time_minutes: number;
-  created_at: string;
-  updated_at: string;
-}
-
 // ========================
 // Screentime Tracking
 // ========================
@@ -85,26 +76,11 @@ export type SleepStageType = 'Core' | 'Deep' | 'REM' | 'Awake';
 export interface SleepStage {
   id: string;
   user_id?: string | null;
-  session_id?: string | null;
   started_at: string;
   ended_at: string;
   duration_minutes: number;
   stage: SleepStageType;
   created_at: string;
-}
-
-export interface SleepSession {
-  id: string;
-  user_id?: string | null;
-  started_at: string;
-  ended_at: string;
-  duration_minutes: number;
-  sleep_score?: number | null;
-  rating?: number | null;
-  percentile?: number | null;
-  wake_count?: number | null;
-  created_at: string;
-  updated_at: string;
 }
 
 export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
@@ -147,83 +123,7 @@ export interface PrayerNotificationSetting {
   updated_at: string;
 }
 
-// ========================
-// Academic & Career (Deep Work Engine)
-// ========================
-export type ProjectType = 'Thesis' | 'Certification' | 'Coding';
-export type ProjectStatus = 'Active' | 'Paused' | 'Done';
 
-export interface Project {
-  id: string;
-  title: string;
-  type: ProjectType;
-  status: ProjectStatus;
-  description?: string;
-  target_date?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export type PaperMethodology = 'AHP' | 'TOPSIS' | 'MCDM' | 'ML' | 'Simulation' | 'Other';
-export type PaperStatus = 'Unread' | 'Reading' | 'Read' | 'Reviewed';
-
-export interface AcademicPaper {
-  id: string;
-  project_id: string; // Foreign key to Project
-  title: string;
-  authors?: string;
-  methodology: PaperMethodology;
-  status: PaperStatus;
-  year?: number;
-  key_finding?: string;
-  notes?: string;
-  url?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-/** Annual strategic goal → broken into quarterly milestones; tasks may link to a milestone. */
-export type StrategicGoalStatus = 'active' | 'completed' | 'archived';
-export type StrategicQuarterStatus = 'pending' | 'in_progress' | 'done';
-
-export interface StrategicGoal {
-  id: string;
-  user_id: string;
-  year: number;
-  title: string;
-  description?: string | null;
-  status: StrategicGoalStatus;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface StrategicGoalQuarter {
-  id: string;
-  goal_id: string;
-  quarter: number;
-  title: string;
-  status: StrategicQuarterStatus;
-  notes?: string | null;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
-
-/** ISO week: week_start_date is Monday; day_index 0 = Mon … 6 = Sun */
-export interface WeeklyPlannerItem {
-  id: string;
-  user_id: string;
-  week_start_date: string;
-  day_index: number;
-  title: string;
-  notes?: string | null;
-  strategic_quarter_id?: string | null;
-  is_done: boolean;
-  sort_order: number;
-  created_at: string;
-  updated_at: string;
-}
 
 // ========================
 // Calendar & Shifts
@@ -333,7 +233,6 @@ export interface Task {
   when_messaging?: boolean;
   // Organization
   list_id?: string; // FK to TaskList
-  project_id?: string; // FK to Project
   tag_ids: string[]; // Array of Tag IDs
   // Recurrence
   recurrence: TaskRecurrence;
@@ -349,8 +248,7 @@ export interface Task {
   // Integrations
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;
-  /** Optional link to an annual strategic plan quarter milestone */
-  strategic_quarter_id?: string | null;
+
   ios_reminders_enabled?: boolean;
   ios_reminder_id?: string | null;
   ios_reminder_list?: string | null;
@@ -439,13 +337,6 @@ export interface UserBank {
   created_at: string;
 }
 
-export interface Budget {
-  id: string;
-  category: TransactionCategory;
-  monthly_limit: number;
-  created_at: string;
-  updated_at: string;
-}
 
 // Investments: isolated from regular transactions (Thndr, Fawry)
 export interface InvestmentAccount {

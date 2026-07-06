@@ -10,7 +10,6 @@ const STORES = {
   taskLists: 'task_lists',
   tags: 'tags',
   transactions: 'transactions',
-  budgets: 'budgets',
   sleepStages: 'sleep_stages',
   inbodyScans: 'inbody_scans',
   offlineQueue: 'offline_queue',
@@ -48,9 +47,7 @@ function openDb(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(STORES.transactions)) {
         db.createObjectStore(STORES.transactions, { keyPath: 'id' });
       }
-      if (!db.objectStoreNames.contains(STORES.budgets)) {
-        db.createObjectStore(STORES.budgets, { keyPath: 'id' });
-      }
+
       if (!db.objectStoreNames.contains(STORES.sleepStages)) {
         db.createObjectStore(STORES.sleepStages, { keyPath: 'id' });
       }
@@ -201,11 +198,7 @@ export async function idbGetInBodyScans(): Promise<any[]> {
   return idbGetAll(STORES.inbodyScans);
 }
 
-// Budgets
-export async function idbSaveBudgets(budgets: any[]): Promise<void> {
-  await idbClear(STORES.budgets);
-  await idbPutMany(STORES.budgets, budgets);
-}
+
 
 // Offline queue
 export interface IdbQueueEntry {
@@ -230,7 +223,6 @@ export async function idbClearAll(): Promise<void> {
     STORES.taskLists,
     STORES.tags,
     STORES.transactions,
-    STORES.budgets,
     STORES.sleepStages,
     STORES.inbodyScans,
     STORES.offlineQueue,

@@ -188,16 +188,7 @@ Deno.serve(async (req: Request) => {
   try {
     if (!anonKey) return jsonResponse({ error: 'SUPABASE_ANON_KEY is not configured.' }, 500);
 
-    let body: Record<string, any> = {};
-    try {
-      const text = await req.text();
-      if (text.trim()) {
-        body = JSON.parse(text);
-      }
-    } catch (e) {
-      return jsonResponse({ error: 'Invalid JSON payload' }, 400);
-    }
-
+    const body = await req.json();
     const mode = (body?.mode ?? 'push') as Mode;
     const userId = body?.user_id;
 
@@ -490,7 +481,7 @@ Deno.serve(async (req: Request) => {
           .eq('ios_reminder_id', write.reminderId);
         if (existsErr) return jsonResponse({ error: existsErr.message }, 500);
 
-        if (((alreadyExists as any[]) ?? []).length > 0) {
+        if ((alreadyExists ?? []).length > 0) {
           const canonical = (alreadyExists as Array<{ id: string; ios_reminder_updated_at?: string | null; updated_at?: string | null }>)
             .slice()
             .sort((a, b) => {
@@ -530,7 +521,7 @@ Deno.serve(async (req: Request) => {
           return q.limit(5);
         })();
         if (contentErr) return jsonResponse({ error: contentErr.message }, 500);
-        if (((contentMatches as any[]) ?? []).length > 0) {
+        if ((contentMatches ?? []).length > 0) {
           const canonical = (contentMatches as Array<{ id: string; updated_at?: string | null }>)
             .slice()
             .sort((a, b) => {

@@ -44,10 +44,8 @@ import {
   useUpdateTransaction,
   useDeleteTransaction,
   getBreakdownFromTransactions,
-  useBudgets,
 } from '../hooks/useFinance';
 import { FinanceHeroCard } from '../components/FinanceHeroCard';
-import { FinanceBudgetRing } from '../components/FinanceBudgetRing';
 import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
 import {
   useInvestmentAccounts,
@@ -172,7 +170,6 @@ export default function Finance() {
   const updateInvestmentTransaction = useUpdateInvestmentTransaction();
   const deleteInvestmentTransaction = useDeleteInvestmentTransaction();
   const { privacyMode } = useUIStore();
-  const { data: budgets = [] } = useBudgets();
 
   const { user } = useAuth();
   const hasEnsuredDefaults = useRef(false);
@@ -337,10 +334,7 @@ export default function Finance() {
     });
   };
 
-  const totalBudgetLimit = useMemo(
-    () => budgets.reduce((sum, b) => sum + Number(b.monthly_limit), 0),
-    [budgets]
-  );
+
 
   // View all + date filter (month or day)
   const [viewAllTransactions, setViewAllTransactions] = useState(false);
@@ -859,14 +853,7 @@ export default function Finance() {
         privacyMode={privacyMode}
       />
 
-      {/* Budget Ring (only when budgets are configured) */}
-      {budgets.length > 0 && (
-        <FinanceBudgetRing
-          totalBudget={totalBudgetLimit}
-          totalSpent={selectedMonthExpenses}
-          privacyMode={privacyMode}
-        />
-      )}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart card with iOS-style graph type selector */}

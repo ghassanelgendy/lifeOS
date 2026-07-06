@@ -21,7 +21,6 @@ import { useHealthMetrics } from '../../hooks/useHealthData';
 import { useOverdueTasks } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useHabits } from '../../hooks/useHabits';
 import { useCategoryBreakdown } from '../../hooks/useFinance';
-import { useProjects } from '../../hooks/useProjects';
 import { useUIStore, DASHBOARD_WIDGET_IDS } from '../../stores/useUIStore';
 import { PrayerTimesWidget } from '../PrayerTimesWidget';
 
@@ -34,7 +33,6 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { adherence, todayLogs } = useWeeklyAdherence();
   const { totalExpenses, balance } = useCategoryBreakdown();
-  const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
   const upcomingItems = useDashboardUpcomingItems({ lookAheadDays: 7, includePrayer: false });
   const { privacyMode, pageWidgetOrder, pageWidgetVisible } = useUIStore();
@@ -49,8 +47,7 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
   const today = new Date();
   const completedToday = todayLogs.filter(l => l.completed).length;
 
-  // Active projects count
-  const activeProjects = projects.filter(p => p.status === 'Active').length;
+
   const screenHours = Math.floor(screentimeAvg / 60);
   const screenMinutes = screentimeAvg % 60;
   const screentimeLabel = screentimeAvg > 0
@@ -70,8 +67,10 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
         const quickstatsColumn = (
           <div className="grid grid-cols-2 gap-4">
             <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
-              <p className="text-2xl font-bold mt-1">{activeProjects}</p>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">Weight</p>
+              <p className={cn("text-2xl font-bold mt-1 tabular-nums", privacyMode && "blur-sm")}>
+                {hasHealthData ? `${metrics.weight.current} kg` : '-'}
+              </p>
             </div>
             <div className="rounded-xl border border-border bg-card p-4">
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Body Fat</p>
@@ -123,8 +122,10 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
               )}
             >
               <div className="rounded-xl border border-border bg-card p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">Active Projects</p>
-                <p className="text-2xl font-bold mt-1">{activeProjects}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Weight</p>
+                <p className={cn("text-2xl font-bold mt-1 tabular-nums", privacyMode && "blur-sm")}>
+                  {hasHealthData ? `${metrics.weight.current} kg` : '-'}
+                </p>
               </div>
               <div className="rounded-xl border border-border bg-card p-4">
                 <p className="text-xs text-muted-foreground uppercase tracking-wider">Body Fat</p>

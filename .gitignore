@@ -35,6 +35,7 @@ dist-ssr
 /src-tauri
 *.txt
 
+*.sql
 # iOS 6 lite: optional auto-login secrets (never commit)
 public/ios6-lite/legacy-autologin.local.js
 public/ios6-check.html
@@ -53,3 +54,5 @@ supabase/.temp/linked-project.json
 /lifeOS-main
 .github/supabase_logs.md
 supabase/supabase_logs (1).json
+/.agents
+/supabase/.temp

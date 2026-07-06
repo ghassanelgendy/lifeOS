@@ -18,8 +18,8 @@ import { LoadingScreen } from './components/LoadingScreen';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
 import Focus from './routes/Focus';
+
 import Health from './routes/Health';
-import Academics from './routes/Academics';
 import CalendarPage from './routes/Calendar';
 import Notes from './routes/Notes';
 import Finance from './routes/Finance';
@@ -28,7 +28,6 @@ import Screentime from './routes/Screentime';
 import Sleep from './routes/Sleep';
 import AnalyticsPage from './routes/Analytics';
 import SettingsPage from './routes/Settings';
-import WeeklyPlanner from './routes/WeeklyPlanner';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
 import './App.css';
@@ -193,10 +192,8 @@ function AppInner() {
               <Route path="focus" element={<Focus />} />
               <Route path="health" element={<Health />} />
               <Route path="habits" element={<Habits />} />
-              <Route path="academics" element={<Academics />} />
               <Route path="calendar" element={<CalendarPage />} />
               <Route path="notes" element={<Notes />} />
-              <Route path="planner" element={<WeeklyPlanner />} />
               <Route path="finance" element={<Finance />} />
               <Route path="screentime" element={<Screentime />} />
               <Route path="sleep" element={<Sleep />} />

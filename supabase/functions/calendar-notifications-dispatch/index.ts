@@ -192,31 +192,8 @@ Deno.serve(async (req: Request) => {
       // Build idempotency key using targetTime so it only fires once per target slot per event
       const idempotencyKey = `calendar:${event.user_id}:${event.id}:${type}:${targetTime.toISOString()}`;
 
-      // Check delivery logs
-      const { data: existingLog } = await (supabase
-        .from('notification_delivery_logs')
-        .select('id')
-        .eq('idempotency_key', idempotencyKey) as any).maybeSingle();
-
-      if (existingLog?.id) continue;
-
       const userSubs = subsByUser.get(event.user_id) || [];
       if (userSubs.length === 0) continue;
-
-      // Register delivery start (use 'task' type to satisfy DB CHECK constraints safely)
-      const { error: insertError } = await supabase.from('notification_delivery_logs').insert({
-        user_id: event.user_id,
-        source_type: 'task',
-        source_id: event.id,
-        scheduled_for: now.toISOString(),
-        status: 'pending',
-        idempotency_key: idempotencyKey,
-      });
-
-      if (insertError) {
-        if ((insertError as any).code === '23505') continue; // Handle duplicate race conditions
-        throw insertError;
-      }
 
       const payload = JSON.stringify({
         calendarEventId: event.id,
@@ -244,14 +221,6 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      await supabase
-        .from('notification_delivery_logs')
-        .update({
-          status: anySuccess ? 'sent' : 'failed',
-          sent_at: anySuccess ? new Date().toISOString() : null,
-          error: anySuccess ? null : 'No valid subscriptions',
-        })
-        .eq('idempotency_key', idempotencyKey);
     }
 
     return new Response(JSON.stringify({ ok: true, sent: sentCount }), {

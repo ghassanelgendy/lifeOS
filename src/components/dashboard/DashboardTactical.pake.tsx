@@ -21,7 +21,6 @@ import { useHealthMetrics } from '../../hooks/useHealthData';
 import { useOverdueTasks } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useHabits } from '../../hooks/useHabits';
 import { useCategoryBreakdown } from '../../hooks/useFinance';
-import { useProjects } from '../../hooks/useProjects';
 import { useUIStore, DASHBOARD_WIDGET_IDS } from '../../stores/useUIStore';
 import { PrayerTimesWidget } from '../PrayerTimesWidget';
 import { Card, Text } from '@fluentui/react-components';
@@ -35,7 +34,6 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { adherence, todayLogs } = useWeeklyAdherence();
   const { totalExpenses, balance } = useCategoryBreakdown();
-  const { data: projects = [] } = useProjects();
   const { data: allHabits = [] } = useHabits();
   const upcomingItems = useDashboardUpcomingItems({ lookAheadDays: 7, includePrayer: false });
   const { privacyMode, pageWidgetOrder, pageWidgetVisible } = useUIStore();
@@ -50,8 +48,7 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
   const today = new Date();
   const completedToday = todayLogs.filter(l => l.completed).length;
 
-  // Active projects count
-  const activeProjects = projects.filter(p => p.status === 'Active').length;
+
   const screenHours = Math.floor(screentimeAvg / 60);
   const screenMinutes = screentimeAvg % 60;
   const screentimeLabel = screentimeAvg > 0
@@ -71,8 +68,10 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
         const quickstatsColumn = (
           <div className="grid grid-cols-2 gap-4">
             <Card className="p-4" appearance="subtle">
-              <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Active Projects</Text>
-              <Text size={600} weight="bold" className="mt-1">{activeProjects}</Text>
+              <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Weight</Text>
+              <Text size={600} weight="bold" className={cn("mt-1 tabular-nums", privacyMode && "blur-sm")}>
+                {hasHealthData ? `${metrics.weight.current} kg` : '-'}
+              </Text>
             </Card>
             <Card className="p-4" appearance="subtle">
               <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Body Fat</Text>
@@ -120,8 +119,10 @@ export function DashboardTactical({ onSelectEntry }: { onSelectEntry: (entry: an
               )}
             >
               <Card className="p-4" appearance="subtle">
-                <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Active Projects</Text>
-                <Text size={600} weight="bold" className="mt-1">{activeProjects}</Text>
+                <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Weight</Text>
+                <Text size={600} weight="bold" className={cn("mt-1 tabular-nums", privacyMode && "blur-sm")}>
+                  {hasHealthData ? `${metrics.weight.current} kg` : '-'}
+                </Text>
               </Card>
               <Card className="p-4" appearance="subtle">
                 <Text size={200} className="uppercase tracking-wider text-muted-foreground font-medium">Body Fat</Text>

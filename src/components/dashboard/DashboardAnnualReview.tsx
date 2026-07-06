@@ -5,7 +5,6 @@ import { BookOpen } from 'lucide-react';
 import { useAnalyticsDailyRange } from '../../hooks/useAnalytics';
 import { useUIStore } from '../../stores/useUIStore';
 import { cn } from '../../lib/utils';
-import { StrategicAnnualGoalsSection } from './StrategicAnnualGoalsSection';
 
 function aggregateScreentimeSecondsByDate(
   rows: { date: string; app_time_seconds: number | null; web_time_seconds: number | null }[],
@@ -137,7 +136,7 @@ export function DashboardAnnualReview() {
         </div>
       </div>
 
-      <StrategicAnnualGoalsSection year={selectedYear} />
+
 
       <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div className="rounded-xl border border-border bg-card p-4">

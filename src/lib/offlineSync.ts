@@ -39,9 +39,6 @@ export type QueuedOp =
   | { entity: 'calendar_events'; op: 'create'; payload: Record<string, unknown> }
   | { entity: 'calendar_events'; op: 'update'; id: string; payload: Record<string, unknown> }
   | { entity: 'calendar_events'; op: 'delete'; id: string }
-  | { entity: 'projects'; op: 'create'; payload: Record<string, unknown> }
-  | { entity: 'projects'; op: 'update'; id: string; payload: Record<string, unknown> }
-  | { entity: 'budgets'; op: 'upsert'; payload: Record<string, unknown> }
   | { entity: 'investment_transactions'; op: 'create'; payload: Record<string, unknown> }
   | { entity: 'investment_transactions'; op: 'update'; id: string; payload: Record<string, unknown> }
   | { entity: 'investment_transactions'; op: 'delete'; id: string }

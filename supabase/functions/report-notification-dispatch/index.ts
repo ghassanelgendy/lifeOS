@@ -139,60 +139,27 @@ Deno.serve(async (req: Request) => {
 
           // 1. Weekly Report (on Saturdays)
           if (local.isSaturday) {
-            const idempotencyKey = `report:weekly:${userId}:${local.formattedDate}`;
-            
-            // Check if already sent
-            const { data: existingLog } = await (supabase
-              .from('notification_delivery_logs')
-              .select('id, status')
-              .eq('idempotency_key', idempotencyKey) as any).maybeSingle();
-
-            if (!existingLog?.id) {
-              // Register delivery start
-              const { error: insertError } = await supabase.from('notification_delivery_logs').insert({
-                user_id: userId,
-                source_type: 'report',
-                source_id: null,
-                scheduled_for: now.toISOString(),
-                status: 'pending',
-                idempotency_key: idempotencyKey,
-              });
-
-              if (!insertError || (insertError as any).code === '23505') {
-                if (!insertError) {
-                  const payload = JSON.stringify({
-                    reportType: 'weekly',
-                    title: 'Your Weekly Wrap is Ready',
-                    body: 'See how your week went and plan for next week!',
-                  });
-                  let anySuccess = false;
-                  for (const sub of userSubs) {
-                    try {
-                      await webpush.sendNotification(
-                        {
-                          endpoint: sub.endpoint,
-                          keys: { p256dh: sub.p256dh, auth: sub.auth },
-                        },
-                        payload
-                      );
-                      anySuccess = true;
-                      weeklySent++;
-                    } catch (e) {
-                      console.error('Weekly Push failed', sub.endpoint.slice(0, 50), e);
-                      if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
-                        await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
-                      }
-                    }
-                  }
-
-                  await supabase
-                    .from('notification_delivery_logs')
-                    .update({
-                      status: anySuccess ? 'sent' : 'failed',
-                      sent_at: anySuccess ? new Date().toISOString() : null,
-                      error: anySuccess ? null : 'No valid subscriptions',
-                    })
-                    .eq('idempotency_key', idempotencyKey);
+            const payload = JSON.stringify({
+              reportType: 'weekly',
+              title: 'Your Weekly Wrap is Ready',
+              body: 'See how your week went and plan for next week!',
+            });
+            let anySuccess = false;
+            for (const sub of userSubs) {
+              try {
+                await webpush.sendNotification(
+                  {
+                    endpoint: sub.endpoint,
+                    keys: { p256dh: sub.p256dh, auth: sub.auth },
+                  },
+                  payload
+                );
+                anySuccess = true;
+                weeklySent++;
+              } catch (e) {
+                console.error('Weekly Push failed', sub.endpoint.slice(0, 50), e);
+                if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
+                  await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
                 }
               }
             }
@@ -200,60 +167,27 @@ Deno.serve(async (req: Request) => {
 
           // 2. Monthly Report (on last day of month or 30th)
           if (local.isMonthlyDay) {
-            const idempotencyKey = `report:monthly:${userId}:${local.yearMonth}`;
-
-            // Check if already sent
-            const { data: existingLog } = await (supabase
-              .from('notification_delivery_logs')
-              .select('id, status')
-              .eq('idempotency_key', idempotencyKey) as any).maybeSingle();
-
-            if (!existingLog?.id) {
-              // Register delivery start
-              const { error: insertError } = await supabase.from('notification_delivery_logs').insert({
-                user_id: userId,
-                source_type: 'report',
-                source_id: null,
-                scheduled_for: now.toISOString(),
-                status: 'pending',
-                idempotency_key: idempotencyKey,
-              });
-
-              if (!insertError || (insertError as any).code === '23505') {
-                if (!insertError) {
-                  const payload = JSON.stringify({
-                    reportType: 'monthly',
-                    title: 'Your Monthly Wrap is Ready',
-                    body: 'Discover your top trends and stats for this month!',
-                  });
-                  let anySuccess = false;
-                  for (const sub of userSubs) {
-                    try {
-                      await webpush.sendNotification(
-                        {
-                          endpoint: sub.endpoint,
-                          keys: { p256dh: sub.p256dh, auth: sub.auth },
-                        },
-                        payload
-                      );
-                      anySuccess = true;
-                      monthlySent++;
-                    } catch (e) {
-                      console.error('Monthly Push failed', sub.endpoint.slice(0, 50), e);
-                      if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
-                        await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
-                      }
-                    }
-                  }
-
-                  await supabase
-                    .from('notification_delivery_logs')
-                    .update({
-                      status: anySuccess ? 'sent' : 'failed',
-                      sent_at: anySuccess ? new Date().toISOString() : null,
-                      error: anySuccess ? null : 'No valid subscriptions',
-                    })
-                    .eq('idempotency_key', idempotencyKey);
+            const payload = JSON.stringify({
+              reportType: 'monthly',
+              title: 'Your Monthly Wrap is Ready',
+              body: 'Discover your top trends and stats for this month!',
+            });
+            let anySuccess = false;
+            for (const sub of userSubs) {
+              try {
+                await webpush.sendNotification(
+                  {
+                    endpoint: sub.endpoint,
+                    keys: { p256dh: sub.p256dh, auth: sub.auth },
+                  },
+                  payload
+                );
+                anySuccess = true;
+                monthlySent++;
+              } catch (e) {
+                console.error('Monthly Push failed', sub.endpoint.slice(0, 50), e);
+                if ((e as any).statusCode === 410 || (e as any).statusCode === 404) {
+                  await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
                 }
               }
             }

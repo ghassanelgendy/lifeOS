@@ -192,31 +192,8 @@ Deno.serve(async (req: Request) => {
           if (!task.user_id) continue;
 
           const idempotencyKey = `task:${task.user_id}:${task.id}:${tz}:${task.due_date}:${task.due_time}`;
-          
-          // Check if already sent
-          const { data: existingLog } = await (supabase
-            .from('notification_delivery_logs')
-            .select('id, status')
-            .eq('idempotency_key', idempotencyKey) as any).maybeSingle();
-          if (existingLog?.id) continue;
-
-          const userSubs = subsByUser.get(task.user_id) || [];
+                 const userSubs = subsByUser.get(task.user_id) || [];
           if (!userSubs.length) continue;
-
-          // Register delivery start
-          const { error: insertError } = await supabase.from('notification_delivery_logs').insert({
-            user_id: task.user_id,
-            source_type: 'task',
-            source_id: task.id,
-            scheduled_for: now.toISOString(),
-            status: 'pending',
-            idempotency_key: idempotencyKey,
-          });
-
-          if (insertError) {
-            if ((insertError as any).code === '23505') continue; // Unique violation duplicate check
-            throw insertError;
-          }
 
           const isAr = /[\u0600-\u06FF]/.test(task.title);
           const titleText = isAr
@@ -249,15 +226,6 @@ Deno.serve(async (req: Request) => {
               }
             }
           }
-
-          await supabase
-            .from('notification_delivery_logs')
-            .update({
-              status: anySuccess ? 'sent' : 'failed',
-              sent_at: anySuccess ? new Date().toISOString() : null,
-              error: anySuccess ? null : 'No valid subscriptions',
-            })
-            .eq('idempotency_key', idempotencyKey);
         }
         results.push({ timezone: tz, tasks: taskList.length, sent });
       } catch (tzProcError) {

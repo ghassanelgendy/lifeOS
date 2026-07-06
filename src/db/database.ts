@@ -1,8 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import type {
   InBodyScan,
-  Project,
-  AcademicPaper,
   CalendarEvent,
   Task,
   TaskList,
@@ -11,7 +9,6 @@ import type {
   Habit,
   HabitLog,
   Transaction,
-  Budget,
   CreateInput,
   UpdateInput,
 } from '../types/schema';
@@ -23,8 +20,6 @@ const STORAGE_KEY = 'lifeos_db';
 
 interface Database {
   inbody_scans: InBodyScan[];
-  projects: Project[];
-  academic_papers: AcademicPaper[];
   calendar_events: CalendarEvent[];
   tasks: Task[];
   task_lists: TaskList[];
@@ -32,13 +27,10 @@ interface Database {
   habits: Habit[];
   habit_logs: HabitLog[];
   transactions: Transaction[];
-  budgets: Budget[];
 }
 
 const defaultDatabase: Database = {
   inbody_scans: [],
-  projects: [],
-  academic_papers: [],
   calendar_events: [],
   tasks: [],
   task_lists: [],
@@ -46,7 +38,6 @@ const defaultDatabase: Database = {
   habits: [],
   habit_logs: [],
   transactions: [],
-  budgets: [],
 };
 
 // Load database from localStorage
@@ -138,117 +129,7 @@ export const inBodyDB = {
   },
 };
 
-// ========================
-// Projects
-// ========================
-export const projectDB = {
-  getAll(): Project[] {
-    return loadDB().projects.sort((a, b) =>
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-    );
-  },
 
-  getById(id: string): Project | undefined {
-    return loadDB().projects.find((p) => p.id === id);
-  },
-
-  getByStatus(status: Project['status']): Project[] {
-    return loadDB().projects.filter((p) => p.status === status);
-  },
-
-  create(input: CreateInput<Project>): Project {
-    const db = loadDB();
-    const project: Project = {
-      ...input,
-      id: uuidv4(),
-      created_at: now(),
-      updated_at: now(),
-    };
-    db.projects.push(project);
-    saveDB(db);
-    return project;
-  },
-
-  update(id: string, input: UpdateInput<Project>): Project | null {
-    const db = loadDB();
-    const index = db.projects.findIndex((p) => p.id === id);
-    if (index === -1) return null;
-
-    const updated: Project = {
-      ...db.projects[index],
-      ...input,
-      updated_at: now(),
-    };
-    db.projects[index] = updated;
-    saveDB(db);
-    return updated;
-  },
-
-  delete(id: string): boolean {
-    const db = loadDB();
-    const index = db.projects.findIndex((p) => p.id === id);
-    if (index === -1) return false;
-    db.projects.splice(index, 1);
-    saveDB(db);
-    return true;
-  },
-};
-
-// ========================
-// Academic Papers
-// ========================
-export const paperDB = {
-  getAll(): AcademicPaper[] {
-    return loadDB().academic_papers.sort((a, b) =>
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-    );
-  },
-
-  getByProject(projectId: string): AcademicPaper[] {
-    return loadDB().academic_papers.filter((p) => p.project_id === projectId);
-  },
-
-  getById(id: string): AcademicPaper | undefined {
-    return loadDB().academic_papers.find((p) => p.id === id);
-  },
-
-  create(input: CreateInput<AcademicPaper>): AcademicPaper {
-    const db = loadDB();
-    const paper: AcademicPaper = {
-      ...input,
-      id: uuidv4(),
-      created_at: now(),
-      updated_at: now(),
-    };
-    db.academic_papers.push(paper);
-    saveDB(db);
-    return paper;
-  },
-
-  update(id: string, input: UpdateInput<AcademicPaper>): AcademicPaper | null {
-    const db = loadDB();
-    const index = db.academic_papers.findIndex((p) => p.id === id);
-    if (index === -1) return null;
-
-    const updated: AcademicPaper = {
-      ...db.academic_papers[index],
-      ...input,
-      updated_at: now(),
-    };
-    db.academic_papers[index] = updated;
-    saveDB(db);
-    return updated;
-  },
-
-  delete(id: string): boolean {
-    const db = loadDB();
-    const index = db.academic_papers.findIndex((p) => p.id === id);
-    if (index === -1) return false;
-    db.academic_papers.splice(index, 1);
-    saveDB(db);
-    return true;
-  },
-};
 
 // ========================
 // Calendar Events
@@ -463,9 +344,7 @@ export const taskDB = {
     return taskDB.getAll().filter((t) => t.list_id === listId);
   },
 
-  getByProject(projectId: string): Task[] {
-    return taskDB.getAll().filter((t) => t.project_id === projectId);
-  },
+
 
   getByTag(tagId: string): Task[] {
     return taskDB.getAll().filter((t) => t.tag_ids.includes(tagId));
@@ -644,7 +523,6 @@ export const taskDB = {
       due_time: task.due_time,
       reminder: task.reminder,
       list_id: task.list_id,
-      project_id: task.project_id,
       tag_ids: task.tag_ids,
       recurrence: task.recurrence,
       recurrence_interval: task.recurrence_interval,
@@ -931,53 +809,7 @@ export const transactionDB = {
   },
 };
 
-// ========================
-// Budgets
-// ========================
-export const budgetDB = {
-  getAll(): Budget[] {
-    return loadDB().budgets;
-  },
 
-  getByCategory(category: Budget['category']): Budget | undefined {
-    return loadDB().budgets.find((b) => b.category === category);
-  },
-
-  upsert(category: Budget['category'], monthlyLimit: number): Budget {
-    const db = loadDB();
-    const existingIndex = db.budgets.findIndex((b) => b.category === category);
-
-    if (existingIndex !== -1) {
-      db.budgets[existingIndex] = {
-        ...db.budgets[existingIndex],
-        monthly_limit: round1(monthlyLimit),
-        updated_at: now(),
-      };
-      saveDB(db);
-      return db.budgets[existingIndex];
-    }
-
-    const budget: Budget = {
-      id: uuidv4(),
-      category,
-      monthly_limit: round1(monthlyLimit),
-      created_at: now(),
-      updated_at: now(),
-    };
-    db.budgets.push(budget);
-    saveDB(db);
-    return budget;
-  },
-
-  delete(category: Budget['category']): boolean {
-    const db = loadDB();
-    const index = db.budgets.findIndex((b) => b.category === category);
-    if (index === -1) return false;
-    db.budgets.splice(index, 1);
-    saveDB(db);
-    return true;
-  },
-};
 
 // ========================
 // Database Utilities

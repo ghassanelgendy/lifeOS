@@ -2,13 +2,12 @@ import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
-import type { Transaction, Budget, CreateInput, UpdateInput, TransactionCategory } from '../types/schema';
+import type { Transaction, CreateInput, UpdateInput } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { idbSaveTransactions, idbGetTransactions } from '../db/indexedDb';
 
 const TRANSACTIONS_KEY = ['transactions'];
-const BUDGETS_KEY = ['budgets'];
 
 function inferCashDirection(t: Pick<Transaction, 'direction' | 'type'>): 'In' | 'Out' | null {
   if (t.direction === 'In' || t.direction === 'Out') return t.direction;
@@ -55,9 +54,7 @@ export function useTransactionsRealtime() {
     };
   }, [user?.id, queryClient]);
 }
-function budgetsKey(userId: string | undefined) {
-  return [...BUDGETS_KEY, userId] as const;
-}
+
 
 // Safety: if RLS is not enabled, the API can return other users' rows. Filter to current user and warn.
 function filterToCurrentUser<T extends { user_id?: string | null }>(
@@ -219,61 +216,7 @@ export function useDeleteTransaction() {
   });
 }
 
-// Budgets
-export function useBudgets() {
-  const { user } = useAuth();
-  const key = budgetsKey(user?.id);
-  const userId = user?.id;
-  return useQuery({
-    queryKey: key,
-    queryFn: async () => {
-      const { data, error } = await supabase.from('budgets').select('*');
-      if (error) throw error;
-      const list = (data ?? []) as (Budget & { user_id?: string | null })[];
-      return userId ? (filterToCurrentUser(list, userId, 'budgets') as Budget[]) : list;
-    },
-    enabled: !!user?.id,
-  });
-}
 
-export function useUpsertBudget() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const key = budgetsKey(user?.id);
-
-  return useMutation({
-    mutationFn: async ({ category, monthlyLimit }: { category: TransactionCategory; monthlyLimit: number }) => {
-      // Upsert based on category
-      const { data, error } = await supabase
-        .from('budgets')
-        .upsert({ category, monthly_limit: monthlyLimit }, { onConflict: 'user_id,category' })
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Budget;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: key });
-    },
-  });
-}
-
-export function useDeleteBudget() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  const key = budgetsKey(user?.id);
-
-  return useMutation({
-    mutationFn: async (category: TransactionCategory) => {
-      const { error } = await supabase.from('budgets').delete().eq('category', category);
-      if (error) throw error;
-      return true;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: key });
-    },
-  });
-}
 
 // Financial Summary
 export function useFinancialSummary(year?: number, month?: number) {
@@ -385,22 +328,4 @@ export function useCategoryBreakdown() {
   return computeBreakdownFromTransactions(transactions);
 }
 
-// Budget vs Actual spending
-export function useBudgetStatus() {
-  const { data: budgets = [] } = useBudgets();
-  const { expensesByCategory } = useCategoryBreakdown();
 
-  return budgets.map((budget) => {
-    const spent = expensesByCategory[budget.category] || 0;
-    const remaining = round1(budget.monthly_limit - spent);
-    const percentUsed = round1((spent / budget.monthly_limit) * 100);
-
-    return {
-      ...budget,
-      spent,
-      remaining,
-      percentUsed,
-      isOverBudget: spent > budget.monthly_limit,
-    };
-  });
-}

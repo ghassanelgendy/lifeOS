@@ -170,13 +170,6 @@ Deno.serve(async (req: Request) => {
           const normalized = ((notifyMinute % 1440) + 1440) % 1440;
           if (!isDueNow(local.minuteOfDay, normalized)) continue;
 
-          const idempotencyKey = `prayer:${row.user_id}:${ph.prayer_name}:${local.date}`;
-          const { data: existingLog } = await (supabase
-            .from('notification_delivery_logs')
-            .select('id, status')
-            .eq('idempotency_key', idempotencyKey) as any).maybeSingle();
-          if (existingLog?.id) continue;
-
           dueInTz.push(row);
         }
 
@@ -207,16 +200,6 @@ Deno.serve(async (req: Request) => {
 
         let sent = 0;
         for (const row of dueInTz) {
-          const idempotencyKey = `prayer:${row.user_id}:${row.prayer_habit.prayer_name}:${local.date}`;
-          await supabase.from('notification_delivery_logs').insert({
-            user_id: row.user_id,
-            source_type: 'prayer',
-            source_id: row.prayer_habit.id,
-            scheduled_for: now.toISOString(),
-            status: 'pending',
-            idempotency_key: idempotencyKey,
-          });
-
           const title = `Time to pray ${row.prayer_habit.prayer_name}`;
           const payload = JSON.stringify({
             title,
@@ -240,15 +223,6 @@ Deno.serve(async (req: Request) => {
               }
             }
           }
-
-          await supabase
-            .from('notification_delivery_logs')
-            .update({
-              status: anySuccess ? 'sent' : 'failed',
-              sent_at: anySuccess ? new Date().toISOString() : null,
-              error: anySuccess ? null : 'No valid subscriptions',
-            })
-            .eq('idempotency_key', idempotencyKey);
         }
 
         results.push({ timezone: tz, due: dueInTz.length, sent });
