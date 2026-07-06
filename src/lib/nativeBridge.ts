@@ -91,36 +91,8 @@ export async function initializeNativeApp() {
       addSystemLog(`initializeNativeApp: requestPermissions display = ${req.display}`, 'info');
     }
 
-    // 4. Register notification action types for quick-action long-press on iOS/Android
-    await LocalNotifications.registerActionTypes({
-      types: [
-        {
-          // Tasks: mark done or postpone by 1 hour
-          id: 'task-actions',
-          actions: [
-            { id: 'done', title: 'Done' },
-            { id: 'postpone', title: 'Postpone 1h' },
-          ],
-        },
-        {
-          // Habits: done or snooze 5 mins
-          id: 'habit-actions',
-          actions: [
-            { id: 'done', title: 'Done' },
-            { id: 'snooze5', title: '+5 mins' },
-          ],
-        },
-        {
-          // Prayers: done or snooze 5 mins
-          id: 'prayer-actions',
-          actions: [
-            { id: 'done', title: 'Done' },
-            { id: 'snooze5', title: '+5 mins' },
-          ],
-        },
-      ],
-    });
-    addSystemLog('initializeNativeApp: Action types registered successfully', 'info');
+    // 4. Register notification action types — also called standalone at module load
+    await registerNotificationActionTypes();
 
     // 5. Hide splash screen after app is fully loaded
     await SplashScreen.hide();
@@ -623,6 +595,46 @@ async function upsertPrayerLogWithHabitSyncDirect(
     .eq('id', prayerLogId);
 }
 
+// Register notification action types so iOS shows quick-action buttons on banners.
+// Called both at module load AND inside initializeNativeApp() as a safety net.
+export async function registerNotificationActionTypes(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    await LocalNotifications.registerActionTypes({
+      types: [
+        {
+          // Tasks: mark done or postpone by 1 hour
+          id: 'task-actions',
+          actions: [
+            { id: 'done', title: 'Done' },
+            { id: 'postpone', title: 'Postpone 1h' },
+          ],
+        },
+        {
+          // Habits: done or snooze 5 mins
+          id: 'habit-actions',
+          actions: [
+            { id: 'done', title: 'Done' },
+            { id: 'snooze5', title: '+5 mins' },
+          ],
+        },
+        {
+          // Prayers: done or snooze 5 mins
+          id: 'prayer-actions',
+          actions: [
+            { id: 'done', title: 'Done' },
+            { id: 'snooze5', title: '+5 mins' },
+          ],
+        },
+      ],
+    });
+    addSystemLog('registerNotificationActionTypes: Action types registered successfully', 'info');
+  } catch (e: any) {
+    addSystemLog(`registerNotificationActionTypes failed: ${e?.message || e}`, 'error');
+    console.error('[LocalNotifications] registerActionTypes failed:', e);
+  }
+}
+
 // Wire up quick-action listeners (Done / Postpone / Snooze / Late).
 // Call once at app startup with access to supabase + react-query client.
 export function setupNotificationActionListeners(supabaseClient: any, queryClient: any) {
@@ -644,7 +656,24 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
       extra = {};
     }
 
+    addSystemLog(`[Notif] actionId="${actionId}" extra=${JSON.stringify(extra)}`, 'info');
     console.log(`[LocalNotifications] Action "${actionId}"`, JSON.stringify(extra));
+
+    // When the user taps the notification body itself (not a button), navigate to relevant route
+    if (actionId === 'tap') {
+      try {
+        if (extra.taskId) {
+          window.location.href = 'lifeos://tasks';
+        } else if (extra.habitId) {
+          window.location.href = 'lifeos://habits';
+        } else if (extra.prayerName) {
+          window.location.href = 'lifeos://habits';
+        } else if (extra.calendarEventId) {
+          window.location.href = 'lifeos://calendar';
+        }
+      } catch { /* non-fatal */ }
+      return;
+    }
 
     // Ensure session is loaded before queries run
     let userId: string | undefined;
@@ -652,6 +681,7 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
       const { data: { session } } = await supabaseClient.auth.getSession();
       userId = session?.user?.id;
     } catch (e) {
+      addSystemLog(`[Notif] Failed to get user session: ${e}`, 'error');
       console.error('[Notif] Failed to get user session:', e);
     }
 

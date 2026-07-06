@@ -57,6 +57,40 @@
 				<string>lifeos</string>
 			</array>
 		</dict>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.ghassanelgendy.lifeos.dashboard</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Dashboard</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeHome</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.ghassanelgendy.lifeos.tasks</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Tasks</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeConfirmation</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.ghassanelgendy.lifeos.calendar</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Calendar</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeDate</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.ghassanelgendy.lifeos.addexpense</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Add Expense</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeAdd</string>
+		</dict>
 	</array>
 </dict>
 </plist>

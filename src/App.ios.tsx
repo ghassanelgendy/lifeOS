@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from './lib/supabase';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
-import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners } from './lib/nativeBridge';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners, registerNotificationActionTypes } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useHabitAverages } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
@@ -49,6 +49,8 @@ const PERSIST_MAX_AGE = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 // Wire up notification quick-action listeners as early as possible on app bundle load
 setupNotificationActionListeners(supabase, queryClient);
+// Register action types at module load so iOS shows action buttons even before full init
+void registerNotificationActionTypes();
 
 function ProtectedRoute() {
   const { user, loading } = useAuth();
@@ -160,7 +162,16 @@ function AppInner() {
       try {
         const parsedUrl = new URL(url);
         // Handlers for deep link paths
-        if (parsedUrl.host === 'add-transaction') {
+        if (parsedUrl.host === 'dashboard') {
+          // Handled by router — app opens to dashboard route by default
+          window.location.href = '/dashboard';
+        } else if (parsedUrl.host === 'tasks') {
+          window.location.href = '/tasks';
+        } else if (parsedUrl.host === 'calendar') {
+          window.location.href = '/calendar';
+        } else if (parsedUrl.host === 'finance') {
+          window.location.href = '/finance';
+        } else if (parsedUrl.host === 'add-transaction') {
           const params = new URLSearchParams(parsedUrl.search);
           const amountStr = params.get('amount');
           const amount = amountStr ? parseFloat(amountStr) : 0;

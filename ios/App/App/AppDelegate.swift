@@ -46,4 +46,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         return ApplicationDelegateProxy.shared.application(application, continue: userActivity, restorationHandler: restorationHandler)
     }
 
+    func application(_ application: UIApplication, performActionFor shortcutItem: UIApplicationShortcutItem, completionHandler: @escaping (Bool) -> Void) {
+        let handled = handleShortcutItem(shortcutItem)
+        completionHandler(handled)
+    }
+
+    private func handleShortcutItem(_ shortcutItem: UIApplicationShortcutItem) -> Bool {
+        var urlString: String?
+        switch shortcutItem.type {
+        case "com.ghassanelgendy.lifeos.dashboard":
+            urlString = "lifeos://dashboard"
+        case "com.ghassanelgendy.lifeos.tasks":
+            urlString = "lifeos://tasks"
+        case "com.ghassanelgendy.lifeos.calendar":
+            urlString = "lifeos://calendar"
+        case "com.ghassanelgendy.lifeos.addexpense":
+            urlString = "lifeos://finance"
+        default:
+            return false
+        }
+        
+        guard let urlStr = urlString, let url = URL(string: urlStr) else {
+            return false
+        }
+        
+        return ApplicationDelegateProxy.shared.application(UIApplication.shared, open: url, options: [:])
+    }
+
 }

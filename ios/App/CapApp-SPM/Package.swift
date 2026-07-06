@@ -24,7 +24,7 @@ let package = Package(
         .package(name: "CapacitorSplashScreen", path: "..\..\..\node_modules\.pnpm\@capacitor+splash-screen@8.0.1_@capacitor+core@8.4.1\node_modules\@capacitor\splash-screen"),
         .package(name: "CapacitorStatusBar", path: "..\..\..\node_modules\.pnpm\@capacitor+status-bar@8.0.2_@capacitor+core@8.4.1\node_modules\@capacitor\status-bar"),
         .package(name: "CapawesomeCapacitorBadge", path: "..\..\..\node_modules\.pnpm\@capawesome+capacitor-badge@8.0.2_@capacitor+core@8.4.1\node_modules\@capawesome\capacitor-badge"),
-        .package(name: "CapgoCapacitorUpdater", path: "..\..\..\node_modules\.pnpm\@capgo+capacitor-updater@8.50.1_@capacitor+core@8.4.1\node_modules\@capgo\capacitor-updater")
+        .package(name: "CapgoCapacitorUpdater", path: "..\..\..\node_modules\.pnpm\@capgo+capacitor-updater@8.50.2_@capacitor+core@8.4.1\node_modules\@capgo\capacitor-updater")
     ],
     targets: [
         .target(
