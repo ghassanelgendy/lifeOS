@@ -18,6 +18,12 @@ function isPcLockApp(stat: Pick<ScreentimeAppStat, 'app_name' | 'source' | 'plat
   return isPc && appName === 'lockapp';
 }
 
+function isBrowserApp(stat: Pick<ScreentimeAppStat, 'app_name'>): boolean {
+  const appName = (stat.app_name || '').trim().toLowerCase();
+  const BROWSER_APP_NAMES = ['safari', 'chrome', 'msedge', 'firefox', 'browser', 'opera', 'brave', 'arc'];
+  return BROWSER_APP_NAMES.some(b => appName.includes(b));
+}
+
 async function fetchAllAppStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeAppStat[]> {
   const { data, count, error } = await supabase
     .from('screentime_daily_app_stats')
@@ -55,7 +61,7 @@ async function fetchAllAppStats(userId: string, startDate: string, endDate: stri
     }
   }
   
-  return all.filter((stat) => !isPcLockApp(stat));
+  return all.filter((stat) => !isPcLockApp(stat) && !isBrowserApp(stat));
 }
 
 async function fetchAllWebsiteStats(userId: string, startDate: string, endDate: string): Promise<ScreentimeWebsiteStat[]> {
