@@ -903,6 +903,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     }
 
     for (const task of completedTasks) {
+      if (task.is_wont_do) continue;
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
 
       const isCalendarEvent = !!(task.calendar_source_key || task.calendar_event_id);
@@ -1369,6 +1370,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   });
 
   completedTasks.forEach((t) => {
+    if (t.is_wont_do) return;
     if (!t.completed_at || format(new Date(t.completed_at), 'yyyy-MM-dd') !== todayStr) return;
     if (t.calendar_source_key || t.calendar_event_id) return;
     const key = `task-${t.id}`;
