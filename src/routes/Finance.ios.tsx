@@ -61,6 +61,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../stores/useUIStore';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
+import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
+import { authenticateWithBiometrics } from '../lib/nativeBridge';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
   { value: 'food', label: 'Food & Dining' },
@@ -120,6 +123,35 @@ const QNB_DEBIT = /0050|\*\*7893|7893/;
 const QNB_CREDIT = /1473|\*\*\*1473/;
 
 export default function Finance() {
+  const [isLocked, setIsLocked] = useState(() => Capacitor.isNativePlatform());
+
+  const triggerAuth = async () => {
+    const success = await authenticateWithBiometrics('Access your finance dashboard');
+    if (success) {
+      setIsLocked(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    // Attempt auth immediately on mount
+    void triggerAuth();
+
+    // Lock again when app goes to background
+    const listenerPromise = App.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) {
+        setIsLocked(true);
+      } else {
+        void triggerAuth();
+      }
+    });
+
+    return () => {
+      void listenerPromise.then((handle) => handle.remove());
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<FinanceTab>('transactions');
   const { data: transactions = [], isLoading } = useTransactions();
   const { data: banks = [], isLoading: banksLoading } = useUserBanks();
@@ -710,6 +742,33 @@ export default function Finance() {
     window.addEventListener('app-trigger-add-finance', handleHeaderPlus);
     return () => window.removeEventListener('app-trigger-add-finance', handleHeaderPlus);
   }, [activeTab, investmentAccounts]);
+
+  if (isLocked) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center text-foreground">
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex flex-col items-center max-w-sm"
+        >
+          <div className="p-4 mb-6 rounded-full bg-muted border border-border">
+            <Wallet size={48} className="text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold mb-2 tracking-tight">Finance Dashboard Locked</h1>
+          <p className="text-sm text-muted-foreground mb-8 leading-relaxed">
+            For your security, please authenticate using Face ID, Touch ID, or your device passcode to view financial records.
+          </p>
+          <Button
+            onClick={triggerAuth}
+            className="flex items-center gap-2 px-6 py-3 rounded-xl bg-foreground text-background font-semibold hover:opacity-90 transition-opacity shadow-lg"
+          >
+            Unlock Section
+          </Button>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (

@@ -13,9 +13,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from './lib/supabase';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
-import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners, registerNotificationActionTypes } from './lib/nativeBridge';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners, registerNotificationActionTypes, syncWidgetHabitStreaks } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
-import { useHabits, useTodayHabitLogs, useHabitAverages } from './hooks/useHabits';
+import { useHabits, useTodayHabitLogs, useHabitAverages, useHabitStreaks } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -115,6 +115,9 @@ function AppInner() {
   const { data: todayHabitLogs = [] } = useTodayHabitLogs();
   const { data: habitAverages = {} } = useHabitAverages();
 
+  const habitIds = habits?.map((h) => h.id) ?? [];
+  const { data: streaks = {} } = useHabitStreaks(habitIds);
+
   const todayStr = new Date().toLocaleDateString('en-CA');
   const { data: todayPrayerLogs = [] } = useQuery({
     queryKey: ['today-prayer-logs-for-notifs', user?.id, todayStr],
@@ -146,6 +149,34 @@ function AppInner() {
       habitAverages
     );
   }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled, habitAverages]);
+
+  // Sync habits and streaks with native iOS Home/Lock screen widgets
+  useEffect(() => {
+    if (!habits || !todayHabitLogs) return;
+
+    const activeHabits = habits.filter((h) => !h.is_archived && h.habit_type !== 'detox');
+    const totalHabits = activeHabits.length;
+    const completedHabits = activeHabits.filter((h) =>
+      todayHabitLogs.some((log) => log.habit_id === h.id && log.completed === true)
+    ).length;
+    const completionRate = totalHabits > 0 ? (completedHabits / totalHabits) * 100 : 0;
+
+    const items = activeHabits.map((h) => ({
+      name: h.title,
+      streak: streaks[h.id] ?? 0,
+      completed: todayHabitLogs.some((log) => log.habit_id === h.id && log.completed === true)
+    }));
+
+    const activeStreak = items.reduce((max, item) => Math.max(max, item.streak), 0);
+
+    void syncWidgetHabitStreaks({
+      completionRate,
+      totalHabits,
+      completedHabits,
+      activeStreak,
+      items
+    });
+  }, [habits, todayHabitLogs, streaks]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();

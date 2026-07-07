@@ -296,13 +296,13 @@ Deno.serve(async (req: Request) => {
           .in('habit_id', scheduledHabitIds)
           .eq('date', local.date)
           .eq('completed', true);
-          
+
         if (todayLogsError) throw todayLogsError;
-        
+
         const completedTodayIds = new Set(((todayLogsData ?? []) as Array<{ habit_id: string }>).map(log => log.habit_id));
-        
+
         const pendingHabits = scheduledHabits.filter(habit => !completedTodayIds.has(habit.id));
-        
+
         if (!pendingHabits.length) continue;
         // --------------------------------------------------------
 
@@ -340,8 +340,8 @@ Deno.serve(async (req: Request) => {
           const notifyMinute = habit.notify_time
             ? parseTimeToMinutes(habit.notify_time)
             : habit.time
-            ? parseTimeToMinutes(habit.time)
-            : inferredTimeByHabit.get(habit.id) ?? DEFAULT_HABIT_NOTIFY_MINUTE;
+              ? parseTimeToMinutes(habit.time)
+              : inferredTimeByHabit.get(habit.id) ?? DEFAULT_HABIT_NOTIFY_MINUTE;
 
           if (!isDueNow(local.minuteOfDay, notifyMinute)) continue;
 
@@ -380,16 +380,16 @@ Deno.serve(async (req: Request) => {
           if (!userSubscriptions.length) continue;
 
           const isAr = /[\u0600-\u06FF]/.test(candidate.habit.title);
-          const titleText = isAr 
-            ? `يلا عشان دة وقت: ${candidate.habit.title}` 
-            : `Time to focus on: ${candidate.habit.title}`;
+          const titleText = isAr
+            ? `يلا عشان دة وقت ${candidate.habit.title}`
+            : `Time to focus on ${candidate.habit.title}`;
 
           const payload = JSON.stringify({
             kind: 'habit',
             habitId: candidate.habit.id,
             title: titleText,
-            body: isAr 
-              ? `حان وقت القيام بعادة "${candidate.habit.title}"` 
+            body: isAr
+              ? `حان وقت القيام بعادة "${candidate.habit.title}"`
               : `Time for your habit "${candidate.habit.title}"`,
             route: '/habits',
           });

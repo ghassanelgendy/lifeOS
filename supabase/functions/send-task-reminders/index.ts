@@ -192,16 +192,16 @@ Deno.serve(async (req: Request) => {
           if (!task.user_id) continue;
 
           const idempotencyKey = `task:${task.user_id}:${task.id}:${tz}:${task.due_date}:${task.due_time}`;
-                 const userSubs = subsByUser.get(task.user_id) || [];
+          const userSubs = subsByUser.get(task.user_id) || [];
           if (!userSubs.length) continue;
 
           const isAr = /[\u0600-\u06FF]/.test(task.title);
           const titleText = isAr
-            ? `يلا عشان وراك مهمة: ${task.title}`
-            : `Ready to tackle: ${task.title}`;
+            ? `يلا عشان وراك مهمة ${task.title}`
+            : `Ready to tackle ${task.title}`;
 
-          const payload = JSON.stringify({ 
-            taskId: task.id, 
+          const payload = JSON.stringify({
+            taskId: task.id,
             title: titleText,
             body: isAr
               ? `تذكير بمهمة: ${task.title}`

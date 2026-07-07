@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { App } from '@capacitor/app';
 import { Keyboard } from '@capacitor/keyboard';
@@ -279,7 +279,7 @@ export async function syncAllLocalNotifications(
         return {
           id: hashCode('task-' + task.id),
           title: 'Task Reminder',
-          body: isAr ? `يلا عشان وراك مهمة: ${task.title}` : `Ready to tackle: ${task.title}`,
+          body: isAr ? `يلا عشان وراك مهمة ${task.title}` : `Ready to tackle ${task.title}`,
           at: taskTriggerDate(task.due_date, task.due_time, task.early_reminder_minutes),
           extra: { taskId: task.id },
           actionTypeId: 'task-actions'
@@ -327,7 +327,7 @@ export async function syncAllLocalNotifications(
           habitReminders.push({
             id: hashCode(`habit-${habit.id}-${dateString}`),
             title: 'Habit Reminder',
-            body: isAr ? `يلا عشان دة وقت: ${habit.title}` : `Time to focus on: ${habit.title}`,
+            body: isAr ? `يلا عشان دة وقت ${habit.title}` : `Time to focus on ${habit.title}`,
             at: triggerAt,
             extra: { habitId: habit.id, date: dateString },
             actionTypeId: 'habit-actions'
@@ -403,8 +403,8 @@ export async function syncAllLocalNotifications(
                 title: `${prayer.name} Prayer`,
                 body: `Time for ${prayer.name}`,
                 at: triggerAt,
-                extra: { 
-                  prayerName: prayer.name, 
+                extra: {
+                  prayerName: prayer.name,
                   date: dateString,
                   prayerHabitId: setting.prayer_habit_id,
                   habitId: setting.prayer_habit?.habit_id
@@ -495,12 +495,12 @@ export async function rescheduleNotificationSnooze(
     addSystemLog(`rescheduleNotificationSnooze: Snoozing notif id = ${id} by ${minutes} minutes`, 'info');
     const at = new Date(Date.now() + minutes * 60000);
     await LocalNotifications.schedule({
-      notifications: [{ 
-        id, 
-        title, 
-        body, 
-        schedule: { at }, 
-        sound: 'default', 
+      notifications: [{
+        id,
+        title,
+        body,
+        schedule: { at },
+        sound: 'default',
         ...(actionTypeId ? { actionTypeId } : {}),
         ...(extra ? { extra } : {})
       }]
@@ -729,7 +729,7 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
       if (actionId === 'done') {
         try {
           const dateOnly = extra.date.split('T')[0];
-          
+
           const { data: existing } = await supabaseClient
             .from('habit_logs')
             .select('id')
@@ -815,3 +815,59 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
     }
   });
 }
+
+// ==========================================
+// Biometrics & Widget Sync Custom Plugins
+// ==========================================
+
+interface BiometricPluginType {
+  authenticate(options: { reason: string }): Promise<{ success: boolean }>;
+}
+const BiometricPlugin = registerPlugin<BiometricPluginType>('BiometricPlugin');
+
+/**
+ * Triggers native iOS Face ID, Touch ID, or passcode fallback.
+ * Automatically resolves to true on non-native environments (web/pake).
+ */
+export async function authenticateWithBiometrics(reason: string = 'Access this secure area'): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  try {
+    addSystemLog(`authenticateWithBiometrics: Prompting user for biometrics. Reason: "${reason}"`, 'info');
+    const result = await BiometricPlugin.authenticate({ reason });
+    return !!result.success;
+  } catch (err: any) {
+    addSystemLog(`authenticateWithBiometrics: Authentication failed/cancelled: ${err?.message || err}`, 'warn');
+    console.error('Biometric authentication failed', err);
+    return false;
+  }
+}
+
+interface WidgetSyncPluginType {
+  syncHabitStreaks(options: { streaks: Record<string, any> }): Promise<{ success: boolean }>;
+}
+const WidgetSyncPlugin = registerPlugin<WidgetSyncPluginType>('WidgetSyncPlugin');
+
+export interface WidgetHabitStreaksData {
+  completionRate: number;
+  totalHabits: number;
+  completedHabits: number;
+  activeStreak: number;
+  items: Array<{ name: string; streak: number; completed: boolean }>;
+}
+
+/**
+ * Sends habit streaks and completion rates to the iOS home/lock screen widget.
+ */
+export async function syncWidgetHabitStreaks(streaksData: WidgetHabitStreaksData): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    addSystemLog(`syncWidgetHabitStreaks: Syncing streaks data to WidgetKit (total = ${streaksData.totalHabits}, active streak = ${streaksData.activeStreak})`, 'info');
+    const result = await WidgetSyncPlugin.syncHabitStreaks({ streaks: streaksData });
+    return !!result.success;
+  } catch (err: any) {
+    addSystemLog(`syncWidgetHabitStreaks failed: ${err?.message || err}`, 'error');
+    console.error('Widget sync failed', err);
+    return false;
+  }
+}
+

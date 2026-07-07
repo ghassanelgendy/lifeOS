@@ -93,5 +93,7 @@
 			<string>UIApplicationShortcutIconTypeAdd</string>
 		</dict>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Use Face ID to securely authenticate and access your financial data.</string>
 </dict>
 </plist>
