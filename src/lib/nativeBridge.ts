@@ -268,7 +268,7 @@ export async function syncAllLocalNotifications(
         return {
           id: hashCode('task-' + task.id),
           title: 'Task Reminder',
-          body: isAr ? `يلا عشان وراك مهمة: ${task.title}` : `Ready to tackle: ${task.title}`,
+          body: isAr ? `يلا عشان وراك مهمة ${task.title}` : `Ready to tackle ${task.title}`,
           at: taskTriggerDate(task.due_date, task.due_time, task.early_reminder_minutes),
           extra: { taskId: task.id },
           actionTypeId: 'task-actions'
@@ -392,8 +392,8 @@ export async function syncAllLocalNotifications(
                 title: `${prayer.name} Prayer`,
                 body: `Time for ${prayer.name}`,
                 at: triggerAt,
-                extra: { 
-                  prayerName: prayer.name, 
+                extra: {
+                  prayerName: prayer.name,
                   date: dateString,
                   prayerHabitId: setting.prayer_habit_id,
                   habitId: setting.prayer_habit?.habit_id
@@ -484,12 +484,12 @@ export async function rescheduleNotificationSnooze(
     addSystemLog(`rescheduleNotificationSnooze: Snoozing notif id = ${id} by ${minutes} minutes`, 'info');
     const at = new Date(Date.now() + minutes * 60000);
     await LocalNotifications.schedule({
-      notifications: [{ 
-        id, 
-        title, 
-        body, 
-        schedule: { at }, 
-        sound: 'default', 
+      notifications: [{
+        id,
+        title,
+        body,
+        schedule: { at },
+        sound: 'default',
         ...(actionTypeId ? { actionTypeId } : {}),
         ...(extra ? { extra } : {})
       }]
@@ -718,7 +718,7 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
       if (actionId === 'done') {
         try {
           const dateOnly = extra.date.split('T')[0];
-          
+
           const { data: existing } = await supabaseClient
             .from('habit_logs')
             .select('id')

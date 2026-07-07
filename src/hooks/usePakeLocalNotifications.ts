@@ -115,7 +115,7 @@ export function usePakeLocalNotifications() {
   useEffect(() => {
     if (!isPake) return;
     if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().catch(() => {});
+      Notification.requestPermission().catch(() => { });
     }
   }, [isPake]);
 
@@ -149,7 +149,7 @@ export function usePakeLocalNotifications() {
 
             const isAr = /[\u0600-\u06FF]/.test(task.title);
             const n = new Notification('Task Reminder', {
-              body: isAr ? `يلا عشان وراك مهمة: ${task.title}` : `Ready to tackle: ${task.title}`,
+              body: isAr ? `يلا عشان وراك مهمة ${task.title}` : `Ready to tackle ${task.title}`,
               tag: key,
             });
             n.onclick = () => {
