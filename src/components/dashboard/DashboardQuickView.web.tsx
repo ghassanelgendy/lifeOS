@@ -557,6 +557,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
     for (const task of completedTasks) {
       if (!task.completed_at || format(new Date(task.completed_at), 'yyyy-MM-dd') !== todayStr) continue;
+      if (task.is_wont_do || (task.description || '').includes('[WONT_DO]')) continue;
       
       const isCalendarEvent = !!(task.calendar_source_key || task.calendar_event_id);
       const minutes = isoToDayMinutes(task.completed_at) ?? timeStringToMinutes(task.due_time) ?? elapsed;
@@ -979,6 +980,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   completedTasks.forEach((t) => {
     if (!t.completed_at || format(new Date(t.completed_at), 'yyyy-MM-dd') !== todayStr) return;
     if (t.calendar_source_key || t.calendar_event_id) return;
+    if (t.is_wont_do || (t.description || '').includes('[WONT_DO]')) return;
     const key = `task-${t.id}`;
     if (addedKeys.has(key)) return;
     addedKeys.add(key);
