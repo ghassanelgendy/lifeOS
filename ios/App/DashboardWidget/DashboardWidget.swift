@@ -62,7 +62,6 @@ struct CircularView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .widgetURL(URL(string: "lifeos://dashboard"))
     }
 }
 
@@ -83,7 +82,6 @@ struct RectangularView: View {
             }
             Spacer()
         }
-        .widgetURL(URL(string: "lifeos://dashboard"))
     }
 }
 
@@ -94,14 +92,17 @@ struct DashboardWidgetEntryView: View {
     var entry: DashboardEntry
 
     var body: some View {
-        switch widgetFamily {
-        case .accessoryCircular:
-            CircularView()
-        case .accessoryRectangular:
-            RectangularView()
-        default:
-            CircularView()
+        Group {
+            switch widgetFamily {
+            case .accessoryCircular:
+                CircularView()
+            case .accessoryRectangular:
+                RectangularView()
+            default:
+                CircularView()
+            }
         }
+        .widgetURL(URL(string: "lifeos://dashboard"))
     }
 }
 

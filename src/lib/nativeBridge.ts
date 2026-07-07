@@ -30,8 +30,19 @@ export async function triggerHaptics(style: 'light' | 'medium' | 'heavy' | 'succ
 // Deep Linking Handler Setup
 export function setupDeepLinkListener(onDeepLink: (url: string) => void) {
   if (!Capacitor.isNativePlatform()) return;
+
+  // Handle deep links when app is running (foreground or background)
   App.addListener('appUrlOpen', (event) => {
     onDeepLink(event.url);
+  });
+
+  // Handle deep links on cold start (when app is launched by a URL)
+  App.getLaunchUrl().then((launchUrl) => {
+    if (launchUrl?.url) {
+      onDeepLink(launchUrl.url);
+    }
+  }).catch((err) => {
+    console.error('Failed to get launch URL on cold start:', err);
   });
 }
 
