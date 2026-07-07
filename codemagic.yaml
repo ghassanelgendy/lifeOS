@@ -5,7 +5,7 @@ workflows:
     instance_type: mac_mini_m1
     environment:
       groups:
-        - lifeos
+        - lifeOSv2
       node: latest
     triggering:
       events:
