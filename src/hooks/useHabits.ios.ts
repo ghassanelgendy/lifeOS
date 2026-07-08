@@ -309,7 +309,7 @@ export function useLogHabit() {
         .select('id')
         .eq('habit_id', habitId)
         .eq('date', date)
-        .single();
+        .maybeSingle();
 
       let result;
       const dateOnly = (date || '').split('T')[0];
