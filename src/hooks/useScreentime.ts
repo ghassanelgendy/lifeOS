@@ -204,10 +204,17 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
 // Get today's screentime summary
 export function useTodayScreentime() {
   const today = format(new Date(), 'yyyy-MM-dd');
+  const startDate = format(subDays(new Date(), 14), 'yyyy-MM-dd');
   
-  const { data: appStats = [] } = useScreentimeAppStats(today, today);
-  const { data: websiteStats = [] } = useScreentimeWebsiteStats(today, today);
-  const { data: summaries = [] } = useScreentimeDailySummaries(today, today);
+  const { data: allAppStats = [] } = useScreentimeAppStats(startDate, today);
+  const { data: allWebsiteStats = [] } = useScreentimeWebsiteStats(startDate, today);
+  const { data: allSummaries = [] } = useScreentimeDailySummaries(startDate, today);
+
+  // Filter for today in-memory
+  const appStats = allAppStats.filter(s => screentimeDateKey(s.date) === today);
+  const websiteStats = allWebsiteStats.filter(s => screentimeDateKey(s.date) === today);
+  const summaries = allSummaries.filter(s => screentimeDateKey(s.date) === today);
+
   
   // Aggregate apps by name first (to avoid double-counting)
   const aggregatedApps = appStats.reduce((acc, stat) => {
