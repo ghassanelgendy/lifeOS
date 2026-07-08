@@ -211,10 +211,15 @@ export function useTasks() {
     queryFn: async () => {
       // Try remote first; on success mirror into IndexedDB.
       try {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
+
         const q = supabase
           .from('tasks')
           .select('*, subtasks:tasks(id, is_completed)')
           .is('parent_id', null)
+          .or(`is_completed.eq.false,completed_at.gte.${thirtyDaysAgoStr}`)
           .order('is_completed', { ascending: true })
           .order('due_date', { ascending: true, nullsFirst: false });
         if (user?.id) q.eq('user_id', user.id);
