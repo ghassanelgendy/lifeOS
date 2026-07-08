@@ -1,7 +1,6 @@
 import { format, parseISO, startOfWeek, subWeeks, endOfWeek, addHours } from 'date-fns';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useUIStore, DASHBOARD_MODE_LABELS, type DashboardMode } from '../stores/useUIStore';
-import { DashboardTactical } from '../components/dashboard/DashboardTactical';
 import { DashboardQuickView } from '../components/dashboard/DashboardQuickView';
 import { DashboardStrategic } from '../components/dashboard/DashboardStrategic';
 import { DashboardAnnualReview } from '../components/dashboard/DashboardAnnualReview';
@@ -604,8 +603,6 @@ function ModeBody({ mode, onSelectEntry }: { mode: DashboardMode; onSelectEntry:
   switch (mode) {
     case 'quick_view':
       return <DashboardQuickView onSelectEntry={onSelectEntry} />;
-    case 'tactical':
-      return <DashboardTactical onSelectEntry={onSelectEntry} />;
     case 'strategic':
       return <DashboardStrategic />;
     case 'annual_review':

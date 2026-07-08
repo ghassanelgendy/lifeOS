@@ -46,7 +46,7 @@ export const ACCENT_THEME_LABELS: Record<AccentTheme, string> = {
 export type PrayerLocationMode = 'device' | 'city';
 
 /** Dashboard decision horizon (default landing layout for Home). */
-export const DASHBOARD_MODES = ['quick_view', 'tactical', 'strategic', 'annual_review'] as const;
+export const DASHBOARD_MODES = ['quick_view', 'strategic', 'annual_review'] as const;
 export type DashboardMode = (typeof DASHBOARD_MODES)[number];
 export const DEFAULT_DASHBOARD_MODE: DashboardMode = 'quick_view';
 
@@ -56,7 +56,6 @@ export function isDashboardMode(v: string): v is DashboardMode {
 
 export const DASHBOARD_MODE_LABELS: Record<DashboardMode, string> = {
   quick_view: 'Quick View',
-  tactical: 'Tactical',
   strategic: 'Strategic',
   annual_review: 'Annual Review',
 };

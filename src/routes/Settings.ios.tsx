@@ -91,7 +91,7 @@ const SETTINGS_NAV = [
   { id: 'about', label: 'About' },
 ] as const;
 
-type LayoutWidgetPage = 'dashboard' | 'habits' | 'sleep';
+type LayoutWidgetPage = 'habits' | 'sleep';
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -164,7 +164,7 @@ export default function SettingsPage() {
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
   const [localNotifStatus, setLocalNotifStatus] = useState<string | null>(null);
-  const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('dashboard');
+  const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('habits');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
@@ -529,7 +529,7 @@ export default function SettingsPage() {
               <div className="p-4 border-b border-border">
                 <h2 className="font-semibold">Page Widgets</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Choose which sections to show and in what order per page. Habits layout applies on desktop only. Dashboard widgets apply to the <span className="font-medium text-foreground">Tactical</span> dashboard only (not Quick View, Strategic, or Annual Review).
+                  Choose which sections to show and in what order per page. Habits layout applies on desktop only.
                 </p>
               </div>
               <div className="p-4 space-y-2">
@@ -539,7 +539,6 @@ export default function SettingsPage() {
                     onChange={(e) => setSelectedWidgetPage(e.target.value as LayoutWidgetPage)}
                     className="px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
                   >
-                    <option value="dashboard">Dashboard</option>
                     <option value="habits">Habits</option>
                     <option value="sleep">Sleep</option>
                   </select>
