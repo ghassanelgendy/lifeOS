@@ -129,7 +129,8 @@ export function usePointsBalance() {
 
   return useMemo(() => {
     if (!transactions) return 0;
-    return transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    const balance = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+    return Math.round(balance * 10) / 10;
   }, [transactions]);
 }
 

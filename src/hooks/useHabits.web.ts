@@ -325,8 +325,8 @@ async function adjustPointsForHabitLog(habitId: string, date: string, completed:
     }
     const newStreak = getHabitStreak(habit, logsDates);
     const streakBonus = newStreak * config.habitStreakMultiplier;
-    const totalEarned = (basePoints + streakBonus) * weight;
-    const amount = isDetox ? -totalEarned * 3 : totalEarned;
+    const totalEarned = Math.round(((basePoints + streakBonus) * weight) * 10) / 10;
+    const amount = isDetox ? Math.round((-totalEarned * 3) * 10) / 10 : totalEarned;
     const desc = isDetox 
       ? `Relapsed on Detox Habit: ${habit.title} (Penalty: -${totalEarned * 3}p, Weight: ${weight}x)`
       : `Completed Habit: ${habit.title} (Streak: ${newStreak} days, +${streakBonus} streak bonus, Weight: ${weight}x)`;
