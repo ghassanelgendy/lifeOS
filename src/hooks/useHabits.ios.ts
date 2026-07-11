@@ -8,7 +8,7 @@ import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { format, startOfWeek, differenceInCalendarDays, subDays } from 'date-fns';
-import { idbGetPointsTransactions, idbAddPointsTransaction } from '../db/indexedDb';
+import { idbAddPointsTransaction } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -777,8 +777,7 @@ export function useHabitInsights(habits: Habit[], days = 90) {
           // Detox: completing on an off-day is neutral (no penalty, no bonus)
         }
 
-        // Effective success: on-schedule + make-up, capped at scheduledDays (max 100%)
-        const effectiveSuccess = Math.min(successDays + extraCompletions, scheduledDays);
+
 
         const eventLogs = habitLogs
           .filter((log) => log.completed)
