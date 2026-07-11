@@ -211,6 +211,7 @@ export interface Task {
   description?: string;
   is_completed: boolean;
   is_wont_do?: boolean;
+  points_value?: number;
   completed_at?: string; // ISO-8601
   priority: TaskPriority;
   due_date?: string; // ISO-8601
@@ -275,6 +276,7 @@ export interface Habit {
   title: string;
   description?: string;
   habit_type?: HabitType;
+  points_value?: number;
   frequency: HabitFrequency;
   target_count: number; // e.g., 1 (once a day), 4 (4 times a week)
   detox_mode?: DetoxMode | null;
@@ -382,3 +384,25 @@ export interface AppSettings {
 // ========================
 export type CreateInput<T> = Omit<T, 'id' | 'created_at' | 'updated_at'>;
 export type UpdateInput<T> = Partial<Omit<T, 'id' | 'created_at' | 'updated_at'>>;
+
+// ========================
+// Points System
+// ========================
+export interface PointTransaction {
+  id: string;
+  user_id: string;
+  amount: number;
+  description: string;
+  reference_type?: string | null;
+  reference_id?: string | null;
+  created_at: string;
+}
+
+export interface CustomReward {
+  id: string;
+  user_id: string;
+  title: string;
+  cost: number;
+  icon?: string | null;
+  created_at: string;
+}

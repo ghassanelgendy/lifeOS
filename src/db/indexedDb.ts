@@ -3,7 +3,7 @@
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const STORES = {
   tasks: 'tasks',
@@ -13,6 +13,8 @@ const STORES = {
   sleepStages: 'sleep_stages',
   inbodyScans: 'inbody_scans',
   offlineQueue: 'offline_queue',
+  pointsTransactions: 'points_transactions',
+  customRewards: 'custom_rewards',
 } as const;
 
 type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -56,6 +58,12 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.offlineQueue)) {
         db.createObjectStore(STORES.offlineQueue, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.pointsTransactions)) {
+        db.createObjectStore(STORES.pointsTransactions, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.customRewards)) {
+        db.createObjectStore(STORES.customRewards, { keyPath: 'id' });
       }
     };
 
@@ -226,9 +234,43 @@ export async function idbClearAll(): Promise<void> {
     STORES.sleepStages,
     STORES.inbodyScans,
     STORES.offlineQueue,
+    STORES.pointsTransactions,
+    STORES.customRewards,
   ];
   
   // Clear all stores in parallel
   await Promise.all(stores.map((store) => idbClear(store)));
+}
+
+// Points transactions
+export async function idbSavePointsTransactions(transactions: any[]): Promise<void> {
+  await idbClear(STORES.pointsTransactions);
+  await idbPutMany(STORES.pointsTransactions, transactions);
+}
+
+export async function idbGetPointsTransactions(): Promise<any[]> {
+  return idbGetAll(STORES.pointsTransactions);
+}
+
+export async function idbAddPointsTransaction(transaction: any): Promise<void> {
+  await idbPut(STORES.pointsTransactions, transaction);
+}
+
+// Custom rewards
+export async function idbSaveCustomRewards(rewards: any[]): Promise<void> {
+  await idbClear(STORES.customRewards);
+  await idbPutMany(STORES.customRewards, rewards);
+}
+
+export async function idbGetCustomRewards(): Promise<any[]> {
+  return idbGetAll(STORES.customRewards);
+}
+
+export async function idbAddCustomReward(reward: any): Promise<void> {
+  await idbPut(STORES.customRewards, reward);
+}
+
+export async function idbDeleteCustomReward(id: string): Promise<void> {
+  await idbDelete(STORES.customRewards, id);
 }
 
