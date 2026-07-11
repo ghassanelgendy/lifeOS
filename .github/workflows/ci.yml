@@ -47,7 +47,6 @@ jobs:
         run: pnpm typecheck
 
       - name: Lint
-        continue-on-error: true  # typescript-eslint does not yet support TypeScript 7.x (stable API due in TS 7.1)
         run: pnpm lint
 
       - name: Test
