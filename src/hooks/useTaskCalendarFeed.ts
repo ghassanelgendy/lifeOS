@@ -71,7 +71,19 @@ export function useTaskCalendarFeed() {
         .eq('user_id', user.id)
         .maybeSingle();
       if (selectError) throw selectError;
-      if (existing) return existing as TaskCalendarFeed;
+      if (existing) {
+        const browserTz = getBrowserTimeZone();
+        if (existing.time_zone !== browserTz) {
+          const { data: updated } = await supabase
+            .from('task_calendar_feeds')
+            .update({ time_zone: browserTz })
+            .eq('user_id', user.id)
+            .select('*')
+            .single();
+          if (updated) return updated as TaskCalendarFeed;
+        }
+        return existing as TaskCalendarFeed;
+      }
 
       const { data: created, error: insertError } = await supabase
         .from('task_calendar_feeds')

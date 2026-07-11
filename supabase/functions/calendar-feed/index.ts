@@ -80,6 +80,24 @@ function formatUtcDateTime(date: Date): string {
   return `${year}${month}${day}T${hour}${minute}${second}Z`;
 }
 
+function formatLocalDateOnly(date: Date, timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const values = new Map(parts.map((part) => [part.type, part.value]));
+    return `${values.get('year')}${values.get('month')}${values.get('day')}`;
+  } catch {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  }
+}
+
 function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
   try {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -307,8 +325,8 @@ Deno.serve(async (req: Request) => {
         icsLines.push(`LAST-MODIFIED:${formatUtcStamp(event.updated_at || event.created_at)}`);
         
         if (event.all_day) {
-          icsLines.push(`DTSTART;VALUE=DATE:${formatUtcDateTime(startDate).slice(0, 8)}`);
-          icsLines.push(`DTEND;VALUE=DATE:${formatUtcDateTime(endDate).slice(0, 8)}`);
+          icsLines.push(`DTSTART;VALUE=DATE:${formatLocalDateOnly(startDate, timeZone)}`);
+          icsLines.push(`DTEND;VALUE=DATE:${formatLocalDateOnly(endDate, timeZone)}`);
         } else {
           icsLines.push(`DTSTART:${formatUtcDateTime(startDate)}`);
           icsLines.push(`DTEND:${formatUtcDateTime(endDate > startDate ? endDate : new Date(startDate.getTime() + 45 * 60_000))}`);

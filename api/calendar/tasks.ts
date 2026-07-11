@@ -120,27 +120,49 @@ function formatUtcDateTime(date: Date): string {
   return `${year}${month}${day}T${hour}${minute}${second}Z`;
 }
 
+function formatLocalDateOnly(date: Date, timeZone: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(date);
+    const values = new Map(parts.map((part) => [part.type, part.value]));
+    return `${values.get('year')}${values.get('month')}${values.get('day')}`;
+  } catch {
+    const year = date.getUTCFullYear();
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(date.getUTCDate()).padStart(2, '0');
+    return `${year}${month}${day}`;
+  }
+}
+
 function getTimeZoneOffsetMs(date: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date);
-  const values = new Map(parts.map((part) => [part.type, part.value]));
-  const asUtc = Date.UTC(
-    Number(values.get('year')),
-    Number(values.get('month')) - 1,
-    Number(values.get('day')),
-    Number(values.get('hour')),
-    Number(values.get('minute')),
-    Number(values.get('second'))
-  );
-  return asUtc - date.getTime();
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const values = new Map(parts.map((part) => [part.type, part.value]));
+    const asUtc = Date.UTC(
+      Number(values.get('year')),
+      Number(values.get('month')) - 1,
+      Number(values.get('day')),
+      Number(values.get('hour')),
+      Number(values.get('minute')),
+      Number(values.get('second'))
+    );
+    return asUtc - date.getTime();
+  } catch {
+    return 0;
+  }
 }
 
 function zonedDateTimeToUtc(
@@ -242,7 +264,7 @@ function eventRrule(event: CalendarEventFeedRow): string | null {
   return rule;
 }
 
-function appendCalendarEvent(lines: string[], event: CalendarEventFeedRow, now: string): void {
+function appendCalendarEvent(lines: string[], event: CalendarEventFeedRow, now: string, timeZone: string): void {
   const startDate = new Date(event.start_time);
   const endDate = new Date(event.end_time);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return;
@@ -252,8 +274,8 @@ function appendCalendarEvent(lines: string[], event: CalendarEventFeedRow, now: 
   lines.push(`DTSTAMP:${now}`);
   lines.push(`LAST-MODIFIED:${formatUtcStamp(event.updated_at || event.created_at)}`);
   if (event.all_day) {
-    lines.push(`DTSTART;VALUE=DATE:${formatUtcDateTime(startDate).slice(0, 8)}`);
-    lines.push(`DTEND;VALUE=DATE:${formatUtcDateTime(endDate).slice(0, 8)}`);
+    lines.push(`DTSTART;VALUE=DATE:${formatLocalDateOnly(startDate, timeZone)}`);
+    lines.push(`DTEND;VALUE=DATE:${formatLocalDateOnly(endDate, timeZone)}`);
   } else {
     lines.push(`DTSTART:${formatUtcDateTime(startDate)}`);
     lines.push(`DTEND:${formatUtcDateTime(endDate > startDate ? endDate : new Date(startDate.getTime() + 45 * 60_000))}`);
@@ -321,7 +343,7 @@ function buildIcs(feed: TaskCalendarFeed, tasks: TaskFeedRow[], events: Calendar
   ];
 
   events.forEach((event) => {
-    if (!eventIdsRenderedAsTasks.has(event.id)) appendCalendarEvent(rawLines, event, now);
+    if (!eventIdsRenderedAsTasks.has(event.id)) appendCalendarEvent(rawLines, event, now, timeZone);
   });
   tasks.forEach((task) => appendTaskEvent(rawLines, feed, task, now));
 
