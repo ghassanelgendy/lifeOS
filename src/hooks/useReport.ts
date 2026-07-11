@@ -4,6 +4,7 @@ import { useAnalyticsDailyRange } from './useAnalytics';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { idbGetPointsTransactions } from '../db/indexedDb';
 import { mean, stddev, sum, pctChange } from '../lib/analytics-utils';
 import { generateSuggestions, type Suggestion } from '../lib/reportSuggestions';
 import { formatCurrency } from '../lib/utils';
@@ -92,6 +93,11 @@ export interface ReportData {
   // Composite score (0-100)
   weekScore: number;
   prevWeekScore: number;
+
+  // Points stats
+  pointsEarned: number;
+  pointsSpent: number;
+  pointsDelta: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -236,9 +242,11 @@ function computeWeekScore(
   sleepTarget: number,
   screenTarget: number,
   tasksTarget: number,
-  habitsTarget: number
+  habitsTarget: number,
+  pointsEarned = 0,
+  prevPointsEarned = 0
 ): { current: number; prev: number } {
-  const score = (ds: DayMetrics[]) => {
+  const score = (ds: DayMetrics[], earnedPts: number) => {
     if (ds.length === 0) return 50;
     const sleepAvg = avg(ds.map((d) => d.sleepMinutes)) ?? 0;
     const sleepScore = Math.min(100, (sleepAvg / (sleepTarget * 60)) * 100);
@@ -248,9 +256,17 @@ function computeWeekScore(
     const habitsScore = habitsTarget > 0 ? Math.min(100, (habitsAvg / habitsTarget) * 100) : 100;
     const tasksTotal = sum(ds.map((d) => d.tasksCompleted));
     const tasksScore = Math.min(100, (tasksTotal / Math.max(1, ds.length * tasksTarget)) * 100);
+
+    const isPointsActive = ds[0] && new Date(ds[0].date) >= new Date('2026-07-01');
+    if (isPointsActive) {
+      // target points earned per day is 15
+      const pointsScore = Math.min(100, (earnedPts / (ds.length * 15)) * 100);
+      return Math.round((sleepScore * 0.20 + screenScore * 0.15 + habitsScore * 0.25 + tasksScore * 0.20 + pointsScore * 0.20));
+    }
+
     return Math.round((sleepScore * 0.25 + screenScore * 0.2 + habitsScore * 0.35 + tasksScore * 0.2));
   };
-  return { current: score(days), prev: score(prevDays) };
+  return { current: score(days, pointsEarned), prev: score(prevDays, prevPointsEarned) };
 }
 
 function computeHabitsByDow(days: DayMetrics[]): { dow: string; adherence: number }[] {
@@ -375,11 +391,16 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
     enabled: !!user?.id,
   });
 
+  const pointsQ = useQuery({
+    queryKey: ['report', 'points-transactions', bounds.weekStart, bounds.weekEnd],
+    queryFn: () => idbGetPointsTransactions(),
+  });
+
   const isLoading =
     curr.finance.isLoading || curr.sleep.isLoading || curr.tasks.isLoading || curr.habits.isLoading || curr.screentime.isLoading ||
     prev.finance.isLoading || prev.sleep.isLoading || prev.tasks.isLoading || prev.habits.isLoading || prev.screentime.isLoading ||
     thirty.finance.isLoading || thirty.sleep.isLoading || thirty.tasks.isLoading || thirty.habits.isLoading || thirty.screentime.isLoading ||
-    topAppsQ.isLoading || topCatsQ.isLoading;
+    topAppsQ.isLoading || topCatsQ.isLoading || pointsQ.isLoading;
 
   return useMemo(() => {
     if (isLoading) {
@@ -403,8 +424,30 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
     const prevAvgHabits = avg(prevDays.map((d) => d.habitsAdherencePct));
     const prevAvgFinance = avg(prevDays.map((d) => d.financeBalance));
 
+    // Points calculations
+    const pointsTransactions = pointsQ.data ?? [];
+    const reportStart = new Date(`${bounds.weekStart}T00:00:00`);
+    const reportEnd = new Date(`${bounds.weekEnd}T23:59:59`);
+    const prevStart = new Date(`${bounds.prevStart}T00:00:00`);
+    const prevEnd = new Date(`${bounds.prevEnd}T23:59:59`);
+
+    const currTxs = pointsTransactions.filter((tx) => {
+      const d = new Date(tx.created_at);
+      return d >= reportStart && d <= reportEnd;
+    });
+    const prevTxs = pointsTransactions.filter((tx) => {
+      const d = new Date(tx.created_at);
+      return d >= prevStart && d <= prevEnd;
+    });
+
+    const pointsEarned = currTxs.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+    const pointsSpent = Math.abs(currTxs.filter((t) => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
+    const pointsDelta = pointsEarned - pointsSpent;
+
+    const prevPointsEarned = prevTxs.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+
     const { best, worst } = computeBestWorstDay(days);
-    const scores = computeWeekScore(days, prevDays, sleepTarget, screenTarget, reportTasksTarget, habitsTarget);
+    const scores = computeWeekScore(days, prevDays, sleepTarget, screenTarget, reportTasksTarget, habitsTarget, pointsEarned, prevPointsEarned);
 
     // 30-day data for suggestions
     const thirtyDates = dateRange(thirtyStart, bounds.weekEnd);
@@ -432,6 +475,9 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
       financeDelta: pctChange(avgFinanceBalance ?? 0, prevAvgFinance ?? 0),
       bestDay: best,
       worstDay: worst,
+      pointsEarned,
+      pointsSpent,
+      pointsDelta,
       outliers: computeOutliers(days),
       habitsByDow: computeHabitsByDow(thirtyDays),
       topApps: topAppsQ.data ?? [],
@@ -487,10 +533,15 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
     enabled: !!user?.id,
   });
 
+  const pointsQ = useQuery({
+    queryKey: ['report', 'points-transactions', bounds.start, bounds.end],
+    queryFn: () => idbGetPointsTransactions(),
+  });
+
   const isLoading =
     curr.finance.isLoading || curr.sleep.isLoading || curr.tasks.isLoading || curr.habits.isLoading || curr.screentime.isLoading ||
     prev.finance.isLoading || prev.sleep.isLoading || prev.tasks.isLoading || prev.habits.isLoading || prev.screentime.isLoading ||
-    topAppsQ.isLoading || topCatsQ.isLoading;
+    topAppsQ.isLoading || topCatsQ.isLoading || pointsQ.isLoading;
 
   return useMemo(() => {
     if (isLoading) return emptyReport('monthly', bounds.start, bounds.end, true);
@@ -512,8 +563,30 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
     const prevAvgHabits = avg(prevDaysArr.map((d) => d.habitsAdherencePct));
     const prevAvgFinance = avg(prevDaysArr.map((d) => d.financeBalance));
 
+    // Points calculations
+    const pointsTransactions = pointsQ.data ?? [];
+    const reportStart = new Date(`${bounds.start}T00:00:00`);
+    const reportEnd = new Date(`${bounds.end}T23:59:59`);
+    const prevStart = new Date(`${bounds.prevStart}T00:00:00`);
+    const prevEnd = new Date(`${bounds.prevEnd}T23:59:59`);
+
+    const currTxs = pointsTransactions.filter((tx) => {
+      const d = new Date(tx.created_at);
+      return d >= reportStart && d <= reportEnd;
+    });
+    const prevTxs = pointsTransactions.filter((tx) => {
+      const d = new Date(tx.created_at);
+      return d >= prevStart && d <= prevEnd;
+    });
+
+    const pointsEarned = currTxs.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+    const pointsSpent = Math.abs(currTxs.filter((t) => t.amount < 0).reduce((sum, t) => sum + t.amount, 0));
+    const pointsDelta = pointsEarned - pointsSpent;
+
+    const prevPointsEarned = prevTxs.filter((t) => t.amount > 0).reduce((sum, t) => sum + t.amount, 0);
+
     const { best, worst } = computeBestWorstDay(days);
-    const scores = computeWeekScore(days, prevDaysArr, sleepTarget, screenTarget, reportTasksTarget, habitsTarget);
+    const scores = computeWeekScore(days, prevDaysArr, sleepTarget, screenTarget, reportTasksTarget, habitsTarget, pointsEarned, prevPointsEarned);
 
     return {
       type: 'monthly' as const,
@@ -537,6 +610,9 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
       financeDelta: pctChange(avgFinanceBalance ?? 0, prevAvgFinance ?? 0),
       bestDay: best,
       worstDay: worst,
+      pointsEarned,
+      pointsSpent,
+      pointsDelta,
       outliers: computeOutliers(days),
       habitsByDow: computeHabitsByDow(days),
       topApps: topAppsQ.data ?? [],
@@ -556,5 +632,6 @@ function emptyReport(type: 'weekly' | 'monthly', start: string, end: string, loa
     sleepDelta: null, screenDelta: null, tasksDelta: null, habitsDelta: null, financeDelta: null,
     bestDay: null, worstDay: null, outliers: [], habitsByDow: [],
     topApps: [], topCategories: [], suggestions: [], weekScore: 0, prevWeekScore: 0,
+    pointsEarned: 0, pointsSpent: 0, pointsDelta: 0,
   };
 }

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon, Coins } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
@@ -12,6 +12,7 @@ import { triggerHaptics } from '../../lib/nativeBridge';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
+import { usePointsBalance, usePointsTransactions, getPointsConfig, useRescueTask } from '../../hooks/usePoints';
 import {
   useDashboardUpcomingItems,
   habitMatchesDay,
@@ -140,6 +141,9 @@ function DueTodayRow({
   showToggle,
   color,
   onClick,
+  onRescue,
+  balance = 0,
+  rescueCost = 100,
 }: {
   kind: DueKind;
   title: string;
@@ -151,6 +155,9 @@ function DueTodayRow({
   showToggle: boolean;
   color?: string;
   onClick?: () => void;
+  onRescue?: () => void;
+  balance?: number;
+  rescueCost?: number;
 }) {
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const touchToggledRef = useRef(false);
@@ -253,25 +260,47 @@ function DueTodayRow({
         </div>
       )}
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between">
-          <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
-            {kindLabel}
-          </span>
-        </div>
-        <p
-          className={cn(
-            'text-[14px] font-semibold text-foreground leading-snug break-words mt-0.5',
-            done && 'line-through text-muted-foreground/60',
-          )}
-        >
-          {title}
-        </p>
-        {subtitle ? (
-          <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
-            {subtitle}
+      <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between">
+            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
+              {kindLabel}
+            </span>
+          </div>
+          <p
+            className={cn(
+              'text-[14px] font-semibold text-foreground leading-snug break-words mt-0.5',
+              done && 'line-through text-muted-foreground/60',
+            )}
+          >
+            {title}
           </p>
-        ) : null}
+          {subtitle ? (
+            <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        {onRescue && !done && (
+          <button
+            type="button"
+            disabled={balance < rescueCost}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRescue();
+            }}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
+              balance >= rescueCost
+                ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
+                : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+            )}
+            title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
+          >
+            <Coins className="size-3.5" />
+            Rescue
+          </button>
+        )}
       </div>
     </div>
   );
@@ -300,6 +329,18 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const lastNightSleep = useLastNightSleepMinutes();
   const todaySleepMinutes = useSleepMinutesForDay(today);
   const { avgBedtimeMinutes } = useSleepMetrics(7);
+
+  const pointsBalance = usePointsBalance();
+  const { data: pointsTransactions = [] } = usePointsTransactions();
+  const rescueTask = useRescueTask();
+  const pointsConfig = getPointsConfig();
+
+  const oneWeekAgo = useMemo(() => subDays(new Date(), 7), []);
+  const pointsEarnedThisWeek = useMemo(() => {
+    return pointsTransactions
+      .filter((tx) => new Date(tx.created_at) >= oneWeekAgo && tx.amount > 0)
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  }, [pointsTransactions, oneWeekAgo]);
 
   const startOfDayStr = format(subDays(today, 1), 'yyyy-MM-dd') + 'T00:00:00.000Z';
   const endOfDayStr = format(today, 'yyyy-MM-dd') + 'T23:59:59.999Z';
@@ -555,6 +596,25 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           const taskId = entry.entityId || entry.id;
           void triggerHaptics('heavy');
           deleteTask.mutate(taskId);
+        }
+        break;
+      case 'wontdo':
+        if (isTask) {
+          const taskId = entry.entityId || entry.id;
+          const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+          const taskToUpdate = taskObj || entry;
+          
+          if (!taskToUpdate.id.startsWith('habit-') && !taskToUpdate.is_completed) {
+            void triggerHaptics('light');
+            updateTask.mutate({
+              id: taskToUpdate.id,
+              data: {
+                is_completed: true,
+                is_wont_do: true,
+                completed_at: new Date().toISOString(),
+              },
+            });
+          }
         }
         break;
     }
@@ -1120,11 +1180,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   : 'Overdue'
               }
               done={false}
-              busy={toggleTask.isPending}
+              busy={toggleTask.isPending || rescueTask.isPending}
               showToggle
               label={`Complete overdue task ${t.title}`}
               onToggle={() => toggleTask.mutate(t.id)}
               onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+              onRescue={() => rescueTask.mutate(t)}
+              balance={pointsBalance}
+              rescueCost={pointsConfig.taskRescueCost}
             />
           </div>
         </div>
@@ -1463,37 +1526,48 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Today
         </h2>
-        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4">
-          <div className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-75">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider truncate">Due today</p>
-            <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1 text-primary">{dueTodayBundleCount}</p>
-          </div>
-          <Link to="/habits" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <Link to="/points" className="liquid-glass-card col-span-2 group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-75">
             <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
-              <Flame className="size-3.5 text-orange-500 shrink-0" />
-              Habits
-            </p>
-            <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1">
-              {todayHabitCompleted}
-              <span className="text-muted-foreground/60 ml-1">/ {todayHabitTotal}</span>
-            </p>
-          </Link>
-          <Link to="/screentime" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
-              <Monitor className="size-3.5 text-sky-500 shrink-0" />
-              Screen
-            </p>
-            <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>{screenLabel}</p>
-          </Link>
-          <Link to="/sleep" className="liquid-glass-card group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-200">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
-              <Moon className="size-3.5 text-indigo-400 shrink-0" />
-              Sleep
+              <Coins className="size-3.5 text-amber-400 shrink-0" />
+              Points
             </p>
             <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>
-              {formatSleepMinutes(lastNightSleep)}
+              {pointsBalance}
+              <span className="text-muted-foreground/60 text-[10px] font-semibold block mt-0.5">
+                +{pointsEarnedThisWeek} this week
+              </span>
             </p>
           </Link>
+          <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
+            <Link to="/" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+              <CheckCircle2 className="size-5 text-primary mb-1 shrink-0" />
+              <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-primary">{dueTodayBundleCount}</p>
+            </Link>
+            <div className="w-px bg-muted-foreground/10 self-stretch my-1" />
+            <Link to="/habits" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+              <Flame className="size-5 text-orange-500 mb-1 shrink-0" />
+              <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight">
+                {todayHabitCompleted}
+                <span className="text-muted-foreground/60 text-xs sm:text-sm font-normal ml-0.5">/ {todayHabitTotal}</span>
+              </p>
+            </Link>
+          </div>
+          <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
+            <Link to="/screentime" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+              <Monitor className="size-5 text-sky-500 mb-1 shrink-0" />
+              <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+                {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
+              </p>
+            </Link>
+            <div className="w-px bg-muted-foreground/10 self-stretch my-1" />
+            <Link to="/sleep" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+              <Moon className="size-5 text-indigo-400 mb-1 shrink-0" />
+              <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+                {lastNightSleep && lastNightSleep > 0 ? `${Math.round(lastNightSleep / 60)}h` : '—'}
+              </p>
+            </Link>
+          </div>
         </div>
 
         <div className="mt-3 sm:mt-4">
@@ -1749,6 +1823,24 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                     >
                       <span>{contextMenuDetails.isHabit ? 'View Insights...' : 'View Details...'}</span>
                       <Edit2 size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
+
+                  {contextMenuDetails.isTask && !contextMenuDetails.isCompleted && (
+                    <button
+                      type="button"
+                      data-menu-action="wontdo"
+                      onClick={() => {
+                        executeMenuAction('wontdo', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Won't Do</span>
+                      <CircleSlash2 size={16} className="text-muted-foreground" />
                     </button>
                   )}
 

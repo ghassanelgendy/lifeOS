@@ -1,6 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
   Flame,
@@ -37,7 +37,9 @@ import {
   useHabitInsights,
   getHabitAdherenceWeight,
   isHabitScheduledForDate,
+  useHabitRescuableStreaks,
 } from '../hooks/useHabits';
+import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
@@ -192,14 +194,76 @@ export default function Habits() {
       }));
   };
 
+  const queryClient = useQueryClient();
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
   const { data: habitInsights = {} } = useHabitInsights(habits);
+  const { data: rescuableStreaks = {} } = useHabitRescuableStreaks(habits.map((h: Habit) => h.id));
+  const pointsBalance = usePointsBalance();
+  const addPointsTx = useAddPointsTransaction();
+  
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
   const logHabit = useLogHabit();
+
+  const handleRescueStreak = async (habit: Habit, rescuableStreak: number) => {
+    const cost = 50 + rescuableStreak * 10;
+    if (pointsBalance < cost) {
+      alert(`Insufficient points. You need ${cost} points to rescue this streak.`);
+      return;
+    }
+
+    const { data: logs } = await supabase
+      .from('habit_logs')
+      .select('date')
+      .eq('habit_id', habit.id)
+      .eq('completed', true);
+
+    const logsSet = new Set((logs || []).map(l => l.date));
+    let lastMissedScheduledDate: Date | null = null;
+    let checkDate = new Date();
+
+    for (let i = 0; i <= 2; i++) {
+      const dateStr = format(checkDate, 'yyyy-MM-dd');
+      const scheduled = isHabitScheduledForDate(habit, checkDate);
+      if (scheduled && !logsSet.has(dateStr)) {
+        lastMissedScheduledDate = new Date(checkDate);
+        break;
+      }
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+
+    if (!lastMissedScheduledDate) {
+      alert("No rescueable day found for this habit.");
+      return;
+    }
+
+    const dateStr = format(lastMissedScheduledDate, 'yyyy-MM-dd');
+
+    try {
+      await addPointsTx.mutateAsync({
+        amount: -cost,
+        description: `Rescued Streak: ${habit.title} (${rescuableStreak} days)`,
+        reference_type: 'habit_rescue',
+        reference_id: habit.id,
+      });
+
+      await logHabit.mutateAsync({
+        habitId: habit.id,
+        date: dateStr,
+        completed: true,
+        note: 'rescue',
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+    } catch (err: any) {
+      console.error(err);
+      alert("Failed to rescue streak: " + err.message);
+    }
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
@@ -221,6 +285,7 @@ export default function Habits() {
     adherence_weight: 1,
     notify_enabled: false,
     notify_time: undefined,
+    points_value: 0,
   });
 
   // Get week days
@@ -387,6 +452,7 @@ export default function Habits() {
         adherence_weight: getHabitAdherenceWeight(habit),
         notify_enabled: habit.notify_enabled ?? false,
         notify_time: habit.notify_time ?? undefined,
+        points_value: habit.points_value ?? 0,
       });
       setHabitType(getHabitType(habit));
       setDetoxMode(detox?.mode ?? 'linear');
@@ -406,6 +472,7 @@ export default function Habits() {
         adherence_weight: 1,
         notify_enabled: false,
         notify_time: undefined,
+        points_value: 0,
       });
       setHabitType('standard');
       setDetoxMode('linear');
@@ -753,7 +820,9 @@ export default function Habits() {
                             {weekDays.map((day: Date) => {
                               const isScheduled = isHabitScheduledForDate(habit, day);
                               const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                              const canToggle = isScheduled && (isToday(day) || isYesterday(day));
+                              const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day);
+                              const canToggle = isScheduled && isToday(day); // Free toggle only today
+                              const canClick = canToggle || isPastMissed;
                               const isDetox = !!detoxConfig;
 
                               return (
@@ -765,22 +834,60 @@ export default function Habits() {
                                   )}
                                 >
                                   <button
-                                    onClick={() => canToggle && handleToggleHabit(habit, day)}
-                                    disabled={!canToggle}
-                                    title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                                    onClick={async () => {
+                                      if (canToggle) {
+                                        handleToggleHabit(habit, day);
+                                      } else if (isPastMissed) {
+                                        const dateStr = format(day, 'yyyy-MM-dd');
+                                        const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
+                                        const cost = 50 + rescuableStreak * 10;
+                                        if (window.confirm(`Rescuing "${habit.title}" on ${dateStr} will cost ${cost} points. Proceed?`)) {
+                                          if (pointsBalance < cost) {
+                                            alert(`Insufficient points. You need ${cost} points.`);
+                                            return;
+                                          }
+                                          try {
+                                            await addPointsTx.mutateAsync({
+                                              amount: -cost,
+                                              description: `Rescued Streak: ${habit.title} (${rescuableStreak} days)`,
+                                              reference_type: 'habit_rescue',
+                                              reference_id: habit.id,
+                                            });
+
+                                            await logHabit.mutateAsync({
+                                              habitId: habit.id,
+                                              date: dateStr,
+                                              completed: true,
+                                              note: 'rescue',
+                                            });
+
+                                            queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+                                            queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+                                          } catch (err: any) {
+                                            alert(err.message || 'Failed to rescue streak');
+                                          }
+                                        }
+                                      }
+                                    }}
+                                    disabled={!canClick}
+                                    title={!isScheduled ? 'Not scheduled for this day' : isPastMissed ? 'Click to rescue streak' : undefined}
                                     className={cn(
                                       "w-8 h-8 rounded-lg flex items-center justify-center mx-auto transition-all",
                                       isCompleted
                                         ? (isDetox ? "bg-red-500 text-white" : "text-white")
-                                        : "border border-border hover:border-muted-foreground bg-background",
-                                      canToggle && "hover:scale-110",
+                                        : isPastMissed
+                                          ? "border border-amber-500/40 hover:border-amber-550 hover:bg-amber-500/10 text-amber-500 bg-background"
+                                          : "border border-border hover:border-muted-foreground bg-background",
+                                      canClick && "hover:scale-110",
                                       !isScheduled && "opacity-20",
-                                      isScheduled && !canToggle && "opacity-30"
+                                      isScheduled && !canClick && "opacity-30"
                                     )}
                                     style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                                   >
                                     {isCompleted ? (
                                       isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={16} />
+                                    ) : isPastMissed ? (
+                                      <span className="text-xs text-amber-500 font-bold">R</span>
                                     ) : !isScheduled || day > today ? (
                                       <span className="text-xs text-muted-foreground">-</span>
                                     ) : null}
@@ -789,9 +896,34 @@ export default function Habits() {
                               );
                             })}
                             <td className="p-2 text-center border-y border-r border-border rounded-r-xl">
-                              <div className="flex items-center justify-center gap-1 font-bold">
-                                {getStreakNode(stats.streak, 14)}
-                                <span className={stats.streak >= 14 ? "text-red-500" : stats.streak >= 7 ? "text-orange-500" : stats.streak > 0 ? "text-amber-500" : "text-muted-foreground"}>{stats.streak}</span>
+                              <div className="flex flex-col items-center justify-center gap-1 font-bold">
+                                {stats.streak === 0 && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
+                                  <>
+                                    <div className="flex items-center gap-1 opacity-50">
+                                      {getStreakNode(0, 14)}
+                                      <span className="text-muted-foreground">0</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRescueStreak(habit, rescuableStreaks[habit.id])}
+                                      className={cn(
+                                        "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95",
+                                        pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10)
+                                          ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                                          : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
+                                      )}
+                                      title={pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10) ? "Rescue this streak" : `Need ${50 + (rescuableStreaks[habit.id] ?? 0) * 10} points`}
+                                      disabled={pointsBalance < (50 + (rescuableStreaks[habit.id] ?? 0) * 10)}
+                                    >
+                                      Rescue ({50 + (rescuableStreaks[habit.id] ?? 0) * 10}p)
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="flex items-center justify-center gap-1">
+                                    {getStreakNode(stats.streak, 14)}
+                                    <span className={stats.streak >= 14 ? "text-red-500" : stats.streak >= 7 ? "text-orange-500" : stats.streak > 0 ? "text-amber-500" : "text-muted-foreground"}>{stats.streak}</span>
+                                  </div>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -867,12 +999,30 @@ export default function Habits() {
                                   >
                                     <Edit2 size={12} />
                                   </button>
-                                  {stats.streak >= 3 && (
+                                  {stats.streak === 0 && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRescueStreak(habit, rescuableStreaks[habit.id]);
+                                      }}
+                                      className={cn(
+                                        "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95 ml-2",
+                                        pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10)
+                                          ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
+                                          : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
+                                      )}
+                                      title={pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10) ? "Rescue streak" : `Need ${50 + (rescuableStreaks[habit.id] ?? 0) * 10} points`}
+                                      disabled={pointsBalance < (50 + (rescuableStreaks[habit.id] ?? 0) * 10)}
+                                    >
+                                      Rescue ({50 + (rescuableStreaks[habit.id] ?? 0) * 10}p)
+                                    </button>
+                                  ) : stats.streak >= 3 ? (
                                     <span className="flex items-center gap-0.5 text-xs font-bold">
                                       {getStreakNode(stats.streak, 12)}
                                       <span className={stats.streak >= 14 ? "text-red-500" : stats.streak >= 7 ? "text-orange-500" : "text-amber-500"}>{stats.streak}</span>
                                     </span>
-                                  )}
+                                  ) : null}
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                   {detoxConfig && (
@@ -1042,6 +1192,18 @@ export default function Habits() {
               />
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Points Reward"
+              type="number"
+              min={0}
+              placeholder="5"
+              value={formData.points_value === undefined ? '' : formData.points_value}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, points_value: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0) })}
+              helperText="Points awarded upon each completion."
+            />
+          </div>
 
           {habitType === 'detox' && (
             <div className="space-y-3 rounded-lg border border-border/70 bg-secondary/20 p-3">

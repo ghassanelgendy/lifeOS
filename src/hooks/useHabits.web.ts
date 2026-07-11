@@ -7,6 +7,9 @@ import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { format, startOfWeek, differenceInCalendarDays, subDays } from 'date-fns';
+import { idbGetPointsTransactions, idbAddPointsTransaction } from '../db/indexedDb';
+import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
+import { v4 as uuidv4 } from 'uuid';
 
 const HABITS_KEY = ['habits'];
 const HABIT_LOGS_KEY = ['habit-logs'];
@@ -297,11 +300,83 @@ export function useHabitAverages() {
   });
 }
 
+async function adjustPointsForHabitLog(habitId: string, date: string, completed: boolean, userId: string, queryClient: any, note?: string) {
+  if (note === 'rescue') return; // Skip points adjustment on rescue completes, as they pay rescue cost instead!
+  const dateStr = date.split('T')[0];
+  if (!isDateEligibleForPoints(dateStr)) return;
+
+  const habits = queryClient.getQueryData(['habits', userId]) as any[] || [];
+  const habit = habits.find((h: any) => h.id === habitId);
+  if (!habit) return;
+
+  const logs = queryClient.getQueryData(['habit-logs', userId]) as any[] || [];
+  const habitLogs = logs.filter((l: any) => l.habit_id === habitId && l.completed);
+  const logsDates = habitLogs.map((l: any) => l.date);
+
+  const config = getPointsConfig();
+  const basePoints = habit.points_value || config.defaultHabitEarn;
+  const weight = habit.adherence_weight ?? 1;
+
+  const isDetox = habit.habit_type === 'detox';
+
+  if (completed) {
+    if (!logsDates.includes(dateStr)) {
+      logsDates.push(dateStr);
+    }
+    const newStreak = getHabitStreak(habit, logsDates);
+    const streakBonus = newStreak * config.habitStreakMultiplier;
+    const totalEarned = (basePoints + streakBonus) * weight;
+    const amount = isDetox ? -totalEarned * 3 : totalEarned;
+    const desc = isDetox 
+      ? `Relapsed on Detox Habit: ${habit.title} (Penalty: -${totalEarned * 3}p, Weight: ${weight}x)`
+      : `Completed Habit: ${habit.title} (Streak: ${newStreak} days, +${streakBonus} streak bonus, Weight: ${weight}x)`;
+
+    await idbAddPointsTransaction({
+      id: uuidv4(),
+      user_id: userId,
+      amount,
+      description: desc,
+      reference_type: 'habit',
+      reference_id: habit.id,
+      created_at: new Date().toISOString(),
+      is_synced: false
+    });
+  } else {
+    if (!logsDates.includes(dateStr)) {
+      logsDates.push(dateStr);
+    }
+    const oldStreak = getHabitStreak(habit, logsDates);
+    const streakBonus = oldStreak * config.habitStreakMultiplier;
+    const totalEarned = (basePoints + streakBonus) * weight;
+    const amount = isDetox ? totalEarned : -totalEarned;
+    const desc = isDetox
+      ? `Reverted Detox Relapse: ${habit.title}`
+      : `Reverted Habit Completion: ${habit.title}`;
+
+    await idbAddPointsTransaction({
+      id: uuidv4(),
+      user_id: userId,
+      amount,
+      description: desc,
+      reference_type: 'habit',
+      reference_id: habit.id,
+      created_at: new Date().toISOString(),
+      is_synced: false
+    });
+  }
+}
+
 export function useLogHabit() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ habitId, date, completed, note }: { habitId: string; date: string; completed: boolean; note?: string }) => {
+      // Apply points adjust locally
+      if (user?.id) {
+        await adjustPointsForHabitLog(habitId, date, completed, user.id, queryClient, note);
+      }
+
       // Check if exists
       const { data: existing } = await supabase
         .from('habit_logs')
@@ -385,6 +460,7 @@ export function useLogHabit() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: HABIT_LOGS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
     },
   });
 }
@@ -530,6 +606,89 @@ export function useHabitStreaks(habitIds: string[]) {
   });
 }
 
+export function getRescuableStreak(habit: Habit, logs: string[]): number {
+  if (habit.habit_type === 'detox') return 0;
+  const logsSet = new Set(logs);
+  const today = new Date();
+  const todayStr = toDateOnly(today);
+
+  let lastMissedScheduledDate: Date | null = null;
+  let checkDate = new Date(today);
+
+  for (let i = 0; i <= 2; i++) {
+    const dateStr = toDateOnly(checkDate);
+    const scheduled = isHabitScheduledForDate(habit, checkDate);
+    if (scheduled && !logsSet.has(dateStr)) {
+      lastMissedScheduledDate = new Date(checkDate);
+      break;
+    }
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+
+  if (!lastMissedScheduledDate) return 0;
+
+  const dateStr = toDateOnly(lastMissedScheduledDate);
+  const tempLogs = [...logs, dateStr];
+  const potentialStreak = getHabitStreak(habit, tempLogs);
+  const currentStreak = getHabitStreak(habit, logs);
+
+  if (potentialStreak > currentStreak) {
+    return potentialStreak - 1;
+  }
+
+  return 0;
+}
+
+export function useHabitRescuableStreaks(habitIds: string[]) {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: [...HABIT_LOGS_KEY, 'rescuable-streaks', [...habitIds].sort().join(','), user?.id],
+    queryFn: async () => {
+      if (!habitIds.length) return {} as Record<string, number>;
+
+      const { data: habits, error: habitsError } = await supabase
+        .from('habits')
+        .select('*')
+        .in('id', habitIds);
+      if (habitsError) throw habitsError;
+
+      const habitsMap = new Map<string, Habit>();
+      (habits || []).forEach((h) => habitsMap.set(h.id, h as Habit));
+
+      const { data, error } = await supabase
+        .from('habit_logs')
+        .select('habit_id,date,completed')
+        .in('habit_id', habitIds)
+        .eq('completed', true)
+        .order('date', { ascending: false });
+      if (error) throw error;
+
+      const byHabit = new Map<string, string[]>();
+      (data as Pick<HabitLog, 'habit_id' | 'date'>[]).forEach((log) => {
+        const arr = byHabit.get(log.habit_id) ?? [];
+        arr.push(log.date);
+        byHabit.set(log.habit_id, arr);
+      });
+
+      const rescuable: Record<string, number> = {};
+
+      habitIds.forEach((habitId) => {
+        const logs = byHabit.get(habitId) ?? [];
+        const habit = habitsMap.get(habitId);
+        if (!habit) {
+          rescuable[habitId] = 0;
+          return;
+        }
+        rescuable[habitId] = getRescuableStreak(habit, logs);
+      });
+
+      return rescuable;
+    },
+    enabled: !!user?.id && habitIds.length > 0,
+  });
+}
+
 export interface HabitInsight {
   scheduledDays: number;
   successDays: number;        // on-schedule completions
@@ -639,7 +798,7 @@ export function useHabitInsights(habits: Habit[], days = 90) {
           scheduledDays,
           successDays,
           extraCompletions,
-          adherencePct: scheduledDays > 0 ? clampPct(round1((effectiveSuccess / scheduledDays) * 100)) : 0,
+          adherencePct: scheduledDays > 0 ? clampPct(round1((successDays / scheduledDays) * 100)) : 0,
           eventCount: eventLogs.length,
           usualTimeLabel: averageHour == null ? 'No usual time yet' : `Usually ${formatHourLabel(averageHour)}`,
           bestDayLabel: eventLogs.length === 0 ? 'No pattern yet' : `Most often ${WEEKDAY_LABELS[bestDayIndex]}`,

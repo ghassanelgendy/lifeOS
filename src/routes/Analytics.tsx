@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { Sparkles, Flame, Monitor, Moon, Activity } from 'lucide-react';
+import { Sparkles, Flame, Monitor, Moon, Activity, Coins } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import {
@@ -8,6 +8,7 @@ import {
   useAnalyticsTop,
 } from '../hooks/useAnalytics';
 import { useHabits, useHabitInsights, isHabitScheduledForDate } from '../hooks/useHabits';
+import { usePointsTransactions } from '../hooks/usePoints';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -22,6 +23,7 @@ import { AnalyticsOverview } from '../components/analytics/AnalyticsOverview';
 import { AnalyticsHabits } from '../components/analytics/AnalyticsHabits';
 import { AnalyticsDigital } from '../components/analytics/AnalyticsDigital';
 import { AnalyticsHealthWealth } from '../components/analytics/AnalyticsHealthWealth';
+import { AnalyticsPoints } from '../components/analytics/AnalyticsPoints';
 import { AnalyticsDeepInsights } from '../components/analytics/AnalyticsDeepInsights';
 import { DayDetailsModal } from '../components/analytics/DayDetailsModal';
 import { AnalyticsReport } from '../components/analytics/AnalyticsReport';
@@ -89,9 +91,10 @@ export default function Analytics() {
   const [rangeDays, setRangeDays] = useState<AnalyticsRangeDays>(30);
   const daily = useAnalyticsDaily(rangeDays);
   const top = useAnalyticsTop(rangeDays);
+  const { data: pointsTransactions = [] } = usePointsTransactions();
   const [crossView, setCrossView] = useState<'scatter' | 'buckets'>('scatter');
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'habits' | 'digital' | 'health_wealth' | 'insights'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'habits' | 'digital' | 'health_wealth' | 'points' | 'insights'>('overview');
 
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [selectedDaySource, setSelectedDaySource] = useState<string | null>(null);
@@ -626,6 +629,7 @@ export default function Analytics() {
     { id: 'habits', label: 'Habits', icon: Flame },
     { id: 'digital', label: 'Digital', icon: Monitor },
     { id: 'health_wealth', label: 'Health', icon: Moon },
+    { id: 'points', label: 'Points', icon: Coins },
     { id: 'insights', label: 'Insights', icon: Activity },
   ] as const;
 
@@ -773,6 +777,15 @@ export default function Analytics() {
             topMerchants={top.topMerchants}
             rangeLabel={rangeLabel}
             privacyMode={privacyMode}
+            analyticsShowTips={analyticsShowTips}
+          />
+        )}
+
+        {activeTab === 'points' && (
+          <AnalyticsPoints
+            transactions={pointsTransactions}
+            rangeDays={rangeDays}
+            rangeLabel={rangeLabel}
             analyticsShowTips={analyticsShowTips}
           />
         )}

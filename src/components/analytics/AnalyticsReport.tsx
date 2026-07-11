@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import {
   Moon, Monitor, CheckSquare, Flame, Wallet, Trophy, TrendingDown, TrendingUp,
   ChevronLeft, ChevronRight, Sparkles, Lightbulb, ChevronDown, ChevronUp,
-  ArrowLeft,
+  ArrowLeft, Coins,
 } from 'lucide-react';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, AreaChart, Area,
@@ -472,6 +472,22 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             </span>
             <div className="mt-1"><DeltaBadge delta={data.habitsDelta} /></div>
           </ExpandableCard>
+
+          {/* Points */}
+          {new Date(data.periodStart) >= new Date('2026-07-01') && (
+            <ExpandableCard onClick={() => {}}>
+              <div className="flex items-center gap-2 mb-2">
+                <Coins size={14} className="text-amber-400" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Points Delta</span>
+              </div>
+              <div className="text-xl font-bold tabular-nums">
+                {data.pointsDelta >= 0 ? '+' : ''}{data.pointsDelta}
+              </div>
+              <span className="text-[10px] text-muted-foreground block mt-0.5">
+                Earned: {data.pointsEarned} · Spent: {data.pointsSpent}
+              </span>
+            </ExpandableCard>
+          )}
 
           {/* Total Spending */}
           <ExpandableCard onClick={() => data.days.length > 0 && onOpenDayDetails?.(data.days[data.days.length - 1].date, 'Total Spending')}>
