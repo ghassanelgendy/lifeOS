@@ -874,24 +874,6 @@ export default function Tasks() {
     if (task.id.startsWith('habit-')) return;
     if (isWontDoTask(task)) return;
     const baseDescription = stripWontDoMarker(task.description);
-    const nextDescription = baseDescription;
-
-    // For recurring tasks, complete this occurrence via toggle so recurrence generation stays intact,
-    // then annotate only this completed item as "won't do".
-    if (!task.is_completed && task.recurrence !== 'none') {
-      toggleTask.mutate(task.id, {
-        onSuccess: () => {
-          updateTask.mutate({
-            id: task.id,
-            data: {
-              is_wont_do: true,
-              description: nextDescription,
-            },
-          });
-        },
-      });
-      return;
-    }
 
     updateTask.mutate({
       id: task.id,
@@ -899,7 +881,7 @@ export default function Tasks() {
         is_completed: true,
         is_wont_do: true,
         completed_at: new Date().toISOString(),
-        description: nextDescription,
+        description: baseDescription,
       },
     });
   };
@@ -1327,6 +1309,7 @@ export default function Tasks() {
       location: editForm.location ?? undefined,
       when_messaging: editForm.when_messaging ?? false,
       early_reminder_minutes: editForm.early_reminder_minutes ?? undefined,
+      points_value: editForm.points_value ?? 0,
     };
     if (recurrence !== 'weekly') {
       payload.recurrence_days = [];

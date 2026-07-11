@@ -10,7 +10,10 @@ import {
   idbSaveTaskLists,
   idbSaveTags,
   idbGetTasks,
+  idbGetPointsTransactions,
+  idbAddPointsTransaction,
 } from '../db/indexedDb';
+import { getPointsConfig, isDateEligibleForPoints, isTaskCompletedOnTime } from './usePoints';
 
 const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
@@ -27,7 +30,7 @@ const TASK_INSERT_KEYS = [
   'list_id', 'project_id', 'tag_ids', 'recurrence', 'recurrence_interval', 'recurrence_end',
   'reminders_enabled', 'recurrence_end_type', 'recurrence_count', 'calendar_event_id', 'calendar_source_key',
   'ios_reminders_enabled', 'ios_reminder_id', 'ios_reminder_list', 'ios_reminder_updated_at',
-  'parent_id', 'sort_order', 'strategic_quarter_id',
+  'parent_id', 'sort_order', 'strategic_quarter_id', 'points_value',
 ] as const;
 
 function taskInsertPayload(input: CreateInput<Task>): Record<string, unknown> {
@@ -81,7 +84,10 @@ function taskUpdatePayload(data: UpdateInput<Task>): Record<string, unknown> {
 
 const toDateOnly = (input: Date | string): string => {
   const d = typeof input === 'string' ? new Date(input) : input;
-  return d.toISOString().split('T')[0];
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 };
 
 const parseDueDateTime = (task: Task): Date | null => {
@@ -433,13 +439,64 @@ export function useUpdateTask() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task> }) => {
       if (!isOnline()) {
+        const tasks = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined) ?? [];
+        const task = tasks.find((t) => t.id === id);
+        if (!task) throw new Error('Task not found');
+        const wasCompleted = task.is_completed;
+        const becameCompleted = data.is_completed === true && !wasCompleted;
+
         addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload: data as Record<string, unknown> });
+        
+        if (becameCompleted && task.recurrence !== 'none') {
+          const next = computeNextRecurrence(task);
+          if (next) {
+            const nextInput: CreateInput<Task> = {
+              title: task.title,
+              description: task.description,
+              is_completed: false,
+              is_wont_do: false,
+              priority: task.priority,
+              due_date: next.due_date,
+              due_time: next.due_time,
+              reminders_enabled: task.reminders_enabled ?? false,
+              reminder: task.reminder,
+              list_id: task.list_id,
+              project_id: task.project_id,
+              tag_ids: task.tag_ids ?? [],
+              recurrence: task.recurrence,
+              recurrence_interval: task.recurrence_interval ?? 1,
+              recurrence_days: task.recurrence_days,
+              recurrence_end: task.recurrence_end,
+              recurrence_end_type: task.recurrence_end_type ?? 'never',
+              recurrence_count: next.recurrence_count,
+              parent_id: undefined,
+              subtask_order: undefined,
+              calendar_event_id: task.calendar_event_id ?? null,
+            };
+            const generatedId = uuidv4();
+            const newTaskOffline = {
+              ...nextInput,
+              id: generatedId,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            addToOfflineQueue({ entity: 'tasks', op: 'create', id: generatedId, payload: nextInput });
+            queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => [...(old ?? []), newTaskOffline]);
+          }
+        }
+
         queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) =>
           (old ?? []).map((t) => (t.id === id ? { ...t, ...data, updated_at: new Date().toISOString() } : t))
         );
-        const prev = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined)?.find((t) => t.id === id);
-        return { ...prev, ...data, id, updated_at: new Date().toISOString() } as Task;
+        return { ...task, ...data, id, updated_at: new Date().toISOString() } as Task;
       }
+
+      // Online route
+      const { data: currentTask } = await supabase.from('tasks').select('*').eq('id', id).single();
+      if (!currentTask) throw new Error('Task not found');
+      const wasCompleted = currentTask.is_completed;
+      const becameCompleted = data.is_completed === true && !wasCompleted;
+
       const payload = taskUpdatePayload(data);
       const { data: updated, error } = await supabase
         .from('tasks')
@@ -449,7 +506,40 @@ export function useUpdateTask() {
         .single();
 
       if (error) throw error;
-      return updated as Task;
+      const updatedTask = updated as Task;
+
+      if (becameCompleted && updatedTask.recurrence !== 'none') {
+        const next = computeNextRecurrence(updatedTask);
+        if (next) {
+          const nextInput: CreateInput<Task> = {
+            title: updatedTask.title,
+            description: updatedTask.description,
+            is_completed: false,
+            is_wont_do: false,
+            priority: updatedTask.priority,
+            due_date: next.due_date,
+            due_time: next.due_time,
+            reminders_enabled: updatedTask.reminders_enabled ?? false,
+            reminder: updatedTask.reminder,
+            list_id: updatedTask.list_id,
+            project_id: updatedTask.project_id,
+            tag_ids: updatedTask.tag_ids ?? [],
+            recurrence: updatedTask.recurrence,
+            recurrence_interval: updatedTask.recurrence_interval ?? 1,
+            recurrence_days: updatedTask.recurrence_days,
+            recurrence_end: updatedTask.recurrence_end,
+            recurrence_end_type: updatedTask.recurrence_end_type ?? 'never',
+            recurrence_count: next.recurrence_count,
+            parent_id: undefined,
+            subtask_order: undefined,
+            calendar_event_id: updatedTask.calendar_event_id ?? null,
+          };
+          const { error: insertErr } = await supabase.from('tasks').insert(taskInsertPayload(nextInput));
+          if (insertErr) throw insertErr;
+        }
+      }
+
+      return updatedTask;
     },
     onSuccess: () => {
       if (isOnline()) {
@@ -457,6 +547,77 @@ export function useUpdateTask() {
       }
     },
   });
+}
+
+async function adjustPointsForTaskToggle(task: any, newCompleted: boolean) {
+  const completedAt = task.completed_at || new Date().toISOString();
+  if (!isDateEligibleForPoints(completedAt)) return;
+
+  const config = getPointsConfig();
+  const pointsVal = task.points_value ?? 0;
+  
+  if (pointsVal < 0) {
+    const cost = Math.abs(pointsVal);
+    if (newCompleted) {
+      const localTxs = await idbGetPointsTransactions();
+      const balance = localTxs.reduce((sum, t) => sum + t.amount, 0);
+      if (balance < cost) {
+        throw new Error('Insufficient points to redeem this task');
+      }
+      await idbAddPointsTransaction({
+        id: uuidv4(),
+        user_id: task.user_id || '',
+        amount: -cost,
+        description: `Redeemed Task: ${task.title}`,
+        reference_type: 'task',
+        reference_id: task.id,
+        created_at: new Date().toISOString(),
+        is_synced: false
+      });
+    } else {
+      await idbAddPointsTransaction({
+        id: uuidv4(),
+        user_id: task.user_id || '',
+        amount: cost,
+        description: `Reverted Task Redemption: ${task.title}`,
+        reference_type: 'task',
+        reference_id: task.id,
+        created_at: new Date().toISOString(),
+        is_synced: false
+      });
+    }
+  } else {
+    const earned = pointsVal || config.defaultTaskEarn;
+    if (newCompleted) {
+      const onTime = isTaskCompletedOnTime(task, completedAt);
+      if (onTime) {
+        await idbAddPointsTransaction({
+          id: uuidv4(),
+          user_id: task.user_id || '',
+          amount: earned,
+          description: `Completed Task: ${task.title}`,
+          reference_type: 'task',
+          reference_id: task.id,
+          created_at: new Date().toISOString(),
+          is_synced: false
+        });
+      }
+    } else {
+      const originallyOnTime = isTaskCompletedOnTime(task, task.completed_at);
+      if (originallyOnTime) {
+        await idbAddPointsTransaction({
+          id: uuidv4(),
+          user_id: task.user_id || '',
+          amount: -earned,
+          description: `Reverted Task Completion: ${task.title}`,
+          reference_type: 'task',
+          reference_id: task.id,
+          created_at: new Date().toISOString(),
+          is_synced: false
+        });
+      }
+    }
+  }
 }
 
 export function useToggleTask() {
@@ -469,6 +630,10 @@ export function useToggleTask() {
         const task = tasks.find((t) => t.id === id);
         if (!task) throw new Error('Task not found');
         const newCompleted = !task.is_completed;
+
+        // Apply points update (will throw error if points insufficient for reward task completion)
+        await adjustPointsForTaskToggle(task, newCompleted);
+
         const payload = { is_completed: newCompleted, is_wont_do: false, completed_at: newCompleted ? new Date().toISOString() : null };
         addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload });
         
@@ -497,6 +662,9 @@ export function useToggleTask() {
         .single();
       if (!task) throw new Error('Task not found');
       const newCompleted = !task.is_completed;
+
+      // Apply points update (will throw error if points insufficient for reward task completion)
+      await adjustPointsForTaskToggle(task, newCompleted);
 
       if (!task.parent_id) {
         const { data: subtasks } = await supabase
@@ -606,6 +774,7 @@ export function useToggleTask() {
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
     },
   });
 }

@@ -36,8 +36,10 @@ import Screentime from './routes/Screentime';
 import Sleep from './routes/Sleep';
 import AnalyticsPage from './routes/Analytics';
 import SettingsPage from './routes/Settings';
+import Points from './routes/Points';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
+import { useDailyPointsSync } from './hooks/usePoints';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -94,6 +96,7 @@ function AppInner() {
   const { data: habits } = useHabits();
   const { data: events } = useCalendarEvents();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+  useDailyPointsSync(); // Run daily points sync worker in the background
   const { isEnabled: isPushEnabled } = usePushNotifications();
 
   const lat = useUIStore((s) => s.prayerLatitude);
@@ -339,6 +342,7 @@ function AppInner() {
               <Route path="focus" element={<Focus />} />
               <Route path="health" element={<Health />} />
               <Route path="habits" element={<Habits />} />
+              <Route path="points" element={<Points />} />
               <Route path="calendar" element={<CalendarPage />} />
               <Route path="notes" element={<Notes />} />
               <Route path="finance" element={<Finance />} />
