@@ -9,6 +9,11 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { usePrayerTimes } from './usePrayerTimes';
 import type { PrayerHabit, PrayerLog, PrayerName, PrayerNotificationSetting, PrayerStatus } from '../types/schema';
+import { isOnline } from '../lib/offlineSync';
+import { idbAddPointsTransaction } from '../db/indexedDb';
+import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 const QUERY_KEY = ['prayer-tracker'];
@@ -204,6 +209,47 @@ async function ensurePrayerRows(
 
 let lastSyncedDateWeb: string | null = null;
 
+async function adjustPointsForPrayerToggle(
+  userId: string,
+  prayerTitle: string,
+  prayerHabitId: string,
+  oldStatus: PrayerStatus | null,
+  newStatus: PrayerStatus | null
+) {
+  if (!isDateEligibleForPoints(new Date())) return;
+
+  const isOldLate = oldStatus === 'Late';
+  const isNewLate = newStatus === 'Late';
+
+  if (isOldLate === isNewLate) return;
+
+  const txId = uuidv4();
+  const amount = isNewLate ? -10 : 10;
+  const desc = isNewLate
+    ? `Late Prayer Penalty: ${prayerTitle}`
+    : `Reverted Late Prayer Penalty: ${prayerTitle}`;
+
+  const payload = {
+    id: txId,
+    user_id: userId,
+    amount,
+    description: desc,
+    reference_type: 'prayer',
+    reference_id: prayerHabitId,
+    created_at: new Date().toISOString(),
+  };
+
+  if (isOnline()) {
+    try {
+      await supabase.from('points_transactions').insert(payload);
+    } catch {
+      await idbAddPointsTransaction({ ...payload, is_synced: false });
+    }
+  } else {
+    await idbAddPointsTransaction({ ...payload, is_synced: false });
+  }
+}
+
 export function usePrayerTracker(date: Date = new Date()) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -340,6 +386,8 @@ export function usePrayerTracker(date: Date = new Date()) {
         (l) => l.prayer_habit_id === input.prayer.prayerHabitId
       );
 
+      const oldStatus = existing ? existing.status : null;
+
       // If user clicks the same status again, treat it as "undo":
       // remove the prayer_log entry and reset the linked habit_log.
       if (existing && existing.status === input.status) {
@@ -360,6 +408,16 @@ export function usePrayerTracker(date: Date = new Date()) {
           if (resetHabitErr) throw resetHabitErr;
         }
 
+        if (user?.id) {
+          await adjustPointsForPrayerToggle(
+            user.id,
+            input.prayer.habitTitle,
+            input.prayer.prayerHabitId,
+            oldStatus,
+            null
+          );
+        }
+
         return;
       }
 
@@ -369,7 +427,18 @@ export function usePrayerTracker(date: Date = new Date()) {
         date: dateStr,
         status: input.status,
       });
+
+      if (user?.id) {
+        await adjustPointsForPrayerToggle(
+          user.id,
+          input.prayer.habitTitle,
+          input.prayer.prayerHabitId,
+          oldStatus,
+          input.status
+        );
+      }
     },
+
     onMutate: async (input: { prayer: PrayerTrackerItem; status: PrayerStatus }) => {
       const todayKey = [...QUERY_KEY, user?.id, 'today', dateStr];
       await queryClient.cancelQueries({ queryKey: todayKey });
