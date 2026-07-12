@@ -306,64 +306,85 @@ async function adjustPointsForHabitLog(habitId: string, date: string, completed:
   const dateStr = date.split('T')[0];
   if (!isDateEligibleForPoints(dateStr)) return;
 
-  const habits = queryClient.getQueryData(['habits', userId]) as any[] || [];
-  const habit = habits.find((h: any) => h.id === habitId);
-  if (!habit) return;
+  let habit: any = null;
+  let logsDates: string[] = [];
 
-  const logs = queryClient.getQueryData(['habit-logs', userId]) as any[] || [];
-  const habitLogs = logs.filter((l: any) => l.habit_id === habitId && l.completed);
-  const logsDates = habitLogs.map((l: any) => l.date);
+  if (isOnline()) {
+    // Query direct source of truth from database to avoid cache races
+    const { data: habitData } = await supabase
+      .from('habits')
+      .select('*')
+      .eq('id', habitId)
+      .single();
+    habit = habitData;
+
+    const { data: logsData } = await supabase
+      .from('habit_logs')
+      .select('date')
+      .eq('habit_id', habitId)
+      .eq('completed', true);
+    logsDates = (logsData || []).map((l: any) => l.date);
+  } else {
+    // Offline: Fallback to correct query cache keys
+    const habits = queryClient.getQueryData(['habits', userId]) as any[] || [];
+    habit = habits.find((h: any) => h.id === habitId);
+
+    const cachedLogs = queryClient.getQueryData(['habit-logs', habitId, userId]) as any[] || [];
+    logsDates = cachedLogs.filter((l: any) => l.completed).map((l: any) => l.date);
+  }
+
+  if (!habit) return;
 
   const config = getPointsConfig();
   const basePoints = habit.points_value || config.defaultHabitEarn;
   const weight = habit.adherence_weight ?? 1;
-
   const isDetox = habit.habit_type === 'detox';
 
+  let amount: number;
+  let desc: string;
+
+
   if (completed) {
-    if (!logsDates.includes(dateStr)) {
-      logsDates.push(dateStr);
-    }
+    if (!logsDates.includes(dateStr)) logsDates.push(dateStr);
     const newStreak = getHabitStreak(habit, logsDates);
     const streakBonus = newStreak * config.habitStreakMultiplier;
-    const totalEarned = Math.round(((basePoints + streakBonus) * weight) * 10) / 10;
-    const amount = isDetox ? Math.round((-totalEarned * 3) * 10) / 10 : totalEarned;
-    const desc = isDetox 
-      ? `Relapsed on Detox Habit: ${habit.title} (Penalty: -${totalEarned * 3}p, Weight: ${weight}x)`
+    const totalEarned = Math.round((basePoints + streakBonus) * weight);
+    amount = isDetox ? -Math.round(totalEarned * 3) : totalEarned;
+    desc = isDetox
+      ? `Relapsed on Detox Habit: ${habit.title} (Penalty: -${Math.abs(amount)}p, Weight: ${weight}x)`
       : `Completed Habit: ${habit.title} (Streak: ${newStreak} days, +${streakBonus} streak bonus, Weight: ${weight}x)`;
-
-    await idbAddPointsTransaction({
-      id: uuidv4(),
-      user_id: userId,
-      amount,
-      description: desc,
-      reference_type: 'habit',
-      reference_id: habit.id,
-      created_at: new Date().toISOString(),
-      is_synced: false
-    });
   } else {
-    if (!logsDates.includes(dateStr)) {
-      logsDates.push(dateStr);
-    }
+    if (!logsDates.includes(dateStr)) logsDates.push(dateStr);
     const oldStreak = getHabitStreak(habit, logsDates);
     const streakBonus = oldStreak * config.habitStreakMultiplier;
-    const totalEarned = (basePoints + streakBonus) * weight;
-    const amount = isDetox ? totalEarned : -totalEarned;
-    const desc = isDetox
+    const totalEarned = Math.round((basePoints + streakBonus) * weight);
+    amount = isDetox ? totalEarned : -totalEarned;
+    desc = isDetox
       ? `Reverted Detox Relapse: ${habit.title}`
       : `Reverted Habit Completion: ${habit.title}`;
+  }
 
-    await idbAddPointsTransaction({
-      id: uuidv4(),
-      user_id: userId,
-      amount,
-      description: desc,
-      reference_type: 'habit',
-      reference_id: habit.id,
-      created_at: new Date().toISOString(),
-      is_synced: false
-    });
+  const payload = {
+    id: uuidv4(),
+    user_id: userId,
+    amount, // already integer
+    description: desc,
+    reference_type: 'habit',
+    reference_id: habit.id,
+    created_at: new Date().toISOString(),
+  };
+
+  if (isOnline()) {
+    // Write directly to Supabase — source of truth, no IDB race
+    try {
+      await supabase.from('points_transactions').insert(payload);
+    } catch {
+      // Offline-like failure — fall through to IDB
+      await idbAddPointsTransaction({ ...payload, is_synced: false });
+    }
+  } else {
+    // Offline: persist locally; daily sync will push later
+    await idbAddPointsTransaction({ ...payload, is_synced: false });
   }
 }
 
@@ -614,12 +635,13 @@ export function getRescuableStreak(habit: Habit, logs: string[]): number {
   if (habit.habit_type === 'detox') return 0;
   const logsSet = new Set(logs);
   const today = new Date();
-  const todayStr = toDateOnly(today);
 
   let lastMissedScheduledDate: Date | null = null;
   let checkDate = new Date(today);
 
-  for (let i = 0; i <= 2; i++) {
+  // Look back up to 14 days so weekly habits (e.g. Sunday-only) are covered
+  // even when today is mid-week and the missed day was >2 days ago.
+  for (let i = 0; i <= 14; i++) {
     const dateStr = toDateOnly(checkDate);
     const scheduled = isHabitScheduledForDate(habit, checkDate);
     if (scheduled && !logsSet.has(dateStr)) {

@@ -22,7 +22,6 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isToday,
-  isYesterday,
   subDays,
 } from 'date-fns';
 import { cn } from '../lib/utils';
@@ -686,7 +685,9 @@ export default function Habits() {
                           {weekDays.map((day: Date) => {
                             const isScheduled = isHabitScheduledForDate(habit, day);
                             const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                            const canToggle = isScheduled && (isToday(day) || isYesterday(day));
+                            const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day);
+                            const canToggle = isScheduled && isToday(day); // Free toggle only today
+                            const canClick = canToggle || isPastMissed;
                             const isDetox = !!detoxConfig;
                             return (
                               <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
@@ -697,22 +698,58 @@ export default function Habits() {
                                   {format(day, 'EEE')}
                                 </span>
                                 <button
-                                  onClick={() => canToggle && handleToggleHabit(habit, day)}
-                                  disabled={!canToggle}
-                                  title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                                  onClick={async () => {
+                                    if (canToggle) {
+                                      handleToggleHabit(habit, day);
+                                    } else if (isPastMissed) {
+                                      const dateStr = format(day, 'yyyy-MM-dd');
+                                      const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
+                                      const cost = 50 + rescuableStreak * 10;
+                                      if (window.confirm(`Rescuing "${habit.title}" on ${dateStr} will cost ${cost} points. Proceed?`)) {
+                                        if (pointsBalance < cost) {
+                                          alert(`Insufficient points. You need ${cost} points.`);
+                                          return;
+                                        }
+                                        try {
+                                          await addPointsTx.mutateAsync({
+                                            amount: -cost,
+                                            description: `Rescued Streak: ${habit.title} (${rescuableStreak} days)`,
+                                            reference_type: 'habit_rescue',
+                                            reference_id: habit.id,
+                                          });
+                                          await logHabit.mutateAsync({
+                                            habitId: habit.id,
+                                            date: dateStr,
+                                            completed: true,
+                                            note: 'rescue',
+                                          });
+                                          queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+                                          queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+                                        } catch (err: any) {
+                                          alert(err.message || 'Failed to rescue streak');
+                                        }
+                                      }
+                                    }
+                                  }}
+                                  disabled={!canClick}
+                                  title={!isScheduled ? 'Not scheduled for this day' : isPastMissed ? 'Click to rescue streak' : undefined}
                                   className={cn(
                                     "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                     isCompleted
                                       ? (isDetox ? "bg-red-500 text-white" : "text-white")
-                                      : "border border-border bg-background",
-                                    canToggle && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
+                                      : isPastMissed
+                                        ? "border border-amber-500/40 hover:border-amber-500 hover:bg-amber-500/10 text-amber-500 bg-background"
+                                        : "border border-border bg-background",
+                                    canClick && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
                                     !isScheduled && "opacity-20",
-                                    isScheduled && !canToggle && "opacity-40"
+                                    isScheduled && !canClick && "opacity-40"
                                   )}
                                   style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                                 >
                                   {isCompleted ? (
                                     isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
+                                  ) : isPastMissed ? (
+                                    <span className="text-[10px] text-amber-500 font-bold">R</span>
                                   ) : !isScheduled || day > today ? (
                                     <span className="text-[10px] text-muted-foreground">-</span>
                                   ) : null}
@@ -721,6 +758,7 @@ export default function Habits() {
                             );
                           })}
                         </div>
+
                       </div>
                     );
                   })}
