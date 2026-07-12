@@ -557,67 +557,73 @@ async function adjustPointsForTaskToggle(task: any, newCompleted: boolean) {
   const config = getPointsConfig();
   const pointsVal = task.points_value ?? 0;
   
+  const txId = uuidv4();
+  let amount = 0;
+  let desc = '';
+
   if (pointsVal < 0) {
     const cost = Math.abs(pointsVal);
     if (newCompleted) {
-      const localTxs = await idbGetPointsTransactions();
-      const balance = localTxs.reduce((sum, t) => sum + t.amount, 0);
+      // Fetch balance securely from DB if online, else fall back to local store
+      const { data: dbTxs } = isOnline()
+        ? await supabase.from('points_transactions').select('amount').eq('user_id', task.user_id)
+        : { data: null };
+      const txs = dbTxs || await idbGetPointsTransactions();
+      const balance = txs.reduce((sum: number, t: any) => sum + t.amount, 0);
+
       if (balance < cost) {
         throw new Error('Insufficient points to redeem this task');
       }
-      await idbAddPointsTransaction({
-        id: uuidv4(),
-        user_id: task.user_id || '',
-        amount: -cost,
-        description: `Redeemed Task: ${task.title}`,
-        reference_type: 'task',
-        reference_id: task.id,
-        created_at: new Date().toISOString(),
-        is_synced: false
-      });
+      amount = -cost;
+      desc = `Redeemed Task: ${task.title}`;
     } else {
-      await idbAddPointsTransaction({
-        id: uuidv4(),
-        user_id: task.user_id || '',
-        amount: cost,
-        description: `Reverted Task Redemption: ${task.title}`,
-        reference_type: 'task',
-        reference_id: task.id,
-        created_at: new Date().toISOString(),
-        is_synced: false
-      });
+      amount = cost;
+      desc = `Reverted Task Redemption: ${task.title}`;
     }
   } else {
     const earned = pointsVal || config.defaultTaskEarn;
+    const onTime = isTaskCompletedOnTime(task, completedAt);
+
     if (newCompleted) {
-      const onTime = isTaskCompletedOnTime(task, completedAt);
       if (onTime) {
-        await idbAddPointsTransaction({
-          id: uuidv4(),
-          user_id: task.user_id || '',
-          amount: earned,
-          description: `Completed Task: ${task.title}`,
-          reference_type: 'task',
-          reference_id: task.id,
-          created_at: new Date().toISOString(),
-          is_synced: false
-        });
+        amount = earned;
+        desc = `Completed Task On-Time: ${task.title}`;
+      } else {
+        amount = -earned;
+        desc = `Completed Task Late: ${task.title}`;
       }
     } else {
       const originallyOnTime = isTaskCompletedOnTime(task, task.completed_at);
       if (originallyOnTime) {
-        await idbAddPointsTransaction({
-          id: uuidv4(),
-          user_id: task.user_id || '',
-          amount: -earned,
-          description: `Reverted Task Completion: ${task.title}`,
-          reference_type: 'task',
-          reference_id: task.id,
-          created_at: new Date().toISOString(),
-          is_synced: false
-        });
+        amount = -earned;
+        desc = `Reverted Task Completion (Was On-Time): ${task.title}`;
+      } else {
+        amount = earned;
+        desc = `Reverted Task Completion (Was Late): ${task.title}`;
       }
     }
+  }
+
+  if (amount === 0) return;
+
+  const payload = {
+    id: txId,
+    user_id: task.user_id || '',
+    amount: Math.round(amount),
+    description: desc,
+    reference_type: 'task',
+    reference_id: task.id,
+    created_at: new Date().toISOString(),
+  };
+
+  if (isOnline()) {
+    try {
+      await supabase.from('points_transactions').insert(payload);
+    } catch {
+      await idbAddPointsTransaction({ ...payload, is_synced: false });
+    }
+  } else {
+    await idbAddPointsTransaction({ ...payload, is_synced: false });
   }
 }
 

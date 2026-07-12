@@ -236,7 +236,10 @@ export function useDeleteCustomReward() {
 }
 
 /**
- * Create local points transaction (used instantly by hooks/UI)
+ * Create a points transaction.
+ * - Online: writes directly to Supabase (source of truth), then invalidates the query cache so the
+ *   UI re-fetches. IDB is populated as a side-effect of the query re-fetch, not written to here.
+ * - Offline: saves to IDB only; the daily sync will push it later.
  */
 export function useAddPointsTransaction() {
   const queryClient = useQueryClient();
@@ -246,20 +249,33 @@ export function useAddPointsTransaction() {
     mutationFn: async (input: { amount: number; description: string; reference_type?: string; reference_id?: string }) => {
       if (!user?.id) throw new Error('Unauthenticated');
 
-      const tx: PointTransaction & { is_synced: boolean } = {
-        id: uuidv4(),
+      const id = uuidv4();
+      const created_at = new Date().toISOString();
+      // DB column is integer — round to avoid type mismatch
+      const amount = Math.round(input.amount);
+
+      const payload = {
+        id,
         user_id: user.id,
-        amount: input.amount,
+        amount,
         description: input.description,
         reference_type: input.reference_type || null,
         reference_id: input.reference_id || null,
-        created_at: new Date().toISOString(),
-        is_synced: false, // Keep local only until daily sync runs
+        created_at,
       };
 
-      // Add to local database instantly
-      await idbAddPointsTransaction(tx);
-      return tx;
+      if (isOnline()) {
+        // Write directly to Supabase — this is the source of truth
+        const { data, error } = await supabase.from('points_transactions').insert(payload).select().single();
+        if (error) throw error;
+        return { ...data, is_synced: true } as PointTransaction & { is_synced: boolean };
+      }
+
+      // Offline path: persist locally and queue for later sync
+      const localTx = { ...payload, is_synced: false };
+      await idbAddPointsTransaction(localTx);
+      addToOfflineQueue({ entity: 'points_transactions', op: 'create', payload });
+      return localTx as PointTransaction & { is_synced: boolean };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: POINTS_TX_KEY });
