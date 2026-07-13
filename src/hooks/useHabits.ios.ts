@@ -490,16 +490,24 @@ export function useLogHabit() {
   });
 }
 
+export function getHabitRescueCost(rescuableStreak: number): number {
+  return 50 + rescuableStreak * 10 + (rescuableStreak ** 2) * 2;
+}
+
 export function getHabitStreak(habit: Habit, logs: string[]): number {
   if (!logs.length) return 0;
 
   const logsSet = new Set(logs);
   const today = new Date();
   const todayStr = toDateOnly(today);
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = toDateOnly(yesterday);
   const createdAtDate = habit.created_at ? habit.created_at.slice(0, 10) : null;
 
   let streak = 0;
   let checkDate = new Date(today);
+  const isGracePeriod = today.getHours() < 6;
 
   // Step backwards day-by-day up to 365 days or until before the habit's creation
   for (let i = 0; i < 365; i++) {
@@ -515,8 +523,13 @@ export function getHabitStreak(habit: Habit, logs: string[]): number {
         streak++;
       } else {
         // If it is today and they haven't completed it yet, the streak is not broken.
-        // If it is yesterday or older, the streak breaks.
-        if (dateStr !== todayStr) {
+        // If it is yesterday and we are currently in the grace period, the streak is also not broken.
+        // If it is yesterday (outside grace period) or older, the streak breaks.
+        if (dateStr === todayStr) {
+          // Do not break
+        } else if (dateStr === yesterdayStr && isGracePeriod) {
+          // Do not break
+        } else {
           break;
         }
       }
