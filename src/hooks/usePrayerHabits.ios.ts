@@ -282,6 +282,13 @@ async function ensurePrayerRows(
 
 let lastSyncedDateIos: string | null = null;
 
+function getPrayerStatusPenalty(status: PrayerStatus | null): number {
+  if (!status) return 0;
+  if (status === 'Late') return -10;
+  if (status === 'Missed' || status === 'Skipped') return -50;
+  return 0; // 'Prayed' has no penalty
+}
+
 async function adjustPointsForPrayerToggle(
   userId: string,
   prayerTitle: string,
@@ -291,16 +298,16 @@ async function adjustPointsForPrayerToggle(
 ) {
   if (!isDateEligibleForPoints(new Date())) return;
 
-  const isOldLate = oldStatus === 'Late';
-  const isNewLate = newStatus === 'Late';
+  const oldPenalty = getPrayerStatusPenalty(oldStatus);
+  const newPenalty = getPrayerStatusPenalty(newStatus);
+  const amount = newPenalty - oldPenalty;
 
-  if (isOldLate === isNewLate) return;
+  if (amount === 0) return;
 
   const txId = uuidv4();
-  const amount = isNewLate ? -10 : 10;
-  const desc = isNewLate
-    ? `Late Prayer Penalty: ${prayerTitle}`
-    : `Reverted Late Prayer Penalty: ${prayerTitle}`;
+  const desc = amount < 0
+    ? `Prayer Penalty (${newStatus}): ${prayerTitle}`
+    : `Reverted Prayer Penalty (${oldStatus}): ${prayerTitle}`;
 
   const payload = {
     id: txId,
@@ -321,6 +328,21 @@ async function adjustPointsForPrayerToggle(
   } else {
     await idbAddPointsTransaction({ ...payload, is_synced: false });
   }
+}
+
+function isPrayerOverdue(prayerName: PrayerName, dateStr: string, times: { name: string; time: Date }[]): boolean {
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  if (dateStr < todayStr) return true;
+  if (dateStr > todayStr) return false;
+
+  const currentIndex = PRAYER_NAMES.indexOf(prayerName);
+  if (currentIndex === -1 || currentIndex === PRAYER_NAMES.length - 1) return false;
+
+  const nextPrayerName = PRAYER_NAMES[currentIndex + 1];
+  const nextPrayer = times.find(t => t.name === nextPrayerName);
+  if (!nextPrayer) return false;
+
+  return new Date() >= new Date(nextPrayer.time);
 }
 
 export function usePrayerTracker(date: Date = new Date()) {
@@ -411,6 +433,87 @@ export function usePrayerTracker(date: Date = new Date()) {
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 60, // 1 hour (almost static)
   });
+
+  const firedUpdatesRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const habits = habitsQuery.data ?? [];
+    if (
+      habitsQuery.isLoading ||
+      weeklyQuery.isLoading ||
+      !user?.id ||
+      habits.length === 0 ||
+      times.length === 0 ||
+      !weeklyQuery.data
+    ) {
+      return;
+    }
+
+    const overdueToMark: {
+      prayerHabitId: string;
+      habitId: string;
+      date: string;
+      status: PrayerStatus;
+      habitTitle: string;
+    }[] = [];
+
+    // Check the last 7 days (including today)
+    for (let i = 0; i < 7; i++) {
+      const checkDate = new Date();
+      checkDate.setDate(checkDate.getDate() - i);
+      const dateStrToCheck = toDateOnly(checkDate);
+
+      habits.forEach((ph) => {
+        // Find if there is a log for this habit and date
+        const log = weeklyQuery.data.find(
+          (l) => l.prayer_habit_id === ph.id && l.date === dateStrToCheck
+        );
+        const status = log?.status ?? null;
+        const isComplete = isPrayerStatusComplete(status);
+        const isMarkedMissedOrSkipped = status === 'Missed' || status === 'Skipped';
+
+        if (!isComplete && !isMarkedMissedOrSkipped) {
+          if (isPrayerOverdue(ph.prayer_name, dateStrToCheck, times)) {
+            overdueToMark.push({
+              prayerHabitId: ph.id,
+              habitId: ph.habit_id,
+              date: dateStrToCheck,
+              status: 'Missed',
+              habitTitle: ph.habit?.title ?? ph.prayer_name,
+            });
+          }
+        }
+      });
+    }
+
+    if (overdueToMark.length > 0) {
+      overdueToMark.forEach((todo) => {
+        const key = `${todo.prayerHabitId}_${todo.date}`;
+        if (firedUpdatesRef.current.has(key)) return;
+        firedUpdatesRef.current.add(key);
+
+        void upsertPrayerLogWithHabitSync({
+          prayerHabitId: todo.prayerHabitId,
+          habitId: todo.habitId,
+          date: todo.date,
+          status: todo.status,
+        }).then(async () => {
+          if (user?.id) {
+            await adjustPointsForPrayerToggle(
+              user.id,
+              todo.habitTitle,
+              todo.prayerHabitId,
+              null,
+              todo.status
+            );
+          }
+          queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id] });
+          queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+          queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+        });
+      });
+    }
+  }, [habitsQuery.data, weeklyQuery.data, habitsQuery.isLoading, weeklyQuery.isLoading, user?.id, times, queryClient]);
 
   const tracker = useMemo<PrayerTrackerItem[]>(() => {
     const habits = habitsQuery.data ?? [];
