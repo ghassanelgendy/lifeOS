@@ -39,6 +39,7 @@ import {
   getHabitAdherenceWeight,
   isHabitScheduledForDate,
   useHabitRescuableStreaks,
+  getHabitRescueCost,
 } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
@@ -220,7 +221,7 @@ export default function Habits() {
   const logHabit = useLogHabit();
 
   const handleRescueStreak = async (habit: Habit, rescuableStreak: number) => {
-    const cost = 50 + rescuableStreak * 10;
+    const cost = getHabitRescueCost(rescuableStreak);
     if (pointsBalance < cost) {
       alert(`Insufficient points. You need ${cost} points to rescue this streak.`);
       return;
@@ -703,7 +704,10 @@ export default function Habits() {
                           {weekDays.map((day: Date) => {
                             const isScheduled = isHabitScheduledForDate(habit, day);
                             const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                            const canToggle = isScheduled && (isToday(day) || isYesterday(day));
+                            const isGracePeriod = new Date().getHours() < 6;
+                            const canToggle = isScheduled && (isToday(day) || (isYesterday(day) && isGracePeriod));
+                            const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
+                            const canClick = canToggle || isPastMissed;
                             const isDetox = !!detoxConfig;
                             return (
                               <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
@@ -714,22 +718,35 @@ export default function Habits() {
                                   {format(day, 'EEE')}
                                 </span>
                                 <button
-                                  onClick={() => canToggle && handleToggleHabit(habit, day)}
-                                  disabled={!canToggle}
-                                  title={!isScheduled ? 'Not scheduled for this day' : undefined}
+                                  onClick={() => {
+                                    if (canToggle) {
+                                      handleToggleHabit(habit, day);
+                                    } else if (isPastMissed) {
+                                      const dateStr = format(day, 'yyyy-MM-dd');
+                                      const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
+                                      const cost = getHabitRescueCost(rescuableStreak);
+                                      setRescueConfirmDetails({ habit, date: dateStr, cost, rescuableStreak });
+                                    }
+                                  }}
+                                  disabled={!canClick}
+                                  title={!isScheduled ? 'Not scheduled for this day' : isPastMissed ? 'Click to rescue streak' : undefined}
                                   className={cn(
                                     "w-8 h-8 rounded-lg flex items-center justify-center transition-all mt-0.5",
                                     isCompleted
                                       ? (isDetox ? "bg-red-500 text-white" : "text-white")
-                                      : "border border-border bg-background",
-                                    canToggle && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
+                                      : isPastMissed
+                                        ? "border border-amber-500/40 hover:border-amber-500 hover:bg-amber-500/10 text-amber-500/80 bg-background"
+                                        : "border border-border bg-background",
+                                    canClick && "hover:scale-105 active:scale-95 hover:border-muted-foreground",
                                     !isScheduled && "opacity-20",
-                                    isScheduled && !canToggle && "opacity-40"
+                                    isScheduled && !canClick && "opacity-40"
                                   )}
                                   style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                                 >
                                   {isCompleted ? (
                                     isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
+                                  ) : isPastMissed ? (
+                                    <span className="text-[10px] text-amber-500/90 font-bold">R</span>
                                   ) : !isScheduled || day > today ? (
                                     <span className="text-[10px] text-muted-foreground">-</span>
                                   ) : null}
@@ -837,8 +854,9 @@ export default function Habits() {
                             {weekDays.map((day: Date) => {
                                const isScheduled = isHabitScheduledForDate(habit, day);
                                const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                               const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day);
-                               const canToggle = isScheduled && isToday(day); // Free toggle only today
+                               const isGracePeriod = new Date().getHours() < 6;
+                               const canToggle = isScheduled && (isToday(day) || (isYesterday(day) && isGracePeriod));
+                               const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
                                const canClick = canToggle || isPastMissed;
                                const isDetox = !!detoxConfig;
 
@@ -857,7 +875,7 @@ export default function Habits() {
                                        } else if (isPastMissed) {
                                          const dateStr = format(day, 'yyyy-MM-dd');
                                          const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
-                                         const cost = 50 + rescuableStreak * 10;
+                                         const cost = getHabitRescueCost(rescuableStreak);
                                          setRescueConfirmDetails({ habit, date: dateStr, cost, rescuableStreak });
                                        }
                                      }}
@@ -900,14 +918,14 @@ export default function Habits() {
                                       onClick={() => handleRescueStreak(habit, rescuableStreaks[habit.id])}
                                       className={cn(
                                         "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95",
-                                        pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10)
+                                        pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)
                                           ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
                                       )}
-                                      title={pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10) ? "Rescue this streak" : `Need ${50 + (rescuableStreaks[habit.id] ?? 0) * 10} points`}
-                                      disabled={pointsBalance < (50 + (rescuableStreaks[habit.id] ?? 0) * 10)}
+                                      title={pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0) ? "Rescue this streak" : `Need ${getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)} points`}
+                                      disabled={pointsBalance < getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}
                                     >
-                                      Rescue ({50 + (rescuableStreaks[habit.id] ?? 0) * 10}p)
+                                      Rescue ({getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}p)
                                     </button>
                                   </>
                                 ) : (
@@ -998,14 +1016,14 @@ export default function Habits() {
                                         }}
                                         className={cn(
                                           "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95 ml-2",
-                                          pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10)
+                                          pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)
                                             ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                             : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
                                         )}
-                                        title={pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10) ? "Rescue streak" : `Need ${50 + (rescuableStreaks[habit.id] ?? 0) * 10} points`}
-                                        disabled={pointsBalance < (50 + (rescuableStreaks[habit.id] ?? 0) * 10)}
+                                        title={pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0) ? "Rescue streak" : `Need ${getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)} points`}
+                                        disabled={pointsBalance < getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}
                                       >
-                                        Rescue ({50 + (rescuableStreaks[habit.id] ?? 0) * 10}p)
+                                        Rescue ({getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}p)
                                       </button>
                                     ) : stats.streak >= 3 ? (
                                       <span className="flex items-center gap-0.5 text-xs font-bold">

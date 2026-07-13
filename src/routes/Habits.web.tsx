@@ -37,6 +37,7 @@ import {
   getHabitAdherenceWeight,
   isHabitScheduledForDate,
   useHabitRescuableStreaks,
+  getHabitRescueCost,
 } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
@@ -208,7 +209,7 @@ export default function Habits() {
   const logHabit = useLogHabit();
 
   const handleRescueStreak = async (habit: Habit, rescuableStreak: number) => {
-    const cost = 50 + rescuableStreak * 10;
+    const cost = getHabitRescueCost(rescuableStreak);
     if (pointsBalance < cost) {
       alert(`Insufficient points. You need ${cost} points to rescue this streak.`);
       return;
@@ -685,8 +686,9 @@ export default function Habits() {
                           {weekDays.map((day: Date) => {
                             const isScheduled = isHabitScheduledForDate(habit, day);
                             const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                            const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day);
-                            const canToggle = isScheduled && isToday(day); // Free toggle only today
+                            const isGracePeriod = new Date().getHours() < 6;
+                            const canToggle = isScheduled && (isToday(day) || (isYesterday(day) && isGracePeriod));
+                            const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
                             const canClick = canToggle || isPastMissed;
                             const isDetox = !!detoxConfig;
                             return (
@@ -704,7 +706,7 @@ export default function Habits() {
                                     } else if (isPastMissed) {
                                       const dateStr = format(day, 'yyyy-MM-dd');
                                       const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
-                                      const cost = 50 + rescuableStreak * 10;
+                                      const cost = getHabitRescueCost(rescuableStreak);
                                       if (window.confirm(`Rescuing "${habit.title}" on ${dateStr} will cost ${cost} points. Proceed?`)) {
                                         if (pointsBalance < cost) {
                                           alert(`Insufficient points. You need ${cost} points.`);
@@ -858,8 +860,9 @@ export default function Habits() {
                             {weekDays.map((day: Date) => {
                               const isScheduled = isHabitScheduledForDate(habit, day);
                               const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
-                              const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day);
-                              const canToggle = isScheduled && isToday(day); // Free toggle only today
+                              const isGracePeriod = new Date().getHours() < 6;
+                              const canToggle = isScheduled && (isToday(day) || (isYesterday(day) && isGracePeriod));
+                              const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
                               const canClick = canToggle || isPastMissed;
                               const isDetox = !!detoxConfig;
 
@@ -878,7 +881,7 @@ export default function Habits() {
                                       } else if (isPastMissed) {
                                         const dateStr = format(day, 'yyyy-MM-dd');
                                         const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
-                                        const cost = 50 + rescuableStreak * 10;
+                                        const cost = getHabitRescueCost(rescuableStreak);
                                         if (window.confirm(`Rescuing "${habit.title}" on ${dateStr} will cost ${cost} points. Proceed?`)) {
                                           if (pointsBalance < cost) {
                                             alert(`Insufficient points. You need ${cost} points.`);
@@ -946,14 +949,14 @@ export default function Habits() {
                                       onClick={() => handleRescueStreak(habit, rescuableStreaks[habit.id])}
                                       className={cn(
                                         "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95",
-                                        pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10)
+                                        pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)
                                           ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
                                       )}
-                                      title={pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10) ? "Rescue this streak" : `Need ${50 + (rescuableStreaks[habit.id] ?? 0) * 10} points`}
-                                      disabled={pointsBalance < (50 + (rescuableStreaks[habit.id] ?? 0) * 10)}
+                                      title={pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0) ? "Rescue this streak" : `Need ${getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)} points`}
+                                      disabled={pointsBalance < getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}
                                     >
-                                      Rescue ({50 + (rescuableStreaks[habit.id] ?? 0) * 10}p)
+                                      Rescue ({getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}p)
                                     </button>
                                   </>
                                 ) : (
@@ -1046,14 +1049,14 @@ export default function Habits() {
                                       }}
                                       className={cn(
                                         "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95 ml-2",
-                                        pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10)
+                                        pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)
                                           ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
                                       )}
-                                      title={pointsBalance >= (50 + (rescuableStreaks[habit.id] ?? 0) * 10) ? "Rescue streak" : `Need ${50 + (rescuableStreaks[habit.id] ?? 0) * 10} points`}
-                                      disabled={pointsBalance < (50 + (rescuableStreaks[habit.id] ?? 0) * 10)}
+                                      title={pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0) ? "Rescue streak" : `Need ${getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)} points`}
+                                      disabled={pointsBalance < getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}
                                     >
-                                      Rescue ({50 + (rescuableStreaks[habit.id] ?? 0) * 10}p)
+                                      Rescue ({getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)}p)
                                     </button>
                                   ) : stats.streak >= 3 ? (
                                     <span className="flex items-center gap-0.5 text-xs font-bold">
