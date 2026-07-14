@@ -22,6 +22,7 @@ import {
   endOfWeek,
   eachDayOfInterval,
   isToday,
+  isYesterday,
   subDays,
 } from 'date-fns';
 import { cn } from '../lib/utils';
