@@ -121,6 +121,63 @@ function AppInner() {
     return () => window.removeEventListener('online', handleOnline);
   }, []);
 
+  // Global Ctrl + Enter / Cmd + Enter to save any open form or modal
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        const active = document.activeElement;
+        if (
+          active &&
+          (active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.tagName === 'SELECT' ||
+            active.getAttribute('contenteditable') === 'true')
+        ) {
+          // 1. Try standard HTML form submission
+          const form = active.closest('form');
+          if (form) {
+            e.preventDefault();
+            form.requestSubmit();
+            return;
+          }
+
+          // 2. Try finding containing dialog/modal/sheet and trigger the Save/Submit button
+          const container = active.closest(
+            '[role="dialog"], .modal, .sheet, .panel, .dialog-content, [data-testid="modal"], .popup, .drawer, .card'
+          );
+          if (container) {
+            const saveButton = container.querySelector(
+              'button[type="submit"], button[data-action="save"], button.btn-primary'
+            ) || Array.from(container.querySelectorAll('button')).find((btn) => {
+              const text = btn.textContent?.trim().toLowerCase() || '';
+              // Match save, submit, create, add, done, done/save, confirm
+              return (
+                text === 'save' ||
+                text === 'submit' ||
+                text.includes('save') ||
+                text === 'create' ||
+                text === 'add' ||
+                text === 'done' ||
+                text === 'confirm'
+              );
+            });
+
+            if (saveButton) {
+              e.preventDefault();
+              (saveButton as HTMLButtonElement).click();
+              return;
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
+    };
+  }, []);
+
   // PWA: when a new service worker takes over, reload so the app gets latest code.
   // Guard: skip the very first controllerchange that fires when the SW claims the
   // page on initial load — only reload for *subsequent* SW updates.
