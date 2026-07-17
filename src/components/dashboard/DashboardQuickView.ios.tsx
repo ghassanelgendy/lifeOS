@@ -12,7 +12,7 @@ import { triggerHaptics } from '../../lib/nativeBridge';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
-import { usePointsBalance, usePointsTransactions, getPointsConfig, useRescueTask } from '../../hooks/usePoints';
+import { usePointsBalance, usePointsTransactions, getPointsConfig, useRescueTask, useAddPointsTransaction } from '../../hooks/usePoints';
 import {
   useDashboardUpcomingItems,
   habitMatchesDay,
@@ -22,6 +22,7 @@ import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Task } from '../../types/schema';
 
 function formatSleepMinutes(m: number | null) {
@@ -449,8 +450,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const todaySleepMinutes = useSleepMinutesForDay(today);
   const { avgBedtimeMinutes } = useSleepMetrics(7);
 
+  const { user } = useAuth();
   const pointsBalance = usePointsBalance();
   const { data: pointsTransactions = [] } = usePointsTransactions();
+  const addPointsTx = useAddPointsTransaction();
   const rescueTask = useRescueTask();
   const pointsConfig = getPointsConfig();
 
@@ -553,6 +556,55 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     includePrayer: false,
     excludeDetoxHabits: true,
   });
+
+  const upcomingItemsToday = useMemo(
+    () => upcomingItems.filter((item) => {
+      const d = new Date(item.start_time);
+      const now = new Date();
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    }),
+    [upcomingItems]
+  );
+
+  useEffect(() => {
+    if (!user?.id || upcomingItemsToday.length === 0 || !pointsTransactions) return;
+
+    const now = new Date();
+    const penalizedIds = new Set(
+      pointsTransactions
+        .filter((tx) => tx.reference_type === 'calendar_event_penalty')
+        .map((tx) => tx.reference_id)
+    );
+
+    upcomingItemsToday.forEach(async (item) => {
+      if (item.kind !== 'event') return;
+      const parsedStart = new Date(item.start_time);
+      const parsedEnd = new Date(item.end_time || item.start_time);
+      if (parsedEnd >= now) return;
+
+      const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+      const eventIdToCheck = item.originalId || item.id.replace('event-', '');
+      const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
+
+      const isCompleted = completedTasks.some((t) =>
+        (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
+        t.due_date === eventDateToCheck
+      ) || item.is_completed;
+
+      if (!isCompleted && !penalizedIds.has(item.id)) {
+        try {
+          await addPointsTx.mutateAsync({
+            amount: -10,
+            description: `Missed Calendar Event: ${item.title}`,
+            reference_type: 'calendar_event_penalty',
+            reference_id: item.id,
+          });
+        } catch (e) {
+          console.error('Failed to apply calendar event penalty:', e);
+        }
+      }
+    });
+  }, [upcomingItemsToday, pointsTransactions, completedTasks, user?.id]);
   const { privacyMode } = useUIStore();
   const toggleTask = useToggleTask();
   const createTask = useCreateTask();
@@ -687,7 +739,37 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
           void triggerHaptics(linkedTask?.is_completed ? 'light' : 'success');
           if (linkedTask) {
+            const willUncomplete = linkedTask.is_completed;
             toggleTask.mutate(linkedTask.id);
+            // Award/revoke points for calendar event toggle
+            const penalizedTx = pointsTransactions.find(
+              (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === entry.id
+            );
+            if (!willUncomplete) {
+              // Ticking: award points and reverse any penalty
+              void addPointsTx.mutateAsync({
+                amount: 10,
+                description: `Completed Calendar Event: ${entry.title}`,
+                reference_type: 'calendar_event_complete',
+                reference_id: entry.id,
+              });
+              if (penalizedTx) {
+                void addPointsTx.mutateAsync({
+                  amount: 10,
+                  description: `Penalty reversal for: ${entry.title}`,
+                  reference_type: 'calendar_event_penalty_reversal',
+                  reference_id: entry.id,
+                });
+              }
+            } else {
+              // Un-ticking: revoke points
+              void addPointsTx.mutateAsync({
+                amount: -10,
+                description: `Uncompleted Calendar Event: ${entry.title}`,
+                reference_type: 'calendar_event_complete',
+                reference_id: entry.id,
+              });
+            }
           } else {
             createTask.mutate({
               title: entry.title,
@@ -700,6 +782,24 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               tag_ids: [],
               recurrence: 'none',
             });
+            // Award points and reverse any penalty for this event
+            const penalizedTx = pointsTransactions.find(
+              (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === entry.id
+            );
+            void addPointsTx.mutateAsync({
+              amount: 10,
+              description: `Completed Calendar Event: ${entry.title}`,
+              reference_type: 'calendar_event_complete',
+              reference_id: entry.id,
+            });
+            if (penalizedTx) {
+              void addPointsTx.mutateAsync({
+                amount: 10,
+                description: `Penalty reversal for: ${entry.title}`,
+                reference_type: 'calendar_event_penalty_reversal',
+                reference_id: entry.id,
+              });
+            }
           }
         } else if (isPrayer) {
           const prayerName = entry.id.replace('prayer-', '');

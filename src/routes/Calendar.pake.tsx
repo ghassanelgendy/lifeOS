@@ -187,6 +187,7 @@ export default function CalendarPage() {
     color: EVENT_TYPE_COLORS.Event,
     description: '',
     location: '',
+    link: '',
     recurrence: 'none',
     recurrence_end: '',
     shift_person: '',
@@ -652,6 +653,7 @@ export default function CalendarPage() {
         color: calEvent.color,
         description: calEvent.description,
         location: calEvent.location,
+        link: calEvent.link || '',
         recurrence: calEvent.recurrence,
         recurrence_end: calEvent.recurrence_end?.split('T')[0] || '',
         shift_person: calEvent.shift_person,
@@ -686,6 +688,7 @@ export default function CalendarPage() {
         color: EVENT_TYPE_COLORS.Event,
         description: '',
         location: '',
+        link: '',
         recurrence: 'none',
         recurrence_end: '',
         shift_person: '',
@@ -1105,6 +1108,19 @@ export default function CalendarPage() {
                           <p className="mt-2 text-xs text-muted-foreground whitespace-pre-line break-words">
                             {event.description}
                           </p>
+                        )}
+                        {'link' in event && event.link && (
+                          <div className="flex items-center gap-1 mt-1.5">
+                            <Link2 size={11} className="text-primary shrink-0" />
+                            <a
+                              href={event.link as string}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-primary hover:underline truncate"
+                            >
+                              {(event.link as string).replace(/^https?:\/\//, '')}
+                            </a>
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center gap-1">
@@ -1563,6 +1579,14 @@ export default function CalendarPage() {
             value={formData.location || ''}
             onChange={(e) => setFormData({ ...formData, location: e.target.value })}
             placeholder="Add location"
+          />
+
+          <Input
+            label="Link"
+            type="url"
+            value={formData.link || ''}
+            onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+            placeholder="Add link (https://...)"
           />
 
           <TextArea

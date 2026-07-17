@@ -715,7 +715,10 @@ async function adjustPointsForTaskToggle(task: any, newCompleted: boolean) {
   
   // Auto-determine earned points based on priority
   let earned = config.defaultTaskEarn;
-  if (task.priority === 'high') {
+  const isCalendarTask = !!(task.calendar_source_key || task.calendar_event_id);
+  if (isCalendarTask) {
+    earned = config.defaultTaskEarn;
+  } else if (task.priority === 'high') {
     earned = config.defaultTaskEarn * 2;
   } else if (task.priority === 'medium') {
     earned = Math.round(config.defaultTaskEarn * 1.5);

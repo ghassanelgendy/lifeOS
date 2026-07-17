@@ -141,6 +141,9 @@ export interface CalendarEvent {
   color?: string; // Hex color for visual distinction
   description?: string;
   location?: string;
+  link?: string;
+  is_completed?: boolean;
+  completed_at?: string;
   // Recurrence
   recurrence: RecurrencePattern;
   recurrence_end?: string; // ISO-8601 date when recurrence ends
