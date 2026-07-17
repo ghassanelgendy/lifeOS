@@ -33,6 +33,30 @@ const TASK_INSERT_KEYS = [
   'parent_id', 'sort_order', 'strategic_quarter_id', 'points_value',
 ] as const;
 
+function extractSubtasksFromDescription(description?: string | null): { subtasks: string[]; cleanedDescription: string } {
+  if (!description) return { subtasks: [], cleanedDescription: '' };
+  const lines = description.split(/\r?\n/);
+  const subtasks: string[] = [];
+  const remainingLines: string[] = [];
+
+  for (const line of lines) {
+    const match = line.match(/^\s*-\s+(.+)$/);
+    if (match) {
+      const subtaskTitle = match[1].trim();
+      if (subtaskTitle) {
+        subtasks.push(subtaskTitle);
+      }
+    } else {
+      remainingLines.push(line);
+    }
+  }
+
+  return {
+    subtasks,
+    cleanedDescription: remainingLines.join('\n').trim(),
+  };
+}
+
 function taskInsertPayload(input: CreateInput<Task>): Record<string, unknown> {
   const raw = input as Record<string, unknown>;
   const out: Record<string, unknown> = {};
@@ -222,7 +246,7 @@ export function useTasks() {
 
         const q = supabase
           .from('tasks')
-          .select('*, subtasks:tasks(id, is_completed)')
+          .select('*, subtasks:tasks(id, title, is_completed)')
           .is('parent_id', null)
           .or(`is_completed.eq.false,completed_at.gte.${thirtyDaysAgoStr}`)
           .order('is_completed', { ascending: true })
@@ -353,11 +377,14 @@ export function useCreateTask() {
       const nowIso = new Date().toISOString();
       const key = [...TASKS_KEY, user?.id];
 
+      const { subtasks: parsedSubtasks, cleanedDescription } = extractSubtasksFromDescription(input.description);
+      const updatedInput = { ...input, description: cleanedDescription || null };
+
       // Offline: local-first + queued sync
       if (!isOnline()) {
         const id = uuidv4();
         const optimistic: Task = {
-          ...input,
+          ...updatedInput,
           id,
           parent_id: input.parent_id ?? null,
           list_id: input.list_id ?? null,
@@ -379,9 +406,35 @@ export function useCreateTask() {
           updated_at: nowIso,
         } as Task;
 
-        queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), optimistic]);
+        let optimisticTasks = [optimistic];
+
+        if (parsedSubtasks.length > 0) {
+          const createdSubtasks = parsedSubtasks.map((title, idx) => ({
+            id: uuidv4(),
+            title,
+            parent_id: id,
+            list_id: optimistic.list_id ?? null,
+            project_id: optimistic.project_id ?? null,
+            tag_ids: [],
+            is_completed: false,
+            is_wont_do: false,
+            priority: 'none',
+            recurrence: 'none',
+            sort_order: idx + 1,
+            created_at: nowIso,
+            updated_at: nowIso,
+          } as unknown as Task));
+
+          optimisticTasks = [...optimisticTasks, ...createdSubtasks];
+
+          createdSubtasks.forEach((sub) => {
+            addToOfflineQueue({ entity: 'tasks', op: 'create', payload: sub as unknown as Record<string, unknown> });
+          });
+        }
+
+        queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), ...optimisticTasks]);
         const existing = await idbGetTasks();
-        await idbSaveTasks([...existing, optimistic]);
+        await idbSaveTasks([...existing, ...optimisticTasks]);
 
         addToOfflineQueue({ entity: 'tasks', op: 'create', payload: optimistic as unknown as Record<string, unknown> });
         // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
@@ -390,14 +443,38 @@ export function useCreateTask() {
       }
 
       // Online: go through Supabase, then mirror into IndexedDB.
-      const payload = taskInsertPayload(input);
+      const payload = taskInsertPayload(updatedInput);
       const { data, error } = await supabase.from('tasks').insert(payload).select().single();
       if (error) throw error;
       const created = data as Task;
 
-      queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), created]);
+      let createdTasks = [created];
+
+      if (parsedSubtasks.length > 0) {
+        const subtasksPayload = parsedSubtasks.map((title, idx) => ({
+          title,
+          parent_id: created.id,
+          list_id: created.list_id,
+          user_id: user?.id,
+          is_completed: false,
+          priority: 'none',
+          tag_ids: [],
+          recurrence: 'none',
+          sort_order: idx + 1,
+        }));
+        const { data: insertedSubtasks, error: subtasksError } = await supabase
+          .from('tasks')
+          .insert(subtasksPayload)
+          .select();
+
+        if (!subtasksError && insertedSubtasks) {
+          createdTasks = [...createdTasks, ...insertedSubtasks];
+        }
+      }
+
+      queryClient.setQueryData(key, (old: Task[] | undefined) => [...(old ?? []), ...createdTasks]);
       const existing = await idbGetTasks();
-      await idbSaveTasks([...existing, created]);
+      await idbSaveTasks([...existing, ...createdTasks]);
       // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
       void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
 
@@ -438,14 +515,23 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task> }) => {
+      const hasDescription = 'description' in data;
+      const { subtasks: parsedSubtasks, cleanedDescription } = hasDescription 
+        ? extractSubtasksFromDescription(data.description) 
+        : { subtasks: [], cleanedDescription: undefined };
+
+      const updatedData = hasDescription 
+        ? { ...data, description: cleanedDescription || null } 
+        : data;
+
       if (!isOnline()) {
         const tasks = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined) ?? [];
         const task = tasks.find((t) => t.id === id);
         if (!task) throw new Error('Task not found');
         const wasCompleted = task.is_completed;
-        const becameCompleted = data.is_completed === true && !wasCompleted;
+        const becameCompleted = updatedData.is_completed === true && !wasCompleted;
 
-        addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload: data as Record<string, unknown> });
+        addToOfflineQueue({ entity: 'tasks', op: 'update', id, payload: updatedData as Record<string, unknown> });
         
         if (becameCompleted && task.recurrence !== 'none') {
           const next = computeNextRecurrence(task);
@@ -485,19 +571,54 @@ export function useUpdateTask() {
           }
         }
 
-        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) =>
-          (old ?? []).map((t) => (t.id === id ? { ...t, ...data, updated_at: new Date().toISOString() } : t))
-        );
-        return { ...task, ...data, id, updated_at: new Date().toISOString() } as Task;
+        let newSubtasksOffline: Task[] = [];
+        if (hasDescription && parsedSubtasks.length > 0) {
+          const existingSubtasks = tasks.filter((t) => t.parent_id === id);
+          const existingTitles = new Set(existingSubtasks.map((t) => t.title.trim().toLowerCase()));
+          const newTitles = parsedSubtasks.filter((t) => !existingTitles.has(t.trim().toLowerCase()));
+
+          if (newTitles.length > 0) {
+            newSubtasksOffline = newTitles.map((title, idx) => ({
+              id: uuidv4(),
+              title,
+              parent_id: id,
+              list_id: task.list_id ?? null,
+              project_id: task.project_id ?? null,
+              tag_ids: [],
+              is_completed: false,
+              is_wont_do: false,
+              priority: 'none',
+              recurrence: 'none',
+              sort_order: existingSubtasks.length + idx + 1,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            } as unknown as Task));
+
+            newSubtasksOffline.forEach((sub) => {
+              addToOfflineQueue({ entity: 'tasks', op: 'create', payload: sub as unknown as Record<string, unknown> });
+            });
+          }
+        }
+
+        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => {
+          const base = (old ?? []).map((t) => (t.id === id ? { ...t, ...updatedData, updated_at: new Date().toISOString() } : t));
+          return [...base, ...newSubtasksOffline];
+        });
+
+        const existing = await idbGetTasks();
+        const baseExisting = existing.map((t) => (t.id === id ? { ...t, ...updatedData, updated_at: new Date().toISOString() } as Task : t));
+        await idbSaveTasks([...baseExisting, ...newSubtasksOffline]);
+
+        return { ...task, ...updatedData, id, updated_at: new Date().toISOString() } as Task;
       }
 
       // Online route
       const { data: currentTask } = await supabase.from('tasks').select('*').eq('id', id).single();
       if (!currentTask) throw new Error('Task not found');
       const wasCompleted = currentTask.is_completed;
-      const becameCompleted = data.is_completed === true && !wasCompleted;
+      const becameCompleted = updatedData.is_completed === true && !wasCompleted;
 
-      const payload = taskUpdatePayload(data);
+      const payload = taskUpdatePayload(updatedData);
       const { data: updated, error } = await supabase
         .from('tasks')
         .update(payload)
@@ -507,6 +628,43 @@ export function useUpdateTask() {
 
       if (error) throw error;
       const updatedTask = updated as Task;
+
+      if (hasDescription && parsedSubtasks.length > 0) {
+        const { data: existingSubtasks } = await supabase
+          .from('tasks')
+          .select('title')
+          .eq('parent_id', id);
+
+        const existingTitles = new Set((existingSubtasks || []).map((t) => t.title.trim().toLowerCase()));
+        const newTitles = parsedSubtasks.filter((t) => !existingTitles.has(t.trim().toLowerCase()));
+
+        if (newTitles.length > 0) {
+          const subtasksPayload = newTitles.map((title, idx) => ({
+            title,
+            parent_id: id,
+            list_id: currentTask.list_id,
+            user_id: currentTask.user_id,
+            is_completed: false,
+            priority: 'none',
+            tag_ids: [],
+            recurrence: 'none',
+            sort_order: (existingSubtasks?.length || 0) + idx + 1,
+          }));
+          const { data: insertedSubtasks, error: subtasksError } = await supabase
+            .from('tasks')
+            .insert(subtasksPayload)
+            .select();
+
+          if (!subtasksError && insertedSubtasks) {
+            queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => [
+              ...(old ?? []),
+              ...insertedSubtasks,
+            ]);
+            const existing = await idbGetTasks();
+            await idbSaveTasks([...existing, ...insertedSubtasks]);
+          }
+        }
+      }
 
       if (becameCompleted && updatedTask.recurrence !== 'none') {
         const next = computeNextRecurrence(updatedTask);
