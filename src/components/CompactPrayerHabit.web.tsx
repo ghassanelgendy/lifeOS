@@ -42,12 +42,12 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
   const percentage = totalCount > 0 ? Math.round((prayedCount / totalCount) * 100) : 0;
 
   const shell = embedded
-    ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
+    ? 'bg-transparent p-0 h-full flex flex-col min-h-0'
     : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-4 h-full flex flex-col shadow-sm';
 
   if (isLoading) {
     return (
-      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-4' : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-4 shadow-sm'}>
+      <div className={embedded ? 'bg-transparent p-0' : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-4 shadow-sm'}>
         <div className="flex items-center justify-center h-16">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
         </div>
@@ -91,7 +91,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
       {/* Expanded View */}
       {isExpanded && (
         <div className="mt-3 pt-3 border-t border-border/40 flex-1 min-h-0">
-          <div className="flex flex-col gap-1">
+          <div className="grid grid-rows-5 gap-1 h-full">
             {tracker.map((item) => {
               const prayerTime = times.find((t) => t.name === item.prayerName)?.time;
               const Icon = getIcon(item.prayerName);
@@ -99,28 +99,28 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                 <div 
                   key={item.prayerName} 
                   className={cn(
-                    "flex items-center justify-between gap-4 p-2 rounded-lg transition-colors border border-transparent",
+                    "flex items-center justify-between gap-4 p-2.5 rounded-xl transition-colors border border-transparent",
                     "hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"
                   )}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-7 h-7 rounded-md flex items-center justify-center bg-secondary/50 text-muted-foreground shrink-0">
-                      <Icon size={14} />
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-secondary/50 text-muted-foreground shrink-0">
+                      <Icon size={18} />
                     </div>
                     <div className="min-w-0">
-                      <p className="font-semibold text-xs text-foreground flex items-center gap-1.5">
+                      <p className="font-semibold text-sm text-foreground flex items-center gap-1.5">
                         {item.prayerName}
-                        {item.status === 'Prayed' && <CheckCircle2 size={12} className="text-green-500 shrink-0" />}
-                        {item.status === 'Late' && <Clock3 size={12} className="text-amber-500 shrink-0" />}
-                        {item.status === 'Missed' && <XCircle size={12} className="text-red-500 shrink-0" />}
-                        {item.status === 'Skipped' && <Minus size={12} className="text-blue-500 shrink-0" />}
+                        {item.status === 'Prayed' && <CheckCircle2 size={14} className="text-green-500 shrink-0" />}
+                        {item.status === 'Late' && <Clock3 size={14} className="text-amber-500 shrink-0" />}
+                        {item.status === 'Missed' && <XCircle size={14} className="text-red-500 shrink-0" />}
+                        {item.status === 'Skipped' && <Minus size={14} className="text-blue-500 shrink-0" />}
                       </p>
-                      <span className="text-[10px] text-muted-foreground tabular-nums block mt-0.5">
+                      <span className="text-xs text-muted-foreground tabular-nums block mt-0.5">
                         {prayerTime ? format(prayerTime, 'h:mm a') : '--:--'}
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 select-none">
+                  <div className="flex items-center gap-1.5 select-none">
                     {statusOptions.map((status) => {
                       const meta = STATUS_BUTTONS[status];
                       const isActive = item.status === status;
@@ -133,7 +133,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                             togglePrayerStatus(item, status);
                           }}
                           className={cn(
-                            "text-[10px] font-semibold px-2 py-1 rounded transition-all duration-150 border cursor-pointer",
+                            "text-xs font-semibold px-3 py-1.5 rounded-lg transition-all duration-150 border cursor-pointer",
                             isActive 
                               ? meta.className 
                               : "border-transparent bg-transparent text-muted-foreground hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground"

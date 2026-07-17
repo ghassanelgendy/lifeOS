@@ -127,14 +127,14 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   }, [dateRange.days, logsByDate, today]);
 
   const shell = embedded
-    ? 'rounded-lg border border-border/80 bg-secondary/15 p-3 md:p-4 h-full flex flex-col min-h-0'
+    ? 'bg-transparent p-0 h-full flex flex-col min-h-0'
     : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-4 md:p-6 h-full flex flex-col shadow-sm';
 
   const isLoading = isLogsLoading || isHabitsLoading;
 
   if (isLoading) {
     return (
-      <div className={embedded ? 'rounded-lg border border-border/80 bg-secondary/15 p-6 h-full flex flex-col' : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-6 h-full flex flex-col shadow-sm'}>
+      <div className={embedded ? 'bg-transparent p-0 h-full flex flex-col' : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-6 h-full flex flex-col shadow-sm'}>
         <div className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>

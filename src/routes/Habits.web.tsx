@@ -609,9 +609,13 @@ export default function Habits() {
           )}
         </button>
         {prayerSectionExpanded && (
-          <div className="px-4 pb-4 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-stretch border-t border-border bg-secondary/5">
-            <CompactPrayerHabit embedded />
-            <PrayerBacklog embedded />
+          <div className="p-4 md:p-6 grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 items-stretch border-t border-border bg-transparent">
+            <div className="pb-6 border-b border-border/15 lg:pb-0 lg:border-b-0 lg:pr-4 lg:border-r lg:border-border/20">
+              <CompactPrayerHabit embedded />
+            </div>
+            <div className="lg:pl-4">
+              <PrayerBacklog embedded />
+            </div>
           </div>
         )}
       </div>
