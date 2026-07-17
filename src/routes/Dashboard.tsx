@@ -1,5 +1,6 @@
 import { format, parseISO, startOfWeek, subWeeks, endOfWeek, addHours } from 'date-fns';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore, DASHBOARD_MODE_LABELS, type DashboardMode } from '../stores/useUIStore';
 import { DashboardQuickView } from '../components/dashboard/DashboardQuickView';
@@ -968,91 +969,94 @@ export default function Dashboard() {
       </Modal>
 
       {/* Floating Action Button (FAB) for Quick Add Shortcuts */}
-      <div 
-        data-fab-container 
-        className="fixed z-[99] transition-all duration-[300ms] ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu"
-        style={{
-          bottom: 'calc(96px + env(safe-area-inset-bottom))',
-          right: '24px',
-          transform: showFab ? 'scale(1)' : 'scale(0)',
-          opacity: showFab ? 1 : 0,
-          pointerEvents: showFab ? 'auto' : 'none',
-        }}
-      >
-        <div className="relative">
-          {/* Slide-up context menu */}
-          <AnimatePresence>
-            {isMenuOpen && (
-              <motion.div
-                ref={menuRef}
-                initial={{ opacity: 0, scale: 0.85, y: 15 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.85, y: 15 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute bottom-full mb-3 right-0 w-44 rounded-2xl bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-1 flex flex-col gap-0.5 origin-bottom-right"
-              >
-                <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 select-none">
-                  Quick Create
-                </div>
-                {FAB_ITEMS.map((item, idx) => {
-                  const Icon = item.icon;
-                  const isActive = activeItemIndex === idx;
-                  return (
-                    <button
-                      key={item.type}
-                      type="button"
-                      data-fab-item-index={idx}
-                      onClick={() => handleQuickAdd(item.type)}
-                      className={cn(
-                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors text-sm font-medium touch-none select-none",
-                        isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-secondary/60 text-foreground"
-                      )}
-                    >
-                      <div className={cn("p-1.5 rounded-lg shrink-0", isActive ? "bg-white/20 text-white" : item.color)}>
-                        <Icon size={16} />
-                      </div>
-                      <span className="truncate">{item.label}</span>
-                    </button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {createPortal(
+        <div 
+          data-fab-container 
+          className="fixed z-[99] transition-all duration-[300ms] ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu"
+          style={{
+            bottom: 'calc(96px + env(safe-area-inset-bottom))',
+            right: '24px',
+            transform: showFab ? 'scale(1)' : 'scale(0)',
+            opacity: showFab ? 1 : 0,
+            pointerEvents: showFab ? 'auto' : 'none',
+          }}
+        >
+          <div className="relative">
+            {/* Slide-up context menu */}
+            <AnimatePresence>
+              {isMenuOpen && (
+                <motion.div
+                  ref={menuRef}
+                  initial={{ opacity: 0, scale: 0.85, y: 15 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.85, y: 15 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute bottom-full mb-3 right-0 w-44 rounded-2xl bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-1 flex flex-col gap-0.5 origin-bottom-right"
+                >
+                  <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 select-none">
+                    Quick Create
+                  </div>
+                  {FAB_ITEMS.map((item, idx) => {
+                    const Icon = item.icon;
+                    const isActive = activeItemIndex === idx;
+                    return (
+                      <button
+                        key={item.type}
+                        type="button"
+                        data-fab-item-index={idx}
+                        onClick={() => handleQuickAdd(item.type)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors text-sm font-medium touch-none select-none",
+                          isActive
+                            ? "bg-primary text-primary-foreground"
+                            : "hover:bg-secondary/60 text-foreground"
+                        )}
+                      >
+                        <div className={cn("p-1.5 rounded-lg shrink-0", isActive ? "bg-white/20 text-white" : item.color)}>
+                          <Icon size={16} />
+                        </div>
+                        <span className="truncate">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Trigger FAB Circle Button */}
-          <button
-            ref={buttonRef}
-            type="button"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-            onClick={() => {
-              if (!showFab) {
-                setShowFab(true);
-                return;
-              }
-              if (!Capacitor.isNativePlatform()) {
-                setIsMenuOpen((prev) => !prev);
-              }
-            }}
-            className={cn(
-              "w-14 h-14 rounded-full flex items-center justify-center active:scale-95 hover:brightness-105 transition-all cursor-pointer transform-gpu duration-350",
-              "bg-[#F9F9F9]/45 dark:bg-[#141416]/65 backdrop-blur-2xl border border-white/40 dark:border-white/10 text-primary",
-              isMenuOpen ? "rotate-45" : "rotate-0"
-            )}
-            style={{
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
-            }}
-            aria-label="Quick Add"
-            aria-expanded={isMenuOpen}
-          >
-            <Plus size={28} className="transition-transform duration-300" />
-          </button>
-        </div>
-      </div>
+            {/* Trigger FAB Circle Button */}
+            <button
+              ref={buttonRef}
+              type="button"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+              onTouchCancel={handleTouchEnd}
+              onClick={() => {
+                if (!showFab) {
+                  setShowFab(true);
+                  return;
+                }
+                if (!Capacitor.isNativePlatform()) {
+                  setIsMenuOpen((prev) => !prev);
+                }
+              }}
+              className={cn(
+                "w-14 h-14 rounded-full flex items-center justify-center active:scale-95 hover:brightness-105 transition-all cursor-pointer transform-gpu duration-350",
+                "bg-[#F9F9F9]/45 dark:bg-[#141416]/65 backdrop-blur-2xl border border-white/40 dark:border-white/10 text-primary",
+                isMenuOpen ? "rotate-45" : "rotate-0"
+              )}
+              style={{
+                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+              }}
+              aria-label="Quick Add"
+              aria-expanded={isMenuOpen}
+            >
+              <Plus size={28} className="transition-transform duration-300" />
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
