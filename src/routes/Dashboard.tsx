@@ -695,6 +695,30 @@ export default function Dashboard() {
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
+  // Attach touchmove with { passive: false } so preventDefault() works inside it
+  useEffect(() => {
+    const el = buttonRef.current;
+    if (!el) return;
+    const onMove = (e: TouchEvent) => {
+      if (!isLongPressActive.current) return;
+      if (e.cancelable) e.preventDefault();
+      const touch = e.touches[0];
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      const menuItem = element?.closest('[data-fab-item-index]');
+      if (menuItem) {
+        const index = parseInt(menuItem.getAttribute('data-fab-item-index') || '', 10);
+        setActiveItemIndex((prev) => {
+          if (prev !== index) void triggerHaptics('light');
+          return index;
+        });
+      } else {
+        setActiveItemIndex(null);
+      }
+    };
+    el.addEventListener('touchmove', onMove, { passive: false });
+    return () => el.removeEventListener('touchmove', onMove);
+  }, []);
+
   const FAB_ITEMS = useMemo(() => [
     { type: 'event', label: 'Event', icon: Calendar, color: 'text-blue-500 bg-blue-500/10' },
     { type: 'task', label: 'Task', icon: ListTodo, color: 'text-emerald-500 bg-emerald-500/10' },
@@ -1028,7 +1052,6 @@ export default function Dashboard() {
               ref={buttonRef}
               type="button"
               onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
               onClick={() => {
