@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Capacitor } from '@capacitor/core';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -159,6 +160,8 @@ function computeDetoxTarget(detox: DetoxConfig, createdAt: string): number {
 }
 
 export default function Habits() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const habitsPrayerDefaultExpanded = useUIStore((s) => s.habitsPrayerDefaultExpanded);
   const habitsPageWidgetOrder = useUIStore((s) => s.pageWidgetOrder.habits);
   const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
@@ -173,6 +176,14 @@ export default function Habits() {
       window.removeEventListener('app-trigger-add-habit', handleTriggerAddHabit);
     };
   }, []);
+
+  useEffect(() => {
+    const state = location.state as { triggerAdd?: boolean } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      handleOpenModal();
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const [mobileListRef] = useAutoAnimate();
   const [pendingListRef] = useAutoAnimate();

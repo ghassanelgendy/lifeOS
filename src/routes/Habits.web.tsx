@@ -1,4 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -266,10 +267,40 @@ export default function Habits() {
     }
   };
 
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const habitFormRef = useRef<HTMLFormElement | null>(null);
+
+  const handleTriggerAddHabit = () => {
+    setEditingHabit(null);
+    setFormData({
+      title: '',
+      description: '',
+      frequency: 'Daily',
+      target_count: 1,
+      color: DEFAULT_COLORS[0],
+      time: undefined,
+      show_in_tasks: false,
+      week_days: [],
+      adherence_weight: 1,
+      notify_enabled: false,
+      notify_time: undefined,
+      points_value: 0,
+    });
+    setHabitType('standard');
+    setIsModalOpen(true);
+  };
+
+  useEffect(() => {
+    const state = location.state as { triggerAdd?: boolean } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      handleTriggerAddHabit();
+    }
+  }, [location.state, navigate, location.pathname]);
   const [habitType, setHabitType] = useState<HabitType>('standard');
   const [detoxMode, setDetoxMode] = useState<DetoxMode>('linear');
   const [detoxStartTarget, setDetoxStartTarget] = useState(3);
