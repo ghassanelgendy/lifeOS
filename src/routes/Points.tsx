@@ -146,13 +146,6 @@ export default function Points() {
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Points &amp; Gamification</h1>
           <p className="text-sm text-muted-foreground mt-0.5">Earn points by crushing tasks/habits. Redeem them for real life rewards.</p>
         </div>
-        <button
-          onClick={() => setIsSettingsOpen(true)}
-          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-secondary/50 active:bg-secondary transition-all shadow-sm"
-        >
-          <Settings className="size-4 text-muted-foreground" />
-          Points Configuration
-        </button>
       </div>
 
       {/* Balance Card & Stats */}
@@ -370,80 +363,7 @@ export default function Points() {
         </div>
       </div>
 
-      {/* Settings Modal */}
-      <Modal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        title="Configure Points System"
-      >
-        <form onSubmit={handleSaveSettings} className="space-y-4">
-          <div className="space-y-3">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Default Task Completion</label>
-              <input
-                type="number"
-                min={0}
-                value={config.defaultTaskEarn}
-                onChange={(e) => setConfig({ ...config, defaultTaskEarn: Math.max(0, parseInt(e.target.value) || 0) })}
-                className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-              <span className="text-[10px] text-muted-foreground">Points awarded when completing a task on time.</span>
-            </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Default Habit Check-in</label>
-              <input
-                type="number"
-                min={0}
-                value={config.defaultHabitEarn}
-                onChange={(e) => setConfig({ ...config, defaultHabitEarn: Math.max(0, parseInt(e.target.value) || 0) })}
-                className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-              <span className="text-[10px] text-muted-foreground">Base points awarded for checking in a habit.</span>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Habit Streak Multiplier</label>
-              <input
-                type="number"
-                min={0}
-                value={config.habitStreakMultiplier}
-                onChange={(e) => setConfig({ ...config, habitStreakMultiplier: Math.max(0, parseInt(e.target.value) || 0) })}
-                className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-              <span className="text-[10px] text-muted-foreground">Points added per day of active streak (bonus streak reward).</span>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold text-muted-foreground uppercase">Task Rescue Cost</label>
-              <input
-                type="number"
-                min={0}
-                value={config.taskRescueCost}
-                onChange={(e) => setConfig({ ...config, taskRescueCost: Math.max(0, parseInt(e.target.value) || 0) })}
-                className="rounded-lg border border-border bg-secondary/50 px-3 py-2 text-sm focus:border-primary focus:outline-none"
-              />
-              <span className="text-[10px] text-muted-foreground">Cost deducted when shifting an overdue task's due date to Today.</span>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4 border-t border-border/60">
-            <button
-              type="button"
-              onClick={() => setIsSettingsOpen(false)}
-              className="rounded-lg border border-border bg-background px-4 py-2 text-sm font-semibold hover:bg-secondary/50 cursor-pointer"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground hover:opacity-95 cursor-pointer"
-            >
-              Save Settings
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   );
 }
