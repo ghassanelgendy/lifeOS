@@ -1011,61 +1011,7 @@ export function TaskDetailsContent({
         )}
       </Card>
 
-      {/* Section 6.5 — Points System */}
-      <SectionLabel>Points System</SectionLabel>
-      <Card>
-        <Row
-          icon={Coins}
-          label="Is Reward Task (Costs Points)"
-          right={
-            <button
-              type="button"
-              role="switch"
-              aria-checked={form.points_value ? form.points_value < 0 : false}
-              aria-label="Is Reward Task"
-              className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                form.points_value && form.points_value < 0 ? 'bg-amber-500' : 'bg-muted'
-              )}
-              onClick={() => {
-                setForm((prev: any) => {
-                  const currVal = prev.points_value ?? 0;
-                  const isCurrentlyReward = currVal < 0;
-                  const newVal = isCurrentlyReward ? Math.abs(currVal) : -Math.abs(currVal || 10);
-                  return { ...prev, points_value: newVal };
-                });
-              }}
-            >
-              <span
-                className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  form.points_value && form.points_value < 0 ? 'left-6' : 'left-1'
-                )}
-              />
-            </button>
-          }
-          helperText="Reward tasks cost points to complete, while regular tasks earn points."
-        />
-        <Divider />
-        <div className="flex items-center gap-3 px-4 py-3 min-h-[52px]">
-          <span className="text-sm font-medium text-foreground flex-1">
-            {form.points_value && form.points_value < 0 ? 'Points Cost' : 'Points Reward'}
-          </span>
-          <input
-            type="number"
-            className="w-20 text-right bg-secondary rounded-lg px-2.5 py-1 text-sm font-semibold border border-border focus:border-primary focus:outline-none"
-            placeholder={form.points_value && form.points_value < 0 ? '100' : '10'}
-            value={form.points_value !== undefined ? Math.abs(form.points_value as number) : ''}
-            onChange={(e) => {
-              const val = Math.max(0, parseInt(e.target.value) || 0);
-              setForm((prev: any) => {
-                const isReward = (prev.points_value ?? 0) < 0;
-                return { ...prev, points_value: isReward ? -val : val };
-              });
-            }}
-          />
-        </div>
-      </Card>
+
 
       {/* Section 7 — Places & People */}
       <SectionLabel>Places &amp; People</SectionLabel>
