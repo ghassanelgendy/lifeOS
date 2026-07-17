@@ -677,25 +677,36 @@ export default function Dashboard() {
     { type: 'transaction', label: 'Transaction', icon: Wallet, color: 'text-rose-500 bg-rose-500/10' },
   ] as const, []);
 
-  // 1. Hide/show FAB on scroll down/up
+  // 1. Hide/show FAB on scroll down/up (matches AppShell's LiquidTabBar scroll-to-hide logic)
   useEffect(() => {
-    const scrollContainer = document.querySelector('[data-lifeos-scroll-root]');
-    if (!scrollContainer) return;
-
-    const handleScroll = () => {
-      const scrollTop = scrollContainer.scrollTop;
-      if (scrollTop > lastScrollTop.current && scrollTop > 60) {
-        setShowFab(false);
-        setIsMenuOpen(false);
-      } else if (scrollTop < lastScrollTop.current) {
-        setShowFab(true);
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (!target || typeof target.hasAttribute !== 'function' || !target.hasAttribute('data-lifeos-scroll-root')) {
+        return;
       }
-      lastScrollTop.current = scrollTop;
+
+      const scrollTop = target.scrollTop;
+      if (scrollTop <= 10) {
+        setShowFab(true);
+        lastScrollTop.current = scrollTop;
+        return;
+      }
+
+      const diff = scrollTop - lastScrollTop.current;
+      if (Math.abs(diff) > 6) {
+        if (diff > 0) {
+          setShowFab(false);
+          setIsMenuOpen(false);
+        } else {
+          setShowFab(true);
+        }
+        lastScrollTop.current = scrollTop;
+      }
     };
 
-    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
     return () => {
-      scrollContainer.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('scroll', handleScroll, { capture: true });
     };
   }, []);
 
@@ -763,6 +774,11 @@ export default function Dashboard() {
       }
       setActiveItemIndex(null);
     } else {
+      if (!showFab) {
+        setShowFab(true);
+        void triggerHaptics('light');
+        return;
+      }
       setIsMenuOpen((prev) => !prev);
       void triggerHaptics('light');
     }
@@ -927,13 +943,15 @@ export default function Dashboard() {
       {/* Floating Action Button (FAB) for Quick Add Shortcuts */}
       <div 
         data-fab-container 
-        className="fixed z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        className="fixed z-40 transition-all duration-[350ms] ease-[cubic-bezier(0.25,1,0.3,1)] transform-gpu"
         style={{
-          bottom: 'calc(80px + env(safe-area-inset-bottom))',
-          right: '16px',
-          transform: showFab ? 'scale(1) translate3d(0,0,0)' : 'scale(0) translate3d(0,20px,0)',
-          opacity: showFab ? 1 : 0,
-          pointerEvents: showFab ? 'auto' : 'none',
+          bottom: 'calc(96px + env(safe-area-inset-bottom))',
+          right: '24px',
+          transform: showFab 
+            ? 'scale(1) translateY(0)' 
+            : 'scale(0.75) translateY(calc(24px + env(safe-area-inset-bottom) * 0.3))',
+          opacity: showFab ? 1 : 0.55,
+          pointerEvents: 'auto',
         }}
       >
         <div className="relative">
@@ -986,16 +1004,21 @@ export default function Dashboard() {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onClick={() => {
+              if (!showFab) {
+                setShowFab(true);
+                return;
+              }
               if (!Capacitor.isNativePlatform()) {
                 setIsMenuOpen((prev) => !prev);
               }
             }}
             className={cn(
-              "w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg active:scale-95 hover:brightness-105 transition-all cursor-pointer transform-gpu duration-300",
+              "w-14 h-14 rounded-full flex items-center justify-center active:scale-95 hover:brightness-105 transition-all cursor-pointer transform-gpu duration-350",
+              "bg-[#F9F9F9]/45 dark:bg-[#141416]/65 backdrop-blur-2xl border border-white/40 dark:border-white/10 text-primary",
               isMenuOpen ? "rotate-45" : "rotate-0"
             )}
             style={{
-              boxShadow: '0 8px 30px rgb(0 0 0 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.15)',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
             }}
             aria-label="Quick Add"
             aria-expanded={isMenuOpen}
