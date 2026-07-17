@@ -237,15 +237,29 @@ export default function Tasks() {
   // 3D Haptic Touch Context Menu State
   const [contextMenuTask, setContextMenuTask] = useState<Task | null>(null);
   const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
+  const [showSubmenu, setShowSubmenu] = useState(false);
   const longPressTimeout = useRef<number | null>(null);
+  const submenuTimeoutRef = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const activeTouchId = useRef<number | null>(null);
   const pressTaskRef = useRef<Task | null>(null);
   const hoveredMenuActionRef = useRef<string | null>(null);
 
-  const executeMenuAction = (action: string, task: Task) => {
+   const executeMenuAction = (action: string, task: Task) => {
+    if (action.startsWith('subtask-')) {
+      const subtaskId = action.replace('subtask-', '');
+      const subtask = task.subtasks?.find(s => s.id === subtaskId);
+      if (subtask) {
+        void triggerHaptics(subtask.is_completed ? 'light' : 'success');
+        toggleTask.mutate(subtaskId);
+      }
+      return;
+    }
     switch (action) {
+      case 'subtasks-trigger':
+        setShowSubmenu(true);
+        break;
       case 'toggle':
         void triggerHaptics(task.is_completed ? 'light' : 'success');
         handleTaskToggle(task);
@@ -307,6 +321,10 @@ export default function Tasks() {
         hoveredMenuActionRef.current = null;
         setHoveredMenuAction(null);
       }
+      if (submenuTimeoutRef.current) {
+        window.clearTimeout(submenuTimeoutRef.current);
+        submenuTimeoutRef.current = null;
+      }
       return;
     }
     const btn = elem.closest('[data-menu-action]');
@@ -315,11 +333,31 @@ export default function Tasks() {
       if (hoveredMenuActionRef.current !== action) {
         hoveredMenuActionRef.current = action;
         setHoveredMenuAction(action);
+
+        // Submenu trigger logic
+        if (action === 'subtasks-trigger') {
+          if (!submenuTimeoutRef.current && !showSubmenu) {
+            submenuTimeoutRef.current = window.setTimeout(() => {
+              setShowSubmenu(true);
+              void triggerHaptics('light');
+            }, 500);
+          }
+        } else if (!action.startsWith('subtask-')) {
+          if (submenuTimeoutRef.current) {
+            window.clearTimeout(submenuTimeoutRef.current);
+            submenuTimeoutRef.current = null;
+          }
+          setShowSubmenu(false);
+        }
       }
     } else {
       if (hoveredMenuActionRef.current !== null) {
         hoveredMenuActionRef.current = null;
         setHoveredMenuAction(null);
+      }
+      if (submenuTimeoutRef.current) {
+        window.clearTimeout(submenuTimeoutRef.current);
+        submenuTimeoutRef.current = null;
       }
     }
   };
@@ -337,6 +375,10 @@ export default function Tasks() {
       window.clearTimeout(longPressTimeout.current);
       longPressTimeout.current = null;
     }
+    if (submenuTimeoutRef.current) {
+      window.clearTimeout(submenuTimeoutRef.current);
+      submenuTimeoutRef.current = null;
+    }
 
     const wasLongPress = isLongPressActive.current;
     if (wasLongPress) {
@@ -348,14 +390,18 @@ export default function Tasks() {
       const task = pressTaskRef.current;
       if (action && task) {
         executeMenuAction(action, task);
-        setContextMenuTask(null);
-        setHoveredMenuAction(null);
+        if (action !== 'subtasks-trigger') {
+          setContextMenuTask(null);
+          setHoveredMenuAction(null);
+          setShowSubmenu(false);
+        }
       } else {
         const elem = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
         const isOutside = !elem?.closest('[data-context-menu-container="true"]');
         if (isOutside) {
           setContextMenuTask(null);
           setHoveredMenuAction(null);
+          setShowSubmenu(false);
         }
       }
       activeTouchId.current = null;
@@ -2505,6 +2551,7 @@ export default function Tasks() {
                             }}
                             formatDueDate={formatDueDate}
                             isLast={isLast}
+                            onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
                           />
                         </div>
                       </motion.div>
@@ -2588,6 +2635,7 @@ export default function Tasks() {
                                 }}
                                 formatDueDate={formatDueDate}
                                 isLast={isLast}
+                                onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
                               />
                             </div>
                           </motion.div>
@@ -2658,6 +2706,7 @@ export default function Tasks() {
                                 }}
                                 formatDueDate={formatDueDate}
                                 isLast={isLast}
+                                onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
                               />
                             </div>
                           </motion.div>
@@ -2973,106 +3022,179 @@ export default function Tasks() {
                 </div>
 
                 {/* Options Menu (iOS styled rounded stack) */}
-                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
-                  {/* Complete / Reopen Action */}
-                  <button
-                    type="button"
-                    data-menu-action="toggle"
-                    onClick={() => {
-                      void triggerHaptics(contextMenuTask.is_completed ? 'light' : 'success');
-                      handleTaskToggle(contextMenuTask);
-                      setContextMenuTask(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                <div className="relative w-full z-10 mt-3">
+                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-left">
+                    {/* Complete / Reopen Action */}
+                    <button
+                      type="button"
+                      data-menu-action="toggle"
+                      onClick={() => {
+                        void triggerHaptics(contextMenuTask.is_completed ? 'light' : 'success');
+                        handleTaskToggle(contextMenuTask);
+                        setContextMenuTask(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
+                      <CheckCircle2 size={16} className="text-muted-foreground" />
+                    </button>
+
+                    {/* Postpone Action (if has due date) */}
+                    {!contextMenuTask.id.startsWith('habit-') && !!(contextMenuTask.due_date || contextMenuTask.due_time) && (
+                      <button
+                        type="button"
+                        data-menu-action="postpone"
+                        onClick={() => {
+                          void triggerHaptics('light');
+                          handlePostponeTask(contextMenuTask);
+                          setContextMenuTask(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>Postpone 1 Hour</span>
+                        <Clock size={16} className="text-muted-foreground" />
+                      </button>
                     )}
-                  >
-                    <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
-                    <CheckCircle2 size={16} className="text-muted-foreground" />
-                  </button>
 
-                  {/* Postpone Action (if has due date) */}
-                  {!contextMenuTask.id.startsWith('habit-') && !!(contextMenuTask.due_date || contextMenuTask.due_time) && (
-                    <button
-                      type="button"
-                      data-menu-action="postpone"
-                      onClick={() => {
-                        void triggerHaptics('light');
-                        handlePostponeTask(contextMenuTask);
-                        setContextMenuTask(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
-                      )}
-                    >
-                      <span>Postpone 1 Hour</span>
-                      <Clock size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    {/* Subtasks trigger menu option */}
+                    {contextMenuTask.subtasks && contextMenuTask.subtasks.length > 0 && (
+                      <button
+                        type="button"
+                        data-menu-action="subtasks-trigger"
+                        onClick={() => {
+                          void triggerHaptics('light');
+                          setShowSubmenu(true);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'subtasks-trigger' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span className="flex items-center gap-1.5">
+                          Subtasks
+                          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                            {contextMenuTask.subtasks.length}
+                          </span>
+                        </span>
+                        <ChevronRight size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
 
-                  {/* Edit Action */}
-                  {!contextMenuTask.id.startsWith('habit-') && (
-                    <button
-                      type="button"
-                      data-menu-action="edit"
-                      onClick={() => {
-                        void triggerHaptics('light');
-                        setContextMenuTask(null);
-                        setTimeout(() => {
-                          handleEditTask(contextMenuTask);
-                        }, 150);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
-                      )}
-                    >
-                      <span>Edit Details...</span>
-                      <Edit2 size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    {/* Edit Action */}
+                    {!contextMenuTask.id.startsWith('habit-') && (
+                      <button
+                        type="button"
+                        data-menu-action="edit"
+                        onClick={() => {
+                          void triggerHaptics('light');
+                          setContextMenuTask(null);
+                          setTimeout(() => {
+                            handleEditTask(contextMenuTask);
+                          }, 150);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>Edit Details...</span>
+                        <Edit2 size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
 
-                  {/* Won't Do Action */}
-                  {!contextMenuTask.id.startsWith('habit-') && !contextMenuTask.is_completed && !(contextMenuTask.is_wont_do ?? (contextMenuTask.description || '').includes('[WONT_DO]')) && (
-                    <button
-                      type="button"
-                      data-menu-action="wontdo"
-                      onClick={() => {
-                        void triggerHaptics('light');
-                        handleMarkWontDo(contextMenuTask);
-                        setContextMenuTask(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
-                      )}
-                    >
-                      <span>Won't Do</span>
-                      <CircleSlash2 size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    {/* Won't Do Action */}
+                    {!contextMenuTask.id.startsWith('habit-') && !contextMenuTask.is_completed && !(contextMenuTask.is_wont_do ?? (contextMenuTask.description || '').includes('[WONT_DO]')) && (
+                      <button
+                        type="button"
+                        data-menu-action="wontdo"
+                        onClick={() => {
+                          void triggerHaptics('light');
+                          handleMarkWontDo(contextMenuTask);
+                          setContextMenuTask(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>Won't Do</span>
+                        <CircleSlash2 size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
 
-                  {/* Delete Action (Red) */}
-                  {!contextMenuTask.id.startsWith('habit-') && (
-                    <button
-                      type="button"
-                      data-menu-action="delete"
-                      onClick={() => {
-                        void triggerHaptics('heavy');
-                        setTaskToDeleteId(contextMenuTask.id);
-                        setContextMenuTask(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
-                        hoveredMenuAction === 'delete' && "bg-red-500/10"
-                      )}
-                    >
-                      <span>Delete Task</span>
-                      <Trash2 size={16} className="text-red-500" />
-                    </button>
-                  )}
+                    {/* Delete Action (Red) */}
+                    {!contextMenuTask.id.startsWith('habit-') && (
+                      <button
+                        type="button"
+                        data-menu-action="delete"
+                        onClick={() => {
+                          void triggerHaptics('heavy');
+                          setTaskToDeleteId(contextMenuTask.id);
+                          setContextMenuTask(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
+                          hoveredMenuAction === 'delete' && "bg-red-500/10"
+                        )}
+                      >
+                        <span>Delete Task</span>
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Submenu Overlay */}
+                  <AnimatePresence>
+                    {showSubmenu && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                      >
+                        <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-secondary/30 flex justify-between items-center">
+                          <span>Subtasks</span>
+                          <span className="text-[9px] font-medium lowercase">Release to toggle</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto divide-y divide-black/5 dark:divide-white/10 no-scrollbar">
+                          {contextMenuTask.subtasks?.map((subtask) => (
+                            <button
+                              key={subtask.id}
+                              type="button"
+                              data-menu-action={`subtask-${subtask.id}`}
+                              onClick={() => {
+                                void triggerHaptics(subtask.is_completed ? 'light' : 'success');
+                                toggleTask.mutate(subtask.id);
+                                setContextMenuTask(null);
+                                setShowSubmenu(false);
+                              }}
+                              className={cn(
+                                "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground transition-colors",
+                                hoveredMenuAction === `subtask-${subtask.id}` && "bg-black/10 dark:bg-white/15"
+                              )}
+                            >
+                              <span className={cn(subtask.is_completed && "line-through text-muted-foreground")}>
+                                {subtask.title || 'Untitled Subtask'}
+                              </span>
+                              <div className={cn(
+                                "w-4.5 h-4.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors",
+                                subtask.is_completed ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30"
+                              )}>
+                                {subtask.is_completed && <Check size={10} strokeWidth={3} />}
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </div>
@@ -3094,9 +3216,11 @@ interface TaskItemProps {
   onWontDo: () => void;
   formatDueDate: (task: Task) => { text: string; className: string };
   isLast?: boolean;
+  onToggleSubtask?: (subtaskId: string) => void;
 }
 
-function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate, isLast }: TaskItemProps) {
+function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate, isLast, onToggleSubtask }: TaskItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
@@ -3105,13 +3229,21 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
 
   const handleToggleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // Success feedback on task check, standard light tap on reopen
     if (task.is_completed) {
       void triggerLightTap();
     } else {
       void triggerSuccessTap();
     }
     onToggle();
+  };
+
+  const handleSubtaskToggleClick = (subtaskId: string, isCompleted: boolean) => {
+    if (isCompleted) {
+      void triggerLightTap();
+    } else {
+      void triggerSuccessTap();
+    }
+    onToggleSubtask?.(subtaskId);
   };
 
   const subtasks = task.subtasks || [];
@@ -3123,102 +3255,160 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
   return (
     <div
       className={cn(
-        "task-item group flex items-start gap-3.5 px-4 bg-transparent active:scale-[0.99] active:bg-white/5 transition-all duration-150 ease-out cursor-pointer select-none",
+        "task-item group flex flex-col px-4 bg-transparent active:bg-white/5 transition-all duration-150 ease-out cursor-pointer select-none",
+        !isLast && "border-b border-white/10",
         task.is_completed && "opacity-45"
       )}
     >
-      <button
-        onClick={handleToggleClick}
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          if (!task.is_completed) void triggerSuccessTap();
-          else void triggerLightTap();
+      <div 
+        className="flex items-start gap-3.5 w-full py-4"
+        onClick={() => {
+          if (!task.id.startsWith('habit-')) {
+            onEdit();
+          }
         }}
-        onMouseDown={(e) => {
-          e.stopPropagation();
-        }}
-        className={cn(
-          "w-5 h-5 mt-[18px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
-          task.is_completed
-            ? "bg-green-500 border-green-500 scale-105"
-            : "border-muted-foreground hover:border-foreground"
-        )}
-        type="button"
       >
-        <svg
+        <button
+          onClick={handleToggleClick}
+          onTouchStart={(e) => {
+            e.stopPropagation();
+            if (!task.is_completed) void triggerSuccessTap();
+            else void triggerLightTap();
+          }}
+          onMouseDown={(e) => {
+            e.stopPropagation();
+          }}
           className={cn(
-            "task-checkmark",
-            task.is_completed && "task-checkmark--active"
+            "w-5 h-5 mt-[2px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
+            task.is_completed
+              ? "bg-green-500 border-green-500 scale-105"
+              : "border-muted-foreground hover:border-foreground"
           )}
-          viewBox="0 0 16 16"
+          type="button"
         >
-          <path
-            className="task-checkmark__check"
-            d="M4 8.5 7 11 12 5"
-            fill="none"
-            stroke="white"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
-      <div className={cn("flex-1 min-w-0 py-4", !isLast && "border-b border-white/10")}>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn(
-            "font-medium tracking-tight text-[15px]",
-            task.is_completed && "line-through text-muted-foreground font-normal"
-          )}>
-            {task.title}
-          </span>
-          {task.id.startsWith('habit-') && (
-            <Flame size={14} className="text-purple-500" />
-          )}
-          {task.priority !== 'none' && (
-            <priorityConfig.icon size={14} className={priorityConfig.color} />
-          )}
-          {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
-            <Repeat size={14} className="text-muted-foreground" />
-          )}
-          {isWontDo && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
-          )}
-          {hasSubtasks && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0">
-              {completedCount}/{totalCount} ({percentage}%)
-            </span>
-          )}
-        </div>
-
-        {hasSubtasks && (
-          <div className="w-full bg-secondary/60 rounded-full h-1 mt-1.5 overflow-hidden">
-            <div 
-              className="bg-primary h-full transition-all duration-300 rounded-full" 
-              style={{ width: `${percentage}%` }}
+          <svg
+            className={cn(
+              "task-checkmark",
+              task.is_completed && "task-checkmark--active"
+            )}
+            viewBox="0 0 16 16"
+          >
+            <path
+              className="task-checkmark__check"
+              d="M4 8.5 7 11 12 5"
+              fill="none"
+              stroke="white"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             />
-          </div>
-        )}
+          </svg>
+        </button>
 
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          {dueInfo.text && (
-            <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
-              <CalendarIcon size={12} />
-              {dueInfo.text}
-              {task.due_time && ` ${formatTime12h(task.due_time)}`}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn(
+              "font-medium tracking-tight text-[15px]",
+              task.is_completed && "line-through text-muted-foreground font-normal"
+            )}>
+              {task.title}
             </span>
+            {task.id.startsWith('habit-') && (
+              <Flame size={14} className="text-purple-500" />
+            )}
+            {task.priority !== 'none' && (
+              <priorityConfig.icon size={14} className={priorityConfig.color} />
+            )}
+            {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
+              <Repeat size={14} className="text-muted-foreground" />
+            )}
+            {isWontDo && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
+            )}
+            {hasSubtasks && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <span>{completedCount}/{totalCount} ({percentage}%)</span>
+                {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+              </button>
+            )}
+          </div>
+
+          {hasSubtasks && (
+            <div className="w-full bg-secondary/60 rounded-full h-1 mt-1.5 overflow-hidden">
+              <div 
+                className="bg-primary h-full transition-all duration-300 rounded-full" 
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
           )}
-          {taskTags.map((tag) => (
-            <span
-              key={tag.id}
-              className="text-xs px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-            >
-              {tag.name}
-            </span>
-          ))}
+
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {dueInfo.text && (
+              <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
+                <CalendarIcon size={12} />
+                {dueInfo.text}
+                {task.due_time && ` ${formatTime12h(task.due_time)}`}
+              </span>
+            )}
+            {taskTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="text-xs px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && hasSubtasks && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden w-full"
+          >
+            <div 
+              className="mt-1 pl-8 pr-2 space-y-2.5 pb-4"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2.5 py-1 text-sm text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => handleSubtaskToggleClick(subtask.id, subtask.is_completed)}
+                    className={cn(
+                      "w-4.5 h-4.5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer",
+                      subtask.is_completed
+                        ? "bg-green-500 border-green-500 text-white"
+                        : "border-muted-foreground/30 hover:border-foreground/50"
+                    )}
+                  >
+                    {subtask.is_completed && <Check size={11} strokeWidth={3} />}
+                  </button>
+                  <span className={cn("text-[14px] font-medium", subtask.is_completed && "line-through text-muted-foreground")}>
+                    {subtask.title || 'Untitled Subtask'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

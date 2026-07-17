@@ -2245,6 +2245,7 @@ export default function Tasks() {
                     }}
                     onPostpone={isHabitTask ? undefined : (task.due_date || task.due_time ? () => handlePostponeTask(task) : undefined)}
                     formatDueDate={formatDueDate}
+                    onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
                   />
               );
             })}
@@ -2280,6 +2281,7 @@ export default function Tasks() {
                           if (!isHabitTask) handleMarkWontDo(task);
                         }}
                         formatDueDate={formatDueDate}
+                        onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
                       />
                     );
                   })}
@@ -2318,6 +2320,7 @@ export default function Tasks() {
                           if (!isHabitTask) handleMarkWontDo(task);
                         }}
                         formatDueDate={formatDueDate}
+                        onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
                       />
                     );
                   })}
@@ -2539,9 +2542,11 @@ interface TaskItemProps {
   onWontDo: () => void;
   onPostpone?: () => void;
   formatDueDate: (task: Task) => { text: string; className: string };
+  onToggleSubtask?: (subtaskId: string) => void;
 }
 
-function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone, formatDueDate }: TaskItemProps) {
+function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone, formatDueDate, onToggleSubtask }: TaskItemProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority];
@@ -2556,117 +2561,155 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
   return (
     <div
       className={cn(
-        "task-item group flex items-start gap-3 p-3 rounded-md cursor-pointer w-full bg-transparent",
+        "task-item group flex flex-col p-3 rounded-md w-full bg-transparent",
         task.is_completed && "opacity-50"
       )}
-      onClick={() => {
-        if (!task.id.startsWith('habit-')) {
-          onEdit();
-        }
-      }}
     >
-      <Checkbox
-        checked={task.is_completed}
-        shape="circular"
-        onChange={(e, data) => {
-          e.stopPropagation();
-          onToggle();
+      <div 
+        className="flex items-start gap-3 cursor-pointer w-full"
+        onClick={() => {
+          if (!task.id.startsWith('habit-')) {
+            onEdit();
+          }
         }}
-        className="mr-2 shrink-0 pointer-events-auto"
-        size="large"
-      />
+      >
+        <Checkbox
+          checked={task.is_completed}
+          shape="circular"
+          onChange={(e, data) => {
+            e.stopPropagation();
+            onToggle();
+          }}
+          className="mr-2 shrink-0 pointer-events-auto"
+          size="large"
+        />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className={cn(
-            "font-medium",
-            task.is_completed && "line-through text-muted-foreground"
-          )}>
-            {task.title}
-          </span>
-          {task.id.startsWith('habit-') && (
-            <Flame size={14} className="text-purple-500" />
-          )}
-          {task.priority !== 'none' && (
-            <priorityConfig.icon size={14} className={priorityConfig.color} />
-          )}
-          {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
-            <Repeat size={14} className="text-muted-foreground" />
-          )}
-          {isWontDo && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
-          )}
-          {hasSubtasks && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0">
-              {completedCount}/{totalCount} ({percentage}%)
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn(
+              "font-medium",
+              task.is_completed && "line-through text-muted-foreground"
+            )}>
+              {task.title}
             </span>
-          )}
-        </div>
-
-        {hasSubtasks && (
-          <div className="w-full bg-secondary/60 rounded-full h-1 mt-1.5 overflow-hidden">
-            <div 
-              className="bg-primary h-full transition-all duration-300 rounded-full" 
-              style={{ width: `${percentage}%` }}
-            />
+            {task.id.startsWith('habit-') && (
+              <Flame size={14} className="text-purple-500" />
+            )}
+            {task.priority !== 'none' && (
+              <priorityConfig.icon size={14} className={priorityConfig.color} />
+            )}
+            {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
+              <Repeat size={14} className="text-muted-foreground" />
+            )}
+            {isWontDo && (
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
+            )}
+            {hasSubtasks && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
+              >
+                <span>{completedCount}/{totalCount} ({percentage}%)</span>
+                {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+              </button>
+            )}
           </div>
-        )}
 
-
-        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-          {dueInfo.text && (
-            <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
-              <CalendarIcon size={12} />
-              {dueInfo.text}
-              {task.due_time && ` ${formatTime12h(task.due_time)}`}
-            </span>
+          {hasSubtasks && (
+            <div className="w-full bg-secondary/60 rounded-full h-1 mt-1.5 overflow-hidden">
+              <div 
+                className="bg-primary h-full transition-all duration-300 rounded-full" 
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
           )}
-          {taskTags.map((tag) => (
-            <span
-              key={tag.id}
-              className="text-xs px-1.5 py-0.5 rounded"
-              style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
-            >
-              {tag.name}
-            </span>
-          ))}
-        </div>
-      </div>
 
-      {!task.id.startsWith('habit-') && (
-        <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all shrink-0">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onWontDo();
-            }}
-            className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all"
-            title="Mark as won't do"
-          >
-            <CircleSlash2 size={14} />
-          </button>
-          {onPostpone && (
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {dueInfo.text && (
+              <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
+                <CalendarIcon size={12} />
+                {dueInfo.text}
+                {task.due_time && ` ${formatTime12h(task.due_time)}`}
+              </span>
+            )}
+            {taskTags.map((tag) => (
+              <span
+                key={tag.id}
+                className="text-xs px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {!task.id.startsWith('habit-') && (
+          <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all shrink-0">
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onPostpone();
+                onWontDo();
               }}
               className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all"
-              title="Postpone +1h"
+              title="Mark as won't do"
             >
-              <Clock size={14} />
+              <CircleSlash2 size={14} />
             </button>
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete();
-            }}
-            className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all"
-            title="Delete task"
-          >
-            <Trash2 size={14} />
-          </button>
+            {onPostpone && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPostpone();
+                }}
+                className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all"
+                title="Postpone +1h"
+              >
+                <Clock size={14} />
+              </button>
+            )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="p-1.5 rounded hover:bg-black/5 dark:hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all"
+              title="Delete task"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {isExpanded && hasSubtasks && (
+        <div 
+          className="mt-3 pl-12 pr-2 space-y-2 border-t border-border/30 pt-3"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {subtasks.map((subtask) => (
+            <div key={subtask.id} className="flex items-center gap-2.5 py-1 text-sm text-foreground">
+              <button
+                type="button"
+                onClick={() => onToggleSubtask?.(subtask.id)}
+                className={cn(
+                  "w-4.5 h-4.5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer",
+                  subtask.is_completed
+                    ? "bg-green-500 border-green-500 text-white"
+                    : "border-muted-foreground/30 hover:border-foreground/50"
+                )}
+              >
+                {subtask.is_completed && <Check size={11} strokeWidth={3} />}
+              </button>
+              <span className={cn("text-xs font-medium", subtask.is_completed && "line-through text-muted-foreground")}>
+                {subtask.title || 'Untitled Subtask'}
+              </span>
+            </div>
+          ))}
         </div>
       )}
     </div>
