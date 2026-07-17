@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
@@ -20,6 +20,7 @@ import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
 
 function formatSleepMinutes(m: number | null) {
@@ -395,6 +396,8 @@ const ACCENT_DOT: Record<DueKind, string> = {
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
   const [parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+
+  const togglingEventsRef = useRef<Record<string, boolean>>({});
 
   const handleTooltipClick = (id: string) => {
     setActiveTooltip(id);
@@ -1153,13 +1156,40 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
                   : isEvent
                     ? async () => {
-                        if (linkedTask) {
-                          const willUncomplete = linkedTask.is_completed;
-                          await toggleTask.mutateAsync(linkedTask.id);
-                          // Award/revoke points for calendar event toggle
-                          const penalizedTx = pointsTransactions.find(
-                            (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === item.id
-                          );
+                        if (togglingEventsRef.current[item.id]) return;
+                        togglingEventsRef.current[item.id] = true;
+                        setTimeout(() => {
+                          delete togglingEventsRef.current[item.id];
+                        }, 1000);
+
+                        const evKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+                        const evId = item.originalId || item.id.replace('event-', '');
+                        const evDate = format(parsedStart, 'yyyy-MM-dd');
+                        // Re-check all lists at call time to avoid stale closure causing 409
+                        let currentLinked =
+                          completedTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
+                          todayTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
+                          overdueTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate);
+
+                        if (!currentLinked && user?.id) {
+                          const { data: existingTasks } = await supabase
+                            .from('tasks')
+                            .select('id, is_completed')
+                            .eq('user_id', user.id)
+                            .eq('calendar_source_key', evKey)
+                            .limit(1);
+                          if (existingTasks && existingTasks.length > 0) {
+                            currentLinked = existingTasks[0] as any;
+                          }
+                        }
+
+                        const penalizedTx = pointsTransactions.find(
+                          (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === item.id
+                        );
+
+                        if (currentLinked) {
+                          const willUncomplete = currentLinked.is_completed;
+                          await toggleTask.mutateAsync(currentLinked.id);
                           if (!willUncomplete) {
                             void addPointsTx.mutateAsync({
                               amount: 10,
@@ -1184,22 +1214,17 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                             });
                           }
                         } else {
-                          const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
                           await createTask.mutateAsync({
                             title: item.title,
                             is_completed: true,
                             priority: 'none',
-                            due_date: format(parsedStart, 'yyyy-MM-dd'),
+                            due_date: evDate,
                             due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
-                            calendar_source_key: eventKey,
-                            calendar_event_id: item.type === 'ical' ? null : (item.originalId || item.id.replace('event-', '')),
+                            calendar_source_key: evKey,
+                            calendar_event_id: item.type === 'ical' ? null : evId,
                             tag_ids: [],
                             recurrence: 'none',
                           });
-                          // Award points and reverse any penalty
-                          const penalizedTx = pointsTransactions.find(
-                            (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === item.id
-                          );
                           void addPointsTx.mutateAsync({
                             amount: 10,
                             description: `Completed Calendar Event: ${item.title}`,
