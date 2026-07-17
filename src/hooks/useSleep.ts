@@ -118,14 +118,15 @@ export function useSleepMetrics(days: number = 7) {
 
 /** Most recent night’s sleep minutes (by segment end date), same grouping as Sleep page. */
 export function useLastNightSleepMinutes() {
-  const endStr = format(new Date(), 'yyyy-MM-dd');
-  const startStr = format(subDays(new Date(), 4), 'yyyy-MM-dd');
+  const today = new Date();
+  const endStr = format(today, 'yyyy-MM-dd');
+  const startStr = format(subDays(today, 4), 'yyyy-MM-dd');
   const { data: segments = [] } = useSleepStages(startStr + 'T00:00:00.000Z', endStr + 'T23:59:59.999Z');
   return useMemo(() => {
     const nights = groupSegmentsByNight(segments);
-    if (nights.length === 0) return null;
-    const sorted = [...nights].sort((a, b) => b.date.localeCompare(a.date));
-    return sorted[0]?.sleepMinutes ?? null;
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    const lastNight = nights.find((n) => n.date === todayStr);
+    return lastNight ? lastNight.sleepMinutes : null;
   }, [segments]);
 }
 
