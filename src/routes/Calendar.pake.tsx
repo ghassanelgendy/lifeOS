@@ -719,6 +719,9 @@ export default function CalendarPage() {
     if (eventData.recurrence_end === '') {
       eventData.recurrence_end = null;
     }
+    if (!eventData.link) delete eventData.link;
+    delete eventData.is_completed;
+    delete eventData.completed_at;
     if (eventData.start_time && eventData.end_time) {
       const start = new Date(eventData.start_time);
       const end = new Date(eventData.end_time);

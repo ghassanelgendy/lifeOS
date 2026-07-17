@@ -684,6 +684,11 @@ export default function CalendarPage() {
     if (eventData.recurrence_end === '') {
       eventData.recurrence_end = null;
     }
+    // Strip link if empty so it's not sent to DB (column may not exist yet)
+    if (!eventData.link) delete eventData.link;
+    // Remove new columns that may not exist in DB yet
+    delete eventData.is_completed;
+    delete eventData.completed_at;
     if (eventData.start_time && eventData.end_time) {
       const start = new Date(eventData.start_time);
       const end = new Date(eventData.end_time);
