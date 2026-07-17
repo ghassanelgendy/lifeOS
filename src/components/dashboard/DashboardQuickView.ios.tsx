@@ -1694,22 +1694,24 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   return (
     <div className="space-y-5 sm:space-y-6">
       <section aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
-        <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Today
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-          <Link to="/points" className="liquid-glass-card col-span-2 group flex flex-col justify-center p-4 sm:p-5 min-w-0 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-75">
-            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5 truncate">
-              <Coins className="size-3.5 text-amber-400 shrink-0" />
-              Points
-            </p>
-            <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight mt-1', privacyMode && 'blur-sm')}>
-              {pointsBalance}
-              <span className="text-muted-foreground/60 text-[10px] font-semibold block mt-0.5">
-                +{pointsEarnedThisWeek} this week
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+            Today
+          </h2>
+          <Link 
+            to="/points" 
+            className="flex items-center gap-1.5 text-xs font-bold text-amber-500 hover:text-amber-600 transition-colors"
+          >
+            <Coins className="size-4 text-amber-400" />
+            <span className={cn(privacyMode && 'blur-sm')}>
+              {pointsBalance} pts
+              <span className="text-[10px] text-muted-foreground font-normal ml-1">
+                (+{pointsEarnedThisWeek} this week)
               </span>
-            </p>
+            </span>
           </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
             <Link to="/" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
               <CheckCircle2 className="size-5 text-primary mb-1 shrink-0" />
