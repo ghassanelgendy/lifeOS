@@ -1,5 +1,6 @@
 import { format, parseISO, startOfWeek, subWeeks, endOfWeek, addHours } from 'date-fns';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore, DASHBOARD_MODE_LABELS, type DashboardMode } from '../stores/useUIStore';
 import { DashboardQuickView } from '../components/dashboard/DashboardQuickView';
 import { DashboardStrategic } from '../components/dashboard/DashboardStrategic';
@@ -10,8 +11,9 @@ import { useTaskLists, useTags, useTasks, useUpdateTask, useToggleTask } from '.
 import { useCalendarEvents, useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Edit2, Check } from 'lucide-react';
+import { Edit2, Check, Plus, Calendar, ListTodo, Flame, Wallet } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { triggerHaptics } from '../lib/nativeBridge';
 import type { PrayerName } from '../types/schema';
 
 type PrayerHadith = {
@@ -656,6 +658,134 @@ export default function Dashboard() {
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const notificationHandled = useRef<string | null>(null);
+  const navigate = useNavigate();
+
+  const [showFab, setShowFab] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+
+  const lastScrollTop = useRef(0);
+  const longPressTimer = useRef<number | null>(null);
+  const isLongPressActive = useRef(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const FAB_ITEMS = useMemo(() => [
+    { type: 'event', label: 'Event', icon: Calendar, color: 'text-blue-500 bg-blue-500/10' },
+    { type: 'task', label: 'Task', icon: ListTodo, color: 'text-emerald-500 bg-emerald-500/10' },
+    { type: 'habit', label: 'Habit', icon: Flame, color: 'text-amber-500 bg-amber-500/10' },
+    { type: 'transaction', label: 'Transaction', icon: Wallet, color: 'text-rose-500 bg-rose-500/10' },
+  ] as const, []);
+
+  // 1. Hide/show FAB on scroll down/up
+  useEffect(() => {
+    const scrollContainer = document.querySelector('[data-lifeos-scroll-root]');
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const scrollTop = scrollContainer.scrollTop;
+      if (scrollTop > lastScrollTop.current && scrollTop > 60) {
+        setShowFab(false);
+        setIsMenuOpen(false);
+      } else if (scrollTop < lastScrollTop.current) {
+        setShowFab(true);
+      }
+      lastScrollTop.current = scrollTop;
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+
+  // 2. Click outside FAB container closes the menu
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-fab-container]')) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('click', handleOutsideClick);
+    return () => document.removeEventListener('click', handleOutsideClick);
+  }, [isMenuOpen]);
+
+  // 3. Touch Gestures (3D Touch option menu)
+  const handleTouchStart = () => {
+    if (longPressTimer.current) window.clearTimeout(longPressTimer.current);
+    isLongPressActive.current = false;
+    setActiveItemIndex(null);
+
+    longPressTimer.current = window.setTimeout(() => {
+      isLongPressActive.current = true;
+      setIsMenuOpen(true);
+      void triggerHaptics('medium');
+    }, 350);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isLongPressActive.current) return;
+    if (e.cancelable) e.preventDefault();
+
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    const menuItem = element?.closest('[data-fab-item-index]');
+
+    if (menuItem) {
+      const index = parseInt(menuItem.getAttribute('data-fab-item-index') || '', 10);
+      if (activeItemIndex !== index) {
+        setActiveItemIndex(index);
+        void triggerHaptics('light');
+      }
+    } else {
+      setActiveItemIndex(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      window.clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+
+    if (isLongPressActive.current) {
+      if (activeItemIndex !== null) {
+        const item = FAB_ITEMS[activeItemIndex];
+        if (item) {
+          handleQuickAdd(item.type);
+        }
+      }
+      isLongPressActive.current = false;
+      if (activeItemIndex === null) {
+        setIsMenuOpen(false);
+      }
+      setActiveItemIndex(null);
+    } else {
+      setIsMenuOpen((prev) => !prev);
+      void triggerHaptics('light');
+    }
+  };
+
+  const handleQuickAdd = (type: 'event' | 'task' | 'habit' | 'transaction') => {
+    void triggerHaptics('medium');
+    switch (type) {
+      case 'event':
+        navigate('/calendar', { state: { triggerAdd: true } });
+        break;
+      case 'task':
+        navigate('/tasks', { state: { triggerAdd: true } });
+        break;
+      case 'habit':
+        navigate('/habits', { state: { triggerAdd: true } });
+        break;
+      case 'transaction':
+        navigate('/finance', { state: { triggerAdd: true } });
+        break;
+    }
+    setIsMenuOpen(false);
+  };
 
   const { data: allTasks = [] } = useTasks();
   const { data: allHabits = [] } = useHabits();
@@ -793,6 +923,87 @@ export default function Dashboard() {
           />
         )}
       </Modal>
+
+      {/* Floating Action Button (FAB) for Quick Add Shortcuts */}
+      <div 
+        data-fab-container 
+        className="fixed z-40 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+        style={{
+          bottom: 'calc(80px + env(safe-area-inset-bottom))',
+          right: '16px',
+          transform: showFab ? 'scale(1) translate3d(0,0,0)' : 'scale(0) translate3d(0,20px,0)',
+          opacity: showFab ? 1 : 0,
+          pointerEvents: showFab ? 'auto' : 'none',
+        }}
+      >
+        <div className="relative">
+          {/* Slide-up context menu */}
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div
+                ref={menuRef}
+                initial={{ opacity: 0, scale: 0.85, y: 15 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.85, y: 15 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="absolute bottom-full mb-3 right-0 w-44 rounded-2xl bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-1 flex flex-col gap-0.5 origin-bottom-right"
+              >
+                <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 select-none">
+                  Quick Create
+                </div>
+                {FAB_ITEMS.map((item, idx) => {
+                  const Icon = item.icon;
+                  const isActive = activeItemIndex === idx;
+                  return (
+                    <button
+                      key={item.type}
+                      type="button"
+                      data-fab-item-index={idx}
+                      onClick={() => handleQuickAdd(item.type)}
+                      className={cn(
+                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors text-sm font-medium touch-none select-none",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-secondary/60 text-foreground"
+                      )}
+                    >
+                      <div className={cn("p-1.5 rounded-lg shrink-0", isActive ? "bg-white/20 text-white" : item.color)}>
+                        <Icon size={16} />
+                      </div>
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Trigger FAB Circle Button */}
+          <button
+            ref={buttonRef}
+            type="button"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onClick={() => {
+              if (!Capacitor.isNativePlatform()) {
+                setIsMenuOpen((prev) => !prev);
+              }
+            }}
+            className={cn(
+              "w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg active:scale-95 hover:brightness-105 transition-all cursor-pointer transform-gpu duration-300",
+              isMenuOpen ? "rotate-45" : "rotate-0"
+            )}
+            style={{
+              boxShadow: '0 8px 30px rgb(0 0 0 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.15)',
+            }}
+            aria-label="Quick Add"
+            aria-expanded={isMenuOpen}
+          >
+            <Plus size={28} className="transition-transform duration-300" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
