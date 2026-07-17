@@ -1209,17 +1209,7 @@ export default function Habits() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Points Reward"
-              type="number"
-              min={0}
-              placeholder="5"
-              value={formData.points_value === undefined ? '' : formData.points_value}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFormData({ ...formData, points_value: e.target.value === '' ? 0 : Math.max(0, parseInt(e.target.value) || 0) })}
-              helperText="Points awarded upon each completion."
-            />
-          </div>
+
 
           {habitType === 'detox' && (
             <div className="space-y-3 rounded-lg border border-border/70 bg-secondary/20 p-3">
