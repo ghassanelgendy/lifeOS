@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Plus,
@@ -79,6 +80,8 @@ const EVENT_TYPE_COLORS: Record<EventType, string> = {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [theme, setTheme] = useState<Theme>(webDarkTheme);
 
   useEffect(() => {
@@ -108,6 +111,14 @@ export default function CalendarPage() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  useEffect(() => {
+    const state = location.state as { triggerAdd?: boolean } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      void handleOpenModal();
+    }
+  }, [location.state, navigate, location.pathname]);
   const [view, setView] = useState<'month' | 'week' | 'day'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
