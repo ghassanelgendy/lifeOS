@@ -251,13 +251,41 @@ export function useAddPointsTransaction() {
 
       const id = uuidv4();
       const created_at = new Date().toISOString();
-      // DB column is integer — round to avoid type mismatch
       const amount = Math.round(input.amount);
+
+      // Securely fetch current balance (online from db, offline from IDB)
+      let currentBalance = 0;
+      if (isOnline()) {
+        const { data: dbTxs } = await supabase.from('points_transactions').select('amount').eq('user_id', user.id);
+        currentBalance = (dbTxs || []).reduce((sum, tx) => sum + tx.amount, 0);
+      } else {
+        const localTxs = await idbGetPointsTransactions();
+        currentBalance = localTxs.filter((tx) => tx.user_id === user.id).reduce((sum, tx) => sum + tx.amount, 0);
+      }
+
+      let finalAmount = amount;
+      if (amount < 0) {
+        const isRedemption =
+          input.reference_type === 'habit_rescue' ||
+          input.reference_type === 'custom_reward' ||
+          input.reference_type === 'reward' ||
+          input.description.toLowerCase().includes('redeem') ||
+          input.description.toLowerCase().includes('rescue');
+
+        if (isRedemption) {
+          if (currentBalance + amount < 0) {
+            throw new Error('Insufficient points balance');
+          }
+        } else {
+          // Clamp negative adjustments so balance never drops below 0
+          finalAmount = Math.max(-currentBalance, amount);
+        }
+      }
 
       const payload = {
         id,
         user_id: user.id,
-        amount,
+        amount: finalAmount,
         description: input.description,
         reference_type: input.reference_type || null,
         reference_id: input.reference_id || null,
@@ -292,8 +320,14 @@ export function useRedeemReward() {
 
   return useMutation({
     mutationFn: async (reward: CustomReward) => {
-      const balance = queryClient.getQueryData<PointTransaction[]>([...POINTS_TX_KEY, reward.user_id])
-        ?.reduce((sum, tx) => sum + tx.amount, 0) ?? 0;
+      let balance = 0;
+      if (isOnline()) {
+        const { data: dbTxs } = await supabase.from('points_transactions').select('amount').eq('user_id', reward.user_id);
+        balance = (dbTxs || []).reduce((sum, tx) => sum + tx.amount, 0);
+      } else {
+        const localTxs = await idbGetPointsTransactions();
+        balance = localTxs.filter((tx) => tx.user_id === reward.user_id).reduce((sum, tx) => sum + tx.amount, 0);
+      }
 
       if (balance < reward.cost) {
         throw new Error('Insufficient points balance');
