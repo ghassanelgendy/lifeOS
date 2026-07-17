@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon, Coins } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon, Coins, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
@@ -144,6 +144,8 @@ function DueTodayRow({
   onRescue,
   balance = 0,
   rescueCost = 100,
+  subtasks = [],
+  onToggleSubtask,
 }: {
   kind: DueKind;
   title: string;
@@ -158,7 +160,10 @@ function DueTodayRow({
   onRescue?: () => void;
   balance?: number;
   rescueCost?: number;
+  subtasks?: Array<{ id: string; title?: string; is_completed: boolean }>;
+  onToggleSubtask?: (id: string) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const touchToggledRef = useRef(false);
   const kindLabel =
@@ -173,7 +178,6 @@ function DueTodayRow({
 
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // onTouchEnd already handled toggle; skip the synthesized click
     if (touchToggledRef.current) {
       touchToggledRef.current = false;
       return;
@@ -184,124 +188,239 @@ function DueTodayRow({
       onToggle();
     }
   };
+
+  const handleSubtaskToggleClick = (subtaskId: string, isCompleted: boolean) => {
+    if (isCompleted) {
+      void triggerLightTap();
+    } else {
+      void triggerSuccessTap();
+    }
+    onToggleSubtask?.(subtaskId);
+  };
+
+  const hasSubtasks = subtasks && subtasks.length > 0;
+  const completedCount = subtasks ? subtasks.filter((s) => s.is_completed).length : 0;
+  const totalCount = subtasks ? subtasks.length : 0;
+  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
     <div
-      onClick={handleRowClick}
       className={cn(
-        'group flex items-center gap-3.5 py-4 px-4 sm:px-5 bg-transparent select-none cursor-pointer',
-        'active:scale-[0.99] active:bg-secondary/20 transition-all duration-150',
+        'group flex flex-col py-4 bg-transparent select-none cursor-pointer',
+        'active:bg-secondary/20 transition-all duration-150',
         done && 'opacity-55'
       )}
     >
-      {showToggle && onToggle ? (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={done}
-          aria-label={label}
-          disabled={busy}
-          onClick={handleCheckboxClick}
-          onTouchStart={(e) => {
-            // Stop the parent wrapper's startPress from capturing this touch
-            e.stopPropagation();
-            if (!done) void triggerSuccessTap();
-            else void triggerLightTap();
-          }}
-          onTouchEnd={(e) => {
-            // Toggle immediately on release — more responsive than synthesized click
-            e.preventDefault();
-            e.stopPropagation();
-            if (onToggle && !busy) {
-              touchToggledRef.current = true;
-              onToggle();
-            }
-          }}
-          className={cn(
-            'relative flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200 active:scale-90',
-            done
-              ? kind === 'prayer'
-                ? 'border-slate-500 bg-slate-500 text-slate-50'
-                : 'border-primary bg-primary text-primary-foreground'
-              : 'border-muted-foreground/35 bg-background/50 hover:border-primary/50'
-          )}
-        >
-          <div className="relative flex h-full w-full items-center justify-center">
-            <span
-              className={cn(
-                'absolute size-2.5 rounded-full transition-all duration-300',
-                !color && ACCENT_DOT[kind],
-                done ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-              )}
-              style={color ? { backgroundColor: color } : undefined}
-              aria-hidden
-            />
-            <svg
-              className={cn(
-                "task-checkmark size-4.5 absolute transition-opacity duration-300",
-                done ? "task-checkmark--active opacity-100" : "opacity-0"
-              )}
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path className="task-checkmark__check" d="M4 8.5 7 11 12 5" />
-            </svg>
-          </div>
-        </button>
-      ) : (
-        <div
-          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/20"
-          aria-hidden
-        >
-          <div className="size-2.5 rounded-full bg-muted-foreground/30" />
-        </div>
-      )}
-
-      <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
-              {kindLabel}
-            </span>
-          </div>
-          <p
-            className={cn(
-              'text-[14px] font-semibold text-foreground leading-snug break-words mt-0.5',
-              done && 'line-through text-muted-foreground/60',
-            )}
-          >
-            {title}
-          </p>
-          {subtitle ? (
-            <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-        {onRescue && !done && (
+      <div 
+        className="flex items-start gap-3.5 px-4 sm:px-5 w-full"
+        onClick={handleRowClick}
+      >
+        {showToggle && onToggle ? (
           <button
             type="button"
-            disabled={balance < rescueCost}
-            onClick={(e) => {
+            role="checkbox"
+            aria-checked={done}
+            aria-label={label}
+            disabled={busy}
+            onClick={handleCheckboxClick}
+            onTouchStart={(e) => {
               e.stopPropagation();
-              onRescue();
+              if (!done) void triggerSuccessTap();
+              else void triggerLightTap();
+            }}
+            onTouchEnd={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (onToggle && !busy) {
+                touchToggledRef.current = true;
+                onToggle();
+              }
             }}
             className={cn(
-              "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
-              balance >= rescueCost
-                ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
-                : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+              'relative flex size-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-90',
+              hasSubtasks && !done
+                ? 'border-0 bg-background/50'
+                : cn(
+                    'border-2',
+                    done
+                      ? kind === 'prayer'
+                        ? 'border-slate-500 bg-slate-500 text-slate-50'
+                        : 'border-primary bg-primary text-primary-foreground'
+                      : 'border-muted-foreground/35 bg-background/50 hover:border-primary/50'
+                  )
             )}
-            title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
           >
-            <Coins className="size-3.5" />
-            Rescue
+            <div className="relative flex h-full w-full items-center justify-center">
+              {hasSubtasks && !done ? (
+                <>
+                  <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 32 32">
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="15"
+                      fill="none"
+                      className="stroke-muted-foreground/35"
+                      strokeWidth="2"
+                    />
+                    <circle
+                      cx="16"
+                      cy="16"
+                      r="15"
+                      fill="none"
+                      className="transition-all duration-300"
+                      style={{
+                        strokeDasharray: '94.25',
+                        strokeDashoffset: `${94.25 - (94.25 * percentage) / 100}`,
+                        stroke: 'var(--primary)',
+                        filter: percentage > 0 ? 'drop-shadow(0 0 3px var(--primary))' : 'none',
+                      }}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span
+                    className={cn(
+                      'absolute size-2.5 rounded-full transition-all duration-300 scale-100 opacity-100',
+                      !color && ACCENT_DOT[kind]
+                    )}
+                    style={color ? { backgroundColor: color } : undefined}
+                    aria-hidden
+                  />
+                </>
+              ) : (
+                <>
+                  <span
+                    className={cn(
+                      'absolute size-2.5 rounded-full transition-all duration-300',
+                      !color && ACCENT_DOT[kind],
+                      done ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+                    )}
+                    style={color ? { backgroundColor: color } : undefined}
+                    aria-hidden
+                  />
+                  <svg
+                    className={cn(
+                      "task-checkmark size-4.5 absolute transition-opacity duration-300",
+                      done ? "task-checkmark--active opacity-100" : "opacity-0"
+                    )}
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path className="task-checkmark__check" d="M4 8.5 7 11 12 5" />
+                  </svg>
+                </>
+              )}
+            </div>
           </button>
+        ) : (
+          <div
+            className="flex size-8 shrink-0 items-center justify-center rounded-full border border-dashed border-muted-foreground/35 bg-muted/20"
+            aria-hidden
+          >
+            <div className="size-2.5 rounded-full bg-muted-foreground/30" />
+          </div>
         )}
+
+        <div className="min-w-0 flex-1 flex items-center justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
+                {kindLabel}
+              </span>
+              {hasSubtasks && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(!isExpanded);
+                  }}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer border-none outline-none"
+                >
+                  <span>{completedCount}/{totalCount} ({percentage}%)</span>
+                  {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                </button>
+              )}
+            </div>
+            <p
+              className={cn(
+                'text-[14px] font-semibold text-foreground leading-snug break-words mt-0.5',
+                done && 'line-through text-muted-foreground/60',
+              )}
+            >
+              {title}
+            </p>
+            {subtitle ? (
+              <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
+                {subtitle}
+              </p>
+            ) : null}
+          </div>
+          {onRescue && !done && (
+            <button
+              type="button"
+              disabled={balance < rescueCost}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRescue();
+              }}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
+                balance >= rescueCost
+                  ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
+                  : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+              )}
+              title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
+            >
+              <Coins className="size-3.5" />
+              Rescue
+            </button>
+          )}
+        </div>
       </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && hasSubtasks && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden w-full"
+          >
+            <div 
+              className="mt-1 pl-16 pr-2 space-y-2.5 pb-2"
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2.5 py-1 text-sm text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => handleSubtaskToggleClick(subtask.id, subtask.is_completed)}
+                    className={cn(
+                      "w-4.5 h-4.5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer",
+                      subtask.is_completed
+                        ? "bg-green-500 border-green-500 text-white"
+                        : "border-muted-foreground/30 hover:border-foreground/50"
+                    )}
+                  >
+                    {subtask.is_completed && <Check size={11} strokeWidth={3} />}
+                  </button>
+                  <span className={cn("text-[14px] font-medium", subtask.is_completed && "line-through text-muted-foreground")}>
+                    {subtask.title || 'Untitled Subtask'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -444,7 +563,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   // 3D Haptic Touch Context Menu State
   const [contextMenuEntry, setContextMenuEntry] = useState<any | null>(null);
   const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
+  const [showSubmenu, setShowSubmenu] = useState(false);
   const longPressTimeout = useRef<number | null>(null);
+  const submenuTimeoutRef = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
   const touchStartPos = useRef<{ x: number; y: number } | null>(null);
   const activeTouchId = useRef<number | null>(null);
@@ -518,12 +639,26 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   };
 
   const executeMenuAction = (action: string, entry: any) => {
+    if (action.startsWith('subtask-')) {
+      const subtaskId = action.replace('subtask-', '');
+      const taskId = entry.entityId || entry.id;
+      const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+      const subtask = taskObj?.subtasks?.find(s => s.id === subtaskId);
+      if (subtask) {
+        void triggerHaptics(subtask.is_completed ? 'light' : 'success');
+        toggleTask.mutate(subtaskId);
+      }
+      return;
+    }
     const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));
     const isHabit = entry.kind === 'habit';
     const isEvent = entry.kind === 'event';
     const isPrayer = entry.kind === 'prayer';
 
     switch (action) {
+      case 'subtasks-trigger':
+        setShowSubmenu(true);
+        break;
       case 'toggle':
         if (isTask) {
           const taskId = entry.entityId || entry.id;
@@ -647,6 +782,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         hoveredMenuActionRef.current = null;
         setHoveredMenuAction(null);
       }
+      if (submenuTimeoutRef.current) {
+        window.clearTimeout(submenuTimeoutRef.current);
+        submenuTimeoutRef.current = null;
+      }
       return;
     }
     const btn = elem.closest('[data-menu-action]');
@@ -655,11 +794,31 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       if (hoveredMenuActionRef.current !== action) {
         hoveredMenuActionRef.current = action;
         setHoveredMenuAction(action);
+
+        // Submenu trigger logic
+        if (action === 'subtasks-trigger') {
+          if (!submenuTimeoutRef.current && !showSubmenu) {
+            submenuTimeoutRef.current = window.setTimeout(() => {
+              setShowSubmenu(true);
+              void triggerHaptics('light');
+            }, 500);
+          }
+        } else if (!action.startsWith('subtask-')) {
+          if (submenuTimeoutRef.current) {
+            window.clearTimeout(submenuTimeoutRef.current);
+            submenuTimeoutRef.current = null;
+          }
+          setShowSubmenu(false);
+        }
       }
     } else {
       if (hoveredMenuActionRef.current !== null) {
         hoveredMenuActionRef.current = null;
         setHoveredMenuAction(null);
+      }
+      if (submenuTimeoutRef.current) {
+        window.clearTimeout(submenuTimeoutRef.current);
+        submenuTimeoutRef.current = null;
       }
     }
   };
@@ -676,6 +835,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       window.clearTimeout(longPressTimeout.current);
       longPressTimeout.current = null;
     }
+    if (submenuTimeoutRef.current) {
+      window.clearTimeout(submenuTimeoutRef.current);
+      submenuTimeoutRef.current = null;
+    }
 
     const wasLongPress = isLongPressActive.current;
     if (wasLongPress) {
@@ -687,14 +850,18 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       const entry = pressEntryRef.current;
       if (action && entry) {
         executeMenuAction(action, entry);
-        setContextMenuEntry(null);
-        setHoveredMenuAction(null);
+        if (action !== 'subtasks-trigger') {
+          setContextMenuEntry(null);
+          setHoveredMenuAction(null);
+          setShowSubmenu(false);
+        }
       } else {
         const elem = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
         const isOutside = !elem?.closest('[data-context-menu-container="true"]');
         if (isOutside) {
           setContextMenuEntry(null);
           setHoveredMenuAction(null);
+          setShowSubmenu(false);
         }
       }
       activeTouchId.current = null;
@@ -1188,6 +1355,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               onRescue={() => rescueTask.mutate(t)}
               balance={pointsBalance}
               rescueCost={pointsConfig.taskRescueCost}
+              subtasks={t.subtasks}
+              onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
             />
           </div>
         </div>
@@ -1229,6 +1398,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               label={`Complete task ${t.title}`}
               onToggle={() => toggleTask.mutate(t.id)}
               onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+              subtasks={t.subtasks}
+              onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
             />
           </div>
         </div>
@@ -1773,94 +1944,184 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   </div>
                 </div>
 
-                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl mt-3 text-left">
-                  <button
-                    type="button"
-                    data-menu-action="toggle"
-                    onClick={() => {
-                      executeMenuAction('toggle', contextMenuEntry);
-                      setContextMenuEntry(null);
-                    }}
-                    className={cn(
-                      "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                      hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                {/* Options Menu (iOS styled rounded stack) */}
+                <div className="relative w-full z-10 mt-3">
+                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-left">
+                    {/* Complete / Reopen Action */}
+                    <button
+                      type="button"
+                      data-menu-action="toggle"
+                      onClick={() => {
+                        executeMenuAction('toggle', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>{contextMenuDetails.isCompleted ? 'Mark Uncompleted' : 'Mark Completed'}</span>
+                      <CheckCircle2 size={16} className="text-muted-foreground" />
+                    </button>
+
+                    {/* Postpone Action (if has due date) */}
+                    {contextMenuDetails.isTask && (
+                      <button
+                        type="button"
+                        data-menu-action="postpone"
+                        onClick={() => {
+                          executeMenuAction('postpone', contextMenuEntry);
+                          setContextMenuEntry(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>Postpone 1 Hour</span>
+                        <Clock size={16} className="text-muted-foreground" />
+                      </button>
                     )}
-                  >
-                    <span>{contextMenuDetails.isCompleted ? 'Mark Uncompleted' : 'Mark Completed'}</span>
-                    <CheckCircle2 size={16} className="text-muted-foreground" />
-                  </button>
 
-                  {contextMenuDetails.isTask && (
-                    <button
-                      type="button"
-                      data-menu-action="postpone"
-                      onClick={() => {
-                        executeMenuAction('postpone', contextMenuEntry);
-                        setContextMenuEntry(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
-                      )}
-                    >
-                      <span>Postpone 1 Hour</span>
-                      <Clock size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    {/* Subtasks trigger menu option */}
+                    {(() => {
+                      const taskId = contextMenuEntry.entityId || contextMenuEntry.id;
+                      const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+                      const subtasks = taskObj?.subtasks || [];
+                      if (subtasks.length === 0) return null;
+                      return (
+                        <button
+                          type="button"
+                          data-menu-action="subtasks-trigger"
+                          onClick={() => {
+                            void triggerHaptics('light');
+                            setShowSubmenu(true);
+                          }}
+                          className={cn(
+                            "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                            hoveredMenuAction === 'subtasks-trigger' && "bg-black/10 dark:bg-white/15"
+                          )}
+                        >
+                          <span className="flex items-center gap-1.5">
+                            Subtasks
+                            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+                              {subtasks.length}
+                            </span>
+                          </span>
+                          <ChevronRight size={16} className="text-muted-foreground" />
+                        </button>
+                      );
+                    })()}
 
-                  {!contextMenuDetails.isPrayer && (
-                    <button
-                      type="button"
-                      data-menu-action="edit"
-                      onClick={() => {
-                        executeMenuAction('edit', contextMenuEntry);
-                        setContextMenuEntry(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
-                      )}
-                    >
-                      <span>{contextMenuDetails.isHabit ? 'View Insights...' : 'View Details...'}</span>
-                      <Edit2 size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    {/* Edit Action */}
+                    {!contextMenuDetails.isPrayer && (
+                      <button
+                        type="button"
+                        data-menu-action="edit"
+                        onClick={() => {
+                          executeMenuAction('edit', contextMenuEntry);
+                          setContextMenuEntry(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>{contextMenuDetails.isHabit ? 'View Insights...' : 'View Details...'}</span>
+                        <Edit2 size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
 
-                  {contextMenuDetails.isTask && !contextMenuDetails.isCompleted && (
-                    <button
-                      type="button"
-                      data-menu-action="wontdo"
-                      onClick={() => {
-                        executeMenuAction('wontdo', contextMenuEntry);
-                        setContextMenuEntry(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
-                      )}
-                    >
-                      <span>Won't Do</span>
-                      <CircleSlash2 size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
+                    {/* Won't Do Action */}
+                    {contextMenuDetails.isTask && !contextMenuDetails.isCompleted && (
+                      <button
+                        type="button"
+                        data-menu-action="wontdo"
+                        onClick={() => {
+                          executeMenuAction('wontdo', contextMenuEntry);
+                          setContextMenuEntry(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>Won't Do</span>
+                        <CircleSlash2 size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
 
-                  {contextMenuDetails.isTask && (
-                    <button
-                      type="button"
-                      data-menu-action="delete"
-                      onClick={() => {
-                        executeMenuAction('delete', contextMenuEntry);
-                        setContextMenuEntry(null);
-                      }}
-                      className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
-                        hoveredMenuAction === 'delete' && "bg-red-500/15"
-                      )}
-                    >
-                      <span>Delete Task</span>
-                      <Trash2 size={16} className="text-red-500" />
-                    </button>
-                  )}
+                    {/* Delete Action (Red) */}
+                    {contextMenuDetails.isTask && (
+                      <button
+                        type="button"
+                        data-menu-action="delete"
+                        onClick={() => {
+                          executeMenuAction('delete', contextMenuEntry);
+                          setContextMenuEntry(null);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-semibold hover:bg-red-500/5 text-red-500 active:bg-red-500/10 transition-colors",
+                          hoveredMenuAction === 'delete' && "bg-red-500/15"
+                        )}
+                      >
+                        <span>Delete Task</span>
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Submenu Overlay */}
+                  <AnimatePresence>
+                    {showSubmenu && (
+                      <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                      >
+                        <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-secondary/30 flex justify-between items-center">
+                          <span>Subtasks</span>
+                          <span className="text-[9px] font-medium lowercase">Release to toggle</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto divide-y divide-black/5 dark:divide-white/10 no-scrollbar">
+                          {(() => {
+                            const taskId = contextMenuEntry.entityId || contextMenuEntry.id;
+                            const taskObj = todayTasks.find(t => t.id === taskId) || overdueTasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+                            const subtasks = taskObj?.subtasks || [];
+                            return subtasks.map((subtask) => (
+                              <button
+                                key={subtask.id}
+                                type="button"
+                                data-menu-action={`subtask-${subtask.id}`}
+                                onClick={() => {
+                                  void triggerHaptics(subtask.is_completed ? 'light' : 'success');
+                                  toggleTask.mutate(subtask.id);
+                                  setContextMenuEntry(null);
+                                  setShowSubmenu(false);
+                                }}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground transition-colors",
+                                  hoveredMenuAction === `subtask-${subtask.id}` && "bg-black/10 dark:bg-white/15"
+                                )}
+                              >
+                                <span className={cn(subtask.is_completed && "line-through text-muted-foreground")}>
+                                  {subtask.title || 'Untitled Subtask'}
+                                </span>
+                                <div className={cn(
+                                  "w-4.5 h-4.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors",
+                                  subtask.is_completed ? "bg-green-500 border-green-500 text-white" : "border-muted-foreground/30"
+                                )}>
+                                  {subtask.is_completed && <Check size={10} strokeWidth={3} />}
+                                </div>
+                              </button>
+                            ));
+                          })()}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </motion.div>
             </div>

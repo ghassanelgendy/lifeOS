@@ -1,8 +1,9 @@
 import { useMemo, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2 } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
@@ -124,9 +125,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
   task: 'bg-amber-500/70',
   habit: 'bg-emerald-500/70',
   event: 'bg-indigo-500/70',
-};
-
-function DueTodayRow({
+};function DueTodayRow({
   kind,
   title,
   subtitle,
@@ -140,6 +139,8 @@ function DueTodayRow({
   onRescue,
   balance = 0,
   rescueCost = 100,
+  subtasks = [],
+  onToggleSubtask,
 }: {
   kind: DueKind;
   title: string;
@@ -154,132 +155,238 @@ function DueTodayRow({
   onRescue?: () => void;
   balance?: number;
   rescueCost?: number;
+  subtasks?: Array<{ id: string; title?: string; is_completed: boolean }>;
+  onToggleSubtask?: (id: string) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
+  const hasSubtasks = subtasks && subtasks.length > 0;
+  const completedCount = subtasks ? subtasks.filter((s) => s.is_completed).length : 0;
+  const totalCount = subtasks ? subtasks.length : 0;
+  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
     <div
-      onClick={onClick}
       className={cn(
-        'task-item group flex items-stretch gap-3 rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
+        'task-item group flex flex-col rounded-xl border border-border/80 bg-gradient-to-br from-card to-card/60 p-3 sm:p-3.5 shadow-sm',
         'transition-all duration-200 hover:border-border hover:shadow-md',
-        onClick && 'cursor-pointer',
         done && (kind === 'prayer' ? 'opacity-75 border-slate-500/20 bg-slate-500/5' : 'opacity-75 border-primary/20 bg-primary/5'),
       )}
     >
-      {showToggle && onToggle ? (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={done}
-          aria-label={label}
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className={cn(
-            'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-            done
-              ? kind === 'prayer'
-                ? 'border-slate-500 bg-slate-500 text-slate-50 shadow-inner shadow-slate-500/20'
-                : 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
-              : kind === 'prayer'
-                ? 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-slate-500/50 hover:bg-accent/40 active:scale-95'
-                : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95',
-            busy && 'pointer-events-none opacity-50',
-          )}
-        >
-          <div className="relative flex h-full w-full items-center justify-center">
-            <span
-              className={cn(
-                'absolute size-2.5 rounded-full transition-all duration-300',
-                !color && ACCENT_DOT[kind],
-                done ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
-              )}
-              style={color ? { backgroundColor: color } : undefined}
-              aria-hidden
-            />
-            <svg
-              className={cn(
-                "task-checkmark absolute transition-opacity duration-300",
-                done ? "task-checkmark--active opacity-100" : "opacity-0"
-              )}
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path className="task-checkmark__check" d="M4 8.5 7 11 12 5" />
-            </svg>
-          </div>
-        </button>
-      ) : (
-        <div
-          className={cn(
-            'mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/20 bg-muted/30',
-          )}
-          aria-hidden
-        >
-          <div className="size-4 text-muted-foreground/50" />
-        </div>
-      )}
-
-      <div className="min-w-0 flex-1 pt-0.5 flex justify-between items-start">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 gap-y-1">
-            <span
-              className={cn(
-                'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                !color && kind === 'prayer' && 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
-                !color && kind === 'task' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
-                !color && kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-amber-400',
-                !color && kind === 'event' && 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
-              )}
-              style={color ? { backgroundColor: `${color}26`, color: color } : undefined}
-            >
-              {kindLabel}
-            </span>
-            {done && (
-              <span className={cn("text-[10px] font-medium uppercase tracking-wide", kind === 'prayer' ? "text-slate-500 dark:text-slate-400" : "text-primary")}>Done</span>
-            )}
-          </div>
-          <p
-            className={cn(
-              'mt-1 text-sm font-semibold leading-snug tracking-tight break-words',
-              done && 'line-through decoration-muted-foreground/60',
-            )}
-          >
-            {title}
-          </p>
-          {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{subtitle}</p> : null}
-        </div>
-
-        {onRescue && !done && (
+      <div 
+        className={cn("flex items-stretch gap-3 w-full", onClick && 'cursor-pointer')}
+        onClick={onClick}
+      >
+        {showToggle && onToggle ? (
           <button
             type="button"
-            disabled={balance < rescueCost}
+            role="checkbox"
+            aria-checked={done}
+            aria-label={label}
+            disabled={busy}
             onClick={(e) => {
               e.stopPropagation();
-              onRescue();
+              onToggle();
             }}
             className={cn(
-              "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
-              balance >= rescueCost
-                ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
-                : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+              'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full transition-all duration-200',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+              hasSubtasks && !done
+                ? 'border-0 bg-background/80 shadow-sm'
+                : cn(
+                    'border-2',
+                    done
+                      ? kind === 'prayer'
+                        ? 'border-slate-500 bg-slate-500 text-slate-50 shadow-inner shadow-slate-500/20'
+                        : 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
+                      : kind === 'prayer'
+                        ? 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-slate-500/50 hover:bg-accent/40 active:scale-95'
+                        : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95'
+                  ),
+              busy && 'pointer-events-none opacity-50',
             )}
-            title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
           >
-            <Coins className="size-3.5" />
-            Rescue
+            <div className="relative flex h-full w-full items-center justify-center">
+              {hasSubtasks && !done ? (
+                <>
+                  <svg className="absolute inset-0 size-full -rotate-90" viewBox="0 0 44 44">
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="21"
+                      fill="none"
+                      className="stroke-muted-foreground/25"
+                      strokeWidth="2"
+                    />
+                    <circle
+                      cx="22"
+                      cy="22"
+                      r="21"
+                      fill="none"
+                      className="transition-all duration-300"
+                      style={{
+                        strokeDasharray: '131.95',
+                        strokeDashoffset: `${131.95 - (131.95 * percentage) / 100}`,
+                        stroke: 'var(--primary)',
+                        filter: percentage > 0 ? 'drop-shadow(0 0 4px var(--primary))' : 'none',
+                      }}
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span
+                    className={cn(
+                      'absolute size-2.5 rounded-full transition-all duration-300 scale-100 opacity-100',
+                      !color && ACCENT_DOT[kind]
+                    )}
+                    style={color ? { backgroundColor: color } : undefined}
+                    aria-hidden
+                  />
+                </>
+              ) : (
+                <>
+                  <span
+                    className={cn(
+                      'absolute size-2.5 rounded-full transition-all duration-300',
+                      !color && ACCENT_DOT[kind],
+                      done ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+                    )}
+                    style={color ? { backgroundColor: color } : undefined}
+                    aria-hidden
+                  />
+                  <svg
+                    className={cn(
+                      "task-checkmark absolute transition-opacity duration-300",
+                      done ? "task-checkmark--active opacity-100" : "opacity-0"
+                    )}
+                    viewBox="0 0 16 16"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path className="task-checkmark__check" d="M4 8.5 7 11 12 5" />
+                  </svg>
+                </>
+              )}
+            </div>
           </button>
+        ) : (
+          <div
+            className={cn(
+              'mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/20 bg-muted/30',
+            )}
+            aria-hidden
+          >
+            <div className="size-4 text-muted-foreground/50" />
+          </div>
         )}
+
+        <div className="min-w-0 flex-1 pt-0.5 flex justify-between items-start">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2 gap-y-1">
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+                  !color && kind === 'prayer' && 'bg-slate-500/15 text-slate-600 dark:text-slate-400',
+                  !color && kind === 'task' && 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+                  !color && kind === 'habit' && 'bg-emerald-500/15 text-emerald-600 dark:text-amber-400',
+                  !color && kind === 'event' && 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+                )}
+                style={color ? { backgroundColor: `${color}26`, color: color } : undefined}
+              >
+                {kindLabel}
+              </span>
+              {done && (
+                <span className={cn("text-[10px] font-medium uppercase tracking-wide", kind === 'prayer' ? "text-slate-500 dark:text-slate-400" : "text-primary")}>Done</span>
+              )}
+              {hasSubtasks && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsExpanded(!isExpanded);
+                  }}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <span>{completedCount}/{totalCount} ({percentage}%)</span>
+                  {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
+                </button>
+              )}
+            </div>
+            <p
+              className={cn(
+                'mt-1 text-sm font-semibold leading-snug tracking-tight break-words',
+                done && 'line-through decoration-muted-foreground/60',
+              )}
+            >
+              {title}
+            </p>
+            {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">{subtitle}</p> : null}
+          </div>
+
+          {onRescue && !done && (
+            <button
+              type="button"
+              disabled={balance < rescueCost}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRescue();
+              }}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
+                balance >= rescueCost
+                  ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
+                  : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+              )}
+              title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
+            >
+              <Coins className="size-3.5" />
+              Rescue
+            </button>
+          )}
+        </div>
       </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && hasSubtasks && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden w-full"
+          >
+            <div 
+              className="mt-3 pl-14 pr-2 space-y-2 border-t border-border/30 pt-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2.5 py-1 text-sm text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => onToggleSubtask?.(subtask.id)}
+                    className={cn(
+                      "w-4.5 h-4.5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer",
+                      subtask.is_completed
+                        ? "bg-green-500 border-green-500 text-white"
+                        : "border-muted-foreground/30 hover:border-foreground/50"
+                    )}
+                  >
+                    {subtask.is_completed && <Check size={11} strokeWidth={3} />}
+                  </button>
+                  <span className={cn("text-xs font-medium", subtask.is_completed && "line-through text-muted-foreground")}>
+                    {subtask.title || 'Untitled Subtask'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -806,6 +913,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             onRescue={() => rescueTask.mutate(t)}
             balance={pointsBalance}
             rescueCost={pointsConfig.taskRescueCost}
+            subtasks={t.subtasks}
+            onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
           />
         </li>
       ),
@@ -838,6 +947,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            subtasks={t.subtasks}
+            onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
           />
         </li>
       ),

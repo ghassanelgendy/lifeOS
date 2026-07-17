@@ -10,7 +10,7 @@ import { useTaskLists, useTags, useTasks, useUpdateTask, useToggleTask } from '.
 import { useCalendarEvents, useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Edit2 } from 'lucide-react';
+import { Edit2, Check } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import type { PrayerName } from '../types/schema';
 
@@ -159,6 +159,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
 
   const updateEvent = useUpdateCalendarEvent();
   const updateTask = useUpdateTask();
+  const toggleTask = useToggleTask();
 
   const [isEditingEvent, setIsEditingEvent] = useState(false);
   const [editTitle, setEditTitle] = useState('');
@@ -368,6 +369,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
   if (isTask) {
     const taskId = (entry.entityId || entry.id || '').replace(/^task-/, '');
     const taskDetails = allTasks.find(t => t.id === taskId);
+    const subtasks = taskDetails?.subtasks || [];
     
     const taskDescription = taskDetails?.description || entry.description || (taskDetails as any)?.notes || entry.notes;
     
@@ -468,6 +470,36 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
                   <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: tag.color }} />
                   {tag.name}
                 </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {subtasks && subtasks.length > 0 && (
+          <div className={cardClassName}>
+            <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Subtasks</p>
+            <div className="space-y-2">
+              {subtasks.map((subtask: any) => (
+                <div key={subtask.id} className="flex items-center gap-2.5 py-1 text-sm text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toggleTask.mutate(subtask.id);
+                    }}
+                    className={cn(
+                      "w-4.5 h-4.5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer bg-transparent",
+                      subtask.is_completed
+                        ? "bg-green-500 border-green-500 text-white"
+                        : "border-muted-foreground/30 hover:border-foreground/50"
+                    )}
+                    style={{ width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {subtask.is_completed && <Check size={11} strokeWidth={3} className="text-white" />}
+                  </button>
+                  <span className={cn("text-sm font-medium", subtask.is_completed && "line-through text-muted-foreground")}>
+                    {subtask.title || 'Untitled Subtask'}
+                  </span>
+                </div>
               ))}
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
@@ -37,7 +38,10 @@ import {
   Sparkle24Regular,
   ArrowRight16Regular,
   CheckmarkCircle24Filled,
-  Circle24Regular
+  Circle24Regular,
+  ChevronDown16Regular,
+  ChevronRight16Regular,
+  Checkmark16Regular
 } from '@fluentui/react-icons';
 
 function formatSleepMinutes(m: number | null) {
@@ -156,6 +160,8 @@ function DueTodayRow({
   showToggle,
   color,
   onClick,
+  subtasks = [],
+  onToggleSubtask,
 }: {
   kind: DueKind;
   title: string;
@@ -167,72 +173,160 @@ function DueTodayRow({
   showToggle: boolean;
   color?: string;
   onClick?: () => void;
+  subtasks?: Array<{ id: string; title?: string; is_completed: boolean }>;
+  onToggleSubtask?: (id: string) => void;
 }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
+  const hasSubtasks = subtasks && subtasks.length > 0;
+  const completedCount = subtasks ? subtasks.filter((s) => s.is_completed).length : 0;
+  const totalCount = subtasks ? subtasks.length : 0;
+  const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
   return (
     <div
-      onClick={onClick}
       className={cn(
-        'group flex items-start gap-4 p-3.5 transition-all duration-150 bg-transparent border-b border-border last:border-b-0',
-        onClick && 'cursor-pointer',
+        'group flex flex-col p-3.5 transition-all duration-150 bg-transparent border-b border-border last:border-b-0',
         done && 'opacity-65'
       )}
     >
-      {showToggle && onToggle ? (
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={done}
-          aria-label={label}
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          className="flex items-center justify-center shrink-0 w-6 h-6 rounded-full transition-all hover:bg-white/10 active:scale-90 disabled:opacity-50 mt-0.5"
-        >
-          {done ? (
-            <CheckmarkCircle24Filled className="text-brand-primary w-6 h-6" />
-          ) : (
-            <Circle24Regular className="text-muted-foreground hover:text-brand-primary w-6 h-6" />
-          )}
-        </button>
-      ) : (
-        <div className="w-6 h-6 shrink-0 mt-0.5" />
-      )}
-
-      <div className="min-w-0 flex-1" dir="auto">
-        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-          <Badge
-            appearance="filled"
-            color={color ? undefined : (ACCENT_COLOR[kind] as any)}
-            style={color ? { backgroundColor: color, color: '#fff' } : undefined}
+      <div 
+        className={cn("flex items-start gap-4 w-full", onClick && 'cursor-pointer')}
+        onClick={onClick}
+      >
+        {showToggle && onToggle ? (
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={done}
+            aria-label={label}
+            disabled={busy}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggle();
+            }}
+            className="flex items-center justify-center shrink-0 w-6 h-6 rounded-full transition-all hover:bg-white/10 active:scale-90 disabled:opacity-50 mt-0.5"
           >
-            {kindLabel}
-          </Badge>
-          {done && (
-            <span className="text-[11px] font-bold text-brand-primary uppercase tracking-wider">
-              Completed
-            </span>
-          )}
-        </div>
-        <div
-          dir="auto"
-          className={cn(
-            'text-sm font-semibold break-words leading-relaxed text-foreground',
-            done && 'line-through text-muted-foreground'
-          )}
-        >
-          {title}
-        </div>
-        {subtitle && (
-          <div dir="auto" className="text-xs text-muted-foreground mt-1 font-medium tabular-nums">
-            {subtitle}
-          </div>
+            {hasSubtasks && !done ? (
+              <div className="relative w-6 h-6 flex items-center justify-center shrink-0">
+                <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="11"
+                    fill="none"
+                    className="stroke-muted-foreground/25"
+                    strokeWidth="2"
+                  />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="11"
+                    fill="none"
+                    className="transition-all duration-300"
+                    style={{
+                      strokeDasharray: '69.12',
+                      strokeDashoffset: `${69.12 - (69.12 * percentage) / 100}`,
+                      stroke: 'var(--colorBrandBackground)',
+                      filter: percentage > 0 ? 'drop-shadow(0 0 2.5px var(--colorBrandBackground))' : 'none',
+                    }}
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            ) : done ? (
+              <CheckmarkCircle24Filled className="text-brand-primary w-6 h-6" />
+            ) : (
+              <Circle24Regular className="text-muted-foreground hover:text-brand-primary w-6 h-6" />
+            )}
+          </button>
+        ) : (
+          <div className="w-6 h-6 shrink-0 mt-0.5" />
         )}
+
+        <div className="min-w-0 flex-1" dir="auto">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <Badge
+              appearance="filled"
+              color={color ? undefined : (ACCENT_COLOR[kind] as any)}
+              style={color ? { backgroundColor: color, color: '#fff' } : undefined}
+            >
+              {kindLabel}
+            </Badge>
+            {done && (
+              <span className="text-[11px] font-bold text-brand-primary uppercase tracking-wider">
+                Completed
+              </span>
+            )}
+            {hasSubtasks && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer border-none outline-none"
+              >
+                <span>{completedCount}/{totalCount} ({percentage}%)</span>
+                {isExpanded ? <ChevronDown16Regular className="w-3.5 h-3.5" /> : <ChevronRight16Regular className="w-3.5 h-3.5" />}
+              </button>
+            )}
+          </div>
+          <div
+            dir="auto"
+            className={cn(
+              'text-sm font-semibold break-words leading-relaxed text-foreground',
+              done && 'line-through text-muted-foreground'
+            )}
+          >
+            {title}
+          </div>
+          {subtitle && (
+            <div dir="auto" className="text-xs text-muted-foreground mt-1 font-medium tabular-nums">
+              {subtitle}
+            </div>
+          )}
+        </div>
       </div>
+
+      <AnimatePresence initial={false}>
+        {isExpanded && hasSubtasks && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="overflow-hidden w-full"
+          >
+            <div 
+              className="mt-3 pl-10 pr-2 space-y-2 border-t border-border/30 pt-3"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {subtasks.map((subtask) => (
+                <div key={subtask.id} className="flex items-center gap-2.5 py-1 text-sm text-foreground">
+                  <button
+                    type="button"
+                    onClick={() => onToggleSubtask?.(subtask.id)}
+                    className={cn(
+                      "w-4.5 h-4.5 rounded-md border flex items-center justify-center flex-shrink-0 transition-colors cursor-pointer bg-transparent border-muted-foreground/30 hover:border-foreground/50",
+                      subtask.is_completed && "bg-green-500 border-green-500 text-white"
+                    )}
+                    style={{ width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    {subtask.is_completed && <Checkmark16Regular className="w-3 h-3 text-white" />}
+                  </button>
+                  <span className={cn("text-xs font-medium", subtask.is_completed && "line-through text-muted-foreground")}>
+                    {subtask.title || 'Untitled Subtask'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -759,6 +853,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete overdue task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            subtasks={t.subtasks}
+            onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
           />
         </li>
       ),
@@ -790,6 +886,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            subtasks={t.subtasks}
+            onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
           />
         </li>
       ),
