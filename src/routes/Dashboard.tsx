@@ -663,6 +663,30 @@ export default function Dashboard() {
   const [showFab, setShowFab] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+  const [isLongPressStateActive, setIsLongPressStateActive] = useState(false);
+
+  // Block page scroll during active long press dragging on iOS
+  useEffect(() => {
+    if (!isLongPressStateActive) return;
+
+    const scrollContainer = document.querySelector('[data-lifeos-scroll-root]');
+    if (scrollContainer) {
+      scrollContainer.classList.add('overflow-hidden', 'touch-none');
+    }
+
+    const preventDefaultScroll = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener('touchmove', preventDefaultScroll, { passive: false });
+
+    return () => {
+      if (scrollContainer) {
+        scrollContainer.classList.remove('overflow-hidden', 'touch-none');
+      }
+      window.removeEventListener('touchmove', preventDefaultScroll);
+    };
+  }, [isLongPressStateActive]);
 
   const lastScrollTop = useRef(0);
   const longPressTimer = useRef<number | null>(null);
@@ -731,6 +755,7 @@ export default function Dashboard() {
 
     longPressTimer.current = window.setTimeout(() => {
       isLongPressActive.current = true;
+      setIsLongPressStateActive(true);
       setIsMenuOpen(true);
       void triggerHaptics('medium');
     }, 350);
@@ -760,6 +785,8 @@ export default function Dashboard() {
       window.clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+
+    setIsLongPressStateActive(false);
 
     if (isLongPressActive.current) {
       if (activeItemIndex !== null) {
@@ -943,15 +970,13 @@ export default function Dashboard() {
       {/* Floating Action Button (FAB) for Quick Add Shortcuts */}
       <div 
         data-fab-container 
-        className="fixed z-40 transition-all duration-[350ms] ease-[cubic-bezier(0.25,1,0.3,1)] transform-gpu"
+        className="fixed z-[99] transition-all duration-[300ms] ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu"
         style={{
           bottom: 'calc(96px + env(safe-area-inset-bottom))',
           right: '24px',
-          transform: showFab 
-            ? 'scale(1) translateY(0)' 
-            : 'scale(0.75) translateY(calc(24px + env(safe-area-inset-bottom) * 0.3))',
-          opacity: showFab ? 1 : 0.55,
-          pointerEvents: 'auto',
+          transform: showFab ? 'scale(1)' : 'scale(0)',
+          opacity: showFab ? 1 : 0,
+          pointerEvents: showFab ? 'auto' : 'none',
         }}
       >
         <div className="relative">
@@ -1003,6 +1028,7 @@ export default function Dashboard() {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd}
             onClick={() => {
               if (!showFab) {
                 setShowFab(true);
