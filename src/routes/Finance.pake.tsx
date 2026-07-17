@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Plus,
   ArrowUpRight,
@@ -130,6 +131,8 @@ const QNB_DEBIT = /0050|\*\*7893|7893/;
 const QNB_CREDIT = /1473|\*\*\*1473/;
 
 export default function Finance() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [theme, setTheme] = useState<Theme>(webDarkTheme);
 
   useEffect(() => {
@@ -731,6 +734,18 @@ export default function Finance() {
   const handleDeleteInvestment = (id: string) => {
     setDeleteInvestmentId(id);
   };
+
+  useEffect(() => {
+    const state = location.state as { triggerAdd?: boolean } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      if (activeTab === 'investments') {
+        handleOpenInvestmentModal();
+      } else {
+        handleOpenModal();
+      }
+    }
+  }, [location.state, navigate, location.pathname, activeTab, investmentAccounts]);
 
   if (isLoading) {
     return (
