@@ -474,3 +474,12 @@ button, a {
   -webkit-tap-highlight-color: transparent !important;
   outline: none !important;
 }
+
+/* Utility to hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
