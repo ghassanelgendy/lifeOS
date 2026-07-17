@@ -1089,9 +1089,14 @@ export default function Tasks() {
     setIsEditModalOpen(true);
   };
 
-  // Redirect to edit task if navigation state payload contains editTaskId
+  // Redirect to edit/add task if navigation state payload contains editTaskId or triggerAdd
   useEffect(() => {
-    const state = location.state as { editTaskId?: string } | null;
+    const state = location.state as { editTaskId?: string; triggerAdd?: boolean } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      handleOpenNewTaskSheet();
+      return;
+    }
     if (state?.editTaskId && allTasks.length > 0) {
       const taskId = state.editTaskId;
       const task = allTasks.find((t) => t.id === taskId);
