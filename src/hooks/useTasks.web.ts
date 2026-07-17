@@ -712,52 +712,41 @@ async function adjustPointsForTaskToggle(task: any, newCompleted: boolean) {
   if (!isDateEligibleForPoints(completedAt)) return;
 
   const config = getPointsConfig();
-  const pointsVal = task.points_value ?? 0;
+  
+  // Auto-determine earned points based on priority
+  let earned = config.defaultTaskEarn;
+  if (task.priority === 'high') {
+    earned = config.defaultTaskEarn * 2;
+  } else if (task.priority === 'medium') {
+    earned = Math.round(config.defaultTaskEarn * 1.5);
+  } else if (task.priority === 'low') {
+    earned = config.defaultTaskEarn;
+  } else {
+    earned = Math.round(config.defaultTaskEarn * 0.5);
+  }
   
   const txId = uuidv4();
   let amount = 0;
   let desc = '';
 
-  if (pointsVal < 0) {
-    const cost = Math.abs(pointsVal);
-    if (newCompleted) {
-      // Fetch balance securely from DB if online, else fall back to local store
-      const { data: dbTxs } = isOnline()
-        ? await supabase.from('points_transactions').select('amount').eq('user_id', task.user_id)
-        : { data: null };
-      const txs = dbTxs || await idbGetPointsTransactions();
-      const balance = txs.reduce((sum: number, t: any) => sum + t.amount, 0);
+  const onTime = isTaskCompletedOnTime(task, completedAt);
 
-      if (balance < cost) {
-        throw new Error('Insufficient points to redeem this task');
-      }
-      amount = -cost;
-      desc = `Redeemed Task: ${task.title}`;
+  if (newCompleted) {
+    if (onTime) {
+      amount = earned;
+      desc = `Completed Task On-Time (${task.priority || 'no'} priority): ${task.title}`;
     } else {
-      amount = cost;
-      desc = `Reverted Task Redemption: ${task.title}`;
+      amount = -earned;
+      desc = `Completed Task Late (${task.priority || 'no'} priority): ${task.title}`;
     }
   } else {
-    const earned = pointsVal || config.defaultTaskEarn;
-    const onTime = isTaskCompletedOnTime(task, completedAt);
-
-    if (newCompleted) {
-      if (onTime) {
-        amount = earned;
-        desc = `Completed Task On-Time: ${task.title}`;
-      } else {
-        amount = -earned;
-        desc = `Completed Task Late: ${task.title}`;
-      }
+    const originallyOnTime = isTaskCompletedOnTime(task, task.completed_at);
+    if (originallyOnTime) {
+      amount = -earned;
+      desc = `Reverted Task Completion (Was On-Time) (${task.priority || 'no'} priority): ${task.title}`;
     } else {
-      const originallyOnTime = isTaskCompletedOnTime(task, task.completed_at);
-      if (originallyOnTime) {
-        amount = -earned;
-        desc = `Reverted Task Completion (Was On-Time): ${task.title}`;
-      } else {
-        amount = earned;
-        desc = `Reverted Task Completion (Was Late): ${task.title}`;
-      }
+      amount = earned;
+      desc = `Reverted Task Completion (Was Late) (${task.priority || 'no'} priority): ${task.title}`;
     }
   }
 
