@@ -583,12 +583,21 @@ export default function Tasks() {
 
     const onTouchStart = (e: TouchEvent) => {
       if (window.innerWidth >= 768) return;
+      // Block sidebar if a 3D touch context menu is currently open
+      if (document.querySelector('[data-context-menu-container="true"]')) {
+        startX = -1;
+        return;
+      }
       if (e.touches[0].clientX < EDGE) startX = e.touches[0].clientX;
       else startX = -1;
     };
 
     const onTouchMove = (e: TouchEvent) => {
       if (window.innerWidth >= 768 || startX < 0) return;
+      if (document.querySelector('[data-context-menu-container="true"]')) {
+        startX = -1;
+        return;
+      }
       const dx = e.touches[0].clientX - startX;
       if (dx > THRESHOLD) {
         setShowListsSidebar(true);
