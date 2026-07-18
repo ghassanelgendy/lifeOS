@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, useInView, useMotionValue, useSpring, animate } from 'framer-motion';
 import { cn } from '../lib/utils';
 import {
@@ -7,6 +7,7 @@ import {
   Moon, BarChart3, Wallet, FileText, Flame, Layout, Dumbbell,
   ArrowRight, Coins, Focus as FocusIcon
 } from 'lucide-react';
+import WikiGraphView from '../components/wiki/WikiGraphView';
 
 type Feature = {
   icon: typeof CheckSquare;
@@ -116,9 +117,18 @@ function RotatingWord() {
 }
 
 function FeatureCard({ feature, index, active, onSelect }: { feature: Feature; index: number; active: boolean; onSelect: () => void }) {
-  const ref = useRef(null);
+  const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: '-60px' });
   const Icon = feature.icon;
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    ref.current.style.setProperty('--mouse-x', `${x}px`);
+    ref.current.style.setProperty('--mouse-y', `${y}px`);
+  };
 
   return (
     <motion.div
@@ -129,13 +139,20 @@ function FeatureCard({ feature, index, active, onSelect }: { feature: Feature; i
       animate={inView ? 'show' : 'hidden'}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       onClick={onSelect}
+      onMouseMove={handleMouseMove}
       className={cn(
         'group relative rounded-2xl border bg-white/[0.03] p-5 overflow-hidden cursor-pointer text-left transition-all',
         active ? 'border-white/20 ring-1 ring-white/20 bg-white/[0.06]' : 'border-white/[0.06]',
       )}
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-      <div className="relative flex gap-4">
+      <div 
+        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
+        style={{
+          background: `radial-gradient(120px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(255,255,255,0.06), transparent 80%)`,
+        }}
+      />
+      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0`} />
+      <div className="relative flex gap-4 z-10">
         <div className="shrink-0 w-10 h-10 rounded-xl bg-white/[0.06] group-hover:bg-white/[0.10] transition-colors flex items-center justify-center">
           <Icon size={18} className="text-white/70 group-hover:text-white transition-colors" />
         </div>
@@ -149,9 +166,49 @@ function FeatureCard({ feature, index, active, onSelect }: { feature: Feature; i
 }
 
 export default function Landing() {
+  const navigate = useNavigate();
   const statsRef = useRef(null);
   const statsInView = useInView(statsRef, { once: true });
   const [activeFeature, setActiveFeature] = useState<Feature | null>(null);
+
+  // Mock Dashboard Sandbox State
+  const [coins, setCoins] = useState(120);
+  const [mockTasks, setMockTasks] = useState([
+    { id: 1, text: 'Ship v1.0 of lifeOS', points: 20, done: false },
+    { id: 2, text: 'Log daily sleep analysis', points: 10, done: false },
+    { id: 3, text: 'Complete 10m focus sprint', points: 15, done: false },
+  ]);
+  const [mockHabits, setMockHabits] = useState([
+    { id: 1, name: '8h Sleep Rest', streak: 5, done: false },
+    { id: 2, name: 'Read 5 Pages', streak: 12, done: false },
+    { id: 3, name: 'Morning Reflection', streak: 2, done: false },
+  ]);
+
+  const toggleMockTask = (id: number) => {
+    setMockTasks((prev) =>
+      prev.map((t) => {
+        if (t.id === id) {
+          const newDone = !t.done;
+          setCoins((c) => c + (newDone ? t.points : -t.points));
+          return { ...t, done: newDone };
+        }
+        return t;
+      })
+    );
+  };
+
+  const completeMockHabit = (id: number) => {
+    setMockHabits((prev) =>
+      prev.map((h) => {
+        if (h.id === id && !h.done) {
+          setCoins((c) => c + 15);
+          return { ...h, done: true, streak: h.streak + 1 };
+        }
+        return h;
+      })
+    );
+  };
+
   const panelState: PanelState = activeFeature
     ? {
       title: activeFeature.title,
@@ -240,6 +297,125 @@ export default function Landing() {
           </div>
         </section>
 
+        {/* Live Interactive Mockup Dashboard Section */}
+        <section className="max-w-4xl mx-auto px-6 py-14">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-bold tracking-tight mb-3">Try it yourself</h2>
+            <p className="text-white/40 text-sm max-w-md mx-auto">Click tasks and habits in this interactive mockup to see how lifeOS gamifies your day-to-day execution.</p>
+          </div>
+
+          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-8 backdrop-blur-md relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/10 rounded-full blur-[80px] pointer-events-none" />
+
+            <div className="flex items-center justify-between pb-6 border-b border-white/[0.06] mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="font-semibold text-white/80 text-sm">Interactive Sandbox</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-white/40">Score:</span>
+                <motion.div 
+                  key={coins}
+                  initial={{ scale: 0.9 }}
+                  animate={{ scale: 1 }}
+                  className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-sm"
+                >
+                  <Coins size={14} className="text-amber-500 shrink-0 animate-bounce" />
+                  <span>{coins} XP</span>
+                </motion.div>
+              </div>
+            </div>
+
+            <div className="grid gap-8 md:grid-cols-2">
+              
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">Inbox Tasks</h4>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-white/60">{mockTasks.filter(t => !t.done).length} active</span>
+                </div>
+                <div className="space-y-2.5">
+                  {mockTasks.map((task) => (
+                    <div 
+                      key={task.id}
+                      onClick={() => toggleMockTask(task.id)}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer select-none",
+                        task.done 
+                          ? "bg-emerald-500/5 border-emerald-500/30 text-white/45" 
+                          : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/15 text-white/80"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0",
+                          task.done ? "bg-emerald-500 border-emerald-400 text-black" : "border-white/30"
+                        )}>
+                          {task.done && <CheckSquare size={13} className="stroke-[3]" />}
+                        </div>
+                        <span className={cn("text-sm font-medium", task.done && "line-through")}>{task.text}</span>
+                      </div>
+                      <span className={cn(
+                        "text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
+                        task.done ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-white/40"
+                      )}>
+                        {task.done ? "Done!" : `+${task.points} XP`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">Daily Habits</h4>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-white/60">{mockHabits.filter(h => h.done).length}/3 tracked</span>
+                </div>
+                <div className="space-y-2.5">
+                  {mockHabits.map((habit) => (
+                    <div 
+                      key={habit.id}
+                      onClick={() => completeMockHabit(habit.id)}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-xl border transition-all select-none",
+                        habit.done 
+                          ? "bg-amber-500/5 border-amber-500/30 text-white/50 cursor-default" 
+                          : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/15 text-white/80 cursor-pointer"
+                      )}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-5 h-5 rounded-full border flex items-center justify-center transition-colors shrink-0",
+                          habit.done ? "bg-amber-500 border-amber-400 text-black" : "border-white/30"
+                        )}>
+                          {habit.done && <Flame size={12} className="fill-current text-black animate-pulse" />}
+                        </div>
+                        <span className="text-sm font-medium">{habit.name}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <div className={cn(
+                          "flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full",
+                          habit.done ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/40"
+                        )}>
+                          <Flame size={12} className={cn(habit.done ? "text-amber-500 fill-amber-500" : "text-white/30")} />
+                          <span>{habit.streak} days</span>
+                        </div>
+                        {!habit.done && (
+                          <span className="text-[10px] uppercase font-bold text-amber-500 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded-md hover:bg-amber-500/25 shrink-0">
+                            Log
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
         <section className="max-w-6xl mx-auto px-6 py-24">
           <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-center mb-14">
             <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Everything in one place</h2>
@@ -288,18 +464,34 @@ export default function Landing() {
 
         {/* Public Wiki Section */}
         <section className="border-t border-white/[0.05] bg-white/[0.01] py-20 text-center">
-          <div className="max-w-4xl mx-auto px-6">
-            <div className="inline-flex p-3 rounded-2xl bg-white/[0.04] border border-white/10 text-white/80 mb-6">
-              <BookOpen size={28} />
+          <div className="max-w-4xl mx-auto px-6 space-y-8">
+            <div className="space-y-3">
+              <div className="inline-flex p-3 rounded-2xl bg-white/[0.04] border border-white/10 text-white/80 mb-2">
+                <BookOpen size={28} />
+              </div>
+              <h2 className="text-3xl font-bold tracking-tight">Explore the lifeOS Wiki</h2>
+              <p className="text-white/45 text-base max-w-lg mx-auto leading-relaxed">
+                Interact with our public knowledge graph. Drag nodes to explore connections, and click any node to read the system specifications and product guidelines.
+              </p>
             </div>
-            <h2 className="text-3xl font-bold tracking-tight mb-4">Explore the lifeOS Wiki</h2>
-            <p className="text-white/45 text-base max-w-lg mx-auto mb-8 leading-relaxed">
-              Dive into our complete developer manuals, software specifications (SRS), product vision (PRD), and interactive knowledge graphs. 100% open and public.
-            </p>
-            <Link to="/wiki" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all shadow-md">
-              Browse Documentation
-              <ArrowRight size={15} />
-            </Link>
+            
+            <div className="rounded-3xl border border-white/[0.08] bg-black/40 p-4 shadow-xl overflow-hidden flex justify-center max-w-3xl mx-auto">
+              <WikiGraphView onNavigate={(nodeId) => {
+                if (nodeId.includes('#')) {
+                  const [pageTitle] = nodeId.split('#');
+                  navigate(`/wiki/${encodeURIComponent(pageTitle)}`);
+                } else {
+                  navigate(`/wiki/${encodeURIComponent(nodeId)}`);
+                }
+              }} />
+            </div>
+
+            <div>
+              <Link to="/wiki" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all shadow-md">
+                Browse Full Documentation
+                <ArrowRight size={15} />
+              </Link>
+            </div>
           </div>
         </section>
       </main>
