@@ -287,26 +287,54 @@ function computeHabitsByDow(days: DayMetrics[]): { dow: string; adherence: numbe
 
 // ── Date helpers ─────────────────────────────────────────────────────
 
-function getWeekBounds(offset: number) {
-  const now = new Date();
-  // Most recently completed Sun-Sat week (offset 0 = last completed week)
-  const daysSinceSat = (now.getDay() + 1) % 7; // days since last Saturday
-  const lastSat = addDays(now, -(daysSinceSat + 7 * offset));
-  const weekEnd = format(lastSat, 'yyyy-MM-dd');
-  const weekStart = format(addDays(lastSat, -6), 'yyyy-MM-dd');
-  const prevEnd = format(addDays(lastSat, -7), 'yyyy-MM-dd');
-  const prevStart = format(addDays(lastSat, -13), 'yyyy-MM-dd');
-  return { weekStart, weekEnd, prevStart, prevEnd };
+export function getWeekBounds(offset: number, now = new Date()) {
+  const dayOfWeek = now.getDay();
+
+  if (dayOfWeek === 6) {
+    // Saturday: wrap day, exclude today, so last completed day is yesterday (Friday)
+    const baseEnd = addDays(now, -1);
+    const weekEnd = format(addDays(baseEnd, -7 * offset), 'yyyy-MM-dd');
+    const weekStart = format(addDays(baseEnd, -6 - 7 * offset), 'yyyy-MM-dd');
+    const prevEnd = format(addDays(baseEnd, -7 - 7 * offset), 'yyyy-MM-dd');
+    const prevStart = format(addDays(baseEnd, -13 - 7 * offset), 'yyyy-MM-dd');
+    return { weekStart, weekEnd, prevStart, prevEnd };
+  } else {
+    // Most recently completed Sun-Sat week (offset 0 = last completed week)
+    const daysSinceSat = (dayOfWeek + 1) % 7; // days since last Saturday
+    const lastSat = addDays(now, -(daysSinceSat + 7 * offset));
+    const weekEnd = format(lastSat, 'yyyy-MM-dd');
+    const weekStart = format(addDays(lastSat, -6), 'yyyy-MM-dd');
+    const prevEnd = format(addDays(lastSat, -7), 'yyyy-MM-dd');
+    const prevStart = format(addDays(lastSat, -13), 'yyyy-MM-dd');
+    return { weekStart, weekEnd, prevStart, prevEnd };
+  }
 }
 
-function getMonthBounds(offset: number) {
-  const now = new Date();
-  const target = subMonths(now, offset + 1); // previous completed month
+export function getMonthBounds(offset: number, now = new Date()) {
+  const dayOfMonth = now.getDate();
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const isMonthlyWrapDay = dayOfMonth >= lastDayOfMonth - 2;
+
+  // If in the wrap period, offset 0 refers to the current month.
+  // Otherwise, offset 0 refers to the previous month.
+  const targetOffset = isMonthlyWrapDay ? offset : offset + 1;
+  const target = subMonths(now, targetOffset);
+
   const start = format(startOfMonth(target), 'yyyy-MM-dd');
-  const end = format(endOfMonth(target), 'yyyy-MM-dd');
+  
+  // If we are looking at the current month (targetOffset === 0), exclude today (now).
+  // Otherwise, it's a completed month, so it goes up to the end of that month.
+  let end: string;
+  if (targetOffset === 0) {
+    end = format(addDays(now, -1), 'yyyy-MM-dd');
+  } else {
+    end = format(endOfMonth(target), 'yyyy-MM-dd');
+  }
+
   const prevTarget = subMonths(target, 1);
   const prevStart = format(startOfMonth(prevTarget), 'yyyy-MM-dd');
   const prevEnd = format(endOfMonth(prevTarget), 'yyyy-MM-dd');
+
   return { start, end, prevStart, prevEnd };
 }
 

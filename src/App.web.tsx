@@ -29,9 +29,11 @@ import Sleep from './routes/Sleep';
 import AnalyticsPage from './routes/Analytics';
 import SettingsPage from './routes/Settings';
 import Points from './routes/Points';
+import Wiki from './routes/Wiki';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
 import { useDailyPointsSync } from './hooks/usePoints';
+import Landing from './routes/Landing';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -53,6 +55,24 @@ function RequireGuest({ children }: { children: React.ReactNode }) {
   if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
+}
+
+function PublicHome() {
+  const { user, loading } = useAuth();
+  const defaultTab = useUIStore((s) => s.defaultTab);
+  
+  useEffect(() => {
+    document.body.dataset.route = 'landing';
+    return () => {
+      delete document.body.dataset.route;
+    };
+  }, []);
+
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Landing />;
+  
+  const dest = defaultTab && defaultTab !== 'dashboard' ? `/${defaultTab}` : '/dashboard';
+  return <Navigate to={dest} replace />;
 }
 
 function UserAppSettingsBridge() {
@@ -242,11 +262,13 @@ function AppInner() {
       <Router>
         <FaviconSync />
         <Routes>
+          <Route path="/" element={<PublicHome />} />
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
-          <Route path="/" element={<ProtectedRoute />}>
+          <Route path="/wiki" element={<Wiki />} />
+          <Route path="/wiki/:pageTitle" element={<Wiki />} />
+          <Route path="*" element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
-              <Route index element={<Dashboard />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="focus" element={<Focus />} />
@@ -260,7 +282,7 @@ function AppInner() {
               <Route path="sleep" element={<Sleep />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Route>
           </Route>
         </Routes>

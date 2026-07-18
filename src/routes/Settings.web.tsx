@@ -20,6 +20,9 @@ import {
   RotateCcw,
   MapPin,
   Loader2,
+  HelpCircle,
+  BookOpen,
+  ChevronRight,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
@@ -84,6 +87,7 @@ const SETTINGS_NAV = [
   { id: 'habits', label: 'Habits' },
   { id: 'privacy', label: 'Privacy & analytics' },
   { id: 'data', label: 'Data & backup' },
+  { id: 'help', label: 'Help & Docs' },
   { id: 'about', label: 'About' },
 ] as const;
 
@@ -1244,6 +1248,46 @@ export default function SettingsPage() {
             <Button variant="destructive" onClick={handleClearAll}>
               Delete
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Help & Docs */}
+      <section id="settings-help" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Help & Documentation</h2>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="font-medium flex items-center gap-2">
+                <HelpCircle size={18} className="text-primary" />
+                <span>lifeOS User Guide & Wiki</span>
+              </p>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                Need help getting started or understanding how lifeOS works? Browse the full documentation, product specifications, and system codebase guide.
+              </p>
+            </div>
+            <Link to="/wiki" className="shrink-0">
+              <Button className="gap-2">
+                <BookOpen size={16} />
+                Open Wiki
+              </Button>
+            </Link>
+          </div>
+          <div className="pt-4 border-t border-border/50">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Popular Articles</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Link to="/wiki/vision-strategy" className="text-xs text-primary hover:underline flex items-center gap-1">
+                <ChevronRight size={12} /> Vision, Principles & Roadmap
+              </Link>
+              <Link to="/wiki/system-architecture" className="text-xs text-primary hover:underline flex items-center gap-1">
+                <ChevronRight size={12} /> System Architecture & Tech Stack
+              </Link>
+              <Link to="/wiki/database-schema" className="text-xs text-primary hover:underline flex items-center gap-1">
+                <ChevronRight size={12} /> Database Schema & Data Models
+              </Link>
+            </div>
           </div>
         </div>
       </section>
