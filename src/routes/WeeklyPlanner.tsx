@@ -416,7 +416,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
+    <div className="max-w-7xl mx-auto p-0 md:p-6 space-y-6">
       {/* Top Banner Control - Desktop-only */}
       <div className="hidden md:flex flex-row items-center justify-between bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 p-4 rounded-2xl gap-4">
         <div className="flex items-center gap-3">
@@ -431,7 +431,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
         <div className="flex items-center gap-3">
           {/* Week Selector */}
-          <div className="flex items-center gap-1 bg-zinc-850 p-1 rounded-xl border border-zinc-800">
+          <div className="flex items-center gap-1 bg-zinc-855 p-1 rounded-xl border border-zinc-800">
             <Button
               onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
               className="p-2 hover:bg-zinc-700/80 text-zinc-350 bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center"
@@ -504,19 +504,18 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
       </div>
 
       {/* Top Banner Control - iOS / Mobile Native Viewport */}
-      <div className="flex md:hidden flex-col gap-3">
-        {/* iOS-style Date Navigation Bar (matches Calendar.ios.tsx Segmented styles) */}
-        <div className="flex items-center justify-between bg-black/10 dark:bg-white/5 border border-white/5 rounded-xl p-1.5">
+      <div className="flex md:hidden items-center justify-between bg-black/10 dark:bg-white/5 border border-white/5 rounded-xl p-2 gap-2 h-11">
+        {/* Centered Week picker that opens native input wheel on tap */}
+        <div className="flex items-center gap-0.5">
           <Button
             onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0"
+            className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          {/* Centered Week picker that opens native input wheel on tap */}
-          <div className="relative flex items-center gap-1.5 hover:bg-white/5 px-3 py-1.5 rounded-lg active:scale-98 transition-transform select-none">
-            <span className="text-sm font-semibold text-zinc-200">Week {weekNumber}</span>
+          <div className="relative flex items-center gap-1 hover:bg-white/5 px-2.5 py-1.5 rounded-lg active:scale-98 transition-transform select-none">
+            <span className="text-xs font-semibold text-zinc-200">Wk {weekNumber}</span>
             <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="date"
@@ -533,22 +532,19 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
           <Button
             onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0"
+            className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
 
-        {/* iOS-style Weekly Load Pill Widget */}
-        <div className="bg-black/10 dark:bg-white/5 border border-white/5 p-4 rounded-xl text-xs gap-3 flex items-center justify-between">
-          <div className="flex flex-col gap-1 flex-1">
-            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-none">Weekly Load Analysis</span>
-            <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full border inline-block w-fit mt-1 leading-none", loadRating.color)}>
-              {loadRating.text}
-            </span>
-          </div>
+        {/* Sparkline Load indicator */}
+        <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
+          <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full border leading-none shrink-0 w-fit whitespace-nowrap", loadRating.color)}>
+            {loadRating.text}
+          </span>
           
-          <div className="flex items-end gap-2.5 h-12 flex-shrink-0">
+          <div className="flex items-end gap-1 h-6 pr-1 flex-shrink-0">
             {weeklyLoads.map((w, idx) => {
               const maxL = Math.max(...weeklyLoads.map(l => l.count), 1);
               const hPct = (w.count / maxL) * 100;
@@ -561,14 +557,11 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
               
               return (
                 <div key={idx} className="flex flex-col items-center group relative cursor-help">
-                  <span className="text-[9px] text-white font-bold leading-none mb-1">{w.count}</span>
-                  <div className="h-8 flex items-end">
-                    <div
-                      style={{ height: `${Math.max(15, hPct)}%` }}
-                      className={cn("w-2.5 rounded-t-sm transition-all duration-300", barColor)}
-                    />
-                  </div>
-                  <span className="text-[8px] text-zinc-400 font-bold mt-1.5 uppercase leading-none">{w.label}</span>
+                  <div
+                    style={{ height: `${Math.max(15, hPct)}%` }}
+                    className={cn("w-1.5 rounded-t-sm transition-all duration-300", barColor)}
+                  />
+                  <span className="text-[7px] text-zinc-400 font-bold mt-0.5 uppercase leading-none">{w.label}</span>
                 </div>
               );
             })}
@@ -576,8 +569,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
         </div>
       </div>
 
-      {/* Main Planner Grid / Carousel on Mobile */}
-      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scroll-pl-4 snap-x snap-mandatory scrollbar-none">
+      {/* Main 2x4 Planner Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Days of the Week (First 7 slots) */}
         {weekDays.map((day, idx) => {
           // Dynamic daily habits matching date (excluding detox habits)
@@ -586,7 +579,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
           return (
             <div
               key={day.dateStr}
-              className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px] shrink-0 w-[88vw] max-w-[350px] md:w-auto md:max-w-none snap-center"
+              className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px]"
             >
               {/* Header colored dynamically based on relative crowdness */}
               <div
@@ -645,15 +638,13 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
         })}
 
         {/* Self Care Card (8th slot) */}
-        <div className="shrink-0 w-[88vw] max-w-[350px] md:w-auto md:max-w-none snap-center">
-          <SelfCareCard
-            sundayDateStr={sundayDateStr}
-            folderId={reflectionsFolder?.id}
-            weeklyNote={weeklyReflectionsNote}
-            createNote={createNote}
-            updateNote={updateNote}
-          />
-        </div>
+        <SelfCareCard
+          sundayDateStr={sundayDateStr}
+          folderId={reflectionsFolder?.id}
+          weeklyNote={weeklyReflectionsNote}
+          createNote={createNote}
+          updateNote={updateNote}
+        />
       </div>
 
       {/* AI Wellbeing Correlation Coach Section */}
