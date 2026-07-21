@@ -21,8 +21,11 @@ import {
   Code2,
   TrendingUp as TrendingUpIcon,
   Wallet,
+  Sparkles,
+  Loader2,
   type LucideIcon,
 } from 'lucide-react';
+import { askAI, extractJSON } from '../lib/ai';
 import {
   BarChart,
   Bar,
@@ -376,6 +379,51 @@ export default function Finance() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+
+  // AI receipt/SMS parsing states
+  const aiEnabled = useUIStore((s) => s.aiEnabled);
+  const [isPasteOpen, setIsPasteOpen] = useState(false);
+  const [pastedText, setPastedText] = useState('');
+  const [isParsingFinance, setIsParsingFinance] = useState(false);
+
+  const handleParseFinance = async () => {
+    if (!pastedText.trim()) return;
+    try {
+      setIsParsingFinance(true);
+      const systemPrompt = `You are a financial assistant. Parse the text from bank notification SMS alerts or receipt logs into a transaction model.
+Today's date is: ${new Date().toISOString().split('T')[0]}.
+Extract:
+- type ("income" or "expense")
+- amount (number)
+- entity (string, merchant name or sender/receiver)
+- direction ("In" or "Out")
+- category (string, values: "food", "transport", "utilities", "entertainment", "health", "education", "shopping", "ipn", "salary", "freelance", "investment", "other_expense", "other_income")
+- bank (string, bank name if identifiable from text)
+- date (string, format YYYY-MM-DD)
+
+Return ONLY raw JSON object.`;
+      const res = await askAI(systemPrompt, pastedText, true);
+      const parsed = extractJSON(res);
+      
+      setFormData((prev) => ({
+        ...prev,
+        type: parsed.type || prev.type,
+        category: parsed.category || prev.category,
+        amount: parsed.amount || prev.amount,
+        entity: parsed.entity || prev.entity || '',
+        direction: parsed.direction || prev.direction,
+        bank: parsed.bank || prev.bank || '',
+        date: parsed.date || prev.date,
+      }));
+      setPastedText('');
+      setIsPasteOpen(false);
+    } catch (err) {
+      console.error("AI Finance Parse failed:", err);
+    } finally {
+      setIsParsingFinance(false);
+    }
+  };
+
   const [isInvestmentModalOpen, setIsInvestmentModalOpen] = useState(false);
   const [editingInvestmentTransaction, setEditingInvestmentTransaction] = useState<InvestmentTransaction | null>(null);
   const [deleteTransactionId, setDeleteTransactionId] = useState<string | null>(null);
@@ -1402,6 +1450,53 @@ export default function Finance() {
         confirmDisabled={createTransaction.isPending || updateTransaction.isPending}
       >
         <form id="transaction-form" ref={transactionFormRef} onSubmit={handleSubmit} className="space-y-4">
+          {aiEnabled && (
+            <div className="border border-border bg-secondary/35 rounded-xl p-3 space-y-2">
+              <button
+                type="button"
+                onClick={() => setIsPasteOpen(!isPasteOpen)}
+                className="w-full flex items-center justify-between text-xs font-semibold text-primary hover:underline"
+              >
+                <span className="flex items-center gap-1">
+                  <Sparkles size={13} fill="currentColor" />
+                  Parse Bank SMS / Receipt text
+                </span>
+                <span>{isPasteOpen ? 'Hide' : 'Show'}</span>
+              </button>
+              {isPasteOpen && (
+                <div className="space-y-2 pt-1">
+                  <textarea
+                    value={pastedText}
+                    onChange={(e) => setPastedText(e.target.value)}
+                    placeholder="Paste bank notification SMS or receipt text here..."
+                    className="w-full h-20 bg-background text-xs rounded-lg border border-border p-2 outline-none focus:ring-1 focus:ring-ring resize-none"
+                  />
+                  <div className="flex justify-end">
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={isParsingFinance || !pastedText.trim()}
+                      onClick={handleParseFinance}
+                      className="text-xs h-7 gap-1"
+                    >
+                      {isParsingFinance ? (
+                        <>
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          Parsing...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-3 h-3" fill="currentColor" />
+                          Parse Text
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex gap-2 p-1 bg-secondary rounded-lg">
             <button
               type="button"
