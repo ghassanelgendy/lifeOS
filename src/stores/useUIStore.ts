@@ -6,8 +6,10 @@ export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', 
 export const DEFAULT_DESKTOP_NAV = [
   '/dashboard',
   '/tasks',
+  '/weekly-planner',
   '/focus',
   '/habits',
+  '/points',
   '/calendar',
   '/notes',
   '/health',
@@ -192,6 +194,16 @@ interface UIState {
   setReportScreenTargetPrevious: (hours: number) => void;
   setReportHabitsTargetPrevious: (pct: number) => void;
   setLastAutopilotAdjustedWeek: (key: string | null) => void;
+
+  // AI Configuration Settings
+  aiEnabled: boolean;
+  aiApiKey: string;
+  aiBaseUrl: string;
+  aiModel: string;
+  setAiEnabled: (enabled: boolean) => void;
+  setAiApiKey: (key: string) => void;
+  setAiBaseUrl: (url: string) => void;
+  setAiModel: (model: string) => void;
 }
 
 /** Serializable UI preferences (localStorage + Supabase). */
@@ -239,6 +251,12 @@ export type PersistedUiSlice = {
   reportScreenTargetPrevious: number;
   reportHabitsTargetPrevious: number;
   lastAutopilotAdjustedWeek: string | null;
+  
+  // AI persisted slice keys
+  aiEnabled: boolean;
+  aiApiKey: string;
+  aiBaseUrl: string;
+  aiModel: string;
 };
 
 export const useUIStore = create<UIState>()(
@@ -414,6 +432,16 @@ export const useUIStore = create<UIState>()(
       calendarShowTasks: true,
       setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
 
+      // AI Default values & Setters
+      aiEnabled: false,
+      aiApiKey: 'sk-nry-XbvPSwZNl6kIPm8WnNHnbx2u-tWrHCQRvZUtsJbCCig',
+      aiBaseUrl: 'https://router.bynara.id/v1',
+      aiModel: 'mistral-medium-3-5',
+      setAiEnabled: (aiEnabled) => set({ aiEnabled }),
+      setAiApiKey: (aiApiKey) => set({ aiApiKey }),
+      setAiBaseUrl: (aiBaseUrl) => set({ aiBaseUrl }),
+      setAiModel: (aiModel) => set({ aiModel }),
+
       pageWidgetOrder: {
         dashboard: [...DASHBOARD_WIDGET_IDS],
         sleep: [...SLEEP_WIDGET_IDS],
@@ -538,5 +566,11 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     reportScreenTargetPrevious: state.reportScreenTargetPrevious,
     reportHabitsTargetPrevious: state.reportHabitsTargetPrevious,
     lastAutopilotAdjustedWeek: state.lastAutopilotAdjustedWeek,
+    
+    // AI state persistance
+    aiEnabled: state.aiEnabled,
+    aiApiKey: state.aiApiKey,
+    aiBaseUrl: state.aiBaseUrl,
+    aiModel: state.aiModel,
   };
 }
