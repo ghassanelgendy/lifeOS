@@ -331,20 +331,60 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
     };
   };
 
-  // 6. Calculate weekly load from all entries in the week (all tasks regardless of priority, events, habits)
+  // 6. Calculate weekly load average for the past 4 weeks (last month) to establish baseline heuristics
+  const lastMonthAverageLoad = useMemo(() => {
+    let totalLoad = 0;
+    const weeksToCompare = 4;
+
+    for (let w = 1; w <= weeksToCompare; w++) {
+      const wStart = subWeeks(weekStart, w);
+      let loadCount = 0;
+
+      for (let i = 0; i < 7; i++) {
+        const dayDate = addDays(wStart, i);
+        const dayStr = toDateOnly(dayDate);
+
+        const tasksCount = tasks.filter(
+          (t) => t.due_date === dayStr && !t.is_wont_do
+        ).length;
+        const eventsCount = events.filter(
+          (e) => e.start_time.split('T')[0] === dayStr
+        ).length;
+        const habitsCount = habits.filter((h) =>
+          h.habit_type !== 'detox' && isHabitScheduledForDate(h, dayDate)
+        ).length;
+
+        loadCount += tasksCount + eventsCount + habitsCount;
+      }
+      totalLoad += loadCount;
+    }
+
+    return totalLoad / weeksToCompare;
+  }, [weekStart, tasks, events, habits]);
+
   const currentWeekTotalLoad = useMemo(() => {
     return dayCounts.reduce((sum, c) => sum + c, 0);
   }, [dayCounts]);
 
   const loadRating = useMemo(() => {
-    if (currentWeekTotalLoad < 15) {
-      return { text: 'Less Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+    const baseline = lastMonthAverageLoad;
+    
+    // Fallback if there is no historical data yet
+    if (baseline === 0) {
+      if (currentWeekTotalLoad < 15) return { text: 'Less Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+      if (currentWeekTotalLoad > 35) return { text: 'More Load', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
+      return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
     }
-    if (currentWeekTotalLoad > 35) {
+
+    // Determine load compared to the average of the last month
+    if (currentWeekTotalLoad > baseline * 1.15) {
       return { text: 'More Load', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
     }
+    if (currentWeekTotalLoad < baseline * 0.85) {
+      return { text: 'Less Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+    }
     return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
-  }, [currentWeekTotalLoad]);
+  }, [currentWeekTotalLoad, lastMonthAverageLoad]);
 
   // Check if a habit is logged for a specific date
   const isHabitLoggedOn = (habitId: string, dateStr: string) => {
