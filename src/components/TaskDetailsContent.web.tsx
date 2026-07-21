@@ -17,7 +17,11 @@ import {
   Trash2,
   Plus,
   Coins,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { useUIStore } from '../stores/useUIStore';
+import { askAI, extractJSON } from '../lib/ai';
 import { Button } from './ui';
 import type { Task } from '../types/schema';
 import { useState, useEffect, useRef } from 'react';
@@ -218,6 +222,35 @@ export function TaskDetailsContent({
   const [parseHints, setParseHints] = useState<string[]>([]);
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(false);
+  const [isBreakingDown, setIsBreakingDown] = useState(false);
+  const aiEnabled = useUIStore((s) => s.aiEnabled);
+
+  const handleAiBreakdown = async () => {
+    if (!form.title) return;
+    try {
+      setIsBreakingDown(true);
+      const systemPrompt = "You are a productivity expert that breaks tasks down into clean, action-oriented checklists.";
+      const userPrompt = `Break down the following task into a checklist of actionable subtasks (3 to 7 items).
+Task Title: "${form.title}"
+Task Description: "${form.description || ''}"
+
+Response format: Return ONLY a raw JSON array of strings representing the subtasks. No explanation, no markdown wrapping. E.g. ["Subtask 1", "Subtask 2", "Subtask 3"]`;
+      
+      const res = await askAI(systemPrompt, userPrompt, true);
+      const parsed = extractJSON(res);
+      if (Array.isArray(parsed)) {
+        for (const subTitle of parsed) {
+          if (typeof subTitle === 'string' && subTitle.trim()) {
+            onAddSubtask?.(subTitle.trim());
+          }
+        }
+      }
+    } catch (err) {
+      console.error("AI Subtask Breakdown failed:", err);
+    } finally {
+      setIsBreakingDown(false);
+    }
+  };
 
   const closePicker = () => setOpenPicker(null);
 
@@ -853,6 +886,32 @@ export function TaskDetailsContent({
                     )}%`,
                   }}
                 />
+              </div>
+            )}
+
+            {/* AI Breakdown Button */}
+            {aiEnabled && form.title && (
+              <div className="flex justify-end pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAiBreakdown}
+                  disabled={isBreakingDown}
+                  className="text-xs h-7 gap-1 border-primary/25 text-primary hover:bg-primary/5 active:scale-95 transition-all flex items-center justify-center shrink-0"
+                >
+                  {isBreakingDown ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3 mr-1" fill="currentColor" />
+                      Breakdown with AI
+                    </>
+                  )}
+                </Button>
               </div>
             )}
 

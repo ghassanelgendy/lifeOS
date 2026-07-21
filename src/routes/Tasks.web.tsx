@@ -26,6 +26,8 @@ import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMo
 import { Flame } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
+import { Sparkles } from 'lucide-react';
+import { askAI, extractJSON } from '../lib/ai';
 import {
   useTasks,
   useTaskLists,
@@ -166,7 +168,9 @@ export default function Tasks() {
 
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
+  const aiEnabled = useUIStore((s) => s.aiEnabled);
   const [activeView, setActiveView] = useState<ViewType>('today');
+  const [isParsing, setIsParsing] = useState(false);
   const [taskSort, setTaskSort] = useState<TaskSortMode>('smart');
   const [sortFeedback, setSortFeedback] = useState<string | null>(null);
   const sortFeedbackTimeoutRef = useRef<number | null>(null);
@@ -1775,41 +1779,82 @@ export default function Tasks() {
           {/* Quick Add */}
           {isAddingTask && (
             <form onSubmit={handleQuickAdd} className="mb-4 p-3 rounded-xl border border-border bg-card relative">
-              <input
-                ref={quickAddRef}
-                autoFocus
-                type="text"
-                value={newTaskTitle}
-                onChange={(e) => handleQuickAddTitleChange(e.target.value)}
-                placeholder="Add task (e.g. 12:00, 15 June, tmrw, ~ list, ! priority, # tag)"
-                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setSuggestionTrigger(null);
-                    setIsAddingTask(false);
-                    setNewTaskTitle('');
-                    setNewTaskDate('');
-                    setNewTaskTime('');
-                    setNewTaskPriority('none');
-                    setNewTaskTagIds([]);
-                    setNewTaskListId(null);
-                    setNewTaskRecurrence('none');
-                    setNewTaskRecurrenceInterval(1);
-                    setNewTaskRecurrenceEndType('never');
-                    setNewTaskRecurrenceEnd('');
-                    setNewTaskRecurrenceCount(5);
-                    setNewTaskRecurrenceDays([]);
-                    setNewTaskRemindersEnabled(false);
-                    setNewTaskEarlyReminderMinutes(null);
-                    setParseHints([]);
-                    setShowAdvancedCreate(false);
-                    setIsTagSelectorOpen(false);
-                    setSuggestionQuery('');
-                    setHighlightedDate(undefined); // Clear highlights
-                    setHighlightedTime(undefined); // Clear highlights
-                  }
-                }}
-              />
+              <div className="relative flex items-center justify-between gap-2">
+                <input
+                  ref={quickAddRef}
+                  autoFocus
+                  type="text"
+                  value={newTaskTitle}
+                  onChange={(e) => handleQuickAddTitleChange(e.target.value)}
+                  placeholder={aiEnabled ? "Add task (type naturally and click ✨ to parse with Bynara AI)" : "Add task (e.g. 12:00, 15 June, tmrw, ~ list, ! priority, # tag)"}
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground pr-8"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSuggestionTrigger(null);
+                      setIsAddingTask(false);
+                      setNewTaskTitle('');
+                      setNewTaskDate('');
+                      setNewTaskTime('');
+                      setNewTaskPriority('none');
+                      setNewTaskTagIds([]);
+                      setNewTaskListId(null);
+                      setNewTaskRecurrence('none');
+                      setNewTaskRecurrenceInterval(1);
+                      setNewTaskRecurrenceEndType('never');
+                      setNewTaskRecurrenceEnd('');
+                      setNewTaskRecurrenceCount(5);
+                      setNewTaskRecurrenceDays([]);
+                      setNewTaskRemindersEnabled(false);
+                      setNewTaskEarlyReminderMinutes(null);
+                      setParseHints([]);
+                      setShowAdvancedCreate(false);
+                      setIsTagSelectorOpen(false);
+                      setSuggestionQuery('');
+                      setHighlightedDate(undefined); // Clear highlights
+                      setHighlightedTime(undefined); // Clear highlights
+                    }
+                  }}
+                />
+                {aiEnabled && newTaskTitle.trim() && (
+                  <button
+                    type="button"
+                    disabled={isParsing}
+                    onClick={async () => {
+                      try {
+                        setIsParsing(true);
+                        const systemPrompt = `You are an expert natural language task parser. Parse the task description relative to today's date: ${new Date().toISOString().split('T')[0]} (which is a ${format(new Date(), 'EEEE')}).
+Extract:
+- title (string): Clean task title without dates/times/priorities.
+- due_date (string, format YYYY-MM-DD, optional): The computed due date.
+- due_time (string, format HH:mm, optional): 24h time.
+- priority (string, values: "high", "medium", "low", "none", default "none"): Priority.
+
+Return ONLY raw JSON.`;
+                        const res = await askAI(systemPrompt, newTaskTitle, true);
+                        const parsed = extractJSON(res);
+                        if (parsed.title) setNewTaskTitle(parsed.title);
+                        if (parsed.due_date) setNewTaskDate(parsed.due_date);
+                        if (parsed.due_time) {
+                          setNewTaskTime(parsed.due_time);
+                          setNewTaskRemindersEnabled(true);
+                          if (newTaskEarlyReminderMinutes === null) {
+                            setNewTaskEarlyReminderMinutes(0);
+                          }
+                        }
+                        if (parsed.priority) setNewTaskPriority(parsed.priority);
+                      } catch (err) {
+                        console.error("AI Quick Add Parse error:", err);
+                      } finally {
+                        setIsParsing(false);
+                      }
+                    }}
+                    className="absolute right-0 p-1 text-primary hover:text-primary-foreground transition-colors shrink-0"
+                    title="Parse with AI"
+                  >
+                    {isParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  </button>
+                )}
+              </div>
               {/* Visual feedback for parsed date/time */}
               {(highlightedDate || highlightedTime) && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
