@@ -17,6 +17,7 @@ import { FaviconSync } from './components/FaviconSync';
 import { LoadingScreen } from './components/LoadingScreen';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
+import WeeklyPlanner from './routes/WeeklyPlanner';
 import Focus from './routes/Focus';
 
 import Health from './routes/Health';
@@ -271,6 +272,7 @@ function AppInner() {
             <Route element={<AppShell />}>
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="tasks" element={<Tasks />} />
+              <Route path="weekly-planner" element={<WeeklyPlanner />} />
               <Route path="focus" element={<Focus />} />
               <Route path="health" element={<Health />} />
               <Route path="habits" element={<Habits />} />
