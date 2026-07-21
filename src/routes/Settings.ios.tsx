@@ -23,6 +23,7 @@ import {
   HelpCircle,
   BookOpen,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
@@ -85,6 +86,7 @@ const SETTINGS_NAV = [
   { id: 'appearance', label: 'Appearance' },
   { id: 'defaults', label: 'App defaults' },
   { id: 'layout', label: 'Layout & widgets' },
+  { id: 'ai', label: 'AI Integration' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'prayer', label: 'Prayer times' },
   { id: 'habits', label: 'Habits' },
@@ -158,6 +160,14 @@ export default function SettingsPage() {
     setReportSleepTargetCurrent,
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
+    aiEnabled,
+    aiApiKey,
+    aiBaseUrl,
+    aiModel,
+    setAiEnabled,
+    setAiApiKey,
+    setAiBaseUrl,
+    setAiModel,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
@@ -715,6 +725,84 @@ export default function SettingsPage() {
               </div>
             </section>
           </div>
+
+          {/* AI Integration Settings Section */}
+          <section id="settings-ai" className="liquid-glass-card overflow-hidden scroll-mt-20">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-primary" />
+                <h2 className="font-semibold">AI Integration (Optional)</h2>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={aiEnabled}
+                  onChange={(e) => setAiEnabled(e.target.checked)}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary animate-gpu"></div>
+                <span className="ml-2 text-xs font-semibold text-muted-foreground">
+                  {aiEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </label>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Configure your optional AI Assistant utilizing Bynara or any OpenAI-compatible router. This powers smart NLP Quick-Add, subtask generators, note summaries, SMS expense parses, and correlation metrics.
+                </p>
+              </div>
+
+              {aiEnabled && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        API Key
+                      </label>
+                      <Input
+                        type="password"
+                        placeholder="sk-nry-..."
+                        value={aiApiKey}
+                        onChange={(e) => setAiApiKey(e.target.value)}
+                        className="w-full bg-secondary/30 border-border h-10 rounded-lg text-sm"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                        Base URL
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder="https://router.bynara.id/v1"
+                        value={aiBaseUrl}
+                        onChange={(e) => setAiBaseUrl(e.target.value)}
+                        className="w-full bg-secondary/30 border-border h-10 rounded-lg text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                      AI Model
+                    </label>
+                    <select
+                      value={aiModel}
+                      onChange={(e) => setAiModel(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring text-sm h-10"
+                    >
+                      <option value="mistral-medium-3-5">mistral-medium-3-5 (Default)</option>
+                      <option value="mistral-large">mistral-large (High Intelligence)</option>
+                      <option value="agnes-2.5-flash">agnes-2.5-flash (Fast Reasoning)</option>
+                      <option value="claude-sonnet-5">claude-sonnet-5 (Creative / Complex)</option>
+                      <option value="gpt-5.4">gpt-5.4</option>
+                      <option value="deepseek-v4-flash">deepseek-v4-flash (Efficient)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
 
           {/* Task reminders (push notifications) */}
           <section id="settings-notifications" className="liquid-glass-card overflow-hidden scroll-mt-20">
