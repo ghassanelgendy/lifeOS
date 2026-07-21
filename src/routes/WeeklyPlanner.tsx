@@ -11,7 +11,13 @@ import {
   Smile,
   Calendar as CalendarIcon,
   Grid,
+  Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { useUIStore } from '../stores/useUIStore';
+import { useSleepStages, groupSegmentsByNight } from '../hooks/useSleep';
+import { useScreentimeAppStats } from '../hooks/useScreentime';
+import { askAI } from '../lib/ai';
 import {
   format,
   startOfWeek,
@@ -231,6 +237,61 @@ export default function WeeklyPlanner() {
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes cache validity
   });
+
+  // AI Wellbeing Coach queries and states
+  const aiEnabled = useUIStore((s) => s.aiEnabled);
+  const { data: sleepSegments = [] } = useSleepStages(sundayDateStr + 'T00:00:00.000Z', saturdayDateStr + 'T23:59:59.999Z');
+  const { data: appStats = [] } = useScreentimeAppStats(sundayDateStr, saturdayDateStr);
+
+  const [isGeneratingCoach, setIsGeneratingCoach] = useState(false);
+  const [coachFeedback, setCoachFeedback] = useState('');
+
+  const generateWellbeingInsights = async () => {
+    try {
+      setIsGeneratingCoach(true);
+      
+      const nights = groupSegmentsByNight(sleepSegments);
+      const sleepSummary = nights.map(n => `${n.date}: ${Math.round(n.sleepMinutes / 60 * 10) / 10}h`).join(', ');
+
+      const screenTimeByDay: Record<string, number> = {};
+      appStats.forEach(stat => {
+        if (stat.date) {
+          screenTimeByDay[stat.date] = (screenTimeByDay[stat.date] || 0) + stat.total_time_seconds;
+        }
+      });
+      const screenTimeSummary = Object.entries(screenTimeByDay)
+        .map(([date, sec]) => `${date}: ${Math.round(sec / 3600 * 10) / 10}h`)
+        .join(', ');
+
+      const habitDetails = weekLogs
+        .filter(l => l.completed)
+        .map(l => {
+          const h = habits.find(hab => hab.id === l.habit_id);
+          return h ? `${h.name} (${l.date})` : '';
+        })
+        .filter(Boolean)
+        .join(', ');
+
+      const totalWeeklyTasks = tasks.filter(t => t.due_date && t.due_date >= sundayDateStr && t.due_date <= saturdayDateStr);
+      const completedWeeklyTasks = totalWeeklyTasks.filter(t => t.is_completed);
+
+      const systemPrompt = "You are a wellness and habits correlation coach. You analyze productivity, screen time, sleep, and habit logs to identify correlations and provide friendly, actionable coaching feedback.";
+      const userPrompt = `Data for this week (${sundayDateStr} to ${saturdayDateStr}):
+- Sleep duration per night: [${sleepSummary || 'None'}]
+- Screen time per day: [${screenTimeSummary || 'None'}]
+- Habits checked: [${habitDetails || 'None'}]
+- Task Completion: ${completedWeeklyTasks.length}/${totalWeeklyTasks.length} tasks completed
+
+Provide a brief, encouraging paragraph highlighting any correlations or trends. Under 5 sentences.`;
+
+      const res = await askAI(systemPrompt, userPrompt);
+      setCoachFeedback(res);
+    } catch (err) {
+      console.error("AI Wellbeing Coach failed:", err);
+    } finally {
+      setIsGeneratingCoach(false);
+    }
+  };
 
   // 5. Crowdness relative scoring & color coding (Excludes detox habits)
   const dayCounts = useMemo(() => {
@@ -594,6 +655,51 @@ export default function WeeklyPlanner() {
           updateNote={updateNote}
         />
       </div>
+
+      {/* AI Wellbeing Correlation Coach Section */}
+      {aiEnabled && (
+        <div className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-xl text-purple-400 border border-purple-500/20">
+                <Sparkles className="w-5 h-5" fill="currentColor" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white leading-tight">✨ AI Wellbeing Correlation Coach</h2>
+                <p className="text-xs text-zinc-400">Discover patterns between habits, tasks, screentime, and sleep</p>
+              </div>
+            </div>
+            <Button
+              type="button"
+              disabled={isGeneratingCoach}
+              onClick={generateWellbeingInsights}
+              className="text-xs h-9 bg-purple-600 hover:bg-purple-750 text-white rounded-xl px-4 flex items-center gap-1.5 active:scale-95 transition-transform"
+            >
+              {isGeneratingCoach ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Analyzing patterns...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5" fill="currentColor" />
+                  Coach Me
+                </>
+              )}
+            </Button>
+          </div>
+
+          {coachFeedback ? (
+            <div className="text-sm text-zinc-350 leading-relaxed bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/50">
+              {coachFeedback}
+            </div>
+          ) : (
+            <p className="text-xs text-zinc-450 italic">
+              Tap "Coach Me" to compile this week's sleep segments, screentime logs, checklist success rates, and task metrics, generating direct lifestyle insights.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
