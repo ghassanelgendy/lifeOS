@@ -283,7 +283,7 @@ The system shall send reminders for habits scheduled on specific days/times.
 ### 3.5 Calendar & Events
 
 #### FR-CAL-001: Calendar View
-The system shall provide a full calendar view (month, week, day) displaying events.
+The system shall provide calendar views (month, day) displaying events.
 
 #### FR-CAL-002: Event Creation
 Users shall be able to create calendar events with title, date, time, timezone, location, recurrence, and description.
@@ -308,6 +308,18 @@ The system shall send push notifications before scheduled events.
 
 #### FR-CAL-009: Expanded Events
 Recurring events and iCal events shall be expanded into individual instances for calendar display.
+
+#### FR-CAL-010: Weekly Planner Grid Layout
+The system shall provide a Weekly Planner route configured as a 2x4 grid layout (Sunday-Saturday + a Self Care card) mirroring a Saturday paper planning workflow.
+
+#### FR-CAL-011: Unified Daily Cards
+Each day's card in the grid shall contain high-priority tasks (Must Do's), calendar events (Meetings), habits scheduled for that day, and faint-blue lined notepad inputs in one consolidated scrollable card.
+
+#### FR-CAL-012: Relative Crowdness Color Coding
+The planner shall color-code each day's header dynamically based on relative crowdness (total items: high-priority tasks + events + scheduled habits for that day) compared to the min/max density of that week, interpolating from green (empty) to red (crowded).
+
+#### FR-CAL-013: Prefilled Modals Redirection
+Creating a task or event from a day card in the Weekly Planner shall redirect the user to the Tasks or Calendar routes with the date parameter pre-filled, launching the standard creation sheets automatically.
 
 ---
 
