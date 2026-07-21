@@ -1100,10 +1100,17 @@ export default function Tasks() {
 
   // Redirect to edit/add task if navigation state payload contains editTaskId or triggerAdd
   useEffect(() => {
-    const state = location.state as { editTaskId?: string; triggerAdd?: boolean } | null;
+    const state = location.state as { editTaskId?: string; triggerAdd?: boolean; dueDate?: string } | null;
     if (state?.triggerAdd) {
+      const defaultForm = getDefaultEditFormForNewTask();
+      if (state.dueDate) {
+        defaultForm.due_date = state.dueDate;
+        defaultForm.date_enabled = true;
+      }
+      setEditForm(defaultForm);
+      setSelectedTask(null);
+      setIsEditModalOpen(true);
       navigate(location.pathname, { replace: true, state: {} });
-      handleOpenNewTaskSheet();
       return;
     }
     if (state?.editTaskId && allTasks.length > 0) {
