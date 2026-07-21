@@ -331,51 +331,20 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
     };
   };
 
-  // 6. Calculate weekly load for current and past 3 weeks for heuristics comparison
-  const weeklyLoads = useMemo(() => {
-    const loads = [];
-    for (let w = 3; w >= 0; w--) {
-      const wStart = subWeeks(weekStart, w);
-      let loadCount = 0;
+  // 6. Calculate weekly load from all entries in the week (all tasks regardless of priority, events, habits)
+  const currentWeekTotalLoad = useMemo(() => {
+    return dayCounts.reduce((sum, c) => sum + c, 0);
+  }, [dayCounts]);
 
-      for (let i = 0; i < 7; i++) {
-        const dayDate = addDays(wStart, i);
-        const dayStr = toDateOnly(dayDate);
-
-        const tasksCount = tasks.filter(
-          (t) => t.due_date === dayStr && !t.is_wont_do
-        ).length;
-        const eventsCount = events.filter(
-          (e) => e.start_time.split('T')[0] === dayStr
-        ).length;
-        const habitsCount = habits.filter((h) =>
-          h.habit_type !== 'detox' && isHabitScheduledForDate(h, dayDate)
-        ).length;
-
-        loadCount += tasksCount + eventsCount + habitsCount;
-      }
-
-      loads.push({
-        weekNum: getWeek(wStart, { weekStartsOn: 0 }),
-        label: w === 0 ? 'Current' : `W-${w}`,
-        count: loadCount,
-        isCurrent: w === 0,
-      });
-    }
-    return loads;
-  }, [weekStart, tasks, events, habits]);
-
-  // Determine heuristic load rating for the current week compared to the average of the past 3 weeks
   const loadRating = useMemo(() => {
-    if (weeklyLoads.length === 0) return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
-    const current = weeklyLoads[weeklyLoads.length - 1].count;
-    const pastCounts = weeklyLoads.slice(0, 3).map(l => l.count);
-    const avgPast = pastCounts.reduce((sum, c) => sum + c, 0) / Math.max(1, pastCounts.length);
-
-    if (current > avgPast * 1.25) return { text: 'Heavy Load', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
-    if (current < avgPast * 0.75) return { text: 'Light Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+    if (currentWeekTotalLoad < 15) {
+      return { text: 'Less Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+    }
+    if (currentWeekTotalLoad > 35) {
+      return { text: 'More Load', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
+    }
     return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
-  }, [weeklyLoads]);
+  }, [currentWeekTotalLoad]);
 
   // Check if a habit is logged for a specific date
   const isHabitLoggedOn = (habitId: string, dateStr: string) => {
@@ -449,40 +418,12 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
             </Button>
           </div>
 
-          {/* Sparkline Load indicator */}
-          <div className="flex items-center gap-3 bg-zinc-855 px-3 py-1.5 rounded-xl border border-zinc-800 h-10">
-            <div className="flex flex-col">
-              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider leading-none font-sans">Weekly Load</span>
-              <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border inline-block mt-0.5 whitespace-nowrap leading-none", loadRating.color)}>
-                {loadRating.text}
-              </span>
-            </div>
-            <div className="flex items-end gap-1 h-7">
-              {weeklyLoads.map((w, idx) => {
-                const maxL = Math.max(...weeklyLoads.map(l => l.count), 1);
-                const hPct = (w.count / maxL) * 100;
-                
-                const avg = weeklyLoads.reduce((sum, l) => sum + l.count, 0) / weeklyLoads.length;
-                const isHeavy = w.count > avg;
-                const barColor = w.isCurrent
-                  ? (isHeavy ? 'bg-red-500' : 'bg-emerald-500')
-                  : (isHeavy ? 'bg-red-500/40 hover:bg-red-500/60' : 'bg-zinc-700 hover:bg-zinc-650');
-                
-                return (
-                  <div key={idx} className="flex flex-col items-center group relative cursor-help">
-                    <div
-                      style={{ height: `${Math.max(15, hPct)}%` }}
-                      className={cn("w-2.5 rounded-t-sm transition-all duration-300", barColor)}
-                    />
-                    <span className="text-[8px] text-zinc-500 font-bold mt-1 uppercase leading-none font-sans">{w.label}</span>
-                    
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-850 px-2 py-1 rounded-md text-[9px] font-bold text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-xl">
-                      Week {w.weekNum}: {w.count} items
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          {/* Weekly Load Badge Card */}
+          <div className="flex items-center gap-2 bg-zinc-855 px-3 py-2 rounded-xl border border-zinc-800 h-10">
+            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider font-sans">Weekly Load:</span>
+            <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap leading-none", loadRating.color)}>
+              {loadRating.text}
+            </span>
           </div>
 
           {/* Icon-only Date picker selector */}
@@ -538,34 +479,11 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
           </Button>
         </div>
 
-        {/* Sparkline Load indicator */}
-        <div className="flex items-center gap-2 flex-1 justify-end min-w-0">
-          <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded-full border leading-none shrink-0 w-fit whitespace-nowrap", loadRating.color)}>
+        {/* Weekly Load indicator */}
+        <div className="flex items-center justify-end flex-1 min-w-0 pr-1">
+          <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border leading-none shrink-0 w-fit whitespace-nowrap", loadRating.color)}>
             {loadRating.text}
           </span>
-          
-          <div className="flex items-end gap-1 h-6 pr-1 flex-shrink-0">
-            {weeklyLoads.map((w, idx) => {
-              const maxL = Math.max(...weeklyLoads.map(l => l.count), 1);
-              const hPct = (w.count / maxL) * 100;
-              
-              const avg = weeklyLoads.reduce((sum, l) => sum + l.count, 0) / weeklyLoads.length;
-              const isHeavy = w.count > avg;
-              const barColor = w.isCurrent
-                ? (isHeavy ? 'bg-red-500' : 'bg-emerald-500')
-                : (isHeavy ? 'bg-red-500/40' : 'bg-zinc-650 dark:bg-zinc-800');
-              
-              return (
-                <div key={idx} className="flex flex-col items-center group relative cursor-help">
-                  <div
-                    style={{ height: `${Math.max(15, hPct)}%` }}
-                    className={cn("w-1.5 rounded-t-sm transition-all duration-300", barColor)}
-                  />
-                  <span className="text-[7px] text-zinc-400 font-bold mt-0.5 uppercase leading-none">{w.label}</span>
-                </div>
-              );
-            })}
-          </div>
         </div>
       </div>
 
