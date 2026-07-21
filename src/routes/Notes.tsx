@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { FileText, Folder, Plus, Save, Search, Trash2 } from 'lucide-react';
+import { FileText, Folder, Plus, Save, Search, Trash2, Sparkles } from 'lucide-react';
 import { Button, ConfirmSheet, Input, Select, TextArea } from '../components/ui';
 import { cn } from '../lib/utils';
+import { useUIStore } from '../stores/useUIStore';
+import { askAI } from '../lib/ai';
 import {
   useCreateNote,
   useCreateNoteFolder,
@@ -61,6 +63,70 @@ export default function Notes() {
   const [newFolderName, setNewFolderName] = useState('');
   const [saveMessage, setSaveMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
+
+  // AI loading and helper states
+  const aiEnabled = useUIStore((s) => s.aiEnabled);
+  const [isProcessingAi, setIsProcessingAi] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+  const [isCleaning, setIsCleaning] = useState(false);
+  const [isLinking, setIsLinking] = useState(false);
+
+  const handleAiSummarize = async () => {
+    if (!draftBody.trim()) return;
+    try {
+      setIsProcessingAi(true);
+      setIsSummarizing(true);
+      const systemPrompt = "You are an AI writing assistant that summarizes text concisely in Markdown format.";
+      const userPrompt = `Provide a concise markdown summary of the following note (under 4 sentences), prefixed with a "### TL;DR" header:\n\n${draftBody}`;
+      const res = await askAI(systemPrompt, userPrompt);
+      setDraftBody((prev) => `${prev.trim()}\n\n${res}`);
+    } catch (err) {
+      console.error("AI Summarize failed:", err);
+    } finally {
+      setIsProcessingAi(false);
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleAiCleanDraft = async () => {
+    if (!draftBody.trim()) return;
+    try {
+      setIsProcessingAi(true);
+      setIsCleaning(true);
+      const systemPrompt = "You are an AI editor. You clean up messy notes, transcripts, and drafts, formatting them into neat markdown sections with bullet points while preserving all key information.";
+      const userPrompt = `Clean up and format this note body into neat markdown sections:\n\n${draftBody}`;
+      const res = await askAI(systemPrompt, userPrompt);
+      setDraftBody(res);
+    } catch (err) {
+      console.error("AI Clean Draft failed:", err);
+    } finally {
+      setIsProcessingAi(false);
+      setIsCleaning(false);
+    }
+  };
+
+  const handleAiWikiLinks = async () => {
+    if (!draftBody.trim()) return;
+    try {
+      setIsProcessingAi(true);
+      setIsLinking(true);
+      
+      const existingTitles = notes
+        .map((n) => noteTitle(n.title, n.body))
+        .filter((t) => t !== noteTitle(draftTitle, draftBody));
+         
+      const systemPrompt = "You are a wiki editor. You analyze a note text and insert wikilinks [[Note Title]] for any direct or near references to other notes in the user's library.";
+      const userPrompt = `Here is the user's note:\n"${draftBody}"\n\nHere are the other notes in the library:\n${JSON.stringify(existingTitles)}\n\nIdentify mentions or concepts related to the other notes and insert them as double bracket wikilinks, e.g. [[Note Title]], directly into the original text. Return the updated note text. Do not add summaries, explanations, or code fences.`;
+
+      const res = await askAI(systemPrompt, userPrompt);
+      setDraftBody(res);
+    } catch (err) {
+      console.error("AI Wiki Links failed:", err);
+    } finally {
+      setIsProcessingAi(false);
+      setIsLinking(false);
+    }
+  };
 
   const activeNote = activeId === NEW_NOTE_ID ? null : notes.find((note) => note.id === activeId) ?? null;
   const folderNameById = useMemo(
@@ -320,7 +386,41 @@ export default function Notes() {
               <div className="text-sm text-muted-foreground">
                 {saveMessage || (isDirty ? 'Unsaved changes' : activeNote ? `Updated ${formatNoteDate(activeNote.updated_at)}` : 'New note')}
               </div>
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-2 flex-wrap">
+                {aiEnabled && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAiSummarize}
+                      disabled={isProcessingAi || !draftBody.trim()}
+                      className="text-xs h-9 gap-1"
+                    >
+                      <Sparkles size={14} className={cn(isSummarizing && "animate-spin")} />
+                      Summarize
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAiCleanDraft}
+                      disabled={isProcessingAi || !draftBody.trim()}
+                      className="text-xs h-9 gap-1"
+                    >
+                      <Sparkles size={14} className={cn(isCleaning && "animate-spin")} />
+                      Clean Draft
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAiWikiLinks}
+                      disabled={isProcessingAi || !draftBody.trim()}
+                      className="text-xs h-9 gap-1"
+                    >
+                      <Sparkles size={14} className={cn(isLinking && "animate-spin")} />
+                      Wiki Links
+                    </Button>
+                  </>
+                )}
                 {activeNote && (
                   <Button
                     type="button"
