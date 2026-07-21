@@ -1,3 +1,4 @@
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { useUIStore } from '../stores/useUIStore';
 
 /**
@@ -19,8 +20,6 @@ export async function askAI(
   }
 
   const cleanBaseUrl = aiBaseUrl.trim().replace(/\/+$/, '');
-  const endpoint = `${cleanBaseUrl}/chat/completions`;
-
   const payload: any = {
     model: aiModel,
     messages: [
@@ -35,18 +34,43 @@ export async function askAI(
     payload.response_format = { type: 'json_object' };
   }
 
-  const response = await fetch(endpoint, {
+  // Bypassing CORS constraints across all web and mobile platforms
+  if (Capacitor.isNativePlatform()) {
+    // Under native iOS / Android, execute via native CapHttp wrapper to completely bypass CORS preflights
+    const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
+    const response = await CapacitorHttp.post({
+      url: nativeEndpoint,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiApiKey.trim()}`,
+      },
+      data: payload,
+    });
+
+    if (response.status !== 200) {
+      const errorMsg = response.data?.error?.message || response.data || 'Unknown native error';
+      throw new Error(`AI Router Native Error (${response.status}): ${errorMsg}`);
+    }
+
+    const text = response.data?.choices?.[0]?.message?.content || '';
+    return text.trim();
+  }
+
+  // Web Browser environment: Proxy request through our Vercel /dev API endpoint to avoid CORS preflights
+  const proxyEndpoint = '/api/ai';
+  const response = await fetch(proxyEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${aiApiKey.trim()}`,
+      'X-AI-Api-Key': aiApiKey.trim(),
+      'X-AI-Base-Url': cleanBaseUrl,
     },
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const errorBody = await response.text().catch(() => '');
-    throw new Error(`AI Router Error (${response.status}): ${response.statusText || 'Unknown error'}. ${errorBody}`);
+    throw new Error(`AI Router Proxy Error (${response.status}): ${response.statusText || 'Unknown error'}. ${errorBody}`);
   }
 
   const data = await response.json();

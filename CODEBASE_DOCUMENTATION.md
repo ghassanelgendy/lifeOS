@@ -48,6 +48,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [.vscode/tasks.json](#-vscode-tasks-json)
 
 ### api
+- [api/ai.ts](#api-ai-ts)
 - [api/proxy.ts](#api-proxy-ts)
 
 ### api/calendar
@@ -549,6 +550,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (Markdown documentation)
 
 **Lines:** 127
+
+---
+
+<a name="api-ai-ts"></a>
+### api/ai.ts
+
+**File Purpose:** Vercel serverless API route. Handles server-side logic for API endpoints.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 43
 
 ---
 
@@ -3664,7 +3676,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`extractJSON`** — Utility function for extract j s o n.
 
-**Lines:** 68
+**Lines:** 92
 
 ---
 
@@ -5541,7 +5553,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`platformResolvePlugin`** — Utility function for platform resolve plugin.
 
-**Lines:** 271
+**Lines:** 334
 
 ---
 

@@ -142,6 +142,69 @@ export default defineConfig(({ mode }) => {
               return;
             }
 
+            if (parsed.pathname === '/api/ai') {
+              try {
+                let bodyData = '';
+                await new Promise((resolve) => {
+                  req.on('data', chunk => {
+                    bodyData += chunk;
+                  });
+                  req.on('end', () => {
+                    resolve(null);
+                  });
+                });
+
+                const parsedBody = bodyData ? JSON.parse(bodyData) : {};
+
+                const apiRes = {
+                  setHeader(name: string, value: number | string | readonly string[]) {
+                    res.setHeader(name, value);
+                    return apiRes;
+                  },
+                  status(code: number) {
+                    res.statusCode = code;
+                    return apiRes;
+                  },
+                  json(body: unknown) {
+                    if (!res.headersSent) res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                    res.end(JSON.stringify(body));
+                    return apiRes;
+                  },
+                  send(body: unknown) {
+                    if (typeof body === 'string' || body instanceof Uint8Array) {
+                      res.end(body);
+                    } else {
+                      if (!res.headersSent) res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                      res.end(JSON.stringify(body));
+                    }
+                    return apiRes;
+                  },
+                  end(body?: unknown) {
+                    if (typeof body === 'string' || body instanceof Uint8Array || body === undefined) {
+                      res.end(body);
+                    } else {
+                      res.end(JSON.stringify(body));
+                    }
+                    return apiRes;
+                  },
+                };
+
+                const { default: handler } = await import('./api/ai.ts');
+                await handler(
+                  { method: req.method, headers: req.headers, body: parsedBody } as unknown as VercelRequest,
+                  apiRes as unknown as VercelResponse
+                );
+              } catch (err) {
+                console.error('[dev-ai-proxy]', err);
+                if (!res.headersSent) {
+                  res.statusCode = 500;
+                  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+                }
+                res.end(JSON.stringify({ error: 'AI Proxy unavailable' }));
+              }
+              return;
+            }
+
             if (parsed.pathname !== '/api/proxy') {
               next();
               return;
