@@ -313,13 +313,16 @@ Recurring events and iCal events shall be expanded into individual instances for
 The system shall provide a Weekly Planner route configured as a 2x4 grid layout (Sunday-Saturday + a Self Care card) mirroring a Saturday paper planning workflow.
 
 #### FR-CAL-011: Unified Daily Cards
-Each day's card in the grid shall contain high-priority tasks (Must Do's), calendar events (Meetings), habits scheduled for that day, and faint-blue lined notepad inputs in one consolidated scrollable card.
+Each day's card in the grid shall contain tasks due on that day (including both normal and high priority tasks, styled and colored according to priority), calendar events (Meetings), standard habits scheduled for that day (excluding detox habits), and faint-blue lined notepad inputs in one consolidated scrollable card.
 
 #### FR-CAL-012: Relative Crowdness Color Coding
-The planner shall color-code each day's header dynamically based on relative crowdness (total items: high-priority tasks + events + scheduled habits for that day) compared to the min/max density of that week, interpolating from green (empty) to red (crowded).
+The planner shall color-code each day's header dynamically based on relative crowdness (total items: tasks + events + scheduled habits for that day) compared to the min/max density of that week, interpolating from green (empty) to red (crowded).
 
 #### FR-CAL-013: Prefilled Modals Redirection
 Creating a task or event from a day card in the Weekly Planner shall redirect the user to the Tasks or Calendar routes with the date parameter pre-filled, launching the standard creation sheets automatically.
+
+#### FR-CAL-014: Weekly Load Heuristics
+The planner shall display a comparison sparkline comparing the current week's item density (tasks + events + scheduled habits) against the past 3 weeks, dynamically calculating and displaying a load rating (e.g. Heavy Load, Optimal Load, Light Load) based on historical averages.
 
 ---
 
