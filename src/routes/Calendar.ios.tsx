@@ -78,13 +78,14 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    const state = location.state as { triggerAdd?: boolean } | null;
+    const state = location.state as { triggerAdd?: boolean; date?: string } | null;
     if (state?.triggerAdd) {
       navigate(location.pathname, { replace: true, state: {} });
-      void handleOpenModal();
+      const targetDate = state.date ? new Date(state.date) : new Date();
+      void handleOpenModal(undefined, targetDate);
     }
   }, [location.state, navigate, location.pathname]);
-  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+  const [view, setView] = useState<'month' | 'day'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
@@ -824,18 +825,6 @@ export default function CalendarPage() {
             )}
           >
             Month
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('week')}
-            className={cn(
-              "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98",
-              view === 'week'
-                ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Week
           </button>
           <button
             type="button"

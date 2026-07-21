@@ -113,13 +113,14 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    const state = location.state as { triggerAdd?: boolean } | null;
+    const state = location.state as { triggerAdd?: boolean; date?: string } | null;
     if (state?.triggerAdd) {
       navigate(location.pathname, { replace: true, state: {} });
-      void handleOpenModal();
+      const targetDate = state.date ? new Date(state.date) : new Date();
+      void handleOpenModal(undefined, targetDate);
     }
   }, [location.state, navigate, location.pathname]);
-  const [view, setView] = useState<'month' | 'week' | 'day'>('month');
+  const [view, setView] = useState<'month' | 'day'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
   const [editingEvent, setEditingEvent] = useState<ExtendedCalendarEvent | null>(null);
@@ -828,12 +829,11 @@ export default function CalendarPage() {
           <div className="flex items-center justify-between gap-4 border-b border-border pb-1">
             <TabList
               selectedValue={view}
-              onTabSelect={(_e, data) => setView(data.value as 'month' | 'week' | 'day')}
+              onTabSelect={(_e, data) => setView(data.value as 'month' | 'day')}
               appearance="subtle"
               size="medium"
             >
               <Tab value="month">Month</Tab>
-              <Tab value="week">Week</Tab>
               <Tab value="day">Day</Tab>
             </TabList>
 
