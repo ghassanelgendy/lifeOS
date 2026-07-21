@@ -952,7 +952,6 @@ function DailyNoteArea({
         paddingTop: '0.15rem',
         WebkitAppearance: 'none',
       }}
-      placeholder="Capture details..."
       value={text}
       onChange={(e) => setText(e.target.value)}
       onBlur={handleSave}
