@@ -28,6 +28,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [vite.config.ts](#vite-config-ts)
 - [vitest.config.ts](#vitest-config-ts)
 
+### .agents
+- [.agents/AGENTS.md](#-agents-agents-md)
+
 ### .agents/rules
 - [.agents/rules/db-optimizer.md](#-agents-rules-db-optimizer-md)
 
@@ -127,6 +130,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [public/ios6-lite/legacy-autologin.js](#public-ios6-lite-legacy-autologin-js)
 - [public/ios6-lite/legacy-autologin.local.js](#public-ios6-lite-legacy-autologin-local-js)
 
+### scratch
+- [scratch/test-marked-heading.js](#scratch-test-marked-heading-js)
+- [scratch/test-marked-instance.js](#scratch-test-marked-instance-js)
+- [scratch/test-marked.js](#scratch-test-marked-js)
+
 ### scripts
 - [scripts/generate-tauri-updater.js](#scripts-generate-tauri-updater-js)
 - [scripts/package.json](#scripts-package-json)
@@ -222,6 +230,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/ui/Modal.tsx](#src-components-ui-modal-tsx)
 - [src/components/ui/index.ts](#src-components-ui-index-ts)
 
+### src/components/wiki
+- [src/components/wiki/WikiGraphView.tsx](#src-components-wiki-wikigraphview-tsx)
+- [src/components/wiki/WikiMarkdown.tsx](#src-components-wiki-wikimarkdown-tsx)
+
 ### src/contexts
 - [src/contexts/AuthContext.tsx](#src-contexts-authcontext-tsx)
 
@@ -258,6 +270,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/hooks/usePushNotifications.pake.ts](#src-hooks-usepushnotifications-pake-ts)
 - [src/hooks/usePushNotifications.ts](#src-hooks-usepushnotifications-ts)
 - [src/hooks/usePushNotifications.web.ts](#src-hooks-usepushnotifications-web-ts)
+- [src/hooks/useReport.test.ts](#src-hooks-usereport-test-ts)
 - [src/hooks/useReport.ts](#src-hooks-usereport-ts)
 - [src/hooks/useScreentime.ts](#src-hooks-usescreentime-ts)
 - [src/hooks/useSleep.ts](#src-hooks-usesleep-ts)
@@ -270,6 +283,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/hooks/useUserBanks.ts](#src-hooks-useuserbanks-ts)
 
 ### src/lib
+- [src/lib/ai.ts](#src-lib-ai-ts)
 - [src/lib/analytics-utils.ts](#src-lib-analytics-utils-ts)
 - [src/lib/calendarExport.ts](#src-lib-calendarexport-ts)
 - [src/lib/focusSessionEvents.ts](#src-lib-focussessionevents-ts)
@@ -291,6 +305,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/userAppSettings.ts](#src-lib-userappsettings-ts)
 - [src/lib/utils.test.ts](#src-lib-utils-test-ts)
 - [src/lib/utils.ts](#src-lib-utils-ts)
+- [src/lib/wikiData.ts](#src-lib-wikidata-ts)
+- [src/lib/wikiStorage.ts](#src-lib-wikistorage-ts)
 - [src/lib/wrapHelpers.ts](#src-lib-wraphelpers-ts)
 
 ### src/routes
@@ -310,6 +326,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Habits.tsx](#src-routes-habits-tsx)
 - [src/routes/Habits.web.tsx](#src-routes-habits-web-tsx)
 - [src/routes/Health.tsx](#src-routes-health-tsx)
+- [src/routes/Landing.tsx](#src-routes-landing-tsx)
 - [src/routes/Login.tsx](#src-routes-login-tsx)
 - [src/routes/Notes.tsx](#src-routes-notes-tsx)
 - [src/routes/Points.tsx](#src-routes-points-tsx)
@@ -328,13 +345,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Tasks.pake.tsx](#src-routes-tasks-pake-tsx)
 - [src/routes/Tasks.tsx](#src-routes-tasks-tsx)
 - [src/routes/Tasks.web.tsx](#src-routes-tasks-web-tsx)
+- [src/routes/WeeklyPlanner.tsx](#src-routes-weeklyplanner-tsx)
+- [src/routes/Wiki.tsx](#src-routes-wiki-tsx)
 
 ### src/stores
 - [src/stores/useFocusSessionStore.ts](#src-stores-usefocussessionstore-ts)
 - [src/stores/useUIStore.ts](#src-stores-useuistore-ts)
+- [src/stores/useWikiStore.ts](#src-stores-usewikistore-ts)
 
 ### src/types
 - [src/types/schema.ts](#src-types-schema-ts)
+- [src/types/wiki.ts](#src-types-wiki-ts)
 
 ### supabase
 - [supabase/config.toml](#supabase-config-toml)
@@ -387,6 +408,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### supabase/functions/upload-sleep
 - [supabase/functions/upload-sleep/index.ts](#supabase-functions-upload-sleep-index-ts)
+
+<a name="-agents-agents-md"></a>
+### .agents/AGENTS.md
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (Markdown documentation)
+
+**Lines:** 5
+
+---
 
 <a name="-agents-rules-db-optimizer-md"></a>
 ### .agents/rules/db-optimizer.md
@@ -483,7 +515,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 5191
+**Lines:** 5568
 
 ---
 
@@ -494,7 +526,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1049
+**Lines:** 1065
 
 ---
 
@@ -505,7 +537,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 828
+**Lines:** 832
 
 ---
 
@@ -736,7 +768,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 32
+**Lines:** 36
 
 ---
 
@@ -747,7 +779,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 383
+**Lines:** 422
 
 ---
 
@@ -1168,7 +1200,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 123
+**Lines:** 125
 
 ---
 
@@ -1179,7 +1211,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 12821
+**Lines:** 12842
 
 ---
 
@@ -1273,6 +1305,47 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="scratch-test-marked-heading-js"></a>
+### scratch/test-marked-heading.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 22
+
+---
+
+<a name="scratch-test-marked-instance-js"></a>
+### scratch/test-marked-instance.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `wikiLinkExtension` (Function)
+
+**Function Details:**
+- **`wikiLinkExtension`** — Utility function for wiki link extension.
+
+**Lines:** 47
+
+---
+
+<a name="scratch-test-marked-js"></a>
+### scratch/test-marked.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `wikiLinkExtension` (Function)
+
+**Function Details:**
+- **`wikiLinkExtension`** — Utility function for wiki link extension.
+
+**Lines:** 33
+
+---
+
 <a name="scripts-generate-tauri-updater-js"></a>
 ### scripts/generate-tauri-updater.js
 
@@ -1348,9 +1421,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes task-enter` — CSS animation definition
 - `@keyframes checkmark-draw` — CSS animation definition
 
-**CSS Classes/Selectors:** task-item, task-checkmark, task-checkmark__check
+**CSS Classes/Selectors:** task-item, task-checkmark, task-checkmark__check, wiki-link, wiki-markdown, wiki-graph-canvas
 
-**Lines:** 42
+**Lines:** 187
 
 ---
 
@@ -1411,7 +1484,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 373
+**Lines:** 375
 
 ---
 
@@ -1498,12 +1571,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `ProtectedRoute` (React Component)
 - `RequireGuest` (React Component)
+- `PublicHome` (React Component)
 - `UserAppSettingsBridge` (React Component)
 - `ThemeSync` (React Component)
 - `AppInner` (React Component)
 - `App` (React Component)
 - `ProtectedRoute` (Function)
 - `RequireGuest` (Function)
+- `PublicHome` (Function)
 - `UserAppSettingsBridge` (Function)
 - `ThemeSync` (Function)
 - `AppInner` (Function)
@@ -1512,16 +1587,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`ProtectedRoute`** — React component rendering UI for ProtectedRoute.
 - **`RequireGuest`** — React component rendering UI for RequireGuest.
+- **`PublicHome`** — React component rendering UI for PublicHome.
 - **`UserAppSettingsBridge`** — React component rendering UI for UserAppSettingsBridge.
 - **`ThemeSync`** — React component rendering UI for ThemeSync.
-- **`AppInner`** — React component rendering UI for AppInner.
 - **`ProtectedRoute`** — Utility function for protected route.
 - **`RequireGuest`** — Utility function for require guest.
+- **`PublicHome`** — Utility function for public home.
 - **`UserAppSettingsBridge`** — Utility function for user app settings bridge.
 - **`ThemeSync`** — Utility function for theme sync.
-- **`AppInner`** — Utility function for app inner.
 
-**Lines:** 283
+**Lines:** 307
 
 ---
 
@@ -2101,7 +2176,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1103
+**Lines:** 1162
 
 ---
 
@@ -2144,7 +2219,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1073
+**Lines:** 1132
 
 ---
 
@@ -2442,7 +2517,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `NavItem` (Interface)
 
-**Lines:** 40
+**Lines:** 42
 
 ---
 
@@ -2559,6 +2634,46 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 6
+
+---
+
+<a name="src-components-wiki-wikigraphview-tsx"></a>
+### src/components/wiki/WikiGraphView.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `WikiGraphView` (React Component)
+- `buildGraph` (Function)
+- `WikiGraphView` (Function)
+- `step` (Function)
+
+**Function Details:**
+- **`WikiGraphView`** — React component rendering UI for WikiGraphView.
+- **`buildGraph`** — Utility function for build graph.
+- **`WikiGraphView`** — Utility function for wiki graph view.
+- **`step`** — Utility function for step.
+
+**Lines:** 359
+
+---
+
+<a name="src-components-wiki-wikimarkdown-tsx"></a>
+### src/components/wiki/WikiMarkdown.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `WikiMarkdown` (React Component)
+- `wikiLinkExtension` (Function)
+- `WikiMarkdown` (Function)
+
+**Function Details:**
+- **`WikiMarkdown`** — React component rendering UI for WikiMarkdown.
+- **`wikiLinkExtension`** — Utility function for wiki link extension.
+- **`WikiMarkdown`** — Utility function for wiki markdown.
+
+**Lines:** 84
 
 ---
 
@@ -3336,6 +3451,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-hooks-usereport-test-ts"></a>
+### src/hooks/useReport.test.ts
+
+**File Purpose:** Unit/integration tests for the corresponding implementation file.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 78
+
+---
+
 <a name="src-hooks-usereport-ts"></a>
 ### src/hooks/useReport.ts
 
@@ -3371,7 +3497,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`computeBestWorstDay`** — Utility function for compute best worst day.
 - **`computeWeekScore`** — Utility function for compute week score.
 
-**Lines:** 638
+**Lines:** 666
 
 ---
 
@@ -3724,6 +3850,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, bg-card, no-scrollbar
 
 **Lines:** 555
+
+---
+
+<a name="src-lib-ai-ts"></a>
+### src/lib/ai.ts
+
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+
+**Functions & Classes:**
+- `extractJSON` (Function)
+
+**Function Details:**
+- **`extractJSON`** — Utility function for extract j s o n.
+
+**Lines:** 68
 
 ---
 
@@ -4151,6 +4292,65 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-lib-wikidata-ts"></a>
+### src/lib/wikiData.ts
+
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+
+**Functions & Classes:**
+- `escapeRegExp` (Function)
+- `normalizeTitle` (Function)
+- `getSection` (Function)
+- `getSubSection` (Function)
+- `buildTitleSet` (Function)
+- `autoLink` (Function)
+- `getWikiPage` (Function)
+- `searchWikiPages` (Function)
+- `getWikiLinkGraph` (Function)
+- `WikiDocPage` (Interface)
+- `WikiGraphNodeInfo` (Interface)
+
+**Function Details:**
+- **`escapeRegExp`** — Utility function for escape reg exp.
+- **`normalizeTitle`** — Utility function for normalize title.
+- **`getSection`** — Utility function for get section.
+- **`getSubSection`** — Utility function for get sub section.
+- **`buildTitleSet`** — Utility function for build title set.
+
+**Lines:** 413
+
+---
+
+<a name="src-lib-wikistorage-ts"></a>
+### src/lib/wikiStorage.ts
+
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+
+**Functions & Classes:**
+- `normalizeTitle` (Function)
+- `loadPages` (Function)
+- `savePages` (Function)
+- `getAllPages` (Function)
+- `getPageByTitle` (Function)
+- `getPageById` (Function)
+- `savePage` (Function)
+- `deletePage` (Function)
+- `searchPages` (Function)
+- `extractWikiLinks` (Function)
+- `getLinkGraph` (Function)
+- `seedWikiIfEmpty` (Function)
+
+**Function Details:**
+- **`normalizeTitle`** — Utility function for normalize title.
+- **`loadPages`** — Utility function for load pages.
+- **`savePages`** — Utility function for save pages.
+- **`getAllPages`** — Utility function for get all pages.
+- **`getPageByTitle`** — Utility function for get page by title.
+
+**Lines:** 140
+
+---
+
 <a name="src-lib-wraphelpers-ts"></a>
 ### src/lib/wrapHelpers.ts
 
@@ -4224,7 +4424,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`CalendarPage`** — React component rendering UI for CalendarPage.
 - **`CalendarPage`** — Utility function for calendar page.
 
-**Lines:** 1740
+**Lines:** 1729
 
 ---
 
@@ -4269,7 +4469,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`CalendarPage`** — React component rendering UI for CalendarPage.
 - **`CalendarPage`** — Utility function for calendar page.
 
-**Lines:** 1716
+**Lines:** 1708
 
 ---
 
@@ -4316,7 +4516,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1860
+**Lines:** 1955
 
 ---
 
@@ -4361,7 +4561,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1774
+**Lines:** 1869
 
 ---
 
@@ -4494,6 +4694,39 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-routes-landing-tsx"></a>
+### src/routes/Landing.tsx
+
+**File Purpose:** Page-level route component for the Landing.tsx module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `GoogleIcon` (React Component)
+- `Counter` (React Component)
+- `RotatingWord` (React Component)
+- `FeatureCard` (React Component)
+- `Landing` (React Component)
+- `GoogleIcon` (Function)
+- `Counter` (Function)
+- `RotatingWord` (Function)
+- `FeatureCard` (Function)
+- `Landing` (Function)
+
+**Function Details:**
+- **`GoogleIcon`** — React component rendering UI for GoogleIcon.
+- **`Counter`** — React component rendering UI for Counter.
+- **`RotatingWord`** — React component rendering UI for RotatingWord.
+- **`FeatureCard`** — React component rendering UI for FeatureCard.
+- **`Landing`** — React component rendering UI for Landing.
+- **`GoogleIcon`** — Utility function for google icon.
+- **`Counter`** — Utility function for counter.
+- **`RotatingWord`** — Utility function for rotating word.
+- **`FeatureCard`** — Utility function for feature card.
+- **`Landing`** — Utility function for landing.
+
+**Lines:** 511
+
+---
+
 <a name="src-routes-login-tsx"></a>
 ### src/routes/Login.tsx
 
@@ -4534,7 +4767,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`formatNoteDate`** — Utility function for format note date.
 - **`Notes`** — Utility function for notes.
 
-**Lines:** 361
+**Lines:** 461
 
 ---
 
@@ -4629,7 +4862,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1409
+**Lines:** 1541
 
 ---
 
@@ -4657,7 +4890,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1302
+**Lines:** 1434
 
 ---
 
@@ -4775,7 +5008,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 3429
+**Lines:** 3481
 
 ---
 
@@ -4800,7 +5033,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2732
+**Lines:** 2739
 
 ---
 
@@ -4836,7 +5069,59 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2744
+**Lines:** 2796
+
+---
+
+<a name="src-routes-weeklyplanner-tsx"></a>
+### src/routes/WeeklyPlanner.tsx
+
+**File Purpose:** Page-level route component for the WeeklyPlanner.tsx module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `WeeklyPlanner` (React Component)
+- `MustDoList` (React Component)
+- `AppointmentsList` (React Component)
+- `DailyHabitsList` (React Component)
+- `DailyNoteArea` (React Component)
+- `SelfCareCard` (React Component)
+- `WeeklyPlanner` (Function)
+- `MustDoList` (Function)
+- `AppointmentsList` (Function)
+- `DailyHabitsList` (Function)
+- `DailyNoteArea` (Function)
+- `SelfCareCard` (Function)
+
+**Function Details:**
+- **`WeeklyPlanner`** — React component rendering UI for WeeklyPlanner.
+- **`MustDoList`** — React component rendering UI for MustDoList.
+- **`AppointmentsList`** — React component rendering UI for AppointmentsList.
+- **`DailyHabitsList`** — React component rendering UI for DailyHabitsList.
+- **`DailyNoteArea`** — React component rendering UI for DailyNoteArea.
+- **`WeeklyPlanner`** — Utility function for weekly planner.
+- **`MustDoList`** — Utility function for must do list.
+- **`AppointmentsList`** — Utility function for appointments list.
+- **`DailyHabitsList`** — Utility function for daily habits list.
+- **`DailyNoteArea`** — Utility function for daily note area.
+
+**Lines:** 1198
+
+---
+
+<a name="src-routes-wiki-tsx"></a>
+### src/routes/Wiki.tsx
+
+**File Purpose:** Page-level route component for the Wiki.tsx module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `Wiki` (React Component)
+- `Wiki` (Function)
+
+**Function Details:**
+- **`Wiki`** — React component rendering UI for Wiki.
+- **`Wiki`** — Utility function for wiki.
+
+**Lines:** 578
 
 ---
 
@@ -4903,7 +5188,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isDashboardMode`** — Utility function for is dashboard mode.
 - **`getPersistedUiSlice`** — Utility function for get persisted ui slice.
 
-**Lines:** 543
+**Lines:** 577
+
+---
+
+<a name="src-stores-usewikistore-ts"></a>
+### src/stores/useWikiStore.ts
+
+**File Purpose:** Zustand state store. Manages global or domain-specific client-side state.
+
+**Functions & Classes:**
+- `useWikiStore` (React Hook)
+
+**Function Details:**
+- **`useWikiStore`** — Custom React hook managing wikistore state and side effects.
+
+**Lines:** 91
 
 ---
 
@@ -4965,6 +5265,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `UpdateInput` (Type)
 
 **Lines:** 412
+
+---
+
+<a name="src-types-wiki-ts"></a>
+### src/types/wiki.ts
+
+**File Purpose:** TypeScript type definitions. Centralized type declarations for the application.
+
+**Functions & Classes:**
+- `WikiPage` (Interface)
+- `WikiLink` (Interface)
+- `WikiGraphNode` (Interface)
+- `WikiGraphEdge` (Interface)
+
+**Lines:** 32
 
 ---
 

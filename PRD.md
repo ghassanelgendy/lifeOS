@@ -544,7 +544,7 @@ Vite Custom Plugin:
 - [x] iOS native build (Capacitor)
 - [x] Desktop build (Pake)
 
-### Phase 2: Intelligence (Current)
+### Phase 2: Intelligence (Completed)
 - [x] Weekly/Monthly reports
 - [x] Cross-domain analytics
 - [x] Points & gamification
@@ -552,6 +552,10 @@ Vite Custom Plugin:
 - [x] Deep insights
 - [x] Bank SMS automation
 - [x] Edge Function notifications
+- [x] AI NLP Quick Add & Subtask Breakdown (Bynara)
+- [x] AI Notes Summarization, Refinement & Wiki Linker (Bynara)
+- [x] AI Finance SMS / Receipt Parser (Bynara)
+- [x] AI Wellbeing Correlation Coach (Bynara)
 
 ### Phase 3: Ecosystem (Planned)
 - [ ] Public API for third-party integrations

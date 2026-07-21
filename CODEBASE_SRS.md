@@ -973,6 +973,7 @@ All icon buttons and non-text controls shall have descriptive `aria-label` attri
 | Supabase Client | `@supabase/supabase-js` | Auth, database queries, realtime subscriptions |
 | Supabase Edge Functions | Deno/TypeScript | Notifications, SMS parsing, data sync, calendar feeds |
 | Vercel API Routes | TypeScript/Vercel | Cron jobs, proxy, calendar task feeds |
+| Bynara AI Router | Fetch API | OpenAI-compatible endpoint for tasks NLP, notes tools, receipt parsing, and wellness coaching |
 | iCal Parser | Custom | Parse external calendar subscriptions |
 | Adhan Library | `adhan` npm | Islamic prayer time calculation |
 | Date Utilities | `date-fns` | Date formatting, manipulation, parsing |
