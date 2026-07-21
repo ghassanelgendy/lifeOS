@@ -11,7 +11,6 @@ import {
   Smile,
   Calendar as CalendarIcon,
   Grid,
-  Target,
 } from 'lucide-react';
 import {
   format,
@@ -104,7 +103,6 @@ export default function WeeklyPlanner() {
   const navigate = useNavigate();
 
   // 1. Calculate default week start (Sunday)
-  // If today is Saturday, default to coming Sunday. Otherwise, current Sunday.
   const getDefaultWeekStart = () => {
     const today = new Date();
     if (today.getDay() === 6) {
@@ -206,7 +204,6 @@ export default function WeeklyPlanner() {
     if (!reflectionsFolder) return map;
     notes.forEach((n) => {
       if (n.folder_id === reflectionsFolder.id && n.note_date) {
-        // Only map if title matches daily format
         if (n.title.startsWith('Daily Note -')) {
           map[n.note_date] = n;
         }
@@ -235,17 +232,17 @@ export default function WeeklyPlanner() {
     staleTime: 1000 * 60 * 5, // 5 minutes cache validity
   });
 
-  // 5. Crowdness relative scoring & color coding
+  // 5. Crowdness relative scoring & color coding (Excludes detox habits)
   const dayCounts = useMemo(() => {
     return weekDays.map((day) => {
       const mustDosCount = tasks.filter(
-        (t) => t.due_date === day.dateStr && t.priority === 'high' && !t.is_wont_do
+        (t) => t.due_date === day.dateStr && !t.is_wont_do
       ).length;
       const eventsCount = events.filter(
         (e) => e.start_time.split('T')[0] === day.dateStr
       ).length;
       const habitsCount = habits.filter(
-        (h) => isHabitScheduledForDate(h, day.date)
+        (h) => h.habit_type !== 'detox' && isHabitScheduledForDate(h, day.date)
       ).length;
       return mustDosCount + eventsCount + habitsCount;
     });
@@ -264,7 +261,7 @@ export default function WeeklyPlanner() {
       score = (count - minCount) / range;
     }
     
-    // Interpolate from 120 (Green) to 0 (Red)
+    // Interpolate HSL from 120 (Green) to 0 (Red)
     const hue = 120 - score * 120;
     
     return {
@@ -272,6 +269,52 @@ export default function WeeklyPlanner() {
       borderBottom: `1px solid hsla(${hue}, 60%, 35%, 0.4)`,
     };
   };
+
+  // 6. Calculate weekly load for current and past 3 weeks for heuristics comparison
+  const weeklyLoads = useMemo(() => {
+    const loads = [];
+    for (let w = 3; w >= 0; w--) {
+      const wStart = subWeeks(weekStart, w);
+      let loadCount = 0;
+      
+      for (let i = 0; i < 7; i++) {
+        const dayDate = addDays(wStart, i);
+        const dayStr = toDateOnly(dayDate);
+        
+        const tasksCount = tasks.filter(
+          (t) => t.due_date === dayStr && !t.is_wont_do
+        ).length;
+        const eventsCount = events.filter(
+          (e) => e.start_time.split('T')[0] === dayStr
+        ).length;
+        const habitsCount = habits.filter((h) => 
+          h.habit_type !== 'detox' && isHabitScheduledForDate(h, dayDate)
+        ).length;
+        
+        loadCount += tasksCount + eventsCount + habitsCount;
+      }
+      
+      loads.push({
+        weekNum: getWeek(wStart, { weekStartsOn: 0 }),
+        label: w === 0 ? 'Current' : `W-${w}`,
+        count: loadCount,
+        isCurrent: w === 0,
+      });
+    }
+    return loads;
+  }, [weekStart, tasks, events, habits]);
+
+  // Determine heuristic load rating for the current week compared to the average of the past 3 weeks
+  const loadRating = useMemo(() => {
+    if (weeklyLoads.length === 0) return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+    const current = weeklyLoads[weeklyLoads.length - 1].count;
+    const pastCounts = weeklyLoads.slice(0, 3).map(l => l.count);
+    const avgPast = pastCounts.reduce((sum, c) => sum + c, 0) / Math.max(1, pastCounts.length);
+    
+    if (current > avgPast * 1.25) return { text: 'Heavy Load', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
+    if (current < avgPast * 0.75) return { text: 'Light Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
+    return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
+  }, [weeklyLoads]);
 
   // Check if a habit is logged for a specific date
   const isHabitLoggedOn = (habitId: string, dateStr: string) => {
@@ -284,7 +327,6 @@ export default function WeeklyPlanner() {
     const existing = weekLogs.find((l) => l.habit_id === habitId && l.date === dateStr);
     const nextCompleted = !existing?.completed;
 
-    // Direct insert/update logic
     if (existing) {
       const { error } = await supabase
         .from('habit_logs')
@@ -315,7 +357,7 @@ export default function WeeklyPlanner() {
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Top Banner Control */}
-      <div className="flex items-center justify-between bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 p-4 rounded-2xl gap-4">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 p-4 rounded-2xl gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
             <Grid className="w-5 h-5" />
@@ -326,8 +368,47 @@ export default function WeeklyPlanner() {
           </div>
         </div>
 
-        {/* Week Selector showing only the number */}
-        <div className="flex items-center gap-2">
+        {/* Load Comparison Sparkline & Selector */}
+        <div className="flex items-center justify-between md:justify-end gap-4 flex-wrap">
+          {/* Sparkline Load indicator */}
+          <div className="flex items-center gap-3 bg-zinc-800/40 px-3 py-2 rounded-xl border border-zinc-800/80">
+            <div className="flex flex-col">
+              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Weekly Load</span>
+              <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border inline-block mt-0.5 whitespace-nowrap", loadRating.color)}>
+                {loadRating.text}
+              </span>
+            </div>
+            <div className="flex items-end gap-1.5 h-8">
+              {weeklyLoads.map((w, idx) => {
+                const maxL = Math.max(...weeklyLoads.map(l => l.count), 1);
+                const hPct = (w.count / maxL) * 100;
+                
+                // Color mapping: light is green, heavy is red
+                const avg = weeklyLoads.reduce((sum, l) => sum + l.count, 0) / weeklyLoads.length;
+                const isHeavy = w.count > avg;
+                const barColor = w.isCurrent
+                  ? (isHeavy ? 'bg-red-500' : 'bg-emerald-500')
+                  : (isHeavy ? 'bg-red-500/40 hover:bg-red-500/60' : 'bg-zinc-700 hover:bg-zinc-650');
+                
+                return (
+                  <div key={idx} className="flex flex-col items-center group relative cursor-help">
+                    <div
+                      style={{ height: `${Math.max(15, hPct)}%` }}
+                      className={cn("w-2.5 rounded-t-sm transition-all duration-300", barColor)}
+                    />
+                    <span className="text-[8px] text-zinc-500 font-bold mt-1 uppercase leading-none">{w.label}</span>
+                    
+                    {/* Tooltip */}
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-850 px-2 py-1 rounded-md text-[9px] font-bold text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-xl">
+                      Week {w.weekNum}: {w.count} items
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Week Selector */}
           <div className="flex items-center gap-1 bg-zinc-800/60 p-1 rounded-xl border border-zinc-800/80">
             <Button
               onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
@@ -370,15 +451,15 @@ export default function WeeklyPlanner() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Days of the Week (First 7 slots) */}
         {weekDays.map((day, idx) => {
-          // Dynamic daily habits matching date
-          const dayHabitsList = habits.filter((h) => isHabitScheduledForDate(h, day.date));
+          // Dynamic daily habits matching date (excluding detox habits)
+          const dayHabitsList = habits.filter((h) => h.habit_type !== 'detox' && isHabitScheduledForDate(h, day.date));
 
           return (
             <div
               key={day.dateStr}
               className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px]"
             >
-              {/* Header */}
+              {/* Header colored dynamically based on relative crowdness */}
               <div
                 style={getHeaderStyle(idx)}
                 className="px-4 py-2.5 flex items-center justify-between transition-colors duration-300"
@@ -390,7 +471,7 @@ export default function WeeklyPlanner() {
               {/* Body - holds everything inside */}
               <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between overflow-hidden">
                 
-                {/* 1. Must Do Tasks */}
+                {/* 1. Must Do Tasks (Displays both normal & high-priority tasks) */}
                 <MustDoList
                   dateStr={day.dateStr}
                   tasks={tasks}
@@ -451,7 +532,7 @@ export default function WeeklyPlanner() {
 // Sub-components
 // ========================
 
-// 1. Must Do list
+// 1. Tasks List (normal & high priority with color indicators)
 function MustDoList({
   dateStr,
   tasks,
@@ -465,63 +546,101 @@ function MustDoList({
   deleteTask: any;
   onRedirect: () => void;
 }) {
-  const mustDos = useMemo(() => {
-    return tasks.filter((t) => t.due_date === dateStr && t.priority === 'high' && !t.is_wont_do);
+  const dayTasks = useMemo(() => {
+    return tasks.filter((t) => t.due_date === dateStr && !t.is_wont_do);
   }, [tasks, dateStr]);
+
+  // Sort: High priority first, then medium, then low, then none
+  const sortedTasks = useMemo(() => {
+    const weight = { high: 3, medium: 2, low: 1, none: 0 };
+    return [...dayTasks].sort((a, b) => weight[b.priority] - weight[a.priority]);
+  }, [dayTasks]);
+
+  const getPriorityStyle = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return {
+          border: 'border-red-500/50 hover:border-red-500',
+          activeBorder: 'bg-red-500/20 border-red-500/80 text-red-400',
+          text: 'text-red-200 font-semibold',
+        };
+      case 'medium':
+        return {
+          border: 'border-amber-500/50 hover:border-amber-500',
+          activeBorder: 'bg-amber-500/20 border-amber-500/80 text-amber-400',
+          text: 'text-amber-200 font-semibold',
+        };
+      case 'low':
+        return {
+          border: 'border-sky-500/50 hover:border-sky-500',
+          activeBorder: 'bg-sky-500/20 border-sky-500/80 text-sky-400',
+          text: 'text-sky-200 font-medium',
+        };
+      default:
+        return {
+          border: 'border-zinc-700 hover:border-zinc-500',
+          activeBorder: 'bg-zinc-500/20 border-zinc-500/80 text-zinc-400',
+          text: 'text-zinc-350 font-medium',
+        };
+    }
+  };
 
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 block">Must do:</label>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 block">Tasks:</label>
         <button
           onClick={onRedirect}
-          className="text-zinc-550 hover:text-blue-400 p-0.5"
-          title="Add Must Do Task"
+          className="text-zinc-555 hover:text-blue-400 p-0.5"
+          title="Add Task"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
-      <div className="space-y-1 max-h-[85px] overflow-y-auto pr-0.5">
-        {mustDos.length > 0 ? (
-          mustDos.map((task) => (
-            <div key={task.id} className="flex items-center justify-between group gap-2">
-              <button
-                onClick={() => toggleTask.mutate({ id: task.id, is_completed: !task.is_completed })}
-                className="flex items-center gap-1.5 text-xs text-left flex-1 min-w-0"
-              >
-                <div
-                  className={cn(
-                    'w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors',
-                    task.is_completed
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                      : 'border-zinc-700 hover:border-zinc-500'
-                  )}
+      <div className="space-y-1.5 max-h-[85px] overflow-y-auto pr-0.5">
+        {sortedTasks.length > 0 ? (
+          sortedTasks.map((task) => {
+            const style = getPriorityStyle(task.priority);
+            return (
+              <div key={task.id} className="flex items-center justify-between group gap-2">
+                <button
+                  onClick={() => toggleTask.mutate({ id: task.id, is_completed: !task.is_completed })}
+                  className="flex items-center gap-1.5 text-xs text-left flex-1 min-w-0"
                 >
-                  {task.is_completed && <Check className="w-2.5 h-2.5" />}
-                </div>
-                <span
-                  className={cn(
-                    'truncate leading-tight',
-                    task.is_completed ? 'text-zinc-650 line-through font-normal' : 'text-zinc-200 font-semibold'
-                  )}
+                  <div
+                    className={cn(
+                      'w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0 transition-colors',
+                      task.is_completed
+                        ? style.activeBorder
+                        : style.border
+                    )}
+                  >
+                    {task.is_completed && <Check className="w-2 h-2" />}
+                  </div>
+                  <span
+                    className={cn(
+                      'truncate leading-tight',
+                      task.is_completed ? 'text-zinc-650 line-through font-normal' : style.text
+                    )}
+                  >
+                    {task.title}
+                  </span>
+                </button>
+                <button
+                  onClick={() => deleteTask.mutate(task.id)}
+                  className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-opacity shrink-0"
                 >
-                  {task.title}
-                </span>
-              </button>
-              <button
-                onClick={() => deleteTask.mutate(task.id)}
-                className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-opacity shrink-0"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            );
+          })
         ) : (
           <button
             onClick={onRedirect}
             className="text-[10px] text-zinc-600 italic hover:text-zinc-400 text-left py-0.5"
           >
-            No high-priority tasks. Add one...
+            No tasks due today. Add one...
           </button>
         )}
       </div>
@@ -614,7 +733,7 @@ function AppointmentsList({
           visibleEvents.map((event) => {
             const timeStr = format(new Date(event.start_time), 'h:mm a');
             return (
-              <div key={event.id} className="flex items-center justify-between group gap-2 text-xs text-zinc-300">
+              <div key={event.id} className="flex items-center justify-between group gap-2 text-xs text-zinc-350 animate-fade-in">
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span className="text-[9px] bg-blue-500/10 text-blue-400 px-1 py-0.5 rounded font-semibold shrink-0">
                     {timeStr}
@@ -673,16 +792,16 @@ function DailyHabitsList({
                 >
                   <div
                     className={cn(
-                      'w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors',
+                      'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors border-zinc-700 hover:border-zinc-500',
                       isCompleted
                         ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                        : 'border-zinc-700 hover:border-zinc-500'
+                        : 'border-zinc-750'
                     )}
                   >
-                    {isCompleted && <Check className="w-2.5 h-2.5" />}
+                    {isCompleted && <Check className="w-2 h-2" />}
                   </div>
                   <span className={cn(
-                    "truncate leading-tight font-medium",
+                    "truncate leading-tight font-medium text-zinc-350",
                     isCompleted ? "text-zinc-650 line-through font-normal" : "text-zinc-200 font-semibold"
                   )}>
                     {habit.title}
