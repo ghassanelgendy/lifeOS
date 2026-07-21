@@ -117,7 +117,7 @@ export default function WeeklyPlanner() {
 
   const sundayDateStr = useMemo(() => toDateOnly(weekStart), [weekStart]);
   const saturdayDateStr = useMemo(() => toDateOnly(addDays(weekStart, 6)), [weekStart]);
-  
+
   // Calculate week number of the year
   const weekNumber = useMemo(() => {
     return getWeek(weekStart, { weekStartsOn: 0 });
@@ -260,10 +260,10 @@ export default function WeeklyPlanner() {
     } else if (range > 0) {
       score = (count - minCount) / range;
     }
-    
+
     // Interpolate HSL from 120 (Green) to 0 (Red)
     const hue = 120 - score * 120;
-    
+
     return {
       backgroundColor: `hsla(${hue}, 60%, 25%, 0.25)`,
       borderBottom: `1px solid hsla(${hue}, 60%, 35%, 0.4)`,
@@ -276,24 +276,24 @@ export default function WeeklyPlanner() {
     for (let w = 3; w >= 0; w--) {
       const wStart = subWeeks(weekStart, w);
       let loadCount = 0;
-      
+
       for (let i = 0; i < 7; i++) {
         const dayDate = addDays(wStart, i);
         const dayStr = toDateOnly(dayDate);
-        
+
         const tasksCount = tasks.filter(
           (t) => t.due_date === dayStr && !t.is_wont_do
         ).length;
         const eventsCount = events.filter(
           (e) => e.start_time.split('T')[0] === dayStr
         ).length;
-        const habitsCount = habits.filter((h) => 
+        const habitsCount = habits.filter((h) =>
           h.habit_type !== 'detox' && isHabitScheduledForDate(h, dayDate)
         ).length;
-        
+
         loadCount += tasksCount + eventsCount + habitsCount;
       }
-      
+
       loads.push({
         weekNum: getWeek(wStart, { weekStartsOn: 0 }),
         label: w === 0 ? 'Current' : `W-${w}`,
@@ -310,7 +310,7 @@ export default function WeeklyPlanner() {
     const current = weeklyLoads[weeklyLoads.length - 1].count;
     const pastCounts = weeklyLoads.slice(0, 3).map(l => l.count);
     const avgPast = pastCounts.reduce((sum, c) => sum + c, 0) / Math.max(1, pastCounts.length);
-    
+
     if (current > avgPast * 1.25) return { text: 'Heavy Load', color: 'text-red-400 bg-red-500/10 border-red-500/20' };
     if (current < avgPast * 0.75) return { text: 'Light Load', color: 'text-green-400 bg-green-500/10 border-green-500/20' };
     return { text: 'Optimal Load', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' };
@@ -358,49 +358,87 @@ export default function WeeklyPlanner() {
     <div className="max-w-7xl mx-auto p-4 sm:p-6 space-y-6">
       {/* Top Banner Control */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 p-4 rounded-2xl gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
-            <Grid className="w-5 h-5" />
+        {/* Title & mobile-specific date picker */}
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20 shrink-0">
+              <Grid className="w-5 h-5" />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-white leading-tight">Weekly Planner</h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-bold text-white leading-tight">Weekly Planner</h1>
-            <p className="text-xs text-zinc-400">Sustainable daily systems over rigid annual goals</p>
+
+          {/* Date Picker showing only on iOS/Mobile screen */}
+          <div className="relative md:hidden bg-zinc-800/60 hover:bg-zinc-750 border border-zinc-800/80 rounded-xl h-9 w-9 flex items-center justify-center cursor-pointer shrink-0">
+            <CalendarIcon className="w-3.5 h-3.5 text-zinc-300" />
+            <input
+              type="date"
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+              style={{ WebkitAppearance: 'none' }}
+              value={sundayDateStr}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setWeekStart(startOfWeek(parseISO(e.target.value), { weekStartsOn: 0 }));
+                }
+              }}
+            />
           </div>
         </div>
 
-        {/* Load Comparison Sparkline & Selector */}
-        <div className="flex items-center justify-between md:justify-end gap-4 flex-wrap">
+        {/* Selector & load indicator row - floats right or centers on mobile */}
+        <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto">
+          {/* Week Selector */}
+          <div className="flex items-center gap-1 bg-zinc-800/60 p-0.5 rounded-xl border border-zinc-800/80">
+            <Button
+              onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
+              className="p-1 hover:bg-zinc-700/80 text-zinc-355 bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+
+            <div className="px-2 select-none flex items-center justify-center min-w-[65px]">
+              <span className="text-xs font-black text-zinc-200">Week {weekNumber}</span>
+            </div>
+
+            <Button
+              onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
+              className="p-1 hover:bg-zinc-700/80 text-zinc-355 bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+
           {/* Sparkline Load indicator */}
-          <div className="flex items-center gap-3 bg-zinc-800/40 px-3 py-2 rounded-xl border border-zinc-800/80">
+          <div className="flex items-center gap-2.5 bg-zinc-800/40 px-2.5 py-1 rounded-xl border border-zinc-800/80 h-9">
             <div className="flex flex-col">
-              <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Weekly Load</span>
-              <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border inline-block mt-0.5 whitespace-nowrap", loadRating.color)}>
+              <span className="text-[8px] text-zinc-550 font-bold uppercase tracking-wider leading-none">Weekly Load</span>
+              <span className={cn("text-[8px] font-bold px-1 py-0.5 rounded border inline-block mt-0.5 whitespace-nowrap leading-none", loadRating.color)}>
                 {loadRating.text}
               </span>
             </div>
-            <div className="flex items-end gap-1.5 h-8">
+            <div className="flex items-end gap-1 h-7">
               {weeklyLoads.map((w, idx) => {
                 const maxL = Math.max(...weeklyLoads.map(l => l.count), 1);
                 const hPct = (w.count / maxL) * 100;
-                
-                // Color mapping: light is green, heavy is red
+
                 const avg = weeklyLoads.reduce((sum, l) => sum + l.count, 0) / weeklyLoads.length;
                 const isHeavy = w.count > avg;
                 const barColor = w.isCurrent
                   ? (isHeavy ? 'bg-red-500' : 'bg-emerald-500')
                   : (isHeavy ? 'bg-red-500/40 hover:bg-red-500/60' : 'bg-zinc-700 hover:bg-zinc-650');
-                
+
                 return (
                   <div key={idx} className="flex flex-col items-center group relative cursor-help">
                     <div
                       style={{ height: `${Math.max(15, hPct)}%` }}
-                      className={cn("w-2.5 rounded-t-sm transition-all duration-300", barColor)}
+                      className={cn("w-2 rounded-t-sm transition-all duration-300", barColor)}
                     />
-                    <span className="text-[8px] text-zinc-500 font-bold mt-1 uppercase leading-none">{w.label}</span>
-                    
+                    <span className="text-[7px] text-zinc-500 font-bold mt-0.5 uppercase leading-none">{w.label}</span>
+
                     {/* Tooltip */}
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-850 px-2 py-1 rounded-md text-[9px] font-bold text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-xl">
-                      Week {w.weekNum}: {w.count} items
+                    <div className="absolute bottom-9 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-850 px-1.5 py-0.5 rounded-md text-[8px] font-bold text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-xl">
+                      W{w.weekNum}: {w.count}
                     </div>
                   </div>
                 );
@@ -408,29 +446,8 @@ export default function WeeklyPlanner() {
             </div>
           </div>
 
-          {/* Week Selector */}
-          <div className="flex items-center gap-1 bg-zinc-800/60 p-1 rounded-xl border border-zinc-800/80">
-            <Button
-              onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
-              className="p-2 hover:bg-zinc-700/80 text-zinc-350 bg-transparent shadow-none border-none h-8 w-8 rounded-lg"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-
-            <div className="px-3 select-none flex items-center justify-center min-w-[70px]">
-              <span className="text-sm font-black text-zinc-200">Week {weekNumber}</span>
-            </div>
-
-            <Button
-              onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
-              className="p-2 hover:bg-zinc-700/80 text-zinc-350 bg-transparent shadow-none border-none h-8 w-8 rounded-lg"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Icon-only Date picker selector */}
-          <div className="relative bg-zinc-800/60 hover:bg-zinc-750 border border-zinc-800/80 rounded-xl h-10 w-10 flex items-center justify-center cursor-pointer">
+          {/* Date Picker showing only on Desktop screen */}
+          <div className="hidden md:relative md:flex bg-zinc-800/60 hover:bg-zinc-750 border border-zinc-800/80 rounded-xl h-10 w-10 items-center justify-center cursor-pointer">
             <CalendarIcon className="w-4 h-4 text-zinc-350" />
             <input
               type="date"
@@ -470,7 +487,7 @@ export default function WeeklyPlanner() {
 
               {/* Body - holds everything inside */}
               <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between overflow-hidden">
-                
+
                 {/* 1. Must Do Tasks (Displays both normal & high-priority tasks) */}
                 <MustDoList
                   dateStr={day.dateStr}
