@@ -540,15 +540,15 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
         </div>
 
         {/* iOS-style Weekly Load Pill Widget */}
-        <div className="flex items-center justify-between bg-black/10 dark:bg-white/5 border border-white/5 p-2.5 rounded-xl text-xs gap-3">
-          <div className="flex flex-col">
-            <span className="text-[8px] text-muted-foreground font-bold uppercase tracking-wider leading-none">Weekly Load</span>
-            <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded border inline-block mt-1 whitespace-nowrap leading-none", loadRating.color)}>
+        <div className="bg-black/10 dark:bg-white/5 border border-white/5 p-4 rounded-xl text-xs gap-3 flex items-center justify-between">
+          <div className="flex flex-col gap-1 flex-1">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider leading-none">Weekly Load Analysis</span>
+            <span className={cn("text-xs font-bold px-2 py-0.5 rounded-full border inline-block w-fit mt-1 leading-none", loadRating.color)}>
               {loadRating.text}
             </span>
           </div>
           
-          <div className="flex items-end gap-1.5 h-8">
+          <div className="flex items-end gap-2.5 h-12 flex-shrink-0">
             {weeklyLoads.map((w, idx) => {
               const maxL = Math.max(...weeklyLoads.map(l => l.count), 1);
               const hPct = (w.count / maxL) * 100;
@@ -557,20 +557,18 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
               const isHeavy = w.count > avg;
               const barColor = w.isCurrent
                 ? (isHeavy ? 'bg-red-500' : 'bg-emerald-500')
-                : (isHeavy ? 'bg-red-500/40' : 'bg-[#8E8E93] dark:bg-[#3A3A3C]');
+                : (isHeavy ? 'bg-red-500/40' : 'bg-zinc-650 dark:bg-zinc-800');
               
               return (
                 <div key={idx} className="flex flex-col items-center group relative cursor-help">
-                  <div
-                    style={{ height: `${Math.max(15, hPct)}%` }}
-                    className={cn("w-2 rounded-t-sm transition-all duration-300", barColor)}
-                  />
-                  <span className="text-[7px] text-[#8E8E93] font-bold mt-1 uppercase leading-none">{w.label}</span>
-                  
-                  {/* Tooltip for hover overlay */}
-                  <div className="absolute bottom-9 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-850 px-1.5 py-0.5 rounded-md text-[8px] font-bold text-zinc-200 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10 shadow-xl">
-                    W{w.weekNum}: {w.count}
+                  <span className="text-[9px] text-white font-bold leading-none mb-1">{w.count}</span>
+                  <div className="h-8 flex items-end">
+                    <div
+                      style={{ height: `${Math.max(15, hPct)}%` }}
+                      className={cn("w-2.5 rounded-t-sm transition-all duration-300", barColor)}
+                    />
                   </div>
+                  <span className="text-[8px] text-zinc-400 font-bold mt-1.5 uppercase leading-none">{w.label}</span>
                 </div>
               );
             })}
@@ -578,8 +576,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
         </div>
       </div>
 
-      {/* Main 2x4 Planner Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Main Planner Grid / Carousel on Mobile */}
+      <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 overflow-x-auto md:overflow-x-visible pb-4 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0 scroll-pl-4 snap-x snap-mandatory scrollbar-none">
         {/* Days of the Week (First 7 slots) */}
         {weekDays.map((day, idx) => {
           // Dynamic daily habits matching date (excluding detox habits)
@@ -588,7 +586,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
           return (
             <div
               key={day.dateStr}
-              className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px]"
+              className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px] shrink-0 w-[88vw] max-w-[350px] md:w-auto md:max-w-none snap-center"
             >
               {/* Header colored dynamically based on relative crowdness */}
               <div
@@ -647,13 +645,15 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
         })}
 
         {/* Self Care Card (8th slot) */}
-        <SelfCareCard
-          sundayDateStr={sundayDateStr}
-          folderId={reflectionsFolder?.id}
-          weeklyNote={weeklyReflectionsNote}
-          createNote={createNote}
-          updateNote={updateNote}
-        />
+        <div className="shrink-0 w-[88vw] max-w-[350px] md:w-auto md:max-w-none snap-center">
+          <SelfCareCard
+            sundayDateStr={sundayDateStr}
+            folderId={reflectionsFolder?.id}
+            weeklyNote={weeklyReflectionsNote}
+            createNote={createNote}
+            updateNote={updateNote}
+          />
+        </div>
       </div>
 
       {/* AI Wellbeing Correlation Coach Section */}
