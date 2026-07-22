@@ -25,18 +25,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify(req.body),
     });
 
+    if (res.writableEnded || res.finished || (res as any).closed) return;
+
     const contentType = response.headers.get('Content-Type') || 'application/json';
     res.setHeader('Content-Type', contentType);
     
     if (!response.ok) {
       const errorText = await response.text();
+      if (res.writableEnded || res.finished || (res as any).closed) return;
       return res.status(response.status).send(errorText);
     }
 
     const data = await response.json();
+    if (res.writableEnded || res.finished || (res as any).closed) return;
     return res.status(response.status).json(data);
   } catch (err) {
     console.error('[ai-proxy]', err);
+    if (res.writableEnded || res.finished || (res as any).closed) return;
     return res.status(502).json({ error: 'Failed to communicate with AI Router' });
   }
 }
