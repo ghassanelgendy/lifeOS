@@ -433,12 +433,12 @@ export const useUIStore = create<UIState>()(
       setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
 
       // AI Default values & Setters
-      aiEnabled: false,
+      aiEnabled: Boolean(import.meta.env.VITE_AI_API_KEY),
       aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
       aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://router.bynara.id/v1',
       aiModel: import.meta.env.VITE_AI_MODEL || 'mistral-medium-3-5',
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
-      setAiApiKey: (aiApiKey) => set({ aiApiKey }),
+      setAiApiKey: (aiApiKey) => set({ aiApiKey, ...(aiApiKey.trim() ? { aiEnabled: true } : {}) }),
       setAiBaseUrl: (aiBaseUrl) => set({ aiBaseUrl }),
       setAiModel: (aiModel) => set({ aiModel }),
 

@@ -52,30 +52,60 @@ export async function askAI(
       throw new Error(`AI Router Native Error (${response.status}): ${errorMsg}`);
     }
 
-    const text = response.data?.choices?.[0]?.message?.content || '';
+    let resData = response.data;
+    if (typeof resData === 'string') {
+      try {
+        resData = JSON.parse(resData);
+      } catch (e) {
+        // Fallback to raw text if not JSON
+      }
+    }
+
+    const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
     return text.trim();
   }
 
-  // Web Browser environment: Proxy request through our Vercel /dev API endpoint to avoid CORS preflights
-  const proxyEndpoint = '/api/ai';
-  const response = await fetch(proxyEndpoint, {
+  // Web Browser environment: Proxy request through Vercel endpoint or fallback to direct fetch
+  try {
+    const proxyEndpoint = '/api/ai';
+    const response = await fetch(proxyEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-AI-Api-Key': aiApiKey.trim(),
+        'X-AI-Base-Url': cleanBaseUrl,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content || '';
+      return text.trim();
+    }
+  } catch (err) {
+    // Proxy failed or unavailable (e.g. standalone mobile web/dev server), fallback to direct API endpoint
+  }
+
+  // Fallback direct request
+  const directEndpoint = `${cleanBaseUrl}/chat/completions`;
+  const directResponse = await fetch(directEndpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'X-AI-Api-Key': aiApiKey.trim(),
-      'X-AI-Base-Url': cleanBaseUrl,
+      'Authorization': `Bearer ${aiApiKey.trim()}`,
     },
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    const errorBody = await response.text().catch(() => '');
-    throw new Error(`AI Router Proxy Error (${response.status}): ${response.statusText || 'Unknown error'}. ${errorBody}`);
+  if (!directResponse.ok) {
+    const errorBody = await directResponse.text().catch(() => '');
+    throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`);
   }
 
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content || '';
-  return text.trim();
+  const directData = await directResponse.json();
+  const directText = directData.choices?.[0]?.message?.content || '';
+  return directText.trim();
 }
 
 /**

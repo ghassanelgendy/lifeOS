@@ -593,11 +593,12 @@ export function AppShell() {
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.12, ease: "easeOut" }}
                 className={cn(
-                  "flex flex-col p-4 md:p-6 w-full flex-1",
+                  "flex flex-col w-full flex-1",
                   location.pathname === '/chat'
-                    ? "pb-[env(safe-area-inset-bottom)] md:pb-6"
-                    : "pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6",
-                  isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
+                    ? "h-full min-h-0 overflow-hidden p-0"
+                    : (isOnTasks
+                        ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
+                        : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6")
                 )}
                 style={{
                   backfaceVisibility: 'hidden',

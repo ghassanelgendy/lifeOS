@@ -1030,41 +1030,52 @@ export default function Dashboard() {
         )}
       </Modal>
 
-      {/* Listening Dialog Overlay */}
-      <AnimatePresence>
-        {isListening && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md text-white font-sans"
-          >
-            <div className="relative flex flex-col items-center p-8 rounded-3xl bg-[#1C1C1E]/95 border border-white/10 max-w-sm w-full mx-4 shadow-2xl text-center space-y-6">
-              <div className="relative">
-                {/* Pulsing ripples */}
-                <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
-                <div className="absolute -inset-4 rounded-full bg-red-500/20 animate-pulse" />
-                <div className="relative z-10 w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/50">
-                  <Mic size={36} className="text-white animate-bounce" />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold tracking-tight">Listening...</h3>
-                <p className="text-sm text-zinc-400">Speak now to do things or ask questions</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setIsListening(false)}
-                className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-sm font-semibold transition-all border border-white/5 cursor-pointer"
+      {/* Listening Dialog Overlay - Portaled directly to document.body relative to SCREEN */}
+      {createPortal(
+        <AnimatePresence>
+          {isListening && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-md flex flex-col items-center justify-end p-4 pb-[calc(170px+env(safe-area-inset-bottom))] font-sans"
+              onClick={() => setIsListening(false)}
+            >
+              <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 30, scale: 0.95 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative flex flex-col items-center p-6 rounded-3xl bg-[#1C1C1E]/95 border border-white/10 max-w-sm w-full shadow-2xl text-center space-y-5 text-white"
               >
-                Cancel
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                <div className="relative">
+                  {/* Pulsing ripples */}
+                  <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
+                  <div className="absolute -inset-3 rounded-full bg-red-500/20 animate-pulse" />
+                  <div className="relative z-10 w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/50">
+                    <Mic size={30} className="text-white animate-bounce" />
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <h3 className="text-lg font-bold tracking-tight">Listening...</h3>
+                  <p className="text-xs text-zinc-400">Speak now to do things or ask questions</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsListening(false)}
+                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-xs font-semibold transition-all border border-white/5 cursor-pointer text-zinc-200"
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Floating Action Button (FAB) for Quick Add Shortcuts */}
       {createPortal(

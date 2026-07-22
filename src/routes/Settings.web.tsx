@@ -174,6 +174,13 @@ export default function SettingsPage() {
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
+  const [aiSaved, setAiSaved] = useState(false);
+
+  const handleAiFieldChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setter(e.target.value);
+    setAiSaved(true);
+    setTimeout(() => setAiSaved(false), 2000);
+  };
 
   useEffect(() => {
     if (prayerLocationMode !== 'city') {
@@ -723,6 +730,12 @@ export default function SettingsPage() {
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
             <h2 className="font-semibold">AI Integration (Optional)</h2>
+            {aiSaved && (
+              <span className="flex items-center gap-1 text-xs font-semibold text-emerald-500 animate-in fade-in slide-in-from-left-2 duration-300">
+                <Check size={12} />
+                Saved
+              </span>
+            )}
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -755,7 +768,7 @@ export default function SettingsPage() {
                     type="password"
                     placeholder="sk-nry-..."
                     value={aiApiKey}
-                    onChange={(e) => setAiApiKey(e.target.value)}
+                    onChange={handleAiFieldChange(setAiApiKey)}
                     className="w-full bg-secondary/30 border-border"
                   />
                 </div>
@@ -767,7 +780,7 @@ export default function SettingsPage() {
                     type="text"
                     placeholder="https://router.bynara.id/v1"
                     value={aiBaseUrl}
-                    onChange={(e) => setAiBaseUrl(e.target.value)}
+                    onChange={handleAiFieldChange(setAiBaseUrl)}
                     className="w-full bg-secondary/30 border-border"
                   />
                 </div>
@@ -779,7 +792,7 @@ export default function SettingsPage() {
                 </label>
                 <select
                   value={aiModel}
-                  onChange={(e) => setAiModel(e.target.value)}
+                  onChange={handleAiFieldChange(setAiModel)}
                   className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring text-sm"
                 >
                   <option value="mistral-medium-3-5">mistral-medium-3-5 (Default, Recommended)</option>

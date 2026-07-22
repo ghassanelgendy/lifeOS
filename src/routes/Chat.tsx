@@ -235,6 +235,7 @@ export default function Chat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const promptConsumedRef = useRef(false);
 
   const parser = useMemo(() => new Marked(), []);
 
@@ -597,7 +598,8 @@ ${knowledgeContext}`;
 
   useEffect(() => {
     const prompt = searchParams.get('prompt');
-    if (prompt) {
+    if (prompt && !promptConsumedRef.current) {
+      promptConsumedRef.current = true;
       setSearchParams((p) => {
         p.delete('prompt');
         return p;
@@ -717,7 +719,7 @@ ${knowledgeContext}`;
   }
 
   return (
-    <div className="relative flex-1 flex flex-col min-h-0 h-[calc(100dvh-4rem)] bg-background text-foreground overflow-hidden">
+    <div className="relative flex-1 flex flex-col min-h-0 h-full w-full bg-background text-foreground overflow-hidden">
       
       {/* MINIMALIST HEADER BAR */}
       <header className="h-14 border-b border-border/40 px-4 flex items-center justify-between shrink-0 bg-background/80 backdrop-blur-md z-20">
@@ -943,7 +945,7 @@ ${knowledgeContext}`;
       </main>
 
       {/* INPUT BAR - FIXED AT BOTTOM, CENTERED */}
-      <footer className="w-full border-t border-border/40 bg-background/90 backdrop-blur-md p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
+      <footer className="sticky bottom-0 w-full border-t border-border/40 bg-background/95 backdrop-blur-md p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
         <div className="w-full max-w-3xl flex items-center gap-2">
           <textarea
             ref={inputRef}
