@@ -6,6 +6,10 @@ import { addSystemLog } from './logger';
  * Standard client helper to perform OpenAI-compatible chat completions.
  * Connects to the user-defined base URL and API key inside useUIStore.
  */
+function cleanAiResponse(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
 export async function askAI(
   systemPrompt: string,
   userPrompt: string,
@@ -78,8 +82,9 @@ export async function askAI(
           }
         }
         const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-        addSystemLog(`askAI native proxy success: response length=${text.length}`, 'info');
-        return text.trim();
+        const cleaned = cleanAiResponse(text);
+        addSystemLog(`askAI native proxy success: response length=${cleaned.length}`, 'info');
+        return cleaned;
       } else {
         addSystemLog(`askAI native proxy returned non-200 status (${proxyResponse.status}), falling back to direct completions`, 'warn');
       }
@@ -122,8 +127,9 @@ export async function askAI(
       }
 
       const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-      addSystemLog(`askAI native direct success: response length=${text.length}`, 'info');
-      return text.trim();
+      const cleaned = cleanAiResponse(text);
+      addSystemLog(`askAI native direct success: response length=${cleaned.length}`, 'info');
+      return cleaned;
     } catch (err: any) {
       addSystemLog(`askAI native direct failed with exception: ${err.message || err}`, 'error');
       throw err;
@@ -176,9 +182,10 @@ export async function askAI(
     }
 
     const data = await proxyResponse.json();
-    const text = (data.choices?.[0]?.message?.content || '').trim();
-    addSystemLog(`askAI proxy success: response length=${text.length}`, 'info');
-    return text;
+    const text = (data.choices?.[0]?.message?.content || '');
+    const cleaned = cleanAiResponse(text);
+    addSystemLog(`askAI proxy success: response length=${cleaned.length}`, 'info');
+    return cleaned;
   } catch (err: any) {
     // If the error came from the proxy response or timeout, propagate it directly
     if (err.message && (err.message.includes('AI Router Error') || err.name === 'AbortError')) {
@@ -214,9 +221,10 @@ export async function askAI(
       }
 
       const directData = await directResponse.json();
-      const text = (directData.choices?.[0]?.message?.content || '').trim();
-      addSystemLog(`askAI direct fetch success: response length=${text.length}`, 'info');
-      return text;
+      const text = (directData.choices?.[0]?.message?.content || '');
+      const cleaned = cleanAiResponse(text);
+      addSystemLog(`askAI direct fetch success: response length=${cleaned.length}`, 'info');
+      return cleaned;
     } catch (directErr: any) {
       clearTimeout(directTimer);
       addSystemLog(`askAI direct fetch exception: ${directErr.message || directErr}`, 'error');
