@@ -14,6 +14,7 @@ import {
   Focus as FocusIcon,
   BarChart3,
   Coins,
+  Sparkles,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Focus', icon: FocusIcon, href: '/focus' },
   { label: 'Habits', icon: Target, href: '/habits' },
   { label: 'Points', icon: Coins, href: '/points' },
+  { label: 'AI Assistant', icon: Sparkles, href: '/chat' },
   { label: 'Calendar', icon: Calendar, href: '/calendar' },
   { label: 'Notes', icon: FileText, href: '/notes' },
   { label: 'Bio-Metrics', icon: Dumbbell, href: '/health' },

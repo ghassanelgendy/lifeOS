@@ -126,7 +126,8 @@ export default defineConfig(({ mode }) => {
                   },
                 };
 
-                const { default: handler } = await import('./api/calendar/tasks.ts');
+                const mod = await server.ssrLoadModule('./api/calendar/tasks.ts');
+                const handler = mod.default;
                 await handler(
                   { method: req.method, query, headers: req.headers } as VercelRequest,
                   apiRes as unknown as VercelResponse
@@ -189,7 +190,8 @@ export default defineConfig(({ mode }) => {
                   },
                 };
 
-                const { default: handler } = await import('./api/ai.ts');
+                const mod = await server.ssrLoadModule('./api/ai.ts');
+                const handler = mod.default;
                 await handler(
                   { method: req.method, headers: req.headers, body: parsedBody } as unknown as VercelRequest,
                   apiRes as unknown as VercelResponse
@@ -265,21 +267,24 @@ export default defineConfig(({ mode }) => {
       const ignoreApiPlugin: PluginOption = {
         name: 'ignore-api',
         enforce: 'pre',
-        resolveId(id) {
+        resolveId(id, _importer, options) {
+          if (options?.ssr) return null;
           const n = id.replace(/\\/g, '/');
           if (n.includes('/api/') && (n.endsWith('.ts') || n.endsWith('.tsx'))) {
             return '\0virtual:api-stub';
           }
           return null;
         },
-        load(id) {
+        load(id, options) {
+          if (options?.ssr) return null;
           const n = id.replace(/\\/g, '/');
           if (id === '\0virtual:api-stub' || (n.includes('/api/') && (n.endsWith('.ts') || n.endsWith('.tsx')))) {
             return 'export default {}';
           }
           return null;
         },
-        transform(_, id) {
+        transform(_, id, options) {
+          if (options?.ssr) return null;
           const n = id.replace(/\\/g, '/');
           if (n.includes('/api/')) {
             return { code: 'export default {}', map: null };

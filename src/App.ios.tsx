@@ -40,6 +40,7 @@ import SettingsPage from './routes/Settings';
 import Points from './routes/Points';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
+import Chat from './routes/Chat';
 import { useDailyPointsSync } from './hooks/usePoints';
 import './App.css';
 
@@ -352,6 +353,7 @@ function AppInner() {
               <Route path="sleep" element={<Sleep />} />
               <Route path="analytics" element={<AnalyticsPage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="chat" element={<Chat />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Route>
           </Route>
