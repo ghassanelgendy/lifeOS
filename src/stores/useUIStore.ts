@@ -434,9 +434,9 @@ export const useUIStore = create<UIState>()(
 
       // AI Default values & Setters
       aiEnabled: false,
-      aiApiKey: 'sk-nry-XbvPSwZNl6kIPm8WnNHnbx2u-tWrHCQRvZUtsJbCCig',
-      aiBaseUrl: 'https://router.bynara.id/v1',
-      aiModel: 'mistral-medium-3-5',
+      aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
+      aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://router.bynara.id/v1',
+      aiModel: import.meta.env.VITE_AI_MODEL || 'mistral-medium-3-5',
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       setAiApiKey: (aiApiKey) => set({ aiApiKey }),
       setAiBaseUrl: (aiBaseUrl) => set({ aiBaseUrl }),
