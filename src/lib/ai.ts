@@ -46,19 +46,64 @@ export async function askAI(
   addSystemLog(`askAI environment check: isNativePlatform=${isNative}`, 'info');
 
   if (isNative) {
+    // Try proxy first to bypass Cloudflare WAF on direct native requests
+    const devUrl = window.location.origin || '';
+    const isDev = devUrl.includes('localhost') || devUrl.includes('192.168') || devUrl.includes('127.0.0.1');
+    const proxyEndpoint = isDev ? `${devUrl.replace(/\/+$/, '')}/api/ai` : 'https://life-os-tan.vercel.app/api/ai';
+
+    addSystemLog(`askAI native: trying proxy endpoint: ${proxyEndpoint}`, 'info');
+    try {
+      const proxyResponse = await CapacitorHttp.post({
+        url: proxyEndpoint,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-AI-Api-Key': aiApiKey.trim(),
+          'X-AI-Base-Url': cleanBaseUrl,
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        },
+        data: payload, // Capacitor handles serialization natively
+        connectTimeout: 10000,
+        readTimeout: 20000,
+      });
+
+      addSystemLog(`askAI native proxy completed: status=${proxyResponse.status}`, 'info');
+
+      if (proxyResponse.status === 200) {
+        let resData = proxyResponse.data;
+        if (typeof resData === 'string') {
+          try {
+            resData = JSON.parse(resData);
+          } catch {
+            // ignore
+          }
+        }
+        const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
+        addSystemLog(`askAI native proxy success: response length=${text.length}`, 'info');
+        return text.trim();
+      } else {
+        addSystemLog(`askAI native proxy returned non-200 status (${proxyResponse.status}), falling back to direct completions`, 'warn');
+      }
+    } catch (proxyErr: any) {
+      addSystemLog(`askAI native proxy request failed: ${proxyErr.message || proxyErr}, falling back to direct completions`, 'warn');
+    }
+
+    // Direct fetch fallback on native
     const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
-    addSystemLog(`askAI executing CapacitorHttp POST to endpoint: ${nativeEndpoint}`, 'info');
+    addSystemLog(`askAI executing native direct CapacitorHttp POST to endpoint: ${nativeEndpoint}`, 'info');
     try {
       const response = await CapacitorHttp.post({
         url: nativeEndpoint,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${aiApiKey.trim()}`,
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         },
-        data: JSON.stringify(payload), // must be string for WKWebView bridge
+        data: payload,
+        connectTimeout: 15000,
+        readTimeout: 30000,
       });
 
-      addSystemLog(`askAI CapacitorHttp completed: status=${response.status}`, 'info');
+      addSystemLog(`askAI native direct completed: status=${response.status}`, 'info');
 
       if (response.status !== 200) {
         const errorMsg = response.data?.error?.message || response.data || 'Unknown native error';
@@ -77,10 +122,10 @@ export async function askAI(
       }
 
       const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-      addSystemLog(`askAI CapacitorHttp success: response length=${text.length}`, 'info');
+      addSystemLog(`askAI native direct success: response length=${text.length}`, 'info');
       return text.trim();
     } catch (err: any) {
-      addSystemLog(`askAI CapacitorHttp failed with exception: ${err.message || err}`, 'error');
+      addSystemLog(`askAI native direct failed with exception: ${err.message || err}`, 'error');
       throw err;
     }
   }
