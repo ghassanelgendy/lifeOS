@@ -34,13 +34,9 @@ export async function askAI(
     payload.response_format = { type: 'json_object' };
   }
 
-  // Use CapacitorHttp on native iOS/Android OR when running in ios vite mode.
-  // Capacitor live-reload loads the dev server URL inside the native WebView –
-  // isNativePlatform() returns false there but fetch() is subject to CORS/WKWebView
-  // restrictions, so we must always use CapacitorHttp on the ios build.
-  const useNativeHttp = Capacitor.isNativePlatform() || import.meta.env.MODE === 'ios';
-
-  if (useNativeHttp) {
+  // Use CapacitorHttp only on real native iOS/Android (bypasses CORS in WKWebView).
+  // In browser/localhost, plain fetch works fine — no CORS restriction.
+  if (Capacitor.isNativePlatform()) {
     const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
     const response = await CapacitorHttp.post({
       url: nativeEndpoint,
@@ -48,7 +44,7 @@ export async function askAI(
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${aiApiKey.trim()}`,
       },
-      data: payload,
+      data: JSON.stringify(payload), // must be string for WKWebView bridge
     });
 
     if (response.status !== 200) {
@@ -69,59 +65,87 @@ export async function askAI(
     return text.trim();
   }
 
-  // Web Browser: try Vercel proxy first (8s timeout), then direct fetch (30s timeout)
+  // Web Browser environment: execute via /api/ai proxy to avoid CORS
   try {
     const proxyController = new AbortController();
-    const proxyTimer = setTimeout(() => proxyController.abort(), 8000);
-    const proxyResponse = await fetch('/api/ai', {
-      method: 'POST',
-      signal: proxyController.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'X-AI-Api-Key': aiApiKey.trim(),
-        'X-AI-Base-Url': cleanBaseUrl,
-      },
-      body: JSON.stringify(payload),
-    });
-    clearTimeout(proxyTimer);
-
-    if (proxyResponse.ok) {
-      const data = await proxyResponse.json();
-      return (data.choices?.[0]?.message?.content || '').trim();
-    }
-  } catch {
-    // Proxy unavailable – fall through to direct fetch
-  }
-
-  // Direct fetch fallback with 30s timeout
-  const directController = new AbortController();
-  const directTimer = setTimeout(() => directController.abort(), 30000);
-
-  try {
-    const directResponse = await fetch(`${cleanBaseUrl}/chat/completions`, {
-      method: 'POST',
-      signal: directController.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${aiApiKey.trim()}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    clearTimeout(directTimer);
-
-    if (!directResponse.ok) {
-      const errorBody = await directResponse.text().catch(() => '');
-      throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`);
+    const proxyTimer = setTimeout(() => proxyController.abort(), 30000); // Allow up to 30s for the proxy
+    let proxyResponse;
+    try {
+      proxyResponse = await fetch('/api/ai', {
+        method: 'POST',
+        signal: proxyController.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-AI-Api-Key': aiApiKey.trim(),
+          'X-AI-Base-Url': cleanBaseUrl,
+        },
+        body: JSON.stringify(payload),
+      });
+      clearTimeout(proxyTimer);
+    } catch (netErr) {
+      clearTimeout(proxyTimer);
+      // Network/CORS failure calling the proxy itself (e.g. proxy endpoint doesn't exist on standalone server).
+      // Fall through to direct fetch.
+      throw netErr;
     }
 
-    const directData = await directResponse.json();
-    return (directData.choices?.[0]?.message?.content || '').trim();
+    if (!proxyResponse.ok) {
+      const errorText = await proxyResponse.text().catch(() => '');
+      let errMsg = `AI Router Error (${proxyResponse.status})`;
+      try {
+        const parsed = JSON.parse(errorText);
+        if (parsed.error?.message) {
+          errMsg = parsed.error.message;
+        } else if (parsed.error) {
+          errMsg = parsed.error;
+        } else if (parsed.message) {
+          errMsg = parsed.message;
+        }
+      } catch {
+        if (errorText) errMsg = errorText;
+      }
+      throw new Error(errMsg);
+    }
+
+    const data = await proxyResponse.json();
+    return (data.choices?.[0]?.message?.content || '').trim();
   } catch (err: any) {
-    clearTimeout(directTimer);
-    if (err?.name === 'AbortError') {
-      throw new Error('AI request timed out. Please check your API key and Base URL in Settings.');
+    // If the error came from the proxy response or timeout, propagate it directly
+    if (err.message && (err.message.includes('AI Router Error') || err.name === 'AbortError')) {
+      throw err;
     }
-    throw err;
+    
+    // Otherwise, the proxy endpoint itself was unreachable (e.g., standalone dev server without /api/ai).
+    // Fall back to direct fetch.
+    const directController = new AbortController();
+    const directTimer = setTimeout(() => directController.abort(), 30000);
+
+    try {
+      const directResponse = await fetch(`${cleanBaseUrl}/chat/completions`, {
+        method: 'POST',
+        signal: directController.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${aiApiKey.trim()}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      clearTimeout(directTimer);
+
+      if (!directResponse.ok) {
+        const errorBody = await directResponse.text().catch(() => '');
+        throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`);
+      }
+
+      const directData = await directResponse.json();
+      return (directData.choices?.[0]?.message?.content || '').trim();
+    } catch (directErr: any) {
+      clearTimeout(directTimer);
+      if (directErr?.name === 'AbortError') {
+        throw new Error('AI request timed out. Please check your API key and Base URL in Settings.');
+      }
+      throw directErr;
+    }
   }
 }
 

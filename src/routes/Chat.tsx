@@ -267,9 +267,15 @@ export default function Chat() {
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      const keyboardHeight = window.innerHeight - vv.height;
       if (footerRef.current) {
-        footerRef.current.style.bottom = offset > 0 ? `${offset}px` : '';
+        if (keyboardHeight > 150) {
+          // Keyboard is open, offset the footer by the keyboard height
+          footerRef.current.style.bottom = `${keyboardHeight}px`;
+        } else {
+          // Keyboard is closed
+          footerRef.current.style.bottom = '';
+        }
       }
     };
     vv.addEventListener('resize', update);
