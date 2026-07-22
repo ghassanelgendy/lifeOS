@@ -56,7 +56,7 @@ export async function askAI(
     if (typeof resData === 'string') {
       try {
         resData = JSON.parse(resData);
-      } catch (e) {
+      } catch {
         // Fallback to raw text if not JSON
       }
     }
@@ -134,7 +134,7 @@ export async function askAI(
 
       if (!directResponse.ok) {
         const errorBody = await directResponse.text().catch(() => '');
-        throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`);
+        throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`, { cause: err });
       }
 
       const directData = await directResponse.json();
@@ -142,7 +142,7 @@ export async function askAI(
     } catch (directErr: any) {
       clearTimeout(directTimer);
       if (directErr?.name === 'AbortError') {
-        throw new Error('AI request timed out. Please check your API key and Base URL in Settings.');
+        throw new Error('AI request timed out. Please check your API key and Base URL in Settings.', { cause: directErr });
       }
       throw directErr;
     }
