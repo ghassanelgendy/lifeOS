@@ -804,12 +804,9 @@ export default function SettingsPage() {
                       onChange={handleAiFieldChange(setAiModel)}
                       className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring text-sm h-10"
                     >
-                      <option value="mistral-medium-3-5">mistral-medium-3-5 (Default)</option>
-                      <option value="mistral-large">mistral-large (High Intelligence)</option>
-                      <option value="agnes-2.5-flash">agnes-2.5-flash (Fast Reasoning)</option>
-                      <option value="claude-sonnet-5">claude-sonnet-5 (Creative / Complex)</option>
-                      <option value="gpt-5.4">gpt-5.4</option>
-                      <option value="deepseek-v4-flash">deepseek-v4-flash (Efficient)</option>
+                      <option value="MiniMaxAI/MiniMax-M2.7">MiniMax M2.7 (Default, Recommended)</option>
+                      <option value="moonshotai/Kimi-K2.6">Kimi K2.6 (High Intelligence)</option>
+                      <option value="zai-org/GLM-5.2-FP8">GLM 5.2 (Fast Reasoning)</option>
                     </select>
                   </div>
                 </div>
