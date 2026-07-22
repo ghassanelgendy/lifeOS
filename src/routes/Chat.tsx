@@ -235,6 +235,7 @@ export default function Chat() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
   const promptConsumedRef = useRef(false);
 
   const parser = useMemo(() => new Marked(), []);
@@ -260,6 +261,24 @@ export default function Chat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeMessages.length, isGenerating]);
+
+  // iOS keyboard: use visualViewport to keep footer above the keyboard
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const offset = window.innerHeight - vv.height - vv.offsetTop;
+      if (footerRef.current) {
+        footerRef.current.style.bottom = offset > 0 ? `${offset}px` : '';
+      }
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
 
   // Create new chat thread
   const handleNewChat = () => {
@@ -942,7 +961,7 @@ ${knowledgeContext}`;
       </main>
 
       {/* INPUT BAR - FIXED AT BOTTOM, CENTERED */}
-      <footer className="sticky bottom-0 w-full border-t border-border/40 bg-background/95 backdrop-blur-md p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
+      <footer ref={footerRef} className="sticky bottom-0 w-full border-t border-border/40 bg-background/95 backdrop-blur-md p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
         <div className="w-full max-w-3xl flex items-center gap-2">
           <textarea
             ref={inputRef}
