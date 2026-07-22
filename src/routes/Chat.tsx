@@ -262,22 +262,18 @@ export default function Chat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeMessages.length, isGenerating]);
 
-  // iOS keyboard: use visualViewport to keep footer above the keyboard
+  const [viewportHeight, setViewportHeight] = useState('100%');
+
+  // iOS keyboard: use visualViewport to dynamically resize container height
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      const keyboardHeight = window.innerHeight - vv.height;
-      if (footerRef.current) {
-        if (keyboardHeight > 150) {
-          // Keyboard is open, offset the footer by the keyboard height
-          footerRef.current.style.bottom = `${keyboardHeight}px`;
-        } else {
-          // Keyboard is closed
-          footerRef.current.style.bottom = '';
-        }
-      }
+      setViewportHeight(`${vv.height}px`);
+      // Force viewport scroll position to 0 to prevent iOS layout shift bugs
+      window.scrollTo(0, 0);
     };
+    update();
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);
     return () => {
@@ -744,7 +740,10 @@ ${knowledgeContext}`;
   }
 
   return (
-    <div className="relative flex-1 flex flex-col min-h-0 h-full w-full bg-background text-foreground overflow-hidden">
+    <div 
+      style={{ height: viewportHeight }}
+      className="relative flex-1 flex flex-col min-h-0 w-full bg-background text-foreground overflow-hidden"
+    >
       
       {/* MINIMALIST HEADER BAR */}
       <header className="h-14 border-b border-border/40 px-4 flex items-center justify-between shrink-0 bg-background/80 backdrop-blur-md z-20">
