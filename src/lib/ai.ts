@@ -34,9 +34,13 @@ export async function askAI(
     payload.response_format = { type: 'json_object' };
   }
 
-  // Bypassing CORS constraints across all web and mobile platforms
-  if (Capacitor.isNativePlatform()) {
-    // Under native iOS / Android, execute via native CapHttp wrapper to completely bypass CORS preflights
+  // Use CapacitorHttp on native iOS/Android OR when running in ios vite mode.
+  // Capacitor live-reload loads the dev server URL inside the native WebView –
+  // isNativePlatform() returns false there but fetch() is subject to CORS/WKWebView
+  // restrictions, so we must always use CapacitorHttp on the ios build.
+  const useNativeHttp = Capacitor.isNativePlatform() || import.meta.env.MODE === 'ios';
+
+  if (useNativeHttp) {
     const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
     const response = await CapacitorHttp.post({
       url: nativeEndpoint,
@@ -49,7 +53,7 @@ export async function askAI(
 
     if (response.status !== 200) {
       const errorMsg = response.data?.error?.message || response.data || 'Unknown native error';
-      throw new Error(`AI Router Native Error (${response.status}): ${errorMsg}`);
+      throw new Error(`AI Router Error (${response.status}): ${errorMsg}`);
     }
 
     let resData = response.data;
@@ -65,11 +69,13 @@ export async function askAI(
     return text.trim();
   }
 
-  // Web Browser environment: Proxy request through Vercel endpoint or fallback to direct fetch
+  // Web Browser: try Vercel proxy first (8s timeout), then direct fetch (30s timeout)
   try {
-    const proxyEndpoint = '/api/ai';
-    const response = await fetch(proxyEndpoint, {
+    const proxyController = new AbortController();
+    const proxyTimer = setTimeout(() => proxyController.abort(), 8000);
+    const proxyResponse = await fetch('/api/ai', {
       method: 'POST',
+      signal: proxyController.signal,
       headers: {
         'Content-Type': 'application/json',
         'X-AI-Api-Key': aiApiKey.trim(),
@@ -77,35 +83,46 @@ export async function askAI(
       },
       body: JSON.stringify(payload),
     });
+    clearTimeout(proxyTimer);
 
-    if (response.ok) {
-      const data = await response.json();
-      const text = data.choices?.[0]?.message?.content || '';
-      return text.trim();
+    if (proxyResponse.ok) {
+      const data = await proxyResponse.json();
+      return (data.choices?.[0]?.message?.content || '').trim();
     }
-  } catch (err) {
-    // Proxy failed or unavailable (e.g. standalone mobile web/dev server), fallback to direct API endpoint
+  } catch {
+    // Proxy unavailable – fall through to direct fetch
   }
 
-  // Fallback direct request
-  const directEndpoint = `${cleanBaseUrl}/chat/completions`;
-  const directResponse = await fetch(directEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${aiApiKey.trim()}`,
-    },
-    body: JSON.stringify(payload),
-  });
+  // Direct fetch fallback with 30s timeout
+  const directController = new AbortController();
+  const directTimer = setTimeout(() => directController.abort(), 30000);
 
-  if (!directResponse.ok) {
-    const errorBody = await directResponse.text().catch(() => '');
-    throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`);
+  try {
+    const directResponse = await fetch(`${cleanBaseUrl}/chat/completions`, {
+      method: 'POST',
+      signal: directController.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${aiApiKey.trim()}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    clearTimeout(directTimer);
+
+    if (!directResponse.ok) {
+      const errorBody = await directResponse.text().catch(() => '');
+      throw new Error(`AI Router Error (${directResponse.status}): ${directResponse.statusText || 'Unknown error'}. ${errorBody}`);
+    }
+
+    const directData = await directResponse.json();
+    return (directData.choices?.[0]?.message?.content || '').trim();
+  } catch (err: any) {
+    clearTimeout(directTimer);
+    if (err?.name === 'AbortError') {
+      throw new Error('AI request timed out. Please check your API key and Base URL in Settings.');
+    }
+    throw err;
   }
-
-  const directData = await directResponse.json();
-  const directText = directData.choices?.[0]?.message?.content || '';
-  return directText.trim();
 }
 
 /**

@@ -748,12 +748,12 @@ ${knowledgeContext}`;
       </header>
 
       {/* MAIN CONVERSATION AREA - CENTERED MAX-W-3XL */}
-      <main className="flex-1 overflow-y-auto min-h-0 flex flex-col items-center">
-        <div className="w-full max-w-3xl flex-1 flex flex-col px-4 py-6 space-y-6">
+      <main className="flex-1 overflow-y-auto min-h-0 flex flex-col">
+        <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col px-4 py-6 space-y-6">
           
           {/* BLANK SLATE (Initial state prompt shortcuts) - Disappears on first message */}
           {isThreadEmpty ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center my-auto space-y-6 py-12 animate-in fade-in duration-500">
+            <div className="flex-1 flex flex-col items-center justify-center text-center space-y-6 py-12 animate-in fade-in duration-500">
               <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
                 <Sparkles size={24} />
               </div>
@@ -769,7 +769,7 @@ ${knowledgeContext}`;
                 <button
                   type="button"
                   disabled={isGenerating}
-                  onClick={() => handleSendMessage('Review my active tasks and scheduled events today. Help me plan my day with a realistic schedule.')}
+                  onClick={() => { inputRef.current?.blur(); void handleSendMessage('Review my active tasks and scheduled events today. Help me plan my day with a realistic schedule.'); }}
                   className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]"
                 >
                   <Calendar size={16} className="text-primary shrink-0 group-hover:scale-110 transition-transform" />
@@ -779,9 +779,8 @@ ${knowledgeContext}`;
                 <button
                   type="button"
                   disabled={isGenerating}
-                  onClick={() => handleSendMessage('نظّملي يومي ومهام بكرة واكتبلي قائمة بالخطوات القادمة')}
-                  className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]"
-                >
+                  onClick={() => { inputRef.current?.blur(); void handleSendMessage('نظّملي يومي ومهام بكرة واكتبلي قائمة بالخطوات القادمة'); }}
+                  className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]">
                   <Sparkles size={16} className="text-emerald-500 shrink-0 group-hover:scale-110 transition-transform" />
                   <span className="line-clamp-2">🇪🇬 نظّملي يومي ومهام بكرة</span>
                 </button>
@@ -789,9 +788,8 @@ ${knowledgeContext}`;
                 <button
                   type="button"
                   disabled={isGenerating}
-                  onClick={() => handleSendMessage('Perform a holistic check of my habits, sleep patterns, and screentime stats from the past week.')}
-                  className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]"
-                >
+                  onClick={() => { inputRef.current?.blur(); void handleSendMessage('Perform a holistic check of my habits, sleep patterns, and screentime stats from the past week.'); }}
+                  className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]">
                   <Activity size={16} className="text-blue-500 shrink-0 group-hover:scale-110 transition-transform" />
                   <span className="line-clamp-2">📊 Health & Habit review</span>
                 </button>
@@ -799,9 +797,8 @@ ${knowledgeContext}`;
                 <button
                   type="button"
                   disabled={isGenerating}
-                  onClick={() => handleSendMessage('Review my recent transactions, income, and expenses. Audit my current spending.')}
-                  className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]"
-                >
+                  onClick={() => { inputRef.current?.blur(); void handleSendMessage('Review my recent transactions, income, and expenses. Audit my current spending.'); }}
+                  className="text-left p-3.5 rounded-xl border border-border/60 bg-card hover:bg-secondary/40 text-xs font-medium transition-all group shadow-sm flex items-center gap-3 min-h-[48px]">
                   <Wallet size={16} className="text-amber-500 shrink-0 group-hover:scale-110 transition-transform" />
                   <span className="line-clamp-2">💰 Budget & Spending audit</span>
                 </button>
