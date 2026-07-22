@@ -594,7 +594,9 @@ export function AppShell() {
                 transition={{ duration: 0.12, ease: "easeOut" }}
                 className={cn(
                   "flex flex-col p-4 md:p-6 w-full flex-1",
-                  "pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6",
+                  location.pathname === '/chat'
+                    ? "pb-[env(safe-area-inset-bottom)] md:pb-6"
+                    : "pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6",
                   isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
                 )}
                 style={{
@@ -608,7 +610,7 @@ export function AppShell() {
           </PullToRefresh>
           <FocusSessionManager />
           <FocusPiPWindow />
-
+ 
         {/* Wrap Toast Notification */}
         {activeToast && (
           <div className="fixed bottom-[calc(100px+env(safe-area-inset-bottom))] md:bottom-6 right-4 left-4 md:left-auto md:w-96 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-300">
@@ -654,25 +656,27 @@ export function AppShell() {
           </div>
         )}
       </div>
-
+ 
         {/* Mobile Bottom Tab Bar */}
-        <LiquidTabBar
-          tabs={mobileNavigationMapped}
-          activeTabHref={location.pathname}
-          onTabClick={(href) => {
-            setShowTabBar(true);
-            if (location.pathname === href) {
-              const scrollRoot = document.querySelector('[data-lifeos-scroll-root]');
-              if (scrollRoot) {
-                scrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
+        {location.pathname !== '/chat' && (
+          <LiquidTabBar
+            tabs={mobileNavigationMapped}
+            activeTabHref={location.pathname}
+            onTabClick={(href) => {
+              setShowTabBar(true);
+              if (location.pathname === href) {
+                const scrollRoot = document.querySelector('[data-lifeos-scroll-root]');
+                if (scrollRoot) {
+                  scrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+              } else {
+                navigate(href);
               }
-            } else {
-              navigate(href);
-            }
-          }}
-          showDotForHref={(href) => href === '/analytics' && showWrappedTakeover}
-          isVisible={showTabBar}
-        />
+            }}
+            showDotForHref={(href) => href === '/analytics' && showWrappedTakeover}
+            isVisible={showTabBar}
+          />
+        )}
         {/* Global SVG Displacement Filter for iOS Liquid Glass cards */}
         <svg style={{ position: 'absolute', width: 0, height: 0, pointerEvents: 'none' }} xmlns="http://www.w3.org/2000/svg">
           <defs>

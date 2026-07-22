@@ -548,7 +548,9 @@ export function AppShell() {
             key={location.pathname}
             className={cn(
               "flex flex-col p-4 md:p-6 section-slide-in",
-              "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
+              location.pathname === '/chat'
+                ? "pb-[env(safe-area-inset-bottom)] md:pb-6"
+                : "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
               isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
             )}
             style={
@@ -611,29 +613,31 @@ export function AppShell() {
       </div>
 
         {/* Mobile Bottom Tab Bar */}
-        <nav 
-          className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
-          style={{
-            paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
-            height: 'calc(64px + env(safe-area-inset-bottom))'
-          }}
-        >
-          <div className="flex justify-around items-center h-16">
-            {mobileNavigationMapped.map((item) => {
-              const isAnalytics = item.href === '/analytics';
-              const showDot = isAnalytics && showWrappedTakeover;
-              return (
-                <MobileNavLink 
-                  key={item.href} 
-                  item={item} 
-                  isMobileSidebarOpen={isMobileSidebarOpen}
-                  setMobileSidebarOpen={setMobileSidebarOpen}
-                  showDot={showDot}
-                />
-              );
-            })}
-          </div>
-        </nav>
+        {location.pathname !== '/chat' && (
+          <nav 
+            className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
+            style={{
+              paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
+              height: 'calc(64px + env(safe-area-inset-bottom))'
+            }}
+          >
+            <div className="flex justify-around items-center h-16">
+              {mobileNavigationMapped.map((item) => {
+                const isAnalytics = item.href === '/analytics';
+                const showDot = isAnalytics && showWrappedTakeover;
+                return (
+                  <MobileNavLink 
+                    key={item.href} 
+                    item={item} 
+                    isMobileSidebarOpen={isMobileSidebarOpen}
+                    setMobileSidebarOpen={setMobileSidebarOpen}
+                    showDot={showDot}
+                  />
+                );
+              })}
+            </div>
+          </nav>
+        )}
       </main>
     </div>
   );

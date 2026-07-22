@@ -942,8 +942,8 @@ ${knowledgeContext}`;
         </div>
       </main>
 
-      {/* INPUT BAR - FIXED AT BOTTOM, CENTERED, ELEVATED ABOVE MOBILE NAV BAR */}
-      <footer className="w-full border-t border-border/40 bg-background/90 backdrop-blur-md p-3 pb-[calc(5.25rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
+      {/* INPUT BAR - FIXED AT BOTTOM, CENTERED */}
+      <footer className="w-full border-t border-border/40 bg-background/90 backdrop-blur-md p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
         <div className="w-full max-w-3xl flex items-center gap-2">
           <textarea
             ref={inputRef}
