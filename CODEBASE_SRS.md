@@ -29,6 +29,7 @@
    - 3.16 [Notifications](#316-notifications)
    - 3.17 [Offline Support & Data Sync](#317-offline-support--data-sync)
    - 3.18 [Deep Links & Integrations](#318-deep-links--integrations)
+   - 3.19 [AI Assistant & Copilot](#319-ai-assistant--copilot)
 4. [Non-Functional Requirements](#4-non-functional-requirements)
    - 4.1 [Performance](#41-performance)
    - 4.2 [Reliability & Availability](#42-reliability--availability)
@@ -783,6 +784,43 @@ Supabase Edge Function shall sync iOS reminders/tasks via external API.
 
 #### FR-DL-009: Calendar Feed Token
 The system shall generate secure tokenized URLs for iCal calendar feeds.
+
+---
+
+### 3.19 AI Assistant & Copilot
+
+#### FR-AI-001: Model API Call Proxying
+The system shall communicate with configured AI models via the secure `/api/ai` proxy or direct native Capacitor Http calls, completely bypassing CORS constraints.
+
+#### FR-AI-002: Dynamic Context Aggregation
+The system shall compile user-scoped tasks, habits, recent notes, calendar events, financial transactions, and wellness statistics (sleep metrics, screentime, health scans) as Markdown text to feed into the AI system prompt.
+
+#### FR-AI-003: Ingestion Toggles
+The system shall allow users to select which data sources (Tasks, Calendar, Habits, Notes, Finance, Health) are sent to the AI router.
+
+#### FR-AI-004: Quick Action Parsing
+The system shall parse structured action tags in the AI response (e.g. `[ACTION:create_task|...]`, `[ACTION:create_event|...]`, `[ACTION:create_note|...]`, `[ACTION:create_transaction|...]`) and hide them from the chat bubble text.
+
+#### FR-AI-005: Interactive Action Execution
+The system shall render parsed action items as Action Cards with check/execution buttons linked to Supabase database mutations (e.g., creating tasks or calendar events).
+
+#### FR-AI-006: Analysis Templates
+The system shall provide quick templates ("Plan My Day", "Health Coach", "Expense Audit", "Notes Synthesizer") to start pre-configured chat queries.
+
+#### FR-AI-007: Onboarding & Setup Redirects
+If AI is disabled or keys are missing, the system shall block the chat view and display instructions redirecting to the settings screen.
+
+#### FR-AI-008: Voice Dictation Ingestion
+The system shall support recording and transcribing user voice dictation in Arabic/English dialect and passing it as the initial prompt to the AI Assistant.
+
+#### FR-AI-009: Dashboard voice shortcut
+The system shall provide a voice assistant option directly inside the floating quick action menu (FAB) on the Dashboard, rendering a premium recording indicator overlay and routing the transcript to `/chat` on completion.
+
+#### FR-AI-010: AI Visibility Toggle Rules
+When the AI Integration setting (`aiEnabled`) is disabled, the system shall dynamically hide all AI-related entrypoints, shortcuts, icons, and menus (including the Sidebar link, the Quick Add mic icon, the Dashboard FAB voice assistant, the row context voice dictate menu, and the Analytics AI coach card) to ensure all AI functionality disappears from the UI.
+
+#### FR-AI-011: Analytics AI Hints
+The system shall include an AI Coaching & Insights panel inside the Analytics Overview tab. This panel shall pass the range's computed metrics and mathematical Pearson correlation coefficients (across sleep, screen time, tasks, habits, and expenses) to the AI service on-demand to generate highly useful, mathematically grounded, and actionable suggestions.
 
 ---
 

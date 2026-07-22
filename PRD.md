@@ -249,6 +249,18 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Task rescue: Spend points to un-overdue a task
 - Streak rescue: Spend exponentially increasing points to restore broken streaks
 
+### 5.14 AI Assistant & Copilot
+**Purpose:** An intelligent chatbot companion that aggregates workspace data (tasks, habits, notes, events, transactions, sleep, screentime) as context to answer user queries, offer life-coaching, and execute database changes directly.
+
+- **Knowledge Ingestion Toggles:** Let the user select which databases (Tasks, Calendar, Habits, Notes, Finance, sleep/health) are serialized and injected into the AI's system prompt.
+- **Conversational UX:** Premium chat interface with backdrop-blur, custom avatars, scroll-anchoring, and slide-in animations.
+- **Agentic Quick Actions:** Parse structured tags from the AI response (e.g. `[ACTION:create_task|...]`) to render interactive cards. Users can click "Execute" to write directly to their database.
+- **Onboarding Redirection:** Renders instructions and direct settings links if AI integration or API keys are missing.
+- **Shortcut Templates:** Quick-prompt buttons for daily schedules, weekly sleep/screentime coaching, expense auditing, and note synthesizing.
+- **Voice Dictation Integration:** Global dictation shortcut integrated inside the floating action button (FAB) quick menu. The speech recognition (optimized for English/Arabic) transcribes the user's voice prompt and routes it directly to the AI Assistant chat thread, automatically triggering query execution or coaching responses.
+- **AI Toggle Integration Visibility:** When the user disables the AI Integration setting, all AI-related entrypoints, shortcuts, icons, and menus (including the Sidebar link, the Quick Add mic icon, the Dashboard FAB voice assistant, the row context voice dictate menu, and the Analytics AI coach card) are dynamically hidden.
+- **AI Coaching & Hints:** An AI Coaching & Insights panel is added to the Analytics Overview page. Utilizing mathematical Pearson correlation coefficients computed across sleep, screentime, tasks, habits, and finance metrics, the coach generates highly useful, mathematically grounded, and actionable suggestions tailored to user performance.
+
 ---
 
 ## 6. User Journeys & Use Cases
@@ -556,13 +568,13 @@ Vite Custom Plugin:
 - [x] AI Notes Summarization, Refinement & Wiki Linker (Bynara)
 - [x] AI Finance SMS / Receipt Parser (Bynara)
 - [x] AI Wellbeing Correlation Coach (Bynara)
+- [x] AI-powered coaching suggestions (Pearson correlation hints)
 
 ### Phase 3: Ecosystem (Planned)
 - [ ] Public API for third-party integrations
 - [ ] Zapier/Make.com integration
 - [ ] Wearable device sync (Apple Health, Fitbit)
 - [ ] Social accountability (optional habit sharing)
-- [ ] AI-powered coaching suggestions
 - [ ] Advanced forecasting (sleep quality prediction)
 
 ### Phase 4: Scale (Future)
