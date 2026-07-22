@@ -62,6 +62,7 @@ export default function Analytics() {
     lastViewedMonthlyWrap,
     setLastViewedWeeklyWrap,
     setLastViewedMonthlyWrap,
+    aiEnabled,
   } = useUIStore();
 
   // Wrap-day takeover logic
@@ -739,6 +740,8 @@ export default function Analytics() {
             financeAgg={financeAgg} financeTrend={financeTrend}
             daily={daily}
             openDayDetails={openDayDetails}
+            aiEnabled={aiEnabled}
+            crossRelationships={crossRelationships}
           />
         )}
 

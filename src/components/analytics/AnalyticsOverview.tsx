@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react';
 import { DataCard } from '../DataCard';
-import { formatCurrency } from '../../lib/utils';
+import { cn, formatCurrency } from '../../lib/utils';
 import { formatMinutes, formatSeconds, aggregateWeekly } from '../../lib/analytics-utils';
 import { Sparkles } from 'lucide-react';
+import { askAI } from '../../lib/ai';
 
 interface AnalyticsOverviewProps {
   rangeDays: number;
@@ -19,9 +21,12 @@ interface AnalyticsOverviewProps {
   financeTrend: number;
   daily: any;
   openDayDetails: (date: string, source: string) => void;
+  aiEnabled: boolean;
+  crossRelationships: any[];
 }
 
 export function AnalyticsOverview({
+  rangeDays,
   rangeLabel,
   privacyMode,
   sleepAgg, sleepTrend,
@@ -30,8 +35,85 @@ export function AnalyticsOverview({
   habitsAgg, habitsTrend,
   financeAgg, financeTrend,
   daily,
-  openDayDetails
+  openDayDetails,
+  aiEnabled,
+  crossRelationships
 }: AnalyticsOverviewProps) {
+
+  const [aiInsights, setAiInsights] = useState<string[]>(() => {
+    const stored = localStorage.getItem('lifeos_analytics_ai_insights');
+    return stored ? JSON.parse(stored) : [];
+  });
+  const [loadingInsights, setLoadingInsights] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+
+  const generateInsights = async () => {
+    setLoadingInsights(true);
+    setInsightError(null);
+    try {
+      const heuristics = {
+        rangeDays,
+        sleep: {
+          avgDurationHours: (sleepAgg.avgMinutes / 60).toFixed(1),
+          avgDeepMins: Math.round(sleepAgg.avgDeep),
+          avgRemMins: Math.round(sleepAgg.avgRem),
+        },
+        screentime: {
+          avgHours: (screentimeAgg.avgSeconds / 3600).toFixed(1),
+          avgSwitches: Math.round(screentimeAgg.avgSwitches),
+        },
+        tasks: {
+          avgAdherencePct: tasksAgg.avgAdherence,
+          avgFocusHours: (tasksAgg.avgFocusSeconds / 3600).toFixed(1),
+          totalCompleted: tasksAgg.totalCompleted,
+        },
+        habits: {
+          avgAdherencePct: habitsAgg.avgAdherence,
+        },
+        finance: {
+          avgDailyExpense: financeAgg.avgExpense.toFixed(0),
+          totalExpense: financeAgg.totalExpense.toFixed(0),
+        },
+        correlations: (crossRelationships || []).map((r: any) => ({
+          label: r.label,
+          correlationCoefficientR: r.r,
+          slope: r.slope,
+          slopeUnit: r.slopeUnitHint,
+        })),
+      };
+
+      const systemPrompt = `You are lifeOS AI Coach, a master of personal analytics, data-driven habits, and productivity metrics.
+Analyze the user's personal metrics and mathematical correlation coefficients (Pearson r) to diagnose their habits, digital health, and sleep.
+Provide 3-4 highly useful, specific, and actionable hints or recommendations.
+Each hint must:
+- Be mathematically grounded on the provided data (specifically the Pearson correlations and trends).
+- Not be generic or boring. Use their actual metrics in your calculations if helpful.
+- Be extremely actionable, offering specific heuristics (e.g. "Try starting your phone bedtime wind-down 30 mins earlier on nights before heavy task days").
+- Be short (1-2 sentences max).
+
+Return ONLY a JSON array of strings, for example:
+[
+  "Your screen time has a strong negative correlation (-0.68) with deep sleep. Keep devices out of bed to protect your rest.",
+  "Focus hours decline by 0.4h for every 50 context switches. Bundle task checking into twice daily blocks to preserve focus.",
+  "Sleep under 6.5 hours correlates with a 20% drop in habit adherence the following day. Set a hard alarm at 10 PM to protect habits."
+]`;
+
+      const userPrompt = `Here is my personal metrics and correlation data from the past ${rangeDays} days:\n${JSON.stringify(heuristics, null, 2)}`;
+      
+      const res = await askAI(systemPrompt, userPrompt, true);
+      let parsed = JSON.parse(res);
+      if (!Array.isArray(parsed)) {
+        parsed = Object.values(parsed).filter((x) => typeof x === 'string');
+      }
+      setAiInsights(parsed);
+      localStorage.setItem('lifeos_analytics_ai_insights', JSON.stringify(parsed));
+    } catch (err: any) {
+      console.error(err);
+      setInsightError(err.message || 'Failed to generate AI insights.');
+    } finally {
+      setLoadingInsights(false);
+    }
+  };
 
   // Weekly calculations
   const sleepWeekly = aggregateWeekly(daily.sleep.data ?? [], (r: any) => r.total_minutes);
@@ -194,6 +276,62 @@ export function AnalyticsOverview({
           </div>
         </div>
       </div>
+
+      {/* AI Coaching & Insights */}
+      {aiEnabled && (
+        <div className="rounded-2xl border border-border bg-card/45 backdrop-blur-2xl overflow-hidden shadow-sm">
+          <div className="p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-secondary/10">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 text-primary rounded-xl">
+                <Sparkles size={20} className="animate-pulse" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">AI Coaching & Insights</h3>
+                <p className="text-sm text-muted-foreground">Heuristic correlation patterns analyzed by AI</p>
+              </div>
+            </div>
+            <button
+              onClick={generateInsights}
+              disabled={loadingInsights}
+              className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50 text-sm font-semibold transition-all shadow-sm cursor-pointer flex items-center gap-1.5 self-start sm:self-auto"
+            >
+              {loadingInsights ? 'Analyzing...' : 'Generate Hints'}
+            </button>
+          </div>
+
+          <div className="p-5">
+            {insightError && (
+              <p className="text-sm text-red-500">{insightError}</p>
+            )}
+            
+            {!loadingInsights && aiInsights.length === 0 && !insightError && (
+              <p className="text-sm text-muted-foreground text-center py-6">
+                Click "Generate Hints" to run AI diagnostics on your sleep, screen, habits, and finance metrics.
+              </p>
+            )}
+
+            {loadingInsights && (
+              <div className="flex flex-col items-center justify-center py-8 space-y-3">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                <p className="text-sm text-muted-foreground">Running Pearson correlations & wellness audit...</p>
+              </div>
+            )}
+
+            {!loadingInsights && aiInsights.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {aiInsights.map((insight, idx) => (
+                  <div key={idx} className="p-4 rounded-xl border border-border bg-secondary/20 flex items-start gap-3">
+                    <span className="text-sm font-bold text-primary shrink-0 select-none bg-primary/10 w-6 h-6 rounded-full flex items-center justify-center mt-0.5">
+                      {idx + 1}
+                    </span>
+                    <p className="text-sm text-foreground leading-relaxed">{insight}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
