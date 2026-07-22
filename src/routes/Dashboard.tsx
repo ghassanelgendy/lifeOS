@@ -12,7 +12,7 @@ import { useTaskLists, useTags, useTasks, useUpdateTask, useToggleTask } from '.
 import { useCalendarEvents, useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Edit2, Check, Plus, Calendar, ListTodo, Flame, Wallet } from 'lucide-react';
+import { Edit2, Check, Plus, Calendar, ListTodo, Flame, Wallet, Mic } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { triggerHaptics } from '../lib/nativeBridge';
 import type { PrayerName } from '../types/schema';
@@ -655,7 +655,7 @@ function parseDueDateTime(dateStr: string | undefined, timeStr: string | undefin
 }
 
 export default function Dashboard() {
-  const dashboardMode = useUIStore((s) => s.dashboardMode);
+  const { dashboardMode, aiEnabled } = useUIStore();
   const [selectedEntry, setSelectedEntry] = useState<any | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const notificationHandled = useRef<string | null>(null);
@@ -665,6 +665,7 @@ export default function Dashboard() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
   const [isLongPressStateActive, setIsLongPressStateActive] = useState(false);
+  const [isListening, setIsListening] = useState(false);
 
   // Block page scroll during active long press dragging on iOS
   useEffect(() => {
@@ -719,12 +720,18 @@ export default function Dashboard() {
     return () => el.removeEventListener('touchmove', onMove);
   }, []);
 
-  const FAB_ITEMS = useMemo(() => [
-    { type: 'event', label: 'Event', icon: Calendar, color: 'text-blue-500 bg-blue-500/10' },
-    { type: 'task', label: 'Task', icon: ListTodo, color: 'text-emerald-500 bg-emerald-500/10' },
-    { type: 'habit', label: 'Habit', icon: Flame, color: 'text-amber-500 bg-amber-500/10' },
-    { type: 'transaction', label: 'Transaction', icon: Wallet, color: 'text-rose-500 bg-rose-500/10' },
-  ] as const, []);
+  const FAB_ITEMS = useMemo(() => {
+    const base: { type: 'event' | 'task' | 'habit' | 'transaction' | 'mic'; label: string; icon: any; color: string }[] = [
+      { type: 'event', label: 'Event', icon: Calendar, color: 'text-blue-500 bg-blue-500/10' },
+      { type: 'task', label: 'Task', icon: ListTodo, color: 'text-emerald-500 bg-emerald-500/10' },
+      { type: 'habit', label: 'Habit', icon: Flame, color: 'text-amber-500 bg-amber-500/10' },
+      { type: 'transaction', label: 'Transaction', icon: Wallet, color: 'text-rose-500 bg-rose-500/10' },
+    ];
+    if (aiEnabled) {
+      base.push({ type: 'mic', label: 'Voice AI', icon: Mic, color: 'text-red-500 bg-red-500/10' });
+    }
+    return base;
+  }, [aiEnabled]);
 
   // 1. Hide/show FAB on scroll down/up (matches AppShell's LiquidTabBar scroll-to-hide logic)
   useEffect(() => {
@@ -836,7 +843,35 @@ export default function Dashboard() {
     }
   };
 
-  const handleQuickAdd = (type: 'event' | 'task' | 'habit' | 'transaction') => {
+  const handleMicClick = () => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice dictation is not supported on this browser/device.');
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ar-EG';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      setIsListening(true);
+      void triggerHaptics('medium');
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0]?.[0]?.transcript;
+        if (transcript) {
+          navigate(`/chat?prompt=${encodeURIComponent(transcript)}`);
+        }
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
+
+  const handleQuickAdd = (type: 'event' | 'task' | 'habit' | 'transaction' | 'mic') => {
     void triggerHaptics('medium');
     switch (type) {
       case 'event':
@@ -850,6 +885,9 @@ export default function Dashboard() {
         break;
       case 'transaction':
         navigate('/finance', { state: { triggerAdd: true } });
+        break;
+      case 'mic':
+        handleMicClick();
         break;
     }
     setIsMenuOpen(false);
@@ -991,6 +1029,42 @@ export default function Dashboard() {
           />
         )}
       </Modal>
+
+      {/* Listening Dialog Overlay */}
+      <AnimatePresence>
+        {isListening && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/60 backdrop-blur-md text-white font-sans"
+          >
+            <div className="relative flex flex-col items-center p-8 rounded-3xl bg-[#1C1C1E]/95 border border-white/10 max-w-sm w-full mx-4 shadow-2xl text-center space-y-6">
+              <div className="relative">
+                {/* Pulsing ripples */}
+                <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
+                <div className="absolute -inset-4 rounded-full bg-red-500/20 animate-pulse" />
+                <div className="relative z-10 w-20 h-20 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/50">
+                  <Mic size={36} className="text-white animate-bounce" />
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-bold tracking-tight">Listening...</h3>
+                <p className="text-sm text-zinc-400">Speak now to do things or ask questions</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsListening(false)}
+                className="w-full py-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-sm font-semibold transition-all border border-white/5 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating Action Button (FAB) for Quick Add Shortcuts */}
       {createPortal(

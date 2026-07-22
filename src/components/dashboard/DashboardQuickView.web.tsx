@@ -1367,7 +1367,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             <Link to="/screentime" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
               <Monitor className="size-5 text-sky-500 mb-1 shrink-0" />
               <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
-                {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
+                {todayScreentime.totalMinutes > 0 ? (
+                  todayScreentime.totalMinutes < 60
+                    ? `${todayScreentime.totalMinutes}m`
+                    : `${Math.floor(todayScreentime.totalMinutes / 60)}h ${todayScreentime.totalMinutes % 60}m`
+                ) : '—'}
               </p>
             </Link>
             <div className="w-px bg-muted-foreground/10 self-stretch my-1" />

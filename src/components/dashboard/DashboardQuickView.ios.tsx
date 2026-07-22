@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon, Coins, ChevronDown, ChevronRight } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon, Coins, ChevronDown, ChevronRight, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
@@ -560,7 +560,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     excludeDetoxHabits: true,
   });
 
-  const { privacyMode } = useUIStore();
+  const { privacyMode, aiEnabled } = useUIStore();
   const toggleTask = useToggleTask();
   const createTask = useCreateTask();
   const logHabit = useLogHabit();
@@ -571,6 +571,35 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const [contextMenuEntry, setContextMenuEntry] = useState<any | null>(null);
   const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
   const [showSubmenu, setShowSubmenu] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+
+  const handleVoiceDictation = (onTranscript: (text: string) => void) => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice dictation is not supported on this browser/device.');
+      return;
+    }
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ar-EG';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      setIsListening(true);
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0]?.[0]?.transcript;
+        if (transcript) {
+          onTranscript(transcript);
+        }
+        setIsListening(false);
+      };
+      recognition.onerror = () => setIsListening(false);
+      recognition.onend = () => setIsListening(false);
+      recognition.start();
+    } catch {
+      setIsListening(false);
+    }
+  };
+
   const longPressTimeout = useRef<number | null>(null);
   const submenuTimeoutRef = useRef<number | null>(null);
   const isLongPressActive = useRef(false);
@@ -1835,7 +1864,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             <Link to="/screentime" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
               <Monitor className="size-5 text-sky-500 mb-1 shrink-0" />
               <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
-                {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
+                {todayScreentime.totalMinutes > 0 ? (
+                  todayScreentime.totalMinutes < 60
+                    ? `${todayScreentime.totalMinutes}m`
+                    : `${Math.floor(todayScreentime.totalMinutes / 60)}h ${todayScreentime.totalMinutes % 60}m`
+                ) : '—'}
               </p>
             </Link>
             <div className="w-px bg-muted-foreground/10 self-stretch my-1" />
@@ -2119,6 +2152,34 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         </button>
                       );
                     })()}
+
+                    {/* Voice Dictate Action */}
+                    {aiEnabled && (
+                      <button
+                        type="button"
+                        data-menu-action="voice"
+                        onClick={() => {
+                          void triggerHaptics('light');
+                          setContextMenuEntry(null);
+                          setTimeout(() => {
+                            handleVoiceDictation((transcript) => {
+                              createTask.mutate({
+                                title: transcript,
+                                is_completed: false,
+                                priority: 'none',
+                              });
+                            });
+                          }, 150);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                          hoveredMenuAction === 'voice' && "bg-black/10 dark:bg-white/15"
+                        )}
+                      >
+                        <span>Voice Dictate AI Task</span>
+                        <Mic size={16} className={cn("text-primary", isListening && "animate-pulse text-red-500")} />
+                      </button>
+                    )}
 
                     {/* Edit Action */}
                     {!contextMenuDetails.isPrayer && (

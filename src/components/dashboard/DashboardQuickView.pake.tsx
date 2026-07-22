@@ -574,7 +574,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   }, [tasksDueTodayOnly.length, dueTodayIncompleteHabits]);
 
   const screenLabel =
-    todayScreentime.totalMinutes > 0 ? `${todayScreentime.totalHours}h ${todayScreentime.remainingMinutes}m` : '—';
+    todayScreentime.totalMinutes > 0
+      ? todayScreentime.totalMinutes < 60
+        ? `${todayScreentime.totalMinutes}m`
+        : `${todayScreentime.totalHours}h ${todayScreentime.remainingMinutes}m`
+      : '—';
 
   const screenChart = useMemo(() => {
     const dayMinutes = 24 * 60;
