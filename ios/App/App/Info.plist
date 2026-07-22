@@ -93,5 +93,9 @@
 			<string>UIApplicationShortcutIconTypeAdd</string>
 		</dict>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to the microphone to record voice commands for the AI assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app requires speech recognition access to transcribe your voice commands into tasks and messages.</string>
 </dict>
 </plist>
