@@ -20,6 +20,7 @@ import {
   ArrowRight,
   CircleSlash2,
   ArrowUpDown,
+  Mic,
 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
@@ -576,6 +577,40 @@ export default function Tasks() {
       );
     }
   }, [searchParams, setSearchParams, toggleTask, updateTask, allTasks]);
+
+  // Listen for header quick add & voice trigger events
+  useEffect(() => {
+    const quickadd = searchParams.get('quickadd');
+    const initialTitle = searchParams.get('title');
+    if (quickadd === 'true') {
+      setIsAddingTask(true);
+      if (initialTitle) {
+        setNewTaskTitle(initialTitle);
+      }
+      setTimeout(() => quickAddRef.current?.focus(), 100);
+    }
+
+    const handleAddTaskEvent = () => {
+      setIsAddingTask(true);
+      setTimeout(() => quickAddRef.current?.focus(), 100);
+    };
+
+    const handleVoiceAddTaskEvent = (e: Event) => {
+      const customEv = e as CustomEvent<{ text: string }>;
+      setIsAddingTask(true);
+      if (customEv.detail?.text) {
+        setNewTaskTitle((prev) => (prev ? `${prev} ${customEv.detail.text}` : customEv.detail.text));
+      }
+      setTimeout(() => quickAddRef.current?.focus(), 100);
+    };
+
+    window.addEventListener('app-trigger-add-task', handleAddTaskEvent);
+    window.addEventListener('app-trigger-voice-add-task', handleVoiceAddTaskEvent);
+    return () => {
+      window.removeEventListener('app-trigger-add-task', handleAddTaskEvent);
+      window.removeEventListener('app-trigger-voice-add-task', handleVoiceAddTaskEvent);
+    };
+  }, [searchParams]);
 
   // Swipe from left edge to open lists sidebar (mobile)
   useEffect(() => {
@@ -1786,7 +1821,7 @@ export default function Tasks() {
                   type="text"
                   value={newTaskTitle}
                   onChange={(e) => handleQuickAddTitleChange(e.target.value)}
-                  placeholder={aiEnabled ? "Add task (type naturally and click ✨ to parse with Bynara AI)" : "Add task (e.g. 12:00, 15 June, tmrw, ~ list, ! priority, # tag)"}
+                  placeholder=""
                   className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground pr-8"
                   onKeyDown={(e) => {
                     if (e.key === 'Escape') {
@@ -1815,14 +1850,52 @@ export default function Tasks() {
                     }
                   }}
                 />
-                {aiEnabled && newTaskTitle.trim() && (
+                <div className="flex items-center gap-1 shrink-0">
+                  {aiEnabled && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                        if (!SpeechRecognition) {
+                          alert('Voice dictation is not supported on this device/browser.');
+                          return;
+                        }
+                        try {
+                          const recognition = new SpeechRecognition();
+                          recognition.lang = 'ar-EG';
+                          recognition.continuous = false;
+                          recognition.interimResults = false;
+                          setIsParsing(true);
+                          recognition.onresult = (event: any) => {
+                            const transcript = event.results[0]?.[0]?.transcript;
+                            if (transcript) {
+                              setNewTaskTitle((prev) => (prev ? `${prev} ${transcript}` : transcript));
+                            }
+                            setIsParsing(false);
+                          };
+                          recognition.onerror = () => setIsParsing(false);
+                          recognition.onend = () => setIsParsing(false);
+                          recognition.start();
+                        } catch {
+                          setIsParsing(false);
+                        }
+                      }}
+                      className={cn(
+                        "p-1.5 text-xs hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground shrink-0",
+                        isParsing && "text-red-500 animate-pulse"
+                      )}
+                      title="Voice Dictate Task"
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
-                    type="button"
-                    disabled={isParsing}
-                    onClick={async () => {
-                      try {
-                        setIsParsing(true);
-                        const systemPrompt = `You are an expert natural language task parser. Parse the task description relative to today's date: ${new Date().toISOString().split('T')[0]} (which is a ${format(new Date(), 'EEEE')}).
+                      type="button"
+                      disabled={isParsing}
+                      onClick={async () => {
+                        try {
+                          setIsParsing(true);
+                          const systemPrompt = `You are an expert natural language task parser. Parse the task description relative to today's date: ${new Date().toISOString().split('T')[0]} (which is a ${format(new Date(), 'EEEE')}).
 Extract:
 - title (string): Clean task title without dates/times/priorities.
 - due_date (string, format YYYY-MM-DD, optional): The computed due date.
@@ -1830,30 +1903,77 @@ Extract:
 - priority (string, values: "high", "medium", "low", "none", default "none"): Priority.
 
 Return ONLY raw JSON.`;
-                        const res = await askAI(systemPrompt, newTaskTitle, true);
-                        const parsed = extractJSON(res);
-                        if (parsed.title) setNewTaskTitle(parsed.title);
-                        if (parsed.due_date) setNewTaskDate(parsed.due_date);
-                        if (parsed.due_time) {
-                          setNewTaskTime(parsed.due_time);
-                          setNewTaskRemindersEnabled(true);
-                          if (newTaskEarlyReminderMinutes === null) {
-                            setNewTaskEarlyReminderMinutes(0);
+                          const res = await askAI(systemPrompt, newTaskTitle, true);
+                          const parsed = extractJSON(res);
+                          if (parsed.title) setNewTaskTitle(parsed.title);
+                          if (parsed.due_date) setNewTaskDate(parsed.due_date);
+                          if (parsed.due_time) {
+                            setNewTaskTime(parsed.due_time);
+                            setNewTaskRemindersEnabled(true);
+                            if (newTaskEarlyReminderMinutes === null) {
+                              setNewTaskEarlyReminderMinutes(0);
+                            }
                           }
+                          if (parsed.priority) setNewTaskPriority(parsed.priority);
+                        } catch (err) {
+                          console.error("AI Quick Add Parse error:", err);
+                        } finally {
+                          setIsParsing(false);
                         }
-                        if (parsed.priority) setNewTaskPriority(parsed.priority);
-                      } catch (err) {
-                        console.error("AI Quick Add Parse error:", err);
-                      } finally {
-                        setIsParsing(false);
-                      }
-                    }}
-                    className="absolute right-0 p-1 text-primary hover:text-primary-foreground transition-colors shrink-0"
-                    title="Parse with AI"
-                  >
-                    {isParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                  </button>
-                )}
+                      }}
+                      className="p-1 text-xs hover:bg-secondary rounded transition-colors text-muted-foreground hover:text-foreground shrink-0"
+                      title="Parse with Bynara AI (Standard)"
+                    >
+                      ✨
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isParsing}
+                      onClick={async () => {
+                        try {
+                          setIsParsing(true);
+                          const systemPrompt = `You are an expert natural language task parser specialized in Egyptian Arabic dialect (اللهجة المصرية) and English mixed inputs. Parse the task description relative to today's date: ${new Date().toISOString().split('T')[0]} (which is a ${format(new Date(), 'EEEE')}).
+
+Understand Egyptian dialect expressions for dates and relative times:
+- "النهارده" = today
+- "بكره" / "بكرة" = tomorrow
+- "بعد بكره" / "بعد بكرة" = day after tomorrow
+- "الجمعة الجاية" = next Friday (or any weekday: السبت, الأحد, الإثنين, الثلاثاء, الأربعاء, الخميس, الجمعة)
+- "الساعة X" = at X time (convert to 24h format HH:mm)
+- "ضروري" / "مهم جداً" = high priority
+- "فكرني" / "اعمل" = action prefix (clean title from these prefixes)
+
+Extract:
+- title (string): Clean task title in Egyptian Arabic or English without dates/times/priorities.
+- due_date (string, format YYYY-MM-DD, optional): The computed due date.
+- due_time (string, format HH:mm, optional): 24h time.
+- priority (string, values: "high", "medium", "low", "none", default "none"): Priority.
+
+Return ONLY raw JSON.`;
+                          const res = await askAI(systemPrompt, newTaskTitle, true);
+                          const parsed = extractJSON(res);
+                          if (parsed.title) setNewTaskTitle(parsed.title);
+                          if (parsed.due_date) setNewTaskDate(parsed.due_date);
+                          if (parsed.due_time) {
+                            setNewTaskTime(parsed.due_time);
+                            setNewTaskRemindersEnabled(true);
+                            if (newTaskEarlyReminderMinutes === null) {
+                              setNewTaskEarlyReminderMinutes(0);
+                            }
+                          }
+                          if (parsed.priority) setNewTaskPriority(parsed.priority);
+                        } catch (err) {
+                          console.error("AI Egyptian Arabic Parse error:", err);
+                        } finally {
+                          setIsParsing(false);
+                        }
+                      }}
+                      className="p-1 text-xs hover:bg-secondary rounded transition-colors text-muted-foreground hover:text-foreground shrink-0 font-medium flex items-center gap-0.5"
+                      title="Parse with Egyptian Arabic Dialect AI"
+                    >
+                      <span>🇪🇬</span>
+                    </button>
+                  </div>
               </div>
               {/* Visual feedback for parsed date/time */}
               {(highlightedDate || highlightedTime) && (
@@ -1897,18 +2017,10 @@ Return ONLY raw JSON.`;
                         .join(', ')}
                     </span>
                   )}
-                  {newTaskRemindersEnabled && newTaskEarlyReminderMinutes != null && newTaskDate && newTaskTime && /^\d{2}:\d{2}$/.test(newTaskTime) && (
-                    (() => {
-                      const due = new Date(`${newTaskDate}T${newTaskTime}:00`);
-                      if (Number.isNaN(due.getTime())) return null;
-                      const reminder = new Date(due.getTime() - newTaskEarlyReminderMinutes * 60 * 1000);
-                      if (Number.isNaN(reminder.getTime())) return null;
-                      return (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary">
-                          Reminder: {format(reminder, 'h:mm a')}
-                        </span>
-                      );
-                    })()
+                  {newTaskRemindersEnabled && newTaskEarlyReminderMinutes != null && (
+                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary">
+                      Reminder: {newTaskEarlyReminderMinutes === 0 ? 'At time of event' : `${newTaskEarlyReminderMinutes}m before`}
+                    </span>
                   )}
                 </div>
               )}

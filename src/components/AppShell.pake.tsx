@@ -98,6 +98,7 @@ export function AppShell() {
     lastNotifiedMonthlyWrap,
     setLastNotifiedWeeklyWrap,
     setLastNotifiedMonthlyWrap,
+    aiEnabled,
   } = useUIStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -140,7 +141,7 @@ export function AppShell() {
   }, [isWeeklyWrapDay, isMonthlyWrapDay, lastViewedWeeklyWrap, lastViewedMonthlyWrap, weeklyWrapKey, monthlyWrapKey]);
 
   const mobileNavigationMapped = useMemo(() => {
-    const rawItems = NAV_ITEMS.filter(item => mobileNavItems.includes(item.href));
+    const rawItems = NAV_ITEMS.filter(item => (aiEnabled || item.href !== '/chat') && mobileNavItems.includes(item.href));
     return rawItems.map(item => {
       if (item.href === '/settings' && showWrappedTakeover) {
         return {
@@ -151,10 +152,10 @@ export function AppShell() {
       }
       return item;
     });
-  }, [mobileNavItems, showWrappedTakeover, isWeeklyWrapDay, isMonthlyWrapDay]);
+  }, [mobileNavItems, showWrappedTakeover, isWeeklyWrapDay, isMonthlyWrapDay, aiEnabled]);
 
   const desktopNavigation = useMemo(() => {
-    const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings');
+    const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings' && (aiEnabled || item.href !== '/chat'));
     const fallback = [...DEFAULT_DESKTOP_NAV];
     const savedOrder = (desktopNavOrder.length ? desktopNavOrder : fallback)
       .map((href) => navItems.find((item) => item.href === href))

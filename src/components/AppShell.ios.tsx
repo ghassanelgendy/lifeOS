@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles, Plus } from 'lucide-react';
+import { Menu, X, Settings, Sparkles, Plus, Mic } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
@@ -90,6 +90,7 @@ export function AppShell() {
     lastNotifiedMonthlyWrap,
     setLastNotifiedWeeklyWrap,
     setLastNotifiedMonthlyWrap,
+    aiEnabled,
   } = useUIStore();
   const location = useLocation();
   const navigate = useNavigate();
@@ -106,12 +107,12 @@ export function AppShell() {
   }, [isWeeklyWrapDay, isMonthlyWrapDay, lastViewedWeeklyWrap, lastViewedMonthlyWrap, weeklyWrapKey, monthlyWrapKey]);
 
   const mobileNavigationMapped = useMemo(() => {
-    const rawItems = NAV_ITEMS.filter(item => item.href !== '/settings' && mobileNavItems.includes(item.href));
+    const rawItems = NAV_ITEMS.filter(item => item.href !== '/settings' && (aiEnabled || item.href !== '/chat') && mobileNavItems.includes(item.href));
     return rawItems;
-  }, [mobileNavItems]);
+  }, [mobileNavItems, aiEnabled]);
 
   const desktopNavigation = useMemo(() => {
-    const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings');
+    const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings' && (aiEnabled || item.href !== '/chat'));
     const fallback = [...DEFAULT_DESKTOP_NAV];
     const savedOrder = (desktopNavOrder.length ? desktopNavOrder : fallback)
       .map((href) => navItems.find((item) => item.href === href))
@@ -124,10 +125,13 @@ export function AppShell() {
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
   const isOnTasks = location.pathname === '/tasks';
-  const showHeaderPlusButton = location.pathname === '/tasks' || location.pathname === '/habits' || location.pathname === '/finance' || location.pathname === '/calendar';
+  const showHeaderPlusButton = location.pathname === '/' || location.pathname === '/dashboard' || location.pathname === '/tasks' || location.pathname === '/habits' || location.pathname === '/finance' || location.pathname === '/calendar';
 
   const handleHeaderPlusClick = useCallback(() => {
-    if (location.pathname === '/tasks') {
+    if (location.pathname === '/' || location.pathname === '/dashboard' || location.pathname === '/tasks') {
+      if (location.pathname !== '/tasks') {
+        navigate('/tasks?quickadd=true');
+      }
       window.dispatchEvent(new CustomEvent('app-trigger-add-task'));
     } else if (location.pathname === '/habits') {
       window.dispatchEvent(new CustomEvent('app-trigger-add-habit'));
@@ -136,7 +140,7 @@ export function AppShell() {
     } else if (location.pathname === '/calendar') {
       window.dispatchEvent(new CustomEvent('app-trigger-add-calendar'));
     }
-  }, [location.pathname]);
+  }, [location.pathname, navigate]);
 
   const getActiveTitle = useCallback(() => {
     if (location.pathname === '/' || location.pathname === '/dashboard') {
@@ -562,13 +566,15 @@ export function AppShell() {
           </motion.span>
 
           {showHeaderPlusButton && (
-            <button
-              onClick={handleHeaderPlusClick}
-              className="absolute right-3 w-9 h-9 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-primary/20 transition-all touch-manipulation"
-              aria-label="Add"
-            >
-              <Plus size={20} className="text-primary" />
-            </button>
+            <div className="absolute right-3 flex items-center gap-1.5">
+              <button
+                onClick={handleHeaderPlusClick}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-primary/20 transition-all touch-manipulation"
+                aria-label="Add"
+              >
+                <Plus size={20} className="text-primary" />
+              </button>
+            </div>
           )}
         </header>
 
