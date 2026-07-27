@@ -1356,7 +1356,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             <p className="text-sm text-muted-foreground text-center py-6">Nothing due today. Enjoy the calm.</p>
           ) : (
             <div className="space-y-2">
-              <ul ref={parent} className="space-y-2">
+              <ul ref={parent} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
                 {timelineItems.map((item) => item.element)}
               </ul>
             </div>
