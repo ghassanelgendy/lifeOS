@@ -474,6 +474,9 @@ Vite Custom Plugin:
 | Meet sleep goal | +10 |
 | Stay under screen time limit | +10 |
 | Weekly report viewed | +5 |
+| Missed/Overdue prayer penalty | -50 |
+| Late prayer penalty | -25 (refunds 25 points if updated from Missed) |
+| Prayed prayer penalty | 0 (refunds 50 points if updated from Missed) |
 
 ### 10.2 Points Spending
 | Action | Points Cost |

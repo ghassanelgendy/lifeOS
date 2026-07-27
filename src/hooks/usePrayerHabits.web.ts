@@ -52,10 +52,20 @@ async function upsertPrayerLogWithHabitSync(input: {
 
   const { data: existingPrayerLog } = await supabase
     .from('prayer_logs')
-    .select('id')
+    .select('id, status')
     .eq('prayer_habit_id', input.prayerHabitId)
     .eq('date', input.date)
     .maybeSingle();
+
+  const oldStatus = existingPrayerLog?.status ?? null;
+
+  const { data: prayerHabit } = await supabase
+    .from('prayer_habits')
+    .select('prayer_name, habit:habits(title)')
+    .eq('id', input.prayerHabitId)
+    .maybeSingle();
+
+  const habitTitle = prayerHabit?.habit?.title ?? prayerHabit?.prayer_name ?? 'Prayer';
 
   let prayerLogId: string;
   if (existingPrayerLog?.id) {
@@ -122,10 +132,13 @@ async function upsertPrayerLogWithHabitSync(input: {
     habitLogId = data.id as string;
   }
 
-  await supabase
+  const { error: linkErr } = await supabase
     .from('prayer_logs')
     .update({ habit_log_id: habitLogId })
     .eq('id', prayerLogId);
+  if (linkErr) throw linkErr;
+
+  return { oldStatus, habitTitle };
 }
 
 async function ensurePrayerRows(
@@ -211,7 +224,7 @@ let lastSyncedDateWeb: string | null = null;
 
 function getPrayerStatusPenalty(status: PrayerStatus | null): number {
   if (!status) return 0;
-  if (status === 'Late') return -10;
+  if (status === 'Late') return -25;
   if (status === 'Missed' || status === 'Skipped') return -50;
   return 0; // 'Prayed' has no penalty
 }
@@ -424,13 +437,13 @@ export function usePrayerTracker(date: Date = new Date()) {
           habitId: todo.habitId,
           date: todo.date,
           status: todo.status,
-        }).then(async () => {
+        }).then(async (result) => {
           if (user?.id) {
             await adjustPointsForPrayerToggle(
               user.id,
-              todo.habitTitle,
+              result.habitTitle,
               todo.prayerHabitId,
-              null,
+              result.oldStatus,
               todo.status
             );
           }
@@ -524,7 +537,7 @@ export function usePrayerTracker(date: Date = new Date()) {
         return;
       }
 
-      await upsertPrayerLogWithHabitSync({
+      const result = await upsertPrayerLogWithHabitSync({
         prayerHabitId: input.prayer.prayerHabitId,
         habitId: input.prayer.habitId,
         date: dateStr,
@@ -534,9 +547,9 @@ export function usePrayerTracker(date: Date = new Date()) {
       if (user?.id) {
         await adjustPointsForPrayerToggle(
           user.id,
-          input.prayer.habitTitle,
+          result.habitTitle,
           input.prayer.prayerHabitId,
-          oldStatus,
+          result.oldStatus,
           input.status
         );
       }
@@ -664,12 +677,24 @@ export function useSetPrayerStatusAtDate() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: async (input: { prayerHabitId: string; habitId: string; date: string; status: PrayerStatus }) =>
-      upsertPrayerLogWithHabitSync(input),
+    mutationFn: async (input: { prayerHabitId: string; habitId: string; date: string; status: PrayerStatus }) => {
+      const result = await upsertPrayerLogWithHabitSync(input);
+      if (user?.id) {
+        await adjustPointsForPrayerToggle(
+          user.id,
+          result.habitTitle,
+          input.prayerHabitId,
+          result.oldStatus,
+          input.status
+        );
+      }
+      return result;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
     },
   });
 

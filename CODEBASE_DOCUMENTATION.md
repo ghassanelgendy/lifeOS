@@ -10,7 +10,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [PRD.md](#prd-md)
 - [README.md](#readme-md)
 - [build-docs.js](#build-docs-js)
-- [capacitor.config.ts](#capacitor-config-ts)
+- [capacitor.config.json](#capacitor-config-json)
 - [codemagic.yaml](#codemagic-yaml)
 - [enhance-docs.js](#enhance-docs-js)
 - [eslint.config.js](#eslint-config-js)
@@ -517,7 +517,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 5913
+**Lines:** 5917
 
 ---
 
@@ -528,7 +528,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1091
+**Lines:** 1106
 
 ---
 
@@ -539,7 +539,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 841
+**Lines:** 847
 
 ---
 
@@ -561,7 +561,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 43
+**Lines:** 48
 
 ---
 
@@ -693,31 +693,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
-<a name="capacitor-config-ts"></a>
-### capacitor.config.ts
+<a name="capacitor-config-json"></a>
+### capacitor.config.json
 
-**File Purpose:** Capacitor configuration for cross-platform mobile app runtime (iOS/Android hybrid app wrapper).
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
-**Functions & Classes:**
-- `config` (object)
+**Functions & Classes:** None (JSON data/config)
 
-**Function Details:**
-- `config.appId` (`'com.ghassanelgendy.lifeos'`) — Unique bundle identifier for the mobile application.
-- `config.appName` (`'lifeOS'`) — Display name of the application on the device.
-- `config.webDir` (`'dist'`) — Directory containing the built web assets to be wrapped.
-- `config.server.androidScheme` / `config.server.iosScheme` (`'https'`) — URL scheme for serving the web content inside the native WebView.
-- `config.plugins.App.urlScheme` (`'lifeos'`) — Custom deep link URL scheme (`lifeos://`) for opening the app from external links.
-- `config.plugins.CapacitorUpdater.autoUpdate` (`false`) — Disables automatic Over-The-Air updates; updates are managed manually.
-- `config.plugins.SplashScreen` — Configures the native splash screen with dark background (`#09090b`), no spinner, and auto-hide.
-- `config.plugins.Keyboard` — Sets keyboard style to dark, disables webview resizing (`resize: "none"`), and prevents full-screen resize behavior.
-
----
-
-**File Purpose:** Source file. Part of the lifeOS application codebase.
-
-**Functions & Classes:** None (configuration or re-export module)
-
-**Lines:** 34
+**Lines:** 29
 
 ---
 
@@ -1224,7 +1207,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 12842
+**Lines:** 12849
 
 ---
 
@@ -1250,7 +1233,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 120
+**Lines:** 121
 
 ---
 
@@ -1684,7 +1667,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 683
+**Lines:** 694
 
 ---
 
@@ -1703,7 +1686,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 491
+**Lines:** 492
 
 ---
 
@@ -1733,7 +1716,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 640
+**Lines:** 646
 
 ---
 
@@ -2303,11 +2286,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:**
 - `AnalyticsOverview` (Function)
-- `generateInsights` (Function)
 
 **Function Details:**
-- **`AnalyticsOverview`** — React component rendering the main dashboard analytics summary cards and weekly reflections.
-- **`generateInsights`** — Formulates a customized heuristics payload including mathematical Pearson correlations and invokes `askAI` to receive useful, data-grounded wellness and lifestyle hints.
+- **`AnalyticsOverview`** — Utility function for analytics overview.
 
 **Lines:** 339
 
@@ -2435,7 +2416,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 2242
+**Lines:** 2299
 
 ---
 
@@ -2465,7 +2446,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 1417
+**Lines:** 1421
 
 ---
 
@@ -3341,7 +3322,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 830
+**Lines:** 855
 
 ---
 
@@ -3382,7 +3363,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 758
+**Lines:** 783
 
 ---
 
@@ -3874,12 +3855,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
+- `cleanAiResponse` (Function)
 - `extractJSON` (Function)
 
 **Function Details:**
+- **`cleanAiResponse`** — Utility function for clean ai response.
 - **`extractJSON`** — Utility function for extract j s o n.
 
-**Lines:** 92
+**Lines:** 250
 
 ---
 
@@ -4422,7 +4405,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Analytics`** — React component rendering UI for Analytics.
 - **`Analytics`** — Utility function for analytics.
 
-**Lines:** 812
+**Lines:** 814
 
 ---
 
@@ -4498,10 +4481,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `Chat` (Function)
 
 **Function Details:**
-- **`Chat`** — React component rendering UI for Chat. Checks URL search parameters for initial voice dictation prompts and processes them automatically.
+- **`Chat`** — React component rendering UI for Chat.
 - **`Chat`** — Utility function for chat.
 
-**Lines:** 1119
+**Lines:** 1136
 
 ---
 
@@ -4530,10 +4513,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`DashboardEntryDetails`** — Utility function for dashboard entry details.
 - **`ModeBody`** — Utility function for mode body.
 - **`parseDueDateTime`** — Utility function for parse due date time.
-- **`handleMicClick`** — Triggers the browser SpeechRecognition API to record user voice dictation and redirects to Chat with transcription parameters.
-- **`Dashboard`** — Renders the Dashboard layout, customizable widgets, and the FAB menu with Voice AI options.
 
-**Lines:** 1159
+**Lines:** 1171
 
 ---
 
@@ -4896,7 +4877,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1541
+**Lines:** 1551
 
 ---
 
@@ -4924,7 +4905,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1434
+**Lines:** 1444
 
 ---
 
@@ -5042,7 +5023,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 3602
+**Lines:** 3652
 
 ---
 
@@ -5103,7 +5084,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2845
+**Lines:** 2908
 
 ---
 

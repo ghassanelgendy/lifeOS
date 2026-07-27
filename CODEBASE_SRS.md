@@ -504,7 +504,10 @@ Users shall be able to log prayer status for each of the 5 daily prayers with st
 Users shall be able to configure push notification preferences per prayer with pre-alarm offsets and sound selection.
 
 #### FR-PRAYER-005: Prayer Status Penalty System
-The system shall calculate adherence penalties for late/missed prayers.
+The system shall calculate adherence penalties for late/missed prayers:
+- Missed/Overdue prayers deduct 50 points.
+- Late prayers deduct 25 points (yielding a 50% refund, i.e. +25 points, if changing from Missed to Late).
+- Prayed/Done prayers deduct 0 points (yielding a 100% refund, i.e. +50 points, if changing from Missed to Prayed).
 
 #### FR-PRAYER-006: Prayer Backlog
 The system shall display a prayer backlog for missed prayers with make-up tracking.
