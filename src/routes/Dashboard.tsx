@@ -1008,7 +1008,7 @@ export default function Dashboard() {
   const label = dashboardMode === 'quick_view' ? '' : DASHBOARD_MODE_LABELS[dashboardMode];
 
   return (
-    <div className="space-y-3 sm:space-y-4 overflow-x-hidden w-full max-w-7xl mx-auto">
+    <div className="space-y-3 sm:space-y-4 overflow-x-hidden w-full max-w-5xl mx-auto">
       {label && (
         <header className="rounded-lg border border-transparent px-1 py-1 -mx-1" aria-live="polite">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{label}</h1>
