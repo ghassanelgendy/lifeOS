@@ -416,7 +416,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { data: todayTasks = [] } = useTodayTasks();
   const { data: completedTasks = [] } = useCompletedTasks();
-  const { todayLogs, habits } = useWeeklyAdherence();
+  const { todayLogs, habits, dailyAdherence, adherence: weekAdherence } = useWeeklyAdherence();
 
   const todayScreentime = useTodayScreentime();
   const lastNightSleep = useLastNightSleepMinutes();
@@ -1542,6 +1542,166 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 </span>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Weekly Habit Performance Chart */}
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
+          <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+                This week
+              </p>
+              <span className={cn(
+                'text-xs font-bold tabular-nums',
+                weekAdherence >= 80 ? 'text-emerald-400' : weekAdherence >= 50 ? 'text-amber-400' : 'text-rose-400'
+              )}>
+                {weekAdherence}% avg
+              </span>
+            </div>
+            <div className="flex items-end gap-1.5 h-16">
+              {dailyAdherence.map((day, i) => {
+                if (!day) {
+                  const d = new Date();
+                  d.setDate(d.getDate() - (dailyAdherence.length - 1 - i));
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
+                      <div className="w-full rounded-sm bg-muted-foreground/10" style={{ height: '100%' }} />
+                      <span className="text-[9px] font-semibold text-muted-foreground/30 uppercase tracking-wide">
+                        {format(d, 'EEE')[0]}
+                      </span>
+                    </div>
+                  );
+                }
+                const pct = day.adherence;
+                const isToday = day.date === todayStr;
+                const color = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
+                return (
+                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5">
+                    <div className="w-full flex items-end rounded-t-sm overflow-hidden" style={{ height: '100%' }}>
+                      <div
+                        className={cn('w-full rounded-sm transition-all duration-700', color, isToday && 'ring-2 ring-offset-1 ring-offset-card ring-primary/40')}
+                        style={{ height: `${Math.max(8, pct)}%` }}
+                        title={`${pct}%`}
+                      />
+                    </div>
+                    <span className={cn('text-[9px] font-bold uppercase tracking-wide', isToday ? 'text-foreground/80' : 'text-muted-foreground/40')}>
+                      {format(parseISO(day.date), 'EEE')[0]}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        {/* Today's Performance vs Targets */}
+        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
+          <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm space-y-3">
+            <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">
+              Today's targets
+            </p>
+
+            {/* Tasks */}
+            {(() => {
+              const done = completedTasks.filter(t => !t.is_wont_do && t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === todayStr && !t.calendar_source_key && !t.calendar_event_id).length;
+              const allDue = done + tasksDueTodayOnly.length;
+              const pct = allDue > 0 ? Math.round((done / allDue) * 100) : 100;
+              const good = pct >= 80;
+              const ok = pct >= 40;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-medium text-foreground/70">Tasks</span>
+                    <span className={cn('text-xs font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
+                      {done}/{allDue}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Habits */}
+            {(() => {
+              const pct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 100;
+              const good = pct >= 80;
+              const ok = pct >= 50;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-medium text-foreground/70">Habits & Prayers</span>
+                    <span className={cn('text-xs font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
+                      {todayHabitCompleted}/{todayHabitTotal}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Sleep */}
+            {(() => {
+              const sleepH = lastNightSleep ? lastNightSleep / 60 : 0;
+              const targetH = 7.5;
+              const pct = sleepH > 0 ? Math.round(Math.min(100, (sleepH / targetH) * 100)) : 0;
+              const good = sleepH >= 7;
+              const ok = sleepH >= 5.5;
+              const label = sleepH > 0 ? `${sleepH.toFixed(1)}h / ${targetH}h` : `— / ${targetH}h`;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-medium text-foreground/70">Sleep</span>
+                    <span className={cn('text-xs font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : sleepH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
+                      {label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : sleepH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Screen Time */}
+            {(() => {
+              const screenH = todayScreentime.totalMinutes > 0 ? todayScreentime.totalMinutes / 60 : 0;
+              const targetH = 4;
+              // For screen time, LESS is better — invert the pct
+              const usagePct = screenH > 0 ? Math.round(Math.min(100, (screenH / targetH) * 100)) : 0;
+              const good = screenH > 0 && screenH <= targetH;
+              const ok = screenH <= targetH * 1.4;
+              const label = screenH > 0 ? `${screenH.toFixed(1)}h / ≤${targetH}h` : `— / ≤${targetH}h`;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-xs font-medium text-foreground/70">Screen time</span>
+                    <span className={cn('text-xs font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : screenH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
+                      {label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : screenH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
+                      style={{ width: `${usagePct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </section>
       </div>
