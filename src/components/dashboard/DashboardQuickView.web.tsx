@@ -1367,8 +1367,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       </section>
 
       {/* Right Column: Today Stats and Day Progress Timeline (Sticky on Desktop) */}
-      <div className="space-y-4 sm:space-y-5 lg:col-span-5 xl:col-span-4 lg:sticky lg:top-6 lg:self-start lg:order-2 order-1">
-        <section aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+      <div className="flex flex-col gap-4 sm:gap-5 lg:col-span-5 xl:col-span-4 lg:sticky lg:top-6 lg:self-stretch lg:order-2 order-1">
+        <section aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-3">
             <h2 id="qv-today-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
               Today
@@ -1386,10 +1386,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               </span>
             </Link>
           </div>
-          <div className="grid grid-cols-2 gap-2.5">
+          {/* 2x2 stat grid — flex-1 so it grows to match the left column height */}
+          <div className="grid grid-cols-2 gap-2.5 flex-1" style={{ gridAutoRows: '1fr' }}>
             {/* Tasks + Habits card */}
-            <div className="rounded-xl bg-card border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
-              <Link to="/" className="flex flex-col items-center justify-center gap-1 p-4 sm:p-5 text-center">
+            <div className="rounded-xl bg-card border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100 flex flex-col">
+              <Link to="/" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
                 <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 mb-1">
                   <CheckCircle2 className="size-4 text-primary shrink-0" />
                 </div>
@@ -1397,7 +1398,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Remaining</p>
               </Link>
               <div className="border-t border-border/30" />
-              <Link to="/habits" className="flex flex-col items-center justify-center gap-1 p-4 sm:p-5 text-center">
+              <Link to="/habits" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
                 <div className="flex items-center justify-center size-8 rounded-lg bg-orange-500/10 mb-1">
                   <Flame className="size-4 text-orange-500 shrink-0" />
                 </div>
@@ -1409,8 +1410,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               </Link>
             </div>
             {/* Screen + Sleep card */}
-            <div className="rounded-xl bg-card border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
-              <Link to="/screentime" className="flex flex-col items-center justify-center gap-1 p-4 sm:p-5 text-center">
+            <div className="rounded-xl bg-card border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150 flex flex-col">
+              <Link to="/screentime" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
                 <div className="flex items-center justify-center size-8 rounded-lg bg-sky-500/10 mb-1">
                   <Monitor className="size-4 text-sky-500 shrink-0" />
                 </div>
@@ -1420,7 +1421,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Screen</p>
               </Link>
               <div className="border-t border-border/30" />
-              <Link to="/sleep" className="flex flex-col items-center justify-center gap-1 p-4 sm:p-5 text-center">
+              <Link to="/sleep" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
                 <div className="flex items-center justify-center size-8 rounded-lg bg-indigo-500/10 mb-1">
                   <Moon className="size-4 text-indigo-400 shrink-0" />
                 </div>
@@ -1559,15 +1560,16 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 {weekAdherence}% avg
               </span>
             </div>
-            <div className="flex items-end gap-1.5 h-16">
+            {/* Pixel-based bar chart — height computed from adherence %, max 44px bar area */}
+            <div className="flex gap-1.5 items-end" style={{ height: '52px' }}>
               {dailyAdherence.map((day, i) => {
                 if (!day) {
                   const d = new Date();
                   d.setDate(d.getDate() - (dailyAdherence.length - 1 - i));
                   return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div className="w-full rounded-sm bg-muted-foreground/10" style={{ height: '100%' }} />
-                      <span className="text-[9px] font-semibold text-muted-foreground/30 uppercase tracking-wide">
+                    <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
+                      <div className="w-full rounded-sm bg-muted-foreground/10" style={{ height: '3px' }} />
+                      <span className="text-[9px] font-semibold text-muted-foreground/25 uppercase tracking-wide">
                         {format(d, 'EEE')[0]}
                       </span>
                     </div>
@@ -1576,15 +1578,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 const pct = day.adherence;
                 const isToday = day.date === todayStr;
                 const color = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
+                const barPx = Math.max(3, Math.round((pct / 100) * 40));
                 return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center gap-1.5">
-                    <div className="w-full flex items-end rounded-t-sm overflow-hidden" style={{ height: '100%' }}>
-                      <div
-                        className={cn('w-full rounded-sm transition-all duration-700', color, isToday && 'ring-2 ring-offset-1 ring-offset-card ring-primary/40')}
-                        style={{ height: `${Math.max(8, pct)}%` }}
-                        title={`${pct}%`}
-                      />
-                    </div>
+                  <div key={day.date} className="flex-1 flex flex-col items-center justify-end gap-1">
+                    <div
+                      className={cn('w-full rounded-sm transition-all duration-700', color, isToday && 'opacity-100 ring-1 ring-white/20')}
+                      style={{ height: `${barPx}px` }}
+                      title={`${pct}%`}
+                    />
                     <span className={cn('text-[9px] font-bold uppercase tracking-wide', isToday ? 'text-foreground/80' : 'text-muted-foreground/40')}>
                       {format(parseISO(day.date), 'EEE')[0]}
                     </span>
