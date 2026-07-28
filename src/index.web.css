@@ -14,24 +14,24 @@ body {
 
 /* Dark theme (default) */
 @theme {
-  --color-background: hsl(240 10% 3.9%);
-  --color-foreground: hsl(0 0% 98%);
-  --color-card: hsl(240 10% 3.9%);
-  --color-card-foreground: hsl(0 0% 98%);
-  --color-popover: hsl(240 10% 3.9%);
-  --color-popover-foreground: hsl(0 0% 98%);
-  --color-primary: hsl(0 0% 98%);
+  --color-background: hsl(240 12% 3.5%);
+  --color-foreground: hsl(0 0% 97%);
+  --color-card: hsl(240 10% 6%);
+  --color-card-foreground: hsl(0 0% 97%);
+  --color-popover: hsl(240 10% 7.5%);
+  --color-popover-foreground: hsl(0 0% 97%);
+  --color-primary: hsl(0 0% 97%);
   --color-primary-foreground: hsl(240 5.9% 10%);
-  --color-secondary: hsl(240 3.7% 15.9%);
-  --color-secondary-foreground: hsl(0 0% 98%);
-  --color-muted: hsl(240 3.7% 15.9%);
-  --color-muted-foreground: hsl(240 5% 64.9%);
-  --color-accent: hsl(240 3.7% 15.9%);
-  --color-accent-foreground: hsl(0 0% 98%);
+  --color-secondary: hsl(240 5% 14%);
+  --color-secondary-foreground: hsl(0 0% 97%);
+  --color-muted: hsl(240 5% 14%);
+  --color-muted-foreground: hsl(240 5% 62%);
+  --color-accent: hsl(240 5% 14%);
+  --color-accent-foreground: hsl(0 0% 97%);
   --color-destructive: hsl(0 62.8% 30.6%);
   --color-destructive-foreground: hsl(0 0% 98%);
-  --color-border: hsl(240 3.7% 15.9%);
-  --color-input: hsl(240 3.7% 15.9%);
+  --color-border: hsl(240 5% 13%);
+  --color-input: hsl(240 5% 13%);
   --color-ring: hsl(240 4.9% 83.9%);
   --color-gray-*: initial;
   --color-gray-50: #fafafa;
@@ -361,6 +361,22 @@ html.light[data-accent="amber"] {
   animation: section-slide-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }
 
+/* Task checkmark draw-on animation */
+@keyframes checkmark-draw {
+  from {
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dasharray: 20;
+    stroke-dashoffset: 0;
+  }
+}
+
+.task-checkmark--active .task-checkmark__check {
+  animation: checkmark-draw 0.25s ease-out forwards;
+}
+
 @layer utilities {
   .privacy-mode {
     filter: blur(4px);
@@ -374,8 +390,8 @@ html.light[data-accent="amber"] {
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -384,8 +400,7 @@ html.light[data-accent="amber"] {
 
 ::-webkit-scrollbar-thumb {
   background: var(--color-border);
-  border-radius: 5px;
-  border: 2px solid var(--color-background);
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
