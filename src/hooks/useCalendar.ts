@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
+import { idbSaveCalendarEvents, idbGetCalendarEvents } from '../db/indexedDb';
 import type { CalendarEvent, CreateInput, UpdateInput } from '../types/schema';
 import { addDays, addWeeks, addMonths, isBefore, parseISO, format } from 'date-fns';
 import { fetchIcalEvents } from '../lib/icalSubscribe';
@@ -15,11 +17,18 @@ export function useCalendarEvents() {
   return useQuery({
     queryKey: [...QUERY_KEY, user?.id],
     queryFn: async () => {
-      const q = supabase.from('calendar_events').select('*');
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as CalendarEvent[];
+      try {
+        const q = supabase.from('calendar_events').select('*');
+        if (user?.id) q.eq('user_id', user.id);
+        const { data, error } = await q;
+        if (error) throw error;
+        const events = (data ?? []) as CalendarEvent[];
+        void idbSaveCalendarEvents(events);
+        return events;
+      } catch {
+        const local = await idbGetCalendarEvents();
+        return (user?.id ? (local as CalendarEvent[]).filter((e) => e.user_id == null || e.user_id === user.id) : local) as CalendarEvent[];
+      }
     },
     enabled: !!user?.id,
   });
@@ -30,12 +39,18 @@ export function useCreateCalendarEvent() {
 
   return useMutation({
     mutationFn: async (input: CreateInput<CalendarEvent>) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'calendar_events', op: 'create', payload: input as Record<string, unknown> });
+        const optimistic = { ...input, id: `offline-cal-${Date.now()}` } as CalendarEvent;
+        queryClient.setQueryData(QUERY_KEY, (old: CalendarEvent[] | undefined) => [...(old ?? []), optimistic]);
+        return optimistic;
+      }
       const { data, error } = await supabase.from('calendar_events').insert(input).select().single();
       if (error) throw error;
       return data as CalendarEvent;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }
@@ -45,12 +60,19 @@ export function useUpdateCalendarEvent() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<CalendarEvent> }) => {
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'calendar_events', op: 'update', id, payload: data as Record<string, unknown> });
+        queryClient.setQueryData(QUERY_KEY, (old: CalendarEvent[] | undefined) =>
+          (old ?? []).map((e) => (e.id === id ? { ...e, ...data } : e))
+        );
+        return { id, ...data } as unknown as CalendarEvent;
+      }
       const { data: updated, error } = await supabase.from('calendar_events').update(data).eq('id', id).select().single();
       if (error) throw error;
       return updated as CalendarEvent;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: QUERY_KEY });
     },
   });
 }

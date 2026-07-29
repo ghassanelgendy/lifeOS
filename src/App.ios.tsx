@@ -254,6 +254,13 @@ function AppInner() {
 
     window.addEventListener('online', handleOnline);
 
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isOnline()) {
+        void handleOnline();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     // Listen for background sync messages from the service worker
     if ('serviceWorker' in navigator) {
       const onMessage = (event: MessageEvent) => {
@@ -265,11 +272,15 @@ function AppInner() {
       navigator.serviceWorker.addEventListener('message', onMessage);
       return () => {
         window.removeEventListener('online', handleOnline);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
         navigator.serviceWorker.removeEventListener('message', onMessage);
       };
     }
 
-    return () => window.removeEventListener('online', handleOnline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   // PWA: when a new service worker takes over, reload so the app gets latest code.

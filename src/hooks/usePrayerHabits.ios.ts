@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePrayerTimes } from './usePrayerTimes';
 import type { PrayerHabit, PrayerLog, PrayerName, PrayerNotificationSetting, PrayerStatus } from '../types/schema';
 import { isOnline } from '../lib/offlineSync';
-import { idbAddPointsTransaction } from '../db/indexedDb';
+import { idbAddPointsTransaction, idbSavePrayerHabits, idbGetPrayerHabits, idbSavePrayerLogs, idbGetPrayerLogs } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -387,13 +387,20 @@ export function usePrayerTracker(date: Date = new Date()) {
   const habitsQuery = useQuery({
     queryKey: [...QUERY_KEY, user?.id, 'habits'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('prayer_habits')
-        .select('*, habit:habits(id,title,color)')
-        .eq('user_id', user!.id)
-        .eq('is_active', true);
-      if (error) throw error;
-      return (data ?? []) as JoinedPrayerHabit[];
+      try {
+        const { data, error } = await supabase
+          .from('prayer_habits')
+          .select('*, habit:habits(id,title,color)')
+          .eq('user_id', user!.id)
+          .eq('is_active', true);
+        if (error) throw error;
+        const list = (data ?? []) as JoinedPrayerHabit[];
+        void idbSavePrayerHabits(list);
+        return list;
+      } catch {
+        const local = await idbGetPrayerHabits();
+        return (user?.id ? (local as JoinedPrayerHabit[]).filter((ph) => ph.user_id == null || ph.user_id === user.id) : local) as JoinedPrayerHabit[];
+      }
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 60, // 1 hour (almost static)
@@ -402,13 +409,20 @@ export function usePrayerTracker(date: Date = new Date()) {
   const logsQuery = useQuery({
     queryKey: [...QUERY_KEY, user?.id, 'today', dateStr],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('prayer_logs')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('date', dateStr);
-      if (error) throw error;
-      return (data ?? []) as PrayerLog[];
+      try {
+        const { data, error } = await supabase
+          .from('prayer_logs')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('date', dateStr);
+        if (error) throw error;
+        const logs = (data ?? []) as PrayerLog[];
+        void idbSavePrayerLogs(logs);
+        return logs;
+      } catch {
+        const local = await idbGetPrayerLogs();
+        return (local as PrayerLog[]).filter((pl) => pl.date === dateStr);
+      }
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -420,14 +434,21 @@ export function usePrayerTracker(date: Date = new Date()) {
       const start = new Date(date);
       start.setDate(start.getDate() - 6);
       const startStr = toDateOnly(start);
-      const { data, error } = await supabase
-        .from('prayer_logs')
-        .select('*')
-        .eq('user_id', user!.id)
-        .gte('date', startStr)
-        .lte('date', dateStr);
-      if (error) throw error;
-      return (data ?? []) as PrayerLog[];
+      try {
+        const { data, error } = await supabase
+          .from('prayer_logs')
+          .select('*')
+          .eq('user_id', user!.id)
+          .gte('date', startStr)
+          .lte('date', dateStr);
+        if (error) throw error;
+        const logs = (data ?? []) as PrayerLog[];
+        void idbSavePrayerLogs(logs);
+        return logs;
+      } catch {
+        const local = await idbGetPrayerLogs();
+        return (local as PrayerLog[]).filter((pl) => pl.date >= startStr && pl.date <= dateStr);
+      }
     },
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 15, // 15 minutes

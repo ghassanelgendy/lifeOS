@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { WifiOff } from 'lucide-react';
-import { getOfflineQueueLength } from '../lib/offlineSync';
+import { getOfflineQueueLengthAsync } from '../lib/offlineSync';
 import { cn } from '../lib/utils';
 
 export function OfflineBanner() {
@@ -19,9 +19,13 @@ export function OfflineBanner() {
   }, []);
 
   useEffect(() => {
-    if (!online) setPendingCount(getOfflineQueueLength());
+    const updateCount = () => {
+      void getOfflineQueueLengthAsync().then(setPendingCount);
+    };
+
+    if (!online) updateCount();
     const interval = setInterval(() => {
-      if (!navigator.onLine) setPendingCount(getOfflineQueueLength());
+      if (!navigator.onLine) updateCount();
     }, 2000);
     return () => clearInterval(interval);
   }, [online]);

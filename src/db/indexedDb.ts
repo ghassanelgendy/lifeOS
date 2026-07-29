@@ -3,7 +3,7 @@
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 const STORES = {
   tasks: 'tasks',
@@ -15,6 +15,11 @@ const STORES = {
   offlineQueue: 'offline_queue',
   pointsTransactions: 'points_transactions',
   customRewards: 'custom_rewards',
+  habits: 'habits',
+  habitLogs: 'habit_logs',
+  prayerHabits: 'prayer_habits',
+  prayerLogs: 'prayer_logs',
+  calendarEvents: 'calendar_events',
 } as const;
 
 type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -64,6 +69,21 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.customRewards)) {
         db.createObjectStore(STORES.customRewards, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.habits)) {
+        db.createObjectStore(STORES.habits, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.habitLogs)) {
+        db.createObjectStore(STORES.habitLogs, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.prayerHabits)) {
+        db.createObjectStore(STORES.prayerHabits, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.prayerLogs)) {
+        db.createObjectStore(STORES.prayerLogs, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.calendarEvents)) {
+        db.createObjectStore(STORES.calendarEvents, { keyPath: 'id' });
       }
     };
 
@@ -206,7 +226,59 @@ export async function idbGetInBodyScans(): Promise<any[]> {
   return idbGetAll(STORES.inbodyScans);
 }
 
+// Habits & Habit Logs
+export async function idbSaveHabits(habits: any[]): Promise<void> {
+  await idbClear(STORES.habits);
+  await idbPutMany(STORES.habits, habits);
+}
 
+export async function idbGetHabits(): Promise<any[]> {
+  return idbGetAll(STORES.habits);
+}
+
+export async function idbSaveHabitLogs(logs: { id: string }[]): Promise<void> {
+  const existing = await idbGetAll<{ id: string }>(STORES.habitLogs);
+  const byId = new Map(existing.map((l) => [l.id, l]));
+  logs.forEach((l) => byId.set(l.id, l));
+  await idbClear(STORES.habitLogs);
+  await idbPutMany(STORES.habitLogs, Array.from(byId.values()));
+}
+
+export async function idbGetHabitLogs(): Promise<any[]> {
+  return idbGetAll(STORES.habitLogs);
+}
+
+// Prayer Habits & Logs
+export async function idbSavePrayerHabits(prayerHabits: any[]): Promise<void> {
+  await idbClear(STORES.prayerHabits);
+  await idbPutMany(STORES.prayerHabits, prayerHabits);
+}
+
+export async function idbGetPrayerHabits(): Promise<any[]> {
+  return idbGetAll(STORES.prayerHabits);
+}
+
+export async function idbSavePrayerLogs(prayerLogs: { id: string }[]): Promise<void> {
+  const existing = await idbGetAll<{ id: string }>(STORES.prayerLogs);
+  const byId = new Map(existing.map((pl) => [pl.id, pl]));
+  prayerLogs.forEach((pl) => byId.set(pl.id, pl));
+  await idbClear(STORES.prayerLogs);
+  await idbPutMany(STORES.prayerLogs, Array.from(byId.values()));
+}
+
+export async function idbGetPrayerLogs(): Promise<any[]> {
+  return idbGetAll(STORES.prayerLogs);
+}
+
+// Calendar Events
+export async function idbSaveCalendarEvents(events: any[]): Promise<void> {
+  await idbClear(STORES.calendarEvents);
+  await idbPutMany(STORES.calendarEvents, events);
+}
+
+export async function idbGetCalendarEvents(): Promise<any[]> {
+  return idbGetAll(STORES.calendarEvents);
+}
 
 // Offline queue
 export interface IdbQueueEntry {
@@ -236,6 +308,11 @@ export async function idbClearAll(): Promise<void> {
     STORES.offlineQueue,
     STORES.pointsTransactions,
     STORES.customRewards,
+    STORES.habits,
+    STORES.habitLogs,
+    STORES.prayerHabits,
+    STORES.prayerLogs,
+    STORES.calendarEvents,
   ];
   
   // Clear all stores in parallel

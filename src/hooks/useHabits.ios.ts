@@ -8,7 +8,7 @@ import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import type { Habit, CreateInput, UpdateInput, HabitLog, PrayerLog } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { format, startOfWeek, differenceInCalendarDays, subDays } from 'date-fns';
-import { idbAddPointsTransaction } from '../db/indexedDb';
+import { idbAddPointsTransaction, idbSaveHabits, idbGetHabits, idbSaveHabitLogs, idbGetHabitLogs } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -43,43 +43,50 @@ export function useHabits() {
   return useQuery({
     queryKey: [...HABITS_KEY, user?.id],
     queryFn: async () => {
-      // Get all habits
-      const q = supabase
-        .from('habits')
-        .select('*')
-        .eq('is_archived', false)
-        .order('created_at', { ascending: true });
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
+      try {
+        // Get all habits
+        const q = supabase
+          .from('habits')
+          .select('*')
+          .eq('is_archived', false)
+          .order('created_at', { ascending: true });
+        if (user?.id) q.eq('user_id', user.id);
+        const { data, error } = await q;
+        if (error) throw error;
 
-      // Get prayer habit IDs to exclude
-      const { data: prayerHabits } = await supabase
-        .from('prayer_habits')
-        .select('habit_id')
-        .eq('user_id', user!.id)
-        .eq('is_active', true);
+        // Get prayer habit IDs to exclude
+        const { data: prayerHabits } = await supabase
+          .from('prayer_habits')
+          .select('habit_id')
+          .eq('user_id', user!.id)
+          .eq('is_active', true);
 
-      const prayerHabitIds = new Set((prayerHabits || []).map((ph) => ph.habit_id));
+        const prayerHabitIds = new Set((prayerHabits || []).map((ph) => ph.habit_id));
 
-      // Heuristic to also hide any legacy prayer habits that might not be linked correctly
-      const PRAYER_PREFIXES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+        // Heuristic to also hide any legacy prayer habits that might not be linked correctly
+        const PRAYER_PREFIXES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
-      // Filter out prayer habits so they don't appear in the general habits UI
-      return (data || []).filter((h) => {
-        if (prayerHabitIds.has(h.id)) return false;
+        // Filter out prayer habits so they don't appear in the general habits UI
+        const filtered = (data || []).filter((h) => {
+          if (prayerHabitIds.has(h.id)) return false;
 
-        const title = (h.title ?? '').trim();
-        const desc = (h.description ?? '').toLowerCase();
+          const title = (h.title ?? '').trim();
+          const desc = (h.description ?? '').toLowerCase();
 
-        const isPrayerTitle = PRAYER_PREFIXES.some(
-          (name) => title === name || title.startsWith(`${name} (`),
-        );
-        const isPrayerDescription =
-          desc.includes('daily') && desc.includes('prayer');
+          const isPrayerTitle = PRAYER_PREFIXES.some(
+            (name) => title === name || title.startsWith(`${name} (`),
+          );
+          const isPrayerDescription =
+            desc.includes('daily') && desc.includes('prayer');
 
-        return !(isPrayerTitle || isPrayerDescription);
-      }) as Habit[];
+          return !(isPrayerTitle || isPrayerDescription);
+        }) as Habit[];
+        void idbSaveHabits(filtered);
+        return filtered;
+      } catch {
+        const local = await idbGetHabits();
+        return (user?.id ? (local as Habit[]).filter((h) => (h as any).user_id == null || (h as any).user_id === user.id) : local) as Habit[];
+      }
     },
     enabled: !!user?.id,
   });
@@ -193,24 +200,31 @@ export function useHabitLogs(habitId: string) {
   return useQuery({
     queryKey: [...HABIT_LOGS_KEY, habitId, user?.id],
     queryFn: async () => {
-      // First verify the habit belongs to the user
-      const { data: habit, error: habitError } = await supabase
-        .from('habits')
-        .select('id, user_id')
-        .eq('id', habitId)
-        .single();
-      if (habitError) throw habitError;
-      if (habit?.user_id !== user?.id) {
-        throw new Error('Habit not found or access denied');
+      try {
+        // First verify the habit belongs to the user
+        const { data: habit, error: habitError } = await supabase
+          .from('habits')
+          .select('id, user_id')
+          .eq('id', habitId)
+          .single();
+        if (habitError) throw habitError;
+        if (habit?.user_id !== user?.id) {
+          throw new Error('Habit not found or access denied');
+        }
+        
+        const { data, error } = await supabase
+          .from('habit_logs')
+          .select('id, habit_id, user_id, date, completed, note, source, completed_at')
+          .eq('habit_id', habitId)
+          .order('date', { ascending: false });
+        if (error) throw error;
+        const logs = (data ?? []) as HabitLog[];
+        void idbSaveHabitLogs(logs);
+        return logs;
+      } catch {
+        const local = await idbGetHabitLogs();
+        return (local as HabitLog[]).filter((l) => l.habit_id === habitId);
       }
-      
-      const { data, error } = await supabase
-        .from('habit_logs')
-        .select('id, habit_id, user_id, date, completed, note, source, completed_at')
-        .eq('habit_id', habitId)
-        .order('date', { ascending: false });
-      if (error) throw error;
-      return data as HabitLog[];
     },
     enabled: !!habitId && !!user?.id,
   });
@@ -222,23 +236,30 @@ export function useTodayHabitLogs() {
   return useQuery({
     queryKey: [...HABIT_LOGS_KEY, 'today', today, user?.id],
     queryFn: async () => {
-      // Filter by habits owned by the user
-      const { data: habits, error: habitsError } = await supabase
-        .from('habits')
-        .select('id')
-        .eq('user_id', user?.id || '');
-      if (habitsError) throw habitsError;
-      const habitIds = habits?.map(h => h.id) || [];
-      
-      if (habitIds.length === 0) return [];
-      
-      const { data, error } = await supabase
-        .from('habit_logs')
-        .select('id, habit_id, user_id, date, completed, note, source, completed_at')
-        .eq('date', today)
-        .in('habit_id', habitIds);
-      if (error) throw error;
-      return data as HabitLog[];
+      try {
+        // Filter by habits owned by the user
+        const { data: habits, error: habitsError } = await supabase
+          .from('habits')
+          .select('id')
+          .eq('user_id', user?.id || '');
+        if (habitsError) throw habitsError;
+        const habitIds = habits?.map(h => h.id) || [];
+        
+        if (habitIds.length === 0) return [];
+        
+        const { data, error } = await supabase
+          .from('habit_logs')
+          .select('id, habit_id, user_id, date, completed, note, source, completed_at')
+          .eq('date', today)
+          .in('habit_id', habitIds);
+        if (error) throw error;
+        const logs = (data ?? []) as HabitLog[];
+        void idbSaveHabitLogs(logs);
+        return logs;
+      } catch {
+        const local = await idbGetHabitLogs();
+        return (local as HabitLog[]).filter((l) => l.date === today);
+      }
     },
     enabled: !!user?.id,
   });

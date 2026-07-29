@@ -48,7 +48,10 @@ export type QueuedOp =
   | { entity: 'points_transactions'; op: 'create'; payload: Record<string, unknown> }
   | { entity: 'custom_rewards'; op: 'create'; payload: Record<string, unknown> }
   | { entity: 'custom_rewards'; op: 'update'; id: string; payload: Record<string, unknown> }
-  | { entity: 'custom_rewards'; op: 'delete'; id: string };
+  | { entity: 'custom_rewards'; op: 'delete'; id: string }
+  | { entity: 'prayer_logs'; op: 'upsert'; payload: Record<string, unknown> }
+  | { entity: 'prayer_logs'; op: 'create'; payload: Record<string, unknown> }
+  | { entity: 'prayer_logs'; op: 'update'; id: string; payload: Record<string, unknown> };
 
 export function addToOfflineQueue(op: QueuedOp): void {
   // Fire-and-forget; best-effort persistence.
