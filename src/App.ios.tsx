@@ -243,12 +243,20 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
+    let syncInProgress = false;
+
     const handleOnline = async () => {
-      const { processed } = await processOfflineQueue();
-      if (processed > 0) {
-        await queryClient.invalidateQueries();
-      } else {
-        queryClient.invalidateQueries();
+      if (syncInProgress) return;
+      syncInProgress = true;
+      try {
+        const { processed } = await processOfflineQueue();
+        if (processed > 0) {
+          await queryClient.invalidateQueries();
+        } else {
+          queryClient.invalidateQueries();
+        }
+      } finally {
+        syncInProgress = false;
       }
     };
 
@@ -261,6 +269,13 @@ function AppInner() {
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
+    // Periodic check every 10s: if online and queue has items, drain it automatically
+    const pollInterval = setInterval(() => {
+      if (isOnline()) {
+        void handleOnline();
+      }
+    }, 10_000);
+
     // Listen for background sync messages from the service worker
     if ('serviceWorker' in navigator) {
       const onMessage = (event: MessageEvent) => {
@@ -271,6 +286,7 @@ function AppInner() {
       };
       navigator.serviceWorker.addEventListener('message', onMessage);
       return () => {
+        clearInterval(pollInterval);
         window.removeEventListener('online', handleOnline);
         document.removeEventListener('visibilitychange', onVisibilityChange);
         navigator.serviceWorker.removeEventListener('message', onMessage);
@@ -278,6 +294,7 @@ function AppInner() {
     }
 
     return () => {
+      clearInterval(pollInterval);
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };

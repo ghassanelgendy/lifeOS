@@ -114,16 +114,37 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
+    let syncInProgress = false;
+
     const handleOnline = async () => {
-      const { processed } = await processOfflineQueue();
-      if (processed > 0) {
-        await queryClient.invalidateQueries();
-      } else {
-        queryClient.invalidateQueries();
+      if (syncInProgress) return;
+      syncInProgress = true;
+      try {
+        const { processed } = await processOfflineQueue();
+        if (processed > 0) {
+          await queryClient.invalidateQueries();
+        } else {
+          queryClient.invalidateQueries();
+        }
+      } finally {
+        syncInProgress = false;
       }
     };
 
     window.addEventListener('online', handleOnline);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isOnline()) {
+        void handleOnline();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    const pollInterval = setInterval(() => {
+      if (isOnline()) {
+        void handleOnline();
+      }
+    }, 10_000);
 
     // Listen for background sync messages from the service worker
     if ('serviceWorker' in navigator) {
@@ -135,12 +156,18 @@ function AppInner() {
       };
       navigator.serviceWorker.addEventListener('message', onMessage);
       return () => {
+        clearInterval(pollInterval);
         window.removeEventListener('online', handleOnline);
+        document.removeEventListener('visibilitychange', onVisibilityChange);
         navigator.serviceWorker.removeEventListener('message', onMessage);
       };
     }
 
-    return () => window.removeEventListener('online', handleOnline);
+    return () => {
+      clearInterval(pollInterval);
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, []);
 
   // Global Ctrl + Enter / Cmd + Enter to save any open form or modal

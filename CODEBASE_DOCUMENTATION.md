@@ -1350,7 +1350,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 388
+**Lines:** 405
 
 ---
 
@@ -1409,7 +1409,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`UserAppSettingsBridge`** — Utility function for user app settings bridge.
 - **`ThemeSync`** — Utility function for theme sync.
 
-**Lines:** 309
+**Lines:** 336
 
 ---
 
