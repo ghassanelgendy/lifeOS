@@ -3139,7 +3139,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 877
+**Lines:** 800
 
 ---
 
@@ -3180,7 +3180,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 783
+**Lines:** 706
 
 ---
 
