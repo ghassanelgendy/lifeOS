@@ -4,6 +4,14 @@ import type { ScreentimeAppStat, ScreentimeWebsiteStat, ScreentimeDailySummary }
 import { format, subDays } from 'date-fns';
 import { screentimeDateKey } from '../lib/screentimePlatform';
 import { useAuth } from '../contexts/AuthContext';
+import {
+  idbSaveScreentimeAppStats,
+  idbGetScreentimeAppStats,
+  idbSaveScreentimeWebsiteStats,
+  idbGetScreentimeWebsiteStats,
+  idbSaveScreentimeDailySummaries,
+  idbGetScreentimeDailySummaries,
+} from '../db/indexedDb';
 
 const QUERY_KEY = ['screentime'];
 
@@ -154,7 +162,14 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
     queryKey: [...QUERY_KEY, 'apps', startDate, endDate, user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      return fetchAllAppStats(user.id, startDate, endDate);
+      try {
+        const stats = await fetchAllAppStats(user.id, startDate, endDate);
+        void idbSaveScreentimeAppStats(stats);
+        return stats;
+      } catch {
+        const local = await idbGetScreentimeAppStats();
+        return local.filter((s: ScreentimeAppStat) => s.date >= startDate && s.date <= endDate);
+      }
     },
     enabled: !!user?.id,
     staleTime: isTodayOnly ? 1000 * 60 * 15 : 1000 * 60 * 30, // 15 minutes for today, 30 minutes for history
@@ -173,7 +188,14 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
     queryKey: [...QUERY_KEY, 'websites', startDate, endDate, user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      return fetchAllWebsiteStats(user.id, startDate, endDate);
+      try {
+        const stats = await fetchAllWebsiteStats(user.id, startDate, endDate);
+        void idbSaveScreentimeWebsiteStats(stats);
+        return stats;
+      } catch {
+        const local = await idbGetScreentimeWebsiteStats();
+        return local.filter((w: ScreentimeWebsiteStat) => w.date >= startDate && w.date <= endDate);
+      }
     },
     enabled: !!user?.id,
     staleTime: isTodayOnly ? 1000 * 60 * 15 : 1000 * 60 * 30, // 15 minutes for today, 30 minutes for history
@@ -192,7 +214,14 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
     queryKey: [...QUERY_KEY, 'summaries', startDate, endDate, user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
-      return fetchAllDailySummaries(user.id, startDate, endDate);
+      try {
+        const sum = await fetchAllDailySummaries(user.id, startDate, endDate);
+        void idbSaveScreentimeDailySummaries(sum);
+        return sum;
+      } catch {
+        const local = await idbGetScreentimeDailySummaries();
+        return local.filter((s: ScreentimeDailySummary) => s.date >= startDate && s.date <= endDate);
+      }
     },
     enabled: !!user?.id,
     staleTime: isTodayOnly ? 1000 * 60 * 15 : 1000 * 60 * 30, // 15 minutes for today, 30 minutes for history

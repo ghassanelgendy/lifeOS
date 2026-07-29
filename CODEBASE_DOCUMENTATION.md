@@ -517,7 +517,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 5898
+**Lines:** 5596
 
 ---
 
@@ -2542,7 +2542,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`openDb`** — Utility function for open db.
 
-**Lines:** 354
+**Lines:** 406
 
 ---
 
@@ -3139,7 +3139,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 876
+**Lines:** 877
 
 ---
 
@@ -3345,7 +3345,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useScreentimeWebsiteStats`** — Utility function for use screentime website stats.
 - **`useScreentimeDailySummaries`** — Utility function for use screentime daily summaries.
 
-**Lines:** 433
+**Lines:** 462
 
 ---
 

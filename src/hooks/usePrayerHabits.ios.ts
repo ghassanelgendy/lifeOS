@@ -375,6 +375,7 @@ export function usePrayerTracker(date: Date = new Date()) {
 
   useEffect(() => {
     if (!user?.id || !timesSignature) return;
+    if (!isOnline()) return; // Skip online prayer sync when offline
     if (lastSyncedDateIos === dateStr) return; // Prevent duplicate daily syncs in this session
 
     void ensurePrayerRows(user.id, timesRef.current).then(() => {

@@ -3,7 +3,7 @@
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 const STORES = {
   tasks: 'tasks',
@@ -20,6 +20,9 @@ const STORES = {
   prayerHabits: 'prayer_habits',
   prayerLogs: 'prayer_logs',
   calendarEvents: 'calendar_events',
+  screentimeAppStats: 'screentime_app_stats',
+  screentimeWebsiteStats: 'screentime_website_stats',
+  screentimeDailySummaries: 'screentime_daily_summaries',
 } as const;
 
 type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -84,6 +87,15 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.calendarEvents)) {
         db.createObjectStore(STORES.calendarEvents, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.screentimeAppStats)) {
+        db.createObjectStore(STORES.screentimeAppStats, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.screentimeWebsiteStats)) {
+        db.createObjectStore(STORES.screentimeWebsiteStats, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.screentimeDailySummaries)) {
+        db.createObjectStore(STORES.screentimeDailySummaries, { keyPath: 'id' });
       }
     };
 
@@ -313,10 +325,50 @@ export async function idbClearAll(): Promise<void> {
     STORES.prayerHabits,
     STORES.prayerLogs,
     STORES.calendarEvents,
+    STORES.screentimeAppStats,
+    STORES.screentimeWebsiteStats,
+    STORES.screentimeDailySummaries,
   ];
   
   // Clear all stores in parallel
   await Promise.all(stores.map((store) => idbClear(store)));
+}
+
+// Screentime stats helpers
+export async function idbSaveScreentimeAppStats(stats: { id: string }[]): Promise<void> {
+  const existing = await idbGetAll<{ id: string }>(STORES.screentimeAppStats);
+  const byId = new Map(existing.map((s) => [s.id, s]));
+  stats.forEach((s) => byId.set(s.id, s));
+  await idbClear(STORES.screentimeAppStats);
+  await idbPutMany(STORES.screentimeAppStats, Array.from(byId.values()));
+}
+
+export async function idbGetScreentimeAppStats(): Promise<any[]> {
+  return idbGetAll(STORES.screentimeAppStats);
+}
+
+export async function idbSaveScreentimeWebsiteStats(stats: { id: string }[]): Promise<void> {
+  const existing = await idbGetAll<{ id: string }>(STORES.screentimeWebsiteStats);
+  const byId = new Map(existing.map((s) => [s.id, s]));
+  stats.forEach((s) => byId.set(s.id, s));
+  await idbClear(STORES.screentimeWebsiteStats);
+  await idbPutMany(STORES.screentimeWebsiteStats, Array.from(byId.values()));
+}
+
+export async function idbGetScreentimeWebsiteStats(): Promise<any[]> {
+  return idbGetAll(STORES.screentimeWebsiteStats);
+}
+
+export async function idbSaveScreentimeDailySummaries(summaries: { id: string }[]): Promise<void> {
+  const existing = await idbGetAll<{ id: string }>(STORES.screentimeDailySummaries);
+  const byId = new Map(existing.map((s) => [s.id, s]));
+  summaries.forEach((s) => byId.set(s.id, s));
+  await idbClear(STORES.screentimeDailySummaries);
+  await idbPutMany(STORES.screentimeDailySummaries, Array.from(byId.values()));
+}
+
+export async function idbGetScreentimeDailySummaries(): Promise<any[]> {
+  return idbGetAll(STORES.screentimeDailySummaries);
 }
 
 // Points transactions
