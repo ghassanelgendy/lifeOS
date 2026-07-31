@@ -34,8 +34,9 @@ export function useSyncStatus(): SyncStatus {
     void refresh();
 
     // Refresh when connection status changes (e.g. after coming back online)
+    // 🔇 Reduced from 30s → 120s to stop burning API egress.
     if (online) {
-      const id = setInterval(refresh, 30000);
+      const id = setInterval(refresh, 120_000);
       return () => {
         cancelled = true;
         clearInterval(id);

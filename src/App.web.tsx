@@ -140,11 +140,13 @@ function AppInner() {
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
+    // 🔇 DRASTICALLY reduced from 10s → 120s to stop burning API egress.
+    // The offline queue drains on every visibility change and online event anyway.
     const pollInterval = setInterval(() => {
       if (isOnline()) {
         void handleOnline();
       }
-    }, 10_000);
+    }, 120_000);
 
     // Listen for background sync messages from the service worker
     if ('serviceWorker' in navigator) {

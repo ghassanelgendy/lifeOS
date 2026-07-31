@@ -243,7 +243,7 @@ export function usePakeLocalNotifications() {
         localStorage.setItem('pake_shown_notifications', JSON.stringify(Array.from(shownNotifsRef.current)));
       }
 
-    }, 30000); // Check every 30 seconds
+      }, 120_000); // 🔇 Reduced from 30s → 120s to stop burning API egress via dependency refetches
 
     return () => clearInterval(checkInterval);
   }, [isPake, user, tasks, habits, events, todayHabitLogs, habitAverages]);

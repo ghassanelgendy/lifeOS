@@ -1,9 +1,10 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, type InvalidateQueryFilters } from '@tanstack/react-query';
+import { getStatus } from './api-limiter';
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 15, // 15 minutes
+      staleTime: 1000 * 60 * 30, // 30 minutes — drastically reduce redundant fetches
       gcTime: 1000 * 60 * 60 * 24, // 24h so offline cache lasts
       retry: (failureCount) => {
         // Don't retry on network errors when likely offline
@@ -15,3 +16,16 @@ export const queryClient = new QueryClient({
     },
   },
 });
+
+// Override global reconnect handler to respect egress limiter emergency state
+const originalInvalidate = queryClient.invalidateQueries.bind(queryClient);
+queryClient.invalidateQueries = async <TInvalidateFilters extends InvalidateQueryFilters = InvalidateQueryFilters>(
+  filters?: TInvalidateFilters
+) => {
+  const status = getStatus();
+  if (status.emergency) {
+    console.warn('[QueryClient] invalidateQueries SKIPPED during API emergency');
+    return;
+  }
+  return originalInvalidate(filters);
+};

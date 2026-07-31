@@ -1,4 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
+import { installApiLimiter } from './api-limiter';
+
+// Install egress circuit-breaker BEFORE creating the Supabase client
+// so the Supabase SDK's internal fetch calls are also gated.
+installApiLimiter();
 
 // Access environment variables securely
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
