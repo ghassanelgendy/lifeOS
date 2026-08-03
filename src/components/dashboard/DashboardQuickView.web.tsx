@@ -831,10 +831,20 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     if (!user?.id || upcomingItemsToday.length === 0 || !pointsTransactions) return;
 
     const now = new Date();
-    const penalizedIds = new Set(
+    // Build a dedup set of "uuid:date" composite keys so recurring events on
+    // different days are tracked independently without compound IDs in the DB.
+    const penalizedKeys = new Set(
       pointsTransactions
         .filter((tx) => tx.reference_type === 'calendar_event_penalty')
-        .map((tx) => tx.reference_id)
+        .map((tx) => {
+          // Legacy rows stored the full compound item.id — extract the date from description
+          // by looking for the "yyyy-MM-dd" pattern at the end of the stored reference_id.
+          const dateMatch = /-(\d{4}-\d{2}-\d{2})$/.exec(tx.reference_id ?? '');
+          if (dateMatch) return `${(tx.reference_id ?? '').replace(`-${dateMatch[1]}`, '')}:${dateMatch[1]}`;
+          // New rows store real UUID — pair with date embedded in description
+          const descDateMatch = /\b(\d{4}-\d{2}-\d{2})\b/.exec(tx.description ?? '');
+          return descDateMatch ? `${tx.reference_id}:${descDateMatch[1]}` : tx.reference_id;
+        })
     );
 
     upcomingItemsToday.forEach(async (item) => {
@@ -844,23 +854,24 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       if (parsedEnd >= now) return; // Has not ended yet
 
       const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-      const eventIdToCheck = item.originalId || item.id.replace('event-', '');
+      const eventIdToCheck = item.originalId || item.id.replace(/^event-/, '').replace(/-\d{4}-\d{2}-\d{2}$/, '');
       const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
+      const dedupeKey = `${eventIdToCheck}:${eventDateToCheck}`;
 
       // Check if there's a completed task representing this event
-      const isCompleted = completedTasks.some((t) => 
+      const isCompleted = completedTasks.some((t) =>
         (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
         t.due_date === eventDateToCheck
       ) || item.is_completed;
 
-      // If not completed manually, and not already penalized
-      if (!isCompleted && !penalizedIds.has(item.id)) {
+      // If not completed manually, and not already penalized for this occurrence
+      if (!isCompleted && !penalizedKeys.has(dedupeKey)) {
         try {
           await addPointsTx.mutateAsync({
             amount: -10,
-            description: `Missed Calendar Event: ${item.title}`,
+            description: `Missed Calendar Event: ${item.title} (${eventDateToCheck})`,
             reference_type: 'calendar_event_penalty',
-            reference_id: item.id,
+            reference_id: eventIdToCheck, // always a valid UUID
           });
         } catch (e) {
           console.error('Failed to apply calendar event penalty:', e);
@@ -1187,8 +1198,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           }
                         }
 
+                        const evItemId = item.originalId || item.id.replace(/^event-/, '').replace(/-\d{4}-\d{2}-\d{2}$/, '');
                         const penalizedTx = pointsTransactions.find(
-                          (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === item.id
+                          (tx) => tx.reference_type === 'calendar_event_penalty' &&
+                            (tx.reference_id === evItemId || tx.reference_id === item.id)
                         );
 
                         if (currentLinked) {
@@ -1199,14 +1212,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                               amount: 10,
                               description: `Completed Calendar Event: ${item.title}`,
                               reference_type: 'calendar_event_complete',
-                              reference_id: item.id,
+                              reference_id: evItemId,
                             });
                             if (penalizedTx) {
                               void addPointsTx.mutateAsync({
                                 amount: 10,
                                 description: `Penalty reversal for: ${item.title}`,
                                 reference_type: 'calendar_event_penalty_reversal',
-                                reference_id: item.id,
+                                reference_id: evItemId,
                               });
                             }
                           } else {
@@ -1214,7 +1227,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                               amount: -10,
                               description: `Uncompleted Calendar Event: ${item.title}`,
                               reference_type: 'calendar_event_complete',
-                              reference_id: item.id,
+                              reference_id: evItemId,
                             });
                           }
                         } else {
@@ -1233,14 +1246,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                             amount: 10,
                             description: `Completed Calendar Event: ${item.title}`,
                             reference_type: 'calendar_event_complete',
-                            reference_id: item.id,
+                            reference_id: evItemId,
                           });
                           if (penalizedTx) {
                             void addPointsTx.mutateAsync({
                               amount: 10,
                               description: `Penalty reversal for: ${item.title}`,
                               reference_type: 'calendar_event_penalty_reversal',
-                              reference_id: item.id,
+                              reference_id: evItemId,
                             });
                           }
                         }

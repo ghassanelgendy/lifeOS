@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
-import { FileText, Folder, Plus, Save, Search, Trash2, Sparkles } from 'lucide-react';
+import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles } from 'lucide-react';
 import { Button, ConfirmSheet, Input, Select, TextArea } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
@@ -54,6 +55,7 @@ export default function Notes() {
   const loadingText = isIos6 ? 'loading' : 'Loading...';
 
   const [activeId, setActiveId] = useState<string>(NEW_NOTE_ID);
+  const [isEditing, setIsEditing] = useState(false);
   const [activeFolderId, setActiveFolderId] = useState<string>(ALL_FOLDERS);
   const [search, setSearch] = useState('');
   const [draftTitle, setDraftTitle] = useState('');
@@ -135,7 +137,10 @@ export default function Notes() {
   );
 
   useEffect(() => {
-    if (activeId === NEW_NOTE_ID) return;
+    if (activeId === NEW_NOTE_ID) {
+      setIsEditing(true);
+      return;
+    }
     if (!activeNote) {
       if (notes.length > 0) setActiveId(notes[0].id);
       else setActiveId(NEW_NOTE_ID);
@@ -145,6 +150,7 @@ export default function Notes() {
     setDraftBody(activeNote.body);
     setDraftDate(activeNote.note_date?.split('T')[0] || todayInputDate());
     setDraftFolderId(activeNote.folder_id || NO_FOLDER);
+    setIsEditing(false);
   }, [activeId, activeNote, notes]);
 
   const filteredNotes = useMemo(() => {
@@ -374,14 +380,44 @@ export default function Notes() {
                 options={folderOptions}
               />
             </div>
-            <TextArea
-              label="Note"
-              value={draftBody}
-              onChange={(e) => setDraftBody(e.target.value)}
-              placeholder="Start writing..."
-              wrapperClassName="flex-1 min-h-0 flex flex-col"
-              className="flex-1 min-h-0 resize-none"
-            />
+            <div className="flex-1 min-h-0 flex flex-col gap-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Note</label>
+                {activeNote && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing((v) => !v)}
+                    className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {isEditing ? (
+                      <><Eye size={13} /> Preview</>
+                    ) : (
+                      <><Pencil size={13} /> Edit</>
+                    )}
+                  </button>
+                )}
+              </div>
+              {isEditing ? (
+                <TextArea
+                  value={draftBody}
+                  onChange={(e) => setDraftBody(e.target.value)}
+                  placeholder="Start writing..."
+                  wrapperClassName="flex-1 min-h-0 flex flex-col"
+                  className="flex-1 min-h-0 resize-none"
+                />
+              ) : (
+                <div
+                  className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-border bg-background px-4 py-3 prose prose-sm dark:prose-invert max-w-none cursor-pointer"
+                  onClick={() => setIsEditing(true)}
+                  title="Click to edit"
+                  dangerouslySetInnerHTML={{
+                    __html: draftBody
+                      ? (marked.parse(draftBody) as string)
+                      : '<p class="text-muted-foreground italic">Empty note — click to edit.</p>',
+                  }}
+                />
+              )}
+            </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="text-sm text-muted-foreground">
                 {saveMessage || (isDirty ? 'Unsaved changes' : activeNote ? `Updated ${formatNoteDate(activeNote.updated_at)}` : 'New note')}
