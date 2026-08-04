@@ -3,20 +3,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
-import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
+import { useUpdateTask, useDeleteTask } from '../../hooks/useTasks.web';
+import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits.web';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
-import { usePointsBalance, usePointsTransactions, getPointsConfig, useRescueTask, useAddPointsTransaction } from '../../hooks/usePoints';
+import { usePointsBalance, getPointsConfig, useRescueTask } from '../../hooks/usePoints';
 import {
   useDashboardUpcomingItems,
   habitMatchesDay,
   isHabitShownInQuickView,
 } from '../../hooks/useDashboardUpcomingItems';
 import { useUIStore } from '../../stores/useUIStore';
-import { usePrayerTracker } from '../../hooks/usePrayerHabits';
+import { usePrayerTracker } from '../../hooks/usePrayerHabits.web';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import { useAuth } from '../../contexts/AuthContext';
@@ -143,6 +144,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
   rescueCost = 100,
   subtasks = [],
   onToggleSubtask,
+  onContextMenu,
 }: {
   kind: DueKind;
   title: string;
@@ -159,6 +161,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
   rescueCost?: number;
   subtasks?: Array<{ id: string; title?: string; is_completed: boolean }>;
   onToggleSubtask?: (id: string) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const kindLabel =
@@ -180,6 +183,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
             : 'opacity-60 border-primary/15 bg-primary/[0.04]'
           : 'border-border/60 bg-card hover:border-border hover:bg-card/80 shadow-sm hover:shadow-md',
       )}
+      onContextMenu={onContextMenu}
     >
       <div 
         className={cn("flex items-stretch gap-3 w-full", onClick && 'cursor-pointer')}
@@ -397,9 +401,19 @@ const ACCENT_DOT: Record<DueKind, string> = {
   );
 }
 
+type ContextMenuState = {
+  x: number;
+  y: number;
+  task: Task;
+  isDone: boolean;
+  isWontDo: boolean;
+} | null;
+
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
   const [parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const togglingEventsRef = useRef<Record<string, boolean>>({});
 
@@ -409,6 +423,25 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       setActiveTooltip((current) => (current === id ? null : current));
     }, 700);
   };
+
+  // Close context menu on outside click or Escape
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+        setContextMenu(null);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setContextMenu(null);
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [contextMenu]);
 
 
   const today = useMemo(() => new Date(), []);
@@ -425,17 +458,12 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   const { user } = useAuth();
   const pointsBalance = usePointsBalance();
-  const { data: pointsTransactions = [] } = usePointsTransactions();
-  const addPointsTx = useAddPointsTransaction();
   const rescueTask = useRescueTask();
+  const updateTask = useUpdateTask();
+  const deleteTask = useDeleteTask();
   const pointsConfig = getPointsConfig();
 
   const oneWeekAgo = useMemo(() => subDays(new Date(), 7), []);
-  const pointsEarnedThisWeek = useMemo(() => {
-    return pointsTransactions
-      .filter((tx) => new Date(tx.created_at) >= oneWeekAgo && tx.amount > 0)
-      .reduce((sum, tx) => sum + tx.amount, 0);
-  }, [pointsTransactions, oneWeekAgo]);
   
   const startOfDayStr = format(subDays(today, 1), 'yyyy-MM-dd') + 'T00:00:00.000Z';
   const endOfDayStr = format(today, 'yyyy-MM-dd') + 'T23:59:59.999Z';
@@ -827,58 +855,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   const upcomingItemsToday = useMemo(() => upcomingItems.filter((item) => isToday(parseISO(item.start_time))), [upcomingItems]);
 
-  useEffect(() => {
-    if (!user?.id || upcomingItemsToday.length === 0 || !pointsTransactions) return;
-
-    const now = new Date();
-    // Build a dedup set of "uuid:date" composite keys so recurring events on
-    // different days are tracked independently without compound IDs in the DB.
-    const penalizedKeys = new Set(
-      pointsTransactions
-        .filter((tx) => tx.reference_type === 'calendar_event_penalty')
-        .map((tx) => {
-          // Legacy rows stored the full compound item.id — extract the date from description
-          // by looking for the "yyyy-MM-dd" pattern at the end of the stored reference_id.
-          const dateMatch = /-(\d{4}-\d{2}-\d{2})$/.exec(tx.reference_id ?? '');
-          if (dateMatch) return `${(tx.reference_id ?? '').replace(`-${dateMatch[1]}`, '')}:${dateMatch[1]}`;
-          // New rows store real UUID — pair with date embedded in description
-          const descDateMatch = /\b(\d{4}-\d{2}-\d{2})\b/.exec(tx.description ?? '');
-          return descDateMatch ? `${tx.reference_id}:${descDateMatch[1]}` : tx.reference_id;
-        })
-    );
-
-    upcomingItemsToday.forEach(async (item) => {
-      if (item.kind !== 'event') return;
-      const parsedStart = parseISO(item.start_time);
-      const parsedEnd = parseISO(item.end_time || item.start_time);
-      if (parsedEnd >= now) return; // Has not ended yet
-
-      const eventKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-      const eventIdToCheck = item.originalId || item.id.replace(/^event-/, '').replace(/-\d{4}-\d{2}-\d{2}$/, '');
-      const eventDateToCheck = format(parsedStart, 'yyyy-MM-dd');
-      const dedupeKey = `${eventIdToCheck}:${eventDateToCheck}`;
-
-      // Check if there's a completed task representing this event
-      const isCompleted = completedTasks.some((t) =>
-        (t.calendar_source_key === eventKey || t.calendar_event_id === eventIdToCheck) &&
-        t.due_date === eventDateToCheck
-      ) || item.is_completed;
-
-      // If not completed manually, and not already penalized for this occurrence
-      if (!isCompleted && !penalizedKeys.has(dedupeKey)) {
-        try {
-          await addPointsTx.mutateAsync({
-            amount: -10,
-            description: `Missed Calendar Event: ${item.title} (${eventDateToCheck})`,
-            reference_type: 'calendar_event_penalty',
-            reference_id: eventIdToCheck, // always a valid UUID
-          });
-        } catch (e) {
-          console.error('Failed to apply calendar event penalty:', e);
-        }
-      }
-    });
-  }, [upcomingItemsToday, pointsTransactions, completedTasks, user?.id]);
 
   const hasDueTodayContent =
     overdueIncomplete.length > 0 ||
@@ -973,6 +949,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete overdue task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenu({ x: e.clientX, y: e.clientY, task: t, isDone: false, isWontDo: false });
+            }}
             onRescue={() => rescueTask.mutate(t)}
             balance={pointsBalance}
             rescueCost={pointsConfig.taskRescueCost}
@@ -1010,6 +990,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenu({ x: e.clientX, y: e.clientY, task: t, isDone: false, isWontDo: false });
+            }}
             subtasks={t.subtasks}
             onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
           />
@@ -1198,38 +1182,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           }
                         }
 
-                        const evItemId = item.originalId || item.id.replace(/^event-/, '').replace(/-\d{4}-\d{2}-\d{2}$/, '');
-                        const penalizedTx = pointsTransactions.find(
-                          (tx) => tx.reference_type === 'calendar_event_penalty' &&
-                            (tx.reference_id === evItemId || tx.reference_id === item.id)
-                        );
-
                         if (currentLinked) {
-                          const willUncomplete = currentLinked.is_completed;
                           await toggleTask.mutateAsync(currentLinked.id);
-                          if (!willUncomplete) {
-                            void addPointsTx.mutateAsync({
-                              amount: 10,
-                              description: `Completed Calendar Event: ${item.title}`,
-                              reference_type: 'calendar_event_complete',
-                              reference_id: evItemId,
-                            });
-                            if (penalizedTx) {
-                              void addPointsTx.mutateAsync({
-                                amount: 10,
-                                description: `Penalty reversal for: ${item.title}`,
-                                reference_type: 'calendar_event_penalty_reversal',
-                                reference_id: evItemId,
-                              });
-                            }
-                          } else {
-                            void addPointsTx.mutateAsync({
-                              amount: -10,
-                              description: `Uncompleted Calendar Event: ${item.title}`,
-                              reference_type: 'calendar_event_complete',
-                              reference_id: evItemId,
-                            });
-                          }
                         } else {
                           await createTask.mutateAsync({
                             title: item.title,
@@ -1242,20 +1196,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                             tag_ids: [],
                             recurrence: 'none',
                           });
-                          void addPointsTx.mutateAsync({
-                            amount: 10,
-                            description: `Completed Calendar Event: ${item.title}`,
-                            reference_type: 'calendar_event_complete',
-                            reference_id: evItemId,
-                          });
-                          if (penalizedTx) {
-                            void addPointsTx.mutateAsync({
-                              amount: 10,
-                              description: `Penalty reversal for: ${item.title}`,
-                              reference_type: 'calendar_event_penalty_reversal',
-                              reference_id: evItemId,
-                            });
-                          }
                         }
                       }
                     : undefined
@@ -1295,6 +1235,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setContextMenu({ x: e.clientX, y: e.clientY, task: t, isDone: true, isWontDo: !!(t.is_wont_do) });
+            }}
           />
         </li>
       ),
@@ -1393,9 +1337,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <Coins className="size-3.5 text-amber-400" />
               <span className={cn(privacyMode && 'blur-sm')}>
                 {pointsBalance} pts
-                <span className="text-[10px] text-muted-foreground/60 font-normal ml-1">
-                  (+{pointsEarnedThisWeek})
-                </span>
               </span>
             </Link>
           </div>
@@ -1720,5 +1661,62 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </section>
       </div>
     </div>
+
+    {/* Right-click context menu */}
+    {contextMenu && (
+      <div
+        ref={contextMenuRef}
+        className="fixed z-[9999] min-w-[180px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-xl overflow-hidden"
+        style={{
+          top: Math.min(contextMenu.y, window.innerHeight - 200),
+          left: Math.min(contextMenu.x, window.innerWidth - 200),
+        }}
+      >
+        <div className="py-1">
+          <button
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-foreground hover:bg-accent/60 transition-colors text-left"
+            onClick={() => { onSelectEntry({ ...contextMenu.task, kind: 'task' }); setContextMenu(null); }}
+          >
+            <MoreVertical className="size-3.5 text-muted-foreground shrink-0" />
+            Open
+          </button>
+          <button
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-foreground hover:bg-accent/60 transition-colors text-left"
+            onClick={() => { toggleTask.mutate(contextMenu.task.id); setContextMenu(null); }}
+          >
+            <CheckCircle2 className="size-3.5 text-primary shrink-0" />
+            {contextMenu.isDone ? 'Mark incomplete' : 'Complete'}
+          </button>
+          {!contextMenu.isDone && !contextMenu.isWontDo && (
+            <button
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:bg-accent/60 transition-colors text-left"
+              onClick={() => {
+                updateTask.mutate({
+                  id: contextMenu.task.id,
+                  data: { is_completed: true, is_wont_do: true, completed_at: new Date().toISOString() },
+                });
+                setContextMenu(null);
+              }}
+            >
+              <X className="size-3.5 shrink-0" />
+              Not going to do
+            </button>
+          )}
+          <div className="h-px bg-border/40 my-1" />
+          <button
+            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors text-left"
+            onClick={() => {
+              if (window.confirm(`Delete "${contextMenu.task.title}"?`)) {
+                deleteTask.mutate(contextMenu.task.id);
+              }
+              setContextMenu(null);
+            }}
+          >
+            <Trash2 className="size-3.5 shrink-0" />
+            Delete
+          </button>
+        </div>
+      </div>
+    )}
   );
 }
