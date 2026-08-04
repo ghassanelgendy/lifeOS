@@ -2281,27 +2281,24 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-dashboard-dashboardquickview-web-tsx"></a>
 ### src/components/dashboard/DashboardQuickView.web.tsx
 
-**File Purpose:** Dashboard widget/component. Displays aggregated life metrics and quick-view data panels.
+**File Purpose:** Dashboard widget/component for web/PC. Displays aggregated life metrics, due-today tasks/habits/events/prayers, day progress timeline, and weekly stats. Supports right-click context menus on task rows.
 
 **Functions & Classes:**
-- `formatSleepMinutes` (Function)
-- `formatDurationMinutes` (Function)
-- `timeStringToMinutes` (Function)
-- `isoToDayMinutes` (Function)
-- `mergeSegments` (Function)
-- `intersectSegments` (Function)
-- `subtractSegments` (Function)
-- `parseDueForSort` (Function)
-- `DashboardQuickView` (Function)
+- `DueTodayRow` (React Component) — Row card for a single due-today item (task/habit/prayer/event). Accepts `onContextMenu` for right-click support.
+- `DashboardQuickView` (Function) — Main dashboard component. Renders due-today list and right-column stats.
+- `formatSleepMinutes`, `formatDurationMinutes`, `timeStringToMinutes`, `isoToDayMinutes` — Time formatting utilities.
+- `mergeSegments`, `intersectSegments`, `subtractSegments`, `parseDueForSort` — Timeline calculation helpers.
 
 **Function Details:**
-- **`formatSleepMinutes`** — Utility function for format sleep minutes.
-- **`formatDurationMinutes`** — Utility function for format duration minutes.
-- **`timeStringToMinutes`** — Utility function for time string to minutes.
-- **`isoToDayMinutes`** — Utility function for iso to day minutes.
-- **`mergeSegments`** — Utility function for merge segments.
+- **`DueTodayRow`** — Renders a task/habit/prayer/event row. Supports `onContextMenu` prop (web only) for right-click context menus.
+- **`DashboardQuickView`** — Renders the full dashboard quick-view panel. Includes a right-click context menu for task rows with options: Open, Complete/Uncomplete, Not going to do, Delete.
 
-**Lines:** 1712
+**Key Behaviors:**
+- Calendar events do **not** affect points (no penalties, no completion bonuses). Points only come from tasks and habits.
+- Right-clicking a task row (overdue, today, or completed) opens a context menu. Context menu is not shown for habits, prayers, or calendar events.
+- Context menu closes on Escape or outside click.
+
+**Lines:** ~1700
 
 ---
 
