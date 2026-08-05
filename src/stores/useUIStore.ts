@@ -149,6 +149,8 @@ interface UIState {
   setDefaultTaskListId: (id: string | null) => void;
   calendarShowTasks: boolean;
   setCalendarShowTasks: (show: boolean) => void;
+  tasksUseModalForCreate: boolean;
+  setTasksUseModalForCreate: (enabled: boolean) => void;
 
   // Page widgets (all pages customization foundation)
   pageWidgetOrder: Record<string, string[]>;
@@ -229,6 +231,7 @@ export type PersistedUiSlice = {
   defaultTaskView: string | null;
   defaultTaskListId: string | null;
   calendarShowTasks: boolean;
+  tasksUseModalForCreate: boolean;
   pageWidgetOrder: Record<string, string[]>;
   pageWidgetVisible: Record<string, Record<string, boolean>>;
   dashboardMode: DashboardMode;
@@ -431,6 +434,8 @@ export const useUIStore = create<UIState>()(
       setDefaultTaskListId: (defaultTaskListId) => set({ defaultTaskListId }),
       calendarShowTasks: true,
       setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
+      tasksUseModalForCreate: false,
+      setTasksUseModalForCreate: (tasksUseModalForCreate) => set({ tasksUseModalForCreate }),
 
       // AI Default values & Setters
       aiEnabled: Boolean(import.meta.env.VITE_AI_API_KEY),
@@ -545,6 +550,7 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     defaultTaskView: state.defaultTaskView,
     defaultTaskListId: state.defaultTaskListId,
     calendarShowTasks: state.calendarShowTasks,
+    tasksUseModalForCreate: state.tasksUseModalForCreate,
     pageWidgetOrder: state.pageWidgetOrder,
     pageWidgetVisible: state.pageWidgetVisible,
     dashboardMode: state.dashboardMode,

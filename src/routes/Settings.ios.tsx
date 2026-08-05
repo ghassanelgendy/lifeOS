@@ -135,6 +135,8 @@ export default function SettingsPage() {
     setDefaultTaskListId,
     dashboardMode,
     setDashboardMode,
+    tasksUseModalForCreate,
+    setTasksUseModalForCreate,
     pageWidgetOrder,
     pageWidgetVisible,
     togglePageWidget,
@@ -518,6 +520,27 @@ export default function SettingsPage() {
                       </optgroup>
                     )}
                   </select>
+                </div>
+                <div className="flex items-center justify-between pt-4 border-t border-border">
+                  <div>
+                    <p className="font-medium">Use Bottom Sheet for new tasks</p>
+                    <p className="text-sm text-muted-foreground">Open a detailed sheet instead of the inline/quick-add input</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setTasksUseModalForCreate(!tasksUseModalForCreate)}
+                    className={cn(
+                      "relative w-12 h-6 rounded-full transition-colors shrink-0",
+                      tasksUseModalForCreate ? "bg-green-500" : "bg-secondary"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                        tasksUseModalForCreate ? "translate-x-7" : "translate-x-1"
+                      )}
+                    />
+                  </button>
                 </div>
                 <div className="rounded-lg border border-transparent p-1 -m-1">
                   <p className="font-medium mb-2">Default dashboard view</p>

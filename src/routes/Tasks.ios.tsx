@@ -174,9 +174,11 @@ export default function Tasks() {
 
   useEffect(() => {
     const handleTriggerAddTask = () => {
-      setSelectedTask(null);
-      setEditForm(getDefaultEditFormForNewTask());
-      setIsEditModalOpen(true);
+      if (useUIStore.getState().tasksUseModalForCreate) {
+        setSelectedTask(null);
+        setEditForm(getDefaultEditFormForNewTask());
+        setIsEditModalOpen(true);
+      }
     };
     window.addEventListener('app-trigger-add-task', handleTriggerAddTask);
     return () => {
@@ -188,6 +190,7 @@ export default function Tasks() {
   const defaultTaskView = useUIStore((s) => s.defaultTaskView);
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
   const aiEnabled = useUIStore((s) => s.aiEnabled);
+  const tasksUseModalForCreate = useUIStore((s) => s.tasksUseModalForCreate);
   const [activeView, setActiveView] = useState<ViewType>('today');
   const [isParsing, setIsParsing] = useState(false);
   const [taskSort, setTaskSort] = useState<TaskSortMode>('smart');
@@ -884,16 +887,27 @@ export default function Tasks() {
     const quickadd = searchParams.get('quickadd');
     const initialTitle = searchParams.get('title');
     if (quickadd === 'true') {
-      setIsAddingTask(true);
-      if (initialTitle) {
-        setNewTaskTitle(initialTitle);
+      if (useUIStore.getState().tasksUseModalForCreate) {
+        setSelectedTask(null);
+        setEditForm({
+          ...getDefaultEditFormForNewTask(),
+          title: initialTitle || '',
+        });
+        setIsEditModalOpen(true);
+      } else {
+        setIsAddingTask(true);
+        if (initialTitle) {
+          setNewTaskTitle(initialTitle);
+        }
+        setTimeout(() => quickAddRef.current?.focus(), 100);
       }
-      setTimeout(() => quickAddRef.current?.focus(), 100);
     }
 
     const handleAddTaskEvent = () => {
-      setIsAddingTask(true);
-      setTimeout(() => quickAddRef.current?.focus(), 100);
+      if (!useUIStore.getState().tasksUseModalForCreate) {
+        setIsAddingTask(true);
+        setTimeout(() => quickAddRef.current?.focus(), 100);
+      }
     };
 
     const handleVoiceAddTaskEvent = (e: Event) => {
@@ -1398,9 +1412,14 @@ export default function Tasks() {
   }
 
   const handleOpenNewTaskSheet = () => {
-    setSelectedTask(null);
-    setEditForm(getDefaultEditFormForNewTask());
-    setIsEditModalOpen(true);
+    if (tasksUseModalForCreate) {
+      setSelectedTask(null);
+      setEditForm(getDefaultEditFormForNewTask());
+      setIsEditModalOpen(true);
+    } else {
+      setIsAddingTask(true);
+      setTimeout(() => quickAddRef.current?.focus(), 100);
+    }
   };
 
   // Open Details sheet (full-height bottom sheet)
