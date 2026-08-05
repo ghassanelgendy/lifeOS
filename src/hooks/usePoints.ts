@@ -62,16 +62,14 @@ export function isTaskCompletedOnTime(task: { due_date?: string | null; due_time
   
   const completedAt = completedAtStr ? new Date(completedAtStr) : new Date();
   const datePart = task.due_date.split('T')[0];
-  let deadline: Date;
   
-  if (task.due_time) {
-    deadline = new Date(`${datePart}T${task.due_time.slice(0, 5)}:00`);
-  } else {
-    // No time set, deadline is end of that day (local time)
-    deadline = new Date(`${datePart}T23:59:59`);
-  }
+  // Extract YYYY-MM-DD in local time from completedAt
+  const yyyy = completedAt.getFullYear();
+  const mm = String(completedAt.getMonth() + 1).padStart(2, '0');
+  const dd = String(completedAt.getDate()).padStart(2, '0');
+  const completedDatePart = `${yyyy}-${mm}-${dd}`;
   
-  return completedAt <= deadline;
+  return completedDatePart <= datePart;
 }
 
 /**
