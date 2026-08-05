@@ -1495,11 +1495,11 @@ export default function Tasks() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    if (isPast(dueDate) && !task.is_completed) {
-      return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
-    }
     if (isToday(dueDate)) {
       return { text: 'Today', className: 'text-blue-500' };
+    }
+    if (isPast(dueDate) && !task.is_completed) {
+      return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
     }
     if (isTomorrow(dueDate)) {
       return { text: 'Tomorrow', className: 'text-amber-500' };
