@@ -1290,6 +1290,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   }
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
       {/* Primary Left Column: Due Today List */}
       <section
@@ -1718,5 +1719,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </div>
       </div>
     )}
+    </>
   );
 }
