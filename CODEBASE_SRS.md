@@ -619,6 +619,9 @@ Rescuing broken habit streaks shall cost points with exponential cost increase b
 #### FR-POINTS-009: Points Eligibility
 The system shall determine date eligibility for points (e.g., no double-counting).
 
+#### FR-POINTS-010: Task Completion Penalty Rules
+The system shall calculate points based on a date-only logic for task completion. Tasks completed on or before their due date (regardless of the specific due time on that day) shall earn positive points and avoid late penalties. Reductions/penalties shall only apply if a task is marked completed after its due date has passed.
+
 ---
 
 ### 3.15 Settings & Customization
