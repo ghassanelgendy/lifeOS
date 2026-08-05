@@ -1291,10 +1291,341 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   return (
     <>
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 items-start">
-      {/* Primary Left Column: Due Today List */}
+    <div className="flex flex-col gap-4 sm:gap-5 w-full">
+      {/* Today Header & Points Balance */}
+      <div className="flex items-center justify-between">
+        <h2 id="qv-today-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+          Today
+        </h2>
+        <Link 
+          to="/points" 
+          className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors"
+        >
+          <Coins className="size-3.5 text-amber-400" />
+          <span className={cn(privacyMode && 'blur-sm')}>
+            {pointsBalance} pts
+          </span>
+        </Link>
+      </div>
+
+      {/* Top Row Grid: Custom column ratios on PC/Desktop, 2 columns on tablet, stacked on mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
+        {/* Col 1: Day Progress (First thing) */}
+        <section aria-labelledby="qv-day-progress-heading" className="rounded-xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-3">
+            <p id="qv-day-progress-heading" className="text-[11px] text-muted-foreground/60 font-bold uppercase tracking-widest flex items-center gap-1.5">
+              <Sparkles className="size-3 text-primary/70 shrink-0" />
+              Day progress
+            </p>
+            <div className="flex items-center gap-x-2 text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-indigo-500" /> Sleep</span>
+              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
+              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-violet-500" /> Phone</span>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-3 mb-4 flex-wrap">
+            <div className="flex items-baseline gap-1">
+              <p className={cn('text-xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+                {Math.round(screenChart.accounted / 60)}h
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">tracked</p>
+            </div>
+            <span className="text-muted-foreground/20 font-light">|</span>
+            <div className="flex items-baseline gap-1">
+              <p className={cn('text-xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+                {Math.round(Math.max(0, screenChart.elapsed - screenChart.sleep) / 60)}h
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">awake</p>
+            </div>
+            <span className="text-muted-foreground/20 font-light">|</span>
+            <div className="flex items-baseline gap-1">
+              <p className={cn('text-xl font-black tabular-nums tracking-tight text-muted-foreground/70', privacyMode && 'blur-sm')}>
+                {Math.round(Math.max(0, screenChart.elapsed - screenChart.accounted) / 60)}h
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">free</p>
+            </div>
+          </div>
+
+          <div
+            className="relative mt-1 h-5 w-full overflow-visible rounded-full bg-muted-foreground/10"
+            aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
+          >
+            <div className="flex h-full w-full overflow-hidden rounded-full">
+              <div className={cn('bg-indigo-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
+              <div className={cn('bg-sky-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC: ${formatDurationMinutes(screenChart.pc)}`} />
+              <div className={cn('bg-violet-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone: ${formatDurationMinutes(screenChart.phone)}`} />
+              <div className={cn('bg-amber-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
+              {screenChart.overlap > 0 && (
+                <div className={cn('bg-red-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
+              )}
+            </div>
+
+            {progressMarkerClusters.map((cluster) => (
+              <div
+                key={cluster.id}
+                className="absolute inset-y-0 flex gap-[2px]"
+                style={{ left: cluster.leftPct, transform: 'translateX(-2.5px)' }}
+              >
+                {cluster.markers.map((marker) => (
+                  <div
+                    key={marker.id}
+                    className="group relative h-full w-[5px] cursor-crosshair sm:hover:z-50 shrink-0"
+                    onClick={() => handleTooltipClick(marker.id)}
+                  >
+                    <div
+                      className={cn(
+                        'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                        marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
+                        !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
+                        !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
+                        !marker.color && marker.kind === 'task' && 'bg-yellow-400',
+                      )}
+                      style={marker.color ? { backgroundColor: marker.color, filter: marker.isCompleted ? 'brightness(1.5)' : undefined } : undefined}
+                    />
+                    {/* Tooltip */}
+                    <div className={cn(
+                      "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 transition-opacity duration-300",
+                      activeTooltip === marker.id ? "opacity-100" : "opacity-0 sm:group-hover:opacity-100"
+                    )}>
+                      <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
+                        <span className="font-semibold">{marker.name}</span>
+                        <span className="text-[10px] text-muted-foreground/80 font-medium tracking-wide uppercase mt-0.5">{marker.timeStr}</span>
+                        <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95 backdrop-blur-sm" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            <span
+              className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-foreground/80 shadow-[0_0_6px_2px_rgba(255,255,255,0.15)] animate-pulse"
+              style={{ left: screenChart.nowPct }}
+              aria-hidden
+            />
+
+            {/* Time Indicators */}
+            <div className="pointer-events-none absolute -bottom-5 left-0 right-0 h-4">
+              <span className="absolute left-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
+              <span className="absolute left-[25%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">6am</span>
+              <span className="absolute left-[50%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12pm</span>
+              <span className="absolute left-[75%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">6pm</span>
+              <span className="absolute right-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
+            </div>
+          </div>
+          <div className="mt-6 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+            <span>24h clock</span>
+            <span className={cn('tabular-nums font-bold text-foreground/60', privacyMode && 'blur-sm')}>
+              {habitAdherencePct}% adherence{sleepTimeStr}
+            </span>
+          </div>
+        </section>
+
+        {/* Col 2: 4 metrics/icons */}
+        <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100 flex flex-col justify-center min-h-[180px] lg:min-h-0">
+          <div className="grid grid-cols-2 gap-3 flex-1 items-center">
+            {/* Remaining Tasks */}
+            <Link to="/" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
+              <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10">
+                <CheckCircle2 className="size-4 text-primary shrink-0" />
+              </div>
+              <p className="text-2xl font-black tabular-nums tracking-tight text-primary leading-none mt-1">{dueTodayBundleCount}</p>
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Remaining</p>
+            </Link>
+            {/* Habits */}
+            <Link to="/habits" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
+              <div className="flex items-center justify-center size-8 rounded-lg bg-orange-500/10">
+                <Flame className="size-4 text-orange-500 shrink-0" />
+              </div>
+              <p className="text-2xl font-black tabular-nums tracking-tight leading-none mt-1">
+                {todayHabitCompleted}
+                <span className="text-muted-foreground/50 text-xs font-normal">/{todayHabitTotal}</span>
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Habits</p>
+            </Link>
+            {/* Screen */}
+            <Link to="/screentime" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
+              <div className="flex items-center justify-center size-8 rounded-lg bg-sky-500/10">
+                <Monitor className="size-4 text-sky-500 shrink-0" />
+              </div>
+              <p className={cn('text-2xl font-black tabular-nums tracking-tight leading-none mt-1', privacyMode && 'blur-sm')}>
+                {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Screen</p>
+            </Link>
+            {/* Sleep */}
+            <Link to="/sleep" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
+              <div className="flex items-center justify-center size-8 rounded-lg bg-indigo-500/10">
+                <Moon className="size-4 text-indigo-400 shrink-0" />
+              </div>
+              <p className={cn('text-2xl font-black tabular-nums tracking-tight leading-none mt-1', privacyMode && 'blur-sm')}>
+                {lastNightSleep && lastNightSleep > 0 ? `${Math.round(lastNightSleep / 60)}h` : '—'}
+              </p>
+              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Sleep</p>
+            </Link>
+          </div>
+        </div>
+
+        {/* Col 3: Weekly Habit Performance Chart */}
+        <section aria-labelledby="qv-weekly-adherence-heading" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in fade-in duration-700 fill-mode-both flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-4">
+            <p id="qv-weekly-adherence-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+              This week
+            </p>
+            <span className={cn(
+              'text-xs font-bold tabular-nums',
+              weekAdherence >= 80 ? 'text-emerald-400' : weekAdherence >= 50 ? 'text-amber-400' : 'text-rose-400'
+            )}>
+              {weekAdherence}% avg
+            </span>
+          </div>
+          {/* Pixel-based bar chart — height computed from adherence %, max 44px bar area */}
+          <div className="flex gap-1.5 items-end mt-auto" style={{ height: '52px' }}>
+            {dailyAdherence.map((day, i) => {
+              if (!day) {
+                const d = new Date();
+                d.setDate(d.getDate() - (dailyAdherence.length - 1 - i));
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
+                    <div className="w-full rounded-sm bg-muted-foreground/10" style={{ height: '3px' }} />
+                    <span className="text-[9px] font-semibold text-muted-foreground/25 uppercase tracking-wide">
+                      {format(d, 'EEE')[0]}
+                    </span>
+                  </div>
+                );
+              }
+              const pct = day.adherence;
+              const isToday = day.date === todayStr;
+              const color = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
+              const barPx = Math.max(3, Math.round((pct / 100) * 40));
+              return (
+                <div key={day.date} className="flex-1 flex flex-col items-center justify-end gap-1">
+                  <div
+                    className={cn('w-full rounded-sm transition-all duration-700', color, isToday && 'opacity-100 ring-1 ring-white/20')}
+                    style={{ height: `${barPx}px` }}
+                    title={`${pct}%`}
+                  />
+                  <span className={cn('text-[9px] font-bold uppercase tracking-wide', isToday ? 'text-foreground/80' : 'text-muted-foreground/40')}>
+                    {format(parseISO(day.date), 'EEE')[0]}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Col 4: Today's Performance vs Targets */}
+        <section aria-labelledby="qv-targets-heading" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in fade-in duration-700 fill-mode-both flex flex-col justify-between">
+          <p id="qv-targets-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-3">
+            Today's targets
+          </p>
+          <div className="space-y-3 flex-1 flex flex-col justify-center">
+            {/* Tasks */}
+            {(() => {
+              const done = completedTasks.filter(t => !t.is_wont_do && t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === todayStr && !t.calendar_source_key && !t.calendar_event_id).length;
+              const allDue = done + tasksDueTodayOnly.length;
+              const pct = allDue > 0 ? Math.round((done / allDue) * 100) : 100;
+              const good = pct >= 80;
+              const ok = pct >= 40;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-medium text-foreground/70">Tasks</span>
+                    <span className={cn('text-[10px] font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
+                      {done}/{allDue}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Habits */}
+            {(() => {
+              const pct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 100;
+              const good = pct >= 80;
+              const ok = pct >= 50;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-medium text-foreground/70">Habits & Prayers</span>
+                    <span className={cn('text-[10px] font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
+                      {todayHabitCompleted}/{todayHabitTotal}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
+                      style={{ width: `${Math.min(100, pct)}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Sleep */}
+            {(() => {
+              const sleepH = lastNightSleep ? lastNightSleep / 60 : 0;
+              const targetH = 7.5;
+              const pct = sleepH > 0 ? Math.round(Math.min(100, (sleepH / targetH) * 100)) : 0;
+              const good = sleepH >= 7;
+              const ok = sleepH >= 5.5;
+              const label = sleepH > 0 ? `${sleepH.toFixed(1)}h/${targetH}h` : `—/${targetH}h`;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-medium text-foreground/70">Sleep</span>
+                    <span className={cn('text-[10px] font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : sleepH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
+                      {label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : sleepH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Screen Time */}
+            {(() => {
+              const screenH = todayScreentime.totalMinutes > 0 ? todayScreentime.totalMinutes / 60 : 0;
+              const targetH = 4;
+              const usagePct = screenH > 0 ? Math.round(Math.min(100, (screenH / targetH) * 100)) : 0;
+              const good = screenH > 0 && screenH <= targetH;
+              const ok = screenH <= targetH * 1.4;
+              const label = screenH > 0 ? `${screenH.toFixed(1)}h/≤${targetH}h` : `—/≤${targetH}h`;
+              return (
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-[10px] font-medium text-foreground/70">Screen time</span>
+                    <span className={cn('text-[10px] font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : screenH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
+                      {label}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
+                    <div
+                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : screenH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
+                      style={{ width: `${usagePct}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </section>
+      </div>
+
+      {/* Row 2: Due Today Entries (3 Columns on Desktop) */}
       <section
-        className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both lg:col-span-7 xl:col-span-8 lg:order-1 order-2"
+        className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both w-full"
         aria-labelledby="qv-due-today-heading"
       >
         <div className="border-b border-border/40 bg-muted/20 px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-2">
@@ -1317,350 +1648,12 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           {!hasDueTodayContent ? (
             <p className="text-sm text-muted-foreground text-center py-8">Nothing due today. Enjoy the calm.</p>
           ) : (
-            <ul ref={parent} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5">
+            <ul ref={parent} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-2.5">
               {timelineItems.map((item) => item.element)}
             </ul>
           )}
         </div>
       </section>
-
-      {/* Right Column: Today Stats and Day Progress Timeline (Sticky on Desktop) */}
-      <div className="flex flex-col gap-4 sm:gap-5 lg:col-span-5 xl:col-span-4 lg:sticky lg:top-6 lg:self-stretch lg:order-2 order-1">
-        <section aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both flex-1 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <h2 id="qv-today-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-              Today
-            </h2>
-            <Link 
-              to="/points" 
-              className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors"
-            >
-              <Coins className="size-3.5 text-amber-400" />
-              <span className={cn(privacyMode && 'blur-sm')}>
-                {pointsBalance} pts
-              </span>
-            </Link>
-          </div>
-          {/* 2x2 stat grid — flex-1 so it grows to match the left column height */}
-          <div className="grid grid-cols-2 gap-2.5 flex-1" style={{ gridAutoRows: '1fr' }}>
-            {/* Tasks + Habits card */}
-            <div className="rounded-xl bg-card border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100 flex flex-col">
-              <Link to="/" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 mb-1">
-                  <CheckCircle2 className="size-4 text-primary shrink-0" />
-                </div>
-                <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-primary leading-none">{dueTodayBundleCount}</p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Remaining</p>
-              </Link>
-              <div className="border-t border-border/30" />
-              <Link to="/habits" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-orange-500/10 mb-1">
-                  <Flame className="size-4 text-orange-500 shrink-0" />
-                </div>
-                <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight leading-none">
-                  {todayHabitCompleted}
-                  <span className="text-muted-foreground/50 text-sm font-normal">/{todayHabitTotal}</span>
-                </p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Habits</p>
-              </Link>
-            </div>
-            {/* Screen + Sleep card */}
-            <div className="rounded-xl bg-card border border-border/50 overflow-hidden shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150 flex flex-col">
-              <Link to="/screentime" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-sky-500/10 mb-1">
-                  <Monitor className="size-4 text-sky-500 shrink-0" />
-                </div>
-                <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight leading-none', privacyMode && 'blur-sm')}>
-                  {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
-                </p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Screen</p>
-              </Link>
-              <div className="border-t border-border/30" />
-              <Link to="/sleep" className="flex flex-col items-center justify-center gap-1 p-4 text-center flex-1">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-indigo-500/10 mb-1">
-                  <Moon className="size-4 text-indigo-400 shrink-0" />
-                </div>
-                <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight leading-none', privacyMode && 'blur-sm')}>
-                  {lastNightSleep && lastNightSleep > 0 ? `${Math.round(lastNightSleep / 60)}h` : '—'}
-                </p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Sleep</p>
-              </Link>
-            </div>
-          </div>
-
-          <div className="mt-3">
-            <div className="rounded-xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[11px] text-muted-foreground/60 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                  <Sparkles className="size-3 text-primary/70 shrink-0" />
-                  Day progress
-                </p>
-                <div className="flex items-center gap-x-3 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
-                  <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-indigo-500" /> Sleep</span>
-                  <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
-                  <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-violet-500" /> Phone</span>
-                </div>
-              </div>
-              <div className="flex items-baseline gap-3 mb-4 flex-wrap">
-                <div className="flex items-baseline gap-1">
-                  <p className={cn('text-xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
-                    {Math.round(screenChart.accounted / 60)}h
-                  </p>
-                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">tracked</p>
-                </div>
-                <span className="text-muted-foreground/20 font-light">|</span>
-                <div className="flex items-baseline gap-1">
-                  <p className={cn('text-xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
-                    {Math.round(Math.max(0, screenChart.elapsed - screenChart.sleep) / 60)}h
-                  </p>
-                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">awake</p>
-                </div>
-                <span className="text-muted-foreground/20 font-light">|</span>
-                <div className="flex items-baseline gap-1">
-                  <p className={cn('text-xl font-black tabular-nums tracking-tight text-muted-foreground/70', privacyMode && 'blur-sm')}>
-                    {Math.round(Math.max(0, screenChart.elapsed - screenChart.accounted) / 60)}h
-                  </p>
-                  <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">free</p>
-                </div>
-              </div>
-
-              <div
-                className="relative mt-1 h-5 w-full overflow-visible rounded-full bg-muted-foreground/10"
-                aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
-              >
-                <div className="flex h-full w-full overflow-hidden rounded-full">
-                  <div className={cn('bg-indigo-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
-                  <div className={cn('bg-sky-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC: ${formatDurationMinutes(screenChart.pc)}`} />
-                  <div className={cn('bg-violet-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone: ${formatDurationMinutes(screenChart.phone)}`} />
-                  <div className={cn('bg-amber-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
-                  {screenChart.overlap > 0 && (
-                    <div className={cn('bg-red-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
-                  )}
-                </div>
-
-                {progressMarkerClusters.map((cluster) => (
-                  <div
-                    key={cluster.id}
-                    className="absolute inset-y-0 flex gap-[2px]"
-                    style={{ left: cluster.leftPct, transform: 'translateX(-2.5px)' }}
-                  >
-                    {cluster.markers.map((marker) => (
-                      <div
-                        key={marker.id}
-                        className="group relative h-full w-[5px] cursor-crosshair sm:hover:z-50 shrink-0"
-                        onClick={() => handleTooltipClick(marker.id)}
-                      >
-                        <div
-                          className={cn(
-                            'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
-                            marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
-                            !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
-                            !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
-                            !marker.color && marker.kind === 'task' && 'bg-yellow-400',
-                          )}
-                          style={marker.color ? { backgroundColor: marker.color, filter: marker.isCompleted ? 'brightness(1.5)' : undefined } : undefined}
-                        />
-                        {/* Tooltip */}
-                        <div className={cn(
-                          "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 transition-opacity duration-300",
-                          activeTooltip === marker.id ? "opacity-100" : "opacity-0 sm:group-hover:opacity-100"
-                        )}>
-                          <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
-                            <span className="font-semibold">{marker.name}</span>
-                            <span className="text-[10px] text-muted-foreground/80 font-medium tracking-wide uppercase mt-0.5">{marker.timeStr}</span>
-                            <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95 backdrop-blur-sm" />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-
-                <span
-                  className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-foreground/80 shadow-[0_0_6px_2px_rgba(255,255,255,0.15)] animate-pulse"
-                  style={{ left: screenChart.nowPct }}
-                  aria-hidden
-                />
-
-                {/* Time Indicators */}
-                <div className="pointer-events-none absolute -bottom-5 left-0 right-0 h-4">
-                  <span className="absolute left-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
-                  <span className="absolute left-[25%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">6am</span>
-                  <span className="absolute left-[50%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12pm</span>
-                  <span className="absolute left-[75%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">6pm</span>
-                  <span className="absolute right-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
-                </div>
-              </div>
-              <div className="mt-6 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
-                <span>24h clock</span>
-                <span className={cn('tabular-nums normal-case tracking-normal font-bold text-foreground/60', privacyMode && 'blur-sm')}>
-                  {habitAdherencePct}% adherence{sleepTimeStr}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Weekly Habit Performance Chart */}
-        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
-          <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-                This week
-              </p>
-              <span className={cn(
-                'text-xs font-bold tabular-nums',
-                weekAdherence >= 80 ? 'text-emerald-400' : weekAdherence >= 50 ? 'text-amber-400' : 'text-rose-400'
-              )}>
-                {weekAdherence}% avg
-              </span>
-            </div>
-            {/* Pixel-based bar chart — height computed from adherence %, max 44px bar area */}
-            <div className="flex gap-1.5 items-end" style={{ height: '52px' }}>
-              {dailyAdherence.map((day, i) => {
-                if (!day) {
-                  const d = new Date();
-                  d.setDate(d.getDate() - (dailyAdherence.length - 1 - i));
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
-                      <div className="w-full rounded-sm bg-muted-foreground/10" style={{ height: '3px' }} />
-                      <span className="text-[9px] font-semibold text-muted-foreground/25 uppercase tracking-wide">
-                        {format(d, 'EEE')[0]}
-                      </span>
-                    </div>
-                  );
-                }
-                const pct = day.adherence;
-                const isToday = day.date === todayStr;
-                const color = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
-                const barPx = Math.max(3, Math.round((pct / 100) * 40));
-                return (
-                  <div key={day.date} className="flex-1 flex flex-col items-center justify-end gap-1">
-                    <div
-                      className={cn('w-full rounded-sm transition-all duration-700', color, isToday && 'opacity-100 ring-1 ring-white/20')}
-                      style={{ height: `${barPx}px` }}
-                      title={`${pct}%`}
-                    />
-                    <span className={cn('text-[9px] font-bold uppercase tracking-wide', isToday ? 'text-foreground/80' : 'text-muted-foreground/40')}>
-                      {format(parseISO(day.date), 'EEE')[0]}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Today's Performance vs Targets */}
-        <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both">
-          <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm space-y-3">
-            <p className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-1">
-              Today's targets
-            </p>
-
-            {/* Tasks */}
-            {(() => {
-              const done = completedTasks.filter(t => !t.is_wont_do && t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === todayStr && !t.calendar_source_key && !t.calendar_event_id).length;
-              const allDue = done + tasksDueTodayOnly.length;
-              const pct = allDue > 0 ? Math.round((done / allDue) * 100) : 100;
-              const good = pct >= 80;
-              const ok = pct >= 40;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs font-medium text-foreground/70">Tasks</span>
-                    <span className={cn('text-xs font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
-                      {done}/{allDue}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Habits */}
-            {(() => {
-              const pct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 100;
-              const good = pct >= 80;
-              const ok = pct >= 50;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs font-medium text-foreground/70">Habits & Prayers</span>
-                    <span className={cn('text-xs font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
-                      {todayHabitCompleted}/{todayHabitTotal}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
-                      style={{ width: `${Math.min(100, pct)}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Sleep */}
-            {(() => {
-              const sleepH = lastNightSleep ? lastNightSleep / 60 : 0;
-              const targetH = 7.5;
-              const pct = sleepH > 0 ? Math.round(Math.min(100, (sleepH / targetH) * 100)) : 0;
-              const good = sleepH >= 7;
-              const ok = sleepH >= 5.5;
-              const label = sleepH > 0 ? `${sleepH.toFixed(1)}h / ${targetH}h` : `— / ${targetH}h`;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs font-medium text-foreground/70">Sleep</span>
-                    <span className={cn('text-xs font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : sleepH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
-                      {label}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : sleepH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Screen Time */}
-            {(() => {
-              const screenH = todayScreentime.totalMinutes > 0 ? todayScreentime.totalMinutes / 60 : 0;
-              const targetH = 4;
-              // For screen time, LESS is better — invert the pct
-              const usagePct = screenH > 0 ? Math.round(Math.min(100, (screenH / targetH) * 100)) : 0;
-              const good = screenH > 0 && screenH <= targetH;
-              const ok = screenH <= targetH * 1.4;
-              const label = screenH > 0 ? `${screenH.toFixed(1)}h / ≤${targetH}h` : `— / ≤${targetH}h`;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-xs font-medium text-foreground/70">Screen time</span>
-                    <span className={cn('text-xs font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : screenH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
-                      {label}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : screenH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
-                      style={{ width: `${usagePct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </section>
-      </div>
     </div>
 
     {/* Right-click context menu */}
