@@ -771,43 +771,48 @@ export function useSetPrayerStatusAtDate() {
       const prayedAt = isPrayerStatusComplete(input.status) ? nowIso : null;
 
       // Update tracker queries (today, weekly, backlog, etc.)
-      queryClient.setQueriesData({ queryKey: trackerKeyPrefix }, (old: any, query: any) => {
-        if (!Array.isArray(old)) return old;
+      queryClient.setQueriesData(
+        {
+          queryKey: trackerKeyPrefix,
+          predicate: (query) =>
+            query.queryKey.includes('today') ||
+            query.queryKey.includes('weekly') ||
+            query.queryKey.includes('backlog')
+        },
+        (old: any) => {
+          if (!Array.isArray(old)) return old;
 
-        const key = query.queryKey;
-        const isLogsQuery = key.includes('today') || key.includes('weekly') || key.includes('backlog');
-        if (!isLogsQuery) return old;
+          const newLogs = [...old];
+          const existingIndex = newLogs.findIndex(
+            (l) => l.prayer_habit_id === input.prayerHabitId && l.date === input.date
+          );
 
-        const newLogs = [...old];
-        const existingIndex = newLogs.findIndex(
-          (l) => l.prayer_habit_id === input.prayerHabitId && l.date === input.date
-        );
-
-        if (existingIndex >= 0) {
-          if (newLogs[existingIndex].status === input.status) {
-            newLogs.splice(existingIndex, 1);
+          if (existingIndex >= 0) {
+            if (newLogs[existingIndex].status === input.status) {
+              newLogs.splice(existingIndex, 1);
+            } else {
+              newLogs[existingIndex] = {
+                ...newLogs[existingIndex],
+                status: input.status,
+                prayed_at: prayedAt,
+                updated_at: nowIso,
+              };
+            }
           } else {
-            newLogs[existingIndex] = {
-              ...newLogs[existingIndex],
+            newLogs.push({
+              id: `optimistic-${Date.now()}`,
+              user_id: user?.id,
+              prayer_habit_id: input.prayerHabitId,
+              date: input.date,
               status: input.status,
               prayed_at: prayedAt,
+              created_at: nowIso,
               updated_at: nowIso,
-            };
+            });
           }
-        } else {
-          newLogs.push({
-            id: `optimistic-${Date.now()}`,
-            user_id: user?.id,
-            prayer_habit_id: input.prayerHabitId,
-            date: input.date,
-            status: input.status,
-            prayed_at: prayedAt,
-            created_at: nowIso,
-            updated_at: nowIso,
-          });
+          return newLogs;
         }
-        return newLogs;
-      });
+      );
 
       // Update prayer-logs (for weekly calculations)
       queryClient.setQueriesData({ queryKey: prayerLogsKey }, (old: any) => {
