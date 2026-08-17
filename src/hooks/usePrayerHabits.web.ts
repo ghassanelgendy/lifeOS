@@ -218,7 +218,7 @@ async function ensurePrayerRows(
   }
 }
 
-let lastSyncedDateWeb: string | null = null;
+const syncedDatesWeb = new Set<string>();
 
 function getPrayerStatusPenalty(status: PrayerStatus | null): number {
   if (!status) return 0;
@@ -300,13 +300,16 @@ export function usePrayerTracker(date: Date = new Date()) {
 
   useEffect(() => {
     if (!user?.id || !timesSignature) return;
-    if (lastSyncedDateWeb === dateStr) return; // Prevent duplicate daily syncs in this session
+    if (syncedDatesWeb.has(dateStr)) return; // Prevent duplicate daily syncs in this session
+
+    syncedDatesWeb.add(dateStr);
 
     void ensurePrayerRows(user.id, timesRef.current).then(() => {
-      lastSyncedDateWeb = dateStr;
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
-    }).catch(() => {});
+    }).catch((err) => {
+      syncedDatesWeb.delete(dateStr);
+    });
   }, [user?.id, timesSignature, queryClient, dateStr]);
 
   const habitsQuery = useQuery({

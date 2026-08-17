@@ -3335,7 +3335,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 940
+**Lines:** 943
 
 ---
 
@@ -3376,7 +3376,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 846
+**Lines:** 849
 
 ---
 
@@ -3939,7 +3939,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`tableFromUrl`** — Utility function for table from url.
 - **`isCritical`** — Utility function for is critical.
 
-**Lines:** 296
+**Lines:** 297
 
 ---
 

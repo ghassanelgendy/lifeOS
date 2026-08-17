@@ -217,7 +217,8 @@ export function installApiLimiter() {
 
     /* ---- 4. Sliding-window rate limit ---- */
     pruneReqLog();
-    if (reqLog.length >= MAX_REQ_PER_MIN) {
+    const isCriticalReq = isCritical(url, method);
+    if (!isCriticalReq && reqLog.length >= MAX_REQ_PER_MIN) {
       const oldest = reqLog[0];
       const wait = 60_000 - (now() - oldest) + 50;
       console.warn(`[API-LIMITER] RATE-LIMIT sleep ${wait}ms`);

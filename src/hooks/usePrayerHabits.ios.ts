@@ -291,7 +291,7 @@ async function ensurePrayerRows(
   }
 }
 
-let lastSyncedDateIos: string | null = null;
+const syncedDatesIos = new Set<string>();
 
 function getPrayerStatusPenalty(status: PrayerStatus | null): number {
   if (!status) return 0;
@@ -374,13 +374,16 @@ export function usePrayerTracker(date: Date = new Date()) {
   useEffect(() => {
     if (!user?.id || !timesSignature) return;
     if (!isOnline()) return; // Skip online prayer sync when offline
-    if (lastSyncedDateIos === dateStr) return; // Prevent duplicate daily syncs in this session
+    if (syncedDatesIos.has(dateStr)) return; // Prevent duplicate daily syncs in this session
+
+    syncedDatesIos.add(dateStr);
 
     void ensurePrayerRows(user.id, timesRef.current).then(() => {
-      lastSyncedDateIos = dateStr;
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
-    }).catch(() => {});
+    }).catch((err) => {
+      syncedDatesIos.delete(dateStr);
+    });
   }, [user?.id, timesSignature, queryClient, dateStr]);
 
   const habitsQuery = useQuery({
