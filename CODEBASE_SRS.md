@@ -858,6 +858,9 @@ All uploaded/ingested images shall be automatically optimized; static assets sha
 #### NFR-PERF-008: Precaching Limits
 Service Worker precaching shall exclude files larger than 3MB and glob patterns `favicon.svg`, `sw.ts`.
 
+#### NFR-PERF-009: Optimistic Interactions
+Toggle actions (completing tasks, logging habits, and backlog prayer status updates) shall apply state transitions client-side immediately (within 50ms), and execute Supabase mutations in the background. If mutations fail, client-side state shall rollback to its previous state.
+
 ### 4.2 Reliability & Availability
 
 #### NFR-REL-001: PWA Offline Support

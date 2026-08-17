@@ -440,6 +440,7 @@ Vite Custom Plugin:
 - **Offline Banner:** Subtle top banner when network is disconnected.
 - **Privacy Mode:** `blur(4px)` on financial data, clears on hover.
 - **Liquid Glass (iOS):** Backdrop-filter blur + SVG refraction filter for native feel.
+- **Optimistic Interactions:** State toggling (tasks completion, habits logging, and backlog prayer status updates) transitions state client-side immediately, resolving Supabase mutations in the background to ensure a zero-latency experience.
 
 ### 9.3 Responsive Breakpoints
 - Mobile: < 768px (bottom nav, single column, touch-optimized)

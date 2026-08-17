@@ -46,79 +46,37 @@ async function upsertPrayerLogWithHabitSync(input: {
   habitId: string;
   date: string;
   status: PrayerStatus;
+  habitTitle: string;
 }) {
   const nowIso = new Date().toISOString();
   const prayedAt = isPrayerStatusComplete(input.status) ? nowIso : null;
+  const completed = isPrayerStatusComplete(input.status);
 
-  const { data: existingPrayerLog } = await supabase
-    .from('prayer_logs')
-    .select('id, status')
-    .eq('prayer_habit_id', input.prayerHabitId)
-    .eq('date', input.date)
-    .maybeSingle();
+  // Fetch both existing logs in parallel to save a roundtrip
+  const [existingPrayerLogRes, existingHabitLogRes] = await Promise.all([
+    supabase
+      .from('prayer_logs')
+      .select('id, status')
+      .eq('prayer_habit_id', input.prayerHabitId)
+      .eq('date', input.date)
+      .maybeSingle(),
+    supabase
+      .from('habit_logs')
+      .select('id')
+      .eq('habit_id', input.habitId)
+      .eq('date', input.date)
+      .maybeSingle()
+  ]);
 
+  const existingPrayerLog = existingPrayerLogRes.data;
+  const existingHabitLog = existingHabitLogRes.data;
   const oldStatus = existingPrayerLog?.status ?? null;
 
-  const { data: prayerHabit } = await supabase
-    .from('prayer_habits')
-    .select('prayer_name, habit:habits(title)')
-    .eq('id', input.prayerHabitId)
-    .maybeSingle();
+  let habitLogId = existingHabitLog?.id;
 
-  const habitTitle = prayerHabit?.habit?.title ?? prayerHabit?.prayer_name ?? 'Prayer';
-
-  let prayerLogId: string;
-  if (existingPrayerLog?.id) {
-    const { data, error } = await supabase
-      .from('prayer_logs')
-      .update({
-        status: input.status,
-        prayed_at: prayedAt,
-        updated_at: nowIso,
-      })
-      .eq('id', existingPrayerLog.id)
-      .select('id')
-      .single();
-    if (error) throw error;
-    prayerLogId = data.id as string;
-  } else {
-    const { data, error } = await supabase
-      .from('prayer_logs')
-      .insert({
-        prayer_habit_id: input.prayerHabitId,
-        date: input.date,
-        status: input.status,
-        prayed_at: prayedAt,
-      })
-      .select('id')
-      .single();
-    if (error) throw error;
-    prayerLogId = data.id as string;
-  }
-
-  const { data: existingHabitLog } = await supabase
-    .from('habit_logs')
-    .select('id')
-    .eq('habit_id', input.habitId)
-    .eq('date', input.date)
-    .maybeSingle();
-
-  const completed = isPrayerStatusComplete(input.status);
-  let habitLogId: string;
-  if (existingHabitLog?.id) {
-    const { data, error } = await supabase
-      .from('habit_logs')
-      .update({
-        completed,
-        source: 'prayer',
-      })
-      .eq('id', existingHabitLog.id)
-      .select('id')
-      .single();
-    if (error) throw error;
-    habitLogId = data.id as string;
-  } else {
-    const { data, error } = await supabase
+  // If habit log doesn't exist, we must create it first to link its ID
+  if (!habitLogId) {
+    const { data: newHabitLog, error: habitErr } = await supabase
       .from('habit_logs')
       .insert({
         habit_id: input.habitId,
@@ -128,17 +86,57 @@ async function upsertPrayerLogWithHabitSync(input: {
       })
       .select('id')
       .single();
-    if (error) throw error;
-    habitLogId = data.id as string;
+    if (habitErr) throw habitErr;
+    habitLogId = newHabitLog.id;
   }
 
-  const { error: linkErr } = await supabase
-    .from('prayer_logs')
-    .update({ habit_log_id: habitLogId })
-    .eq('id', prayerLogId);
-  if (linkErr) throw linkErr;
+  // Update/insert everything concurrently
+  const promises: Promise<any>[] = [];
 
-  return { oldStatus, habitTitle };
+  if (existingHabitLog?.id) {
+    promises.push(
+      supabase
+        .from('habit_logs')
+        .update({
+          completed,
+          source: 'prayer',
+        })
+        .eq('id', existingHabitLog.id)
+    );
+  }
+
+  if (existingPrayerLog?.id) {
+    promises.push(
+      supabase
+        .from('prayer_logs')
+        .update({
+          status: input.status,
+          prayed_at: prayedAt,
+          habit_log_id: habitLogId,
+          updated_at: nowIso,
+        })
+        .eq('id', existingPrayerLog.id)
+    );
+  } else {
+    promises.push(
+      supabase
+        .from('prayer_logs')
+        .insert({
+          prayer_habit_id: input.prayerHabitId,
+          date: input.date,
+          status: input.status,
+          prayed_at: prayedAt,
+          habit_log_id: habitLogId,
+        })
+    );
+  }
+
+  const results = await Promise.all(promises);
+  for (const res of results) {
+    if (res.error) throw res.error;
+  }
+
+  return { oldStatus, habitTitle: input.habitTitle };
 }
 
 async function ensurePrayerRows(
@@ -465,6 +463,7 @@ export function usePrayerTracker(date: Date = new Date()) {
         habitId: input.prayer.habitId,
         date: dateStr,
         status: input.status,
+        habitTitle: input.prayer.habitTitle,
       });
 
       if (user?.id) {
@@ -480,8 +479,13 @@ export function usePrayerTracker(date: Date = new Date()) {
 
     onMutate: async (input: { prayer: PrayerTrackerItem; status: PrayerStatus }) => {
       const todayKey = [...QUERY_KEY, user?.id, 'today', dateStr];
+      const prayerLogsKey = ['prayer-logs'];
+
       await queryClient.cancelQueries({ queryKey: todayKey });
+      await queryClient.cancelQueries({ queryKey: prayerLogsKey });
+
       const previousLogs = queryClient.getQueryData(todayKey);
+      const previousPrayerLogs = queryClient.getQueriesData({ queryKey: prayerLogsKey });
 
       queryClient.setQueryData(todayKey, (old: any) => {
         if (!Array.isArray(old)) return old;
@@ -513,11 +517,42 @@ export function usePrayerTracker(date: Date = new Date()) {
         return newLogs;
       });
 
-      return { previousLogs, todayKey };
+      // Optimistically update prayer-logs
+      queryClient.setQueriesData({ queryKey: prayerLogsKey }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        const newLogs = [...old];
+        const existingIndex = newLogs.findIndex(
+          (l) => l.prayer_habit_id === input.prayer.prayerHabitId && l.date === dateStr
+        );
+        if (existingIndex >= 0) {
+          if (newLogs[existingIndex].status === input.status) {
+            newLogs.splice(existingIndex, 1);
+          } else {
+            newLogs[existingIndex] = {
+              ...newLogs[existingIndex],
+              status: input.status,
+            };
+          }
+        } else {
+          newLogs.push({
+            prayer_habit_id: input.prayer.prayerHabitId,
+            date: dateStr,
+            status: input.status,
+          });
+        }
+        return newLogs;
+      });
+
+      return { previousLogs, todayKey, previousPrayerLogs };
     },
     onError: (_err, _variables, context: any) => {
       if (context?.previousLogs) {
         queryClient.setQueryData(context.todayKey, context.previousLogs);
+      }
+      if (context?.previousPrayerLogs) {
+        context.previousPrayerLogs.forEach(([queryKey, data]: [any, any]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
       }
     },
     onSettled: () => {
@@ -525,6 +560,8 @@ export function usePrayerTracker(date: Date = new Date()) {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id, 'weekly', dateStr] });
       queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
+      queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
     },
   });
 
@@ -601,7 +638,17 @@ export function useSetPrayerStatusAtDate() {
 
   const mutation = useMutation({
     mutationFn: async (input: { prayerHabitId: string; habitId: string; date: string; status: PrayerStatus }) => {
-      const result = await upsertPrayerLogWithHabitSync(input);
+      const habits = queryClient.getQueryData<JoinedPrayerHabit[]>([...QUERY_KEY, user?.id, 'habits']) || [];
+      const habit = habits.find((h) => h.id === input.prayerHabitId);
+      const habitTitle = habit?.habit?.title ?? habit?.prayer_name ?? 'Prayer';
+
+      const result = await upsertPrayerLogWithHabitSync({
+        prayerHabitId: input.prayerHabitId,
+        habitId: input.habitId,
+        date: input.date,
+        status: input.status,
+        habitTitle,
+      });
       if (user?.id) {
         await adjustPointsForPrayerToggle(
           user.id,
@@ -613,10 +660,103 @@ export function useSetPrayerStatusAtDate() {
       }
       return result;
     },
-    onSuccess: () => {
+    onMutate: async (input) => {
+      const trackerKeyPrefix = [...QUERY_KEY, user?.id];
+      const prayerLogsKey = ['prayer-logs'];
+
+      await queryClient.cancelQueries({ queryKey: trackerKeyPrefix });
+      await queryClient.cancelQueries({ queryKey: prayerLogsKey });
+
+      const previousQueries = queryClient.getQueriesData({ queryKey: trackerKeyPrefix });
+      const previousPrayerLogs = queryClient.getQueriesData({ queryKey: prayerLogsKey });
+
+      const nowIso = new Date().toISOString();
+      const prayedAt = isPrayerStatusComplete(input.status) ? nowIso : null;
+
+      // Update tracker queries (today, weekly, backlog, etc.)
+      queryClient.setQueriesData({ queryKey: trackerKeyPrefix }, (old: any, query: any) => {
+        if (!Array.isArray(old)) return old;
+
+        const key = query.queryKey;
+        const isLogsQuery = key.includes('today') || key.includes('weekly') || key.includes('backlog');
+        if (!isLogsQuery) return old;
+
+        const newLogs = [...old];
+        const existingIndex = newLogs.findIndex(
+          (l) => l.prayer_habit_id === input.prayerHabitId && l.date === input.date
+        );
+
+        if (existingIndex >= 0) {
+          if (newLogs[existingIndex].status === input.status) {
+            newLogs.splice(existingIndex, 1);
+          } else {
+            newLogs[existingIndex] = {
+              ...newLogs[existingIndex],
+              status: input.status,
+              prayed_at: prayedAt,
+              updated_at: nowIso,
+            };
+          }
+        } else {
+          newLogs.push({
+            id: `optimistic-${Date.now()}`,
+            user_id: user?.id,
+            prayer_habit_id: input.prayerHabitId,
+            date: input.date,
+            status: input.status,
+            prayed_at: prayedAt,
+            created_at: nowIso,
+            updated_at: nowIso,
+          });
+        }
+        return newLogs;
+      });
+
+      // Update prayer-logs (for weekly calculations)
+      queryClient.setQueriesData({ queryKey: prayerLogsKey }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        const newLogs = [...old];
+        const existingIndex = newLogs.findIndex(
+          (l) => l.prayer_habit_id === input.prayerHabitId && l.date === input.date
+        );
+        if (existingIndex >= 0) {
+          if (newLogs[existingIndex].status === input.status) {
+            newLogs.splice(existingIndex, 1);
+          } else {
+            newLogs[existingIndex] = {
+              ...newLogs[existingIndex],
+              status: input.status,
+            };
+          }
+        } else {
+          newLogs.push({
+            prayer_habit_id: input.prayerHabitId,
+            date: input.date,
+            status: input.status,
+          });
+        }
+        return newLogs;
+      });
+
+      return { previousQueries, previousPrayerLogs };
+    },
+    onError: (_err, _variables, context: any) => {
+      if (context?.previousQueries) {
+        context.previousQueries.forEach(([queryKey, data]: [any, any]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+      if (context?.previousPrayerLogs) {
+        context.previousPrayerLogs.forEach(([queryKey, data]: [any, any]) => {
+          queryClient.setQueryData(queryKey, data);
+        });
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id] });
       queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
     },
   });

@@ -852,7 +852,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 : 'Overdue'
             }
             done={false}
-            busy={toggleTask.isPending}
+            busy={toggleTask.isPending && toggleTask.variables === t.id}
             showToggle
             label={`Complete overdue task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
@@ -885,7 +885,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             title={t.title}
             subtitle={t.due_time && t.due_time.length >= 5 ? format(new Date(`2000-01-01T${t.due_time.slice(0, 5)}`), 'h:mm a') : 'Any time'}
             done={false}
-            busy={toggleTask.isPending}
+            busy={toggleTask.isPending && toggleTask.variables === t.id}
             showToggle
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
@@ -950,7 +950,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             title={h.title}
             subtitle={subtitle}
             done={done}
-            busy={logHabit.isPending}
+            busy={logHabit.isPending && logHabit.variables?.habitId === h.id}
             showToggle
             label={`Log habit ${h.title}`}
             color={h.color}
@@ -1039,7 +1039,13 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             title={item.title}
             subtitle={subtitle}
             done={isDone}
-            busy={isTask ? toggleTask.isPending : isHabit ? logHabit.isPending : toggleTask.isPending || createTask.isPending}
+            busy={
+               isTask
+                 ? toggleTask.isPending && toggleTask.variables === item.entityId
+                 : isHabit
+                   ? logHabit.isPending && logHabit.variables?.habitId === item.entityId
+                   : (toggleTask.isPending && toggleTask.variables === item.entityId) || (createTask.isPending && (createTask.variables as any)?.calendar_event_id === item.id)
+            }
             showToggle={showToggle}
             label={
               isTask
@@ -1114,7 +1120,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 : 'Any time'
             }
             done={true}
-            busy={toggleTask.isPending}
+            busy={toggleTask.isPending && toggleTask.variables === t.id}
             showToggle
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}

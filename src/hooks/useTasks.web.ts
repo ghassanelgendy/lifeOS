@@ -613,8 +613,13 @@ export function useUpdateTask() {
       }
 
       // Online route
-      const { data: currentTask } = await supabase.from('tasks').select('*').eq('id', id).single();
-      if (!currentTask) throw new Error('Task not found');
+      const cachedTasks = queryClient.getQueryData<Task[]>(TASKS_KEY) || [];
+      let currentTask = cachedTasks.find((t) => t.id === id);
+      if (!currentTask) {
+        const { data, error } = await supabase.from('tasks').select('*').eq('id', id).single();
+        if (error || !data) throw new Error('Task not found');
+        currentTask = data as Task;
+      }
       const wasCompleted = currentTask.is_completed;
       const becameCompleted = updatedData.is_completed === true && !wasCompleted;
 
@@ -811,12 +816,17 @@ export function useToggleTask() {
         return { ...task, ...payload } as Task;
       }
 
-      const { data: task } = await supabase
-        .from('tasks')
-        .select('*')
-        .eq('id', id)
-        .single();
-      if (!task) throw new Error('Task not found');
+      const cachedTasks = queryClient.getQueryData<Task[]>(TASKS_KEY) || [];
+      let task = cachedTasks.find((t) => t.id === id);
+      if (!task) {
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (error || !data) throw new Error('Task not found');
+        task = data as Task;
+      }
       const newCompleted = !task.is_completed;
 
       // Apply points update (will throw error if points insufficient for reward task completion)
