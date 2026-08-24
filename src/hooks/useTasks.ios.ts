@@ -198,16 +198,7 @@ export function useTaskLists() {
   return useQuery({
     queryKey: [...LISTS_KEY, user?.id],
     queryFn: async () => {
-      const q = supabase.from('task_lists').select('*').order('sort_order');
-      if (user?.id) {
-        const email = user.email ? user.email.trim().toLowerCase() : '';
-        if (email) {
-          q.or(`user_id.eq.${user.id},and(is_shared.eq.true,shared_with.cs.{"${email}"})`);
-        } else {
-          q.eq('user_id', user.id);
-        }
-      }
-      const { data, error } = await q;
+      const { data, error } = await supabase.from('task_lists').select('*').order('sort_order');
       if (error) throw error;
       const lists = (data ?? []) as TaskList[];
       // Keep IndexedDB in sync for offline sidebar rendering.
@@ -252,15 +243,13 @@ export function useTasks() {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
 
-        const q = supabase
+        const { data, error } = await supabase
           .from('tasks')
           .select('*, subtasks:tasks(id, title, is_completed)')
           .is('parent_id', null)
           .or(`is_completed.eq.false,completed_at.gte.${thirtyDaysAgoStr}`)
           .order('is_completed', { ascending: true })
           .order('due_date', { ascending: true, nullsFirst: false });
-        if (user?.id) q.eq('user_id', user.id);
-        const { data, error } = await q;
         if (error) throw error;
         const tasks = (data ?? []) as Task[];
         void idbSaveTasks(tasks);

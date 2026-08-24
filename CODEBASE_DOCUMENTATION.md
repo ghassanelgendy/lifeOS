@@ -3750,7 +3750,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTaskLists`** — Utility function for use task lists.
 - **`useTags`** — Utility function for use tags.
 
-**Lines:** 1163
+**Lines:** 1152
 
 ---
 
@@ -3823,7 +3823,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTaskLists`** — Utility function for use task lists.
 - **`useTags`** — Utility function for use tags.
 
-**Lines:** 1156
+**Lines:** 1145
 
 ---
 
