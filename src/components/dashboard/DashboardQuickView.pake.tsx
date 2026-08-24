@@ -19,6 +19,8 @@ import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
+import { MarqueeTitle } from '../ui/MarqueeTitle';
+
 
 
 // Fluent UI React Components
@@ -277,15 +279,13 @@ function DueTodayRow({
               </button>
             )}
           </div>
-          <div
-            dir="auto"
+          <MarqueeTitle
+            title={title}
             className={cn(
-              'text-sm font-semibold break-words leading-relaxed text-foreground',
+              'text-sm font-semibold leading-relaxed text-foreground',
               done && 'line-through text-muted-foreground'
             )}
-          >
-            {title}
-          </div>
+          />
           {subtitle && (
             <div dir="auto" className="text-xs text-muted-foreground mt-1 font-medium tabular-nums">
               {subtitle}

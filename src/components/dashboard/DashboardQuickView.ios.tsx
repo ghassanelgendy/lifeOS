@@ -26,6 +26,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
+import { MarqueeTitle } from '../ui/MarqueeTitle';
+
 
 function formatSleepMinutes(m: number | null) {
   if (m == null || m <= 0) return '—';
@@ -348,14 +350,15 @@ function DueTodayRow({
                 </button>
               )}
             </div>
-            <p
-              className={cn(
-                'text-[14px] font-semibold text-foreground leading-snug break-words mt-0.5',
-                done && 'line-through text-muted-foreground/60',
-              )}
-            >
-              {title}
-            </p>
+            <div className="mt-0.5">
+              <MarqueeTitle
+                title={title}
+                className={cn(
+                  'text-[14px] font-semibold text-foreground leading-snug',
+                  done && 'line-through text-muted-foreground/60'
+                )}
+              />
+            </div>
             {subtitle ? (
               <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
                 {subtitle}

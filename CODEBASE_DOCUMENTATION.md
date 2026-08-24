@@ -233,6 +233,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/ui/ConfirmSheet.tsx](#src-components-ui-confirmsheet-tsx)
 - [src/components/ui/DetailsSheet.tsx](#src-components-ui-detailssheet-tsx)
 - [src/components/ui/Input.tsx](#src-components-ui-input-tsx)
+- [src/components/ui/MarqueeTitle.tsx](#src-components-ui-marqueetitle-tsx)
 - [src/components/ui/Modal.tsx](#src-components-ui-modal-tsx)
 - [src/components/ui/index.ts](#src-components-ui-index-ts)
 
@@ -2652,6 +2653,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`TextArea`** — React component rendering UI for TextArea.
 
 **Lines:** 113
+
+---
+
+<a name="src-components-ui-marqueetitle-tsx"></a>
+### src/components/ui/MarqueeTitle.tsx
+
+**File Purpose:** UI component that truncates text to a single uniform height line by default, and smoothly scrolls/marquees horizontally on hover/focus if text overflows.
+
+**Functions & Classes:**
+- `MarqueeTitle` (React Component)
+
+**Function Details:**
+- **`MarqueeTitle`** — Ensures dashboard row cards maintain uniform height while allowing users to hover and read long titles smoothly.
+
+**Lines:** 65
 
 ---
 

@@ -24,6 +24,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
+import { MarqueeTitle } from '../ui/MarqueeTitle';
+
 
 function formatSleepMinutes(m: number | null) {
   if (m == null || m <= 0) return '—';
@@ -328,14 +330,15 @@ const ACCENT_DOT: Record<DueKind, string> = {
                 </button>
               )}
             </div>
-            <p
-              className={cn(
-                'mt-1 text-sm font-medium leading-snug break-words',
-                done ? 'line-through decoration-muted-foreground/50 text-muted-foreground' : 'text-foreground',
-              )}
-            >
-              {title}
-            </p>
+            <div className="mt-1">
+              <MarqueeTitle
+                title={title}
+                className={cn(
+                  'text-sm font-medium leading-snug',
+                  done ? 'line-through decoration-muted-foreground/50 text-muted-foreground' : 'text-foreground'
+                )}
+              />
+            </div>
             {subtitle ? <p className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums font-medium">{subtitle}</p> : null}
           </div>
 
