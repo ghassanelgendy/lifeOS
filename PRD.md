@@ -111,7 +111,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Quick View Mode:** Today's timeline (tasks due, habits scheduled, events, prayer times) with countdowns and quick actions
 - **Strategic Mode:** Long-term view with configurable horizon (30/90/180 days), goal progress, and upcoming milestones
 - **Annual Review Mode:** Year-in-review with reflections, trends, and note-taking per year
-- **Widgets:** Prayer (next prayer countdown), Stats (daily summary), Overdue (urgent tasks), Events (upcoming calendar), Quick Stats (tasks/habits/screentime/finance mini-cards), Habits (today's habit checklist)
+- **Widgets:** Daily Hadith (short inspiring hadith with Zunburk calligraphic font, daily rotation, shuffle, copy, and English translation), Prayer (next prayer countdown), Stats (daily summary), Overdue (urgent tasks), Events (upcoming calendar), Quick Stats (tasks/habits/screentime/finance mini-cards), Habits (today's habit checklist)
 - **Customization:** Reorder, toggle visibility of widgets. Per-page widget system extends to Sleep and Habits pages.
 
 ### 5.2 Tasks & Goals

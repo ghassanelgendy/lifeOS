@@ -138,7 +138,10 @@ The system shall redirect authenticated users to the Dashboard route (`/dashboar
 The system shall support three dashboard modes: **Quick View**, **Strategic**, and **Annual Review**, with the ability to cycle between them.
 
 #### FR-DASH-003: Widget System
-The Dashboard shall display customizable widgets including: Prayer, Stats, Overdue Tasks, Events, Quick Stats, and Habits.
+The Dashboard shall display customizable widgets including: Daily Hadith, Prayer, Stats, Overdue Tasks, Events, Quick Stats, and Habits.
+
+#### FR-DASH-010: Daily Hadith Widget
+The system shall display a Daily Hadith banner on the Dashboard featuring concise Arabic Hadiths, Zunburk and Zain/Amiri calligraphic font styling, daily date-based rotation, manual refresh/shuffle, one-click copy to clipboard, and optional English translation.
 
 #### FR-DASH-004: Widget Visibility Toggle
 Users shall be able to toggle the visibility of individual dashboard widgets.

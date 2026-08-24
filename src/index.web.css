@@ -568,3 +568,8 @@ html.light[data-accent="amber"] {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+/* Font utility for Hadith typography */
+.font-hadith {
+  font-family: 'Zunburk', 'Zain', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif;
+}

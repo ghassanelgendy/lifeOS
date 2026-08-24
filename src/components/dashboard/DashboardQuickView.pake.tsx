@@ -18,6 +18,8 @@ import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import type { Task } from '../../types/schema';
+import { HadithWidget } from './HadithWidget';
+
 
 // Fluent UI React Components
 import {
@@ -1183,6 +1185,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               Today
             </h2>
           </div>
+          <HadithWidget className="mb-4" />
+
 
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">

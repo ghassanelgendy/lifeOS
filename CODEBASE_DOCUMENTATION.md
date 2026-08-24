@@ -221,6 +221,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/dashboard/DashboardQuickView.tsx](#src-components-dashboard-dashboardquickview-tsx)
 - [src/components/dashboard/DashboardQuickView.web.tsx](#src-components-dashboard-dashboardquickview-web-tsx)
 - [src/components/dashboard/DashboardStrategic.tsx](#src-components-dashboard-dashboardstrategic-tsx)
+- [src/components/dashboard/HadithWidget.tsx](#src-components-dashboard-hadithwidget-tsx)
+
 
 ### src/components/ui
 - [src/components/ui/Button.ios.tsx](#src-components-ui-button-ios-tsx)
@@ -2515,6 +2517,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`DashboardStrategic`** — Utility function for dashboard strategic.
 
 **Lines:** 121
+
+---
+
+<a name="src-components-dashboard-hadithwidget-tsx"></a>
+### src/components/dashboard/HadithWidget.tsx
+
+**File Purpose:** Dashboard widget for displaying daily concise Arabic Hadiths with calligraphic font styling (Zunburk / Zain / Amiri), daily rotation, shuffle, copy to clipboard, and optional English translation.
+
+**Functions & Classes:**
+- `HadithWidget` (React Component)
+
+**Function Details:**
+- **`HadithWidget`** — Renders an inspiring Hadith card on web, iOS, and Pake platforms with daily rotation, manual refresh, copy functionality, and language toggle.
+
+**Lines:** 140
+
 
 ---
 

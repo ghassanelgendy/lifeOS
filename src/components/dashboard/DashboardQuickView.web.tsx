@@ -23,6 +23,7 @@ import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
+import { HadithWidget } from './HadithWidget';
 
 function formatSleepMinutes(m: number | null) {
   if (m == null || m <= 0) return '—';
@@ -1313,6 +1314,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           </span>
         </Link>
       </div>
+
+      {/* Daily Hadith Banner */}
+      <HadithWidget />
+
 
       {/* Top Row Grid: Custom column ratios on PC/Desktop, 2 columns on tablet, stacked on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
