@@ -2684,7 +2684,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`Modal`** — Utility function for modal.
 
-**Lines:** 239
+**Lines:** 236
 
 ---
 

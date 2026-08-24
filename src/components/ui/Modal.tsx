@@ -49,13 +49,10 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       );
       const target = preferred ?? firstField;
       target?.focus();
-      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
-        target.select?.();
-      }
     }, 120);
 
     return () => window.clearTimeout(timer);
-  }, [isOpen, isPake]);
+  }, [isOpen, isPake, isIOS]);
 
 
   useEffect(() => {
@@ -139,7 +136,7 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       ref={overlayRef}
       data-lifeos-modal
       className={cn(
-        'fixed inset-0 z-[110] font-sans text-foreground transition-opacity duration-300',
+        'fixed inset-0 z-[110] font-sans text-foreground transition-opacity duration-200 flex flex-col justify-end sm:justify-center sm:items-center sm:p-4',
         isIOS ? 'bg-black/35 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
@@ -153,24 +150,24 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       <div
         ref={panelRef}
         className={cn(
-          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl modal-sheet-ios overflow-hidden',
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl modal-sheet-ios overflow-hidden sm:relative sm:bottom-auto sm:max-h-[85vh]',
           isIOS
             ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
             : 'bg-card border border-border rounded-[24px]',
           className
         )}
         style={{
-          position: 'absolute',
+          position: 'relative',
           bottom: 'var(--keyboard-height, 0px)',
           maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom)',
           transform: dragY > 0
             ? `translateY(${dragY}px)`
             : sheetVisible
-              ? 'translateY(0)'
+              ? 'none'
               : 'translateY(100%)',
-          transition: dragY > 0 ? 'none' : 'transform 0.36s cubic-bezier(0.32, 0.72, 0, 1)',
-          willChange: 'transform',
+          transition: (dragY > 0 || sheetVisible) ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+          willChange: 'auto',
           ...panelStyle,
         }}
         onClick={(e) => e.stopPropagation()}
