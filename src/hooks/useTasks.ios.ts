@@ -199,7 +199,14 @@ export function useTaskLists() {
     queryKey: [...LISTS_KEY, user?.id],
     queryFn: async () => {
       const q = supabase.from('task_lists').select('*').order('sort_order');
-      if (user?.id) q.eq('user_id', user.id);
+      if (user?.id) {
+        const email = user.email ? user.email.trim().toLowerCase() : '';
+        if (email) {
+          q.or(`user_id.eq.${user.id},and(is_shared.eq.true,shared_with.cs.{"${email}"})`);
+        } else {
+          q.eq('user_id', user.id);
+        }
+      }
       const { data, error } = await q;
       if (error) throw error;
       const lists = (data ?? []) as TaskList[];

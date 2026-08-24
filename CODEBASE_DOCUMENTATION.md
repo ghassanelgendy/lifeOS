@@ -538,7 +538,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 5994
+**Lines:** 6016
 
 ---
 
@@ -1228,7 +1228,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 12359
+**Lines:** 14256
 
 ---
 
@@ -3750,7 +3750,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTaskLists`** — Utility function for use task lists.
 - **`useTags`** — Utility function for use tags.
 
-**Lines:** 1156
+**Lines:** 1163
 
 ---
 
@@ -3823,7 +3823,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTaskLists`** — Utility function for use task lists.
 - **`useTags`** — Utility function for use tags.
 
-**Lines:** 1149
+**Lines:** 1156
 
 ---
 
