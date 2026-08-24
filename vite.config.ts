@@ -63,7 +63,7 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
     },
     build: {
-      target: isIos6Legacy ? 'es5' : 'safari13',
+      target: isIos6Legacy ? 'es5' : 'es2022',
       minify: 'esbuild',
       sourcemap: false,
       rollupOptions: {
