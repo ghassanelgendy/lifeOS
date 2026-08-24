@@ -74,6 +74,43 @@ export function deletePage(title: string): boolean {
   return true;
 }
 
+export function sharePage(title: string, collaboratorEmail: string): WikiPage | undefined {
+  const pages = loadPages();
+  const normalizedTitle = normalizeTitle(title);
+  const page = pages.find((p) => p.title === normalizedTitle);
+  if (!page) return undefined;
+
+  const email = collaboratorEmail.trim().toLowerCase();
+  if (!email) return page;
+
+  const sharedWith = new Set(page.shared_with || []);
+  sharedWith.add(email);
+
+  page.is_shared = true;
+  page.shared_with = Array.from(sharedWith);
+  page.updated_at = new Date().toISOString();
+
+  savePages(pages);
+  return page;
+}
+
+export function unsharePage(title: string, collaboratorEmail: string): WikiPage | undefined {
+  const pages = loadPages();
+  const normalizedTitle = normalizeTitle(title);
+  const page = pages.find((p) => p.title === normalizedTitle);
+  if (!page) return undefined;
+
+  const email = collaboratorEmail.trim().toLowerCase();
+  page.shared_with = (page.shared_with || []).filter((e) => e.toLowerCase() !== email.toLowerCase());
+  if (page.shared_with.length === 0) {
+    page.is_shared = false;
+  }
+  page.updated_at = new Date().toISOString();
+
+  savePages(pages);
+  return page;
+}
+
 export function searchPages(query: string): WikiPage[] {
   const q = query.trim().toLowerCase();
   if (!q) return loadPages();

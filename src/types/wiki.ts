@@ -6,6 +6,9 @@ export interface WikiPage {
   id: string;
   title: string;           // normalized: Title Case, unique
   content: string;         // markdown with [[Wiki Links]]
+  is_shared?: boolean;
+  shared_with?: string[];
+  owner_email?: string;
   created_at: string;      // ISO-8601
   updated_at: string;      // ISO-8601
 }

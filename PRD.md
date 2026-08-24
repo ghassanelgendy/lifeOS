@@ -118,7 +118,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 **Purpose:** More than a to-do list. Task management tied to goals and calendar.
 
 - Smart Lists: Today, Week, Upcoming, All Tasks, Completed, Won't Do
-- Lists (Projects): Custom lists with color coding, drag ordering
+- Lists (Projects): Custom lists with color coding, drag ordering, and shared collaboration (invite users by email to co-manage whole todo lists)
 - Tags: Multi-tag support for cross-cutting categorization
 - Natural Language Input: "Submit report tomorrow at 3pm !!" creates a high-priority task due tomorrow at 15:00
 - Subtasks: Extracted from markdown `- [ ]` checkboxes in description
@@ -199,6 +199,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Rich-text notes with title and body
 - Folder organization with custom folder names
 - CRUD operations for notes and folders
+- Shared notes collaboration (invite users by email to co-manage shared notes)
 - Date display: Creation and update timestamps
 
 ### 5.10 Focus Mode

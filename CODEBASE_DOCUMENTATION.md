@@ -201,7 +201,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/TaskDetailsContent.ios.tsx](#src-components-taskdetailscontent-ios-tsx)
 - [src/components/TaskDetailsContent.tsx](#src-components-taskdetailscontent-tsx)
 - [src/components/TaskDetailsContent.web.tsx](#src-components-taskdetailscontent-web-tsx)
+- [src/components/collaboration/ShareModal.tsx](#src-components-collaboration-sharemodal-tsx)
 - [src/components/navItems.ts](#src-components-navitems-ts)
+
 
 ### src/components/analytics
 - [src/components/analytics/AnalyticsDeepInsights.tsx](#src-components-analytics-analyticsdeepinsights-tsx)
@@ -2533,6 +2535,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Lines:** 140
 
+
+---
+
+<a name="src-components-collaboration-sharemodal-tsx"></a>
+### src/components/collaboration/ShareModal.tsx
+
+**File Purpose:** Modal component for user-to-user collaboration, allowing sharing of whole Task Lists or Wiki Notes by collaborator email.
+
+**Functions & Classes:**
+- `ShareModal` (React Component)
+
+**Function Details:**
+- **`ShareModal`** — Renders an interactive modal to invite collaborators, view active shared users with badges, and remove collaborators.
+
+**Lines:** 115
 
 ---
 

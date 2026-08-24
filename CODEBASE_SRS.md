@@ -432,6 +432,17 @@ Screen time data ingestion shall support both standard and Chronos platform form
 
 ---
 
+### 3.14 Shared Collaboration
+
+#### FR-COLLAB-001: Shared Todo Lists Collaboration
+The system shall allow users to share an entire Task List with other users by email. Collaborators shall be able to view, create, edit, and mark tasks complete within shared lists in real-time.
+
+#### FR-COLLAB-002: Shared Notes Collaboration
+The system shall allow users to share Wiki Notes with other users by email. Collaborators shall be able to view and edit shared notes.
+
+
+---
+
 ### 3.9 Health & Body Metrics
 
 #### FR-HEALTH-001: InBody Scan Recording

@@ -163,6 +163,9 @@ export interface Note {
   body: string;
   note_date: string;
   folder_id?: string | null;
+  is_shared?: boolean;
+  shared_with?: string[];
+  owner_email?: string;
   created_at: string;
   updated_at: string;
 }
@@ -186,6 +189,9 @@ export interface TaskList {
   icon?: string; // Lucide icon name
   sort_order: number;
   is_default: boolean;
+  is_shared?: boolean;
+  shared_with?: string[];
+  owner_email?: string;
   created_at: string;
   updated_at: string;
 }

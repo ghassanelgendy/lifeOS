@@ -13,14 +13,18 @@ import {
   Moon, 
   ChevronRight, 
   ExternalLink,
-  HelpCircle
+  HelpCircle,
+  Users
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WIKI_PAGES, getWikiPage, searchWikiPages, normalizeTitle } from '../lib/wikiData';
 import WikiMarkdown from '../components/wiki/WikiMarkdown';
 import WikiGraphView from '../components/wiki/WikiGraphView';
+import { ShareModal } from '../components/collaboration/ShareModal';
 import { useUIStore } from '../stores/useUIStore';
+import { useWikiStore } from '../stores/useWikiStore';
 import { useAuth } from '../contexts/AuthContext';
+
 
 export default function Wiki() {
   const navigate = useNavigate();
@@ -32,7 +36,11 @@ export default function Wiki() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const { pages: storePages, shareCurrentPage, unshareCurrentPage } = useWikiStore();
+
 
   /* Determine current page */
   const currentPage = useMemo(() => {
@@ -323,10 +331,20 @@ export default function Wiki() {
             <article className="space-y-6">
               {/* Document Meta Header */}
               <div className="space-y-2 pb-6 border-b border-border">
-                <div className="flex items-center gap-2 text-xs text-primary font-medium tracking-wide uppercase">
-                  <span>{currentPage.category}</span>
-                  <span>·</span>
-                  <span>System Documentation</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs text-primary font-medium tracking-wide uppercase">
+                    <span>{currentPage.category}</span>
+                    <span>·</span>
+                    <span>System Documentation</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShareModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-card hover:bg-secondary text-xs font-semibold text-foreground transition-all cursor-pointer shadow-xs"
+                  >
+                    <Users className="size-3.5 text-indigo-400" />
+                    <span>Share Note</span>
+                  </button>
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
                   {currentPage.title}
@@ -337,6 +355,19 @@ export default function Wiki() {
                   <span>Referenced by: {backlinks.length} incoming</span>
                 </div>
               </div>
+
+              {/* Share Modal */}
+              <ShareModal
+                isOpen={shareModalOpen}
+                onClose={() => setShareModalOpen(false)}
+                title={`Share Note: ${currentPage.title}`}
+                entityName={currentPage.title}
+                entityType="note"
+                sharedWith={storePages.find(p => p.title === currentPage.title)?.shared_with || []}
+                onShare={(email) => shareCurrentPage(email)}
+                onUnshare={(email) => unshareCurrentPage(email)}
+              />
+
 
               {/* Document Body */}
               <div className="min-h-[300px]">

@@ -21,6 +21,7 @@ import {
   CircleSlash2,
   ArrowUpDown,
   Mic,
+  Users,
 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
@@ -55,6 +56,8 @@ import {
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { ShareModal } from '../components/collaboration/ShareModal';
+
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
@@ -719,6 +722,37 @@ export default function Tasks() {
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#3b82f6');
   const [newTagDefaultListId, setNewTagDefaultListId] = useState<string | null>(null);
+
+  const [shareListModalOpen, setShareListModalOpen] = useState(false);
+  const [shareListTarget, setShareListTarget] = useState<TaskList | null>(null);
+
+  const handleShareList = (email: string) => {
+    if (!shareListTarget) return;
+    const currentShared = shareListTarget.shared_with || [];
+    const updatedShared = Array.from(new Set([...currentShared, email]));
+    updateTaskList.mutate({
+      id: shareListTarget.id,
+      data: {
+        is_shared: true,
+        shared_with: updatedShared,
+      },
+    });
+    setShareListTarget({ ...shareListTarget, is_shared: true, shared_with: updatedShared });
+  };
+
+  const handleUnshareList = (email: string) => {
+    if (!shareListTarget) return;
+    const updatedShared = (shareListTarget.shared_with || []).filter((e) => e.toLowerCase() !== email.toLowerCase());
+    updateTaskList.mutate({
+      id: shareListTarget.id,
+      data: {
+        is_shared: updatedShared.length > 0,
+        shared_with: updatedShared,
+      },
+    });
+    setShareListTarget({ ...shareListTarget, is_shared: updatedShared.length > 0, shared_with: updatedShared });
+  };
+
 
   // Convert habits with show_in_tasks=true to task-like objects
   const habitTasks = useMemo(() => {
@@ -1634,11 +1668,27 @@ export default function Tasks() {
                   className="flex-1 min-w-0 flex items-center gap-3 px-3 py-3 text-base md:text-sm font-medium"
                 >
                   <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
-                  <span className="flex-1 min-w-0 text-left break-words">{list.name}</span>
+                  <span className="flex-1 min-w-0 text-left break-words flex items-center gap-1.5">
+                    {list.name}
+                    {list.is_shared && <Users size={12} className="text-indigo-400 shrink-0" title="Shared list" />}
+                  </span>
                   <span className="text-sm md:text-xs shrink-0">{activeListCounts.get(list.id) ?? 0}</span>
                 </button>
                 {activeListActionsId === list.id && (
                   <>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShareListTarget(list);
+                        setShareListModalOpen(true);
+                      }}
+                      className="p-1.5 rounded hover:bg-background/70 text-indigo-400"
+                      aria-label={`Share list ${list.name}`}
+                      title="Share list"
+                    >
+                      <Users size={14} />
+                    </button>
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1782,6 +1832,23 @@ export default function Tasks() {
               <ListTodo size={20} />
             </button>
             <h1 className="text-2xl font-bold">{getViewTitle()}</h1>
+            {activeView === 'list' && activeListId && (() => {
+              const currentList = taskLists.find(l => l.id === activeListId);
+              if (!currentList) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShareListTarget(currentList);
+                    setShareListModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-secondary text-xs font-semibold text-foreground transition-all cursor-pointer shadow-xs ml-2"
+                >
+                  <Users className="size-3.5 text-indigo-400" />
+                  <span>{currentList.is_shared ? `Shared (${currentList.shared_with?.length || 0})` : 'Share List'}</span>
+                </button>
+              );
+            })()}
             {activeView === 'today' && overdueTasks.length > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-xs font-medium">
                 {overdueTasks.length} overdue
@@ -2701,6 +2768,19 @@ Return ONLY raw JSON.`;
           });
         }}
         isLoading={deleteTag.isPending}
+      />
+      <ShareModal
+        isOpen={shareListModalOpen}
+        onClose={() => {
+          setShareListModalOpen(false);
+          setShareListTarget(null);
+        }}
+        title={`Share List: ${shareListTarget?.name || ''}`}
+        entityName={shareListTarget?.name || ''}
+        entityType="list"
+        sharedWith={shareListTarget?.shared_with || []}
+        onShare={handleShareList}
+        onUnshare={handleUnshareList}
       />
     </div>
   );

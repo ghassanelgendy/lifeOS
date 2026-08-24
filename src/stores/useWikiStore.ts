@@ -5,6 +5,8 @@ import {
   getPageByTitle,
   savePage as storageSavePage,
   deletePage as storageDeletePage,
+  sharePage,
+  unsharePage,
   searchPages,
   seedWikiIfEmpty,
   normalizeTitle,
@@ -79,6 +81,22 @@ export const useWikiStore = create<WikiState>((set, get) => ({
     } else {
       set({ currentTitle: normalized });
     }
+  },
+
+  shareCurrentPage: (email) => {
+    const { currentTitle } = get();
+    if (!currentTitle) return;
+    sharePage(currentTitle, email);
+    const pages = getAllPages();
+    set({ pages });
+  },
+
+  unshareCurrentPage: (email) => {
+    const { currentTitle } = get();
+    if (!currentTitle) return;
+    unsharePage(currentTitle, email);
+    const pages = getAllPages();
+    set({ pages });
   },
 
   getBacklinks: (title) => {
