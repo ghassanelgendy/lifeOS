@@ -201,9 +201,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/TaskDetailsContent.ios.tsx](#src-components-taskdetailscontent-ios-tsx)
 - [src/components/TaskDetailsContent.tsx](#src-components-taskdetailscontent-tsx)
 - [src/components/TaskDetailsContent.web.tsx](#src-components-taskdetailscontent-web-tsx)
-- [src/components/collaboration/ShareModal.tsx](#src-components-collaboration-sharemodal-tsx)
 - [src/components/navItems.ts](#src-components-navitems-ts)
-
 
 ### src/components/analytics
 - [src/components/analytics/AnalyticsDeepInsights.tsx](#src-components-analytics-analyticsdeepinsights-tsx)
@@ -216,6 +214,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/analytics/AnimatedCounter.tsx](#src-components-analytics-animatedcounter-tsx)
 - [src/components/analytics/DayDetailsModal.tsx](#src-components-analytics-daydetailsmodal-tsx)
 
+### src/components/collaboration
+- [src/components/collaboration/ShareModal.tsx](#src-components-collaboration-sharemodal-tsx)
+
 ### src/components/dashboard
 - [src/components/dashboard/DashboardAnnualReview.tsx](#src-components-dashboard-dashboardannualreview-tsx)
 - [src/components/dashboard/DashboardQuickView.ios.tsx](#src-components-dashboard-dashboardquickview-ios-tsx)
@@ -224,7 +225,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/dashboard/DashboardQuickView.web.tsx](#src-components-dashboard-dashboardquickview-web-tsx)
 - [src/components/dashboard/DashboardStrategic.tsx](#src-components-dashboard-dashboardstrategic-tsx)
 - [src/components/dashboard/HadithWidget.tsx](#src-components-dashboard-hadithwidget-tsx)
-
 
 ### src/components/ui
 - [src/components/ui/Button.ios.tsx](#src-components-ui-button-ios-tsx)
@@ -243,6 +243,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### src/contexts
 - [src/contexts/AuthContext.tsx](#src-contexts-authcontext-tsx)
+
+### src/data
+- [src/data/shortHadiths.ts](#src-data-shorthadiths-ts)
 
 ### src/db
 - [src/db/database.ts](#src-db-database-ts)
@@ -535,7 +538,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 5943
+**Lines:** 5994
 
 ---
 
@@ -546,7 +549,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1112
+**Lines:** 1126
 
 ---
 
@@ -557,7 +560,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 848
+**Lines:** 849
 
 ---
 
@@ -844,7 +847,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 44
+**Lines:** 47
 
 ---
 
@@ -1214,7 +1217,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 125
+**Lines:** 126
 
 ---
 
@@ -1225,7 +1228,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 12347
+**Lines:** 12359
 
 ---
 
@@ -1251,7 +1254,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 125
+**Lines:** 106
 
 ---
 
@@ -2391,6 +2394,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-collaboration-sharemodal-tsx"></a>
+### src/components/collaboration/ShareModal.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `ShareModal` (Function)
+
+**Function Details:**
+- **`ShareModal`** — Utility function for share modal.
+
+**Lines:** 152
+
+---
+
 <a name="src-components-dashboard-dashboardannualreview-tsx"></a>
 ### src/components/dashboard/DashboardAnnualReview.tsx
 
@@ -2434,7 +2452,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 2304
+**Lines:** 2309
 
 ---
 
@@ -2464,7 +2482,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 1427
+**Lines:** 1431
 
 ---
 
@@ -2502,7 +2520,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 1724
+**Lines:** 1732
 
 ---
 
@@ -2526,31 +2544,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-dashboard-hadithwidget-tsx"></a>
 ### src/components/dashboard/HadithWidget.tsx
 
-**File Purpose:** Dashboard widget for displaying daily concise Arabic Hadiths with calligraphic font styling (Zunburk / Zain / Amiri), daily rotation, shuffle, copy to clipboard, and optional English translation.
+**File Purpose:** Dashboard widget/component. Displays aggregated life metrics and quick-view data panels.
 
 **Functions & Classes:**
-- `HadithWidget` (React Component)
+- `HadithWidget` (Function)
 
 **Function Details:**
-- **`HadithWidget`** — Renders an inspiring Hadith card on web, iOS, and Pake platforms with daily rotation, manual refresh, copy functionality, and language toggle.
+- **`HadithWidget`** — Utility function for hadith widget.
 
-**Lines:** 140
-
-
----
-
-<a name="src-components-collaboration-sharemodal-tsx"></a>
-### src/components/collaboration/ShareModal.tsx
-
-**File Purpose:** Modal component for user-to-user collaboration, allowing sharing of whole Task Lists or Wiki Notes by collaborator email.
-
-**Functions & Classes:**
-- `ShareModal` (React Component)
-
-**Function Details:**
-- **`ShareModal`** — Renders an interactive modal to invite collaborators, view active shared users with badges, and remove collaborators.
-
-**Lines:** 115
+**Lines:** 173
 
 ---
 
@@ -2659,15 +2661,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-ui-marqueetitle-tsx"></a>
 ### src/components/ui/MarqueeTitle.tsx
 
-**File Purpose:** UI component that truncates text to a single uniform height line by default, and smoothly scrolls/marquees horizontally on hover/focus if text overflows.
+**File Purpose:** UI primitive component. Reusable design-system element used across the application.
 
 **Functions & Classes:**
-- `MarqueeTitle` (React Component)
+- `MarqueeTitle` (Function)
 
 **Function Details:**
-- **`MarqueeTitle`** — Ensures dashboard row cards maintain uniform height while allowing users to hover and read long titles smoothly.
+- **`MarqueeTitle`** — Utility function for marquee title.
 
-**Lines:** 65
+**Lines:** 81
 
 ---
 
@@ -2753,6 +2755,24 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useAuth`** — Utility function for use auth.
 
 **Lines:** 119
+
+---
+
+<a name="src-data-shorthadiths-ts"></a>
+### src/data/shortHadiths.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `getDailyHadith` (Function)
+- `getRandomHadith` (Function)
+- `ShortHadith` (Interface)
+
+**Function Details:**
+- **`getDailyHadith`** — Utility function for get daily hadith.
+- **`getRandomHadith`** — Utility function for get random hadith.
+
+**Lines:** 207
 
 ---
 
@@ -3867,9 +3887,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar
+**CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar, font-hadith
 
-**Lines:** 485
+**Lines:** 490
 
 ---
 
@@ -3887,9 +3907,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar
+**CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar, font-hadith
 
-**Lines:** 485
+**Lines:** 490
 
 ---
 
@@ -3908,9 +3928,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, bg-card, no-scrollbar
+**CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, bg-card, no-scrollbar, font-hadith
 
-**Lines:** 570
+**Lines:** 575
 
 ---
 
@@ -4429,6 +4449,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `getPageById` (Function)
 - `savePage` (Function)
 - `deletePage` (Function)
+- `sharePage` (Function)
+- `unsharePage` (Function)
 - `searchPages` (Function)
 - `extractWikiLinks` (Function)
 - `getLinkGraph` (Function)
@@ -4441,7 +4463,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getAllPages`** — Utility function for get all pages.
 - **`getPageByTitle`** — Utility function for get page by title.
 
-**Lines:** 140
+**Lines:** 177
 
 ---
 
@@ -5180,7 +5202,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2908
+**Lines:** 2988
 
 ---
 
@@ -5232,7 +5254,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Wiki`** — React component rendering UI for Wiki.
 - **`Wiki`** — Utility function for wiki.
 
-**Lines:** 578
+**Lines:** 609
 
 ---
 
@@ -5314,7 +5336,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`useWikiStore`** — Custom React hook managing wikistore state and side effects.
 
-**Lines:** 91
+**Lines:** 109
 
 ---
 
@@ -5375,7 +5397,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `CreateInput` (Type)
 - `UpdateInput` (Type)
 
-**Lines:** 412
+**Lines:** 418
 
 ---
 
@@ -5390,7 +5412,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `WikiGraphNode` (Interface)
 - `WikiGraphEdge` (Interface)
 
-**Lines:** 32
+**Lines:** 35
 
 ---
 

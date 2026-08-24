@@ -1,7 +1,8 @@
 {
   "name": "lifeos-workspace",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.5.1",
+  "author": "Ghassan Elgendy",
   "type": "module",
   "packageManager": "pnpm@10.18.0",
   "engines": {
