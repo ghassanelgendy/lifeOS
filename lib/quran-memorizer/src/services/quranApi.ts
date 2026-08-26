@@ -15,16 +15,29 @@ export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
     const uthmaniEdition = json.data[0];
     const translationEdition = json.data[1];
 
-    const ayahs: Ayah[] = uthmaniEdition.ayahs.map((a: any, idx: number) => ({
-      number: a.number,
-      numberInSurah: a.numberInSurah,
-      surahNumber: surahNumber,
-      textUthmani: a.text,
-      translation: translationEdition?.ayahs[idx]?.text || '',
-      juz: a.juz,
-      page: a.page,
-      hizbQuarter: a.hizbQuarter,
-    }));
+    const ayahs: Ayah[] = uthmaniEdition.ayahs.map((a: any, idx: number) => {
+      let text = a.text;
+
+      // Strip prefixed Basmalah from Ayah 1 for surahs 2-114 (except surah 9 At-Tawbah)
+      if (a.numberInSurah === 1 && surahNumber !== 1 && surahNumber !== 9) {
+        text = text
+          .replace(/^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/, '')
+          .replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/, '')
+          .replace(/^بْسمِ\s+اللَّهِ\s+الرَّحْمٰنِ\s+الرَّحيمِ\s*/, '')
+          .trim();
+      }
+
+      return {
+        number: a.number,
+        numberInSurah: a.numberInSurah,
+        surahNumber: surahNumber,
+        textUthmani: text,
+        translation: translationEdition?.ayahs[idx]?.text || '',
+        juz: a.juz,
+        page: a.page,
+        hizbQuarter: a.hizbQuarter,
+      };
+    });
 
     verseCache.set(surahNumber, ayahs);
     return ayahs;

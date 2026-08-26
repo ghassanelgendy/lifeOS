@@ -1333,7 +1333,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useQuranAudio`** — Custom React hook managing quranaudio state and side effects.
 - **`useQuranAudio`** — Utility function for use quran audio.
 
-**Lines:** 205
+**Lines:** 236
 
 ---
 
@@ -1387,7 +1387,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`getAyahAudioUrl`** — Utility function for get ayah audio url.
 
-**Lines:** 46
+**Lines:** 59
 
 ---
 
