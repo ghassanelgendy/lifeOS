@@ -1295,7 +1295,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 324
+**Lines:** 390
 
 ---
 
@@ -1306,7 +1306,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 184
+**Lines:** 380
 
 ---
 

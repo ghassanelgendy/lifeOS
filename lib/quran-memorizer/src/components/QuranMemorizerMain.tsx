@@ -121,6 +121,66 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setActiveTab('reader');
   };
 
+  const memorizationPlan = (() => {
+    try {
+      const saved = localStorage.getItem('quran_khatmah_plan_v1');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const readingWird = (() => {
+    try {
+      const saved = localStorage.getItem('quran_reading_wird_v1');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const memorizationPage = memorizationPlan ? memorizationPlan.currentPage : undefined;
+  const memorizationEndPage = memorizationPlan
+    ? memorizationPlan.direction === 'reverse'
+      ? Math.max(memorizationPlan.endPage, memorizationPlan.currentPage - memorizationPlan.pagesPerDay)
+      : Math.min(memorizationPlan.endPage, memorizationPlan.currentPage + memorizationPlan.pagesPerDay)
+    : undefined;
+
+  const readingPage = readingWird ? readingWird.currentPage : undefined;
+  const readingEndPage = readingWird ? Math.min(604, readingWird.currentPage + readingWird.pagesPerDay) : undefined;
+
+  const handleSyncMemorization = () => {
+    if (memorizationPage) {
+      const foundSurah =
+        SURAHS.find((s, idx) => {
+          const nextS = SURAHS[idx + 1];
+          const pageEnd = nextS ? nextS.pageStart - 1 : 604;
+          return s.pageStart <= memorizationPage && memorizationPage <= pageEnd;
+        }) || SURAHS[0];
+
+      setSelectedSurah(foundSurah.id);
+      setStartAyah(1);
+      setEndAyah(Math.min(7, foundSurah.versesCount));
+      setActiveTab('reader');
+    }
+  };
+
+  const handleSyncReading = () => {
+    if (readingPage) {
+      const foundSurah =
+        SURAHS.find((s, idx) => {
+          const nextS = SURAHS[idx + 1];
+          const pageEnd = nextS ? nextS.pageStart - 1 : 604;
+          return s.pageStart <= readingPage && readingPage <= pageEnd;
+        }) || SURAHS[0];
+
+      setSelectedSurah(foundSurah.id);
+      setStartAyah(1);
+      setEndAyah(Math.min(7, foundSurah.versesCount));
+      setActiveTab('reader');
+    }
+  };
+
   return (
     <div dir="rtl" className="-mt-4 -mx-4 md:-mt-6 md:-mx-6 flex flex-col font-arabic-body text-right">
       {/* Top Banner & Tab Navigation */}
@@ -279,6 +339,12 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
               onGradeVerse={(grade) =>
                 memorizerStore.reviewRecord(selectedSurah, startAyah, endAyah, grade)
               }
+              memorizationPage={memorizationPage}
+              memorizationEndPage={memorizationEndPage}
+              readingPage={readingPage}
+              readingEndPage={readingEndPage}
+              onSyncMemorization={handleSyncMemorization}
+              onSyncReading={handleSyncReading}
             />
           </div>
         )}
