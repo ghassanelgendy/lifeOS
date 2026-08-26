@@ -247,8 +247,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 
 - **Dual Daily Wird Cards:** Track Memorization Wird (ورد الحفظ) and Reading Wird (ورد التلاوة) with streaks and progress sync.
 - **Authentic Mushaf Page View:** Renders pages inside a classic Medina Mushaf double-border frame with ornamental corners, Surah title banners, Basmalah, Uthmani script, verse markers `﴿ ١ ﴾`, and page footers.
-- **Page Navigation Toolbar:** Easy page-by-page navigation (1-604), direct page input, 30-Juz selector dropdown, quick wird page jump pills, and toggle between Single Page and All Pages of Surah.
 - **Smart Automated Wird Detection for Halaqa Notes:** Opening note creation automatically detects today's active wird page and calculates precise Surah & Ayah range.
+- **Relative Wird Notifications & 1-Tap Routing:** Local and desktop notifications for Quran Memorization Habits, Quran Reading Habits, and Sheikh Recitation Calendar Events dynamically compute the user's latest Wird (Page number and Surah name), allowing users to jump directly to the target Medina Mushaf page with a single tap.
 - **1-Click Quick Preset Pills:** Preset pills in the note creation modal to switch between today's memorization wird and reading wird.
 - **Recitation Session Logs:** Log Sheikh feedback, ratings (ممتاز, جيد جداً, جيد, يحتاج تثبيت), and detailed mistake/mutashabihat notes synced with lifeOS Notes engine.
 

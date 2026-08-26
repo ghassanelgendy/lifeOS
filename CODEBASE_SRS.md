@@ -571,8 +571,11 @@ The system shall render direct "📝 تدوين ملاحظة" action buttons on 
 #### FR-QURAN-005: Authentic Mushaf Page View Layout
 The page view shall display Quran pages inside an authentic Mushaf double-border frame with ornamental corners, top Surah/Page/Juz headers, ornate Surah title banners, Basmalah line, continuous Uthmani text, circular verse number markers, and page number footers.
 
-#### FR-QURAN-006: Page Navigation Toolbar & Juz Jump
-The reader shall provide a dedicated page navigation toolbar allowing page-by-page traversal (1-604), direct page number jump input, 30-Juz selector dropdown, layout mode switching (Single Page vs All Pages of Surah), and quick wird page jump pills.
+#### FR-QURAN-006: Unified Single-Row Toolbar & Gesture Navigation
+The reader shall provide a consolidated single-row toolbar for Surah, Juz, view mode, and wird quick jumps, along with horizontal swipe gestures for fluid page traversal.
+
+#### FR-QURAN-007: Relative Wird Notifications & Deep Link Routing
+The system shall automatically compute dynamic relative Wird information (page number and Surah name) inside notifications scheduled for Quran Memorization Habits, Quran Reading Habits, and Sheikh Halqah Calendar Events. Tapping the notification banner shall route the user directly to the target Medina Mushaf page.
 
 ---
 

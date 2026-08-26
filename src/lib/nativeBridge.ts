@@ -9,6 +9,7 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Coordinates, CalculationMethod, PrayerTimes, Madhab } from 'adhan';
 import { addSystemLog } from './logger';
+import { getCurrentWirdInfo } from '../../lib/quran-memorizer/src/services/quranData';
 
 // Trigger device haptics
 export async function triggerHaptics(style: 'light' | 'medium' | 'heavy' | 'success' | 'error' = 'medium') {
@@ -313,12 +314,49 @@ export async function syncAllLocalNotifications(
 
         if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
           const isAr = isArabic(habit.title);
+          const isMemHabit = /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title) || habit.habit_type === 'quran_memorization';
+          const isReadHabit = /read|تلاوة|قراءة|ورد/i.test(habit.title) || habit.habit_type === 'quran_reading';
+          const isQuranHabit = isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
+
+          let notifTitle = isAr ? `تذكير بالعادات: ${habit.title}` : 'Habit Reminder';
+          let notifBody = isAr ? `يلا عشان دة وقت: ${habit.title}` : `Time to focus on: ${habit.title}`;
+          let notifExtra: Record<string, any> = { habitId: habit.id, date: dateString };
+
+          if (isQuranHabit) {
+            const wird = getCurrentWirdInfo();
+            if (isReadHabit && !isMemHabit) {
+              notifTitle = isAr ? 'ورد تلاوة القرآن الكريم 📖' : 'Quran Reading 📖';
+              notifBody = isAr
+                ? `حان وقت ورد التلاوة — صفحة ${wird.reading.page} (سورة ${wird.reading.surahName})`
+                : `Time for Quran Reading — Page ${wird.reading.page} (Surah ${wird.reading.surahName})`;
+              notifExtra = {
+                ...notifExtra,
+                quranPage: wird.reading.page,
+                quranSurah: wird.reading.surahId,
+                quranMode: 'reading',
+                targetRoute: 'quran',
+              };
+            } else {
+              notifTitle = isAr ? 'ورد حفظ القرآن الكريم 🎯' : 'Quran Memorization 🎯';
+              notifBody = isAr
+                ? `حان وقت ورد الحفظ — صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
+                : `Time for Quran Memorization — Page ${wird.memorization.page} (Surah ${wird.memorization.surahName})`;
+              notifExtra = {
+                ...notifExtra,
+                quranPage: wird.memorization.page,
+                quranSurah: wird.memorization.surahId,
+                quranMode: 'memorization',
+                targetRoute: 'quran',
+              };
+            }
+          }
+
           habitReminders.push({
             id: hashCode(`habit-${habit.id}-${dateString}`),
-            title: 'Habit Reminder',
-            body: isAr ? `يلا عشان دة وقت: ${habit.title}` : `Time to focus on: ${habit.title}`,
+            title: notifTitle,
+            body: notifBody,
             at: triggerAt,
-            extra: { habitId: habit.id, date: dateString },
+            extra: notifExtra,
             actionTypeId: 'habit-actions'
           });
         }
@@ -333,12 +371,34 @@ export async function syncAllLocalNotifications(
       const instances = generateEventInstances(event, 7);
       for (const start of instances) {
         if (start.getTime() > nowMs) {
+          const isAr = isArabic(event.title);
+          const isQuranEvent = /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran|halqah|حلقة/i.test(event.title) || event.category === 'quran' || event.type === 'quran';
+
+          let notifTitle = isAr ? `موعد ${event.title}` : 'Calendar Event';
+          let notifBody = `${event.title} is starting`;
+          let notifExtra: Record<string, any> = { calendarEventId: event.id };
+
+          if (isQuranEvent) {
+            const wird = getCurrentWirdInfo();
+            notifTitle = isAr ? `موعد ${event.title} 🕌` : `${event.title} 🕌`;
+            notifBody = isAr
+              ? `حان موعد الجلسة والتسميع — موضع الحفظ: صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
+              : `${event.title} is starting — Memorization: Page ${wird.memorization.page} (${wird.memorization.surahName})`;
+            notifExtra = {
+              ...notifExtra,
+              quranPage: wird.memorization.page,
+              quranSurah: wird.memorization.surahId,
+              quranMode: 'memorization',
+              targetRoute: 'quran',
+            };
+          }
+
           eventReminders.push({
             id: hashCode(`event-${event.id}-${start.toISOString()}`),
-            title: 'Calendar Event',
-            body: `${event.title} is starting`,
+            title: notifTitle,
+            body: notifBody,
             at: start,
-            extra: { calendarEventId: event.id }
+            extra: notifExtra
           });
         }
       }
@@ -662,7 +722,15 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
     // When the user taps the notification body itself (not a button), navigate to relevant route
     if (actionId === 'tap') {
       try {
-        if (extra.taskId) {
+        if (extra.quranPage || extra.targetRoute === 'quran') {
+          const page = extra.quranPage || 1;
+          const surah = extra.quranSurah || 1;
+          const mode = extra.quranMode || 'reader';
+          localStorage.setItem('quran_active_page_v1', page.toString());
+          localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: surah }));
+          window.dispatchEvent(new CustomEvent('lifeos:openQuran', { detail: { page, surah, mode, tab: 'reader' } }));
+          window.location.href = `lifeos://quran?page=${page}&surah=${surah}&mode=${mode}`;
+        } else if (extra.taskId) {
           window.location.href = 'lifeos://tasks';
         } else if (extra.habitId) {
           window.location.href = 'lifeos://habits';

@@ -179,3 +179,73 @@ export const MUTASHABIHAT_SAMPLE: MutashabihItem[] = [
     similarityNote: 'في البقرة جاء الخطاب للجماعة (قُولُوا) و(إِلَيْنَا)، بينما في آل عمران الخطاب للنبي صلى الله عليه وسلم (قُلْ) و(عَلَيْنَا).'
   }
 ];
+
+/**
+ * Returns the Surah that contains the given page number in the Medina Mushaf (1-604).
+ */
+export function getSurahForPage(pageNum: number): SurahMeta {
+  const p = Math.max(1, Math.min(604, pageNum));
+  for (let i = SURAHS.length - 1; i >= 0; i--) {
+    if (SURAHS[i].pageStart <= p) {
+      return SURAHS[i];
+    }
+  }
+  return SURAHS[0];
+}
+
+/**
+ * Reads local storage to resolve the user's latest Memorization & Reading Wird page and Surah.
+ */
+export function getCurrentWirdInfo() {
+  let memPage = 604;
+  let memSurahId = 114;
+  let memSurahName = 'الناس';
+
+  let readPage = 1;
+  let readSurahId = 1;
+  let readSurahName = 'الفاتحة';
+
+  try {
+    const memMarkerStr = localStorage.getItem('quran_memorization_marker_v1');
+    const memPlanStr = localStorage.getItem('quran_khatmah_plan_v1');
+    const memMarker = memMarkerStr ? JSON.parse(memMarkerStr) : null;
+    const memPlan = memPlanStr ? JSON.parse(memPlanStr) : null;
+
+    if (memMarker?.page) {
+      memPage = memMarker.page;
+      memSurahId = memMarker.surahNumber || getSurahForPage(memPage).id;
+    } else if (memPlan?.currentPage) {
+      memPage = memPlan.currentPage;
+      memSurahId = getSurahForPage(memPage).id;
+    }
+    memSurahName = getSurahForPage(memPage).name;
+
+    const readMarkerStr = localStorage.getItem('quran_reading_marker_v1');
+    const readPlanStr = localStorage.getItem('quran_reading_wird_v1');
+    const readMarker = readMarkerStr ? JSON.parse(readMarkerStr) : null;
+    const readPlan = readPlanStr ? JSON.parse(readPlanStr) : null;
+
+    if (readMarker?.page) {
+      readPage = readMarker.page;
+      readSurahId = readMarker.surahNumber || getSurahForPage(readPage).id;
+    } else if (readPlan?.currentPage) {
+      readPage = readPlan.currentPage;
+      readSurahId = getSurahForPage(readPage).id;
+    }
+    readSurahName = getSurahForPage(readPage).name;
+  } catch {}
+
+  return {
+    memorization: {
+      page: memPage,
+      surahId: memSurahId,
+      surahName: memSurahName,
+    },
+    reading: {
+      page: readPage,
+      surahId: readSurahId,
+      surahName: readSurahName,
+    },
+  };
+}
+

@@ -177,6 +177,19 @@ function AppInner() {
           window.location.href = '/calendar';
         } else if (parsedUrl.host === 'finance') {
           window.location.href = '/finance';
+        } else if (parsedUrl.host === 'quran') {
+          const params = new URLSearchParams(parsedUrl.search);
+          const page = Number(params.get('page') || 1);
+          const surah = Number(params.get('surah') || 1);
+          const mode = (params.get('mode') || 'reader') as any;
+          const tab = (params.get('tab') || 'reader') as any;
+          localStorage.setItem('quran_active_page_v1', page.toString());
+          localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: tab, selectedSurah: surah }));
+          void triggerHaptics('light');
+          window.dispatchEvent(new CustomEvent('lifeos:openQuran', { detail: { page, surah, mode, tab } }));
+          if (window.location.pathname !== '/quran') {
+            window.location.href = '/quran';
+          }
         } else if (parsedUrl.host === 'braindump' || parsedUrl.host === 'brain-dump') {
           const params = new URLSearchParams(parsedUrl.search);
           const text = params.get('text') || params.get('q') || '';

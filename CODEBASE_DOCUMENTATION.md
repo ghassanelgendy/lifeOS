@@ -4431,7 +4431,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-nativebridge-ts"></a>
 ### src/lib/nativeBridge.ts
 
-**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+**File Purpose:** Utility library module. Provides helper functions, Capacitor iOS native plugins integration, push and local notifications scheduling, and deep link URL scheme routing.
+- **Quran Notifications & Relative Wird Sync**: Injects dynamic relative Wird information (page number and Surah name) for Quran Memorization Habits, Quran Reading Habits, and Quran Sheikh/Halqah Calendar Events, routing 1-tap notification actions directly to the corresponding Medina Mushaf page.
 
 **Functions & Classes:**
 - `setupDeepLinkListener` (Function)

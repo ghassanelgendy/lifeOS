@@ -171,6 +171,27 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     } catch {}
   }, [activePage, pageLayout]);
 
+  useEffect(() => {
+    const handleActivePageSync = () => {
+      try {
+        const saved = localStorage.getItem('quran_active_page_v1');
+        if (saved) {
+          const parsed = Number(saved);
+          if (parsed >= 1 && parsed <= 604) {
+            setActivePage(parsed);
+          }
+        }
+      } catch {}
+    };
+
+    window.addEventListener('quran_active_page_updated', handleActivePageSync);
+    window.addEventListener('storage', handleActivePageSync);
+    return () => {
+      window.removeEventListener('quran_active_page_updated', handleActivePageSync);
+      window.removeEventListener('storage', handleActivePageSync);
+    };
+  }, []);
+
   const handlePageChange = (newPage: number) => {
     const clampedPage = Math.min(604, Math.max(1, newPage));
     setActivePage(clampedPage);

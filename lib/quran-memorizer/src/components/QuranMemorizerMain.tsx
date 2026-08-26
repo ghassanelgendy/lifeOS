@@ -309,6 +309,70 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setActiveTab('reader');
   };
 
+  // Check URL params or lifeos:openQuran event for deep linking to specific Wird / Page
+  useEffect(() => {
+    const handleOpenQuran = (e?: any) => {
+      let targetPage = e?.detail?.page;
+      let targetSurah = e?.detail?.surah;
+      let targetMode = e?.detail?.mode;
+      let targetTab = e?.detail?.tab || 'reader';
+
+      // Check URL query parameters if event details are missing
+      if (!targetPage && !targetSurah && typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const p = params.get('page');
+        const s = params.get('surah');
+        const m = params.get('mode');
+        const t = params.get('tab');
+        if (p) targetPage = Number(p);
+        if (s) targetSurah = Number(s);
+        if (m) targetMode = m;
+        if (t) targetTab = t;
+      }
+
+      if (targetTab) {
+        setActiveTab(targetTab);
+      }
+
+      if (targetMode === 'memorization') {
+        const mSaved = localStorage.getItem('quran_memorization_marker_v1');
+        const marker = mSaved ? JSON.parse(mSaved) : null;
+        targetPage = targetPage || marker?.page || (memorizationPlan ? memorizationPlan.currentPage : 604);
+        targetSurah = targetSurah || marker?.surahNumber;
+      } else if (targetMode === 'reading') {
+        const rSaved = localStorage.getItem('quran_reading_marker_v1');
+        const marker = rSaved ? JSON.parse(rSaved) : null;
+        targetPage = targetPage || marker?.page || (readingWird ? readingWird.currentPage : 1);
+        targetSurah = targetSurah || marker?.surahNumber;
+      }
+
+      if (targetPage) {
+        localStorage.setItem('quran_active_page_v1', targetPage.toString());
+        if (!targetSurah) {
+          const found = SURAHS.find((s, idx) => {
+            const nextS = SURAHS[idx + 1];
+            const pageEnd = nextS ? nextS.pageStart - 1 : 604;
+            return s.pageStart <= targetPage && targetPage <= pageEnd;
+          });
+          targetSurah = found?.id;
+        }
+      }
+
+      if (targetSurah) {
+        setSelectedSurah(targetSurah);
+      }
+
+      window.dispatchEvent(new Event('quran_active_page_updated'));
+    };
+
+    handleOpenQuran();
+
+    window.addEventListener('lifeos:openQuran', handleOpenQuran);
+    return () => {
+      window.removeEventListener('lifeos:openQuran', handleOpenQuran);
+    };
+  }, [memorizationPlan, readingWird]);
+
   const currentHadith = QURAN_HADITHS[currentHadithIdx] || QURAN_HADITHS[0];
 
   return (
