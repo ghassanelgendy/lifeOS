@@ -502,10 +502,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   </p>
                 )}
 
-                {/* Active Ayah Quick Marker Actions */}
+                {/* Active Ayah Sleek Micro-Toolbar */}
                 {isActive && (
-                  <div className="mt-3 pt-3 border-t border-border/40 flex items-center justify-between gap-2 flex-wrap text-xs">
-                    <div className="flex items-center gap-2 flex-wrap">
+                  <div className="mt-3 pt-2.5 border-t border-border/40 flex items-center justify-between gap-2 flex-wrap text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="flex items-center gap-1.5 p-0.5 rounded-xl bg-secondary/60 border border-border/50">
                       {onSetMemorizationMarker && (
                         <button
                           type="button"
@@ -513,14 +513,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             e.stopPropagation();
                             onSetMemorizationMarker(surahNumber, ayah.numberInSurah, ayah.page);
                           }}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer ${
                             isMemMarker
                               ? 'bg-emerald-600 text-white shadow-sm'
-                              : 'bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border border-emerald-500/30'
+                              : 'text-emerald-400 hover:bg-emerald-500/15'
                           }`}
+                          title="تحديد كموضع الحفظ"
                         >
-                          <Target className="size-3.5" />
-                          <span>{isMemMarker ? '✓ موضع الحفظ الحالي' : 'تعيين كموضع الحفظ'}</span>
+                          <Target className="size-3" />
+                          <span>{isMemMarker ? 'موضع الحفظ' : 'حفظ'}</span>
                         </button>
                       )}
 
@@ -531,14 +532,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             e.stopPropagation();
                             onSetReadingMarker(surahNumber, ayah.numberInSurah, ayah.page);
                           }}
-                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer ${
+                          className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer ${
                             isReadMarker
                               ? 'bg-indigo-600 text-white shadow-sm'
-                              : 'bg-indigo-500/15 text-indigo-400 hover:bg-indigo-500/25 border border-indigo-500/30'
+                              : 'text-indigo-400 hover:bg-indigo-500/15'
                           }`}
+                          title="تحديد كموضع التلاوة"
                         >
-                          <Bookmark className="size-3.5" />
-                          <span>{isReadMarker ? '✓ موضع التلاوة الحالي' : 'تعيين كموضع التلاوة'}</span>
+                          <Bookmark className="size-3" />
+                          <span>{isReadMarker ? 'موضع التلاوة' : 'تلاوة'}</span>
                         </button>
                       )}
                     </div>
@@ -550,10 +552,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                           e.stopPropagation();
                           onMarkMemorized();
                         }}
-                        className="px-2.5 py-1.5 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-bold border border-border text-xs flex items-center gap-1.5 active:scale-95 cursor-pointer"
+                        className="px-2 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/25 text-[11px] flex items-center gap-1 active:scale-95 cursor-pointer transition-all"
+                        title="اعتماد المقطع كمُتقَن"
                       >
-                        <Award className="size-3.5 text-emerald-400" />
-                        <span>اعتماد المقطع كمُتقَن</span>
+                        <Award className="size-3 text-emerald-400" />
+                        <span>إتقان</span>
                       </button>
                     )}
                   </div>
