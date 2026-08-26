@@ -1,11 +1,18 @@
 @import "tailwindcss";
 
-/* Lock scroll to content area only — title bar, sidebar, bottom bar stay fixed */
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Cairo', sans-serif !important;
+}
+
 html,
 body {
   overflow: hidden;
   height: 100%;
-  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 }
 #root {
   height: 100%;
@@ -14,6 +21,7 @@ body {
 
 /* Dark theme (default) */
 @theme {
+  --font-sans: 'Cairo', sans-serif;
   --color-background: hsl(240 10% 3.9%);
   --color-foreground: hsl(0 0% 98%);
   --color-card: hsl(240 10% 3.9%);

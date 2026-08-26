@@ -75,7 +75,7 @@ export function FocusPiPWindow() {
     body.style.overflow = 'hidden';
     body.style.backgroundColor = '#05060c';
     body.style.color = '#ffffff';
-    body.style.fontFamily = 'Inter, system-ui, sans-serif';
+    body.style.fontFamily = "'Cairo', sans-serif";
     body.style.display = 'flex';
     body.style.alignItems = 'center';
     body.style.justifyContent = 'center';

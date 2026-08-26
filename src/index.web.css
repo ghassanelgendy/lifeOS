@@ -1,11 +1,18 @@
 @import "tailwindcss";
 
-/* Lock scroll to content area only — title bar, sidebar, bottom bar stay fixed */
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: 'Cairo', sans-serif !important;
+}
+
 html,
 body {
   overflow: hidden;
   height: 100%;
-  font-family: var(--font-sans, ui-sans-serif, system-ui, sans-serif);
 }
 #root {
   height: 100%;
@@ -14,6 +21,7 @@ body {
 
 /* Dark theme (default) */
 @theme {
+  --font-sans: 'Cairo', sans-serif;
   --color-background: hsl(240 12% 3.5%);
   --color-foreground: hsl(0 0% 97%);
   --color-card: hsl(240 10% 6%);
@@ -456,7 +464,7 @@ html.light[data-accent="amber"] {
    ========================================== */
 .pake-platform {
   /* Windows System Fonts */
-  font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  font-family: 'Cairo', sans-serif !important;
   
   /* Fluent UI Color Variables & Corner Radii adjustments */
   --radius-xl: 8px; /* Fluent UI uses 8px for cards/controls */
