@@ -39,11 +39,11 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onChangeSpeed,
 }) => {
   return (
-    <div className="fixed bottom-0 inset-x-0 z-50 border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] dir-rtl font-arabic-title">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-2.5 text-foreground">
+    <div className="sticky bottom-0 z-50 w-full border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] dir-rtl font-arabic-title">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-foreground">
         
         {/* Reciter & Current Verse Info */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto shrink-0 justify-between md:justify-start">
+        <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-between md:justify-start">
           <div className="flex items-center gap-2">
             <Volume2 className="size-4 text-emerald-400 shrink-0" />
             <select
@@ -52,7 +52,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                 const found = RECITERS.find((r) => r.id === e.target.value);
                 if (found) onSelectReciter(found);
               }}
-              className="bg-secondary/80 text-xs font-bold rounded-xl px-2.5 py-1.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="bg-secondary/80 text-xs font-bold rounded-xl px-3 py-1.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               {RECITERS.map((r) => (
                 <option key={r.id} value={r.id}>
@@ -62,7 +62,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
             </select>
           </div>
 
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20 font-bold">
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20 font-bold">
             <span className="text-emerald-400">الآية {currentAyahIndex}</span>
             {isPlaying && isDelaying && (
               <span className="animate-pulse text-amber-400 font-bold flex items-center gap-1">
@@ -115,7 +115,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
         <div className="flex items-center gap-2 w-full md:w-auto justify-center md:justify-end text-xs shrink-0 flex-wrap">
           
           {/* Verse Repeats */}
-          <div className="flex items-center gap-1 bg-secondary/80 px-2.5 py-1 rounded-xl border border-border/40">
+          <div className="flex items-center gap-1.5 bg-secondary/80 px-3 py-1 rounded-xl border border-border/40">
             <Repeat className="size-3.5 text-emerald-400 shrink-0" />
             <span className="text-[11px] font-bold text-muted-foreground">تكرار الآية:</span>
             <select
@@ -137,7 +137,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           </div>
 
           {/* Range Repeats */}
-          <div className="flex items-center gap-1 bg-secondary/80 px-2.5 py-1 rounded-xl border border-border/40">
+          <div className="flex items-center gap-1.5 bg-secondary/80 px-3 py-1 rounded-xl border border-border/40">
             <Sparkles className="size-3.5 text-indigo-400 shrink-0" />
             <span className="text-[11px] font-bold text-muted-foreground">المقطع:</span>
             <select
@@ -159,7 +159,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           </div>
 
           {/* Pause Delay */}
-          <div className="flex items-center gap-1 bg-secondary/80 px-2.5 py-1 rounded-xl border border-border/40">
+          <div className="flex items-center gap-1.5 bg-secondary/80 px-3 py-1 rounded-xl border border-border/40">
             <Clock className="size-3.5 text-amber-400 shrink-0" />
             <span className="text-[11px] font-bold text-muted-foreground">السكوت:</span>
             <select
@@ -181,7 +181,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           <select
             value={playbackRate}
             onChange={(e) => onChangeSpeed(Number(e.target.value))}
-            className="bg-secondary/80 text-[11px] font-bold rounded-xl px-2 py-1 border border-border focus:outline-none"
+            className="bg-secondary/80 text-[11px] font-bold rounded-xl px-2.5 py-1 border border-border focus:outline-none"
           >
             {[0.75, 1.0, 1.25, 1.5].map((speed) => (
               <option key={speed} value={speed}>

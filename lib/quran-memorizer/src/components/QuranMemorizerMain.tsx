@@ -150,7 +150,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         {activeTab === 'reader' && (
           <div className="space-y-4">
             {/* Range Target Selector Header */}
-            <div className="p-4 rounded-2xl border border-border bg-card/50 flex flex-wrap items-center justify-between gap-3 text-xs font-bold">
+            <div className="p-4 rounded-2xl border border-border bg-card/50 flex flex-wrap items-center justify-between gap-3 text-xs font-bold font-arabic-title">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">نطاق التكرار الحالي:</span>
                 <span className="text-emerald-400">
@@ -158,25 +158,30 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <label className="text-muted-foreground">من:</label>
-                <input
-                  type="number"
-                  min={1}
-                  max={currentSurah.versesCount}
-                  value={startAyah}
-                  onChange={(e) => setStartAyah(Math.max(1, Number(e.target.value)))}
-                  className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
-                />
-                <label className="text-muted-foreground">إلى:</label>
-                <input
-                  type="number"
-                  min={startAyah}
-                  max={currentSurah.versesCount}
-                  value={endAyah}
-                  onChange={(e) => setEndAyah(Math.min(currentSurah.versesCount, Number(e.target.value)))}
-                  className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
-                />
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
+                  <label className="text-muted-foreground">من الآية:</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={currentSurah.versesCount}
+                    value={startAyah}
+                    onChange={(e) => setStartAyah(Math.max(1, Number(e.target.value)))}
+                    className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <label className="text-muted-foreground">إلى الآية:</label>
+                  <input
+                    type="number"
+                    min={startAyah}
+                    max={currentSurah.versesCount}
+                    value={endAyah}
+                    onChange={(e) => setEndAyah(Math.min(currentSurah.versesCount, Number(e.target.value)))}
+                    className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-2">
