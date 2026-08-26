@@ -339,7 +339,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       {/* New Plan Modal */}
       {showNewPlanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 space-y-4 shadow-2xl">
+          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 space-y-4 shadow-2xl overflow-hidden isolate">
             <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Target className="size-5 text-emerald-500" />
               إنشاء خطة خاتمة مخصصة

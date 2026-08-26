@@ -150,7 +150,7 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       <div
         ref={panelRef}
         className={cn(
-          'w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl modal-sheet-ios overflow-hidden sm:relative sm:bottom-auto sm:max-h-[85vh]',
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl modal-sheet-ios overflow-hidden isolate sm:relative sm:bottom-auto sm:max-h-[85vh]',
           isIOS
             ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
             : 'bg-card border border-border rounded-[24px]',

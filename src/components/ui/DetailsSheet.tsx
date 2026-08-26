@@ -203,8 +203,8 @@ export function DetailsSheet({
         className={cn(
           'absolute left-0 right-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
           isIOS
-            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
-            : 'rounded-[24px] border border-border bg-card shadow-2xl'
+            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10 overflow-hidden isolate'
+            : 'rounded-[24px] border border-border bg-card shadow-2xl overflow-hidden isolate'
         )}
         style={{
           position: 'absolute',
