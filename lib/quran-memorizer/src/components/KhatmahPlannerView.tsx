@@ -208,52 +208,8 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         </div>
       )}
 
-      {/* lifeOS Connected Tasks, Habits & Sheikh Calendar Sessions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        
-        {/* Connected Tasks Card */}
-        <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-emerald-500" />
-              مهام الحفظ (lifeOS Tasks) ({quranTasks.length})
-            </h3>
-          </div>
-
-          {quranTasks.length === 0 ? (
-            <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
-              لا توجد مهام قرآنية حالية في lifeOS.
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
-              {quranTasks.map((task) => (
-                <div
-                  key={task.id}
-                  onClick={() => onToggleTask && onToggleTask(task.id)}
-                  className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
-                    task.is_completed
-                      ? 'border-emerald-500/30 bg-emerald-500/5 text-muted-foreground line-through'
-                      : 'border-border/60 bg-secondary/30 hover:bg-secondary/60 text-foreground'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    {task.is_completed ? (
-                      <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-muted-foreground shrink-0" />
-                    )}
-                    <span className="text-xs font-bold">{task.title}</span>
-                  </div>
-                  {task.due_date && (
-                    <span className="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded-md border border-border/40">
-                      {task.due_date}
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      {/* lifeOS Connected Habits & Sheikh Calendar Sessions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Connected Habits Card */}
         <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
