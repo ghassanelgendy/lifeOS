@@ -42,6 +42,7 @@ export type PrayerTrackerItem = {
 };
 
 async function upsertPrayerLogWithHabitSync(input: {
+  userId?: string;
   prayerHabitId: string;
   habitId: string;
   date: string;
@@ -51,6 +52,12 @@ async function upsertPrayerLogWithHabitSync(input: {
   const nowIso = new Date().toISOString();
   const prayedAt = isPrayerStatusComplete(input.status) ? nowIso : null;
   const completed = isPrayerStatusComplete(input.status);
+
+  let userId = input.userId;
+  if (!userId) {
+    const { data: authData } = await supabase.auth.getUser();
+    userId = authData?.user?.id;
+  }
 
   // Fetch both existing logs in parallel to save a roundtrip
   const [existingPrayerLogRes, existingHabitLogRes] = await Promise.all([
@@ -83,6 +90,7 @@ async function upsertPrayerLogWithHabitSync(input: {
         date: input.date,
         completed,
         source: 'prayer',
+        ...(userId && { user_id: userId }),
       })
       .select('id')
       .single();
@@ -100,6 +108,7 @@ async function upsertPrayerLogWithHabitSync(input: {
         .update({
           completed,
           source: 'prayer',
+          ...(userId && { user_id: userId }),
         })
         .eq('id', existingHabitLog.id)
     );
@@ -113,6 +122,7 @@ async function upsertPrayerLogWithHabitSync(input: {
           status: input.status,
           prayed_at: prayedAt,
           habit_log_id: habitLogId,
+          ...(userId && { user_id: userId }),
           updated_at: nowIso,
         })
         .eq('id', existingPrayerLog.id)
@@ -127,6 +137,7 @@ async function upsertPrayerLogWithHabitSync(input: {
           status: input.status,
           prayed_at: prayedAt,
           habit_log_id: habitLogId,
+          ...(userId && { user_id: userId }),
         })
     );
   }
@@ -462,6 +473,7 @@ export function usePrayerTracker(date: Date = new Date()) {
       }
 
       const result = await upsertPrayerLogWithHabitSync({
+        userId: user?.id,
         prayerHabitId: input.prayer.prayerHabitId,
         habitId: input.prayer.habitId,
         date: dateStr,
@@ -647,6 +659,7 @@ export function useSetPrayerStatusAtDate() {
       const habitTitle = habit?.habit?.title ?? habit?.prayer_name ?? 'Prayer';
 
       const result = await upsertPrayerLogWithHabitSync({
+        userId: user?.id,
         prayerHabitId: input.prayerHabitId,
         habitId: input.habitId,
         date: input.date,
