@@ -269,84 +269,31 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         )}
 
         {activeTab === 'reader' && (
-          <div className="space-y-4">
-            {/* Range Target Selector Header */}
-            <div dir="rtl" className="p-4 rounded-2xl border border-border bg-card/50 flex flex-wrap items-center justify-between gap-3 text-xs font-bold font-arabic-title text-right">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">نطاق التكرار الحالي:</span>
-                <span className="text-emerald-400">
-                  من الآية {startAyah} إلى الآية {endAyah}
-                </span>
-              </div>
-
-              <div dir="rtl" className="flex items-center gap-4">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground">من الآية:</span>
-                  <select
-                    value={startAyah}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setStartAyah(val);
-                      if (val > endAyah) setEndAyah(val);
-                    }}
-                    className="rounded-xl border border-border bg-background px-3 py-1.5 font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
-                  >
-                    {Array.from({ length: currentSurah.versesCount }, (_, i) => i + 1).map((num) => (
-                      <option key={num} value={num}>
-                        الآية {num}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <span className="text-muted-foreground">إلى الآية:</span>
-                  <select
-                    value={endAyah}
-                    onChange={(e) => setEndAyah(Number(e.target.value))}
-                    className="rounded-xl border border-border bg-background px-3 py-1.5 font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
-                  >
-                    {Array.from({ length: currentSurah.versesCount - startAyah + 1 }, (_, i) => startAyah + i).map((num) => (
-                      <option key={num} value={num}>
-                        الآية {num}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    memorizerStore.updateRecordStatus(selectedSurah, startAyah, endAyah, 'memorized')
-                  }
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 cursor-pointer shadow-md"
-                >
-                  <Award className="size-4 shrink-0" />
-                  <span>اعتماد المقطع كمُتقَن</span>
-                </button>
-              </div>
-            </div>
-
-            <QuranReaderView
-              surahNumber={selectedSurah}
-              onSelectSurah={handleSurahChange}
-              currentAyahIndex={audio.currentAyahIndex}
-              onSelectAyah={audio.setCurrentAyahIndex}
-              isAudioPlaying={audio.isPlaying}
-              repeatSettings={repeatSettings}
-              onChangeRepeatSettings={setRepeatSettings}
-              onGradeVerse={(grade) =>
-                memorizerStore.reviewRecord(selectedSurah, startAyah, endAyah, grade)
-              }
-              memorizationPage={memorizationPage}
-              memorizationEndPage={memorizationEndPage}
-              readingPage={readingPage}
-              readingEndPage={readingEndPage}
-              onSyncMemorization={handleSyncMemorization}
-              onSyncReading={handleSyncReading}
-            />
-          </div>
+          <QuranReaderView
+            surahNumber={selectedSurah}
+            onSelectSurah={handleSurahChange}
+            currentAyahIndex={audio.currentAyahIndex}
+            onSelectAyah={audio.setCurrentAyahIndex}
+            startAyah={startAyah}
+            endAyah={endAyah}
+            onStartAyahChange={setStartAyah}
+            onEndAyahChange={setEndAyah}
+            isAudioPlaying={audio.isPlaying}
+            repeatSettings={repeatSettings}
+            onChangeRepeatSettings={setRepeatSettings}
+            onGradeVerse={(grade) =>
+              memorizerStore.reviewRecord(selectedSurah, startAyah, endAyah, grade)
+            }
+            onMarkMemorized={() =>
+              memorizerStore.updateRecordStatus(selectedSurah, startAyah, endAyah, 'memorized')
+            }
+            memorizationPage={memorizationPage}
+            memorizationEndPage={memorizationEndPage}
+            readingPage={readingPage}
+            readingEndPage={readingEndPage}
+            onSyncMemorization={handleSyncMemorization}
+            onSyncReading={handleSyncReading}
+          />
         )}
 
         {activeTab === 'revision' && (

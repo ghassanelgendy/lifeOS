@@ -1,20 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   BookOpen,
-  Layers,
   Eye,
   EyeOff,
-  Check,
-  RotateCcw,
   Volume2,
   Target,
   Bookmark,
-  FileText,
-  Compass,
-  LayoutList,
   Book,
+  LayoutList,
+  Award,
+  SlidersHorizontal,
 } from 'lucide-react';
-import { Ayah, SurahMeta, Reciter, RepeatSettings, RatingGrade } from '../types/quran';
+import { Ayah, RepeatSettings, RatingGrade } from '../types/quran';
 import { fetchSurahVerses } from '../services/quranApi';
 import { SURAHS } from '../services/quranData';
 import { BlindModeOverlay } from './BlindModeOverlay';
@@ -24,10 +21,15 @@ interface QuranReaderViewProps {
   onSelectSurah: (surahNumber: number) => void;
   currentAyahIndex: number;
   onSelectAyah: (ayahNumber: number) => void;
+  startAyah: number;
+  endAyah: number;
+  onStartAyahChange: (val: number) => void;
+  onEndAyahChange: (val: number) => void;
   isAudioPlaying: boolean;
   repeatSettings: RepeatSettings;
   onChangeRepeatSettings: (settings: RepeatSettings) => void;
   onGradeVerse?: (grade: RatingGrade) => void;
+  onMarkMemorized?: () => void;
 
   // Sync Locations & Highlights
   memorizationPage?: number;
@@ -43,10 +45,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onSelectSurah,
   currentAyahIndex,
   onSelectAyah,
+  startAyah,
+  endAyah,
+  onStartAyahChange,
+  onEndAyahChange,
   isAudioPlaying,
   repeatSettings,
   onChangeRepeatSettings,
   onGradeVerse,
+  onMarkMemorized,
   memorizationPage,
   memorizationEndPage,
   readingPage,
@@ -57,6 +64,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const [verses, setVerses] = useState<Ayah[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showRangeControls, setShowRangeControls] = useState(false);
   const [viewMode, setViewMode] = useState<'page' | 'ayah'>('page');
 
   const currentSurah = SURAHS.find((s) => s.id === surahNumber) || SURAHS[0];
@@ -96,120 +104,183 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   return (
     <div dir="rtl" className="space-y-4 font-arabic-body text-right">
 
-      {/* Sync Buttons Bar (Memorization + Reading Jump) */}
-      <div className="p-3 md:p-4 rounded-2xl border border-border bg-card/60 backdrop-blur-md shadow-sm flex flex-wrap items-center justify-between gap-2.5">
-        <div className="flex items-center gap-2">
-          <Compass className="size-4 text-emerald-400 shrink-0" />
-          <span className="text-xs font-bold text-foreground">مزامنة موقع القراءة والحفظ:</span>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={onSyncMemorization}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-            title="الانتقال فوراً لموقع ورد الحفظ الحالي"
-          >
-            <Target className="size-3.5" />
-            <span>موقع الحفظ {memorizationPage ? `(صفحة ${memorizationPage})` : ''}</span>
-          </button>
-
-          <button
-            onClick={onSyncReading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition-all cursor-pointer shadow-sm active:scale-95"
-            title="الانتقال فوراً لموقع ورد التلاوة الحالي"
-          >
-            <Bookmark className="size-3.5" />
-            <span>موقع التلاوة {readingPage ? `(صفحة ${readingPage})` : ''}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Surah Header Selector & View Toggle Bar */}
-      <div className="p-4 rounded-2xl border border-border bg-card shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-500 font-bold flex items-center justify-center shrink-0 border border-emerald-500/20 text-sm">
-            {surahNumber}
+      {/* UNIFIED SLEEK TOP CONTROL BAR */}
+      <div className="p-3 md:p-3.5 rounded-2xl border border-border bg-card/80 backdrop-blur-md shadow-md flex flex-col md:flex-row items-center justify-between gap-3 font-arabic-title">
+        
+        {/* Right Section: Surah Selector & View Mode Switcher */}
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto shrink-0 justify-between md:justify-start">
+          {/* Surah Dropdown */}
+          <div className="flex items-center gap-2">
+            <span className="size-8 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/20">
+              {surahNumber}
+            </span>
+            <select
+              value={surahNumber}
+              onChange={(e) => onSelectSurah(Number(e.target.value))}
+              className="bg-secondary/80 text-xs font-bold text-foreground rounded-xl px-2.5 py-1.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+            >
+              {SURAHS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  سورة {s.name} ({s.versesCount} آية)
+                </option>
+              ))}
+            </select>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <select
-                value={surahNumber}
-                onChange={(e) => onSelectSurah(Number(e.target.value))}
-                className="bg-secondary/70 text-sm font-bold text-foreground rounded-xl px-3 py-1.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
-              >
-                {SURAHS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    سورة {s.name} ({s.transliteration})
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-muted-foreground mt-1 font-semibold">
-              سورة {currentSurah.type === 'Meccan' ? 'مكية' : 'مدنية'} • {currentSurah.versesCount} آية • الجزء {currentSurah.juzStart}
-            </p>
-          </div>
-        </div>
 
-        {/* View Toggle Tabs (Pages View vs Ayahs View) */}
-        <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
-          <div className="flex items-center p-1 rounded-xl bg-secondary/80 border border-border text-xs font-bold">
+          {/* View Mode Segmented Control (Pages vs Ayahs) */}
+          <div className="flex items-center p-0.5 rounded-xl bg-secondary/80 border border-border text-[11px] font-bold shrink-0">
             <button
               onClick={() => setViewMode('page')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                 viewMode === 'page'
                   ? 'bg-background text-emerald-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <Book className="size-3.5" />
-              <span>عرض المصحف (صفحات)</span>
+              <span>المصحف</span>
             </button>
 
             <button
               onClick={() => setViewMode('ayah')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                 viewMode === 'ayah'
                   ? 'bg-background text-emerald-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               <LayoutList className="size-3.5" />
-              <span>عرض الآيات (قائمة)</span>
+              <span>الآيات</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Left Section: Sync Location Pills & Quick Tools */}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end shrink-0">
+          
+          {/* Quick Location Sync Pills */}
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={onSyncMemorization}
+              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+              title="موقع ورد الحفظ الحالي"
+            >
+              <Target className="size-3.5" />
+              <span>الحفظ</span>
+              <span className="text-[10px] opacity-80">({memorizationPage || 1})</span>
+            </button>
+
+            <button
+              onClick={onSyncReading}
+              className="px-2.5 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/25 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+              title="موقع ورد التلاوة الحالي"
+            >
+              <Bookmark className="size-3.5" />
+              <span>التلاوة</span>
+              <span className="text-[10px] opacity-80">({readingPage || 1})</span>
             </button>
           </div>
 
-          <button
-            onClick={() =>
-              onChangeRepeatSettings({ ...repeatSettings, blindMode: !repeatSettings.blindMode })
-            }
-            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-              repeatSettings.blindMode
-                ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
-                : 'bg-secondary/70 text-muted-foreground border-border hover:bg-secondary'
-            }`}
-          >
-            {repeatSettings.blindMode ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-            اختبار الحفظ
-          </button>
-
-          {viewMode === 'ayah' && (
+          {/* Tools & Settings Actions */}
+          <div className="flex items-center gap-1.5">
+            {/* Toggle Range Selector Popover */}
             <button
-              onClick={() => setShowTranslation(!showTranslation)}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
-                showTranslation
-                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
-                  : 'bg-secondary/70 text-muted-foreground border-border hover:bg-secondary'
+              onClick={() => setShowRangeControls(!showRangeControls)}
+              className={`p-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                showRangeControls
+                  ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                  : 'bg-secondary/80 text-muted-foreground border-border hover:bg-secondary'
               }`}
+              title="تحديد نطاق التكرار (من آية - إلى آية)"
             >
-              التفسير / الترجمة
+              <SlidersHorizontal className="size-4" />
             </button>
-          )}
+
+            {/* Blind Mode Testing Toggle */}
+            <button
+              onClick={() =>
+                onChangeRepeatSettings({ ...repeatSettings, blindMode: !repeatSettings.blindMode })
+              }
+              className={`p-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                repeatSettings.blindMode
+                  ? 'bg-indigo-600 text-white border-indigo-500 shadow-sm'
+                  : 'bg-secondary/80 text-muted-foreground border-border hover:bg-secondary'
+              }`}
+              title="اختبار الحفظ (تغطية الآيات)"
+            >
+              {repeatSettings.blindMode ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+
+            {/* Mark Memorized Mastered Button */}
+            {onMarkMemorized && (
+              <button
+                onClick={onMarkMemorized}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-sm flex items-center gap-1"
+                title="اعتماد المقطع كمُتقَن"
+              >
+                <Award className="size-3.5" />
+                <span className="hidden sm:inline">إتقان</span>
+              </button>
+            )}
+          </div>
         </div>
+
       </div>
+
+      {/* Expandable Range Selector (Shows cleanly when clicked) */}
+      {showRangeControls && (
+        <div className="p-3 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-bold font-arabic-title">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">نطاق التلاوة والتكرار:</span>
+            <span className="text-emerald-400 font-bold">
+              من الآية {startAyah} إلى الآية {endAyah}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">من:</span>
+              <select
+                value={startAyah}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  onStartAyahChange(val);
+                  if (val > endAyah) onEndAyahChange(val);
+                }}
+                className="rounded-xl border border-border bg-background px-2.5 py-1 font-bold text-foreground text-xs focus:outline-none"
+              >
+                {Array.from({ length: currentSurah.versesCount }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num}>
+                    الآية {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted-foreground">إلى:</span>
+              <select
+                value={endAyah}
+                onChange={(e) => onEndAyahChange(Number(e.target.value))}
+                className="rounded-xl border border-border bg-background px-2.5 py-1 font-bold text-foreground text-xs focus:outline-none"
+              >
+                {Array.from(
+                  { length: currentSurah.versesCount - startAyah + 1 },
+                  (_, i) => startAyah + i
+                ).map((num) => (
+                  <option key={num} value={num}>
+                    الآية {num}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Standalone Basmalah Header */}
       {surahNumber !== 9 && (
-        <div className="text-center py-4 font-arabic-quran text-3xl md:text-4xl text-emerald-500/90 dir-rtl select-none tracking-wide">
+        <div className="text-center py-3 font-arabic-quran text-3xl md:text-4xl text-emerald-500/90 dir-rtl select-none tracking-wide">
           بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
         </div>
       )}
@@ -221,7 +292,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         </div>
       ) : viewMode === 'page' ? (
         /* PAGES VIEW (MUSHAF DISPLAY) */
-        <div className="space-y-8">
+        <div className="space-y-6">
           {Array.from(versesByPage.entries()).map(([pageNum, pageAyahs]) => {
             const isMemTargetPage = memorizationEndPage === pageNum || memorizationPage === pageNum;
             const isReadTargetPage = readingEndPage === pageNum || readingPage === pageNum;
@@ -247,14 +318,14 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                   <div className="flex items-center gap-2 flex-wrap">
                     {isMemTargetPage && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold animate-pulse text-[11px]">
-                        <Target className="size-3.5" /> 🎯 نهاية ورد الحفظ اليومي
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] animate-pulse">
+                        <Target className="size-3" /> نهاية ورد الحفظ
                       </span>
                     )}
 
                     {isReadTargetPage && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-bold animate-pulse text-[11px]">
-                        <Bookmark className="size-3.5" /> 📖 نهاية ورد التلاوة اليومي
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-bold text-[10px] animate-pulse">
+                        <Bookmark className="size-3" /> نهاية ورد التلاوة
                       </span>
                     )}
                   </div>
@@ -295,7 +366,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         </div>
       ) : (
         /* AYAH VIEW (LIST CARDS DISPLAY) */
-        <div className="space-y-4">
+        <div className="space-y-3">
           {verses.map((ayah) => {
             const isActive = currentAyahIndex === ayah.numberInSurah;
             const isMemTargetPage = memorizationEndPage === ayah.page || memorizationPage === ayah.page;
@@ -305,7 +376,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
               <div
                 key={ayah.number}
                 onClick={() => onSelectAyah(ayah.numberInSurah)}
-                className={`p-5 md:p-7 rounded-2xl border transition-all cursor-pointer relative ${
+                className={`p-4 md:p-6 rounded-2xl border transition-all cursor-pointer relative ${
                   isActive
                     ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/20 shadow-lg'
                     : isMemTargetPage
@@ -318,13 +389,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 {/* Verse Header Info */}
                 <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground font-sans flex-wrap gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-foreground font-bold">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-foreground font-bold text-[11px]">
                       الآية {ayah.numberInSurah} (صفحة {ayah.page})
                     </span>
 
                     {isActive && isAudioPlaying && (
                       <span className="text-xs font-bold text-emerald-400 animate-pulse flex items-center gap-1.5">
-                        <Volume2 className="size-4" /> جاري التلاوة والتكرار...
+                        <Volume2 className="size-4" /> جاري التلاوة...
                       </span>
                     )}
                   </div>
@@ -332,13 +403,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   <div className="flex items-center gap-2 flex-wrap">
                     {isMemTargetPage && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold text-[10px]">
-                        <Target className="size-3" /> 🎯 نهاية ورد الحفظ
+                        <Target className="size-3" /> نهاية ورد الحفظ
                       </span>
                     )}
 
                     {isReadTargetPage && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-bold text-[10px]">
-                        <Bookmark className="size-3" /> 📖 نهاية ورد التلاوة
+                        <Bookmark className="size-3" /> نهاية ورد التلاوة
                       </span>
                     )}
                   </div>
