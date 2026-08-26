@@ -3,6 +3,8 @@ import { QuranMemorizerMain } from '../../lib/quran-memorizer';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
+import { useCreateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
+import { SheikhHalqahNote } from '../../lib/quran-memorizer/src/types/quran';
 
 export function QuranRoute() {
   const { data: tasks = [] } = useTasks();
@@ -13,6 +15,9 @@ export function QuranRoute() {
   const createTaskMutation = useCreateTask();
   const logHabitMutation = useLogHabit();
   const updateHabitMutation = useUpdateHabit();
+  const createNoteMutation = useCreateNote();
+  const { data: noteFolders = [] } = useNoteFolders();
+  const createNoteFolderMutation = useCreateNoteFolder();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -44,6 +49,48 @@ export function QuranRoute() {
       due_date: dueDate,
       priority: 'high',
       is_completed: false,
+    });
+  };
+
+  const handleCreateHalqahNote = async (note: SheikhHalqahNote) => {
+    let quranFolder = noteFolders.find(
+      (f) => f.name.includes('قرآن') || f.name.includes('تسميع') || f.name.includes('حلقات')
+    );
+    let folderId = quranFolder?.id;
+
+    if (!folderId) {
+      try {
+        const createdFolder = await createNoteFolderMutation.mutateAsync({ name: 'حلقات التسميع والقرآن' });
+        folderId = createdFolder?.id;
+      } catch (e) {
+        console.warn('Folder creation warning:', e);
+      }
+    }
+
+    const ratingLabel =
+      note.rating === 'mumtaz'
+        ? '🌟 ممتاز'
+        : note.rating === 'jayyid_jiddan'
+        ? '✨ جيد جداً'
+        : note.rating === 'jayyid'
+        ? '🟢 جيد'
+        : '⚠️ يحتاج تثبيت ومراجعة';
+
+    const noteContent = `
+# ملاحظات حلقة التسميع — ${note.surahName} (${note.ayahRange})
+- **التاريخ**: ${new Date(note.date).toLocaleDateString('ar-EG')}
+- **تقييم الجلسة**: ${ratingLabel}
+- **السورة والآيات**: ${note.surahName} (${note.ayahRange})
+
+## 📝 ملاحظات الأخطاء والمتشابهات:
+${note.mistakesNote}
+`.trim();
+
+    createNoteMutation.mutate({
+      title: `ملاحظات حلقة تسميع - ${note.surahName} (${note.ayahRange})`,
+      content: noteContent,
+      folder_id: folderId,
+      tags: ['قرآن', 'تسميع', 'ملاحظات_الشيخ'],
     });
   };
 
@@ -80,6 +127,7 @@ export function QuranRoute() {
       onToggleHabit={handleToggleHabit}
       onUpdateHabitDescription={handleUpdateHabitDescription}
       onCreateQuranTask={handleCreateQuranTask}
+      onCreateHalqahNote={handleCreateHalqahNote}
     />
   );
 }

@@ -41,6 +41,7 @@ interface KhatmahPlannerViewProps {
   onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
   onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateTask?: (title: string, dueDate: string) => void;
+  onCreateHalqahNote?: (note: SheikhHalqahNote) => void;
 }
 
 const getSurahForPage = (page: number) => {
@@ -63,6 +64,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   onToggleHabit,
   onUpdateHabitDescription,
   onCreateTask,
+  onCreateHalqahNote,
 }) => {
   // Memorization Plan State
   const [plan, setPlan] = useState<KhatmahPlan | null>(() => {
@@ -270,6 +272,11 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     };
 
     setHalqahNotes([newNote, ...halqahNotes]);
+
+    if (onCreateHalqahNote) {
+      onCreateHalqahNote(newNote);
+    }
+
     setNoteMistakes('');
     setShowHalqahNoteModal(false);
   };
@@ -483,7 +490,17 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                   }`}
                 >
                   <div
-                    onClick={() => onToggleHabit && onToggleHabit(habit.id, !habit.is_completed_today)}
+                    onClick={() => {
+                      const nextState = !habit.is_completed_today;
+                      if (onToggleHabit) onToggleHabit(habit.id, nextState);
+                      if (nextState) {
+                        if (/حفظ|memoriz|تحفيظ/i.test(habit.title)) {
+                          handleLogProgress();
+                        } else if (/ورد|تلاوة|قراءة|reading|tilawah/i.test(habit.title)) {
+                          handleLogReadingWird();
+                        }
+                      }
+                    }}
                     className="flex items-center justify-between cursor-pointer"
                   >
                     <div className="flex items-center gap-2.5">

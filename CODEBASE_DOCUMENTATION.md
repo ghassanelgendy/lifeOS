@@ -570,7 +570,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6307
+**Lines:** 6309
 
 ---
 
@@ -1273,7 +1273,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 824
+**Lines:** 841
 
 ---
 
@@ -1295,7 +1295,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 320
+**Lines:** 324
 
 ---
 
@@ -1438,7 +1438,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `KhatmahGoalType` (Type)
 - `KhatmahDirection` (Type)
 
-**Lines:** 134
+**Lines:** 135
 
 ---
 
@@ -5210,7 +5210,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 88
+**Lines:** 136
 
 ---
 

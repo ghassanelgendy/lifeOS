@@ -18,7 +18,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   linkedEvents = [],
   onToggleTask,
   onToggleHabit,
+  onUpdateHabitDescription,
   onCreateQuranTask,
+  onCreateHalqahNote,
 }) => {
   const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>(() => {
     try {
@@ -200,7 +202,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             linkedEvents={linkedEvents}
             onToggleTask={onToggleTask}
             onToggleHabit={onToggleHabit}
+            onUpdateHabitDescription={onUpdateHabitDescription}
             onCreateTask={onCreateQuranTask}
+            onCreateHalqahNote={onCreateHalqahNote}
           />
         )}
 

@@ -129,5 +129,6 @@ export interface LifeOSIntegrationProps {
   onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
   onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateQuranTask?: (title: string, dueDate: string) => void;
+  onCreateHalqahNote?: (note: SheikhHalqahNote) => void;
 }
 
