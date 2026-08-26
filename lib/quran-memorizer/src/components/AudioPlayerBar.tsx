@@ -41,9 +41,9 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   return (
     <div
       dir="rtl"
-      className="fixed bottom-0 left-0 right-0 md:left-64 z-40 border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.4)] font-arabic-title text-right transition-all"
+      className="fixed bottom-0 inset-x-0 z-50 border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] font-arabic-title text-right"
     >
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-foreground">
+      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-foreground px-2">
         
         {/* Reciter & Current Verse Info */}
         <div className="flex items-center gap-3 w-full md:w-auto shrink-0 justify-between md:justify-start">
