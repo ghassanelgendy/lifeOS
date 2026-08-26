@@ -196,11 +196,15 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 ### 5.9 Notes & Knowledge
 **Purpose:** Personal knowledge base.
 
-- Rich-text notes with title and body
-- Folder organization with custom folder names
-- CRUD operations for notes and folders
-- Shared notes collaboration (invite users by email to co-manage shared notes)
-- Date display: Creation and update timestamps
+- Rich-text notes with title, markdown preview/editing, date, and body
+- Platform-Specific UI/UX:
+  - **PC/Web Desktop View (`Notes.web.tsx`)**: 3-column layout (folder sidebar, search & notes list, editor/reader pane) with keyboard shortcuts (`/`), word/char counts, pin indicators, and folder management.
+  - **iOS Native View (`Notes.ios.tsx`)**: Apple Notes aesthetic, grouped inset card lists, iOS header, swipe gestures, haptic feedback, 3D long-press touch context menus, and screen navigation.
+- **Cognitive Brain Dump AI Processor**: Unstructured stream-of-consciousness thought capture with voice dictation, automated AI analysis (mental clarity score 1-100, sentiment/mood, core summary, key insights).
+- **Auto-Classification (Tasks, Habits, Events)**: Automatically detects tasks, recurring habits, and calendar events with 1-click action buttons (+ Add Task, + Add Habit, + Add Event).
+- **Global 1-Click Access & iOS Back Tap**: Instant access from anywhere via header button, desktop sidebar shortcut (`Alt+B`), Command Palette (`Cmd+K`), and **iOS Back Tap / Apple Shortcut deep link** (`lifeos://braindump?text=`).
+- Folder organization with custom folder names, pinned notes, and brain dump categorization.
+- Database schema extensions (`is_pinned`, `is_brain_dump`, `ai_analysis`, `tags`).
 
 ### 5.10 Focus Mode
 **Purpose:** Deep work sessions with task linkage.
@@ -237,6 +241,16 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Score rings and delta badges for visual impact
 - Suggestions engine: Pattern-based recommendations
 - Day details modal: Click any chart day for full breakdown
+
+### 5.13 Quran Memorizer, Khatmah Planner & Smart Sheikh Halqah Notes
+**Purpose:** Manage Quran memorization, daily reading wirds, revision schedules, and smart Sheikh recitation session notes.
+
+- **Dual Daily Wird Cards:** Track Memorization Wird (ورد الحفظ) and Reading Wird (ورد التلاوة) with streaks and progress sync.
+- **Authentic Mushaf Page View:** Renders pages inside a classic Medina Mushaf double-border frame with ornamental corners, Surah title banners, Basmalah, Uthmani script, verse markers `﴿ ١ ﴾`, and page footers.
+- **Page Navigation Toolbar:** Easy page-by-page navigation (1-604), direct page input, 30-Juz selector dropdown, quick wird page jump pills, and toggle between Single Page and All Pages of Surah.
+- **Smart Automated Wird Detection for Halaqa Notes:** Opening note creation automatically detects today's active wird page and calculates precise Surah & Ayah range.
+- **1-Click Quick Preset Pills:** Preset pills in the note creation modal to switch between today's memorization wird and reading wird.
+- **Recitation Session Logs:** Log Sheikh feedback, ratings (ممتاز, جيد جداً, جيد, يحتاج تثبيت), and detailed mistake/mutashabihat notes synced with lifeOS Notes engine.
 
 ### 5.13 Gamification (Points System)
 **Purpose:** Behavioral reinforcement through reward mechanics.

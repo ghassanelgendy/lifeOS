@@ -1274,11 +1274,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-khatmahplannerview-tsx"></a>
 ### lib/quran-memorizer/src/components/KhatmahPlannerView.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Sheikh Halqah Recitation Notes & Khatmah Plan component. Manages Quran memorization plans, reading wirds, smart automated wird detection for recitation notes, and session mistake logs.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:**
+- `getSurahForPage` (Function): Maps a Mushaf page number to its corresponding Surah.
+- `calculateSmartAyahRange` (Function): Calculates smart start and end Ayah ranges for a given page within a Surah based on Mushaf structure.
+- `KhatmahPlannerView` (React.FC): Main component rendering dual wird cards, smart Halaqa note modal, quick preset pills, and session mistake logs.
 
-**Lines:** 935
+**Lines:** 1006
 
 ---
 
@@ -1307,11 +1310,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Quran Mushaf Reader component. Provides authentic Medina Mushaf single-page and multi-page reading views, page navigation toolbar (1-604), Juz jump dropdowns, quick wird jumps, Uthmani script rendering, Tafsir Al-Muyassar, and memorization testing controls.
+- **Ayah Number Badge Styling**: Formatted Ayah number ornament badges (`﴿{ayah.numberInSurah}﴾`) with responsive fluid pill containers (`min-w-[2.2rem] whitespace-nowrap font-mono`), preventing 3-digit Ayah number clipping and vertical line wrapping in Mushaf Page and Ayah List views.
+- **Single-Row Desktop Toolbar**: Consolidated all Quran controls (Surah dropdown, Juz selector, view mode, page layout, wird quick jumps, and tools) into a single unified horizontal row on PC/desktop, maximizing screen space for Mushaf reading.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:**
+- `getSurahForPage` (Function): Determines which Surah contains a given page number.
+- `JUZ_START_PAGES` (Constant): Array of starting page numbers for all 30 Juz.
+- `QuranReaderView` (React.FC): Main Quran reader component with page navigation, Mushaf page frame, verse controls, and wird markers.
 
-**Lines:** 664
+**Lines:** 751
 
 ---
 
@@ -4172,9 +4180,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ---
 
 <a name="src-index-css"></a>
-### src/index.css
-
 **File Purpose:** Global CSS stylesheet with Tailwind CSS v4 integration, theming system (dark/light/accent colors), animations, and iOS-specific styles.
+- **Strict Cairo Font System**: Enforces `Cairo` font family strictly across all HTML root elements (`html`, `body`, `button`, `input`, `select`, `textarea`) and Tailwind `--font-sans` token without falling back to system or device fonts.
 
 **Keyframes:**
 - `@keyframes modal-backdrop-in` — CSS animation definition
@@ -5182,23 +5189,33 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-notes-tsx"></a>
 ### src/routes/Notes.tsx
 
-**File Purpose:** Page-level route component for the Notes.tsx module. Renders the main view when navigating to this section.
+**File Purpose:** Platform resolution router for Notes module. Re-exports `./Notes.platform` which resolves at build time to `Notes.ios.tsx` (iOS builds) or `Notes.web.tsx` (PC/Web builds).
 
-**Functions & Classes:**
-- `Notes` (React Component)
-- `todayInputDate` (Function)
-- `noteTitle` (Function)
-- `formatNoteDate` (Function)
-- `Notes` (Function)
+---
 
-**Function Details:**
-- **`Notes`** — React component rendering UI for Notes.
-- **`todayInputDate`** — Utility function for today input date.
-- **`noteTitle`** — Utility function for note title.
-- **`formatNoteDate`** — Utility function for format note date.
-- **`Notes`** — Utility function for notes.
+### src/routes/Notes.web.tsx
 
-**Lines:** 497
+**File Purpose:** PC Desktop view for Notes & Knowledge Base.
+- 3-column layout: Left sidebar (Folders, Smart Filters: All, Pinned, Brain Dumps, Uncategorized), Middle column (Notes list with search), Right main panel (Markdown live editor & preview).
+- Integrates folder CRUD, pin toggling, AI tools (Summarize, Clean Draft, Wiki Links), and Cognitive Brain Dump launcher.
+
+---
+
+### src/routes/Notes.ios.tsx
+
+**File Purpose:** iOS-Native view for Notes & Knowledge Base.
+- Designed strictly after Apple Notes UI/UX guidelines with iOS large title navigation, inset grouped card lists, iOS back screen transitions, touch swipe actions, haptic feedback (`triggerHaptics`), and 3D long-press touch context menus.
+- Features quick voice dictation, Cognitive Brain Dump sheet, and + New Note floating action button.
+
+---
+
+### src/components/BrainDumpModal.tsx
+
+**File Purpose:** AI Cognitive Brain Dump processor component.
+- Captures stream-of-consciousness thoughts & voice dictation.
+- Performs automated AI analysis (`askAI` in JSON mode) producing mental clarity score (1-100), mood/sentiment tags, executive summary, and key insights.
+- **Auto-Classifies**: Actionable Tasks, Daily/Weekly Habits, and Scheduled Events with 1-click creation action buttons (`useCreateTask`, `useCreateHabit`, `useCreateCalendarEvent`).
+- Includes an interactive iOS Back Tap & Apple Shortcut setup guide with deep link URL scheme support (`lifeos://braindump?text=`).
 
 ---
 

@@ -479,6 +479,23 @@ Users shall be able to create and rename note folders.
 #### FR-NOTE-005: Note Date Display
 Notes shall display creation and update dates.
 
+#### FR-NOTE-006: Platform-Optimized Responsive Views
+The system shall deliver tailored user experiences per target platform:
+- **PC Desktop (`Notes.web.tsx`)**: 3-column layout (folder sidebar, search/notes list, markdown live editor), `/` search shortcut, word/character counter, pin toggles.
+- **iOS Native (`Notes.ios.tsx`)**: Apple Notes aesthetic, grouped inset card lists, iOS header navigation, touch gestures, haptics (`triggerHaptics`), and 3D long-press context menus.
+
+#### FR-NOTE-007: Cognitive Brain Dump AI Processor
+The system shall provide a Cognitive Brain Dump processor (`BrainDumpModal.tsx`) with:
+- Stream-of-consciousness raw thought capture & speech-to-text dictation.
+- Automated AI classification detecting **Tasks**, **Habits**, and **Calendar Events** with 1-click creation buttons (+ Add Task, + Add Habit, + Add Event).
+- Mental clarity score (1-100), mood/sentiment tags, executive summary, and key insights.
+
+#### FR-NOTE-008: Note Pinning & Metadata
+The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`, `ai_analysis` (jsonb), and `tags` (text[]) for organizing thoughts.
+
+#### FR-NOTE-009: iOS Back Tap & Deep Link Integration
+The system shall register a URL scheme listener (`lifeos://braindump?text=`) in `App.ios.tsx` to handle iPhone Back Tap gestures via Apple Shortcuts, pre-filling text and triggering auto-classification upon app launch.
+
 ---
 
 ### 3.11 Focus Sessions
@@ -534,6 +551,28 @@ Supabase Edge Functions shall dispatch prayer notifications to all subscribed de
 
 #### FR-PRAYER-009: Quiet Hours
 Prayer notifications shall respect quiet hours configuration (e.g., no notifications during sleep).
+
+---
+
+### 3.12.1 Quran Memorizer & Smart Sheikh Halqah Notes
+
+#### FR-QURAN-001: Dual Wird Management
+The system shall display and track active Memorization Wird (ورد الحفظ) and Reading Wird (ورد التلاوة) with progress logs and streak counters.
+
+#### FR-QURAN-002: Smart Automated Wird Detection for Halaqa Notes
+When launching the Sheikh Halqah Note creation interface, the system shall automatically detect today's active wird page, identify the corresponding Surah, and compute smart start and end Ayah ranges.
+
+#### FR-QURAN-003: 1-Click Wird Preset Pills
+The Halqah Note modal shall present quick preset pills to switch between today's Memorization Wird and Reading Wird in a single click.
+
+#### FR-QURAN-004: Direct Card & Reader Action Buttons
+The system shall render direct "📝 تدوين ملاحظة" action buttons on Memorization/Reading cards and in the Quran Reader toolbar to launch smart note recording.
+
+#### FR-QURAN-005: Authentic Mushaf Page View Layout
+The page view shall display Quran pages inside an authentic Mushaf double-border frame with ornamental corners, top Surah/Page/Juz headers, ornate Surah title banners, Basmalah line, continuous Uthmani text, circular verse number markers, and page number footers.
+
+#### FR-QURAN-006: Page Navigation Toolbar & Juz Jump
+The reader shall provide a dedicated page navigation toolbar allowing page-by-page traversal (1-604), direct page number jump input, 30-Juz selector dropdown, layout mode switching (Single Page vs All Pages of Surah), and quick wird page jump pills.
 
 ---
 
