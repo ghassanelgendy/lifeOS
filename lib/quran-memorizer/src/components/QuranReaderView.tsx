@@ -308,39 +308,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         /* PAGES VIEW (MUSHAF DISPLAY) */
         <div className="space-y-6">
           {Array.from(versesByPage.entries()).map(([pageNum, pageAyahs]) => {
-            const isMemTargetPage = memorizationEndPage === pageNum || memorizationPage === pageNum;
-            const isReadTargetPage = readingEndPage === pageNum || readingPage === pageNum;
-
             return (
               <div
                 key={pageNum}
-                className={`p-6 md:p-10 rounded-3xl border transition-all space-y-4 bg-card/90 shadow-xl relative ${
-                  isMemTargetPage && isReadTargetPage
-                    ? 'border-gradient-to-r ring-4 ring-emerald-500/40 border-amber-500 shadow-[0_0_30px_rgba(16,185,129,0.25)]'
-                    : isMemTargetPage
-                    ? 'border-emerald-500 ring-4 ring-emerald-500/30 bg-emerald-950/10 shadow-[0_0_25px_rgba(16,185,129,0.2)]'
-                    : isReadTargetPage
-                    ? 'border-indigo-500 ring-4 ring-indigo-500/30 bg-indigo-950/10 shadow-[0_0_25px_rgba(99,102,241,0.2)]'
-                    : 'border-border/60 hover:border-border'
-                }`}
+                className="p-6 md:p-10 rounded-3xl border border-border/60 hover:border-border transition-all space-y-4 bg-card/90 shadow-xl relative"
               >
-                {/* Page Top Target Badges (Only shown if page has targets) */}
-                {(isMemTargetPage || isReadTargetPage) && (
-                  <div className="flex items-center justify-end border-b border-border/40 pb-2.5 text-xs text-muted-foreground font-sans gap-2 flex-wrap">
-                    {isMemTargetPage && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] animate-pulse">
-                        <Target className="size-3" /> نهاية ورد الحفظ
-                      </span>
-                    )}
-
-                    {isReadTargetPage && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-bold text-[10px] animate-pulse">
-                        <Bookmark className="size-3" /> نهاية ورد التلاوة
-                      </span>
-                    )}
-                  </div>
-                )}
-
                 {/* Continuous Mushaf Page Text */}
                 <div className="dir-rtl text-justify font-arabic-quran text-2xl md:text-3xl leading-[2.6] md:leading-[2.8] text-foreground tracking-wide select-none font-bold">
                   {pageAyahs.map((ayah) => {
@@ -351,6 +323,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     
                     const isMemMarker = memorizationMarker?.surahNumber === surahNumber && memorizationMarker?.ayahNumber === ayah.numberInSurah;
                     const isReadMarker = readingMarker?.surahNumber === surahNumber && readingMarker?.ayahNumber === ayah.numberInSurah;
+                    const isMemWirdEnd = ayah.numberInSurah === endAyah;
+                    const words = ayah.textUthmani.trim().split(/\s+/);
 
                     return (
                       <React.Fragment key={ayah.number}>
@@ -372,12 +346,25 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               : 'hover:bg-accent/40'
                           }`}
                         >
-                          {ayah.textUthmani}
+                          {repeatSettings.blindMode ? (
+                            words.map((w, wIdx) => (
+                              <span
+                                key={wIdx}
+                                className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
+                              >
+                                {w}{' '}
+                              </span>
+                            ))
+                          ) : (
+                            ayah.textUthmani
+                          )}
                         </span>
                         <span
                           onClick={() => onSelectAyah(ayah.numberInSurah)}
                           className={`inline-flex items-center justify-center size-8 md:size-9 mx-1 rounded-full text-xs font-bold align-middle cursor-pointer transition-all ${
-                            isMemMarker
+                            isMemWirdEnd
+                              ? 'bg-emerald-600 text-white font-black ring-4 ring-emerald-500/50 scale-110 shadow-lg'
+                              : isMemMarker
                               ? 'bg-emerald-500 text-white font-black shadow-[0_0_10px_rgba(16,185,129,0.5)] scale-110'
                               : isReadMarker
                               ? 'bg-indigo-600 text-white font-black shadow-[0_0_10px_rgba(99,102,241,0.5)] scale-110'
@@ -388,7 +375,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               : 'border border-emerald-500/30 text-emerald-500/80'
                           }`}
                           title={`الآية ${ayah.numberInSurah} ${
-                            isMemMarker ? '🎯 (موضع الحفظ الحالي)' : isReadMarker ? '📖 (موضع التلاوة الحالي)' : isMemorized ? '✨ (مُتقنة 100%)' : ''
+                            isMemWirdEnd ? '🎯 (نهاية ورد الحفظ)' : isMemMarker ? '🎯 (موضع الحفظ الحالي)' : isReadMarker ? '📖 (موضع التلاوة الحالي)' : isMemorized ? '✨ (مُتقنة 100%)' : ''
                           }`}
                         >
                           {ayah.numberInSurah}
@@ -418,18 +405,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             const inStudyRange = startAyah <= ayah.numberInSurah && ayah.numberInSurah <= endAyah;
             const mastery = getVerseMastery ? getVerseMastery(surahNumber, ayah.numberInSurah) : null;
             const isMemorized = mastery?.status === 'memorized';
-            const isMemTargetPage = memorizationEndPage === ayah.page || memorizationPage === ayah.page;
-            const isReadTargetPage = readingEndPage === ayah.page || readingPage === ayah.page;
             
             const isMemMarker = memorizationMarker?.surahNumber === surahNumber && memorizationMarker?.ayahNumber === ayah.numberInSurah;
             const isReadMarker = readingMarker?.surahNumber === surahNumber && readingMarker?.ayahNumber === ayah.numberInSurah;
+            const isMemWirdEnd = ayah.numberInSurah === endAyah;
 
             return (
               <div
                 key={ayah.number}
                 onClick={() => onSelectAyah(ayah.numberInSurah)}
                 className={`p-4 md:p-6 rounded-2xl border transition-all cursor-pointer relative ${
-                  isMemMarker
+                  isMemWirdEnd
+                    ? 'border-emerald-500 ring-2 ring-emerald-500/40 bg-emerald-950/20 shadow-lg'
+                    : isMemMarker
                     ? 'border-emerald-500 bg-emerald-950/20 ring-2 ring-emerald-500/40 shadow-lg'
                     : isReadMarker
                     ? 'border-indigo-500 bg-indigo-950/20 ring-2 ring-indigo-500/40 shadow-lg'
@@ -437,10 +425,6 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/30 shadow-lg'
                     : inStudyRange
                     ? 'border-emerald-500/40 bg-emerald-950/10'
-                    : isMemTargetPage
-                    ? 'border-emerald-500/50 bg-emerald-950/10'
-                    : isReadTargetPage
-                    ? 'border-indigo-500/50 bg-indigo-950/10'
                     : 'border-border/60 bg-card hover:border-border hover:bg-accent/20'
                 }`}
               >
@@ -455,6 +439,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     {isMemMarker && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold text-[10px]">
                         <Target className="size-3" /> موضع الحفظ الحالي
+                      </span>
+                    )}
+
+                    {/* End of Memorization Wird Badge (Emerald) */}
+                    {isMemWirdEnd && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-600 text-white font-bold text-[10px] shadow-sm animate-pulse">
+                        <Target className="size-3" /> نهاية ورد الحفظ
                       </span>
                     )}
 
@@ -477,7 +468,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       </span>
                     )}
 
-                    {inStudyRange && (
+                    {inStudyRange && !isMemWirdEnd && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">
                         🎯 نطاق التكرار
                       </span>
@@ -486,20 +477,6 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     {isActive && isAudioPlaying && (
                       <span className="text-xs font-bold text-emerald-400 animate-pulse flex items-center gap-1.5">
                         <Volume2 className="size-4" /> جاري التلاوة...
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {isMemTargetPage && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold text-[10px]">
-                        <Target className="size-3" /> نهاية ورد الحفظ
-                      </span>
-                    )}
-
-                    {isReadTargetPage && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 font-bold text-[10px]">
-                        <Bookmark className="size-3" /> نهاية ورد التلاوة
                       </span>
                     )}
                   </div>

@@ -1255,7 +1255,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`getSheikhLastName`** — Utility function for get sheikh last name.
 
-**Lines:** 404
+**Lines:** 407
 
 ---
 
@@ -1266,7 +1266,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 133
+**Lines:** 140
 
 ---
 
@@ -1310,7 +1310,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 598
+**Lines:** 575
 
 ---
 

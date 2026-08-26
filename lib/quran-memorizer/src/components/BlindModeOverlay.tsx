@@ -97,32 +97,39 @@ export const BlindModeOverlay: React.FC<BlindModeOverlayProps> = ({
 
       {/* Self-Rating SRS Buttons */}
       {onGrade && (
-        <div className="flex items-center justify-between pt-3 border-t border-border/30 flex-wrap gap-2">
-          <span className="text-xs text-muted-foreground font-bold">قيّم جودة حفظك لهذه الآية:</span>
-          <div className="flex items-center gap-2">
+        <div className="pt-3 border-t border-border/40 space-y-2">
+          <span className="text-[11px] text-muted-foreground font-bold block">قيّم جودة حفظك لهذه الآية:</span>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full">
             <button
               onClick={() => onGrade('again')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold hover:bg-rose-500/20 cursor-pointer"
+              className="py-2.5 px-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 text-rose-400 border border-rose-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 text-center shadow-sm"
             >
-              <RefreshCw className="size-3.5" /> إعادة (نسيت)
+              <RefreshCw className="size-3.5" />
+              <span>إعادة (نسيت)</span>
             </button>
+
             <button
               onClick={() => onGrade('hard')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold hover:bg-amber-500/20 cursor-pointer"
+              className="py-2.5 px-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 text-center shadow-sm"
             >
-              <AlertTriangle className="size-3.5" /> صعب
+              <AlertTriangle className="size-3.5" />
+              <span>صعب</span>
             </button>
+
             <button
               onClick={() => onGrade('good')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 cursor-pointer"
+              className="py-2.5 px-2 rounded-xl bg-blue-500/15 hover:bg-blue-500/25 text-blue-400 border border-blue-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 text-center shadow-sm"
             >
-              <CheckCircle2 className="size-3.5" /> جيد
+              <CheckCircle2 className="size-3.5" />
+              <span>جيد</span>
             </button>
+
             <button
               onClick={() => onGrade('easy')}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold hover:bg-indigo-500/20 cursor-pointer"
+              className="py-2.5 px-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5 text-center shadow-sm"
             >
-              <Award className="size-3.5" /> ممتاز (متقن)
+              <Award className="size-3.5" />
+              <span>ممتاز (متقن)</span>
             </button>
           </div>
         </div>
