@@ -570,7 +570,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6294
+**Lines:** 6306
 
 ---
 
@@ -1273,7 +1273,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 484
+**Lines:** 562
 
 ---
 
@@ -1434,8 +1434,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `MemorizationStatus` (Type)
 - `RatingGrade` (Type)
 - `KhatmahGoalType` (Type)
+- `KhatmahDirection` (Type)
 
-**Lines:** 115
+**Lines:** 117
 
 ---
 

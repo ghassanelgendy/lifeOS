@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Flame, Calendar, Sparkles, CheckCircle2, Circle, Plus, Trash2, BookOpen, Clock, UserCheck, Compass, ArrowLeft } from 'lucide-react';
-import { KhatmahPlan, KhatmahGoalType, LinkedLifeOSTask, LinkedLifeOSHabit, LinkedLifeOSEvent } from '../types/quran';
+import { Target, Flame, Calendar, Sparkles, CheckCircle2, Circle, Plus, Trash2, BookOpen, Clock, UserCheck, Compass } from 'lucide-react';
+import { KhatmahPlan, KhatmahGoalType, KhatmahDirection, LinkedLifeOSTask, LinkedLifeOSHabit, LinkedLifeOSEvent } from '../types/quran';
 import { SURAHS } from '../services/quranData';
 
 const KHATMAH_STORAGE_KEY = 'quran_khatmah_plan_v1';
@@ -48,7 +48,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
 
   // Form State
-  const [title, setTitle] = useState('خطة حفظ القرآن الكريم');
+  const [title, setTitle] = useState('خطة حفظ جزء عمَّ (من سورة النبأ)');
+  const [direction, setDirection] = useState<KhatmahDirection>('juz_amma');
+  const [customStartPage, setCustomStartPage] = useState(582);
   const [goalType, setGoalType] = useState<KhatmahGoalType>('pages_per_day');
   const [pagesPerDay, setPagesPerDay] = useState(1);
   const [juzCount, setJuzCount] = useState(1);
@@ -62,6 +64,19 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     }
   }, [plan]);
 
+  const handleDirectionChange = (newDir: KhatmahDirection) => {
+    setDirection(newDir);
+    if (newDir === 'juz_amma') {
+      setTitle('خطة حفظ جزء عمَّ (من سورة النبأ إلى الناس)');
+    } else if (newDir === 'forward') {
+      setTitle('خطة حفظ القرآن (من بداية المصحف)');
+    } else if (newDir === 'reverse') {
+      setTitle('خطة حفظ القرآن (من آخر المصحف عكسياً)');
+    } else if (newDir === 'custom') {
+      setTitle(`خطة حفظ القرآن (من الصفحة ${customStartPage})`);
+    }
+  };
+
   const handleCreatePlan = (e: React.FormEvent) => {
     e.preventDefault();
     let calculatedPages = pagesPerDay;
@@ -70,19 +85,37 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       calculatedPages = Math.max(1, Math.ceil(totalPages / Math.max(1, targetDays)));
     }
 
-    const totalPagesToRead = 604;
+    let startP = 582;
+    let endP = 604;
+
+    if (direction === 'juz_amma') {
+      startP = 582;
+      endP = 604;
+    } else if (direction === 'forward') {
+      startP = 1;
+      endP = 604;
+    } else if (direction === 'reverse') {
+      startP = 604;
+      endP = 1;
+    } else if (direction === 'custom') {
+      startP = Math.min(604, Math.max(1, customStartPage));
+      endP = 604;
+    }
+
+    const totalPagesToRead = Math.abs(endP - startP) + 1;
     const daysRequired = Math.ceil(totalPagesToRead / Math.max(1, calculatedPages));
     const targetDate = new Date();
     targetDate.setDate(targetDate.getDate() + daysRequired);
 
     const newPlan: KhatmahPlan = {
       id: Date.now().toString(),
-      title,
+      title: title.trim() || 'خطة حفظ القرآن',
       goalType,
+      direction,
       pagesPerDay: calculatedPages,
-      startPage: 1,
-      endPage: 604,
-      currentPage: 1,
+      startPage: startP,
+      endPage: endP,
+      currentPage: startP,
       startDate: new Date().toISOString(),
       targetEndDate: targetDate.toISOString(),
       streakDays: 0,
@@ -100,7 +133,14 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       : true;
 
     const nextStreak = isConsecutive ? (plan.streakDays || 0) + 1 : 1;
-    const nextCurrentPage = Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay);
+    const isReverse = plan.direction === 'reverse';
+
+    let nextCurrentPage = plan.currentPage;
+    if (isReverse) {
+      nextCurrentPage = Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay);
+    } else {
+      nextCurrentPage = Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay);
+    }
 
     const updated: KhatmahPlan = {
       ...plan,
@@ -110,9 +150,11 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     };
     setPlan(updated);
 
+    const surah = getSurahForPage(nextCurrentPage);
+
     if (onCreateTask) {
       onCreateTask(
-        `حفظ القرآن - الصفحة ${nextCurrentPage}`,
+        `حفظ القرآن - الصفحة ${nextCurrentPage} (سورة ${surah.name})`,
         todayStr
       );
     }
@@ -123,10 +165,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
       );
       if (targetHabit) {
-        const nextSurah = getSurahForPage(nextCurrentPage);
         onUpdateHabitDescription(
           targetHabit.id,
-          `الورد القادم للحفظ: الصفحة ${nextCurrentPage} (سورة ${nextSurah.name})`
+          `الورد القادم للحفظ: الصفحة ${nextCurrentPage} (سورة ${surah.name})`
         );
       }
     }
@@ -146,12 +187,17 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran/i.test(e.title)
   );
 
-  const totalPages = plan ? plan.endPage - plan.startPage + 1 : 604;
-  const pagesCompleted = plan ? plan.currentPage - plan.startPage : 0;
+  const totalPages = plan ? Math.abs(plan.endPage - plan.startPage) + 1 : 23;
+  const pagesCompleted = plan ? Math.abs(plan.currentPage - plan.startPage) : 0;
   const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
 
-  const currentSurah = getSurahForPage(plan ? plan.currentPage : 1);
-  const nextTargetPage = Math.min(604, (plan ? plan.currentPage : 1) + (plan ? plan.pagesPerDay : 1));
+  const currentSurah = getSurahForPage(plan ? plan.currentPage : 582);
+  const isReverse = plan ? plan.direction === 'reverse' : false;
+  const nextTargetPage = plan
+    ? isReverse
+      ? Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay)
+      : Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay)
+    : 583;
   const nextSurah = getSurahForPage(nextTargetPage);
 
   return (
@@ -165,7 +211,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-foreground">إنشاء خطة الخاتمة والحفظ التفاعلية</h2>
             <p className="text-xs md:text-sm text-muted-foreground max-w-md mx-auto mt-1 leading-relaxed">
-              حدد هدفك اليومي مثل "صفحة واحدة يومياً" أو "إنهاء ٥ أجزاء في ٣٠ يوماً". تابع نسبة الإنجاز وسلسلة الالتزام مع ربط تلقائي بمهام lifeOS وجلسات الشيخ.
+              يمكنك البدء من جزء عمَّ (الناس ← النبأ)، من بداية المصحف، أو من أي صفحة مخصصة مع المتابعة اليومية التفاعلية.
             </p>
           </div>
           <button
@@ -184,7 +230,11 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 <div className="flex items-center gap-2">
                   <h2 className="text-lg font-bold text-foreground">{plan.title}</h2>
                   <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                    خطة نشطة
+                    {plan.direction === 'juz_amma'
+                      ? 'جزء عمَّ'
+                      : plan.direction === 'reverse'
+                      ? 'عكسياً من الآخر'
+                      : 'خطة نشطة'}
                   </span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
@@ -213,7 +263,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             {/* Progress Bar */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-muted-foreground">نسبة التقدم الكلي في المصحف</span>
+                <span className="text-muted-foreground">نسبة التقدم الكلي في الخاتمة</span>
                 <span className="text-emerald-400">{progressPercent}% ({pagesCompleted} من {totalPages} صفحة)</span>
               </div>
               <div className="w-full h-3 rounded-full bg-secondary overflow-hidden border border-border/40 p-0.5">
@@ -227,7 +277,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             {/* Action Log Button */}
             <div className="flex items-center justify-between pt-2 border-t border-border/40 flex-wrap gap-2">
               <div className="text-xs text-muted-foreground">
-                الصفحة الحالية: <span className="font-bold text-foreground">صفحة {plan.currentPage}</span>
+                الصفحة الحالية: <span className="font-bold text-foreground">صفحة {plan.currentPage} (سورة {currentSurah.name})</span>
               </div>
               <button
                 onClick={handleLogProgress}
@@ -329,7 +379,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     <button
                       onClick={() => {
                         if (onUpdateHabitDescription) {
-                          const nextP = Math.min(604, (plan ? plan.currentPage : 1) + (plan ? plan.pagesPerDay : 1));
+                          const nextP = nextTargetPage;
                           const surah = getSurahForPage(nextP);
                           const desc = `الورد القادم للحفظ: الصفحة ${nextP} (سورة ${surah.name})`;
                           onUpdateHabitDescription(habit.id, desc);
@@ -397,6 +447,34 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             </h3>
 
             <form onSubmit={handleCreatePlan} className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-muted-foreground">نقطة البداية واتجاه الحفظ</label>
+                <select
+                  value={direction}
+                  onChange={(e) => handleDirectionChange(e.target.value as KhatmahDirection)}
+                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                >
+                  <option value="juz_amma">من جزء عمَّ (سورة النبأ ← الناس - الصفحة 582)</option>
+                  <option value="forward">من بداية المصحف (سورة الفاتحة ← الناس - الصفحة 1)</option>
+                  <option value="reverse">من آخر المصحف عكسياً (سورة الناس ← الفاتحة - الصفحة 604)</option>
+                  <option value="custom">تحديد صفحة بداية مخصصة</option>
+                </select>
+              </div>
+
+              {direction === 'custom' && (
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">صفحة البداية المخصصة (1-604)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={604}
+                    value={customStartPage}
+                    onChange={(e) => setCustomStartPage(Math.min(604, Math.max(1, Number(e.target.value))))}
+                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+                  />
+                </div>
+              )}
+
               <div>
                 <label className="text-xs font-bold text-muted-foreground">اسم الخاتمة</label>
                 <input

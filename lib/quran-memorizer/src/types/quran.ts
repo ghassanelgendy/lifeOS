@@ -65,11 +65,13 @@ export interface MutashabihItem {
 }
 
 export type KhatmahGoalType = 'pages_per_day' | 'juz_in_days' | 'target_date';
+export type KhatmahDirection = 'forward' | 'juz_amma' | 'reverse' | 'custom';
 
 export interface KhatmahPlan {
   id: string;
   title: string;
   goalType: KhatmahGoalType;
+  direction?: KhatmahDirection;
   pagesPerDay: number;
   startPage: number;
   endPage: number;
