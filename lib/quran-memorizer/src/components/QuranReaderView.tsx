@@ -52,7 +52,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   }, [surahNumber]);
 
   return (
-    <div className="space-y-4 font-sans dir-rtl">
+    <div dir="rtl" className="space-y-4 font-arabic-body text-right">
       {/* Surah Header Selector & Bar */}
       <div className="p-4 rounded-2xl border border-border bg-card shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto">

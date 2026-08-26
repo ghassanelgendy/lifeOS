@@ -12,8 +12,10 @@ import { KhatmahPlannerView } from './KhatmahPlannerView';
 
 export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   linkedTasks = [],
+  linkedHabits = [],
   linkedEvents = [],
   onToggleTask,
+  onToggleHabit,
   onCreateQuranTask,
 }) => {
   const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>('khatmah');
@@ -62,17 +64,17 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans dir-rtl">
+    <div dir="rtl" className="min-h-screen bg-background text-foreground flex flex-col font-arabic-body text-right">
       {/* Top Banner & Tab Navigation */}
       <header className="border-b border-border/60 bg-card/60 backdrop-blur-md p-4 md:px-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="size-12 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-2xl shadow-sm border border-emerald-500/20 shrink-0">
               📖
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-foreground flex items-center gap-2 font-arabic-title">
-                مُحَفِّظُ القُرْآنِ الكَرِيمِ
+            <div className="text-right">
+              <h1 className="text-xl font-extrabold text-foreground flex items-center gap-2 font-arabic-title">
+                <span>مُحَفِّظُ القُرْآنِ الكَرِيمِ</span>
                 <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                   الحفظ والمراجعة
                 </span>
@@ -84,7 +86,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-1.5 bg-secondary/60 p-1.5 rounded-2xl border border-border flex-wrap">
+          <div dir="rtl" className="flex items-center gap-1.5 bg-secondary/60 p-1.5 rounded-2xl border border-border flex-wrap">
             <button
               onClick={() => setActiveTab('khatmah')}
               className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
@@ -93,8 +95,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Target className="size-4 text-emerald-500" />
-              خطة الخاتمة
+              <Target className="size-4 text-emerald-500 shrink-0" />
+              <span>خطة الخاتمة</span>
             </button>
 
             <button
@@ -105,8 +107,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <BookOpen className="size-4 text-emerald-500" />
-              المصحف الشريف
+              <BookOpen className="size-4 text-emerald-500 shrink-0" />
+              <span>المصحف الشريف</span>
             </button>
 
             <button
@@ -117,8 +119,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Calendar className="size-4 text-amber-500" />
-              ورد المراجعة ({memorizerStore.dueReviews.length})
+              <Calendar className="size-4 text-amber-500 shrink-0" />
+              <span>ورد المراجعة ({memorizerStore.dueReviews.length})</span>
             </button>
 
             <button
@@ -129,20 +131,22 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Layers className="size-4 text-indigo-400" />
-              المتشابهات
+              <Layers className="size-4 text-indigo-400 shrink-0" />
+              <span>المتشابهات</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-36 md:pb-40 font-arabic-body">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-28 text-right">
         {activeTab === 'khatmah' && (
           <KhatmahPlannerView
             linkedTasks={linkedTasks}
+            linkedHabits={linkedHabits}
             linkedEvents={linkedEvents}
             onToggleTask={onToggleTask}
+            onToggleHabit={onToggleHabit}
             onCreateTask={onCreateQuranTask}
           />
         )}
@@ -150,7 +154,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         {activeTab === 'reader' && (
           <div className="space-y-4">
             {/* Range Target Selector Header */}
-            <div className="p-4 rounded-2xl border border-border bg-card/50 flex flex-wrap items-center justify-between gap-3 text-xs font-bold font-arabic-title">
+            <div dir="rtl" className="p-4 rounded-2xl border border-border bg-card/50 flex flex-wrap items-center justify-between gap-3 text-xs font-bold font-arabic-title text-right">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">نطاق التكرار الحالي:</span>
                 <span className="text-emerald-400">
@@ -158,9 +162,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                 </span>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div dir="rtl" className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
-                  <label className="text-muted-foreground">من الآية:</label>
+                  <span className="text-muted-foreground">من الآية:</span>
                   <input
                     type="number"
                     min={1}
@@ -172,7 +176,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <label className="text-muted-foreground">إلى الآية:</label>
+                  <span className="text-muted-foreground">إلى الآية:</span>
                   <input
                     type="number"
                     min={startAyah}
@@ -191,7 +195,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                   }
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 cursor-pointer shadow-md"
                 >
-                  <Award className="size-4" /> اعتماد المقطع كمُتقَن
+                  <Award className="size-4 shrink-0" />
+                  <span>اعتماد المقطع كمُتقَن</span>
                 </button>
               </div>
             </div>

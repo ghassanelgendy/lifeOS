@@ -33,7 +33,7 @@ export const MutashabihatView: React.FC<MutashabihatViewProps> = ({
   });
 
   return (
-    <div className="space-y-4 p-5 md:p-7 rounded-3xl border border-border bg-card shadow-sm font-sans dir-rtl">
+    <div dir="rtl" className="space-y-4 p-5 md:p-7 rounded-3xl border border-border bg-card shadow-sm font-arabic-body text-right">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">

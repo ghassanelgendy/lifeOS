@@ -114,7 +114,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   );
 
   const quranHabits = linkedHabits.filter((h) =>
-    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|ورد|تحفيظ|صفحة|صفحات/i.test(h.title)
+    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
   );
 
   const sheikhEvents = linkedEvents.filter((e) =>
@@ -126,7 +126,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
 
   return (
-    <div className="space-y-6 font-sans dir-rtl">
+    <div dir="rtl" className="space-y-6 font-arabic-body text-right">
       {/* Top Banner / Plan Summary */}
       {!plan ? (
         <div className="p-6 md:p-8 rounded-3xl border border-emerald-500/30 bg-emerald-950/25 backdrop-blur-md text-center space-y-4 shadow-xl">

@@ -32,20 +32,20 @@ export const BlindModeOverlay: React.FC<BlindModeOverlayProps> = ({
 
   if (!isBlindMode) {
     return (
-      <div className="flex items-center gap-2 mb-2 dir-rtl">
+      <div dir="rtl" className="flex items-center gap-2 mb-2">
         <button
           onClick={onToggleBlindMode}
           className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold hover:bg-indigo-500/20 transition-all cursor-pointer"
         >
-          <EyeOff className="size-4" />
-          تفعيل وضع اختبار الحفظ (إخفاء النص)
+          <EyeOff className="size-4 shrink-0" />
+          <span>تفعيل وضع اختبار الحفظ (إخفاء النص)</span>
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 my-2 p-4 md:p-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 backdrop-blur-md dir-rtl shadow-lg">
+    <div dir="rtl" className="space-y-3 my-2 p-4 md:p-5 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 backdrop-blur-md shadow-lg font-arabic-body text-right">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <span className="text-xs font-bold text-indigo-400 flex items-center gap-2">
           <EyeOff className="size-4" />

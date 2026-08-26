@@ -39,7 +39,10 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onChangeSpeed,
 }) => {
   return (
-    <div className="sticky bottom-0 z-50 w-full border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] dir-rtl font-arabic-title">
+    <div
+      dir="rtl"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.4)] font-arabic-title text-right"
+    >
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-foreground">
         
         {/* Reciter & Current Verse Info */}

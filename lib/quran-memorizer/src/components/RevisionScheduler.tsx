@@ -20,7 +20,7 @@ export const RevisionScheduler: React.FC<RevisionSchedulerProps> = ({
   const totalReviewing = allRecords.filter((r) => r.status === 'reviewing' || r.status === 'memorizing').length;
 
   return (
-    <div className="space-y-4 font-sans dir-rtl">
+    <div dir="rtl" className="space-y-4 font-arabic-body text-right">
       {/* Stats Summary Header */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 flex items-center gap-3">
