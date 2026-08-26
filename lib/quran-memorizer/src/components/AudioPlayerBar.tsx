@@ -82,14 +82,13 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
         </div>
 
         {/* Playback Buttons */}
-        <div dir="rtl" className="flex items-center gap-2 font-arabic-title shrink-0">
+        <div dir="rtl" className="flex items-center gap-2 shrink-0">
           <button
             onClick={onPrev}
-            className="px-2.5 py-1.5 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+            className="p-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground transition-colors cursor-pointer"
             title="الآية السابقة"
           >
             <SkipForward className="size-4 shrink-0" />
-            <span className="hidden sm:inline">السابقة</span>
           </button>
 
           <button
@@ -114,10 +113,9 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
 
           <button
             onClick={onNext}
-            className="px-2.5 py-1.5 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground transition-colors cursor-pointer flex items-center gap-1 text-xs font-bold"
+            className="p-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground transition-colors cursor-pointer"
             title="الآية التالية"
           >
-            <span className="hidden sm:inline">التالية</span>
             <SkipBack className="size-4 shrink-0" />
           </button>
         </div>
