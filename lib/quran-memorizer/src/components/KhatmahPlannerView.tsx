@@ -149,14 +149,17 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     } else {
       localStorage.removeItem(KHATMAH_STORAGE_KEY);
     }
+    window.dispatchEvent(new Event('quran_plan_updated'));
   }, [plan]);
 
   useEffect(() => {
     localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(readingWird));
+    window.dispatchEvent(new Event('quran_plan_updated'));
   }, [readingWird]);
 
   useEffect(() => {
     localStorage.setItem(HALQAH_NOTES_STORAGE_KEY, JSON.stringify(halqahNotes));
+    window.dispatchEvent(new Event('quran_plan_updated'));
   }, [halqahNotes]);
 
   const handleDirectionChange = (newDir: KhatmahDirection) => {

@@ -1273,7 +1273,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 927
+**Lines:** 930
 
 ---
 
@@ -1295,7 +1295,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 434
+**Lines:** 465
 
 ---
 
@@ -1306,7 +1306,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 451
+**Lines:** 464
 
 ---
 
@@ -1334,7 +1334,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useQuranAudio`** — Custom React hook managing quranaudio state and side effects.
 - **`useQuranAudio`** — Utility function for use quran audio.
 
-**Lines:** 236
+**Lines:** 243
 
 ---
 
@@ -1502,7 +1502,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 14083
+**Lines:** 14284
 
 ---
 

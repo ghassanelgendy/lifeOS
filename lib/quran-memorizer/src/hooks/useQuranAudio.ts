@@ -7,6 +7,7 @@ interface UseQuranAudioProps {
   surahNumber: number;
   startAyah: number;
   endAyah: number;
+  initialAyahIndex?: number;
   repeatSettings: RepeatSettings;
   onAyahChange?: (ayahNumber: number) => void;
 }
@@ -16,11 +17,12 @@ export function useQuranAudio({
   surahNumber,
   startAyah,
   endAyah,
+  initialAyahIndex,
   repeatSettings,
   onAyahChange,
 }: UseQuranAudioProps) {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentAyahIndex, setCurrentAyahIndex] = useState(startAyah);
+  const [currentAyahIndex, setCurrentAyahIndex] = useState(initialAyahIndex ?? startAyah);
   const [currentVerseRepeat, setCurrentVerseRepeat] = useState(1);
   const [currentRangeLoop, setCurrentRangeLoop] = useState(1);
   const [isDelaying, setIsDelaying] = useState(false);
@@ -28,11 +30,12 @@ export function useQuranAudio({
 
   const verseRepeatRef = useRef(1);
   const rangeLoopRef = useRef(1);
-  const currentAyahRef = useRef(startAyah);
+  const currentAyahRef = useRef(initialAyahIndex ?? startAyah);
   const repeatSettingsRef = useRef(repeatSettings);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const delayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isFirstMountRef = useRef(true);
 
   // Sync refs when settings or selections change
   useEffect(() => {
@@ -40,6 +43,10 @@ export function useQuranAudio({
   }, [repeatSettings]);
 
   useEffect(() => {
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return;
+    }
     currentAyahRef.current = startAyah;
     verseRepeatRef.current = 1;
     rangeLoopRef.current = 1;

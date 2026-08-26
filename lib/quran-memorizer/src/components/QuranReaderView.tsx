@@ -62,10 +62,23 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onSyncReading,
 }) => {
   const [verses, setVerses] = useState<Ayah[]>([]);
+  const [viewMode, setViewMode] = useState<'page' | 'ayah'>(() => {
+    try {
+      const saved = localStorage.getItem('quran_view_mode_v1');
+      if (saved === 'page' || saved === 'ayah') return saved;
+    } catch {}
+    return 'page';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('quran_view_mode_v1', viewMode);
+    } catch {}
+  }, [viewMode]);
+
   const [loading, setLoading] = useState(true);
   const [showTranslation, setShowTranslation] = useState(false);
   const [showRangeControls, setShowRangeControls] = useState(false);
-  const [viewMode, setViewMode] = useState<'page' | 'ayah'>('page');
 
   const currentSurah = SURAHS.find((s) => s.id === surahNumber) || SURAHS[0];
 

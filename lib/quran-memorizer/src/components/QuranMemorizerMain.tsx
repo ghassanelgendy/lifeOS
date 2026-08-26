@@ -104,22 +104,18 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     return 7;
   });
 
-  const [reciter, setReciter] = useState<Reciter>(RECITERS[0]);
-
-  // Persist position whenever it changes
-  useEffect(() => {
+  const [savedAyahIndex] = useState<number>(() => {
     try {
-      localStorage.setItem(
-        QURAN_LAST_POSITION_KEY,
-        JSON.stringify({
-          activeTab,
-          selectedSurah,
-          startAyah,
-          endAyah,
-        })
-      );
+      const saved = localStorage.getItem(QURAN_LAST_POSITION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.currentAyahIndex === 'number') return parsed.currentAyahIndex;
+      }
     } catch {}
-  }, [activeTab, selectedSurah, startAyah, endAyah]);
+    return 1;
+  });
+
+  const [reciter, setReciter] = useState<Reciter>(RECITERS[0]);
 
   // Repeat & Blind mode settings
   const [repeatSettings, setRepeatSettings] = useState<RepeatSettings>({
@@ -148,8 +144,25 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     surahNumber: selectedSurah,
     startAyah,
     endAyah,
+    initialAyahIndex: savedAyahIndex,
     repeatSettings,
   });
+
+  // Persist position whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        QURAN_LAST_POSITION_KEY,
+        JSON.stringify({
+          activeTab,
+          selectedSurah,
+          startAyah,
+          endAyah,
+          currentAyahIndex: audio.currentAyahIndex,
+        })
+      );
+    } catch {}
+  }, [activeTab, selectedSurah, startAyah, endAyah, audio.currentAyahIndex]);
 
   const handleSelectReviewItem = (record: HifdhRecord) => {
     setSelectedSurah(record.surahNumber);
@@ -158,23 +171,41 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setActiveTab('reader');
   };
 
-  const memorizationPlan = (() => {
+  const [memorizationPlan, setMemorizationPlan] = useState<KhatmahPlan | null>(() => {
     try {
       const saved = localStorage.getItem('quran_khatmah_plan_v1');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
-  })();
+  });
 
-  const readingWird = (() => {
+  const [readingWird, setReadingWird] = useState<ReadingWirdPlan>(() => {
     try {
       const saved = localStorage.getItem('quran_reading_wird_v1');
-      return saved ? JSON.parse(saved) : null;
+      return saved ? JSON.parse(saved) : { currentPage: 1, pagesPerDay: 4, streakDays: 0 };
     } catch {
-      return null;
+      return { currentPage: 1, pagesPerDay: 4, streakDays: 0 };
     }
-  })();
+  });
+
+  useEffect(() => {
+    const handleStorageUpdate = () => {
+      try {
+        const pSaved = localStorage.getItem('quran_khatmah_plan_v1');
+        setMemorizationPlan(pSaved ? JSON.parse(pSaved) : null);
+        const rSaved = localStorage.getItem('quran_reading_wird_v1');
+        setReadingWird(rSaved ? JSON.parse(rSaved) : { currentPage: 1, pagesPerDay: 4, streakDays: 0 });
+      } catch {}
+    };
+
+    window.addEventListener('storage', handleStorageUpdate);
+    window.addEventListener('quran_plan_updated', handleStorageUpdate);
+    return () => {
+      window.removeEventListener('storage', handleStorageUpdate);
+      window.removeEventListener('quran_plan_updated', handleStorageUpdate);
+    };
+  }, []);
 
   const memorizationPage = memorizationPlan ? memorizationPlan.currentPage : undefined;
   const memorizationEndPage = memorizationPlan
