@@ -247,13 +247,6 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
     const surah = getSurahForPage(nextCurrentPage);
 
-    if (onCreateTask) {
-      onCreateTask(
-        `حفظ القرآن - الصفحة ${nextCurrentPage} (سورة ${surah.name})`,
-        todayStr
-      );
-    }
-
     if (onUpdateHabitDescription && linkedHabits.length > 0) {
       const targetHabit = linkedHabits.find((h) =>
         /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
