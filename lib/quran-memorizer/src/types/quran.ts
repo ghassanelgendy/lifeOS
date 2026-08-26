@@ -112,6 +112,8 @@ export interface SheikhHalqahNote {
   ayahRange: string;
   mistakesNote: string;
   rating: 'mumtaz' | 'jayyid_jiddan' | 'jayyid' | 'yahatadj_tathbeet';
+  wirdType?: 'memorization' | 'reading' | 'general';
+  pageNumber?: number;
 }
 
 export interface ReadingWirdPlan {

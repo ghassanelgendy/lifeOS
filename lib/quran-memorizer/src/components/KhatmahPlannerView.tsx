@@ -56,6 +56,25 @@ const getSurahForPage = (page: number) => {
   return found;
 };
 
+const calculateSmartAyahRange = (page: number, surah: typeof SURAHS[0]) => {
+  const nextSurah = SURAHS.find((s) => s.id === surah.id + 1);
+  const nextSurahPageStart = nextSurah ? nextSurah.pageStart : 605;
+  const surahPageSpan = Math.max(1, nextSurahPageStart - surah.pageStart);
+
+  if (surah.versesCount <= 10 || surahPageSpan <= 1) {
+    return { startAyah: 1, endAyah: surah.versesCount };
+  }
+
+  const offset = Math.max(0, page - surah.pageStart);
+  const startAyah = Math.max(1, Math.floor((offset / surahPageSpan) * surah.versesCount) + 1);
+  const endAyah =
+    offset >= surahPageSpan - 1
+      ? surah.versesCount
+      : Math.min(surah.versesCount, Math.ceil(((offset + 1) / surahPageSpan) * surah.versesCount));
+
+  return { startAyah, endAyah };
+};
+
 export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   linkedTasks = [],
   linkedHabits = [],
@@ -124,8 +143,40 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const [noteEndAyah, setNoteEndAyah] = useState<number>(7);
   const [noteMistakes, setNoteMistakes] = useState('');
   const [noteRating, setNoteRating] = useState<'mumtaz' | 'jayyid_jiddan' | 'jayyid' | 'yahatadj_tathbeet'>('jayyid_jiddan');
+  const [noteWirdType, setNoteWirdType] = useState<'memorization' | 'reading' | 'general'>('memorization');
 
   const selectedNoteSurahMeta = SURAHS.find((s) => s.id === noteSurahId) || SURAHS[0];
+
+  const getSmartWirdInfo = (type: 'memorization' | 'reading') => {
+    if (type === 'memorization' && plan) {
+      const page = plan.currentPage;
+      const surah = getSurahForPage(page);
+      const range = calculateSmartAyahRange(page, surah);
+      return { type, page, surah, startAyah: range.startAyah, endAyah: range.endAyah, label: 'ورد الحفظ اليومي' };
+    }
+    const page = readingWird.currentPage;
+    const surah = getSurahForPage(page);
+    const range = calculateSmartAyahRange(page, surah);
+    return { type: 'reading' as const, page, surah, startAyah: range.startAyah, endAyah: range.endAyah, label: 'ورد التلاوة اليومي' };
+  };
+
+  const handleOpenSmartHalqahNoteModal = (preferredType: 'memorization' | 'reading' = 'memorization') => {
+    const targetType = (preferredType === 'memorization' && plan) ? 'memorization' : 'reading';
+    const smart = getSmartWirdInfo(targetType);
+    setNoteSurahId(smart.surah.id);
+    setNoteStartAyah(smart.startAyah);
+    setNoteEndAyah(smart.endAyah);
+    setNoteWirdType(smart.type);
+    setShowHalqahNoteModal(true);
+  };
+
+  const applyWirdPreset = (type: 'memorization' | 'reading') => {
+    const smart = getSmartWirdInfo(type);
+    setNoteSurahId(smart.surah.id);
+    setNoteStartAyah(smart.startAyah);
+    setNoteEndAyah(smart.endAyah);
+    setNoteWirdType(type);
+  };
 
   const handleNoteSurahChange = (id: number) => {
     setNoteSurahId(id);
@@ -291,6 +342,8 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       ayahRange: `من الآية ${noteStartAyah} إلى ${noteEndAyah}`,
       mistakesNote: noteMistakes.trim(),
       rating: noteRating,
+      wirdType: noteWirdType,
+      pageNumber: selectedNoteSurahMeta.pageStart,
     };
 
     setHalqahNotes([newNote, ...halqahNotes]);
@@ -378,15 +431,24 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 <span className="font-bold text-emerald-400">صفحة {nextTargetPage} (سورة {nextSurah.name})</span>
               </div>
 
-              <div className="pt-2 flex items-center justify-between">
-                <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
-                  <Flame className="size-3.5 fill-current" /> سلسلة {plan.streakDays} أيام
-                </span>
+              <div className="pt-2 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
+                    <Flame className="size-3.5 fill-current" /> سلسلة {plan.streakDays} أيام
+                  </span>
+                  <button
+                    onClick={handleLogProgress}
+                    className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <CheckCircle2 className="size-3.5" /> تسجيل إنجاز الحفظ
+                  </button>
+                </div>
                 <button
-                  onClick={handleLogProgress}
-                  className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  onClick={() => handleOpenSmartHalqahNoteModal('memorization')}
+                  className="w-full py-2 px-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm mt-1"
                 >
-                  <CheckCircle2 className="size-3.5" /> تسجيل إنجاز الحفظ
+                  <FileText className="size-3.5 text-emerald-400" />
+                  <span>📝 تدوين ملاحظة تسميع لورد الحفظ اليومي</span>
                 </button>
               </div>
             </div>
@@ -416,15 +478,24 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               <span className="font-bold text-indigo-400">صفحة {Math.min(604, readingWird.currentPage + readingWird.pagesPerDay)}</span>
             </div>
 
-            <div className="pt-2 flex items-center justify-between">
-              <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
-                <Flame className="size-3.5 fill-current" /> سلسلة {readingWird.streakDays} أيام قراءة
-              </span>
+            <div className="pt-2 flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
+                  <Flame className="size-3.5 fill-current" /> سلسلة {readingWird.streakDays} أيام قراءة
+                </span>
+                <button
+                  onClick={handleLogReadingWird}
+                  className="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Bookmark className="size-3.5" /> تسجيل إنجاز التلاوة (+{readingWird.pagesPerDay} صفحة)
+                </button>
+              </div>
               <button
-                onClick={handleLogReadingWird}
-                className="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                onClick={() => handleOpenSmartHalqahNoteModal('reading')}
+                className="w-full py-2 px-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm mt-1"
               >
-                <Bookmark className="size-3.5" /> تسجيل إنجاز التلاوة (+{readingWird.pagesPerDay} صفحة)
+                <FileText className="size-3.5 text-indigo-400" />
+                <span>📝 تدوين ملاحظة على ورد التلاوة اليومي</span>
               </button>
             </div>
           </div>
@@ -579,7 +650,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               </h3>
             </div>
             <button
-              onClick={() => setShowHalqahNoteModal(true)}
+              onClick={() => handleOpenSmartHalqahNoteModal('memorization')}
               className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap"
             >
               <Plus className="size-3.5" />
@@ -829,6 +900,59 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               </div>
 
               <form onSubmit={handleAddHalqahNote} className="space-y-3.5">
+                {/* Smart Wird Presets Quick Select */}
+                <div className="space-y-2 pb-1">
+                  <label className="text-xs font-bold text-muted-foreground block">
+                    ⚡ تعبئة تلقائية سريعة من ورد اليوم:
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {plan && (
+                      <button
+                        type="button"
+                        onClick={() => applyWirdPreset('memorization')}
+                        className={`p-2.5 rounded-2xl border text-right transition-all cursor-pointer ${
+                          noteWirdType === 'memorization'
+                            ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300 shadow-sm'
+                            : 'bg-secondary/40 border-border/60 text-muted-foreground hover:bg-secondary'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between text-[11px] font-bold">
+                          <span>🎯 ورد الحفظ اليومي</span>
+                          <span className="text-[10px] opacity-75">صفحة {getSmartWirdInfo('memorization').page}</span>
+                        </div>
+                        <div className="text-xs font-bold mt-0.5 text-foreground">
+                          سورة {getSmartWirdInfo('memorization').surah.name} (الآيات {getSmartWirdInfo('memorization').startAyah}-{getSmartWirdInfo('memorization').endAyah})
+                        </div>
+                      </button>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => applyWirdPreset('reading')}
+                      className={`p-2.5 rounded-2xl border text-right transition-all cursor-pointer ${
+                        noteWirdType === 'reading'
+                          ? 'bg-indigo-500/15 border-indigo-500/50 text-indigo-300 shadow-sm'
+                          : 'bg-secondary/40 border-border/60 text-muted-foreground hover:bg-secondary'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-[11px] font-bold">
+                        <span>📖 ورد التلاوة اليومي</span>
+                        <span className="text-[10px] opacity-75">صفحة {getSmartWirdInfo('reading').page}</span>
+                      </div>
+                      <div className="text-xs font-bold mt-0.5 text-foreground">
+                        سورة {getSmartWirdInfo('reading').surah.name} (الآيات {getSmartWirdInfo('reading').startAyah}-{getSmartWirdInfo('reading').endAyah})
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-3 py-2 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-[11px] font-bold text-indigo-300 flex items-center gap-1.5">
+                  <Sparkles className="size-3.5 text-indigo-400 shrink-0" />
+                  <span>
+                    محدَّد تلقائياً لـ {noteWirdType === 'memorization' ? 'ورد الحفظ' : 'ورد التلاوة'}: سورة {selectedNoteSurahMeta.name} (الآيات {noteStartAyah} إلى {noteEndAyah})
+                  </span>
+                </div>
+
                 <div>
                   <label className="text-xs font-bold text-muted-foreground">اسم السورة</label>
                   <select

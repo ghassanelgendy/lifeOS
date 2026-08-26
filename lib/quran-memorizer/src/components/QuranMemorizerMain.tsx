@@ -193,9 +193,15 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     const handleStorageUpdate = () => {
       try {
         const pSaved = localStorage.getItem('quran_khatmah_plan_v1');
-        setMemorizationPlan(pSaved ? JSON.parse(pSaved) : null);
+        if (pSaved) setMemorizationPlan(JSON.parse(pSaved));
         const rSaved = localStorage.getItem('quran_reading_wird_v1');
-        setReadingWird(rSaved ? JSON.parse(rSaved) : { currentPage: 1, pagesPerDay: 4, streakDays: 0 });
+        if (rSaved) setReadingWird(JSON.parse(rSaved));
+
+        const mSaved = localStorage.getItem('quran_memorization_marker_v1');
+        if (mSaved) setMemorizationMarker(JSON.parse(mSaved));
+
+        const rdSaved = localStorage.getItem('quran_reading_marker_v1');
+        if (rdSaved) setReadingMarker(JSON.parse(rdSaved));
       } catch {}
     };
 
@@ -248,6 +254,14 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setMemorizationMarker(marker);
     try {
       localStorage.setItem('quran_memorization_marker_v1', JSON.stringify(marker));
+      
+      // Update plan currentPage as well
+      const planSaved = localStorage.getItem('quran_khatmah_plan_v1');
+      const p = planSaved ? JSON.parse(planSaved) : {};
+      const updatedPlan = { ...p, currentPage: page };
+      localStorage.setItem('quran_khatmah_plan_v1', JSON.stringify(updatedPlan));
+      setMemorizationPlan(updatedPlan);
+
       window.dispatchEvent(new Event('quran_plan_updated'));
     } catch {}
   };
@@ -257,6 +271,14 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setReadingMarker(marker);
     try {
       localStorage.setItem('quran_reading_marker_v1', JSON.stringify(marker));
+
+      // Update reading wird currentPage as well
+      const wirdSaved = localStorage.getItem('quran_reading_wird_v1');
+      const r = wirdSaved ? JSON.parse(wirdSaved) : {};
+      const updatedWird = { ...r, currentPage: page };
+      localStorage.setItem('quran_reading_wird_v1', JSON.stringify(updatedWird));
+      setReadingWird(updatedWird);
+
       window.dispatchEvent(new Event('quran_plan_updated'));
     } catch {}
   };
@@ -433,6 +455,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onSetReadingMarker={handleSetReadingMarker}
             onSyncMemorization={handleSyncMemorization}
             onSyncReading={handleSyncReading}
+            onOpenHalqahNote={() => setActiveTab('khatmah')}
           />
         )}
 
