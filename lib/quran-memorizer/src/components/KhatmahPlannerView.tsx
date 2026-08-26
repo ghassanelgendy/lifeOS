@@ -6,15 +6,19 @@ const KHATMAH_STORAGE_KEY = 'quran_khatmah_plan_v1';
 
 interface KhatmahPlannerViewProps {
   linkedTasks?: LinkedLifeOSTask[];
+  linkedHabits?: LinkedLifeOSHabit[];
   linkedEvents?: LinkedLifeOSEvent[];
   onToggleTask?: (taskId: string) => void;
+  onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
   onCreateTask?: (title: string, dueDate: string) => void;
 }
 
 export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   linkedTasks = [],
+  linkedHabits = [],
   linkedEvents = [],
   onToggleTask,
+  onToggleHabit,
   onCreateTask,
 }) => {
   const [plan, setPlan] = useState<KhatmahPlan | null>(() => {
@@ -106,11 +110,15 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   };
 
   const quranTasks = linkedTasks.filter((t) =>
-    /quran|memoriz|حفظ|مراجعة|تلاوة|قران/i.test(t.title)
+    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن/i.test(t.title)
+  );
+
+  const quranHabits = linkedHabits.filter((h) =>
+    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|ورد|تحفيظ/i.test(h.title)
   );
 
   const sheikhEvents = linkedEvents.filter((e) =>
-    /sheikh|حفظ|قران|تسميع|شيخ/i.test(e.title)
+    /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran/i.test(e.title)
   );
 
   const totalPages = plan ? plan.endPage - plan.startPage + 1 : 604;
@@ -200,21 +208,21 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         </div>
       )}
 
-      {/* lifeOS Connected Tasks & Sheikh Calendar Sessions Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* lifeOS Connected Tasks, Habits & Sheikh Calendar Sessions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
         {/* Connected Tasks Card */}
         <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <CheckCircle2 className="size-4 text-emerald-500" />
-              مهام الحفظ المرتبطة في lifeOS ({quranTasks.length})
+              مهام الحفظ (lifeOS Tasks) ({quranTasks.length})
             </h3>
           </div>
 
           {quranTasks.length === 0 ? (
             <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
-              لا توجد مهام قرآنية حالية في lifeOS. يمكنك إضافة مهمة تحتوي على كلمة "حفظ" أو "قرآن" في قسم المهام.
+              لا توجد مهام قرآنية حالية في lifeOS.
             </div>
           ) : (
             <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
@@ -247,18 +255,60 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           )}
         </div>
 
+        {/* Connected Habits Card */}
+        <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+              <Sparkles className="size-4 text-amber-400" />
+              العادات القرآنية (lifeOS Habits) ({quranHabits.length})
+            </h3>
+          </div>
+
+          {quranHabits.length === 0 ? (
+            <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
+              لا توجد عادات قرآنية في lifeOS Habits (مثل: ورد القرآن، تحفيظ).
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
+              {quranHabits.map((habit) => (
+                <div
+                  key={habit.id}
+                  onClick={() => onToggleHabit && onToggleHabit(habit.id, !habit.is_completed_today)}
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                    habit.is_completed_today
+                      ? 'border-amber-500/30 bg-amber-500/5 text-muted-foreground line-through'
+                      : 'border-border/60 bg-secondary/30 hover:bg-secondary/60 text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {habit.is_completed_today ? (
+                      <CheckCircle2 className="size-4 text-amber-500 shrink-0" />
+                    ) : (
+                      <Circle className="size-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="text-xs font-bold">{habit.title}</span>
+                  </div>
+                  <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                    {habit.is_completed_today ? 'تم اليوم' : 'غير مكتمل'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Connected Sheikh Recitation Calendar Sessions Card */}
         <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <UserCheck className="size-4 text-indigo-400" />
-              جلسات التسميع المجدولة مع الشيخ ({sheikhEvents.length})
+              جلسات التحفيظ والتسميع مع الشيخ ({sheikhEvents.length})
             </h3>
           </div>
 
           {sheikhEvents.length === 0 ? (
             <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
-              لا توجد جلسات تسميع مجدولة في التقويم. يمكنك إضافة حدث يحتوي على "تسميع" أو "الشيخ" في التقويم ليعرض هنا.
+              لا توجد أحداث مجدولة في التقويم (أضف حدثاً بعنوان "قرآن" أو "تحفيظ" أو "تسميع" أو "الشيخ").
             </div>
           ) : (
             <div className="space-y-2 max-h-48 overflow-y-auto pl-1">

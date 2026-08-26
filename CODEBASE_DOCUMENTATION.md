@@ -1272,7 +1272,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 383
+**Lines:** 433
 
 ---
 
@@ -1416,13 +1416,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `MutashabihItem` (Interface)
 - `KhatmahPlan` (Interface)
 - `LinkedLifeOSTask` (Interface)
+- `LinkedLifeOSHabit` (Interface)
 - `LinkedLifeOSEvent` (Interface)
 - `LifeOSIntegrationProps` (Interface)
 - `MemorizationStatus` (Type)
 - `RatingGrade` (Type)
 - `KhatmahGoalType` (Type)
 
-**Lines:** 105
+**Lines:** 113
 
 ---
 
@@ -5192,7 +5193,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 53
+**Lines:** 78
 
 ---
 

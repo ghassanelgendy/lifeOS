@@ -1,19 +1,33 @@
 import React from 'react';
 import { QuranMemorizerMain } from '../../lib/quran-memorizer';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
+import { useHabits, useTodayHabitLogs, useToggleHabitLog } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
 
 export function QuranRoute() {
   const { data: tasks = [] } = useTasks();
+  const { data: habits = [] } = useHabits();
+  const { data: todayLogs = [] } = useTodayHabitLogs();
   const { data: calendarEvents = [] } = useCalendarEvents();
   const toggleTaskMutation = useToggleTask();
   const createTaskMutation = useCreateTask();
+  const toggleHabitLogMutation = useToggleHabitLog();
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   const handleToggleTask = (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId);
     if (task) {
       toggleTaskMutation.mutate({ id: taskId, is_completed: !task.is_completed });
     }
+  };
+
+  const handleToggleHabit = (habitId: string, isCompleted: boolean) => {
+    toggleHabitLogMutation.mutate({
+      habitId,
+      date: todayStr,
+      completed: isCompleted,
+    });
   };
 
   const handleCreateQuranTask = (title: string, dueDate: string) => {
@@ -32,6 +46,15 @@ export function QuranRoute() {
     due_date: t.due_date,
   }));
 
+  const formattedHabits = habits.map((h) => {
+    const log = todayLogs.find((l) => l.habit_id === h.id);
+    return {
+      id: h.id,
+      title: h.title,
+      is_completed_today: !!log?.completed,
+    };
+  });
+
   const formattedEvents = calendarEvents.map((e) => ({
     id: e.id,
     title: e.title,
@@ -42,8 +65,10 @@ export function QuranRoute() {
   return (
     <QuranMemorizerMain
       linkedTasks={formattedTasks}
+      linkedHabits={formattedHabits}
       linkedEvents={formattedEvents}
       onToggleTask={handleToggleTask}
+      onToggleHabit={handleToggleHabit}
       onCreateQuranTask={handleCreateQuranTask}
     />
   );

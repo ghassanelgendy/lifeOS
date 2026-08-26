@@ -88,6 +88,12 @@ export interface LinkedLifeOSTask {
   due_date?: string;
 }
 
+export interface LinkedLifeOSHabit {
+  id: string;
+  title: string;
+  is_completed_today: boolean;
+}
+
 export interface LinkedLifeOSEvent {
   id: string;
   title: string;
@@ -97,8 +103,10 @@ export interface LinkedLifeOSEvent {
 
 export interface LifeOSIntegrationProps {
   linkedTasks?: LinkedLifeOSTask[];
+  linkedHabits?: LinkedLifeOSHabit[];
   linkedEvents?: LinkedLifeOSEvent[];
   onToggleTask?: (taskId: string) => void;
+  onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
   onCreateQuranTask?: (title: string, dueDate: string) => void;
 }
 
