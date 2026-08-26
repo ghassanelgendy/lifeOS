@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Play, Pause, Square, SkipBack, SkipForward, Repeat, Clock, Volume2, Sparkles } from 'lucide-react';
 import { Reciter, RepeatSettings } from '../types/quran';
 import { RECITERS } from '../services/quranData';
@@ -38,10 +39,10 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onPrev,
   onChangeSpeed,
 }) => {
-  return (
+  const content = (
     <div
       dir="rtl"
-      className="fixed bottom-0 inset-x-0 z-50 border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] font-arabic-title text-right"
+      className="fixed bottom-0 left-0 right-0 md:left-64 z-[90] border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] font-arabic-title text-right"
     >
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 text-foreground px-2">
         
@@ -197,4 +198,6 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
       </div>
     </div>
   );
+
+  return createPortal(content, document.body);
 };

@@ -162,26 +162,36 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
               <div dir="rtl" className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">من الآية:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={currentSurah.versesCount}
+                  <select
                     value={startAyah}
-                    onChange={(e) => setStartAyah(Math.max(1, Number(e.target.value)))}
-                    className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
-                  />
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setStartAyah(val);
+                      if (val > endAyah) setEndAyah(val);
+                    }}
+                    className="rounded-xl border border-border bg-background px-3 py-1.5 font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
+                  >
+                    {Array.from({ length: currentSurah.versesCount }, (_, i) => i + 1).map((num) => (
+                      <option key={num} value={num}>
+                        الآية {num}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex items-center gap-1.5">
                   <span className="text-muted-foreground">إلى الآية:</span>
-                  <input
-                    type="number"
-                    min={startAyah}
-                    max={currentSurah.versesCount}
+                  <select
                     value={endAyah}
-                    onChange={(e) => setEndAyah(Math.min(currentSurah.versesCount, Number(e.target.value)))}
-                    className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
-                  />
+                    onChange={(e) => setEndAyah(Number(e.target.value))}
+                    className="rounded-xl border border-border bg-background px-3 py-1.5 font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500 text-xs"
+                  >
+                    {Array.from({ length: currentSurah.versesCount - startAyah + 1 }, (_, i) => startAyah + i).map((num) => (
+                      <option key={num} value={num}>
+                        الآية {num}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
