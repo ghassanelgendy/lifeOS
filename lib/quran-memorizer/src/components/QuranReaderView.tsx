@@ -379,6 +379,76 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   })}
                 </div>
 
+                {/* Active Ayah Quick Actions in Page Mode */}
+                {pageAyahs.some((a) => a.numberInSurah === currentAyahIndex) && (
+                  <div className="border-t border-border/40 pt-2.5 flex items-center justify-between gap-2 flex-wrap text-xs animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="flex items-center gap-1.5 p-0.5 rounded-xl bg-secondary/60 border border-border/50">
+                      <span className="text-[11px] font-bold text-foreground px-2 py-0.5">
+                        آية {currentAyahIndex}:
+                      </span>
+
+                      {onSetMemorizationMarker && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const target = pageAyahs.find((a) => a.numberInSurah === currentAyahIndex);
+                            if (target) {
+                              onSetMemorizationMarker(surahNumber, target.numberInSurah, target.page);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer ${
+                            memorizationMarker?.surahNumber === surahNumber && memorizationMarker?.ayahNumber === currentAyahIndex
+                              ? 'bg-emerald-600 text-white shadow-sm'
+                              : 'text-emerald-400 hover:bg-emerald-500/15'
+                          }`}
+                          title="تحديد كموضع الحفظ"
+                        >
+                          <Target className="size-3" />
+                          <span>{memorizationMarker?.surahNumber === surahNumber && memorizationMarker?.ayahNumber === currentAyahIndex ? '✓ موضع الحفظ' : '🎯 تحديد كورد الحفظ'}</span>
+                        </button>
+                      )}
+
+                      {onSetReadingMarker && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const target = pageAyahs.find((a) => a.numberInSurah === currentAyahIndex);
+                            if (target) {
+                              onSetReadingMarker(surahNumber, target.numberInSurah, target.page);
+                            }
+                          }}
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer ${
+                            readingMarker?.surahNumber === surahNumber && readingMarker?.ayahNumber === currentAyahIndex
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : 'text-indigo-400 hover:bg-indigo-500/15'
+                          }`}
+                          title="تحديد كموضع التلاوة"
+                        >
+                          <Bookmark className="size-3" />
+                          <span>{readingMarker?.surahNumber === surahNumber && readingMarker?.ayahNumber === currentAyahIndex ? '✓ موضع التلاوة' : '📖 تحديد كورد التلاوة'}</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {onMarkMemorized && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onMarkMemorized();
+                        }}
+                        className="px-2.5 py-1 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/25 text-[11px] flex items-center gap-1 active:scale-95 cursor-pointer transition-all"
+                        title="اعتماد المقطع كمُتقَن"
+                      >
+                        <Award className="size-3 text-emerald-400" />
+                        <span>اعتماد كمُتقَن</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+
                 {/* Page Bottom Footer: Surah Name | Page Number | Juz */}
                 <div className="border-t border-border/40 pt-3 text-xs text-muted-foreground flex items-center justify-between font-sans">
                   <span className="font-semibold text-foreground/80">سورة {currentSurah.name}</span>
