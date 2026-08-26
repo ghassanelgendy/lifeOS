@@ -659,7 +659,7 @@ export function AppShell() {
       </div>
  
         {/* Mobile Bottom Tab Bar */}
-        {location.pathname !== '/chat' && (
+        {location.pathname !== '/chat' && location.pathname !== '/quran' && (
           <LiquidTabBar
             tabs={mobileNavigationMapped}
             activeTabHref={location.pathname}

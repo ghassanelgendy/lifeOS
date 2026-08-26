@@ -253,45 +253,17 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
   return (
     <div dir="rtl" className="flex flex-col font-arabic-body text-right">
-      {/* Top Banner & Tab Navigation (Native iOS Header) */}
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/40 p-3 md:p-4 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 md:mb-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* Native iOS Segmented Control Navbar */}
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/30 px-3 py-2 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-3 md:mb-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-2">
           
-          {/* Header Title Bar */}
-          <div className="flex items-center justify-between w-full sm:w-auto gap-3">
-            <div className="flex items-center gap-2.5">
-              <div className="size-9 md:size-10 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-lg md:text-xl shadow-sm border border-emerald-500/20 shrink-0">
-                📖
-              </div>
-              <div className="text-right">
-                <h1 className="text-base md:text-lg font-bold text-foreground tracking-tight font-arabic-title">
-                  <span>القرآن الكريم</span>
-                </h1>
-                {/* Description visible on Desktop only */}
-                <p className="hidden md:block text-[11px] text-muted-foreground font-semibold mt-0.5">
-                  تخطيط الخاتمات، التكرار الصوتي، المراجعة المتباعدة، ومتابعة جلسات التسميع مع الشيخ.
-                </p>
-              </div>
-            </div>
-
-            {/* Mobile Hadith of the Day Trigger Button */}
-            <button
-              onClick={openHadithModalManual}
-              className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
-              title="حديث اليوم"
-            >
-              <Sparkles className="size-3 text-amber-400" />
-              <span>حديث اليوم</span>
-            </button>
-          </div>
-
-          {/* iOS Segmented Navigation Tabs */}
-          <div dir="rtl" className="flex items-center gap-1 bg-secondary/80 p-1 rounded-2xl border border-border/60 w-full sm:w-auto overflow-x-auto justify-between sm:justify-start shrink-0">
+          {/* iOS Native Segmented Tabs Pill */}
+          <div dir="rtl" className="flex-1 flex items-center bg-zinc-200/70 dark:bg-zinc-800/80 p-1 rounded-2xl border border-border/40 shadow-inner">
             <button
               onClick={() => setActiveTab('khatmah')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                 activeTab === 'khatmah'
-                  ? 'bg-card text-emerald-400 shadow-sm'
+                  ? 'bg-white dark:bg-zinc-700 text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -301,9 +273,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
             <button
               onClick={() => setActiveTab('reader')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                 activeTab === 'reader'
-                  ? 'bg-card text-emerald-400 shadow-sm'
+                  ? 'bg-white dark:bg-zinc-700 text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -313,9 +285,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
             <button
               onClick={() => setActiveTab('revision')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                 activeTab === 'revision'
-                  ? 'bg-card text-amber-400 shadow-sm'
+                  ? 'bg-white dark:bg-zinc-700 text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -325,9 +297,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
             <button
               onClick={() => setActiveTab('mutashabihat')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
+              className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 ${
                 activeTab === 'mutashabihat'
-                  ? 'bg-card text-indigo-400 shadow-sm'
+                  ? 'bg-white dark:bg-zinc-700 text-foreground shadow-[0_1px_3px_rgba(0,0,0,0.1)]'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -335,6 +307,15 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
               <span>المتشابهات</span>
             </button>
           </div>
+
+          {/* Quick Hadith of the day button */}
+          <button
+            onClick={openHadithModalManual}
+            className="p-2 rounded-2xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 active:scale-95 transition-all cursor-pointer shrink-0"
+            title="حديث اليوم"
+          >
+            <Sparkles className="size-4 text-amber-400" />
+          </button>
         </div>
       </header>
 

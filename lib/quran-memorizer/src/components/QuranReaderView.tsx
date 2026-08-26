@@ -123,16 +123,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
       <div className="p-3 md:p-3.5 rounded-2xl border border-border bg-card/80 backdrop-blur-md shadow-md flex flex-col md:flex-row items-center justify-between gap-3 font-arabic-title">
         
         {/* Right Section: Surah Selector & View Mode Switcher */}
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto shrink-0 justify-between md:justify-start">
-          {/* Surah Dropdown */}
-          <div className="flex items-center gap-2">
-            <span className="size-8 rounded-lg bg-emerald-500/10 text-emerald-500 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/20">
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
+          {/* Surah Dropdown with matched height */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/20">
               {surahNumber}
             </span>
             <select
               value={surahNumber}
               onChange={(e) => onSelectSurah(Number(e.target.value))}
-              className="bg-secondary/80 text-xs font-bold text-foreground rounded-xl px-2.5 py-1.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="h-9 bg-secondary/80 text-xs font-bold text-foreground rounded-xl px-3 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
             >
               {SURAHS.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -143,12 +143,12 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           </div>
 
           {/* View Mode Segmented Control (Pages vs Ayahs) */}
-          <div className="flex items-center p-0.5 rounded-xl bg-secondary/80 border border-border text-[11px] font-bold shrink-0">
+          <div className="flex items-center h-9 p-0.5 rounded-xl bg-secondary/80 border border-border/60 text-[11px] font-bold shrink-0">
             <button
               onClick={() => setViewMode('page')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+              className={`h-full px-2.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                 viewMode === 'page'
-                  ? 'bg-background text-emerald-400 shadow-sm'
+                  ? 'bg-card text-emerald-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -158,9 +158,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
             <button
               onClick={() => setViewMode('ayah')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+              className={`h-full px-2.5 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
                 viewMode === 'ayah'
-                  ? 'bg-background text-emerald-400 shadow-sm'
+                  ? 'bg-card text-emerald-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >

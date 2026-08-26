@@ -614,7 +614,7 @@ export function AppShell() {
       </div>
 
         {/* Mobile Bottom Tab Bar */}
-        {location.pathname !== '/chat' && (
+        {location.pathname !== '/chat' && location.pathname !== '/quran' && (
           <nav 
             className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
             style={{
