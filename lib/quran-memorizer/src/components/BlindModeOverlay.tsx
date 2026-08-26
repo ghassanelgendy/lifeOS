@@ -32,43 +32,43 @@ export const BlindModeOverlay: React.FC<BlindModeOverlayProps> = ({
 
   if (!isBlindMode) {
     return (
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 dir-rtl">
         <button
           onClick={onToggleBlindMode}
-          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold hover:bg-indigo-500/20 transition-all cursor-pointer"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold hover:bg-indigo-500/20 transition-all cursor-pointer"
         >
-          <EyeOff className="size-3.5" />
-          Enable Blind Mode (Self-Test)
+          <EyeOff className="size-4" />
+          تفعيل وضع اختبار الحفظ (إخفاء النص)
         </button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3 my-2 p-3 rounded-xl border border-indigo-500/30 bg-indigo-950/20 backdrop-blur-sm">
+    <div className="space-y-3 my-2 p-4 rounded-2xl border border-indigo-500/30 bg-indigo-950/30 backdrop-blur-md dir-rtl shadow-lg">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-indigo-400 flex items-center gap-1.5">
+        <span className="text-xs font-bold text-indigo-400 flex items-center gap-2">
           <EyeOff className="size-4" />
-          Blind Recitation Mode
+          وضع الاختبار والتسميع الذاتي (مُخفَى)
         </span>
         <div className="flex items-center gap-2">
           <button
             onClick={handleRevealWord}
             disabled={revealedWordsCount >= words.length}
-            className="px-2.5 py-1 rounded-lg bg-secondary text-foreground text-[11px] font-semibold border border-border hover:bg-accent disabled:opacity-40 cursor-pointer"
+            className="px-3 py-1 rounded-xl bg-secondary text-foreground text-xs font-bold border border-border hover:bg-accent disabled:opacity-40 cursor-pointer"
           >
-            Reveal +1 Word
+            + كشف كلمة واحدة
           </button>
           <button
             onClick={handleToggleFullReveal}
-            className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[11px] font-semibold hover:bg-indigo-500 cursor-pointer"
+            className="px-3 py-1 rounded-xl bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-500 cursor-pointer shadow-sm"
           >
-            {isFullyRevealed ? 'Blur Text' : 'Reveal All'}
+            {isFullyRevealed ? 'تظليل النص' : 'كشف النص كاملاً'}
           </button>
           <button
             onClick={onToggleBlindMode}
-            className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
-            title="Exit Blind Mode"
+            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary cursor-pointer"
+            title="إلغاء الإخفاء"
           >
             <Eye className="size-4" />
           </button>
@@ -76,17 +76,17 @@ export const BlindModeOverlay: React.FC<BlindModeOverlayProps> = ({
       </div>
 
       {/* Masked / Blur Text Display */}
-      <div className="dir-rtl text-right font-arabic text-xl md:text-2xl leading-loose p-4 rounded-xl bg-black/20 border border-border/30 select-none">
+      <div className="dir-rtl text-right font-arabic text-2xl md:text-3xl leading-[2.2] p-4 rounded-xl bg-black/30 border border-border/30 select-none">
         {words.map((word, i) => {
           const isRevealed = isFullyRevealed || i < revealedWordsCount;
           return (
             <span
               key={i}
               onClick={handleRevealWord}
-              className={`inline-block mx-1 px-1 rounded transition-all duration-300 cursor-pointer ${
+              className={`inline-block mx-1 px-1 rounded-lg transition-all duration-300 cursor-pointer ${
                 isRevealed
                   ? 'text-foreground bg-transparent'
-                  : 'text-transparent bg-indigo-500/20 blur-sm hover:blur-none select-none'
+                  : 'text-transparent bg-indigo-500/25 blur-md hover:blur-none select-none'
               }`}
             >
               {word}
@@ -97,32 +97,32 @@ export const BlindModeOverlay: React.FC<BlindModeOverlayProps> = ({
 
       {/* Self-Rating SRS Buttons */}
       {onGrade && (
-        <div className="flex items-center justify-between pt-2 border-t border-border/30">
-          <span className="text-[11px] text-muted-foreground font-medium">Rate your recitation accuracy:</span>
-          <div className="flex items-center gap-1.5">
+        <div className="flex items-center justify-between pt-3 border-t border-border/30 flex-wrap gap-2">
+          <span className="text-xs text-muted-foreground font-bold">قيّم جودة حفظك لهذه الآية:</span>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => onGrade('again')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-semibold hover:bg-rose-500/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-500/10 text-rose-400 border border-rose-500/20 text-xs font-bold hover:bg-rose-500/20 cursor-pointer"
             >
-              <RefreshCw className="size-3" /> Again (Forgot)
+              <RefreshCw className="size-3.5" /> إعادة (نسيت)
             </button>
             <button
               onClick={() => onGrade('hard')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold hover:bg-amber-500/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-bold hover:bg-amber-500/20 cursor-pointer"
             >
-              <AlertTriangle className="size-3" /> Hard
+              <AlertTriangle className="size-3.5" /> صعب
             </button>
             <button
               onClick={() => onGrade('good')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold hover:bg-emerald-500/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold hover:bg-emerald-500/20 cursor-pointer"
             >
-              <CheckCircle2 className="size-3" /> Good
+              <CheckCircle2 className="size-3.5" /> جيد
             </button>
             <button
               onClick={() => onGrade('easy')}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold hover:bg-indigo-500/20 cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold hover:bg-indigo-500/20 cursor-pointer"
             >
-              <Award className="size-3" /> Easy (Perfect)
+              <Award className="size-3.5" /> ممتاز (متقن)
             </button>
           </div>
         </div>

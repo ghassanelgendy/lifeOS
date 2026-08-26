@@ -28,7 +28,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 }) => {
   const [verses, setVerses] = useState<Ayah[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showTranslation, setShowTranslation] = useState(true);
+  const [showTranslation, setShowTranslation] = useState(false);
 
   const currentSurah = SURAHS.find((s) => s.id === surahNumber) || SURAHS[0];
 
@@ -52,11 +52,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   }, [surahNumber]);
 
   return (
-    <div className="space-y-4 font-sans">
+    <div className="space-y-4 font-sans dir-rtl">
       {/* Surah Header Selector & Bar */}
       <div className="p-4 rounded-2xl border border-border bg-card shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="size-10 rounded-xl bg-emerald-500/10 text-emerald-500 font-bold flex items-center justify-center shrink-0">
+          <div className="size-11 rounded-xl bg-emerald-500/10 text-emerald-500 font-bold flex items-center justify-center shrink-0 border border-emerald-500/20 text-sm">
             {surahNumber}
           </div>
           <div>
@@ -64,17 +64,17 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
               <select
                 value={surahNumber}
                 onChange={(e) => onSelectSurah(Number(e.target.value))}
-                className="bg-secondary/60 text-sm font-bold text-foreground rounded-lg px-2.5 py-1 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                className="bg-secondary/70 text-sm font-bold text-foreground rounded-xl px-3 py-1.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
               >
                 {SURAHS.map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.id}. {s.transliteration} ({s.name})
+                    سورة {s.name} ({s.transliteration})
                   </option>
                 ))}
               </select>
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {currentSurah.type} • {currentSurah.versesCount} Verses • Juz {currentSurah.juzStart}
+            <p className="text-xs text-muted-foreground mt-1 font-semibold">
+              سورة {currentSurah.type === 'Meccan' ? 'مكية' : 'مدنية'} • {currentSurah.versesCount} آية • الجزء {currentSurah.juzStart}
             </p>
           </div>
         </div>
@@ -85,40 +85,40 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             onClick={() =>
               onChangeRepeatSettings({ ...repeatSettings, blindMode: !repeatSettings.blindMode })
             }
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
               repeatSettings.blindMode
-                ? 'bg-indigo-600 text-white border-indigo-500'
-                : 'bg-secondary/60 text-muted-foreground border-border hover:bg-secondary'
+                ? 'bg-indigo-600 text-white border-indigo-500 shadow-md'
+                : 'bg-secondary/70 text-muted-foreground border-border hover:bg-secondary'
             }`}
           >
-            {repeatSettings.blindMode ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-            Blind Mode
+            {repeatSettings.blindMode ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            اختبار الحفظ
           </button>
 
           <button
             onClick={() => setShowTranslation(!showTranslation)}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
               showTranslation
-                ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-                : 'bg-secondary/60 text-muted-foreground border-border hover:bg-secondary'
+                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                : 'bg-secondary/70 text-muted-foreground border-border hover:bg-secondary'
             }`}
           >
-            Translation
+            الترجمة
           </button>
         </div>
       </div>
 
       {/* Bismillah Header (Except Surah 1 & Surah 9) */}
       {surahNumber !== 1 && surahNumber !== 9 && (
-        <div className="text-center py-3 font-arabic text-2xl text-emerald-500/90 dir-rtl select-none">
+        <div className="text-center py-4 font-arabic text-3xl text-emerald-500/90 dir-rtl select-none">
           بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
         </div>
       )}
 
       {/* Verses Container */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-muted-foreground border border-dashed border-border rounded-2xl">
-          Loading Uthmani text for {currentSurah.transliteration}...
+        <div className="p-12 text-center text-xs font-bold text-muted-foreground border border-dashed border-border rounded-2xl">
+          جاري تحميل آيات سورة {currentSurah.name}...
         </div>
       ) : (
         <div className="space-y-4">
@@ -129,21 +129,21 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
               <div
                 key={ayah.number}
                 onClick={() => onSelectAyah(ayah.numberInSurah)}
-                className={`p-4 md:p-6 rounded-2xl border transition-all cursor-pointer ${
+                className={`p-5 md:p-7 rounded-2xl border transition-all cursor-pointer ${
                   isActive
-                    ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/20 shadow-md'
+                    ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/20 shadow-lg'
                     : 'border-border/60 bg-card hover:border-border hover:bg-accent/20'
                 }`}
               >
                 {/* Verse Header Info */}
                 <div className="flex items-center justify-between mb-3 text-xs text-muted-foreground font-sans">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-secondary text-foreground font-bold">
-                    {surahNumber}:{ayah.numberInSurah}
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-foreground font-bold">
+                    الآية {ayah.numberInSurah}
                   </span>
 
                   {isActive && isAudioPlaying && (
-                    <span className="text-xs font-semibold text-emerald-500 animate-pulse flex items-center gap-1">
-                      <Volume2 className="size-3.5" /> Reciting...
+                    <span className="text-xs font-bold text-emerald-400 animate-pulse flex items-center gap-1.5">
+                      <Volume2 className="size-4" /> جاري التلاوة والتكرار...
                     </span>
                   )}
                 </div>
@@ -159,9 +159,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     onGrade={onGradeVerse}
                   />
                 ) : (
-                  <div className="dir-rtl text-right font-arabic text-2xl md:text-3xl leading-[2.2] text-foreground tracking-wide select-none">
+                  <div className="dir-rtl text-right font-arabic text-3xl md:text-4xl leading-[2.3] text-foreground tracking-wide select-none">
                     {ayah.textUthmani}
-                    <span className="inline-flex items-center justify-center size-8 mx-2 rounded-full border border-emerald-500/40 text-emerald-500 font-sans text-xs font-bold align-middle">
+                    <span className="inline-flex items-center justify-center size-9 mx-2 rounded-full border border-emerald-500/40 text-emerald-500 font-sans text-xs font-bold align-middle">
                       {ayah.numberInSurah}
                     </span>
                   </div>
@@ -169,7 +169,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                 {/* Translation Display */}
                 {showTranslation && ayah.translation && (
-                  <p className="mt-3 text-xs md:text-sm text-muted-foreground leading-relaxed border-t border-border/30 pt-3">
+                  <p className="mt-4 text-xs md:text-sm text-muted-foreground leading-relaxed border-t border-border/30 pt-3 text-left dir-ltr">
                     {ayah.translation}
                   </p>
                 )}

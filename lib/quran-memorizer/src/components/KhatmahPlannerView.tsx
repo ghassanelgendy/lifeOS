@@ -29,7 +29,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
 
   // Form State
-  const [title, setTitle] = useState('My Khatmah Plan');
+  const [title, setTitle] = useState('خطة حفظ القرآن الكريم');
   const [goalType, setGoalType] = useState<KhatmahGoalType>('pages_per_day');
   const [pagesPerDay, setPagesPerDay] = useState(1);
   const [juzCount, setJuzCount] = useState(1);
@@ -91,22 +91,20 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     };
     setPlan(updated);
 
-    // Optionally trigger lifeOS task creation for next page
     if (onCreateTask) {
       onCreateTask(
-        `Memorize Quran - Page ${nextCurrentPage}`,
+        `حفظ القرآن - الصفحة ${nextCurrentPage}`,
         todayStr
       );
     }
   };
 
   const handleDeletePlan = () => {
-    if (confirm('Are you sure you want to delete this Khatmah plan?')) {
+    if (confirm('هل أنت تأكد من رغبتك في حذف خطة الخاتمة الحالية؟')) {
       setPlan(null);
     }
   };
 
-  // Filter tasks & events relevant to Quran / Sheikh
   const quranTasks = linkedTasks.filter((t) =>
     /quran|memoriz|حفظ|مراجعة|تلاوة|قران/i.test(t.title)
   );
@@ -120,24 +118,24 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6 font-sans dir-rtl">
       {/* Top Banner / Plan Summary */}
       {!plan ? (
-        <div className="p-6 md:p-8 rounded-3xl border border-emerald-500/30 bg-emerald-950/20 backdrop-blur-md text-center space-y-4 shadow-xl">
-          <div className="size-14 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto text-2xl border border-emerald-500/20">
+        <div className="p-6 md:p-8 rounded-3xl border border-emerald-500/30 bg-emerald-950/25 backdrop-blur-md text-center space-y-4 shadow-xl">
+          <div className="size-16 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto text-3xl border border-emerald-500/20">
             🎯
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">Create Your Dynamic Khatmah & Memorization Plan</h2>
-            <p className="text-xs md:text-sm text-muted-foreground max-w-md mx-auto mt-1">
-              Set goals like "1 page daily" or "Finish 5 Juz in 30 days". Track progress, streak counts, and sync with your lifeOS tasks & Sheikh sessions.
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">إنشاء خطة الخاتمة والحفظ التفاعلية</h2>
+            <p className="text-xs md:text-sm text-muted-foreground max-w-md mx-auto mt-1 leading-relaxed">
+              حدد هدفك اليومي مثل "صفحة واحدة يومياً" أو "إنهاء ٥ أجزاء في ٣٠ يوماً". تابع نسبة الإنجاز وسلسلة الالتزام مع ربط تلقائي بمهام lifeOS وجلسات الشيخ.
             </p>
           </div>
           <button
             onClick={() => setShowNewPlanModal(true)}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-transform active:scale-95 cursor-pointer"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg transition-transform active:scale-95 cursor-pointer"
           >
-            <Plus className="size-4" /> Create Khatmah Plan
+            <Plus className="size-4" /> بدء خطة خاتمة جديدة
           </button>
         </div>
       ) : (
@@ -146,14 +144,14 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold text-foreground">{plan.title}</h2>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 uppercase">
-                  Active Goal
+                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  خطة نشطة
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Target Pace: <span className="font-bold text-foreground">{plan.pagesPerDay} Page(s) / day</span> • Target End:{' '}
+              <p className="text-xs text-muted-foreground mt-1">
+                معدل الإنجاز: <span className="font-bold text-foreground">{plan.pagesPerDay} صفحة / يومياً</span> • تاريخ الانتهاء المتوقع:{' '}
                 <span className="font-semibold text-emerald-400">
-                  {new Date(plan.targetEndDate).toLocaleDateString()}
+                  {new Date(plan.targetEndDate).toLocaleDateString('ar-EG')}
                 </span>
               </p>
             </div>
@@ -161,12 +159,12 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xs font-bold">
                 <Flame className="size-4 fill-current animate-pulse" />
-                {plan.streakDays} Days Streak
+                سلسلة {plan.streakDays} أيام متتالية
               </div>
               <button
                 onClick={handleDeletePlan}
                 className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                title="Reset Plan"
+                title="حذف الخاتمة"
               >
                 <Trash2 className="size-4" />
               </button>
@@ -176,8 +174,8 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           {/* Progress Bar */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-muted-foreground">Overall Khatmah Progress</span>
-              <span className="text-emerald-500">{progressPercent}% ({pagesCompleted} / {totalPages} Pages)</span>
+              <span className="text-muted-foreground">نسبة التقدم الكلي في المصحف</span>
+              <span className="text-emerald-400">{progressPercent}% ({pagesCompleted} من {totalPages} صفحة)</span>
             </div>
             <div className="w-full h-3 rounded-full bg-secondary overflow-hidden border border-border/40 p-0.5">
               <div
@@ -188,15 +186,15 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           </div>
 
           {/* Action Log Button */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/40">
+          <div className="flex items-center justify-between pt-2 border-t border-border/40 flex-wrap gap-2">
             <div className="text-xs text-muted-foreground">
-              Current Page: <span className="font-bold text-foreground">Page {plan.currentPage}</span>
+              الصفحة الحالية: <span className="font-bold text-foreground">صفحة {plan.currentPage}</span>
             </div>
             <button
               onClick={handleLogProgress}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
             >
-              <CheckCircle2 className="size-4" /> Log Today's Pace (+{plan.pagesPerDay} Page)
+              <CheckCircle2 className="size-4" /> تسجيل إنجاز اليوم (+{plan.pagesPerDay} صفحة)
             </button>
           </div>
         </div>
@@ -210,21 +208,21 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <CheckCircle2 className="size-4 text-emerald-500" />
-              Linked lifeOS Tasks ({quranTasks.length})
+              مهام الحفظ المرتبطة في lifeOS ({quranTasks.length})
             </h3>
           </div>
 
           {quranTasks.length === 0 ? (
             <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
-              No active Quran tasks found in lifeOS. Create one in Tasks or log your Khatmah above to auto-sync!
+              لا توجد مهام قرآنية حالية في lifeOS. يمكنك إضافة مهمة تحتوي على كلمة "حفظ" أو "قرآن" في قسم المهام.
             </div>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
               {quranTasks.map((task) => (
                 <div
                   key={task.id}
                   onClick={() => onToggleTask && onToggleTask(task.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${
+                  className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
                     task.is_completed
                       ? 'border-emerald-500/30 bg-emerald-500/5 text-muted-foreground line-through'
                       : 'border-border/60 bg-secondary/30 hover:bg-secondary/60 text-foreground'
@@ -236,7 +234,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     ) : (
                       <Circle className="size-4 text-muted-foreground shrink-0" />
                     )}
-                    <span className="text-xs font-semibold">{task.title}</span>
+                    <span className="text-xs font-bold">{task.title}</span>
                   </div>
                   {task.due_date && (
                     <span className="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded-md border border-border/40">
@@ -254,16 +252,16 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <UserCheck className="size-4 text-indigo-400" />
-              Sheikh Recitation Sessions (تسميع الشيخ) ({sheikhEvents.length})
+              جلسات التسميع المجدولة مع الشيخ ({sheikhEvents.length})
             </h3>
           </div>
 
           {sheikhEvents.length === 0 ? (
             <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
-              No Sheikh recitation sessions found in your Calendar events. Add an event with title "Sheikh" or "تسميع" in Calendar to display here.
+              لا توجد جلسات تسميع مجدولة في التقويم. يمكنك إضافة حدث يحتوي على "تسميع" أو "الشيخ" في التقويم ليعرض هنا.
             </div>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
               {sheikhEvents.map((evt) => (
                 <div
                   key={evt.id}
@@ -276,7 +274,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     <div>
                       <p className="text-xs font-bold text-foreground">{evt.title}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        {new Date(evt.start_time).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                        {new Date(evt.start_time).toLocaleString('ar-EG', { dateStyle: 'medium', timeStyle: 'short' })}
                       </p>
                     </div>
                   </div>
@@ -294,12 +292,12 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 space-y-4 shadow-2xl">
             <h3 className="text-base font-bold text-foreground flex items-center gap-2">
               <Target className="size-5 text-emerald-500" />
-              Create Custom Khatmah Plan
+              إنشاء خطة خاتمة مخصصة
             </h3>
 
             <form onSubmit={handleCreatePlan} className="space-y-3">
               <div>
-                <label className="text-xs font-semibold text-muted-foreground">Plan Title</label>
+                <label className="text-xs font-bold text-muted-foreground">اسم الخاتمة</label>
                 <input
                   type="text"
                   value={title}
@@ -310,20 +308,20 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-muted-foreground">Goal Strategy</label>
+                <label className="text-xs font-bold text-muted-foreground">استراتيجية الإنجاز</label>
                 <select
                   value={goalType}
                   onChange={(e) => setGoalType(e.target.value as KhatmahGoalType)}
                   className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
                 >
-                  <option value="pages_per_day">Fixed Pages Per Day (e.g. 1 Page Daily)</option>
-                  <option value="juz_in_days">Finish X Juz in Y Days</option>
+                  <option value="pages_per_day">عدد صفحات ثابت يومياً (مثال: صفحة واحدة)</option>
+                  <option value="juz_in_days">إنهاء عدد أجزاء في أيام محددة</option>
                 </select>
               </div>
 
               {goalType === 'pages_per_day' ? (
                 <div>
-                  <label className="text-xs font-semibold text-muted-foreground">Pages Daily</label>
+                  <label className="text-xs font-bold text-muted-foreground">الصفحات يومياً</label>
                   <input
                     type="number"
                     min={1}
@@ -336,7 +334,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               ) : (
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground">Number of Juz</label>
+                    <label className="text-xs font-bold text-muted-foreground">عدد الأجزاء</label>
                     <input
                       type="number"
                       min={1}
@@ -347,7 +345,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     />
                   </div>
                   <div>
-                    <label className="text-xs font-semibold text-muted-foreground">In Days</label>
+                    <label className="text-xs font-bold text-muted-foreground">خلال كم يوم؟</label>
                     <input
                       type="number"
                       min={1}
@@ -364,15 +362,15 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowNewPlanModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-secondary cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-secondary cursor-pointer"
                 >
-                  Cancel
+                  إلغاء
                 </button>
                 <button
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-md"
                 >
-                  Start Plan
+                  بدء الخاتمة
                 </button>
               </div>
             </form>

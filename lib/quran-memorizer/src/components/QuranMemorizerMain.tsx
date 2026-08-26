@@ -62,75 +62,75 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans dir-rtl">
       {/* Top Banner & Tab Navigation */}
       <header className="border-b border-border/60 bg-card/60 backdrop-blur-md p-4 md:px-8">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="size-11 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-lg shadow-sm border border-emerald-500/20">
+            <div className="size-12 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-2xl shadow-sm border border-emerald-500/20 shrink-0">
               📖
             </div>
             <div>
-              <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
-                Quran Memorizer (مُحَفِّظ القرآن)
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                  Hifdh & Muraja'ah
+              <h1 className="text-xl font-bold text-foreground flex items-center gap-2 font-arabic-title">
+                مُحَفِّظُ القُرْآنِ الكَرِيمِ
+                <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  الحفظ والمراجعة
                 </span>
               </h1>
-              <p className="text-xs text-muted-foreground">
-                Khatmah Goal Planner, Spaced Repetition, Tikrār audio loops & Sheikh Session sync.
+              <p className="text-xs text-muted-foreground font-semibold mt-0.5">
+                تخطيط الخاتمات، التكرار الصوتي، المراجعة المتباعدة، ومتابعة جلسات التسميع مع الشيخ.
               </p>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-1.5 bg-secondary/60 p-1 rounded-xl border border-border flex-wrap">
+          <div className="flex items-center gap-1.5 bg-secondary/60 p-1.5 rounded-2xl border border-border flex-wrap">
             <button
               onClick={() => setActiveTab('khatmah')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'khatmah'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Target className="size-3.5 text-emerald-500" />
-              Khatmah Planner
+              <Target className="size-4 text-emerald-500" />
+              خطة الخاتمة
             </button>
 
             <button
               onClick={() => setActiveTab('reader')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'reader'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <BookOpen className="size-3.5 text-emerald-500" />
-              Mushaf Reader
+              <BookOpen className="size-4 text-emerald-500" />
+              المصحف الشريف
             </button>
 
             <button
               onClick={() => setActiveTab('revision')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'revision'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Calendar className="size-3.5 text-amber-500" />
-              Revision ({memorizerStore.dueReviews.length})
+              <Calendar className="size-4 text-amber-500" />
+              ورد المراجعة ({memorizerStore.dueReviews.length})
             </button>
 
             <button
               onClick={() => setActiveTab('mutashabihat')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === 'mutashabihat'
                   ? 'bg-background text-foreground shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <Layers className="size-3.5 text-indigo-400" />
-              Mutashabihat
+              <Layers className="size-4 text-indigo-400" />
+              المتشابهات
             </button>
           </div>
         </div>
@@ -150,32 +150,32 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         {activeTab === 'reader' && (
           <div className="space-y-4">
             {/* Range Target Selector Header */}
-            <div className="p-4 rounded-2xl border border-border bg-card/40 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="p-4 rounded-2xl border border-border bg-card/50 flex flex-wrap items-center justify-between gap-3 text-xs font-bold">
               <div className="flex items-center gap-2">
-                <span className="font-semibold text-muted-foreground">Practice Range:</span>
-                <span className="font-bold text-foreground">
-                  Ayah {startAyah} to {endAyah}
+                <span className="text-muted-foreground">نطاق التكرار الحالي:</span>
+                <span className="text-emerald-400">
+                  من الآية {startAyah} إلى الآية {endAyah}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
-                <label className="text-muted-foreground">From:</label>
+                <label className="text-muted-foreground">من:</label>
                 <input
                   type="number"
                   min={1}
                   max={currentSurah.versesCount}
                   value={startAyah}
                   onChange={(e) => setStartAyah(Math.max(1, Number(e.target.value)))}
-                  className="w-14 rounded-lg border border-border bg-background px-2 py-1 text-center font-bold text-foreground"
+                  className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
                 />
-                <label className="text-muted-foreground">To:</label>
+                <label className="text-muted-foreground">إلى:</label>
                 <input
                   type="number"
                   min={startAyah}
                   max={currentSurah.versesCount}
                   value={endAyah}
                   onChange={(e) => setEndAyah(Math.min(currentSurah.versesCount, Number(e.target.value)))}
-                  className="w-14 rounded-lg border border-border bg-background px-2 py-1 text-center font-bold text-foreground"
+                  className="w-16 rounded-xl border border-border bg-background px-2.5 py-1 text-center font-bold text-foreground focus:outline-none"
                 />
               </div>
 
@@ -184,9 +184,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                   onClick={() =>
                     memorizerStore.updateRecordStatus(selectedSurah, startAyah, endAyah, 'memorized')
                   }
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-500 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 cursor-pointer shadow-md"
                 >
-                  <Award className="size-3.5" /> Mark Range as Memorized
+                  <Award className="size-4" /> اعتماد المقطع كمُتقَن
                 </button>
               </div>
             </div>
