@@ -82,15 +82,14 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
       <div
         dir="rtl"
         className={`fixed z-30 font-arabic-title text-right transition-all
-          /* iOS Mobile: EXACT LiquidTabBar size, radius, liquid blur & shadow */
+          /* iOS Mobile: Crisp Docked/Floating Pill matching iOS navigation */
           bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[92%] max-w-[440px] h-[68px]
           rounded-[34px] px-3.5 flex items-center justify-between
-          bg-white/45 dark:bg-[rgba(20,20,22,0.6)] backdrop-blur-[25px] saturate-200
-          border border-white/40 dark:border-white/[0.08]
-          shadow-[0_10px_35px_rgba(0,0,0,0.05),inset_0_1px_1px_rgba(255,255,255,0.3)]
-          dark:shadow-[0_10px_30px_rgba(0,0,0,0.35),inset_0_1px_0px_rgba(255,255,255,0.08)]
+          bg-card/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl
+          border border-border/80 dark:border-white/10
+          shadow-[0_12px_40px_rgba(0,0,0,0.25)]
           /* Desktop / MD+: Docked Bottom Bar */
-          md:bottom-0 md:translate-x-0 md:left-0 md:right-0 md:w-auto md:max-w-none md:h-auto md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/50 md:bg-card/85 md:px-6 md:py-3 md:pb-safe
+          md:bottom-0 md:translate-x-0 md:left-0 md:right-0 md:w-auto md:max-w-none md:h-auto md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/50 md:bg-card/95 md:px-6 md:py-3 md:pb-safe
           ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
         `}
       >
