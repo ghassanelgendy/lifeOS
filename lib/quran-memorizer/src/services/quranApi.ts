@@ -9,7 +9,7 @@ export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
   }
 
   try {
-    const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,en.sahih`);
+    const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,ar.muyassar`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
     const uthmaniEdition = json.data[0];

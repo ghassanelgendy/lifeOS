@@ -225,6 +225,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
               <SlidersHorizontal className="size-4" />
             </button>
 
+            {/* Tafsir Al-Muyassar Toggle */}
+            <button
+              onClick={() => setShowTranslation(!showTranslation)}
+              className={`p-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                showTranslation
+                  ? 'bg-amber-600 text-white border-amber-500 shadow-sm'
+                  : 'bg-secondary/80 text-muted-foreground border-border hover:bg-secondary'
+              }`}
+              title="عرض التفسير الميسر"
+            >
+              <BookOpen className="size-4" />
+            </button>
+
             {/* Blind Mode Testing Toggle */}
             <button
               onClick={() =>
@@ -447,7 +460,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       </button>
                     )}
                   </div>
-                )}
+
+                  {/* Tafsir in Page Mode if enabled */}
+                  {showTranslation && (
+                    <div className="text-xs text-foreground/90 leading-relaxed border-t border-border/30 pt-2 text-right dir-rtl font-arabic-body bg-secondary/30 p-2.5 rounded-xl border border-border/40">
+                      <span className="font-bold text-amber-400 block mb-0.5 text-[11px]">📖 التفسير الميسر (آية {currentAyahIndex}):</span>
+                      {pageAyahs.find((a) => a.numberInSurah === currentAyahIndex)?.translation}
+                    </div>
+                  )}
+                </div>
 
                 {/* Page Bottom Footer: Surah Name | Page Number | Juz */}
                 <div className="border-t border-border/40 pt-3 text-xs text-muted-foreground flex items-center justify-between font-sans">
@@ -565,11 +586,12 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   </div>
                 )}
 
-                {/* Translation Display */}
+                {/* Tafsir Al-Muyassar Display (Arabic) */}
                 {showTranslation && ayah.translation && (
-                  <p className="mt-4 text-xs md:text-sm text-muted-foreground leading-relaxed border-t border-border/30 pt-3 text-left dir-ltr">
+                  <div className="mt-4 text-xs md:text-sm text-foreground/90 leading-relaxed border-t border-border/30 pt-3 text-right dir-rtl font-arabic-body bg-secondary/30 p-3 rounded-xl border border-border/40">
+                    <span className="font-bold text-amber-400 block mb-1 text-[11px]">📖 التفسير الميسر:</span>
                     {ayah.translation}
-                  </p>
+                  </div>
                 )}
 
                 {/* Active Ayah Sleek Micro-Toolbar */}
