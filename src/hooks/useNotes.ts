@@ -121,6 +121,70 @@ export function useUpdateNote() {
   });
 }
 
+export function useTogglePinNote() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
+      const q = supabase
+        .from('notes')
+        .update({ is_pinned })
+        .eq('id', id);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data: updated, error } = await q.select().single();
+      if (error) throw error;
+      return updated as Note;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+    },
+  });
+}
+
+export function useUpdateNoteFolder() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const cleanName = normalizeFolderName(name);
+      if (!cleanName) throw new Error('Folder name required');
+      const q = supabase
+        .from('note_folders')
+        .update({ name: cleanName })
+        .eq('id', id);
+      if (user?.id) q.eq('user_id', user.id);
+      const { data: updated, error } = await q.select().single();
+      if (error) throw error;
+      return updated as NoteFolder;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+    },
+  });
+}
+
+export function useDeleteNoteFolder() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const q = supabase.from('note_folders').delete().eq('id', id);
+      if (user?.id) q.eq('user_id', user.id);
+      const { error } = await q;
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
+      queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+    },
+  });
+}
+
 export function useDeleteNote() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -139,3 +203,4 @@ export function useDeleteNote() {
     },
   });
 }
+

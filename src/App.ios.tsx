@@ -177,6 +177,11 @@ function AppInner() {
           window.location.href = '/calendar';
         } else if (parsedUrl.host === 'finance') {
           window.location.href = '/finance';
+        } else if (parsedUrl.host === 'braindump' || parsedUrl.host === 'brain-dump') {
+          const params = new URLSearchParams(parsedUrl.search);
+          const text = params.get('text') || params.get('q') || '';
+          void triggerHaptics('medium');
+          window.dispatchEvent(new CustomEvent('lifeos:openBrainDump', { detail: { text, autoAnalyze: true } }));
         } else if (parsedUrl.host === 'add-transaction') {
           const params = new URLSearchParams(parsedUrl.search);
           const amountStr = params.get('amount');

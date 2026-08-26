@@ -156,6 +156,37 @@ export interface CalendarEvent {
 // ========================
 // Notes
 // ========================
+export interface BrainDumpSuggestionTask {
+  title: string;
+  priority?: 'low' | 'medium' | 'high';
+  due?: string;
+}
+
+export interface BrainDumpSuggestionHabit {
+  title: string;
+  frequency?: 'Daily' | 'Weekly';
+  target_count?: number;
+}
+
+export interface BrainDumpSuggestionEvent {
+  title: string;
+  date?: string;
+  time?: string;
+  description?: string;
+}
+
+export interface BrainDumpAnalysis {
+  summary?: string;
+  insights?: string[];
+  tasks?: BrainDumpSuggestionTask[];
+  habits?: BrainDumpSuggestionHabit[];
+  events?: BrainDumpSuggestionEvent[];
+  projects_or_notes?: Array<{ title: string; content: string }>;
+  clarity_score?: number;
+  sentiment_or_mood?: string;
+  analyzed_at?: string;
+}
+
 export interface Note {
   id: string;
   user_id?: string | null;
@@ -163,6 +194,10 @@ export interface Note {
   body: string;
   note_date: string;
   folder_id?: string | null;
+  is_pinned?: boolean;
+  is_brain_dump?: boolean;
+  ai_analysis?: BrainDumpAnalysis | null;
+  tags?: string[];
   is_shared?: boolean;
   shared_with?: string[];
   owner_email?: string;

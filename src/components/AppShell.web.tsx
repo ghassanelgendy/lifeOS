@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles } from 'lucide-react';
+import { Menu, X, Settings, Sparkles, Brain, Plus } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { AppFooter } from './AppFooter';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
+import { BrainDumpModal } from './BrainDumpModal';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
@@ -94,6 +95,33 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
+  const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
+
+  useEffect(() => {
+    const handleOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text?: string; autoAnalyze?: boolean }>;
+      if (customEvent.detail?.text) {
+        setBrainDumpInitialText(customEvent.detail.text);
+      }
+      setIsBrainDumpOpen(true);
+    };
+    window.addEventListener('lifeos:openBrainDump', handleOpen as EventListener);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isAltB = e.altKey && e.key.toLowerCase() === 'b';
+      if (isAltB) {
+        e.preventDefault();
+        setIsBrainDumpOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('lifeos:openBrainDump', handleOpen as EventListener);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus();
 
@@ -416,6 +444,27 @@ export function AppShell() {
           </button>
         </div>
 
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            onClick={() => setIsBrainDumpOpen(true)}
+            className={cn(
+              "w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-150 border",
+              "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 active:scale-98 shadow-sm",
+              isSidebarCollapsed && "justify-center px-0 w-10 h-9 mx-auto"
+            )}
+            title="Cognitive Brain Dump (Alt+B)"
+          >
+            <Brain size={16} className="shrink-0 text-purple-500 animate-pulse" />
+            {!isSidebarCollapsed && (
+              <div className="flex items-center justify-between w-full min-w-0">
+                <span className="truncate">Brain Dump</span>
+                <kbd className="px-1 py-0.5 text-[9px] bg-purple-500/20 rounded font-mono">Alt+B</kbd>
+              </div>
+            )}
+          </button>
+        </div>
+
         <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 gap-[2px] flex flex-col px-2">
           {desktopNavigation.map((item) => {
             const isAnalytics = item.href === '/analytics';
@@ -531,7 +580,13 @@ export function AppShell() {
             <Menu size={24} />
           </button>
           <span className="font-bold text-lg">LifeOS</span>
-          <div className="w-10" />
+          <button
+            onClick={() => setIsBrainDumpOpen(true)}
+            className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg active:scale-95 transition-transform touch-manipulation flex items-center gap-1"
+            title="Cognitive Brain Dump (Alt+B)"
+          >
+            <Brain size={20} />
+          </button>
         </header>
 
         <OfflineBanner />
@@ -566,6 +621,7 @@ export function AppShell() {
         <AppFooter />
         <FocusSessionManager />
         <FocusPiPWindow />
+        <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
 
         {/* Wrap Toast Notification */}
         {activeToast && (

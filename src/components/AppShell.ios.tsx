@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles, Plus, Mic } from 'lucide-react';
+import { Menu, X, Settings, Sparkles, Plus, Mic, Brain, Wallet, Calendar, Flame } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { PullToRefresh } from './PullToRefresh';
 import { OfflineBanner } from './OfflineBanner';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
+import { BrainDumpModal } from './BrainDumpModal';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
@@ -97,6 +98,33 @@ export function AppShell() {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [showTabBar, setShowTabBar] = useState(true);
   const lastScrollTop = useRef(0);
+  const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
+  const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
+
+  useEffect(() => {
+    const handleOpen = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text?: string; autoAnalyze?: boolean }>;
+      if (customEvent.detail?.text) {
+        setBrainDumpInitialText(customEvent.detail.text);
+      }
+      setIsBrainDumpOpen(true);
+    };
+    window.addEventListener('lifeos:openBrainDump', handleOpen as EventListener);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isAltB = e.altKey && e.key.toLowerCase() === 'b';
+      if (isAltB) {
+        e.preventDefault();
+        setIsBrainDumpOpen((v) => !v);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('lifeos:openBrainDump', handleOpen as EventListener);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus();
 
@@ -127,11 +155,13 @@ export function AppShell() {
   const isOnTasks = location.pathname === '/tasks';
   const showHeaderPlusButton = location.pathname === '/' || location.pathname === '/dashboard' || location.pathname === '/tasks' || location.pathname === '/habits' || location.pathname === '/finance' || location.pathname === '/calendar';
 
+  const [showQuickPlusMenu, setShowQuickPlusMenu] = useState(false);
+
   const handleHeaderPlusClick = useCallback(() => {
-    if (location.pathname === '/' || location.pathname === '/dashboard' || location.pathname === '/tasks') {
-      if (location.pathname !== '/tasks') {
-        navigate('/tasks?quickadd=true');
-      }
+    if (location.pathname === '/' || location.pathname === '/dashboard') {
+      setShowQuickPlusMenu(true);
+      void triggerHaptics('light');
+    } else if (location.pathname === '/tasks') {
       window.dispatchEvent(new CustomEvent('app-trigger-add-task'));
     } else if (location.pathname === '/habits') {
       window.dispatchEvent(new CustomEvent('app-trigger-add-habit'));
@@ -140,7 +170,7 @@ export function AppShell() {
     } else if (location.pathname === '/calendar') {
       window.dispatchEvent(new CustomEvent('app-trigger-add-calendar'));
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname]);
 
   const getActiveTitle = useCallback(() => {
     if (location.pathname === '/' || location.pathname === '/dashboard') {
@@ -565,8 +595,16 @@ export function AppShell() {
             {getActiveTitle()}
           </motion.span>
 
-          {showHeaderPlusButton && (
-            <div className="absolute right-3 flex items-center gap-1.5">
+          <div className="absolute right-3 flex items-center gap-1.5">
+            <button
+              onClick={() => setIsBrainDumpOpen(true)}
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-purple-500/10 border border-purple-500/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-purple-500/20 transition-all touch-manipulation text-purple-600 dark:text-purple-400"
+              aria-label="Brain Dump"
+              title="Cognitive Brain Dump"
+            >
+              <Brain size={18} />
+            </button>
+            {showHeaderPlusButton && (
               <button
                 onClick={handleHeaderPlusClick}
                 className="w-9 h-9 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-primary/20 transition-all touch-manipulation"
@@ -574,8 +612,8 @@ export function AppShell() {
               >
                 <Plus size={20} className="text-primary" />
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </header>
 
         <OfflineBanner />
@@ -611,6 +649,103 @@ export function AppShell() {
           </PullToRefresh>
           <FocusSessionManager />
           <FocusPiPWindow />
+          <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
+
+        {/* iOS Quick Plus Dashboard Menu */}
+        <AnimatePresence>
+          {showQuickPlusMenu && (
+            <>
+              <div
+                className="fixed inset-0 bg-black/50 z-50 transition-opacity backdrop-blur-xs"
+                onClick={() => setShowQuickPlusMenu(false)}
+              />
+              <motion.div
+                initial={{ y: '100%' }}
+                animate={{ y: 0 }}
+                exit={{ y: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="fixed bottom-0 left-0 right-0 z-50 bg-popover border-t border-border rounded-t-2xl p-4 space-y-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+              >
+                <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-2" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground text-center mb-3">
+                  Quick Create
+                </h4>
+                
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPlusMenu(false);
+                    setIsBrainDumpOpen(true);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold text-sm border border-purple-500/20 active:scale-98 transition-transform"
+                >
+                  <Brain size={20} className="animate-pulse" />
+                  <span>Cognitive Brain Dump</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPlusMenu(false);
+                    navigate('/tasks?quickadd=true');
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-task')), 100);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                >
+                  <Plus size={20} className="text-primary" />
+                  <span>New Task</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPlusMenu(false);
+                    navigate('/habits');
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-habit')), 100);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                >
+                  <Flame size={20} className="text-orange-500" />
+                  <span>Log Habit</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPlusMenu(false);
+                    navigate('/finance');
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-finance')), 100);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                >
+                  <Wallet size={20} className="text-emerald-500" />
+                  <span>Add Transaction</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickPlusMenu(false);
+                    navigate('/calendar');
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-calendar')), 100);
+                  }}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                >
+                  <Calendar size={20} className="text-blue-500" />
+                  <span>New Event</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowQuickPlusMenu(false)}
+                  className="w-full py-2 text-xs text-muted-foreground font-semibold"
+                >
+                  Cancel
+                </button>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
  
         {/* Wrap Toast Notification */}
         {activeToast && (
