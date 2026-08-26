@@ -192,27 +192,21 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             {/* Memorization Sync Button (Emerald) */}
             <button
               onClick={onSyncMemorization}
-              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95"
-              title={`الانتقال إلى موضع الحفظ (آية ${memorizationMarker?.ayahNumber || 1})`}
+              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 whitespace-nowrap"
+              title={`الانتقال إلى موضع الحفظ (سورة ${memorizationMarker?.surahNumber || surahNumber} - آية ${memorizationMarker?.ayahNumber || 1})`}
             >
               <Target className="size-3.5 text-emerald-400" />
-              <span>ورد الحفظ</span>
-              <span className="text-[10px] opacity-90 font-mono font-bold">
-                ({memorizationMarker ? `آية ${memorizationMarker.ayahNumber}` : `ص${memorizationPage || 1}`})
-              </span>
+              <span>الحفظ</span>
             </button>
 
             {/* Reading Sync Button (Indigo) */}
             <button
               onClick={onSyncReading}
-              className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95"
-              title={`الانتقال إلى موضع التلاوة (آية ${readingMarker?.ayahNumber || 1})`}
+              className="px-2.5 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1 active:scale-95 whitespace-nowrap"
+              title={`الانتقال إلى موضع التلاوة (سورة ${readingMarker?.surahNumber || surahNumber} - آية ${readingMarker?.ayahNumber || 1})`}
             >
               <Bookmark className="size-3.5 text-indigo-400" />
-              <span>ورد التلاوة</span>
-              <span className="text-[10px] opacity-90 font-mono font-bold">
-                ({readingMarker ? `آية ${readingMarker.ayahNumber}` : `ص${readingPage || 1}`})
-              </span>
+              <span>التلاوة</span>
             </button>
           </div>
 

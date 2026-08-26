@@ -248,6 +248,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setMemorizationMarker(marker);
     try {
       localStorage.setItem('quran_memorization_marker_v1', JSON.stringify(marker));
+      window.dispatchEvent(new Event('quran_plan_updated'));
     } catch {}
   };
 
@@ -256,6 +257,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setReadingMarker(marker);
     try {
       localStorage.setItem('quran_reading_marker_v1', JSON.stringify(marker));
+      window.dispatchEvent(new Event('quran_plan_updated'));
     } catch {}
   };
 

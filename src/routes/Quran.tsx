@@ -4,8 +4,10 @@ import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
 import { useCreateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
+import { useQuranCloudSync } from '../hooks/useQuranCloudSync';
 
 export function QuranRoute() {
+  useQuranCloudSync();
   const { data: tasks = [] } = useTasks();
   const { data: habits = [] } = useHabits();
   const { data: todayLogs = [] } = useTodayHabitLogs();

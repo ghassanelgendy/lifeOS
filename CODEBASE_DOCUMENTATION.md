@@ -311,6 +311,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/hooks/usePushNotifications.pake.ts](#src-hooks-usepushnotifications-pake-ts)
 - [src/hooks/usePushNotifications.ts](#src-hooks-usepushnotifications-ts)
 - [src/hooks/usePushNotifications.web.ts](#src-hooks-usepushnotifications-web-ts)
+- [src/hooks/useQuranCloudSync.ts](#src-hooks-usequrancloudsync-ts)
 - [src/hooks/useReport.test.ts](#src-hooks-usereport-test-ts)
 - [src/hooks/useReport.ts](#src-hooks-usereport-ts)
 - [src/hooks/useScreentime.ts](#src-hooks-usescreentime-ts)
@@ -1299,7 +1300,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 475
+**Lines:** 477
 
 ---
 
@@ -1310,7 +1311,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 575
+**Lines:** 569
 
 ---
 
@@ -3811,6 +3812,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-hooks-usequrancloudsync-ts"></a>
+### src/hooks/useQuranCloudSync.ts
+
+**File Purpose:** Custom React hook. Encapsulates QuranCloudSync.ts logic for data fetching, state management, or side effects.
+
+**Functions & Classes:**
+- `useQuranCloudSync` (React Hook)
+- `useQuranCloudSync` (Function)
+
+**Function Details:**
+- **`useQuranCloudSync`** — Custom React hook managing qurancloudsync state and side effects.
+- **`useQuranCloudSync`** — Utility function for use quran cloud sync.
+
+**Lines:** 237
+
+---
+
 <a name="src-hooks-usereport-test-ts"></a>
 ### src/hooks/useReport.test.ts
 
@@ -5214,7 +5232,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 135
+**Lines:** 137
 
 ---
 
