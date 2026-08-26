@@ -1,10 +1,9 @@
 import React from 'react';
-import { QuranMemorizerMain } from '../../lib/quran-memorizer';
+import { QuranMemorizerMain, SheikhHalqahNote } from '../../lib/quran-memorizer';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
 import { useCreateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
-import { SheikhHalqahNote } from '../../lib/quran-memorizer/src/types/quran';
 
 export function QuranRoute() {
   const { data: tasks = [] } = useTasks();
