@@ -104,6 +104,23 @@ export interface LinkedLifeOSEvent {
   end_time?: string;
 }
 
+export interface SheikhHalqahNote {
+  id: string;
+  eventId?: string;
+  date: string;
+  surahName: string;
+  ayahRange: string;
+  mistakesNote: string;
+  rating: 'mumtaz' | 'jayyid_jiddan' | 'jayyid' | 'yahatadj_tathbeet';
+}
+
+export interface ReadingWirdPlan {
+  currentPage: number;
+  pagesPerDay: number;
+  lastReadDate?: string;
+  streakDays: number;
+}
+
 export interface LifeOSIntegrationProps {
   linkedTasks?: LinkedLifeOSTask[];
   linkedHabits?: LinkedLifeOSHabit[];

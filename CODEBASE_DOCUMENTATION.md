@@ -1273,7 +1273,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 562
+**Lines:** 824
 
 ---
 
@@ -1430,13 +1430,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `LinkedLifeOSTask` (Interface)
 - `LinkedLifeOSHabit` (Interface)
 - `LinkedLifeOSEvent` (Interface)
+- `SheikhHalqahNote` (Interface)
+- `ReadingWirdPlan` (Interface)
 - `LifeOSIntegrationProps` (Interface)
 - `MemorizationStatus` (Type)
 - `RatingGrade` (Type)
 - `KhatmahGoalType` (Type)
 - `KhatmahDirection` (Type)
 
-**Lines:** 117
+**Lines:** 134
 
 ---
 
