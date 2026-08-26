@@ -252,23 +252,23 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   const currentHadith = QURAN_HADITHS[currentHadithIdx] || QURAN_HADITHS[0];
 
   return (
-    <div dir="rtl" className="-mt-4 -mx-4 md:-mt-6 md:-mx-6 flex flex-col font-arabic-body text-right">
-      {/* Top Banner & Tab Navigation (Ultra Compact on Mobile) */}
-      <header className="border-b border-border/60 bg-card/80 backdrop-blur-xl p-3 md:p-4">
+    <div dir="rtl" className="flex flex-col font-arabic-body text-right">
+      {/* Top Banner & Tab Navigation (Native iOS Header) */}
+      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/40 p-3 md:p-4 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 md:mb-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           
           {/* Header Title Bar */}
           <div className="flex items-center justify-between w-full sm:w-auto gap-3">
             <div className="flex items-center gap-2.5">
-              <div className="size-10 md:size-11 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-xl shadow-sm border border-emerald-500/20 shrink-0">
+              <div className="size-9 md:size-10 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-lg md:text-xl shadow-sm border border-emerald-500/20 shrink-0">
                 📖
               </div>
               <div className="text-right">
-                <h1 className="text-base md:text-xl font-extrabold text-foreground flex items-center gap-2 font-arabic-title">
-                  <span>مُحَفِّظُ القُرْآنِ الكَرِيمِ</span>
+                <h1 className="text-base md:text-lg font-bold text-foreground tracking-tight font-arabic-title">
+                  <span>القرآن الكريم</span>
                 </h1>
-                {/* Description hidden on Mobile to bring first entry above the fold, visible on PC */}
-                <p className="hidden md:block text-xs text-muted-foreground font-semibold mt-0.5">
+                {/* Description visible on Desktop only */}
+                <p className="hidden md:block text-[11px] text-muted-foreground font-semibold mt-0.5">
                   تخطيط الخاتمات، التكرار الصوتي، المراجعة المتباعدة، ومتابعة جلسات التسميع مع الشيخ.
                 </p>
               </div>
@@ -277,21 +277,21 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             {/* Mobile Hadith of the Day Trigger Button */}
             <button
               onClick={openHadithModalManual}
-              className="md:hidden flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
+              className="md:hidden flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/25 text-[11px] font-bold active:scale-95 transition-all cursor-pointer"
               title="حديث اليوم"
             >
-              <Sparkles className="size-3.5 text-amber-400" />
+              <Sparkles className="size-3 text-amber-400" />
               <span>حديث اليوم</span>
             </button>
           </div>
 
-          {/* Navigation Tabs */}
+          {/* iOS Segmented Navigation Tabs */}
           <div dir="rtl" className="flex items-center gap-1 bg-secondary/80 p-1 rounded-2xl border border-border/60 w-full sm:w-auto overflow-x-auto justify-between sm:justify-start shrink-0">
             <button
               onClick={() => setActiveTab('khatmah')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
                 activeTab === 'khatmah'
-                  ? 'bg-background text-emerald-400 shadow-sm'
+                  ? 'bg-card text-emerald-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -301,9 +301,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
             <button
               onClick={() => setActiveTab('reader')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
                 activeTab === 'reader'
-                  ? 'bg-background text-emerald-400 shadow-sm'
+                  ? 'bg-card text-emerald-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -313,9 +313,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
             <button
               onClick={() => setActiveTab('revision')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
                 activeTab === 'revision'
-                  ? 'bg-background text-amber-400 shadow-sm'
+                  ? 'bg-card text-amber-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -325,9 +325,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
             <button
               onClick={() => setActiveTab('mutashabihat')}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold active:scale-95 transition-all cursor-pointer ${
                 activeTab === 'mutashabihat'
-                  ? 'bg-background text-indigo-400 shadow-sm'
+                  ? 'bg-card text-indigo-400 shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -338,19 +338,17 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         </div>
       </header>
 
-      {/* 12-Hour Message of the Day Hadith Bottom Sheet Popup */}
+      {/* 12-Hour Message of the Day Hadith Animated Dialog */}
       {showHadithModal &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
             onClick={() => setShowHadithModal(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-t-[2.5rem] sm:rounded-3xl border border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl text-center overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200"
+              className="w-full max-w-md rounded-3xl border border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl text-center overscroll-contain animate-in fade-in zoom-in-95 duration-300 ease-out"
             >
-              <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-1" />
-
               <div className="size-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto text-2xl border border-emerald-500/20">
                 ✨
               </div>
@@ -366,15 +364,15 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
                 «{currentHadith.text}»
               </blockquote>
 
-              <p className="text-xs text-muted-foreground font-mono">
-                — {currentHadith.narrator}
+              <p className="text-xs text-muted-foreground font-mono font-medium">
+                {currentHadith.narrator}
               </p>
 
               <button
                 onClick={() => setShowHadithModal(false)}
                 className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
               >
-                جزاكم الله خيراً — متابعة القراءة
+                متابعة القراءة
               </button>
             </div>
           </div>,

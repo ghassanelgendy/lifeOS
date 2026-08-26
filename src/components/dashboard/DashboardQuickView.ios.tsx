@@ -1854,7 +1854,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             </span>
           </Link>
         </div>
-        <HadithWidget isIOS className="mb-4" />
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
             <Link to="/" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">

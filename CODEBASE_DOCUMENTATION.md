@@ -1251,7 +1251,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 214
+**Lines:** 389
 
 ---
 
@@ -1295,7 +1295,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 466
+**Lines:** 464
 
 ---
 
@@ -2726,7 +2726,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 2309
+**Lines:** 2308
 
 ---
 
