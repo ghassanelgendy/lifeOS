@@ -120,19 +120,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     <div dir="rtl" className="space-y-4 font-arabic-body text-right">
 
       {/* UNIFIED SLEEK TOP CONTROL BAR */}
-      <div className="p-3 md:p-3.5 rounded-2xl border border-border bg-card/80 backdrop-blur-md shadow-md flex flex-col md:flex-row items-center justify-between gap-3 font-arabic-title">
+      <div className="p-3 md:p-3.5 rounded-2xl border border-border bg-card/80 backdrop-blur-md shadow-md flex flex-col md:flex-row items-center justify-between gap-2.5 font-arabic-title">
         
-        {/* Right Section: Surah Selector & View Mode Switcher */}
+        {/* Row 1 / Right Section: Surah Selector & View Mode Switcher */}
         <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-start">
           {/* Surah Dropdown with matched height */}
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0 md:flex-initial">
             <span className="h-9 w-9 rounded-xl bg-emerald-500/10 text-emerald-400 font-bold flex items-center justify-center text-xs shrink-0 border border-emerald-500/20">
               {surahNumber}
             </span>
             <select
               value={surahNumber}
               onChange={(e) => onSelectSurah(Number(e.target.value))}
-              className="h-9 bg-secondary/80 text-xs font-bold text-foreground rounded-xl px-3 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="h-9 w-full md:w-auto bg-secondary/80 text-xs font-bold text-foreground rounded-xl px-2.5 border border-border focus:outline-none focus:ring-1 focus:ring-emerald-500 truncate"
             >
               {SURAHS.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -170,8 +170,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           </div>
         </div>
 
-        {/* Left Section: Sync Location Pills & Quick Tools */}
-        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end shrink-0">
+        {/* Row 2 / Left Section: Sync Location Pills & Quick Tools */}
+        <div className="flex items-center gap-2 w-full md:w-auto justify-between md:justify-end shrink-0 pt-2 border-t border-border/40 md:border-t-0 md:pt-0">
           
           {/* Quick Location Sync Pills */}
           <div className="flex items-center gap-1.5">
@@ -230,7 +230,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             {onMarkMemorized && (
               <button
                 onClick={onMarkMemorized}
-                className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-sm flex items-center gap-1"
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-sm flex items-center gap-1 active:scale-95"
                 title="اعتماد المقطع كمُتقَن"
               >
                 <Award className="size-3.5" />
@@ -254,40 +254,31 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">من:</span>
-              <select
+              <span className="text-muted-foreground text-[11px]">من:</span>
+              <input
+                type="number"
+                min={1}
+                max={currentSurah.versesCount}
                 value={startAyah}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  onStartAyahChange(val);
-                  if (val > endAyah) onEndAyahChange(val);
-                }}
-                className="rounded-xl border border-border bg-background px-2.5 py-1 font-bold text-foreground text-xs focus:outline-none"
-              >
-                {Array.from({ length: currentSurah.versesCount }, (_, i) => i + 1).map((num) => (
-                  <option key={num} value={num}>
-                    الآية {num}
-                  </option>
-                ))}
-              </select>
+                onChange={(e) => onStartAyahChange(Math.max(1, Number(e.target.value)))}
+                className="w-14 bg-secondary/80 text-foreground font-mono text-center rounded-xl p-1 border border-border focus:outline-none"
+              />
             </div>
 
             <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground">إلى:</span>
-              <select
+              <span className="text-muted-foreground text-[11px]">إلى:</span>
+              <input
+                type="number"
+                min={startAyah}
+                max={currentSurah.versesCount}
                 value={endAyah}
-                onChange={(e) => onEndAyahChange(Number(e.target.value))}
-                className="rounded-xl border border-border bg-background px-2.5 py-1 font-bold text-foreground text-xs focus:outline-none"
-              >
-                {Array.from(
-                  { length: currentSurah.versesCount - startAyah + 1 },
-                  (_, i) => startAyah + i
-                ).map((num) => (
-                  <option key={num} value={num}>
-                    الآية {num}
-                  </option>
-                ))}
-              </select>
+                onChange={(e) =>
+                  onEndAyahChange(
+                    Math.min(currentSurah.versesCount, Math.max(startAyah, Number(e.target.value)))
+                  )
+                }
+                className="w-14 bg-secondary/80 text-foreground font-mono text-center rounded-xl p-1 border border-border focus:outline-none"
+              />
             </div>
           </div>
         </div>
@@ -325,13 +316,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     : 'border-border/60 hover:border-border'
                 }`}
               >
-                {/* Page Top Indicator Header */}
-                <div className="flex items-center justify-between border-b border-border/40 pb-3 text-xs text-muted-foreground font-sans">
-                  <span className="font-bold text-foreground bg-secondary px-3 py-1 rounded-full border border-border">
-                    صفحة {pageNum}
-                  </span>
-
-                  <div className="flex items-center gap-2 flex-wrap">
+                {/* Page Top Target Badges (Only shown if page has targets) */}
+                {(isMemTargetPage || isReadTargetPage) && (
+                  <div className="flex items-center justify-end border-b border-border/40 pb-2.5 text-xs text-muted-foreground font-sans gap-2 flex-wrap">
                     {isMemTargetPage && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-bold text-[10px] animate-pulse">
                         <Target className="size-3" /> نهاية ورد الحفظ
@@ -344,7 +331,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       </span>
                     )}
                   </div>
-                </div>
+                )}
 
                 {/* Continuous Mushaf Page Text */}
                 <div className="dir-rtl text-justify font-arabic-quran text-2xl md:text-3xl leading-[2.6] md:leading-[2.8] text-foreground tracking-wide select-none font-bold">
@@ -388,10 +375,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   })}
                 </div>
 
-                {/* Page Bottom Info */}
-                <div className="border-t border-border/30 pt-2 text-[10px] text-muted-foreground flex justify-between">
-                  <span>سورة {currentSurah.name}</span>
-                  <span>الجزء {currentSurah.juzStart}</span>
+                {/* Page Bottom Footer: Surah Name | Page Number | Juz */}
+                <div className="border-t border-border/40 pt-3 text-xs text-muted-foreground flex items-center justify-between font-sans">
+                  <span className="font-semibold text-foreground/80">سورة {currentSurah.name}</span>
+                  <span className="font-bold text-foreground bg-secondary/80 px-3 py-1 rounded-full border border-border text-xs">
+                    صفحة {pageNum}
+                  </span>
+                  <span className="font-semibold text-foreground/80">الجزء {currentSurah.juzStart}</span>
                 </div>
               </div>
             );
