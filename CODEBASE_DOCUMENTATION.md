@@ -5210,7 +5210,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 136
+**Lines:** 135
 
 ---
 
