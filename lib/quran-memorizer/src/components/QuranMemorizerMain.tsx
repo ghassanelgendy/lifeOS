@@ -75,9 +75,6 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             <div className="text-right">
               <h1 className="text-xl font-extrabold text-foreground flex items-center gap-2 font-arabic-title">
                 <span>مُحَفِّظُ القُرْآنِ الكَرِيمِ</span>
-                <span className="text-[10px] font-bold font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  الحفظ والمراجعة
-                </span>
               </h1>
               <p className="text-xs text-muted-foreground font-semibold mt-0.5">
                 تخطيط الخاتمات، التكرار الصوتي، المراجعة المتباعدة، ومتابعة جلسات التسميع مع الشيخ.
