@@ -126,6 +126,35 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### lib/db/src/schema
 - [lib/db/src/schema/index.ts](#lib-db-src-schema-index-ts)
 
+### lib/quran-memorizer
+- [lib/quran-memorizer/index.html](#lib-quran-memorizer-index-html)
+- [lib/quran-memorizer/package.json](#lib-quran-memorizer-package-json)
+- [lib/quran-memorizer/tsconfig.json](#lib-quran-memorizer-tsconfig-json)
+- [lib/quran-memorizer/vite.config.ts](#lib-quran-memorizer-vite-config-ts)
+
+### lib/quran-memorizer/src
+- [lib/quran-memorizer/src/index.ts](#lib-quran-memorizer-src-index-ts)
+- [lib/quran-memorizer/src/main.tsx](#lib-quran-memorizer-src-main-tsx)
+
+### lib/quran-memorizer/src/components
+- [lib/quran-memorizer/src/components/AudioPlayerBar.tsx](#lib-quran-memorizer-src-components-audioplayerbar-tsx)
+- [lib/quran-memorizer/src/components/BlindModeOverlay.tsx](#lib-quran-memorizer-src-components-blindmodeoverlay-tsx)
+- [lib/quran-memorizer/src/components/MutashabihatView.tsx](#lib-quran-memorizer-src-components-mutashabihatview-tsx)
+- [lib/quran-memorizer/src/components/QuranMemorizerMain.tsx](#lib-quran-memorizer-src-components-quranmemorizermain-tsx)
+- [lib/quran-memorizer/src/components/QuranReaderView.tsx](#lib-quran-memorizer-src-components-quranreaderview-tsx)
+- [lib/quran-memorizer/src/components/RevisionScheduler.tsx](#lib-quran-memorizer-src-components-revisionscheduler-tsx)
+
+### lib/quran-memorizer/src/hooks
+- [lib/quran-memorizer/src/hooks/useQuranAudio.ts](#lib-quran-memorizer-src-hooks-usequranaudio-ts)
+- [lib/quran-memorizer/src/hooks/useQuranMemorizer.ts](#lib-quran-memorizer-src-hooks-usequranmemorizer-ts)
+
+### lib/quran-memorizer/src/services
+- [lib/quran-memorizer/src/services/quranApi.ts](#lib-quran-memorizer-src-services-quranapi-ts)
+- [lib/quran-memorizer/src/services/quranData.ts](#lib-quran-memorizer-src-services-qurandata-ts)
+
+### lib/quran-memorizer/src/types
+- [lib/quran-memorizer/src/types/quran.ts](#lib-quran-memorizer-src-types-quran-ts)
+
 ### public/ios6-lite
 - [public/ios6-lite/index.html](#public-ios6-lite-index-html)
 - [public/ios6-lite/legacy-autologin.example.js](#public-ios6-lite-legacy-autologin-example-js)
@@ -342,6 +371,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Login.tsx](#src-routes-login-tsx)
 - [src/routes/Notes.tsx](#src-routes-notes-tsx)
 - [src/routes/Points.tsx](#src-routes-points-tsx)
+- [src/routes/Quran.tsx](#src-routes-quran-tsx)
 - [src/routes/Screentime.ios.tsx](#src-routes-screentime-ios-tsx)
 - [src/routes/Screentime.tsx](#src-routes-screentime-tsx)
 - [src/routes/Screentime.web.tsx](#src-routes-screentime-web-tsx)
@@ -1190,6 +1220,217 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="lib-quran-memorizer-index-html"></a>
+### lib/quran-memorizer/index.html
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration file)
+
+**Lines:** 16
+
+---
+
+<a name="lib-quran-memorizer-package-json"></a>
+### lib/quran-memorizer/package.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 26
+
+---
+
+<a name="lib-quran-memorizer-src-components-audioplayerbar-tsx"></a>
+### lib/quran-memorizer/src/components/AudioPlayerBar.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 198
+
+---
+
+<a name="lib-quran-memorizer-src-components-blindmodeoverlay-tsx"></a>
+### lib/quran-memorizer/src/components/BlindModeOverlay.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 133
+
+---
+
+<a name="lib-quran-memorizer-src-components-mutashabihatview-tsx"></a>
+### lib/quran-memorizer/src/components/MutashabihatView.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 120
+
+---
+
+<a name="lib-quran-memorizer-src-components-quranmemorizermain-tsx"></a>
+### lib/quran-memorizer/src/components/QuranMemorizerMain.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 220
+
+---
+
+<a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
+### lib/quran-memorizer/src/components/QuranReaderView.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 184
+
+---
+
+<a name="lib-quran-memorizer-src-components-revisionscheduler-tsx"></a>
+### lib/quran-memorizer/src/components/RevisionScheduler.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 116
+
+---
+
+<a name="lib-quran-memorizer-src-hooks-usequranaudio-ts"></a>
+### lib/quran-memorizer/src/hooks/useQuranAudio.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `useQuranAudio` (React Hook)
+- `useQuranAudio` (Function)
+
+**Function Details:**
+- **`useQuranAudio`** — Custom React hook managing quranaudio state and side effects.
+- **`useQuranAudio`** — Utility function for use quran audio.
+
+**Lines:** 205
+
+---
+
+<a name="lib-quran-memorizer-src-hooks-usequranmemorizer-ts"></a>
+### lib/quran-memorizer/src/hooks/useQuranMemorizer.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `useQuranMemorizer` (React Hook)
+- `useQuranMemorizer` (Function)
+
+**Function Details:**
+- **`useQuranMemorizer`** — Custom React hook managing quranmemorizer state and side effects.
+- **`useQuranMemorizer`** — Utility function for use quran memorizer.
+
+**Lines:** 162
+
+---
+
+<a name="lib-quran-memorizer-src-index-ts"></a>
+### lib/quran-memorizer/src/index.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 12
+
+---
+
+<a name="lib-quran-memorizer-src-main-tsx"></a>
+### lib/quran-memorizer/src/main.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 11
+
+---
+
+<a name="lib-quran-memorizer-src-services-quranapi-ts"></a>
+### lib/quran-memorizer/src/services/quranApi.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `getAyahAudioUrl` (Function)
+
+**Function Details:**
+- **`getAyahAudioUrl`** — Utility function for get ayah audio url.
+
+**Lines:** 46
+
+---
+
+<a name="lib-quran-memorizer-src-services-qurandata-ts"></a>
+### lib/quran-memorizer/src/services/quranData.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 162
+
+---
+
+<a name="lib-quran-memorizer-src-types-quran-ts"></a>
+### lib/quran-memorizer/src/types/quran.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `SurahMeta` (Interface)
+- `Ayah` (Interface)
+- `Reciter` (Interface)
+- `HifdhRecord` (Interface)
+- `RepeatSettings` (Interface)
+- `MutashabihItem` (Interface)
+- `MemorizationStatus` (Type)
+- `RatingGrade` (Type)
+
+**Lines:** 66
+
+---
+
+<a name="lib-quran-memorizer-tsconfig-json"></a>
+### lib/quran-memorizer/tsconfig.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 21
+
+---
+
+<a name="lib-quran-memorizer-vite-config-ts"></a>
+### lib/quran-memorizer/vite.config.ts
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 10
+
+---
+
 <a name="package-json"></a>
 ### package.json
 
@@ -1501,7 +1742,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 406
+**Lines:** 408
 
 ---
 
@@ -1613,7 +1854,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`UserAppSettingsBridge`** — Utility function for user app settings bridge.
 - **`ThemeSync`** — Utility function for theme sync.
 
-**Lines:** 338
+**Lines:** 340
 
 ---
 
@@ -2564,7 +2805,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `NavItem` (Interface)
 
-**Lines:** 44
+**Lines:** 46
 
 ---
 
@@ -4918,6 +5159,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Points`** — Utility function for points.
 
 **Lines:** 370
+
+---
+
+<a name="src-routes-quran-tsx"></a>
+### src/routes/Quran.tsx
+
+**File Purpose:** Page-level route component for the Quran.tsx module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `QuranRoute` (React Component)
+- `QuranRoute` (Function)
+
+**Function Details:**
+- **`QuranRoute`** — React component rendering UI for QuranRoute.
+- **`QuranRoute`** — Utility function for quran route.
+
+**Lines:** 9
 
 ---
 
