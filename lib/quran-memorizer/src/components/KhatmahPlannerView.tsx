@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Target,
   Flame,
@@ -13,9 +14,8 @@ import {
   UserCheck,
   Compass,
   FileText,
-  Star,
-  AlertTriangle,
   Bookmark,
+  X,
 } from 'lucide-react';
 import {
   KhatmahPlan,
@@ -101,6 +101,22 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   // Modals state
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
   const [showHalqahNoteModal, setShowHalqahNoteModal] = useState(false);
+
+  // Lock body scroll when any modal is open to prevent background scrolling
+  const isAnyModalOpen = showNewPlanModal || showHalqahNoteModal;
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      const originalOverflow = document.body.style.overflow;
+      const originalTouchAction = document.body.style.touchAction;
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+      return () => {
+        document.body.style.overflow = originalOverflow;
+        document.body.style.touchAction = originalTouchAction;
+      };
+    }
+  }, [isAnyModalOpen]);
 
   // New Halqah Note Form State
   const [noteSurahId, setNoteSurahId] = useState<number>(2);
@@ -331,14 +347,14 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         
         {/* 1. Memorization Wird (ورد الحفظ والتكرار) */}
-        <div className="p-5 rounded-3xl border border-emerald-500/30 bg-emerald-950/20 space-y-3 shadow-md">
+        <div className="p-6 rounded-3xl border border-emerald-500/30 bg-emerald-950/20 backdrop-blur-xl space-y-3 shadow-lg active:scale-[0.99] transition-all">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-2 font-arabic-title">
               <Target className="size-4 text-emerald-400 shrink-0" />
               <span>🎯 ورد الحفظ الجديد والتكرار</span>
             </h3>
             {plan && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 {plan.pagesPerDay} صفحة / يومياً
               </span>
             )}
@@ -349,7 +365,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               <p className="text-xs text-muted-foreground">لم تقم بإنشاء خطة حفظ بعد.</p>
               <button
                 onClick={() => setShowNewPlanModal(true)}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm cursor-pointer"
+                className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
               >
                 + إنشاء خطة حفظ جديدة
               </button>
@@ -372,7 +388,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 </span>
                 <button
                   onClick={handleLogProgress}
-                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                 >
                   <CheckCircle2 className="size-3.5" /> تسجيل إنجاز الحفظ
                 </button>
@@ -382,13 +398,13 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         </div>
 
         {/* 2. Reading & Tilawah Wird (ورد التلاوة والقراءة اليومية) */}
-        <div className="p-5 rounded-3xl border border-indigo-500/30 bg-indigo-950/20 space-y-3 shadow-md">
+        <div className="p-6 rounded-3xl border border-indigo-500/30 bg-indigo-950/20 backdrop-blur-xl space-y-3 shadow-lg active:scale-[0.99] transition-all">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-indigo-400 flex items-center gap-2 font-arabic-title">
               <BookOpen className="size-4 text-indigo-400 shrink-0" />
               <span>📖 ورد التلاوة والقراءة اليومية</span>
             </h3>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               {readingWird.pagesPerDay} صفحة يومياً
             </span>
           </div>
@@ -410,7 +426,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               </span>
               <button
                 onClick={handleLogReadingWird}
-                className="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
               >
                 <Bookmark className="size-3.5" /> تسجيل إنجاز التلاوة (+{readingWird.pagesPerDay} صفحة)
               </button>
@@ -422,7 +438,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
       {/* Main Plan Overview Banner */}
       {plan && (
-        <div className="p-6 rounded-3xl border border-border bg-card shadow-lg space-y-4">
+        <div className="p-6 rounded-3xl border border-border/60 bg-card/90 backdrop-blur-xl shadow-lg space-y-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
@@ -442,13 +458,13 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setShowNewPlanModal(true)}
-                className="px-3 py-1.5 rounded-xl bg-secondary text-xs font-bold text-muted-foreground hover:text-foreground cursor-pointer"
+                className="px-3.5 py-2 rounded-2xl bg-secondary text-xs font-bold text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer"
               >
                 تغيير الخطة
               </button>
               <button
                 onClick={handleDeletePlan}
-                className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                className="p-2 rounded-2xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
                 title="حذف الخاتمة"
               >
                 <Trash2 className="size-4" />
@@ -476,7 +492,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
         {/* Connected Habits Card */}
-        <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
+        <div className="p-6 rounded-3xl border border-border/60 bg-card/80 backdrop-blur-xl space-y-3 shadow-md">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 font-arabic-title">
               <Sparkles className="size-4 text-amber-400 shrink-0" />
@@ -485,15 +501,15 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           </div>
 
           {quranHabits.length === 0 ? (
-            <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
+            <div className="p-4 border border-dashed border-border rounded-2xl text-center text-xs text-muted-foreground">
               لا توجد عادات قرآنية في lifeOS Habits (مثل: حفظ صفحة، ورد القرآن).
             </div>
           ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto pl-1">
+            <div className="space-y-2 max-h-64 overflow-y-auto overscroll-contain pl-1">
               {quranHabits.map((habit) => (
                 <div
                   key={habit.id}
-                  className={`p-3 rounded-xl border transition-all ${
+                  className={`p-3.5 rounded-2xl border transition-all ${
                     habit.is_completed_today
                       ? 'border-amber-500/30 bg-amber-500/5'
                       : 'border-border/60 bg-secondary/30'
@@ -524,7 +540,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                       </span>
                     </div>
 
-                    <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                    <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20">
                       {habit.is_completed_today ? 'تم اليوم' : 'غير مكتمل'}
                     </span>
                   </div>
@@ -543,7 +559,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                           alert(`تم تحديث تفاصيل العادة إلى:\n"${desc}"`);
                         }
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold border border-emerald-500/30 transition-all cursor-pointer shrink-0"
+                      className="px-2.5 py-1 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold border border-emerald-500/30 transition-all cursor-pointer shrink-0 active:scale-95"
                       title="مزامنة الورد القادم مع تفاصيل العادة في lifeOS"
                     >
                       مزامنة الورد القادم
@@ -556,7 +572,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         </div>
 
         {/* Sheikh Recitation Sessions & Notes for Mistakes */}
-        <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
+        <div className="p-6 rounded-3xl border border-border/60 bg-card/80 backdrop-blur-xl space-y-3 shadow-md">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 font-arabic-title">
               <UserCheck className="size-4 text-indigo-400 shrink-0" />
@@ -564,9 +580,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             </h3>
             <button
               onClick={() => setShowHalqahNoteModal(true)}
-              className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[10px] shadow-sm cursor-pointer flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1"
             >
-              <Plus className="size-3" /> إضافة ملاحظات حلقة
+              <Plus className="size-3.5" /> إضافة ملاحظات حلقة
             </button>
           </div>
 
@@ -575,7 +591,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <div className="space-y-1.5 mb-3">
               <span className="text-[11px] font-bold text-muted-foreground block">الحلقات المجدولة في التقويم:</span>
               {sheikhEvents.map((evt) => (
-                <div key={evt.id} className="p-2.5 rounded-xl border border-indigo-500/20 bg-indigo-500/5 flex items-center justify-between text-xs">
+                <div key={evt.id} className="p-2.5 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 flex items-center justify-between text-xs">
                   <span className="font-bold text-foreground">{evt.title}</span>
                   <span className="text-[10px] text-muted-foreground">
                     {new Date(evt.start_time).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
@@ -590,13 +606,13 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <span className="text-[11px] font-bold text-muted-foreground block">سجل ملاحظات وأخطاء التسميع ({halqahNotes.length}):</span>
             
             {halqahNotes.length === 0 ? (
-              <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
+              <div className="p-4 border border-dashed border-border rounded-2xl text-center text-xs text-muted-foreground">
                 لا توجد ملاحظات أخطاء مسجلة بعد. اضغط على "+ إضافة ملاحظات حلقة" لتدوين الأخطاء والمتشابهات بعد كل جلسة مع الشيخ.
               </div>
             ) : (
-              <div className="space-y-2 max-h-56 overflow-y-auto pl-1">
+              <div className="space-y-2 max-h-56 overflow-y-auto overscroll-contain pl-1">
                 {halqahNotes.map((note) => (
-                  <div key={note.id} className="p-3 rounded-xl border border-border/60 bg-secondary/20 space-y-1.5 relative">
+                  <div key={note.id} className="p-3.5 rounded-2xl border border-border/60 bg-secondary/20 space-y-1.5 relative">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-foreground">{note.surahName}</span>
@@ -604,7 +620,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                        <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
                           note.rating === 'mumtaz'
                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                             : note.rating === 'jayyid_jiddan'
@@ -618,7 +634,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
                         <button
                           onClick={() => handleDeleteHalqahNote(note.id)}
-                          className="text-muted-foreground hover:text-rose-500 p-1"
+                          className="text-muted-foreground hover:text-rose-500 p-1 transition-colors"
                           title="حذف الملاحظة"
                         >
                           <Trash2 className="size-3.5" />
@@ -626,7 +642,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                       </div>
                     </div>
 
-                    <p className="text-xs text-foreground bg-background/60 p-2 rounded-lg border border-border/40 leading-relaxed font-semibold">
+                    <p className="text-xs text-foreground bg-background/60 p-2.5 rounded-xl border border-border/40 leading-relaxed font-semibold">
                       📝 {note.mistakesNote}
                     </p>
 
@@ -643,235 +659,275 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
       </div>
 
-      {/* New Plan Modal */}
-      {showNewPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 space-y-4 shadow-2xl overflow-hidden isolate">
-            <h3 className="text-base font-bold text-foreground flex items-center gap-2 font-arabic-title">
-              <Target className="size-5 text-emerald-500 shrink-0" />
-              <span>إنشاء خطة خاتمة مخصصة</span>
-            </h3>
+      {/* iOS Native Bottom Sheet Modal for New Plan */}
+      {showNewPlanModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+            onClick={() => setShowNewPlanModal(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl border border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh] overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200"
+            >
+              {/* iOS Sheet Drag Handle Pill */}
+              <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-1" />
 
-            <form onSubmit={handleCreatePlan} className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">نقطة البداية واتجاه الحفظ</label>
-                <select
-                  value={direction}
-                  onChange={(e) => handleDirectionChange(e.target.value as KhatmahDirection)}
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2 font-arabic-title">
+                  <Target className="size-5 text-emerald-500 shrink-0" />
+                  <span>إنشاء خطة خاتمة مخصصة</span>
+                </h3>
+
+                <button
+                  onClick={() => setShowNewPlanModal(false)}
+                  className="p-2 rounded-full hover:bg-secondary text-muted-foreground"
                 >
-                  <option value="reverse">من سورة الناس إلى سورة البقرة (الصفحة 604 ← 1 عكسياً)</option>
-                  <option value="juz_amma">من جزء عمَّ (سورة النبأ ← الناس - الصفحة 582)</option>
-                  <option value="forward">من سورة الفاتحة إلى سورة الناس (الصفحة 1 → 604)</option>
-                  <option value="custom">تحديد صفحة بداية مخصصة</option>
-                </select>
+                  <X className="size-4" />
+                </button>
               </div>
 
-              {direction === 'custom' && (
+              <form onSubmit={handleCreatePlan} className="space-y-3.5">
                 <div>
-                  <label className="text-xs font-bold text-muted-foreground">صفحة البداية المخصصة (1-604)</label>
+                  <label className="text-xs font-bold text-muted-foreground">نقطة البداية واتجاه الحفظ</label>
+                  <select
+                    value={direction}
+                    onChange={(e) => handleDirectionChange(e.target.value as KhatmahDirection)}
+                    className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  >
+                    <option value="reverse">من سورة الناس إلى سورة البقرة (الصفحة 604 ← 1 عكسياً)</option>
+                    <option value="juz_amma">من جزء عمَّ (سورة النبأ ← الناس - الصفحة 582)</option>
+                    <option value="forward">من سورة الفاتحة إلى سورة الناس (الصفحة 1 → 604)</option>
+                    <option value="custom">تحديد صفحة بداية مخصصة</option>
+                  </select>
+                </div>
+
+                {direction === 'custom' && (
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground">صفحة البداية المخصصة (1-604)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={604}
+                      value={customStartPage}
+                      onChange={(e) => setCustomStartPage(Math.min(604, Math.max(1, Number(e.target.value))))}
+                      className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">اسم الخاتمة</label>
                   <input
-                    type="number"
-                    min={1}
-                    max={604}
-                    value={customStartPage}
-                    onChange={(e) => setCustomStartPage(Math.min(604, Math.max(1, Number(e.target.value))))}
-                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                    required
                   />
                 </div>
-              )}
 
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">اسم الخاتمة</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">استراتيجية الإنجاز</label>
-                <select
-                  value={goalType}
-                  onChange={(e) => setGoalType(e.target.value as KhatmahGoalType)}
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                >
-                  <option value="pages_per_day">عدد صفحات ثابت يومياً (مثال: صفحة واحدة)</option>
-                  <option value="juz_in_days">إنهاء عدد أجزاء في أيام محددة</option>
-                </select>
-              </div>
-
-              {goalType === 'pages_per_day' ? (
                 <div>
-                  <label className="text-xs font-bold text-muted-foreground">الصفحات يومياً</label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={20}
-                    value={pagesPerDay}
-                    onChange={(e) => setPagesPerDay(Number(e.target.value))}
-                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                  />
+                  <label className="text-xs font-bold text-muted-foreground">استراتيجية الإنجاز</label>
+                  <select
+                    value={goalType}
+                    onChange={(e) => setGoalType(e.target.value as KhatmahGoalType)}
+                    className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                  >
+                    <option value="pages_per_day">عدد صفحات ثابت يومياً (مثال: صفحة واحدة)</option>
+                    <option value="juz_in_days">إنهاء عدد أجزاء في أيام محددة</option>
+                  </select>
                 </div>
-              ) : (
+
+                {goalType === 'pages_per_day' ? (
+                  <div>
+                    <label className="text-xs font-bold text-muted-foreground">الصفحات يومياً</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      value={pagesPerDay}
+                      onChange={(e) => setPagesPerDay(Number(e.target.value))}
+                      className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                    />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs font-bold text-muted-foreground">عدد الأجزاء</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={30}
+                        value={juzCount}
+                        onChange={(e) => setJuzCount(Number(e.target.value))}
+                        className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted-foreground">خلال كم يوم؟</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={targetDays}
+                        onChange={(e) => setTargetDays(Number(e.target.value))}
+                        className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPlanModal(false)}
+                    className="px-4 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:bg-secondary active:scale-95 transition-all cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-md active:scale-95 transition-all"
+                  >
+                    بدء الخاتمة
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* iOS Native Bottom Sheet Modal for Sheikh Halqah Note */}
+      {showHalqahNoteModal &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+            onClick={() => setShowHalqahNoteModal(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl border border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh] overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200"
+            >
+              {/* iOS Sheet Drag Handle Pill */}
+              <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-1" />
+
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2 font-arabic-title">
+                  <FileText className="size-5 text-indigo-400 shrink-0" />
+                  <span>تدوين ملاحظات وأخطاء حلقة التسميع</span>
+                </h3>
+
+                <button
+                  onClick={() => setShowHalqahNoteModal(false)}
+                  className="p-2 rounded-full hover:bg-secondary text-muted-foreground"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddHalqahNote} className="space-y-3.5">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">اسم السورة</label>
+                  <select
+                    value={noteSurahId}
+                    onChange={(e) => handleNoteSurahChange(Number(e.target.value))}
+                    className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                  >
+                    {SURAHS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        سورة {s.name} ({s.transliteration})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs font-bold text-muted-foreground">عدد الأجزاء</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={30}
-                      value={juzCount}
-                      onChange={(e) => setJuzCount(Number(e.target.value))}
-                      className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                    />
+                    <label className="text-xs font-bold text-muted-foreground">من الآية</label>
+                    <select
+                      value={noteStartAyah}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setNoteStartAyah(val);
+                        if (val > noteEndAyah) setNoteEndAyah(val);
+                      }}
+                      className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                    >
+                      {Array.from({ length: selectedNoteSurahMeta.versesCount }, (_, i) => i + 1).map((num) => (
+                        <option key={num} value={num}>
+                          الآية {num}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
                   <div>
-                    <label className="text-xs font-bold text-muted-foreground">خلال كم يوم؟</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={365}
-                      value={targetDays}
-                      onChange={(e) => setTargetDays(Number(e.target.value))}
-                      className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                    />
+                    <label className="text-xs font-bold text-muted-foreground">إلى الآية</label>
+                    <select
+                      value={noteEndAyah}
+                      onChange={(e) => setNoteEndAyah(Number(e.target.value))}
+                      className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
+                    >
+                      {Array.from(
+                        { length: selectedNoteSurahMeta.versesCount - noteStartAyah + 1 },
+                        (_, i) => noteStartAyah + i
+                      ).map((num) => (
+                        <option key={num} value={num}>
+                          الآية {num}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
-              )}
 
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowNewPlanModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-secondary cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-md"
-                >
-                  بدء الخاتمة
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* New Sheikh Halqah Note Modal */}
-      {showHalqahNoteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 space-y-4 shadow-2xl overflow-hidden isolate">
-            <h3 className="text-base font-bold text-foreground flex items-center gap-2 font-arabic-title">
-              <FileText className="size-5 text-indigo-400 shrink-0" />
-              <span>تدوين ملاحظات وأخطاء حلقة التسميع</span>
-            </h3>
-
-            <form onSubmit={handleAddHalqahNote} className="space-y-3">
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">اسم السورة</label>
-                <select
-                  value={noteSurahId}
-                  onChange={(e) => handleNoteSurahChange(Number(e.target.value))}
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                >
-                  {SURAHS.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      سورة {s.name} ({s.transliteration})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="text-xs font-bold text-muted-foreground">من الآية</label>
+                  <label className="text-xs font-bold text-muted-foreground">تقييم الجلسة مع الشيخ</label>
                   <select
-                    value={noteStartAyah}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setNoteStartAyah(val);
-                      if (val > noteEndAyah) setNoteEndAyah(val);
-                    }}
-                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+                    value={noteRating}
+                    onChange={(e) => setNoteRating(e.target.value as any)}
+                    className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none"
                   >
-                    {Array.from({ length: selectedNoteSurahMeta.versesCount }, (_, i) => i + 1).map((num) => (
-                      <option key={num} value={num}>
-                        الآية {num}
-                      </option>
-                    ))}
+                    <option value="mumtaz">ممتاز (بدون أخطاء)</option>
+                    <option value="jayyid_jiddan">جيد جداً (أخطاء بسيطة جداً)</option>
+                    <option value="jayyid">جيد (أخطاء متوسطة)</option>
+                    <option value="yahatadj_tathbeet">يحتاج تثبيت ومراجعة مكثفة</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-muted-foreground">إلى الآية</label>
-                  <select
-                    value={noteEndAyah}
-                    onChange={(e) => setNoteEndAyah(Number(e.target.value))}
-                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                  >
-                    {Array.from(
-                      { length: selectedNoteSurahMeta.versesCount - noteStartAyah + 1 },
-                      (_, i) => noteStartAyah + i
-                    ).map((num) => (
-                      <option key={num} value={num}>
-                        الآية {num}
-                      </option>
-                    ))}
-                  </select>
+                  <label className="text-xs font-bold text-muted-foreground">تدوين الأخطاء والملاحظات</label>
+                  <textarea
+                    value={noteMistakes}
+                    onChange={(e) => setNoteMistakes(e.target.value)}
+                    placeholder="اكتب ملاحظات الشيخ وأخطاء التشكيل والمتشابهات هنا..."
+                    rows={3}
+                    className="w-full mt-1 rounded-2xl border border-border bg-background px-3.5 py-2.5 text-xs font-bold text-foreground focus:outline-none resize-none"
+                    required
+                  />
                 </div>
-              </div>
 
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">تقييم الجلسة مع الشيخ</label>
-                <select
-                  value={noteRating}
-                  onChange={(e) => setNoteRating(e.target.value as any)}
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                >
-                  <option value="mumtaz">ممتاز (بدون أخطاء)</option>
-                  <option value="jayyid_jiddan">جيد جداً (أخطاء بسيطة جداً)</option>
-                  <option value="jayyid">جيد (أخطاء متوسطة)</option>
-                  <option value="yahatadj_tathbeet">يحتاج تثبيت ومراجعة مكثفة</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">تدوين الأخطاء والملاحظات</label>
-                <textarea
-                  value={noteMistakes}
-                  onChange={(e) => setNoteMistakes(e.target.value)}
-                  placeholder="اكتب ملاحظات الشيخ وأخطاء التشكيل والمتشابهات هنا..."
-                  rows={3}
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none resize-none"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowHalqahNoteModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-muted-foreground hover:bg-secondary cursor-pointer"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer shadow-md"
-                >
-                  حفظ الملاحظة
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+                <div className="flex items-center justify-end gap-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowHalqahNoteModal(false)}
+                    className="px-4 py-2.5 rounded-2xl text-xs font-bold text-muted-foreground hover:bg-secondary active:scale-95 transition-all cursor-pointer"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer shadow-md active:scale-95 transition-all"
+                  >
+                    حفظ الملاحظة
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

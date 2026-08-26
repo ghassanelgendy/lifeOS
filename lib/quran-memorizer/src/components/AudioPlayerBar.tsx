@@ -50,7 +50,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   const content = (
     <div
       dir="rtl"
-      className={`fixed bottom-0 left-0 right-0 z-[90] border-t border-emerald-500/30 bg-card/95 backdrop-blur-xl p-2.5 md:p-3.5 shadow-[0_-8px_30px_rgba(0,0,0,0.5)] font-arabic-title text-right transition-all ${
+      className={`fixed bottom-0 left-0 right-0 z-[90] border-t border-emerald-500/30 bg-card/90 backdrop-blur-2xl p-2.5 md:p-3.5 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.5)] font-arabic-title text-right transition-all ${
         isSidebarCollapsed ? 'md:left-16' : 'md:left-64'
       }`}
     >
