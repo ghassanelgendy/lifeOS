@@ -48,9 +48,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const [showNewPlanModal, setShowNewPlanModal] = useState(false);
 
   // Form State
-  const [title, setTitle] = useState('خطة حفظ جزء عمَّ (من سورة النبأ)');
-  const [direction, setDirection] = useState<KhatmahDirection>('juz_amma');
-  const [customStartPage, setCustomStartPage] = useState(582);
+  const [title, setTitle] = useState('خطة حفظ القرآن (من سورة الناس إلى سورة البقرة)');
+  const [direction, setDirection] = useState<KhatmahDirection>('reverse');
+  const [customStartPage, setCustomStartPage] = useState(604);
   const [goalType, setGoalType] = useState<KhatmahGoalType>('pages_per_day');
   const [pagesPerDay, setPagesPerDay] = useState(1);
   const [juzCount, setJuzCount] = useState(1);
@@ -66,12 +66,12 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
   const handleDirectionChange = (newDir: KhatmahDirection) => {
     setDirection(newDir);
-    if (newDir === 'juz_amma') {
+    if (newDir === 'reverse') {
+      setTitle('خطة حفظ القرآن (من سورة الناس إلى سورة البقرة)');
+    } else if (newDir === 'juz_amma') {
       setTitle('خطة حفظ جزء عمَّ (من سورة النبأ إلى الناس)');
     } else if (newDir === 'forward') {
-      setTitle('خطة حفظ القرآن (من بداية المصحف)');
-    } else if (newDir === 'reverse') {
-      setTitle('خطة حفظ القرآن (من آخر المصحف عكسياً)');
+      setTitle('خطة حفظ القرآن (من سورة الفاتحة إلى الناس)');
     } else if (newDir === 'custom') {
       setTitle(`خطة حفظ القرآن (من الصفحة ${customStartPage})`);
     }
@@ -454,9 +454,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                   onChange={(e) => handleDirectionChange(e.target.value as KhatmahDirection)}
                   className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 >
+                  <option value="reverse">من سورة الناس إلى سورة البقرة (الصفحة 604 ← 1 عكسياً)</option>
                   <option value="juz_amma">من جزء عمَّ (سورة النبأ ← الناس - الصفحة 582)</option>
-                  <option value="forward">من بداية المصحف (سورة الفاتحة ← الناس - الصفحة 1)</option>
-                  <option value="reverse">من آخر المصحف عكسياً (سورة الناس ← الفاتحة - الصفحة 604)</option>
+                  <option value="forward">من سورة الفاتحة إلى سورة الناس (الصفحة 1 → 604)</option>
                   <option value="custom">تحديد صفحة بداية مخصصة</option>
                 </select>
               </div>
