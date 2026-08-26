@@ -63,3 +63,42 @@ export interface MutashabihItem {
   matchedSnippet: string;
   similarityNote: string;
 }
+
+export type KhatmahGoalType = 'pages_per_day' | 'juz_in_days' | 'target_date';
+
+export interface KhatmahPlan {
+  id: string;
+  title: string;
+  goalType: KhatmahGoalType;
+  pagesPerDay: number;
+  startPage: number;
+  endPage: number;
+  currentPage: number;
+  startDate: string; // ISO date
+  targetEndDate: string; // ISO date
+  streakDays: number;
+  lastCompletedDate?: string;
+  notes?: string;
+}
+
+export interface LinkedLifeOSTask {
+  id: string;
+  title: string;
+  is_completed: boolean;
+  due_date?: string;
+}
+
+export interface LinkedLifeOSEvent {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time?: string;
+}
+
+export interface LifeOSIntegrationProps {
+  linkedTasks?: LinkedLifeOSTask[];
+  linkedEvents?: LinkedLifeOSEvent[];
+  onToggleTask?: (taskId: string) => void;
+  onCreateQuranTask?: (title: string, dueDate: string) => void;
+}
+

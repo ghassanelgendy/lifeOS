@@ -139,6 +139,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### lib/quran-memorizer/src/components
 - [lib/quran-memorizer/src/components/AudioPlayerBar.tsx](#lib-quran-memorizer-src-components-audioplayerbar-tsx)
 - [lib/quran-memorizer/src/components/BlindModeOverlay.tsx](#lib-quran-memorizer-src-components-blindmodeoverlay-tsx)
+- [lib/quran-memorizer/src/components/KhatmahPlannerView.tsx](#lib-quran-memorizer-src-components-khatmahplannerview-tsx)
 - [lib/quran-memorizer/src/components/MutashabihatView.tsx](#lib-quran-memorizer-src-components-mutashabihatview-tsx)
 - [lib/quran-memorizer/src/components/QuranMemorizerMain.tsx](#lib-quran-memorizer-src-components-quranmemorizermain-tsx)
 - [lib/quran-memorizer/src/components/QuranReaderView.tsx](#lib-quran-memorizer-src-components-quranreaderview-tsx)
@@ -568,7 +569,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6016
+**Lines:** 6274
 
 ---
 
@@ -1264,6 +1265,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="lib-quran-memorizer-src-components-khatmahplannerview-tsx"></a>
+### lib/quran-memorizer/src/components/KhatmahPlannerView.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 385
+
+---
+
 <a name="lib-quran-memorizer-src-components-mutashabihatview-tsx"></a>
 ### lib/quran-memorizer/src/components/MutashabihatView.tsx
 
@@ -1282,7 +1294,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 220
+**Lines:** 247
 
 ---
 
@@ -1402,10 +1414,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `HifdhRecord` (Interface)
 - `RepeatSettings` (Interface)
 - `MutashabihItem` (Interface)
+- `KhatmahPlan` (Interface)
+- `LinkedLifeOSTask` (Interface)
+- `LinkedLifeOSEvent` (Interface)
+- `LifeOSIntegrationProps` (Interface)
 - `MemorizationStatus` (Type)
 - `RatingGrade` (Type)
+- `KhatmahGoalType` (Type)
 
-**Lines:** 66
+**Lines:** 105
 
 ---
 
@@ -5175,7 +5192,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 9
+**Lines:** 53
 
 ---
 

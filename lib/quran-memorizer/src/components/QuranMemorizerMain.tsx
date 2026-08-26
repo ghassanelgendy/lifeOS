@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { BookOpen, Calendar, Layers, Award, Sparkles } from 'lucide-react';
-import { Reciter, RepeatSettings, HifdhRecord } from '../types/quran';
+import { BookOpen, Calendar, Layers, Award, Sparkles, Target } from 'lucide-react';
+import { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps } from '../types/quran';
 import { RECITERS, SURAHS } from '../services/quranData';
 import { useQuranAudio } from '../hooks/useQuranAudio';
 import { useQuranMemorizer } from '../hooks/useQuranMemorizer';
@@ -8,9 +8,15 @@ import { AudioPlayerBar } from './AudioPlayerBar';
 import { QuranReaderView } from './QuranReaderView';
 import { RevisionScheduler } from './RevisionScheduler';
 import { MutashabihatView } from './MutashabihatView';
+import { KhatmahPlannerView } from './KhatmahPlannerView';
 
-export const QuranMemorizerMain: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'reader' | 'revision' | 'mutashabihat'>('reader');
+export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
+  linkedTasks = [],
+  linkedEvents = [],
+  onToggleTask,
+  onCreateQuranTask,
+}) => {
+  const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>('khatmah');
   
   // Selection state
   const [selectedSurah, setSelectedSurah] = useState<number>(1);
@@ -72,13 +78,25 @@ export const QuranMemorizerMain: React.FC = () => {
                 </span>
               </h1>
               <p className="text-xs text-muted-foreground">
-                Spaced repetition, Tikrār audio loops, blind recitation testing & Mutashabihat finder.
+                Khatmah Goal Planner, Spaced Repetition, Tikrār audio loops & Sheikh Session sync.
               </p>
             </div>
           </div>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-1.5 bg-secondary/60 p-1 rounded-xl border border-border">
+          <div className="flex items-center gap-1.5 bg-secondary/60 p-1 rounded-xl border border-border flex-wrap">
+            <button
+              onClick={() => setActiveTab('khatmah')}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                activeTab === 'khatmah'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Target className="size-3.5 text-emerald-500" />
+              Khatmah Planner
+            </button>
+
             <button
               onClick={() => setActiveTab('reader')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -120,6 +138,15 @@ export const QuranMemorizerMain: React.FC = () => {
 
       {/* Main Content Body */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-24">
+        {activeTab === 'khatmah' && (
+          <KhatmahPlannerView
+            linkedTasks={linkedTasks}
+            linkedEvents={linkedEvents}
+            onToggleTask={onToggleTask}
+            onCreateTask={onCreateQuranTask}
+          />
+        )}
+
         {activeTab === 'reader' && (
           <div className="space-y-4">
             {/* Range Target Selector Header */}
