@@ -539,6 +539,8 @@ export function getHabitStreak(habit: Habit, logs: string[]): number {
   return streak;
 }
 
+export const useToggleHabitLog = useLogHabit;
+
 export function useHabitStreak(habitId: string) {
   const { user } = useAuth();
   return useQuery({

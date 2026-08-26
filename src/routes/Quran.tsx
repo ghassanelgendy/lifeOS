@@ -1,7 +1,7 @@
 import React from 'react';
 import { QuranMemorizerMain } from '../../lib/quran-memorizer';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
-import { useHabits, useTodayHabitLogs, useToggleHabitLog } from '../hooks/useHabits';
+import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
 
 export function QuranRoute() {
@@ -11,7 +11,7 @@ export function QuranRoute() {
   const { data: calendarEvents = [] } = useCalendarEvents();
   const toggleTaskMutation = useToggleTask();
   const createTaskMutation = useCreateTask();
-  const toggleHabitLogMutation = useToggleHabitLog();
+  const logHabitMutation = useLogHabit();
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -23,7 +23,7 @@ export function QuranRoute() {
   };
 
   const handleToggleHabit = (habitId: string, isCompleted: boolean) => {
-    toggleHabitLogMutation.mutate({
+    logHabitMutation.mutate({
       habitId,
       date: todayStr,
       completed: isCompleted,

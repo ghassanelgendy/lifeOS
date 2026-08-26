@@ -3283,6 +3283,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useTodayHabitLogs` (React Hook)
 - `useHabitAverages` (React Hook)
 - `useLogHabit` (React Hook)
+- `useToggleHabitLog` (React Hook)
 - `useHabitStreak` (React Hook)
 - `useArchivedHabits` (React Hook)
 - `useHabitStreaks` (React Hook)
@@ -3318,7 +3319,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 1023
+**Lines:** 1025
 
 ---
 
@@ -3349,6 +3350,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useTodayHabitLogs` (React Hook)
 - `useHabitAverages` (React Hook)
 - `useLogHabit` (React Hook)
+- `useToggleHabitLog` (React Hook)
 - `useHabitStreak` (React Hook)
 - `useArchivedHabits` (React Hook)
 - `useHabitStreaks` (React Hook)
@@ -3384,7 +3386,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 999
+**Lines:** 1001
 
 ---
 
