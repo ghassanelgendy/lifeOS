@@ -137,7 +137,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       </header>
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-24">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-36 md:pb-40 font-arabic-body">
         {activeTab === 'khatmah' && (
           <KhatmahPlannerView
             linkedTasks={linkedTasks}
