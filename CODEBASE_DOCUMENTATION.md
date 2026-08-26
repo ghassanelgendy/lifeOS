@@ -1272,7 +1272,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 389
+**Lines:** 484
 
 ---
 
@@ -1423,7 +1423,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `RatingGrade` (Type)
 - `KhatmahGoalType` (Type)
 
-**Lines:** 113
+**Lines:** 115
 
 ---
 
@@ -5195,7 +5195,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 78
+**Lines:** 88
 
 ---
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Flame, Calendar, Sparkles, CheckCircle2, Circle, Plus, Trash2, BookOpen, Clock, UserCheck } from 'lucide-react';
-import { KhatmahPlan, KhatmahGoalType, LinkedLifeOSTask, LinkedLifeOSEvent } from '../types/quran';
+import { Target, Flame, Calendar, Sparkles, CheckCircle2, Circle, Plus, Trash2, BookOpen, Clock, UserCheck, Compass, ArrowLeft } from 'lucide-react';
+import { KhatmahPlan, KhatmahGoalType, LinkedLifeOSTask, LinkedLifeOSHabit, LinkedLifeOSEvent } from '../types/quran';
+import { SURAHS } from '../services/quranData';
 
 const KHATMAH_STORAGE_KEY = 'quran_khatmah_plan_v1';
 
@@ -10,8 +11,21 @@ interface KhatmahPlannerViewProps {
   linkedEvents?: LinkedLifeOSEvent[];
   onToggleTask?: (taskId: string) => void;
   onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
+  onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateTask?: (title: string, dueDate: string) => void;
 }
+
+const getSurahForPage = (page: number) => {
+  let found = SURAHS[0];
+  for (const s of SURAHS) {
+    if (s.pageStart <= page) {
+      found = s;
+    } else {
+      break;
+    }
+  }
+  return found;
+};
 
 export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   linkedTasks = [],
@@ -19,6 +33,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   linkedEvents = [],
   onToggleTask,
   onToggleHabit,
+  onUpdateHabitDescription,
   onCreateTask,
 }) => {
   const [plan, setPlan] = useState<KhatmahPlan | null>(() => {
@@ -101,6 +116,20 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         todayStr
       );
     }
+
+    // Auto update linked habit description if available
+    if (onUpdateHabitDescription && linkedHabits.length > 0) {
+      const targetHabit = linkedHabits.find((h) =>
+        /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
+      );
+      if (targetHabit) {
+        const nextSurah = getSurahForPage(nextCurrentPage);
+        onUpdateHabitDescription(
+          targetHabit.id,
+          `الورد القادم للحفظ: الصفحة ${nextCurrentPage} (سورة ${nextSurah.name})`
+        );
+      }
+    }
   };
 
   const handleDeletePlan = () => {
@@ -108,10 +137,6 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       setPlan(null);
     }
   };
-
-  const quranTasks = linkedTasks.filter((t) =>
-    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن/i.test(t.title)
-  );
 
   const quranHabits = linkedHabits.filter((h) =>
     /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
@@ -124,6 +149,10 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const totalPages = plan ? plan.endPage - plan.startPage + 1 : 604;
   const pagesCompleted = plan ? plan.currentPage - plan.startPage : 0;
   const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
+
+  const currentSurah = getSurahForPage(plan ? plan.currentPage : 1);
+  const nextTargetPage = Math.min(604, (plan ? plan.currentPage : 1) + (plan ? plan.pagesPerDay : 1));
+  const nextSurah = getSurahForPage(nextTargetPage);
 
   return (
     <div dir="rtl" className="space-y-6 font-arabic-body text-right">
@@ -147,63 +176,98 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="p-6 rounded-3xl border border-border bg-card shadow-lg space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-foreground">{plan.title}</h2>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  خطة نشطة
-                </span>
+        <div className="space-y-4">
+          {/* Main Plan Card */}
+          <div className="p-6 rounded-3xl border border-border bg-card shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-foreground">{plan.title}</h2>
+                  <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    خطة نشطة
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  معدل الإنجاز: <span className="font-bold text-foreground">{plan.pagesPerDay} صفحة / يومياً</span> • تاريخ الانتهاء المتوقع:{' '}
+                  <span className="font-semibold text-emerald-400">
+                    {new Date(plan.targetEndDate).toLocaleDateString('ar-EG')}
+                  </span>
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                معدل الإنجاز: <span className="font-bold text-foreground">{plan.pagesPerDay} صفحة / يومياً</span> • تاريخ الانتهاء المتوقع:{' '}
-                <span className="font-semibold text-emerald-400">
-                  {new Date(plan.targetEndDate).toLocaleDateString('ar-EG')}
-                </span>
-              </p>
+
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xs font-bold">
+                  <Flame className="size-4 fill-current animate-pulse" />
+                  سلسلة {plan.streakDays} أيام متتالية
+                </div>
+                <button
+                  onClick={handleDeletePlan}
+                  className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                  title="حذف الخاتمة"
+                >
+                  <Trash2 className="size-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xs font-bold">
-                <Flame className="size-4 fill-current animate-pulse" />
-                سلسلة {plan.streakDays} أيام متتالية
+            {/* Progress Bar */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs font-bold">
+                <span className="text-muted-foreground">نسبة التقدم الكلي في المصحف</span>
+                <span className="text-emerald-400">{progressPercent}% ({pagesCompleted} من {totalPages} صفحة)</span>
+              </div>
+              <div className="w-full h-3 rounded-full bg-secondary overflow-hidden border border-border/40 p-0.5">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-indigo-500 transition-all duration-500"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Action Log Button */}
+            <div className="flex items-center justify-between pt-2 border-t border-border/40 flex-wrap gap-2">
+              <div className="text-xs text-muted-foreground">
+                الصفحة الحالية: <span className="font-bold text-foreground">صفحة {plan.currentPage}</span>
               </div>
               <button
-                onClick={handleDeletePlan}
-                className="p-2 rounded-xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                title="حذف الخاتمة"
+                onClick={handleLogProgress}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
               >
-                <Trash2 className="size-4" />
+                <CheckCircle2 className="size-4" /> تسجيل إنجاز اليوم (+{plan.pagesPerDay} صفحة)
               </button>
             </div>
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-muted-foreground">نسبة التقدم الكلي في المصحف</span>
-              <span className="text-emerald-400">{progressPercent}% ({pagesCompleted} من {totalPages} صفحة)</span>
+          {/* Current Position & Next Target Card */}
+          <div className="p-5 rounded-3xl border border-emerald-500/30 bg-emerald-950/20 space-y-3 shadow-md">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-2 font-arabic-title">
+                <Compass className="size-4 text-emerald-400 shrink-0" />
+                <span>أين أنت الآن وماذا بعد؟ (موقعي الحالي والورد القادم)</span>
+              </h3>
             </div>
-            <div className="w-full h-3 rounded-full bg-secondary overflow-hidden border border-border/40 p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-indigo-500 transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
 
-          {/* Action Log Button */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/40 flex-wrap gap-2">
-            <div className="text-xs text-muted-foreground">
-              الصفحة الحالية: <span className="font-bold text-foreground">صفحة {plan.currentPage}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 space-y-1">
+                <span className="text-[11px] font-bold text-emerald-400 block">📌 موقعي الحالي في المصحف:</span>
+                <p className="text-base font-extrabold text-foreground">
+                  الصفحة {plan.currentPage} — سورة {currentSurah.name}
+                </p>
+                <span className="text-[10px] text-muted-foreground font-semibold block">
+                  الجزء {currentSurah.juzStart}
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl border border-indigo-500/20 bg-indigo-500/10 space-y-1">
+                <span className="text-[11px] font-bold text-indigo-400 block">🎯 الورد القادم المطلوب للحفظ:</span>
+                <p className="text-base font-extrabold text-foreground">
+                  الصفحة {nextTargetPage} — سورة {nextSurah.name}
+                </p>
+                <span className="text-[10px] text-muted-foreground font-semibold block">
+                  الهدف اليومي: {plan.pagesPerDay} صفحة
+                </span>
+              </div>
             </div>
-            <button
-              onClick={handleLogProgress}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
-            >
-              <CheckCircle2 className="size-4" /> تسجيل إنجاز اليوم (+{plan.pagesPerDay} صفحة)
-            </button>
           </div>
         </div>
       )}
@@ -214,39 +278,70 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         {/* Connected Habits Card */}
         <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-              <Sparkles className="size-4 text-amber-400" />
-              العادات القرآنية (lifeOS Habits) ({quranHabits.length})
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 font-arabic-title">
+              <Sparkles className="size-4 text-amber-400 shrink-0" />
+              <span>العادات القرآنية (lifeOS Habits) ({quranHabits.length})</span>
             </h3>
           </div>
 
           {quranHabits.length === 0 ? (
             <div className="p-4 border border-dashed border-border rounded-xl text-center text-xs text-muted-foreground">
-              لا توجد عادات قرآنية في lifeOS Habits (مثل: ورد القرآن، تحفيظ).
+              لا توجد عادات قرآنية في lifeOS Habits (مثل: حفظ صفحة، ورد القرآن).
             </div>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
+            <div className="space-y-2 max-h-56 overflow-y-auto pl-1">
               {quranHabits.map((habit) => (
                 <div
                   key={habit.id}
-                  onClick={() => onToggleHabit && onToggleHabit(habit.id, !habit.is_completed_today)}
-                  className={`flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer ${
+                  className={`p-3 rounded-xl border transition-all ${
                     habit.is_completed_today
-                      ? 'border-amber-500/30 bg-amber-500/5 text-muted-foreground line-through'
-                      : 'border-border/60 bg-secondary/30 hover:bg-secondary/60 text-foreground'
+                      ? 'border-amber-500/30 bg-amber-500/5'
+                      : 'border-border/60 bg-secondary/30'
                   }`}
                 >
-                  <div className="flex items-center gap-2.5">
-                    {habit.is_completed_today ? (
-                      <CheckCircle2 className="size-4 text-amber-500 shrink-0" />
-                    ) : (
-                      <Circle className="size-4 text-muted-foreground shrink-0" />
-                    )}
-                    <span className="text-xs font-bold">{habit.title}</span>
+                  <div
+                    onClick={() => onToggleHabit && onToggleHabit(habit.id, !habit.is_completed_today)}
+                    className="flex items-center justify-between cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {habit.is_completed_today ? (
+                        <CheckCircle2 className="size-4 text-amber-500 shrink-0" />
+                      ) : (
+                        <Circle className="size-4 text-muted-foreground shrink-0" />
+                      )}
+                      <span className={`text-xs font-bold ${habit.is_completed_today ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                        {habit.title}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                        {habit.is_completed_today ? 'تم اليوم' : 'غير مكتمل'}
+                      </span>
+                    </div>
                   </div>
-                  <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-                    {habit.is_completed_today ? 'تم اليوم' : 'غير مكتمل'}
-                  </span>
+
+                  {/* Sync Habit Description Button */}
+                  <div className="mt-2.5 pt-2 border-t border-border/30 flex items-center justify-between gap-2 text-[10px]">
+                    <span className="text-muted-foreground font-semibold truncate max-w-[200px]">
+                      {habit.description || 'لا يوجد وصف حالياً'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        if (onUpdateHabitDescription) {
+                          const nextP = Math.min(604, (plan ? plan.currentPage : 1) + (plan ? plan.pagesPerDay : 1));
+                          const surah = getSurahForPage(nextP);
+                          const desc = `الورد القادم للحفظ: الصفحة ${nextP} (سورة ${surah.name})`;
+                          onUpdateHabitDescription(habit.id, desc);
+                          alert(`تم تحديث تفاصيل العادة إلى:\n"${desc}"`);
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold border border-emerald-500/30 transition-all cursor-pointer shrink-0"
+                      title="مزامنة الورد القادم مع تفاصيل العادة في lifeOS"
+                    >
+                      مزامنة الورد القادم
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -256,9 +351,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         {/* Connected Sheikh Recitation Calendar Sessions Card */}
         <div className="p-5 rounded-2xl border border-border bg-card space-y-3 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
-              <UserCheck className="size-4 text-indigo-400" />
-              جلسات التحفيظ والتسميع مع الشيخ ({sheikhEvents.length})
+            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 font-arabic-title">
+              <UserCheck className="size-4 text-indigo-400 shrink-0" />
+              <span>جلسات التحفيظ والتسميع مع الشيخ ({sheikhEvents.length})</span>
             </h3>
           </div>
 
@@ -267,7 +362,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               لا توجد أحداث مجدولة في التقويم (أضف حدثاً بعنوان "قرآن" أو "تحفيظ" أو "تسميع" أو "الشيخ").
             </div>
           ) : (
-            <div className="space-y-2 max-h-48 overflow-y-auto pl-1">
+            <div className="space-y-2 max-h-56 overflow-y-auto pl-1">
               {sheikhEvents.map((evt) => (
                 <div
                   key={evt.id}
@@ -296,9 +391,9 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       {showNewPlanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-md rounded-3xl border border-border bg-card p-6 space-y-4 shadow-2xl overflow-hidden isolate">
-            <h3 className="text-base font-bold text-foreground flex items-center gap-2">
-              <Target className="size-5 text-emerald-500" />
-              إنشاء خطة خاتمة مخصصة
+            <h3 className="text-base font-bold text-foreground flex items-center gap-2 font-arabic-title">
+              <Target className="size-5 text-emerald-500 shrink-0" />
+              <span>إنشاء خطة خاتمة مخصصة</span>
             </h3>
 
             <form onSubmit={handleCreatePlan} className="space-y-3">
