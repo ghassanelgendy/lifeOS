@@ -36,6 +36,21 @@ interface AudioPlayerBarProps {
   onChangeSpeed: (speed: number) => void;
 }
 
+function getSheikhLastName(reciter: Reciter): string {
+  const map: Record<string, string> = {
+    husary: 'الحصري',
+    alafasy: 'العفاسي',
+    minshawi: 'المنشاوي',
+    minshawi_mujawwad: 'المنشاوي',
+    abdulbasit: 'عبد الباسط',
+    shatri: 'الشاطري',
+    ghamadi: 'الغامدي',
+  };
+  if (map[reciter.id]) return map[reciter.id];
+  const words = reciter.name.replace(/\(.*?\)/g, '').trim().split(/\s+/);
+  return words[words.length - 1] || reciter.name;
+}
+
 export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   reciter,
   onSelectReciter,
@@ -99,7 +114,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
               className="flex items-center gap-1.5 text-[11px] bg-secondary/80 hover:bg-secondary border border-border/60 px-2.5 py-1.5 rounded-xl cursor-pointer active:scale-95 transition-all truncate"
             >
               <span className="md:hidden text-emerald-400 font-bold truncate max-w-[90px]">
-                {reciter.name.split(' ')[0]}
+                {getSheikhLastName(reciter)}
               </span>
               <span className="text-foreground font-bold shrink-0">آية {currentAyahIndex}</span>
               {repeatSettings.verseRepeats > 1 && (

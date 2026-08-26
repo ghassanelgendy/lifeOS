@@ -568,17 +568,22 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         </div>
 
         {/* Sheikh Recitation Sessions & Notes for Mistakes */}
-        <div className="p-6 rounded-3xl border border-border/60 bg-card/80 backdrop-blur-xl space-y-3 shadow-md">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 font-arabic-title">
-              <UserCheck className="size-4 text-indigo-400 shrink-0" />
-              <span>جلسات التسميع وملاحظات الأخطاء مع الشيخ</span>
-            </h3>
+        <div className="p-4 md:p-6 rounded-3xl border border-border/60 bg-card/80 backdrop-blur-xl space-y-3 shadow-md">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="size-8 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0 border border-indigo-500/20">
+                <UserCheck className="size-4" />
+              </div>
+              <h3 className="text-xs md:text-sm font-bold text-foreground font-arabic-title truncate">
+                جلسات وملاحظات التسميع
+              </h3>
+            </div>
             <button
               onClick={() => setShowHalqahNoteModal(true)}
-              className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1"
+              className="px-2.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-sm transition-all active:scale-95 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap"
             >
-              <Plus className="size-3.5" /> إضافة ملاحظات حلقة
+              <Plus className="size-3.5" />
+              <span>إضافة ملاحظة</span>
             </button>
           </div>
 

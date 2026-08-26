@@ -1249,9 +1249,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:**
+- `getSheikhLastName` (Function)
 
-**Lines:** 389
+**Function Details:**
+- **`getSheikhLastName`** — Utility function for get sheikh last name.
+
+**Lines:** 404
 
 ---
 
@@ -1273,7 +1277,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 930
+**Lines:** 935
 
 ---
 

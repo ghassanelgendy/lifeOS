@@ -291,7 +291,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
               }`}
             >
               <Calendar className="size-3.5 text-amber-500 shrink-0" />
-              <span>المراجعة ({memorizerStore.dueReviews.length})</span>
+              <span>المراجعة</span>
             </button>
 
             <button
