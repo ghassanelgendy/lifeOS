@@ -135,6 +135,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### lib/quran-memorizer/src
 - [lib/quran-memorizer/src/index.ts](#lib-quran-memorizer-src-index-ts)
 - [lib/quran-memorizer/src/main.tsx](#lib-quran-memorizer-src-main-tsx)
+- [lib/quran-memorizer/src/standalone.css](#lib-quran-memorizer-src-standalone-css)
 
 ### lib/quran-memorizer/src/components
 - [lib/quran-memorizer/src/components/AudioPlayerBar.tsx](#lib-quran-memorizer-src-components-audioplayerbar-tsx)
@@ -1250,7 +1251,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 209
+**Lines:** 214
 
 ---
 
@@ -1294,7 +1295,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 264
+**Lines:** 320
 
 ---
 
@@ -1399,6 +1400,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 162
+
+---
+
+<a name="lib-quran-memorizer-src-standalone-css"></a>
+### lib/quran-memorizer/src/standalone.css
+
+**File Purpose:** Stylesheet. Provides CSS rules, animations, and theming for the application.
+
+**CSS Classes/Selectors:** font-arabic-title, font-arabic-body, font-arabic-quran
+
+**Lines:** 14
 
 ---
 

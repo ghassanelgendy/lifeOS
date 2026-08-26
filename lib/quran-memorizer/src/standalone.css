@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer utilities {
+  .font-arabic-title {
+    font-family: 'Cairo', sans-serif;
+  }
+  .font-arabic-body {
+    font-family: 'Cairo', sans-serif;
+  }
+  .font-arabic-quran {
+    font-family: 'Scheherazade New', 'Amiri', serif;
+  }
+}

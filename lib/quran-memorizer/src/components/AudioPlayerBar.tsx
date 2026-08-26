@@ -40,7 +40,12 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onPrev,
   onChangeSpeed,
 }) => {
-  const isSidebarCollapsed = useUIStore((state) => state.isSidebarCollapsed);
+  let isSidebarCollapsed = false;
+  try {
+    isSidebarCollapsed = useUIStore((state) => state?.isSidebarCollapsed ?? false);
+  } catch {
+    isSidebarCollapsed = false;
+  }
 
   const content = (
     <div

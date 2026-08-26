@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, Calendar, Layers, Award, Sparkles, Target } from 'lucide-react';
 import { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps } from '../types/quran';
 import { RECITERS, SURAHS } from '../services/quranData';
@@ -10,6 +10,8 @@ import { RevisionScheduler } from './RevisionScheduler';
 import { MutashabihatView } from './MutashabihatView';
 import { KhatmahPlannerView } from './KhatmahPlannerView';
 
+const QURAN_LAST_POSITION_KEY = 'quran_last_position_v1';
+
 export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   linkedTasks = [],
   linkedHabits = [],
@@ -18,13 +20,67 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   onToggleHabit,
   onCreateQuranTask,
 }) => {
-  const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>('khatmah');
-  
+  const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>(() => {
+    try {
+      const saved = localStorage.getItem(QURAN_LAST_POSITION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.activeTab) return parsed.activeTab;
+      }
+    } catch {}
+    return 'khatmah';
+  });
+
   // Selection state
-  const [selectedSurah, setSelectedSurah] = useState<number>(1);
-  const [startAyah, setStartAyah] = useState<number>(1);
-  const [endAyah, setEndAyah] = useState<number>(7);
+  const [selectedSurah, setSelectedSurah] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(QURAN_LAST_POSITION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.selectedSurah === 'number') return parsed.selectedSurah;
+      }
+    } catch {}
+    return 1;
+  });
+
+  const [startAyah, setStartAyah] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(QURAN_LAST_POSITION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.startAyah === 'number') return parsed.startAyah;
+      }
+    } catch {}
+    return 1;
+  });
+
+  const [endAyah, setEndAyah] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem(QURAN_LAST_POSITION_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.endAyah === 'number') return parsed.endAyah;
+      }
+    } catch {}
+    return 7;
+  });
+
   const [reciter, setReciter] = useState<Reciter>(RECITERS[0]);
+
+  // Persist position whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        QURAN_LAST_POSITION_KEY,
+        JSON.stringify({
+          activeTab,
+          selectedSurah,
+          startAyah,
+          endAyah,
+        })
+      );
+    } catch {}
+  }, [activeTab, selectedSurah, startAyah, endAyah]);
 
   // Repeat & Blind mode settings
   const [repeatSettings, setRepeatSettings] = useState<RepeatSettings>({
