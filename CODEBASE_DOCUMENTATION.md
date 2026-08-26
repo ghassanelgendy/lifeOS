@@ -569,7 +569,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6291
+**Lines:** 6292
 
 ---
 
@@ -1697,9 +1697,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes task-enter` — CSS animation definition
 - `@keyframes checkmark-draw` — CSS animation definition
 
-**CSS Classes/Selectors:** task-item, task-checkmark, task-checkmark__check, wiki-link, wiki-markdown, wiki-graph-canvas
+**CSS Classes/Selectors:** task-item, task-checkmark, task-checkmark__check, font-arabic-title, font-arabic-body, font-arabic-quran, wiki-link, wiki-markdown, wiki-graph-canvas
 
-**Lines:** 187
+**Lines:** 200
 
 ---
 

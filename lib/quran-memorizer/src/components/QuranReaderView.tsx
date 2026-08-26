@@ -159,9 +159,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     onGrade={onGradeVerse}
                   />
                 ) : (
-                  <div className="dir-rtl text-right font-arabic text-3xl md:text-4xl leading-[2.3] text-foreground tracking-wide select-none">
+                  <div className="dir-rtl text-right font-arabic-quran text-3xl md:text-4xl leading-[2.4] text-foreground tracking-wide select-none font-bold">
                     {ayah.textUthmani}
-                    <span className="inline-flex items-center justify-center size-9 mx-2 rounded-full border border-emerald-500/40 text-emerald-500 font-sans text-xs font-bold align-middle">
+                    <span className="inline-flex items-center justify-center size-9 mx-2.5 rounded-full border border-emerald-500/40 text-emerald-500 font-sans text-xs font-bold align-middle">
                       {ayah.numberInSurah}
                     </span>
                   </div>

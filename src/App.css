@@ -45,6 +45,19 @@
    Wiki / KB Styles
    ======================== */
 
+/* Arabic Typography Utility Classes */
+.font-arabic-title {
+  font-family: 'Cairo', 'Zain', system-ui, -apple-system, sans-serif;
+}
+
+.font-arabic-body {
+  font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+}
+
+.font-arabic-quran {
+  font-family: 'Scheherazade New', 'Amiri', 'Traditional Arabic', serif;
+}
+
 /* Wiki link styling */
 .wiki-link {
   color: hsl(var(--primary));
