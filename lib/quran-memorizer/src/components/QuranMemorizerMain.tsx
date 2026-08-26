@@ -64,9 +64,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   };
 
   return (
-    <div dir="rtl" className="min-h-screen bg-background text-foreground flex flex-col font-arabic-body text-right">
+    <div dir="rtl" className="-mt-4 -mx-4 md:-mt-6 md:-mx-6 flex flex-col font-arabic-body text-right">
       {/* Top Banner & Tab Navigation */}
-      <header className="border-b border-border/60 bg-card/60 backdrop-blur-md p-4 md:px-8">
+      <header className="border-b border-border/60 bg-card/70 backdrop-blur-md p-4 md:px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <div className="size-12 rounded-2xl bg-emerald-600/10 text-emerald-500 flex items-center justify-center font-bold text-2xl shadow-sm border border-emerald-500/20 shrink-0">
@@ -139,7 +139,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       </header>
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-28 text-right">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-6 text-right space-y-6">
         {activeTab === 'khatmah' && (
           <KhatmahPlannerView
             linkedTasks={linkedTasks}
@@ -231,26 +231,26 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             currentAyahNumber={audio.currentAyahIndex}
           />
         )}
-      </main>
 
-      {/* Floating Audio Player Bar */}
-      <AudioPlayerBar
-        reciter={reciter}
-        onSelectReciter={setReciter}
-        isPlaying={audio.isPlaying}
-        isDelaying={audio.isDelaying}
-        currentAyahIndex={audio.currentAyahIndex}
-        currentVerseRepeat={audio.currentVerseRepeat}
-        currentRangeLoop={audio.currentRangeLoop}
-        playbackRate={audio.playbackRate}
-        repeatSettings={repeatSettings}
-        onChangeRepeatSettings={setRepeatSettings}
-        onTogglePlayPause={audio.togglePlayPause}
-        onStop={audio.stop}
-        onNext={audio.nextAyah}
-        onPrev={audio.prevAyah}
-        onChangeSpeed={audio.changePlaybackRate}
-      />
+        {/* Sticky Audio Player Bar inside container */}
+        <AudioPlayerBar
+          reciter={reciter}
+          onSelectReciter={setReciter}
+          isPlaying={audio.isPlaying}
+          isDelaying={audio.isDelaying}
+          currentAyahIndex={audio.currentAyahIndex}
+          currentVerseRepeat={audio.currentVerseRepeat}
+          currentRangeLoop={audio.currentRangeLoop}
+          playbackRate={audio.playbackRate}
+          repeatSettings={repeatSettings}
+          onChangeRepeatSettings={setRepeatSettings}
+          onTogglePlayPause={audio.togglePlayPause}
+          onStop={audio.stop}
+          onNext={audio.nextAyah}
+          onPrev={audio.prevAyah}
+          onChangeSpeed={audio.changePlaybackRate}
+        />
+      </main>
     </div>
   );
 };
