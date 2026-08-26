@@ -415,6 +415,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onMarkMemorized={() =>
               memorizerStore.updateRecordStatus(selectedSurah, startAyah, endAyah, 'memorized')
             }
+            getVerseMastery={memorizerStore.getVerseMastery}
             memorizationPage={memorizationPage}
             memorizationEndPage={memorizationEndPage}
             readingPage={readingPage}

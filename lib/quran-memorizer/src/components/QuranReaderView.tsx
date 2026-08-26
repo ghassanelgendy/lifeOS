@@ -30,6 +30,7 @@ interface QuranReaderViewProps {
   onChangeRepeatSettings: (settings: RepeatSettings) => void;
   onGradeVerse?: (grade: RatingGrade) => void;
   onMarkMemorized?: () => void;
+  getVerseMastery?: (surahNumber: number, ayahNumber: number) => { status: MemorizationStatus; masteryScore: number } | null;
 
   // Sync Locations & Highlights
   memorizationPage?: number;
@@ -54,6 +55,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onChangeRepeatSettings,
   onGradeVerse,
   onMarkMemorized,
+  getVerseMastery,
   memorizationPage,
   memorizationEndPage,
   readingPage,
@@ -348,19 +350,37 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 <div className="dir-rtl text-justify font-arabic-quran text-2xl md:text-3xl leading-[2.6] md:leading-[2.8] text-foreground tracking-wide select-none font-bold">
                   {pageAyahs.map((ayah) => {
                     const isActive = currentAyahIndex === ayah.numberInSurah;
+                    const inStudyRange = startAyah <= ayah.numberInSurah && ayah.numberInSurah <= endAyah;
+                    const mastery = getVerseMastery ? getVerseMastery(surahNumber, ayah.numberInSurah) : null;
+                    const isMemorized = mastery?.status === 'memorized';
+
                     return (
                       <React.Fragment key={ayah.number}>
                         <span
                           onClick={() => onSelectAyah(ayah.numberInSurah)}
-                          className={`cursor-pointer rounded-lg px-1 transition-all ${
+                          className={`cursor-pointer rounded-xl px-1.5 py-0.5 transition-all inline ${
                             isActive
-                              ? 'bg-emerald-500/25 text-emerald-300 ring-2 ring-emerald-500/50'
+                              ? 'bg-emerald-500/30 text-emerald-200 ring-2 ring-emerald-500 shadow-md font-extrabold'
+                              : inStudyRange
+                              ? 'bg-emerald-500/15 text-emerald-300 font-bold border-b-2 border-emerald-500/50'
+                              : isMemorized
+                              ? 'text-emerald-400 font-bold'
                               : 'hover:bg-accent/40'
                           }`}
                         >
                           {ayah.textUthmani}
                         </span>
-                        <span className="inline-flex items-center justify-center size-8 md:size-9 mx-1.5 rounded-full border border-emerald-500/40 text-emerald-500 font-sans text-xs font-bold align-middle">
+                        <span
+                          onClick={() => onSelectAyah(ayah.numberInSurah)}
+                          className={`inline-flex items-center justify-center size-8 md:size-9 mx-1 rounded-full text-xs font-bold align-middle cursor-pointer transition-all ${
+                            isMemorized
+                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.3)]'
+                              : inStudyRange
+                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/50'
+                              : 'border border-emerald-500/30 text-emerald-500/80'
+                          }`}
+                          title={`الآية ${ayah.numberInSurah} ${isMemorized ? '(مُتقنة 100%)' : inStudyRange ? '(في نطاق التكرار)' : ''}`}
+                        >
                           {ayah.numberInSurah}
                         </span>
                       </React.Fragment>
@@ -382,6 +402,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         <div className="space-y-3">
           {verses.map((ayah) => {
             const isActive = currentAyahIndex === ayah.numberInSurah;
+            const inStudyRange = startAyah <= ayah.numberInSurah && ayah.numberInSurah <= endAyah;
+            const mastery = getVerseMastery ? getVerseMastery(surahNumber, ayah.numberInSurah) : null;
+            const isMemorized = mastery?.status === 'memorized';
             const isMemTargetPage = memorizationEndPage === ayah.page || memorizationPage === ayah.page;
             const isReadTargetPage = readingEndPage === ayah.page || readingPage === ayah.page;
 
@@ -391,7 +414,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 onClick={() => onSelectAyah(ayah.numberInSurah)}
                 className={`p-4 md:p-6 rounded-2xl border transition-all cursor-pointer relative ${
                   isActive
-                    ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/20 shadow-lg'
+                    ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/30 shadow-lg'
+                    : inStudyRange
+                    ? 'border-emerald-500/40 bg-emerald-950/10'
                     : isMemTargetPage
                     ? 'border-emerald-500/50 bg-emerald-950/10'
                     : isReadTargetPage
@@ -405,6 +430,24 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary text-foreground font-bold text-[11px]">
                       الآية {ayah.numberInSurah} (صفحة {ayah.page})
                     </span>
+
+                    {isMemorized && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold text-[10px]">
+                        ✨ مُتقَن (100%)
+                      </span>
+                    )}
+
+                    {mastery && mastery.status === 'reviewing' && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 font-bold text-[10px]">
+                        🔄 قيد المراجعة ({mastery.masteryScore}%)
+                      </span>
+                    )}
+
+                    {inStudyRange && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30 font-bold text-[10px]">
+                        🎯 نطاق التكرار
+                      </span>
+                    )}
 
                     {isActive && isAudioPlaying && (
                       <span className="text-xs font-bold text-emerald-400 animate-pulse flex items-center gap-1.5">

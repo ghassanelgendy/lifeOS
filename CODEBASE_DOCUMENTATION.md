@@ -1295,7 +1295,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 465
+**Lines:** 466
 
 ---
 
@@ -1306,7 +1306,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 464
+**Lines:** 507
 
 ---
 
@@ -1351,7 +1351,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useQuranMemorizer`** — Custom React hook managing quranmemorizer state and side effects.
 - **`useQuranMemorizer`** — Utility function for use quran memorizer.
 
-**Lines:** 162
+**Lines:** 233
 
 ---
 
