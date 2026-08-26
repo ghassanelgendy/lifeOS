@@ -640,6 +640,7 @@ export function useSetPrayerStatusAtDate() {
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
+    mutationKey: ['set-prayer-status', user?.id],
     mutationFn: async (input: { prayerHabitId: string; habitId: string; date: string; status: PrayerStatus }) => {
       const habits = queryClient.getQueryData<JoinedPrayerHabit[]>([...QUERY_KEY, user?.id, 'habits']) || [];
       const habit = habits.find((h) => h.id === input.prayerHabitId);
@@ -694,19 +695,15 @@ export function useSetPrayerStatusAtDate() {
           );
 
           if (existingIndex >= 0) {
-            if (newLogs[existingIndex].status === input.status) {
-              newLogs.splice(existingIndex, 1);
-            } else {
-              newLogs[existingIndex] = {
-                ...newLogs[existingIndex],
-                status: input.status,
-                prayed_at: prayedAt,
-                updated_at: nowIso,
-              };
-            }
+            newLogs[existingIndex] = {
+              ...newLogs[existingIndex],
+              status: input.status,
+              prayed_at: prayedAt,
+              updated_at: nowIso,
+            };
           } else {
             newLogs.push({
-              id: `optimistic-${Date.now()}`,
+              id: `optimistic-${Date.now()}-${Math.random()}`,
               user_id: user?.id,
               prayer_habit_id: input.prayerHabitId,
               date: input.date,
@@ -728,19 +725,19 @@ export function useSetPrayerStatusAtDate() {
           (l) => l.prayer_habit_id === input.prayerHabitId && l.date === input.date
         );
         if (existingIndex >= 0) {
-          if (newLogs[existingIndex].status === input.status) {
-            newLogs.splice(existingIndex, 1);
-          } else {
-            newLogs[existingIndex] = {
-              ...newLogs[existingIndex],
-              status: input.status,
-            };
-          }
+          newLogs[existingIndex] = {
+            ...newLogs[existingIndex],
+            status: input.status,
+            prayed_at: prayedAt,
+          };
         } else {
           newLogs.push({
+            id: `optimistic-${Date.now()}-${Math.random()}`,
+            user_id: user?.id,
             prayer_habit_id: input.prayerHabitId,
             date: input.date,
             status: input.status,
+            prayed_at: prayedAt,
           });
         }
         return newLogs;
@@ -761,11 +758,13 @@ export function useSetPrayerStatusAtDate() {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['habits'] });
-      queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+      if (queryClient.isMutating({ mutationKey: ['set-prayer-status', user?.id] }) <= 1) {
+        queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user?.id], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['habit-logs'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['habits'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['prayer-logs'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['points-transactions'], refetchType: 'active' });
+      }
     },
   });
 

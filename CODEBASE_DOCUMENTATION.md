@@ -571,7 +571,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6313
+**Lines:** 6331
 
 ---
 
@@ -1256,7 +1256,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`getSheikhLastName`** — Utility function for get sheikh last name.
 
-**Lines:** 407
+**Lines:** 415
 
 ---
 
@@ -3687,7 +3687,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 948
+**Lines:** 947
 
 ---
 
@@ -3728,7 +3728,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 854
+**Lines:** 853
 
 ---
 

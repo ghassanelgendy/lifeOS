@@ -81,9 +81,17 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
     <>
       <div
         dir="rtl"
-        className={`fixed bottom-0 left-0 right-0 z-[90] border-t border-border/50 bg-card/85 backdrop-blur-2xl px-3 py-2 md:py-3 pb-safe shadow-[0_-8px_30px_rgba(0,0,0,0.3)] font-arabic-title text-right transition-all ${
-          isSidebarCollapsed ? 'md:left-16' : 'md:left-64'
-        }`}
+        className={`fixed z-30 font-arabic-title text-right transition-all
+          /* iOS Mobile: Floating Liquid Glass Pill matching LiquidTabBar */
+          bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[92%] max-w-md
+          rounded-[34px] px-3.5 py-2 md:py-3
+          bg-white/75 dark:bg-[rgba(20,20,22,0.75)] backdrop-blur-2xl
+          border border-white/40 dark:border-white/10
+          shadow-[0_10px_35px_rgba(0,0,0,0.25),inset_0_1px_1px_rgba(255,255,255,0.2)]
+          /* Desktop / MD+: Docked Bottom Bar */
+          md:bottom-0 md:translate-x-0 md:right-0 md:w-auto md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/50 md:bg-card/85 md:pb-safe
+          ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
+        `}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2 md:gap-4 text-foreground">
           
