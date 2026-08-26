@@ -114,7 +114,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   );
 
   const quranHabits = linkedHabits.filter((h) =>
-    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|ورد|تحفيظ/i.test(h.title)
+    /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|ورد|تحفيظ|صفحة|صفحات/i.test(h.title)
   );
 
   const sheikhEvents = linkedEvents.filter((e) =>
