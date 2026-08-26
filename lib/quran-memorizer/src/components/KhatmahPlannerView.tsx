@@ -103,10 +103,20 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const [showHalqahNoteModal, setShowHalqahNoteModal] = useState(false);
 
   // New Halqah Note Form State
-  const [noteSurahName, setNoteSurahName] = useState('سورة البقرة');
-  const [noteAyahRange, setNoteAyahRange] = useState('170 - 185');
+  const [noteSurahId, setNoteSurahId] = useState<number>(2);
+  const [noteStartAyah, setNoteStartAyah] = useState<number>(1);
+  const [noteEndAyah, setNoteEndAyah] = useState<number>(7);
   const [noteMistakes, setNoteMistakes] = useState('');
   const [noteRating, setNoteRating] = useState<'mumtaz' | 'jayyid_jiddan' | 'jayyid' | 'yahatadj_tathbeet'>('jayyid_jiddan');
+
+  const selectedNoteSurahMeta = SURAHS.find((s) => s.id === noteSurahId) || SURAHS[0];
+
+  const handleNoteSurahChange = (id: number) => {
+    setNoteSurahId(id);
+    setNoteStartAyah(1);
+    const meta = SURAHS.find((s) => s.id === id);
+    setNoteEndAyah(meta ? Math.min(7, meta.versesCount) : 7);
+  };
 
   // Plan Form State
   const [title, setTitle] = useState('خطة حفظ القرآن (من سورة الناس إلى سورة البقرة)');
@@ -265,8 +275,8 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     const newNote: SheikhHalqahNote = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
-      surahName: noteSurahName,
-      ayahRange: noteAyahRange,
+      surahName: `سورة ${selectedNoteSurahMeta.name}`,
+      ayahRange: `من الآية ${noteStartAyah} إلى ${noteEndAyah}`,
       mistakesNote: noteMistakes.trim(),
       rating: noteRating,
     };
@@ -603,7 +613,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                             ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                             : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
                         }`}>
-                          {note.rating === 'mumtaz' ? '🌟 ممتاز' : note.rating === 'jayyid_jiddan' ? '✨ جيد جداً' : note.rating === 'jayyid' ? '🟢 جيد' : '⚠️ يحتاج تثبيت'}
+                          {note.rating === 'mumtaz' ? 'ممتاز' : note.rating === 'jayyid_jiddan' ? 'جيد جداً' : note.rating === 'jayyid' ? 'جيد' : 'يحتاج تثبيت'}
                         </span>
 
                         <button
@@ -766,28 +776,55 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               <div>
                 <label className="text-xs font-bold text-muted-foreground">اسم السورة</label>
                 <select
-                  value={noteSurahName}
-                  onChange={(e) => setNoteSurahName(e.target.value)}
+                  value={noteSurahId}
+                  onChange={(e) => handleNoteSurahChange(Number(e.target.value))}
                   className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
                 >
                   {SURAHS.map((s) => (
-                    <option key={s.id} value={`سورة ${s.name}`}>
-                      سورة {s.name}
+                    <option key={s.id} value={s.id}>
+                      سورة {s.name} ({s.transliteration})
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-muted-foreground">نطاق الآيات</label>
-                <input
-                  type="text"
-                  value={noteAyahRange}
-                  onChange={(e) => setNoteAyahRange(e.target.value)}
-                  placeholder="مثال: من 170 إلى 190"
-                  className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">من الآية</label>
+                  <select
+                    value={noteStartAyah}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setNoteStartAyah(val);
+                      if (val > noteEndAyah) setNoteEndAyah(val);
+                    }}
+                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+                  >
+                    {Array.from({ length: selectedNoteSurahMeta.versesCount }, (_, i) => i + 1).map((num) => (
+                      <option key={num} value={num}>
+                        الآية {num}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground">إلى الآية</label>
+                  <select
+                    value={noteEndAyah}
+                    onChange={(e) => setNoteEndAyah(Number(e.target.value))}
+                    className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
+                  >
+                    {Array.from(
+                      { length: selectedNoteSurahMeta.versesCount - noteStartAyah + 1 },
+                      (_, i) => noteStartAyah + i
+                    ).map((num) => (
+                      <option key={num} value={num}>
+                        الآية {num}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div>
@@ -797,10 +834,10 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                   onChange={(e) => setNoteRating(e.target.value as any)}
                   className="w-full mt-1 rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:outline-none"
                 >
-                  <option value="mumtaz">🌟 ممتاز (بدون أخطاء)</option>
-                  <option value="jayyid_jiddan">✨ جيد جداً (أخطاء بسيطة جداً)</option>
-                  <option value="jayyid">🟢 جيد (أخطاء متوسطة)</option>
-                  <option value="yahatadj_tathbeet">⚠️ يحتاج تثبيت ومراجعة مكثفة</option>
+                  <option value="mumtaz">ممتاز (بدون أخطاء)</option>
+                  <option value="jayyid_jiddan">جيد جداً (أخطاء بسيطة جداً)</option>
+                  <option value="jayyid">جيد (أخطاء متوسطة)</option>
+                  <option value="yahatadj_tathbeet">يحتاج تثبيت ومراجعة مكثفة</option>
                 </select>
               </div>
 

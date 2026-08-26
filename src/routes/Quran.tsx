@@ -69,12 +69,12 @@ export function QuranRoute() {
 
     const ratingLabel =
       note.rating === 'mumtaz'
-        ? '🌟 ممتاز'
+        ? 'ممتاز'
         : note.rating === 'jayyid_jiddan'
-        ? '✨ جيد جداً'
+        ? 'جيد جداً'
         : note.rating === 'jayyid'
-        ? '🟢 جيد'
-        : '⚠️ يحتاج تثبيت ومراجعة';
+        ? 'جيد'
+        : 'يحتاج تثبيت ومراجعة';
 
     const noteContent = `
 # ملاحظات حلقة التسميع — ${note.surahName} (${note.ayahRange})
