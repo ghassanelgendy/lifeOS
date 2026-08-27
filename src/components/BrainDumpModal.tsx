@@ -200,10 +200,11 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
         });
         setSaveSuccessMsg(`Appended thought to Today's Brain Dump at ${timeString}`);
       } else {
-        // Create new atomic thought note
-        const firstLine = text.split(/\r?\n/)[0]?.slice(0, 50) || 'Brain Dump';
+        // Create new atomic thought note named after the date (e.g., 27/8)
+        const d = new Date();
+        const dateFormattedTitle = `${d.getDate()}/${d.getMonth() + 1}`;
         const newNote = await createNote.mutateAsync({
-          title: `Brain Dump: ${firstLine}`,
+          title: dateFormattedTitle,
           body: `**🕒 ${timeString}:**\n${text}`,
           note_date: todayStr,
           is_brain_dump: true,
@@ -211,7 +212,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
           folder_id: null,
         });
         if (onSavedNote) onSavedNote(newNote.id);
-        setSaveSuccessMsg(`Saved thought to Inbox (${timeString})`);
+        setSaveSuccessMsg(`Saved thought to Inbox (${dateFormattedTitle} - ${timeString})`);
       }
 
       setRawText('');
@@ -384,7 +385,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
   };
 
   /**
-   * Manual trigger: Organize a brain dump note and auto-file it into 'Organized Brain Dumps' folder
+   * Manual trigger: Organize a brain dump note into a separate brief note named "DD/M organized" in 'Organized Brain Dumps' folder
    */
   const handleOrganizeAndMoveToFolder = async (note: Note) => {
     if (!note || !note.body) return;
@@ -395,19 +396,42 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
         folder = await createNoteFolder.mutateAsync({ name: 'Organized Brain Dumps', sort_order: 1 });
       }
 
-      // 2. Perform AI organization
-      await handleAnalyzeText(note.body, note);
+      // 2. Perform AI brief organization prompt
+      const briefSystemPrompt = `You are lifeOS Executive Summarizer. Analyze this brain dump. Produce a BRIEF, CONCISE, bulleted summary of key insights, action points, and ideas. DO NOT extend or add conversational fluff. Keep it strictly focused and brief. Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks": [{"title": "..."}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
+      const resText = await askAI(briefSystemPrompt, note.body, true);
+      const parsed = extractJSON(resText) as BrainDumpAnalysis;
 
-      // 3. Move note into Organized Brain Dumps folder
+      // 3. Create a NEW separate note named "DD/M organized" in the Organized folder
+      const d = note.note_date ? new Date(note.note_date) : new Date();
+      const organizedTitle = `${d.getDate()}/${d.getMonth() + 1} organized`;
+
+      const formattedContent = [
+        `### 📌 Brief Summary\n${parsed.summary || 'Concise daily dump organization.'}`,
+        parsed.insights?.length ? `\n### 💡 Key Takeaways\n${parsed.insights.map((i) => `- ${i}`).join('\n')}` : '',
+        parsed.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t) => `- ${t.title}`).join('\n')}` : '',
+        parsed.projects_or_notes?.length ? `\n### 📝 Core Ideas\n${parsed.projects_or_notes.map((p) => `**${p.title}:** ${p.content}`).join('\n')}` : '',
+      ].filter(Boolean).join('\n');
+
+      await createNote.mutateAsync({
+        title: organizedTitle,
+        body: formattedContent,
+        note_date: note.note_date || todayStr,
+        is_brain_dump: false,
+        ai_analysis: parsed,
+        folder_id: folder.id,
+      });
+
+      // Mark original note as organized
       await updateNote.mutateAsync({
         id: note.id,
         data: {
-          folder_id: folder.id,
+          ai_analysis: parsed,
         },
       });
 
-      setSaveSuccessMsg(`Organized note and moved to "${folder.name}" folder!`);
+      setSaveSuccessMsg(`Created separate note "${organizedTitle}" in Organized folder!`);
       setTimeout(() => setSaveSuccessMsg(null), 3000);
+      setActiveTab('inbox');
     } catch (err: any) {
       console.error('Organize & move folder error:', err);
     }

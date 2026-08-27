@@ -1075,8 +1075,18 @@ ${knowledgeContext}`;
         <button
           type="button"
           disabled={isGenerating || !inputText.trim()}
-          onClick={() => void handleSendMessage()}
-          className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 shadow-md flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer"
+          onPointerDown={(e) => {
+            e.preventDefault();
+            if (!isGenerating && inputText.trim()) {
+              void handleSendMessage();
+            }
+          }}
+          onClick={() => {
+            if (!isGenerating && inputText.trim()) {
+              void handleSendMessage();
+            }
+          }}
+          className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 shadow-md flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer z-40"
           title="Send message"
         >
           <Send size={16} className="translate-x-0.5" />
