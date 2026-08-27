@@ -48,51 +48,9 @@ async function executeCandidateCompletion(
   const apiKey = candidate.apiKey.trim();
 
   if (isNative) {
-    // 1. Try proxy first on native to avoid any CORS/WAF issues
-    const devUrl = window.location.origin || '';
-    const isDev = devUrl.includes('localhost') || devUrl.includes('192.168') || devUrl.includes('127.0.0.1');
-    const proxyEndpoint = isDev ? `${devUrl.replace(/\/+$/, '')}/api/ai` : 'https://life-os-tan.vercel.app/api/ai';
-
+    // 1. On native (iOS/Android), execute direct HTTPS request first via CapacitorHttp (bypasses browser CORS & proxies)
+    const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
     try {
-      const proxyResponse = await CapacitorHttp.post({
-        url: proxyEndpoint,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-AI-Api-Key': apiKey,
-          'X-AI-Base-Url': cleanBaseUrl,
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        },
-        data: payload,
-        connectTimeout: 10000,
-        readTimeout: 25000,
-      });
-
-      if (proxyResponse.status === 200) {
-        let resData = proxyResponse.data;
-        if (typeof resData === 'string') {
-          try {
-            resData = JSON.parse(resData);
-          } catch {
-            // keep raw string
-          }
-        }
-        const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-        const latencyMs = Math.round(performance.now() - startTime);
-        return { text, latencyMs };
-      } else {
-        const errorMsg = proxyResponse.data?.error?.message || proxyResponse.data?.error || proxyResponse.data || `HTTP ${proxyResponse.status}`;
-        const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-        err.status = proxyResponse.status;
-        throw err;
-      }
-    } catch (proxyErr: any) {
-      // If error was an explicit non-200 from the provider, throw it so fallback can handle cooldown
-      if (proxyErr?.status && proxyErr.status !== 502 && proxyErr.status !== 504) {
-        throw proxyErr;
-      }
-
-      // Otherwise fall back to direct native CapacitorHttp
-      const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
       const response = await CapacitorHttp.post({
         url: nativeEndpoint,
         headers: {
@@ -105,24 +63,57 @@ async function executeCandidateCompletion(
         readTimeout: 30000,
       });
 
-      if (response.status !== 200) {
+      if (response.status === 200) {
+        let resData = response.data;
+        if (typeof resData === 'string') {
+          try {
+            resData = JSON.parse(resData);
+          } catch {}
+        }
+        const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
+        const latencyMs = Math.round(performance.now() - startTime);
+        return { text, latencyMs };
+      } else {
         const errorMsg = response.data?.error?.message || response.data?.error || response.data || `HTTP ${response.status}`;
         const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
         err.status = response.status;
         throw err;
       }
-
-      let resData = response.data;
-      if (typeof resData === 'string') {
-        try {
-          resData = JSON.parse(resData);
-        } catch {
-          // ignore
-        }
+    } catch (nativeErr: any) {
+      if (nativeErr?.status && nativeErr.status !== 502 && nativeErr.status !== 504) {
+        throw nativeErr;
       }
-      const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-      const latencyMs = Math.round(performance.now() - startTime);
-      return { text, latencyMs };
+
+      // Fallback: try proxy server if direct native fails
+      const proxyEndpoint = 'https://life-os-tan.vercel.app/api/ai';
+      const proxyResponse = await CapacitorHttp.post({
+        url: proxyEndpoint,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-AI-Api-Key': apiKey,
+          'X-AI-Base-Url': cleanBaseUrl,
+        },
+        data: payload,
+        connectTimeout: 10000,
+        readTimeout: 25000,
+      });
+
+      if (proxyResponse.status === 200) {
+        let resData = proxyResponse.data;
+        if (typeof resData === 'string') {
+          try {
+            resData = JSON.parse(resData);
+          } catch {}
+        }
+        const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
+        const latencyMs = Math.round(performance.now() - startTime);
+        return { text, latencyMs };
+      } else {
+        const errorMsg = proxyResponse.data?.error?.message || proxyResponse.data?.error || proxyResponse.data || `HTTP ${proxyResponse.status}`;
+        const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+        err.status = proxyResponse.status;
+        throw err;
+      }
     }
   }
 
