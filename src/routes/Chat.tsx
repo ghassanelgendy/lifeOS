@@ -275,30 +275,53 @@ export default function Chat() {
   const [viewportHeight, setViewportHeight] = useState('100%');
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [isInputFocused, setIsInputFocused] = useState(false);
 
-  // iOS keyboard: listen to visualViewport to dynamically elevate input ONLY when typing
+  // Keyboard height handling for native iOS & web mobile
   useEffect(() => {
+    let showListener: any;
+    let hideListener: any;
+
+    if (Capacitor.isNativePlatform()) {
+      import('@capacitor/keyboard').then(({ Keyboard }) => {
+        showListener = Keyboard.addListener('keyboardWillShow', (info) => {
+          setIsKeyboardOpen(true);
+          setKeyboardHeight(info.keyboardHeight || 300);
+        });
+        hideListener = Keyboard.addListener('keyboardWillHide', () => {
+          setIsKeyboardOpen(false);
+          setKeyboardHeight(0);
+        });
+      }).catch(() => {});
+    }
+
     const vv = window.visualViewport;
-    if (!vv) return;
     const update = () => {
       const isMobile = typeof window !== 'undefined' && (Capacitor.isNativePlatform() || window.innerWidth < 768);
-      const isKeyboardVisible = window.innerHeight - vv.height > 120;
-      setIsKeyboardOpen(isKeyboardVisible);
-      setKeyboardHeight(isKeyboardVisible ? Math.max(0, window.innerHeight - vv.height) : 0);
-
-      if (isMobile) {
+      if (vv && isMobile) {
+        const isKeyboardVisible = window.innerHeight - vv.height > 100;
+        if (!Capacitor.isNativePlatform()) {
+          setIsKeyboardOpen(isKeyboardVisible);
+          setKeyboardHeight(isKeyboardVisible ? Math.max(0, window.innerHeight - vv.height) : 0);
+        }
         setViewportHeight(`${vv.height}px`);
       } else {
         setViewportHeight('100%');
       }
-      window.scrollTo(0, 0);
     };
+
     update();
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
+    if (vv) {
+      vv.addEventListener('resize', update);
+      vv.addEventListener('scroll', update);
+    }
     return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
+      if (showListener) showListener.remove();
+      if (hideListener) hideListener.remove();
+      if (vv) {
+        vv.removeEventListener('resize', update);
+        vv.removeEventListener('scroll', update);
+      }
     };
   }, []);
 
@@ -989,7 +1012,9 @@ ${knowledgeContext}`;
       <footer
         ref={footerRef}
         style={{
-          bottom: isKeyboardOpen ? `${keyboardHeight + 12}px` : 'calc(16px + env(safe-area-inset-bottom))',
+          bottom: (isKeyboardOpen || isInputFocused) && (typeof window !== 'undefined' && (Capacitor.isNativePlatform() || window.innerWidth < 768))
+            ? `${(keyboardHeight || 300) + 12}px`
+            : 'calc(16px + env(safe-area-inset-bottom))',
         }}
         className={cn(
           "fixed z-30 left-1/2 -translate-x-1/2 w-[92%] max-w-[480px] md:max-w-3xl rounded-[34px] px-2 sm:px-3 py-1.5 bg-card/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-border/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex items-center gap-1.5 sm:gap-2 transition-all duration-200"
@@ -1011,6 +1036,8 @@ ${knowledgeContext}`;
           rows={1}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
+          onFocus={() => setIsInputFocused(true)}
+          onBlur={() => setIsInputFocused(false)}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
