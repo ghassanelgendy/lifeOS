@@ -32,7 +32,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Modal, Input } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useUIStore } from '../stores/useUIStore';
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteFolders } from '../hooks/useNotes';
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
 import { useTasks, useCreateTask } from '../hooks/useTasks';
 import { useHabits, useCreateHabit } from '../hooks/useHabits';
 import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
@@ -58,6 +58,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
+  const createNoteFolder = useCreateNoteFolder();
   const createTask = useCreateTask();
   const createHabit = useCreateHabit();
   const createCalendarEvent = useCreateCalendarEvent();
@@ -379,6 +380,36 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
       setErrorMsg(err.message || 'Failed to organize thoughts. Please check your AI API key in Settings.');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  /**
+   * Manual trigger: Organize a brain dump note and auto-file it into 'Organized Brain Dumps' folder
+   */
+  const handleOrganizeAndMoveToFolder = async (note: Note) => {
+    if (!note || !note.body) return;
+    try {
+      // 1. Ensure 'Organized Brain Dumps' folder exists
+      let folder = noteFolders.find((f) => f.name.toLowerCase() === 'organized brain dumps');
+      if (!folder) {
+        folder = await createNoteFolder.mutateAsync({ name: 'Organized Brain Dumps', sort_order: 1 });
+      }
+
+      // 2. Perform AI organization
+      await handleAnalyzeText(note.body, note);
+
+      // 3. Move note into Organized Brain Dumps folder
+      await updateNote.mutateAsync({
+        id: note.id,
+        data: {
+          folder_id: folder.id,
+        },
+      });
+
+      setSaveSuccessMsg(`Organized note and moved to "${folder.name}" folder!`);
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    } catch (err: any) {
+      console.error('Organize & move folder error:', err);
     }
   };
 
@@ -726,14 +757,13 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                           <button
                             type="button"
                             onClick={() => {
-                              setActiveTab('plan');
-                              void handleAnalyzeText(note.body, note);
+                              void handleOrganizeAndMoveToFolder(note);
                             }}
                             className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
-                            title="Organize this thought note with AI"
+                            title="Organize with AI and move into 'Organized Brain Dumps' folder"
                           >
                             <Sparkles size={11} />
-                            <span>Organize</span>
+                            <span>Organize & File</span>
                           </button>
                         </div>
                       </div>
