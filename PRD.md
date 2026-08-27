@@ -246,11 +246,20 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 **Purpose:** Manage Quran memorization, daily reading wirds, revision schedules, and smart Sheikh recitation session notes.
 
 - **Dual Daily Wird Cards:** Track Memorization Wird (ورد الحفظ) and Reading Wird (ورد التلاوة) with streaks and progress sync.
-- **Authentic Mushaf Page View:** Renders pages inside a classic Medina Mushaf double-border frame with ornamental corners, Surah title banners, Basmalah, Uthmani script, verse markers `﴿ ١ ﴾`, and page footers.
+- **iOS-Native Liquid Glass Navigation & Full-Bleed Mushaf View:** Renders an ultra-compact, native-feeling header with compact Surah and Juz pickers, iOS segmented control pills, and an iOS bottom sheet for secondary controls (repeat range slider, tafseer, blind testing, and halqah notes). Minimal edge padding maximizes visible Arabic calligraphy by over 35%.
+- **Sidebar Swipe Gesture Isolation:** On the Quran route, the global sidebar swipe-to-open drawer and tab horizontal swipe transitions are isolated, ensuring left-to-right touch gestures turn pages smoothly without opening the drawer.
 - **Smart Automated Wird Detection for Halaqa Notes:** Opening note creation automatically detects today's active wird page and calculates precise Surah & Ayah range.
 - **Relative Wird Notifications & 1-Tap Routing:** Local and desktop notifications for Quran Memorization Habits, Quran Reading Habits, and Sheikh Recitation Calendar Events dynamically compute the user's latest Wird (Page number and Surah name), allowing users to jump directly to the target Medina Mushaf page with a single tap.
 - **1-Click Quick Preset Pills:** Preset pills in the note creation modal to switch between today's memorization wird and reading wird.
 - **Recitation Session Logs:** Log Sheikh feedback, ratings (ممتاز, جيد جداً, جيد, يحتاج تثبيت), and detailed mistake/mutashabihat notes synced with lifeOS Notes engine.
+
+### 5.14 Cognitive Brain Dump & Asynchronous Thought Vault
+**Purpose:** Frictionless, instant thought capture with deferred AI planning and structured extraction.
+
+- **Instant Quick-Save & Append (<100ms):** Quick thought capture with `Cmd+Enter` keyboard shortcut and voice dictation. Users can append thoughts to today's daily log or save discrete atomic cards without waiting for AI analysis.
+- **Thought Inbox & Search:** Chronological stream of all captured thoughts with full-text search, time stamps, and organization status badges (`Pending / Unprocessed` vs `Organized`).
+- **Deferred AI Batch Planning:** On-demand batch organization during planning sessions. AI extracts actionable tasks (with due dates & priorities), recurring habits, and calendar events with 1-click database synchronization.
+- **iOS Triple-Tap Back Tap Integration:** Launch LifeOS directly into Brain Dump quick-capture from any screen or app via `lifeos://braindump?text=`.
 
 ### 5.13 Gamification (Points System)
 **Purpose:** Behavioral reinforcement through reward mechanics.
@@ -275,6 +284,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Voice Dictation Integration:** Global dictation shortcut integrated inside the floating action button (FAB) quick menu. The speech recognition (optimized for English/Arabic) transcribes the user's voice prompt and routes it directly to the AI Assistant chat thread, automatically triggering query execution or coaching responses.
 - **AI Toggle Integration Visibility:** When the user disables the AI Integration setting, all AI-related entrypoints, shortcuts, icons, and menus (including the Sidebar link, the Quick Add mic icon, the Dashboard FAB voice assistant, the row context voice dictate menu, and the Analytics AI coach card) are dynamically hidden.
 - **AI Coaching & Hints:** An AI Coaching & Insights panel is added to the Analytics Overview page. Utilizing mathematical Pearson correlation coefficients computed across sleep, screentime, tasks, habits, and finance metrics, the coach generates highly useful, mathematically grounded, and actionable suggestions tailored to user performance.
+- **Multi-Provider AI Fallbacks & Smart Health Routing:** Seamless integration across **Dahl Inference API** (MiniMax M2.7, Kimi K2.6, DeepSeek V4 Flash) and **Bynara API Router** (20 frontier & flash models). Features an intelligent self-healing routing queue that automatically cascades to healthy candidates upon encountering HTTP 429 rate limits, server 5xx errors, or timeouts. Failing models are assigned timed cooldown penalties and neglected in subsequent candidate queues, while the fastest working model is automatically cached in memory and used for all future requests. Includes a real-time Model Diagnostics & Health Inspector in Settings with 1-click benchmarking.
 
 ---
 

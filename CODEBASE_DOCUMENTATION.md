@@ -192,6 +192,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/sw.ts](#src-sw-ts)
 
 ### src/components
+- [src/components/AISettingsSection.tsx](#src-components-aisettingssection-tsx)
 - [src/components/AppFooter.ios.tsx](#src-components-appfooter-ios-tsx)
 - [src/components/AppFooter.pake.tsx](#src-components-appfooter-pake-tsx)
 - [src/components/AppFooter.tsx](#src-components-appfooter-tsx)
@@ -200,6 +201,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/AppShell.pake.tsx](#src-components-appshell-pake-tsx)
 - [src/components/AppShell.tsx](#src-components-appshell-tsx)
 - [src/components/AppShell.web.tsx](#src-components-appshell-web-tsx)
+- [src/components/BrainDumpGraphView.tsx](#src-components-braindumpgraphview-tsx)
+- [src/components/BrainDumpModal.tsx](#src-components-braindumpmodal-tsx)
 - [src/components/CommandPalette.tsx](#src-components-commandpalette-tsx)
 - [src/components/CompactPrayerHabit.ios.tsx](#src-components-compactprayerhabit-ios-tsx)
 - [src/components/CompactPrayerHabit.tsx](#src-components-compactprayerhabit-tsx)
@@ -326,6 +329,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### src/lib
 - [src/lib/ai.ts](#src-lib-ai-ts)
+- [src/lib/aiFallback.ts](#src-lib-aifallback-ts)
 - [src/lib/analytics-utils.ts](#src-lib-analytics-utils-ts)
 - [src/lib/api-limiter.ts](#src-lib-api-limiter-ts)
 - [src/lib/calendarExport.ts](#src-lib-calendarexport-ts)
@@ -352,6 +356,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/wikiStorage.ts](#src-lib-wikistorage-ts)
 - [src/lib/wrapHelpers.ts](#src-lib-wraphelpers-ts)
 
+### src/lib/__tests__
+- [src/lib/__tests__/aiFallback.test.ts](#src-lib---tests---aifallback-test-ts)
+
 ### src/routes
 - [src/routes/Analytics.tsx](#src-routes-analytics-tsx)
 - [src/routes/Calendar.ios.tsx](#src-routes-calendar-ios-tsx)
@@ -372,7 +379,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Health.tsx](#src-routes-health-tsx)
 - [src/routes/Landing.tsx](#src-routes-landing-tsx)
 - [src/routes/Login.tsx](#src-routes-login-tsx)
+- [src/routes/Notes.ios.tsx](#src-routes-notes-ios-tsx)
 - [src/routes/Notes.tsx](#src-routes-notes-tsx)
+- [src/routes/Notes.web.tsx](#src-routes-notes-web-tsx)
 - [src/routes/Points.tsx](#src-routes-points-tsx)
 - [src/routes/Quran.tsx](#src-routes-quran-tsx)
 - [src/routes/Screentime.ios.tsx](#src-routes-screentime-ios-tsx)
@@ -571,7 +580,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6331
+**Lines:** 6349
 
 ---
 
@@ -582,7 +591,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1126
+**Lines:** 1180
 
 ---
 
@@ -593,7 +602,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 849
+**Lines:** 864
 
 ---
 
@@ -615,7 +624,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 48
+**Lines:** 69
 
 ---
 
@@ -1274,14 +1283,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-khatmahplannerview-tsx"></a>
 ### lib/quran-memorizer/src/components/KhatmahPlannerView.tsx
 
-**File Purpose:** Sheikh Halqah Recitation Notes & Khatmah Plan component. Manages Quran memorization plans, reading wirds, smart automated wird detection for recitation notes, and session mistake logs.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:**
-- `getSurahForPage` (Function): Maps a Mushaf page number to its corresponding Surah.
-- `calculateSmartAyahRange` (Function): Calculates smart start and end Ayah ranges for a given page within a Surah based on Mushaf structure.
-- `KhatmahPlannerView` (React.FC): Main component rendering dual wird cards, smart Halaqa note modal, quick preset pills, and session mistake logs.
+**Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 1006
+**Lines:** 1059
 
 ---
 
@@ -1303,23 +1309,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 477
+**Lines:** 564
 
 ---
 
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Quran Mushaf Reader component. Provides authentic Medina Mushaf single-page and multi-page reading views, page navigation toolbar (1-604), Juz jump dropdowns, quick wird jumps, Uthmani script rendering, Tafsir Al-Muyassar, and memorization testing controls.
-- **Ayah Number Badge Styling**: Formatted Ayah number ornament badges (`﴿{ayah.numberInSurah}﴾`) with responsive fluid pill containers (`min-w-[2.2rem] whitespace-nowrap font-mono`), preventing 3-digit Ayah number clipping and vertical line wrapping in Mushaf Page and Ayah List views.
-- **Single-Row Desktop Toolbar**: Consolidated all Quran controls (Surah dropdown, Juz selector, view mode, page layout, wird quick jumps, and tools) into a single unified horizontal row on PC/desktop, maximizing screen space for Mushaf reading.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:**
-- `getSurahForPage` (Function): Determines which Surah contains a given page number.
-- `JUZ_START_PAGES` (Constant): Array of starting page numbers for all 30 Juz.
-- `QuranReaderView` (React.FC): Main Quran reader component with page navigation, Mushaf page frame, verse controls, and wird markers.
+**Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 751
+**Lines:** 921
 
 ---
 
@@ -1410,9 +1411,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:**
+- `getSurahForPage` (Function)
+- `getCurrentWirdInfo` (Function)
 
-**Lines:** 182
+**Function Details:**
+- **`getSurahForPage`** — Utility function for get surah for page.
+- **`getCurrentWirdInfo`** — Utility function for get current wird info.
+
+**Lines:** 252
 
 ---
 
@@ -1451,7 +1458,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `KhatmahGoalType` (Type)
 - `KhatmahDirection` (Type)
 
-**Lines:** 135
+**Lines:** 137
 
 ---
 
@@ -1788,7 +1795,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 408
+**Lines:** 426
 
 ---
 
@@ -1904,6 +1911,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-aisettingssection-tsx"></a>
+### src/components/AISettingsSection.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `AISettingsSection` (Function)
+
+**Function Details:**
+- **`AISettingsSection`** — Utility function for a i settings section.
+
+**Lines:** 413
+
+---
+
 <a name="src-components-appfooter-ios-tsx"></a>
 ### src/components/AppFooter.ios.tsx
 
@@ -1975,7 +1997,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 694
+**Lines:** 829
 
 ---
 
@@ -2024,7 +2046,35 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 646
+**Lines:** 702
+
+---
+
+<a name="src-components-braindumpgraphview-tsx"></a>
+### src/components/BrainDumpGraphView.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `BrainDumpGraphView` (Function)
+
+**Function Details:**
+- **`BrainDumpGraphView`** — Utility function for brain dump graph view.
+
+**Lines:** 560
+
+---
+
+<a name="src-components-braindumpmodal-tsx"></a>
+### src/components/BrainDumpModal.tsx
+
+**File Purpose:** Cognitive Brain Dump modal supporting instant <100ms quick-capture and append, search-enabled Thought Inbox, and deferred AI batch planning and extraction.
+
+**Functions & Classes:**
+- `BrainDumpModal` (Function)
+
+**Function Details:**
+- **`BrainDumpModal`** — Renders the multi-tab Brain Dump workflow (Quick Capture, Thought Inbox, AI Planner/Organizer).
 
 ---
 
@@ -2039,7 +2089,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`CommandPalette`** — Utility function for command palette.
 
-**Lines:** 228
+**Lines:** 236
 
 ---
 
@@ -3570,6 +3620,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useCreateNoteFolder` (React Hook)
 - `useCreateNote` (React Hook)
 - `useUpdateNote` (React Hook)
+- `useTogglePinNote` (React Hook)
+- `useUpdateNoteFolder` (React Hook)
+- `useDeleteNoteFolder` (React Hook)
 - `useDeleteNote` (React Hook)
 - `normalizeNoteInput` (Function)
 - `normalizeFolderName` (Function)
@@ -3578,6 +3631,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useCreateNoteFolder` (Function)
 - `useCreateNote` (Function)
 - `useUpdateNote` (Function)
+- `useTogglePinNote` (Function)
+- `useUpdateNoteFolder` (Function)
+- `useDeleteNoteFolder` (Function)
 - `useDeleteNote` (Function)
 
 **Function Details:**
@@ -3592,7 +3648,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useNoteFolders`** — Utility function for use note folders.
 - **`useCreateNoteFolder`** — Utility function for use create note folder.
 
-**Lines:** 142
+**Lines:** 207
 
 ---
 
@@ -3615,7 +3671,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`taskTriggerDate`** — Utility function for task trigger date.
 - **`usePakeLocalNotifications`** — Utility function for use pake local notifications.
 
-**Lines:** 251
+**Lines:** 317
 
 ---
 
@@ -4180,8 +4236,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ---
 
 <a name="src-index-css"></a>
+### src/index.css
+
 **File Purpose:** Global CSS stylesheet with Tailwind CSS v4 integration, theming system (dark/light/accent colors), animations, and iOS-specific styles.
-- **Strict Cairo Font System**: Enforces `Cairo` font family strictly across all HTML root elements (`html`, `body`, `button`, `input`, `select`, `textarea`) and Tailwind `--font-sans` token without falling back to system or device fonts.
 
 **Keyframes:**
 - `@keyframes modal-backdrop-in` — CSS animation definition
@@ -4194,7 +4251,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar, font-hadith
 
-**Lines:** 490
+**Lines:** 498
 
 ---
 
@@ -4214,7 +4271,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar, font-hadith
 
-**Lines:** 490
+**Lines:** 498
 
 ---
 
@@ -4235,7 +4292,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **CSS Classes/Selectors:** light, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, bg-card, no-scrollbar, font-hadith
 
-**Lines:** 575
+**Lines:** 583
+
+---
+
+<a name="src-lib---tests---aifallback-test-ts"></a>
+### src/lib/__tests__/aiFallback.test.ts
+
+**File Purpose:** Unit/integration tests for the corresponding implementation file.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 124
 
 ---
 
@@ -4252,7 +4320,43 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanAiResponse`** — Utility function for clean ai response.
 - **`extractJSON`** — Utility function for extract j s o n.
 
-**Lines:** 250
+**Lines:** 401
+
+---
+
+<a name="src-lib-aifallback-ts"></a>
+### src/lib/aiFallback.ts
+
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+
+**Functions & Classes:**
+- `getModelDefinition` (Function)
+- `getProviderForModel` (Function)
+- `loadModelHealthState` (Function)
+- `saveModelHealthState` (Function)
+- `getModelStat` (Function)
+- `isModelInCooldown` (Function)
+- `recordModelSuccess` (Function)
+- `recordModelFailure` (Function)
+- `resetModelHealth` (Function)
+- `calculateModelScore` (Function)
+- `getFallbackCandidates` (Function)
+- `getStoredBestModel` (Function)
+- `AIModelDefinition` (Interface)
+- `AIProviderConfig` (Interface)
+- `ModelHealthStat` (Interface)
+- `AIModelHealthState` (Interface)
+- `FallbackCandidate` (Interface)
+- `AIProviderId` (Type)
+
+**Function Details:**
+- **`getModelDefinition`** — Utility function for get model definition.
+- **`getProviderForModel`** — Utility function for get provider for model.
+- **`loadModelHealthState`** — Utility function for load model health state.
+- **`saveModelHealthState`** — Utility function for save model health state.
+- **`getModelStat`** — Utility function for get model stat.
+
+**Lines:** 640
 
 ---
 
@@ -4431,8 +4535,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-nativebridge-ts"></a>
 ### src/lib/nativeBridge.ts
 
-**File Purpose:** Utility library module. Provides helper functions, Capacitor iOS native plugins integration, push and local notifications scheduling, and deep link URL scheme routing.
-- **Quran Notifications & Relative Wird Sync**: Injects dynamic relative Wird information (page number and Surah name) for Quran Memorization Habits, Quran Reading Habits, and Quran Sheikh/Halqah Calendar Events, routing 1-tap notification actions directly to the corresponding Medina Mushaf page.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
 - `setupDeepLinkListener` (Function)
@@ -4451,7 +4554,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 807
+**Lines:** 875
 
 ---
 
@@ -4908,7 +5011,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Chat`** — React component rendering UI for Chat.
 - **`Chat`** — Utility function for chat.
 
-**Lines:** 1136
+**Lines:** 1144
 
 ---
 
@@ -5187,36 +5290,60 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-routes-notes-ios-tsx"></a>
+### src/routes/Notes.ios.tsx
+
+**File Purpose:** Page-level route component for the Notes module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `NotesIOS` (React Component)
+- `todayInputDate` (Function)
+- `noteTitle` (Function)
+- `formatNoteDate` (Function)
+- `NotesIOS` (Function)
+
+**Function Details:**
+- **`NotesIOS`** — React component rendering UI for NotesIOS.
+- **`todayInputDate`** — Utility function for today input date.
+- **`noteTitle`** — Utility function for note title.
+- **`formatNoteDate`** — Utility function for format note date.
+- **`NotesIOS`** — Utility function for notes i o s.
+
+**Lines:** 698
+
+---
+
 <a name="src-routes-notes-tsx"></a>
 ### src/routes/Notes.tsx
 
-**File Purpose:** Platform resolution router for Notes module. Re-exports `./Notes.platform` which resolves at build time to `Notes.ios.tsx` (iOS builds) or `Notes.web.tsx` (PC/Web builds).
+**File Purpose:** Page-level route component for the Notes.tsx module. Renders the main view when navigating to this section.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 3
 
 ---
 
+<a name="src-routes-notes-web-tsx"></a>
 ### src/routes/Notes.web.tsx
 
-**File Purpose:** PC Desktop view for Notes & Knowledge Base.
-- 3-column layout: Left sidebar (Folders, Smart Filters: All, Pinned, Brain Dumps, Uncategorized), Middle column (Notes list with search), Right main panel (Markdown live editor & preview).
-- Integrates folder CRUD, pin toggling, AI tools (Summarize, Clean Draft, Wiki Links), and Cognitive Brain Dump launcher.
+**File Purpose:** Page-level route component for the Notes module. Renders the main view when navigating to this section.
 
----
+**Functions & Classes:**
+- `NotesWeb` (React Component)
+- `todayInputDate` (Function)
+- `noteTitle` (Function)
+- `formatNoteDate` (Function)
+- `NotesWeb` (Function)
 
-### src/routes/Notes.ios.tsx
+**Function Details:**
+- **`NotesWeb`** — React component rendering UI for NotesWeb.
+- **`todayInputDate`** — Utility function for today input date.
+- **`noteTitle`** — Utility function for note title.
+- **`formatNoteDate`** — Utility function for format note date.
+- **`NotesWeb`** — Utility function for notes web.
 
-**File Purpose:** iOS-Native view for Notes & Knowledge Base.
-- Designed strictly after Apple Notes UI/UX guidelines with iOS large title navigation, inset grouped card lists, iOS back screen transitions, touch swipe actions, haptic feedback (`triggerHaptics`), and 3D long-press touch context menus.
-- Features quick voice dictation, Cognitive Brain Dump sheet, and + New Note floating action button.
-
----
-
-### src/components/BrainDumpModal.tsx
-
-**File Purpose:** AI Cognitive Brain Dump processor component.
-- Captures stream-of-consciousness thoughts & voice dictation.
-- Performs automated AI analysis (`askAI` in JSON mode) producing mental clarity score (1-100), mood/sentiment tags, executive summary, and key insights.
-- **Auto-Classifies**: Actionable Tasks, Daily/Weekly Habits, and Scheduled Events with 1-click creation action buttons (`useCreateTask`, `useCreateHabit`, `useCreateCalendarEvent`).
-- Includes an interactive iOS Back Tap & Apple Shortcut setup guide with deep link URL scheme support (`lifeos://braindump?text=`).
+**Lines:** 764
 
 ---
 
@@ -5328,7 +5455,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1574
+**Lines:** 1496
 
 ---
 
@@ -5356,7 +5483,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1444
+**Lines:** 1367
 
 ---
 
@@ -5654,7 +5781,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isDashboardMode`** — Utility function for is dashboard mode.
 - **`getPersistedUiSlice`** — Utility function for get persisted ui slice.
 
-**Lines:** 583
+**Lines:** 607
 
 ---
 
@@ -5699,6 +5826,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `PrayerLog` (Interface)
 - `PrayerNotificationSetting` (Interface)
 - `CalendarEvent` (Interface)
+- `BrainDumpSuggestionTask` (Interface)
+- `BrainDumpSuggestionHabit` (Interface)
+- `BrainDumpSuggestionEvent` (Interface)
+- `BrainDumpAnalysis` (Interface)
 - `Note` (Interface)
 - `NoteFolder` (Interface)
 - `TaskList` (Interface)
@@ -5730,7 +5861,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `CreateInput` (Type)
 - `UpdateInput` (Type)
 
-**Lines:** 418
+**Lines:** 453
 
 ---
 

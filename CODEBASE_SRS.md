@@ -568,14 +568,25 @@ The Halqah Note modal shall present quick preset pills to switch between today's
 #### FR-QURAN-004: Direct Card & Reader Action Buttons
 The system shall render direct "📝 تدوين ملاحظة" action buttons on Memorization/Reading cards and in the Quran Reader toolbar to launch smart note recording.
 
-#### FR-QURAN-005: Authentic Mushaf Page View Layout
-The page view shall display Quran pages inside an authentic Mushaf double-border frame with ornamental corners, top Surah/Page/Juz headers, ornate Surah title banners, Basmalah line, continuous Uthmani text, circular verse number markers, and page number footers.
+#### FR-QURAN-005: iOS-Native Mushaf Page View & Maximized Text Area
+The page view shall display Quran pages with minimal border padding and native liquid glass controls, maximizing the visible Arabic calligraphy area while preserving authentic Surah headers and verse markers.
 
-#### FR-QURAN-006: Unified Single-Row Toolbar & Gesture Navigation
-The reader shall provide a consolidated single-row toolbar for Surah, Juz, view mode, and wird quick jumps, along with horizontal swipe gestures for fluid page traversal.
+#### FR-QURAN-006: Compact iOS Toolbar & Isolated Gesture Navigation
+The reader shall provide an iOS-native liquid glass header with compact Surah and Juz dropdowns, segmented view pills, and an iOS bottom sheet for secondary controls. Left-to-right swipe gestures on the Quran reader shall be strictly isolated to page turning, suppressing global sidebar drawer triggers.
 
 #### FR-QURAN-007: Relative Wird Notifications & Deep Link Routing
 The system shall automatically compute dynamic relative Wird information (page number and Surah name) inside notifications scheduled for Quran Memorization Habits, Quran Reading Habits, and Sheikh Halqah Calendar Events. Tapping the notification banner shall route the user directly to the target Medina Mushaf page.
+
+### 3.12.2 Cognitive Brain Dump & Asynchronous Thought Vault
+
+#### FR-DUMP-001: Instant Quick-Capture & Append
+The system shall support instant thought saving in less than 100ms via `Cmd+Enter` or voice dictation, allowing thoughts to be appended directly to today's journal or saved as discrete atomic notes without blocking on AI analysis.
+
+#### FR-DUMP-002: Thought Inbox & Review
+The system shall provide a search-enabled Thought Inbox displaying all captured brain dump notes with timestamp metadata and status tags (`Pending / Unprocessed` vs `Organized`).
+
+#### FR-DUMP-003: Deferred AI Batch Planning
+The system shall allow users to select single or multiple captured thoughts during planning sessions to trigger batch AI structuring, extracting actionable tasks, recurring habits, and calendar events with 1-click database synchronization.
 
 ---
 
@@ -883,6 +894,18 @@ When the AI Integration setting (`aiEnabled`) is disabled, the system shall dyna
 
 #### FR-AI-011: Analytics AI Hints
 The system shall include an AI Coaching & Insights panel inside the Analytics Overview tab. This panel shall pass the range's computed metrics and mathematical Pearson correlation coefficients (across sleep, screen time, tasks, habits, and expenses) to the AI service on-demand to generate highly useful, mathematically grounded, and actionable suggestions.
+
+#### FR-AI-012: Multi-Model Fallbacks & Cascading Queue
+The system shall support cascading through prioritized candidate models across Dahl Inference API and Bynara API Router whenever a model encounters HTTP 429 (Rate Limit), HTTP 402, HTTP 404, HTTP 5xx, or network timeouts.
+
+#### FR-AI-013: Model Health Tracking & Cooldown Penalty (Neglect)
+The system shall maintain a persistent health ledger for all LLMs in localStorage. When a model fails with HTTP 429, it shall be placed in a timed cooldown state (5-30 minutes) and neglected in future request candidate queues until the cooldown expires.
+
+#### FR-AI-014: Best Model Caching & Self-Healing
+The system shall automatically record the fastest, most reliable model upon successful completion, storing it as the primary active model for subsequent requests. When cooldown timers expire, neglected models shall automatically self-heal and re-enter the eligible pool.
+
+#### FR-AI-015: Model Diagnostics & Health Inspector
+The system shall provide a model benchmarking interface in Settings to run ping tests across all catalog models, displaying latency, success counts, failure counts, and live cooldown timers.
 
 ---
 
