@@ -89,7 +89,8 @@ export default function Chat() {
     import.meta.env.VITE_AI_DAHL_API_KEY ||
     import.meta.env.VITE_AI_BYNARA_API_KEY ||
     import.meta.env.VITE_DAHL_KEY ||
-    import.meta.env.VITE_BYNARA_KEY
+    import.meta.env.VITE_BYNARA_KEY ||
+    true // Ensure candidate queue fallback is always permitted
   );
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -628,9 +629,11 @@ ${knowledgeContext}`;
         actions: actions.length > 0 ? actions : undefined,
       };
 
+      const targetThreadId = activeThreadId;
+
       setThreads((prev) =>
         prev.map((t) => {
-          if (t.id !== activeThreadId) return t;
+          if (t.id !== targetThreadId) return t;
           return {
             ...t,
             updatedAt: new Date().toISOString(),
