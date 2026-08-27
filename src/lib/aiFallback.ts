@@ -542,8 +542,12 @@ export function getFallbackCandidates(options: {
     fallbackEnabled = true,
   } = options;
 
-  const resolvedDahlKey = (dahlApiKey || '').trim() || AI_PROVIDERS.dahl.defaultApiKey;
-  const resolvedBynaraKey = (bynaraApiKey || '').trim() || AI_PROVIDERS.bynara.defaultApiKey;
+  const envDahlKey = (import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_DAHL_KEY || '').trim();
+  const envBynaraKey = (import.meta.env.VITE_AI_BYNARA_API_KEY || import.meta.env.VITE_BYNARA_KEY || '').trim();
+  const envGenKey = (import.meta.env.VITE_AI_API_KEY || '').trim();
+
+  const resolvedDahlKey = (dahlApiKey || '').trim() || envDahlKey || customApiKey.trim() || envGenKey || AI_PROVIDERS.dahl.defaultApiKey;
+  const resolvedBynaraKey = (bynaraApiKey || '').trim() || envBynaraKey || customApiKey.trim() || envGenKey || AI_PROVIDERS.bynara.defaultApiKey;
 
   // If user provided a custom model or custom URL and fallback is disabled
   if (selectedModel && selectedModel !== 'auto' && !fallbackEnabled) {

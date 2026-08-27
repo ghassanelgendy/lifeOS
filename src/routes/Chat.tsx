@@ -80,7 +80,17 @@ Ask me to **create tasks, schedule events, write notes, or log expenses** for yo
 };
 
 export default function Chat() {
-  const { aiEnabled, aiApiKey, aiModel, aiActiveModel, aiFallbackEnabled } = useUIStore();
+  const { aiEnabled, aiApiKey, aiDahlApiKey, aiBynaraApiKey, aiModel, aiActiveModel, aiFallbackEnabled } = useUIStore();
+  const hasAiKey = Boolean(
+    aiApiKey?.trim() ||
+    aiDahlApiKey?.trim() ||
+    aiBynaraApiKey?.trim() ||
+    import.meta.env.VITE_AI_API_KEY ||
+    import.meta.env.VITE_AI_DAHL_API_KEY ||
+    import.meta.env.VITE_AI_BYNARA_API_KEY ||
+    import.meta.env.VITE_DAHL_KEY ||
+    import.meta.env.VITE_BYNARA_KEY
+  );
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Queries for default context
@@ -515,7 +525,7 @@ export default function Chat() {
     const finalQuery = (textToSend || inputText).trim();
     if (!finalQuery) return;
 
-    if (!aiEnabled || !aiApiKey) return;
+    if (!aiEnabled || !hasAiKey) return;
 
     if (!textToSend) setInputText('');
 
@@ -715,7 +725,7 @@ ${knowledgeContext}`;
   };
 
   // Redirection onboarding card if AI settings are missing
-  if (!aiEnabled || !aiApiKey) {
+  if (!aiEnabled || !hasAiKey) {
     return (
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="max-w-md w-full rounded-2xl border border-border bg-card p-6 shadow-lg text-center space-y-4 animate-in fade-in zoom-in-95 duration-300">

@@ -450,7 +450,13 @@ export const useUIStore = create<UIState>()(
       setTasksUseModalForCreate: (tasksUseModalForCreate) => set({ tasksUseModalForCreate }),
 
       // AI Default values & Setters
-      aiEnabled: Boolean(import.meta.env.VITE_AI_API_KEY || import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_AI_BYNARA_API_KEY || import.meta.env.VITE_DAHL_KEY || import.meta.env.VITE_BYNARA_KEY),
+      aiEnabled: Boolean(
+        import.meta.env.VITE_AI_API_KEY ||
+        import.meta.env.VITE_AI_DAHL_API_KEY ||
+        import.meta.env.VITE_AI_BYNARA_API_KEY ||
+        import.meta.env.VITE_DAHL_KEY ||
+        import.meta.env.VITE_BYNARA_KEY
+      ),
       aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
       aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://router.bynara.id/v1',
       aiModel: import.meta.env.VITE_AI_MODEL || 'auto',
