@@ -643,15 +643,16 @@ ${knowledgeContext}`;
       );
     } catch (error: any) {
       console.error('AI completion error:', error);
+      const targetThreadId = activeThreadId;
       const errorMsgObj: ChatMessage = {
         id: assistantMessageId,
         role: 'assistant',
-        content: `⚠️ **Error communicating with AI Router**: ${error.message || 'Unknown network error'}. Please check your API configuration in Settings.`,
+        content: `⚠️ **AI Response Failed**: ${error.message || 'Unknown network error'}.\n\n*Tip: Check your connection or test models under Settings > AI Configuration.*`,
         timestamp: new Date().toISOString(),
       };
       setThreads((prev) =>
         prev.map((t) => {
-          if (t.id !== activeThreadId) return t;
+          if (t.id !== targetThreadId) return t;
           return {
             ...t,
             messages: [...t.messages, errorMsgObj],
@@ -1002,9 +1003,9 @@ ${knowledgeContext}`;
           )}
 
           {isGenerating && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2 animate-in fade-in">
-              <Loader2 size={14} className="animate-spin text-primary" />
-              <span>Thinking...</span>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-primary/10 border border-primary/20 text-xs font-semibold text-primary w-fit animate-in fade-in zoom-in-95 duration-200">
+              <Sparkles size={14} className="animate-spin text-purple-400" />
+              <span>AI is thinking ({aiActiveModel || 'MiniMax M2.7'})...</span>
             </div>
           )}
           <div ref={messagesEndRef} />
