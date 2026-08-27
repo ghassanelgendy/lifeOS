@@ -80,7 +80,7 @@ Ask me to **create tasks, schedule events, write notes, or log expenses** for yo
 };
 
 export default function Chat() {
-  const { aiEnabled, aiApiKey, aiModel } = useUIStore();
+  const { aiEnabled, aiApiKey, aiModel, aiActiveModel, aiFallbackEnabled } = useUIStore();
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Queries for default context
@@ -773,7 +773,7 @@ ${knowledgeContext}`;
 
       {/* MAIN CONVERSATION AREA - CENTERED MAX-W-3XL */}
       <main className="flex-1 overflow-y-auto min-h-0 flex flex-col">
-        <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col px-4 py-6 space-y-6">
+        <div className="w-full max-w-3xl mx-auto flex-1 flex flex-col px-4 py-6 pb-28 sm:pb-32 space-y-6">
           
           {/* BLANK SLATE (Initial state prompt shortcuts) - Disappears on first message */}
           {isThreadEmpty ? (
@@ -965,49 +965,66 @@ ${knowledgeContext}`;
         </div>
       </main>
 
-      {/* INPUT BAR - FIXED AT BOTTOM, CENTERED */}
-      <footer ref={footerRef} className="sticky bottom-0 w-full border-t border-border/40 bg-background/95 backdrop-blur-md p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] md:pb-3 flex justify-center shrink-0 z-20">
-        <div className="w-full max-w-3xl flex items-center gap-2">
-          <textarea
-            ref={inputRef}
-            rows={1}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                void handleSendMessage();
-              }
-            }}
-            placeholder=""
-            className="flex-1 resize-none overflow-y-auto max-h-28 bg-secondary/30 focus:bg-background border border-border/60 focus:border-primary rounded-xl px-4 py-3 text-sm outline-none transition-colors"
-          />
-          <Button
-            size="icon"
-            type="button"
-            variant="outline"
-            onClick={() => {
-              handleVoiceDictation((transcript) => {
-                setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
-              });
-            }}
-            className={cn(
-              "h-11 w-11 shrink-0 rounded-xl border-border/60 min-h-[44px] min-w-[44px]",
-              isListening && "border-red-500 text-red-500 animate-pulse bg-red-500/10"
-            )}
-            title="Voice Dictate Input"
-          >
-            <Mic size={16} />
-          </Button>
-          <Button
-            size="icon"
-            disabled={isGenerating || !inputText.trim()}
-            onClick={() => void handleSendMessage()}
-            className="h-11 w-11 shrink-0 rounded-xl shadow-sm min-h-[44px] min-w-[44px]"
-          >
-            <Send size={16} />
-          </Button>
-        </div>
+      {/* FLOATING LIQUID GLASS CHAT INPUT CAPSULE (Matching Bottom Bar & Audio Player) */}
+      <footer
+        ref={footerRef}
+        className="fixed z-30 bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[92%] max-w-[480px] md:max-w-3xl rounded-[34px] px-2 sm:px-3 py-1.5 bg-card/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-border/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex items-center gap-1.5 sm:gap-2 transition-all"
+      >
+        {/* Knowledge Context & Threads Trigger Button */}
+        <button
+          type="button"
+          onClick={() => setSidebarOpen((prev) => !prev)}
+          className="h-10 w-10 rounded-full bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shrink-0 active:scale-95 border border-border/40"
+          title="Chat History & Knowledge Sources"
+        >
+          <Brain size={18} className="text-purple-500 animate-pulse" />
+        </button>
+
+        {/* Text Input Area */}
+        <textarea
+          ref={inputRef}
+          rows={1}
+          value={inputText}
+          onChange={(e) => setInputText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              void handleSendMessage();
+            }
+          }}
+          placeholder="Ask LifeOS Assistant..."
+          className="flex-1 bg-transparent border-none text-xs sm:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none resize-none px-2 py-2 max-h-28 leading-relaxed"
+        />
+
+        {/* Voice Dictation Button */}
+        <button
+          type="button"
+          onClick={() => {
+            handleVoiceDictation((transcript) => {
+              setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+            });
+          }}
+          className={cn(
+            "h-10 w-10 rounded-full flex items-center justify-center transition-all shrink-0 active:scale-95 border border-border/40",
+            isListening
+              ? "bg-rose-500 text-white animate-pulse border-rose-600"
+              : "bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground"
+          )}
+          title="Voice Dictation"
+        >
+          <Mic size={18} />
+        </button>
+
+        {/* Send Button */}
+        <button
+          type="button"
+          disabled={isGenerating || !inputText.trim()}
+          onClick={() => void handleSendMessage()}
+          className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 shadow-md flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer"
+          title="Send message"
+        >
+          <Send size={16} className="translate-x-0.5" />
+        </button>
       </footer>
 
       {/* COLLAPSIBLE SIDEBAR DRAWER (SETTINGS, CHAT HISTORY 4+, KNOWLEDGE TOGGLES) */}
@@ -1119,7 +1136,15 @@ ${knowledgeContext}`;
 
             {/* Model & Config Info */}
             <div className="mt-auto pt-4 border-t border-border/60 space-y-2 text-xs text-muted-foreground">
-              <p>Model: <strong className="text-foreground">{aiModel}</strong></p>
+              <div className="space-y-0.5">
+                <p>
+                  Routing: <strong className="text-foreground">{aiModel === 'auto' ? 'Smart Auto' : aiModel}</strong>
+                </p>
+                <p className="text-[11px]">
+                  Active: <span className="font-mono text-primary font-semibold">{aiActiveModel || 'MiniMaxAI/MiniMax-M2.7'}</span>
+                  {aiFallbackEnabled && <span className="ml-1 text-[10px] text-emerald-400 font-sans">(Fallbacks ON)</span>}
+                </p>
+              </div>
               <Link to="/settings" className="inline-flex items-center gap-1.5 text-primary hover:underline text-xs font-semibold">
                 <Settings size={14} />
                 <span>AI Configuration Settings</span>

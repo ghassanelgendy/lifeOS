@@ -259,13 +259,23 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('lifeos:openBrainDump'))}
+            className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 border border-purple-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+            title="Instant Quick Thought Dump"
+          >
+            <Brain size={13} />
+            <span>+ Quick Dump</span>
+          </button>
+
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search thoughts..."
-              className="pl-7 pr-3 py-1 text-xs rounded-lg border border-border bg-background text-foreground outline-none focus:ring-1 focus:ring-primary w-40 sm:w-48"
+              className="pl-7 pr-3 py-1 text-xs rounded-lg border border-border bg-background text-foreground outline-none focus:ring-1 focus:ring-primary w-32 sm:w-44"
             />
           </div>
 

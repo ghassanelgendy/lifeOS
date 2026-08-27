@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Sparkles,
   Brain,
@@ -19,17 +19,26 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Inbox,
+  PenTool,
+  Clock,
+  ListTodo,
+  Search,
+  ArrowRight,
+  Filter,
+  Trash2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, Modal } from './ui';
+import { Button, Modal, Input } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useUIStore } from '../stores/useUIStore';
-import { useCreateNote } from '../hooks/useNotes';
-import { useCreateTask } from '../hooks/useTasks';
-import { useCreateHabit } from '../hooks/useHabits';
-import { useCreateCalendarEvent } from '../hooks/useCalendar';
+import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteFolders } from '../hooks/useNotes';
+import { useTasks, useCreateTask } from '../hooks/useTasks';
+import { useHabits, useCreateHabit } from '../hooks/useHabits';
+import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
+import { format } from 'date-fns';
 import { triggerHaptics } from '../lib/nativeBridge';
-import type { BrainDumpAnalysis } from '../types/schema';
+import type { Note, BrainDumpAnalysis } from '../types/schema';
 import { cn } from '../lib/utils';
 
 interface BrainDumpModalProps {
@@ -41,35 +50,81 @@ interface BrainDumpModalProps {
 
 export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote }: BrainDumpModalProps) {
   const aiEnabled = useUIStore((s) => s.aiEnabled);
+  const { data: allNotes = [] } = useNotes();
+  const { data: noteFolders = [] } = useNoteFolders();
+  const { data: tasks = [] } = useTasks();
+  const { data: habits = [] } = useHabits();
+  const { data: calendarEvents = [] } = useCalendarEvents();
   const createNote = useCreateNote();
+  const updateNote = useUpdateNote();
+  const deleteNote = useDeleteNote();
   const createTask = useCreateTask();
   const createHabit = useCreateHabit();
   const createCalendarEvent = useCreateCalendarEvent();
 
+  // Active Tab: 'capture' (default quick-dump) | 'inbox' (review past thoughts) | 'plan' (AI batch extraction)
+  const [activeTab, setActiveTab] = useState<'capture' | 'inbox' | 'plan'>('capture');
+
+  // Capture State
   const [rawText, setRawText] = useState(initialText);
+  const [appendToToday, setAppendToToday] = useState(true);
+  const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [showIosGuide, setShowIosGuide] = useState(false);
+
+  // Inbox & Search State
+  const [inboxSearch, setInboxSearch] = useState('');
+  const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
+
+  // Planning & AI Analysis State
+  const [targetNoteToAnalyze, setTargetNoteToAnalyze] = useState<Note | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<BrainDumpAnalysis | null>(null);
   const [selectedTaskIndexes, setSelectedTaskIndexes] = useState<Set<number>>(new Set());
-  
-  // Status states
   const [exportedTasksSuccess, setExportedTasksSuccess] = useState(false);
   const [createdHabitTitle, setCreatedHabitTitle] = useState<string | null>(null);
   const [createdEventTitle, setCreatedEventTitle] = useState<string | null>(null);
-  const [savedAsNoteSuccess, setSavedAsNoteSuccess] = useState(false);
-  const [isListening, setIsListening] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [showIosGuide, setShowIosGuide] = useState(false);
 
-  // Listen to custom event parameter details when launched via deep link or shortcut
+  // Brain Dump notes list
+  const brainDumpNotes = useMemo(() => {
+    return allNotes
+      .filter((n) => n.is_brain_dump)
+      .sort((a, b) => new Date(b.created_at || b.updated_at).getTime() - new Date(a.created_at || a.updated_at).getTime());
+  }, [allNotes]);
+
+  const unprocessedNotes = useMemo(() => {
+    return brainDumpNotes.filter((n) => !n.ai_analysis);
+  }, [brainDumpNotes]);
+
+  const filteredInboxNotes = useMemo(() => {
+    if (!inboxSearch.trim()) return brainDumpNotes;
+    const q = inboxSearch.toLowerCase();
+    return brainDumpNotes.filter(
+      (n) => n.title.toLowerCase().includes(q) || (n.body && n.body.toLowerCase().includes(q))
+    );
+  }, [brainDumpNotes, inboxSearch]);
+
+  // Today's date string
+  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+
+  const todayBrainDumpNote = useMemo(() => {
+    return brainDumpNotes.find((n) => n.note_date?.slice(0, 10) === todayStr);
+  }, [brainDumpNotes, todayStr]);
+
+  // Listen to deep link event
   useEffect(() => {
     const handleCustomOpen = (e: Event) => {
       const customEvent = e as CustomEvent<{ text?: string; autoAnalyze?: boolean }>;
       if (customEvent.detail?.text) {
         setRawText(customEvent.detail.text);
         if (customEvent.detail.autoAnalyze) {
+          setActiveTab('plan');
           setTimeout(() => {
             void handleAnalyzeText(customEvent.detail.text!);
           }, 300);
+        } else {
+          setActiveTab('capture');
         }
       }
     };
@@ -81,6 +136,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
     if (initialText) setRawText(initialText);
   }, [initialText]);
 
+  // Voice Dictation
   const handleSpeechDictation = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -92,7 +148,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
       recognition.lang = 'en-US';
       recognition.continuous = true;
       recognition.interimResults = false;
-      
+
       if (isListening) {
         setIsListening(false);
         return;
@@ -118,22 +174,148 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
     }
   };
 
-  const handleAnalyzeText = async (textToAnalyze: string) => {
+  /**
+   * INSTANT QUICK SAVE / APPEND (<100ms)
+   * Saves or appends thoughts immediately without blocking on AI
+   */
+  const handleQuickSave = async () => {
+    const text = rawText.trim();
+    if (!text) return;
+
+    const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    try {
+      void triggerHaptics('medium');
+
+      if (appendToToday && todayBrainDumpNote) {
+        // Append to today's brain dump note
+        const updatedBody = `${todayBrainDumpNote.body.trim()}\n\n---\n**🕒 ${timeString}:**\n${text}`;
+        await updateNote.mutateAsync({
+          id: todayBrainDumpNote.id,
+          data: {
+            body: updatedBody,
+            ai_analysis: null, // Reset analysis to mark as pending fresh organization
+          },
+        });
+        setSaveSuccessMsg(`Appended thought to Today's Brain Dump at ${timeString}`);
+      } else {
+        // Create new atomic thought note
+        const firstLine = text.split(/\r?\n/)[0]?.slice(0, 50) || 'Brain Dump';
+        const newNote = await createNote.mutateAsync({
+          title: `Brain Dump: ${firstLine}`,
+          body: `**🕒 ${timeString}:**\n${text}`,
+          note_date: todayStr,
+          is_brain_dump: true,
+          ai_analysis: null,
+          folder_id: null,
+        });
+        if (onSavedNote) onSavedNote(newNote.id);
+        setSaveSuccessMsg(`Saved thought to Inbox (${timeString})`);
+      }
+
+      setRawText('');
+      void triggerHaptics('success');
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    } catch (err: any) {
+      console.error('Quick save failed:', err);
+      setSaveSuccessMsg(`Error saving thought: ${err.message || err}`);
+    }
+  };
+
+  // Keyboard shortcut (Cmd/Ctrl + Enter) to quick save
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      void handleQuickSave();
+    }
+  };
+
+  /**
+   * AI PLANNING ORGANIZER
+   */
+  const handleAnalyzeText = async (textToAnalyze: string, noteContext?: Note | null) => {
     if (!textToAnalyze.trim()) return;
     setErrorMsg('');
     setIsAnalyzing(true);
+    if (noteContext) setTargetNoteToAnalyze(noteContext);
     void triggerHaptics('medium');
 
-    const systemPrompt = `You are an executive AI assistant & Cognitive Brain Dump Analyzer. 
-Your goal is to parse raw stream-of-consciousness thoughts and structure them cleanly into JSON format.
-Analyze if any thoughts represent:
-1. Actionable Tasks (one-off items to complete)
-2. Daily or Weekly Habits (recurring behaviors or routines to build)
-3. Calendar Events (scheduled meetings, appointments, or time-specific deadlines)
+    const compileBrainDumpContext = () => {
+      const now = new Date();
+      const formattedNow = format(now, "EEEE, MMMM d, yyyy 'at' hh:mm a");
+      const todayDate = format(now, 'yyyy-MM-dd');
+      const tomorrowDate = format(new Date(now.getTime() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
 
-Return a valid JSON object with the following fields:
+      // Active pending tasks
+      const pendingTasks = tasks
+        .filter((t) => !t.is_completed)
+        .slice(0, 15)
+        .map((t) => `- ${t.title}${t.due_date ? ` (Due: ${t.due_date})` : ''}${t.priority ? ` [Priority: ${t.priority}]` : ''}`)
+        .join('\n');
+
+      // Tracked habits
+      const activeHabits = habits
+        .slice(0, 10)
+        .map((h) => `- ${h.title}${h.frequency ? ` (${h.frequency})` : ''}`)
+        .join('\n');
+
+      // Upcoming events (today & next 7 days)
+      const upcomingEvents = calendarEvents
+        .filter((e) => e.start_time && e.start_time >= todayDate)
+        .slice(0, 10)
+        .map((e) => `- ${e.title} (${e.start_time.slice(0, 16).replace('T', ' ')})`)
+        .join('\n');
+
+      // Existing Note Folders / Projects
+      const folders = noteFolders.map((f) => f.name).join(', ');
+
+      // Quran Progress
+      let quranPage: string | null = null;
+      try {
+        quranPage = localStorage.getItem('quran_active_page_v1');
+      } catch {}
+
+      return `
+### Current Time & Context:
+- Current Timestamp: ${formattedNow}
+- Today's Date: ${todayDate}
+- Tomorrow's Date: ${tomorrowDate}
+${quranPage ? `- Active Quran Reading/Memorization Page: Page ${quranPage}` : ''}
+${folders ? `- Available Project/Note Folders: ${folders}` : ''}
+
+### User's Current Workspace State:
+**Active Tasks (${tasks.filter((t) => !t.is_completed).length} pending):**
+${pendingTasks || '(No pending tasks)'}
+
+**Tracked Daily/Weekly Habits:**
+${activeHabits || '(No habits tracked yet)'}
+
+**Upcoming Calendar Events:**
+${upcomingEvents || '(No upcoming events scheduled)'}
+`.trim();
+    };
+
+    const contextSummary = compileBrainDumpContext();
+
+    const systemPrompt = `You are lifeOS Cognitive Classifier & Executive Day Planner.
+You understand English and Egyptian Arabic dialect (اللهجة المصرية) as well as Franco-Arabic.
+Your goal is to parse raw stream-of-consciousness thoughts and classify them accurately with FULL CONTEXT of what the user is currently doing.
+
+You have access to the user's current date/time, active tasks, habits, calendar events, and note folders.
+
+Instructions:
+1. Contextual Awareness:
+   - When the user mentions relative time like "tomorrow", "tonight", "this Friday", "next week", "النهارده", "بكره", compute exact dates in "YYYY-MM-DD" based on today (${format(new Date(), 'yyyy-MM-dd')}).
+   - Cross-reference with existing tasks and habits to avoid duplicate items or to create relevant follow-ups.
+   - If the thought relates to Quran memorization, reading, fitness, work, studies, or personal life, classify it into the appropriate action category.
+2. Structure:
+   - "tasks": Discrete actionable tasks to do (with realistic priority high/medium/low and computed due date).
+   - "habits": Recurring daily or weekly routines/habits to build (frequency Daily or Weekly).
+   - "events": Meetings, appointments, or time-blocked events (with date YYYY-MM-DD, time HH:mm, and description).
+   - "projects_or_notes": Long-term ideas, reflections, project outlines, or takeaways.
+3. Return JSON ONLY matching this exact schema:
 {
-  "summary": "1-2 sentence core summary of the thoughts",
+  "summary": "1-2 sentence core summary of the thoughts in context of current work",
   "clarity_score": number from 1 to 100 representing mental clarity/structure,
   "sentiment_or_mood": "Short label (e.g. Focused, Overwhelmed, Creative, Ambitious, Restless, Pragmatic)",
   "insights": ["Array of key realizations or takeaways"],
@@ -168,23 +350,44 @@ Return a valid JSON object with the following fields:
 }
 Return JSON ONLY. No markdown wrapping or conversational text.`;
 
-    const userPrompt = `Here is the user's raw brain dump text:\n\n"${textToAnalyze}"`;
+    const userPrompt = `### User Workspace Context:\n${contextSummary}\n\n### Raw Brain Dump to Classify & Organize:\n"""\n${textToAnalyze}\n"""`;
 
     try {
       const resText = await askAI(systemPrompt, userPrompt, true);
       const parsed = extractJSON(resText) as BrainDumpAnalysis;
       parsed.analyzed_at = new Date().toISOString();
       setAnalysis(parsed);
+
       if (parsed.tasks && parsed.tasks.length > 0) {
         setSelectedTaskIndexes(new Set(parsed.tasks.map((_, i) => i)));
       }
+
+      // If we analyzed a specific note, attach the analysis to the note in DB
+      if (noteContext) {
+        await updateNote.mutateAsync({
+          id: noteContext.id,
+          data: {
+            ai_analysis: parsed,
+          },
+        });
+      }
+
       void triggerHaptics('success');
+      setActiveTab('plan');
     } catch (err: any) {
       console.error('Brain dump AI analysis failed:', err);
-      setErrorMsg(err.message || 'Failed to analyze thoughts. Please check your AI API key in Settings.');
+      setErrorMsg(err.message || 'Failed to organize thoughts. Please check your AI API key in Settings.');
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Analyze selected notes in batch
+  const handleBatchAnalyzeSelected = () => {
+    if (selectedNoteIds.size === 0) return;
+    const selectedNotes = brainDumpNotes.filter((n) => selectedNoteIds.has(n.id));
+    const combinedText = selectedNotes.map((n) => `--- Thought Note (${n.note_date || 'Undated'}) ---\n${n.body}`).join('\n\n');
+    void handleAnalyzeText(combinedText, null);
   };
 
   const handleExportSelectedTasks = async () => {
@@ -251,338 +454,489 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
     }
   };
 
-  const handleSaveAsNote = async () => {
-    if (!rawText.trim()) return;
-    const titleFirstLine = rawText.trim().split(/\r?\n/)[0]?.slice(0, 60) || 'Brain Dump';
-    const title = analysis?.summary ? `Brain Dump: ${analysis.summary.slice(0, 50)}...` : `Brain Dump: ${titleFirstLine}`;
-    
-    try {
-      const created = await createNote.mutateAsync({
-        title,
-        body: rawText,
-        note_date: new Date().toISOString().slice(0, 10),
-        is_brain_dump: true,
-        ai_analysis: analysis || undefined,
-        folder_id: null,
-      });
-      setSavedAsNoteSuccess(true);
-      void triggerHaptics('success');
-      if (onSavedNote) onSavedNote(created.id);
-      setTimeout(() => setSavedAsNoteSuccess(false), 2500);
-    } catch (err) {
-      console.error('Save as note failed:', err);
-    }
-  };
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Cognitive Brain Dump" className="max-w-3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Cognitive Brain Dump & Thought Vault" className="max-w-3xl">
       <div className="space-y-4">
-        {/* Header & Status */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs border-b border-border pb-2">
-          <div className="flex items-center gap-1.5 font-medium text-foreground">
-            <Brain size={16} className="text-purple-500 animate-pulse" />
-            <span>Unstructured Thought & Auto-Classifier</span>
+        {/* Navigation Tabs Header */}
+        <div className="flex items-center justify-between border-b border-border pb-2.5 flex-wrap gap-2">
+          {/* iOS Segmented Navigation Pills */}
+          <div className="flex items-center p-1 bg-secondary/60 rounded-xl border border-border text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setActiveTab('capture')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                activeTab === 'capture'
+                  ? "bg-card text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <PenTool size={13} />
+              <span>Quick Dump</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('inbox')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                activeTab === 'inbox'
+                  ? "bg-card text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Inbox size={13} />
+              <span>Thought Inbox</span>
+              {unprocessedNotes.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold">
+                  {unprocessedNotes.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('plan')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                activeTab === 'plan'
+                  ? "bg-card text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Brain size={13} />
+              <span>AI Organizer</span>
+              {analysis && (
+                <span className="ml-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              )}
+            </button>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-2 text-xs">
             <button
               type="button"
               onClick={() => setShowIosGuide((v) => !v)}
-              className="text-xs text-primary font-medium flex items-center gap-1 hover:underline"
+              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
             >
               <Smartphone size={13} />
-              iOS Back Tap Setup
+              <span className="hidden sm:inline">Back Tap</span>
               {showIosGuide ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
             </button>
-            {aiEnabled ? (
+            {aiEnabled && (
               <span className="flex items-center gap-1 text-emerald-500 font-medium">
-                <ShieldCheck size={14} /> AI Ready
+                <ShieldCheck size={13} /> AI
               </span>
-            ) : (
-              <span className="text-amber-500">AI disabled in settings</span>
             )}
           </div>
         </div>
 
-        {/* Expandable iOS Back Tap Setup Guide */}
+        {/* Expandable iOS Back Tap Guide */}
         <AnimatePresence>
           {showIosGuide && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-purple-500/10 border border-purple-500/20 rounded-xl p-3.5 text-xs space-y-2 text-foreground"
+              className="overflow-hidden bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-xs space-y-2 text-foreground"
             >
-              <div className="flex items-center gap-2 font-bold text-purple-600 dark:text-purple-400">
-                <Zap size={15} /> Quick Setup: iOS Triple-Tap Back to Brain Dump
+              <div className="flex items-center gap-1.5 font-bold text-purple-600 dark:text-purple-400">
+                <Zap size={14} /> iOS Triple-Tap Back Setup
               </div>
-              <ol className="list-decimal list-inside space-y-1 text-muted-foreground leading-relaxed">
-                <li>Open the <strong>Shortcuts</strong> app on your iPhone and create a new Shortcut.</li>
-                <li>Add the <strong>"Open URLs"</strong> action to your shortcut.</li>
-                <li>
-                  Set the URL input to:{' '}
-                  <code className="px-1.5 py-0.5 bg-background border border-border rounded font-mono text-[11px] select-all text-primary">
-                    lifeos://braindump?text=
-                  </code>
-                </li>
-                <li>Go to iPhone <strong>Settings &gt; Accessibility &gt; Touch &gt; Back Tap</strong>.</li>
-                <li>Select <strong>Triple Tap</strong> (or Double Tap) and assign your new Shortcut!</li>
-              </ol>
-              <p className="text-[11px] text-muted-foreground italic">
-                Now triple-tapping the back of your iPhone instantly opens LifeOS and triggers the Brain Dump processor!
+              <p className="text-muted-foreground leading-relaxed">
+                Create a Shortcut with <strong>Open URLs</strong>: <code className="px-1 py-0.5 bg-background border border-border rounded font-mono text-[11px] text-primary">lifeos://braindump?text=</code>. Assign to <strong>Settings &gt; Accessibility &gt; Touch &gt; Back Tap</strong>.
               </p>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Text Input Area */}
-        <div>
-          <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1 block">
-            Raw Stream of Consciousness
-          </label>
-          <div className="relative">
-            <textarea
-              value={rawText}
-              onChange={(e) => setRawText(e.target.value)}
-              placeholder="Type or dictate anything... e.g. 'Call doctor tomorrow at 3pm, need to drink more water daily, remind me to check flight bookings'"
-              className="w-full h-36 p-3.5 text-sm rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary focus:outline-none resize-none leading-relaxed"
-            />
-            <button
-              type="button"
-              onClick={handleSpeechDictation}
-              className={cn(
-                "absolute bottom-3 right-3 p-2 rounded-full border transition-all active:scale-95",
-                isListening
-                  ? "bg-rose-500 text-white border-rose-600 animate-pulse"
-                  : "bg-secondary text-muted-foreground hover:text-foreground border-border"
-              )}
-              title="Toggle Voice Dictation"
-            >
-              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-            </button>
-          </div>
-        </div>
-
-        {errorMsg && (
-          <div className="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs">
-            {errorMsg}
+        {/* Save Toast Feedback */}
+        {saveSuccessMsg && (
+          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2 animate-in fade-in">
+            <CheckCircle2 size={15} />
+            <span>{saveSuccessMsg}</span>
           </div>
         )}
 
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-          <div className="flex gap-2">
-            <Button
-              type="button"
-              onClick={() => void handleAnalyzeText(rawText)}
-              disabled={isAnalyzing || !rawText.trim() || !aiEnabled}
-              className="gap-2 text-xs h-9 bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              {isAnalyzing ? <Loader2 size={15} className="animate-spin" /> : <Sparkles size={15} />}
-              {isAnalyzing ? 'Analyzing Thoughts...' : 'Auto-Analyze & Classify'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleSaveAsNote}
-              disabled={!rawText.trim() || createNote.isPending}
-              className="gap-1.5 text-xs h-9"
-            >
-              <Save size={15} />
-              {savedAsNoteSuccess ? 'Saved to Notes!' : 'Save to Notes'}
-            </Button>
-          </div>
-
-          <span className="text-xs text-muted-foreground">
-            {rawText.trim() ? `${rawText.trim().split(/\s+/).length} words` : 'Empty'}
-          </span>
-        </div>
-
-        {/* AI Analysis Output Section */}
-        <AnimatePresence>
-          {analysis && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              className="mt-6 p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 space-y-4"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-purple-500/10 pb-3">
+        {/* TAB 1: QUICK CAPTURE */}
+        {activeTab === 'capture' && (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Instant Stream of Consciousness
+                </label>
                 <div className="flex items-center gap-2">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-600 text-white">
-                    Clarity: {analysis.clarity_score ?? 80}/100
-                  </span>
-                  {analysis.sentiment_or_mood && (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-secondary border border-border text-foreground">
-                      Mood: {analysis.sentiment_or_mood}
-                    </span>
-                  )}
+                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={appendToToday}
+                      onChange={(e) => setAppendToToday(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5"
+                    />
+                    <span>Append to Today's Journal</span>
+                  </label>
                 </div>
-                <span className="text-[11px] text-muted-foreground">
-                  Processed
-                </span>
               </div>
 
-              {analysis.summary && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Executive Summary</h4>
-                  <p className="text-sm text-foreground font-medium leading-relaxed">{analysis.summary}</p>
-                </div>
-              )}
+              <div className="relative">
+                <textarea
+                  value={rawText}
+                  onChange={(e) => setRawText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Dump any thought, task, or realization without friction... (Press ⌘+Enter to save instantly)"
+                  className="w-full h-44 p-3.5 text-sm rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary focus:outline-none resize-none leading-relaxed"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleSpeechDictation}
+                  className={cn(
+                    "absolute bottom-3 right-3 p-2 rounded-full border transition-all active:scale-95",
+                    isListening
+                      ? "bg-rose-500 text-white border-rose-600 animate-pulse"
+                      : "bg-secondary text-muted-foreground hover:text-foreground border-border"
+                  )}
+                  title="Toggle Voice Dictation"
+                >
+                  {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                </button>
+              </div>
+            </div>
 
-              {/* 📌 SUGGESTED TASKS */}
-              {analysis.tasks && analysis.tasks.length > 0 && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                      <CheckCircle2 size={14} className="text-blue-500" />
-                      Detected Tasks ({analysis.tasks.length})
-                    </h4>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="secondary"
-                      onClick={handleExportSelectedTasks}
-                      disabled={selectedTaskIndexes.size === 0 || createTask.isPending}
-                      className="text-xs h-7 gap-1"
+            {/* Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+              <div className="text-[11px] text-muted-foreground">
+                Shortcut: <kbd className="px-1.5 py-0.5 rounded bg-secondary border border-border font-mono text-[10px]">⌘ + Enter</kbd>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActiveTab('plan');
+                    void handleAnalyzeText(rawText);
+                  }}
+                  disabled={!rawText.trim() || isAnalyzing}
+                  className="text-xs gap-1.5"
+                >
+                  <Sparkles size={13} className="text-purple-400" />
+                  <span>Organize with AI Now</span>
+                </Button>
+
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleQuickSave}
+                  disabled={!rawText.trim()}
+                  className="text-xs gap-1.5 shadow-md font-bold px-4"
+                >
+                  <Zap size={13} />
+                  <span>Quick Save ({appendToToday && todayBrainDumpNote ? 'Append' : 'New'})</span>
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: THOUGHT INBOX */}
+        {activeTab === 'inbox' && (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            {/* Search & Batch Actions Header */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search captured thoughts..."
+                  value={inboxSearch}
+                  onChange={(e) => setInboxSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 bg-secondary/40 border border-border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              {selectedNoteIds.size > 0 && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleBatchAnalyzeSelected}
+                  disabled={isAnalyzing}
+                  className="text-xs gap-1.5 font-bold"
+                >
+                  <Sparkles size={13} />
+                  <span>Organize Selected ({selectedNoteIds.size})</span>
+                </Button>
+              )}
+            </div>
+
+            {/* Thoughts List */}
+            <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+              {filteredInboxNotes.length === 0 ? (
+                <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                  No brain dump thoughts found. Use Quick Dump to capture your first thought!
+                </div>
+              ) : (
+                filteredInboxNotes.map((note) => {
+                  const isSelected = selectedNoteIds.has(note.id);
+                  const isAnalyzed = Boolean(note.ai_analysis);
+
+                  return (
+                    <div
+                      key={note.id}
+                      className={cn(
+                        "p-3 rounded-xl border transition-all flex flex-col gap-2",
+                        isSelected
+                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                          : "bg-secondary/20 border-border hover:bg-secondary/40"
+                      )}
                     >
-                      <Plus size={13} />
-                      {exportedTasksSuccess ? 'Exported!' : `Add ${selectedTaskIndexes.size} to Tasks`}
-                    </Button>
-                  </div>
-                  <div className="space-y-1.5 bg-background/70 p-2.5 rounded-lg border border-border">
-                    {analysis.tasks.map((task, i) => {
-                      const isSelected = selectedTaskIndexes.has(i);
-                      return (
-                        <div
-                          key={i}
-                          onClick={() => {
-                            const next = new Set(selectedTaskIndexes);
-                            if (next.has(i)) next.delete(i);
-                            else next.add(i);
-                            setSelectedTaskIndexes(next);
-                          }}
-                          className={cn(
-                            "flex items-center justify-between p-2 rounded-md text-xs cursor-pointer transition-colors border",
-                            isSelected ? "bg-blue-500/10 border-blue-500/30" : "bg-card border-border hover:bg-secondary/50"
-                          )}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={() => {}}
-                              className="rounded border-border text-primary focus:ring-primary"
-                            />
-                            <span className="font-medium truncate">{task.title}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {task.priority && (
-                              <span className={cn(
-                                "px-1.5 py-0.5 rounded text-[10px] uppercase font-bold",
-                                task.priority === 'high' && "bg-red-500/20 text-red-500",
-                                task.priority === 'medium' && "bg-amber-500/20 text-amber-500",
-                                task.priority === 'low' && "bg-blue-500/20 text-blue-500"
-                              )}>
-                                {task.priority}
-                              </span>
-                            )}
-                            {task.due && (
-                              <span className="text-[10px] text-muted-foreground">{task.due}</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* 🔥 SUGGESTED HABITS */}
-              {analysis.habits && analysis.habits.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Flame size={14} className="text-orange-500" />
-                    Detected Habits to Build ({analysis.habits.length})
-                  </h4>
-                  <div className="space-y-1.5 bg-background/70 p-2.5 rounded-lg border border-border">
-                    {analysis.habits.map((habit, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded-md bg-card border border-border text-xs">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Flame size={14} className="text-orange-500 shrink-0" />
-                          <span className="font-medium truncate">{habit.title}</span>
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-orange-500/10 text-orange-500 font-semibold">
-                            {habit.frequency || 'Daily'}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const newSet = new Set(selectedNoteIds);
+                              if (e.target.checked) newSet.add(note.id);
+                              else newSet.delete(note.id);
+                              setSelectedNoteIds(newSet);
+                            }}
+                            className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-foreground truncate max-w-[240px]">
+                            {note.title}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono">
+                            <Clock size={10} />
+                            {note.note_date?.slice(0, 10)}
                           </span>
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void handleCreateSuggestedHabit(habit.title, habit.frequency)}
-                          disabled={createHabit.isPending || createdHabitTitle === habit.title}
-                          className="text-xs h-7 gap-1"
-                        >
-                          <Plus size={13} />
-                          {createdHabitTitle === habit.title ? 'Added Habit!' : 'Add Habit'}
-                        </Button>
+
+                        <div className="flex items-center gap-1.5">
+                          {isAnalyzed ? (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                              ✓ Organized
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                              Pending
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveTab('plan');
+                              void handleAnalyzeText(note.body, note);
+                            }}
+                            className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            title="Organize this thought note with AI"
+                          >
+                            <Sparkles size={11} />
+                            <span>Organize</span>
+                          </button>
+                        </div>
                       </div>
-                    ))}
+
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                        {note.body}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 3: AI PLANNER & ORGANIZER */}
+        {activeTab === 'plan' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {isAnalyzing && (
+              <div className="p-8 text-center space-y-3 bg-secondary/30 rounded-2xl border border-border">
+                <Loader2 size={28} className="animate-spin text-primary mx-auto" />
+                <div className="text-xs font-bold text-foreground">
+                  AI is analyzing and organizing your thoughts...
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Extracting actionable tasks, recurring habits, calendar events, and key realizations.
+                </p>
+              </div>
+            )}
+
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-destructive/15 border border-destructive/30 text-destructive text-xs font-medium">
+                {errorMsg}
+              </div>
+            )}
+
+            {!isAnalyzing && analysis && (
+              <div className="space-y-4">
+                {/* Clarity & Summary Banner */}
+                <div className="p-3.5 rounded-2xl bg-secondary/30 border border-border flex flex-wrap items-center justify-between gap-3">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-foreground">Clarity Score:</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-mono">
+                        {analysis.clarity_score || 85}/100
+                      </span>
+                      {analysis.sentiment_or_mood && (
+                        <span className="text-[11px] text-muted-foreground">
+                          • Mood: <strong className="text-foreground">{analysis.sentiment_or_mood}</strong>
+                        </span>
+                      )}
+                    </div>
+                    {analysis.summary && (
+                      <p className="text-xs text-muted-foreground italic">"{analysis.summary}"</p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleExportSelectedTasks()}
+                      disabled={selectedTaskIndexes.size === 0}
+                      className="text-xs gap-1.5"
+                    >
+                      <ListTodo size={13} />
+                      <span>Sync Tasks ({selectedTaskIndexes.size})</span>
+                    </Button>
                   </div>
                 </div>
-              )}
 
-              {/* 📅 SUGGESTED CALENDAR EVENTS */}
-              {analysis.events && analysis.events.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <Calendar size={14} className="text-emerald-500" />
-                    Detected Scheduled Events ({analysis.events.length})
-                  </h4>
-                  <div className="space-y-1.5 bg-background/70 p-2.5 rounded-lg border border-border">
-                    {analysis.events.map((evt, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded-md bg-card border border-border text-xs">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Calendar size={14} className="text-emerald-500 shrink-0" />
-                          <div>
-                            <span className="font-medium truncate block">{evt.title}</span>
-                            <span className="text-[10px] text-muted-foreground">
-                              {evt.date || 'Today'} {evt.time ? `at ${evt.time}` : ''}
+                {exportedTasksSuccess && (
+                  <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                    <Check size={14} /> Tasks synced successfully to your Task List!
+                  </div>
+                )}
+
+                {/* 1. Actionable Tasks */}
+                {analysis.tasks && analysis.tasks.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                        <ListTodo size={13} className="text-primary" />
+                        Actionable Tasks ({analysis.tasks.length})
+                      </label>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {analysis.tasks.map((task, idx) => {
+                        const isChecked = selectedTaskIndexes.has(idx);
+                        return (
+                          <div
+                            key={idx}
+                            onClick={() => {
+                              const newSet = new Set(selectedTaskIndexes);
+                              if (isChecked) newSet.delete(idx);
+                              else newSet.add(idx);
+                              setSelectedTaskIndexes(newSet);
+                            }}
+                            className={cn(
+                              "p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer text-xs",
+                              isChecked
+                                ? "bg-primary/10 border-primary/40 text-foreground font-medium"
+                                : "bg-secondary/20 border-border text-muted-foreground"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {}}
+                                className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5"
+                              />
+                              <span>{task.title}</span>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0 font-mono text-[10px]">
+                              {task.due && <span>📅 {task.due}</span>}
+                              <span className="uppercase px-1.5 py-0.5 rounded bg-secondary border border-border">
+                                {task.priority || 'med'}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Suggested Habits */}
+                {analysis.habits && analysis.habits.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Flame size={13} className="text-amber-500" />
+                      Suggested Habits ({analysis.habits.length})
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {analysis.habits.map((habit, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2.5 rounded-xl border border-border bg-secondary/20 flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-semibold text-foreground truncate block">{habit.title}</span>
+                            <span className="text-[10px] text-muted-foreground">{habit.frequency} habit</span>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCreateSuggestedHabit(habit.title, habit.frequency)}
+                            className="h-7 text-[11px] px-2 shrink-0"
+                          >
+                            <Plus size={11} /> Add
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Suggested Calendar Events */}
+                {analysis.events && analysis.events.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <Calendar size={13} className="text-indigo-400" />
+                      Scheduled Events ({analysis.events.length})
+                    </label>
+                    <div className="space-y-1.5">
+                      {analysis.events.map((ev, idx) => (
+                        <div
+                          key={idx}
+                          className="p-2.5 rounded-xl border border-border bg-secondary/20 flex items-center justify-between gap-2 text-xs"
+                        >
+                          <div className="min-w-0">
+                            <span className="font-semibold text-foreground block">{ev.title}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">
+                              {ev.date || 'Today'} {ev.time ? `• ${ev.time}` : ''}
                             </span>
                           </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCreateSuggestedEvent(ev)}
+                            className="h-7 text-[11px] px-2 shrink-0"
+                          >
+                            <Calendar size={11} /> Schedule
+                          </Button>
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => void handleCreateSuggestedEvent(evt)}
-                          disabled={createCalendarEvent.isPending || createdEventTitle === evt.title}
-                          className="text-xs h-7 gap-1"
-                        >
-                          <Plus size={13} />
-                          {createdEventTitle === evt.title ? 'Added Event!' : 'Add Event'}
-                        </Button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
 
-              {analysis.insights && analysis.insights.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">Key Insights & Takeaways</h4>
-                  <ul className="space-y-1.5 text-xs text-muted-foreground">
-                    {analysis.insights.map((insight, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <span className="text-purple-500 font-bold">•</span>
-                        <span>{insight}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {!isAnalyzing && !analysis && (
+              <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl space-y-2">
+                <Brain size={24} className="mx-auto text-purple-400" />
+                <p>No active analysis. Pick thoughts from your <strong>Thought Inbox</strong> or type text in <strong>Quick Dump</strong> to organize with AI.</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   );
