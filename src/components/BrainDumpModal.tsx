@@ -926,6 +926,48 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                     </div>
                   </div>
                 )}
+
+                {/* 4. Structured Ideas & Project Outlines */}
+                {analysis.projects_or_notes && analysis.projects_or_notes.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <PenTool size={13} className="text-purple-400" />
+                      Captured Ideas & Outlines ({analysis.projects_or_notes.length})
+                    </label>
+                    <div className="space-y-2">
+                      {analysis.projects_or_notes.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className="p-3 rounded-xl border border-border bg-secondary/20 space-y-1.5 text-xs"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="font-bold text-foreground">{item.title}</span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={async () => {
+                                await createNote.mutateAsync({
+                                  title: item.title,
+                                  body: item.content,
+                                  note_date: todayStr,
+                                  is_brain_dump: false,
+                                });
+                                setSaveSuccessMsg(`Converted "${item.title}" into a dedicated Note!`);
+                                setTimeout(() => setSaveSuccessMsg(null), 3000);
+                              }}
+                              className="h-6 text-[10px] px-2 shrink-0"
+                            >
+                              <Plus size={10} /> Save as Note
+                            </Button>
+                          </div>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                            {item.content}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

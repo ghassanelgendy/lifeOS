@@ -188,15 +188,14 @@ function AppInner() {
           if (userNotes && userNotes.length > 0) {
             const yesterdayBrainDump = userNotes.find((n) => !n.ai_analysis && n.body && n.body.trim().length > 10);
             if (yesterdayBrainDump && store.aiEnabled) {
-              const systemPrompt = `You are lifeOS Cognitive Organizer. Summarize and organize this unorganized midnight brain dump note into a clean structured journal entry with bullet points and action items. Return JSON: {"summary": "...", "tasks": [{"title": "..."}], "insights": ["..."]}`;
+              const systemPrompt = `You are lifeOS Cognitive Organizer. Analyze this unorganized raw brain dump. Classify all ideas into suggested categories (tasks, habits, calendar events, ideas/notes) with key takeaways. Return JSON: {"summary": "...", "clarity_score": 85, "tasks": [{"title": "...", "priority": "medium"}], "habits": [{"title": "...", "frequency": "Daily"}], "events": [{"title": "...", "date": "${todayDate}"}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
               const resText = await askAI(systemPrompt, yesterdayBrainDump.body, true);
               const parsed = extractJSON(resText);
               await supabase.from('notes').update({ ai_analysis: parsed }).eq('id', yesterdayBrainDump.id);
             }
           }
 
-          // Create fresh empty brain dump note for the new day
-          const firstLine = 'Midnight Journal';
+          // Create fresh empty brain dump journal for the new day
           await supabase.from('notes').insert({
             title: `Brain Dump Journal (${todayDate})`,
             body: `**🕒 12:00 AM:**\nNew Day Started. Capture your thoughts...`,
