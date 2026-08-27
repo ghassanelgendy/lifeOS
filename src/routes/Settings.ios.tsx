@@ -51,7 +51,7 @@ import { Link } from 'react-router-dom';
 import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
-import { sendTestNotification } from '../lib/nativeBridge';
+import { AISettingsSection } from '../components/AISettingsSection';
 import { Capacitor } from '@capacitor/core';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
@@ -756,86 +756,8 @@ export default function SettingsPage() {
             </section>
           </div>
 
-          {/* AI Integration Settings Section */}
-          <section id="settings-ai" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-primary" />
-                <h2 className="font-semibold">AI Integration (Optional)</h2>
-                {aiSaved && (
-                  <span className="flex items-center gap-1 text-xs font-semibold text-emerald-500 animate-in fade-in slide-in-from-left-2 duration-300">
-                    <Check size={12} />
-                    Saved
-                  </span>
-                )}
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={aiEnabled}
-                  onChange={(e) => setAiEnabled(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary animate-gpu"></div>
-                <span className="ml-2 text-xs font-semibold text-muted-foreground">
-                  {aiEnabled ? 'Enabled' : 'Disabled'}
-                </span>
-              </label>
-            </div>
-            <div className="p-4 space-y-4">
-              <div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Configure your optional AI Assistant utilizing Bynara or any OpenAI-compatible router. This powers smart NLP Quick-Add, subtask generators, note summaries, SMS expense parses, and correlation metrics.
-                </p>
-              </div>
-
-              {aiEnabled && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                        API Key
-                      </label>
-                      <Input
-                        type="password"
-                        placeholder="sk-nry-..."
-                        value={aiApiKey}
-                        onChange={handleAiFieldChange(setAiApiKey)}
-                        className="w-full bg-secondary/30 border-border h-10 rounded-lg text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                        Base URL
-                      </label>
-                      <Input
-                        type="text"
-                        placeholder="https://router.bynara.id/v1"
-                        value={aiBaseUrl}
-                        onChange={handleAiFieldChange(setAiBaseUrl)}
-                        className="w-full bg-secondary/30 border-border h-10 rounded-lg text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-                      AI Model
-                    </label>
-                    <select
-                      value={aiModel}
-                      onChange={handleAiFieldChange(setAiModel)}
-                      className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring text-sm h-10"
-                    >
-                      <option value="MiniMaxAI/MiniMax-M2.7">MiniMax M2.7 (Default, Recommended)</option>
-                      <option value="moonshotai/Kimi-K2.6">Kimi K2.6 (High Intelligence)</option>
-                      <option value="zai-org/GLM-5.2-FP8">GLM 5.2 (Fast Reasoning)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
+          {/* AI Integration & Model Fallbacks Section */}
+          <AISettingsSection isIOS={true} />
 
           {/* Task reminders (push notifications) */}
           <section id="settings-notifications" className="liquid-glass-card overflow-hidden scroll-mt-20">

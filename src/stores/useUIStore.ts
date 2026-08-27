@@ -202,10 +202,18 @@ interface UIState {
   aiApiKey: string;
   aiBaseUrl: string;
   aiModel: string;
+  aiBynaraApiKey: string;
+  aiDahlApiKey: string;
+  aiFallbackEnabled: boolean;
+  aiActiveModel: string;
   setAiEnabled: (enabled: boolean) => void;
   setAiApiKey: (key: string) => void;
   setAiBaseUrl: (url: string) => void;
   setAiModel: (model: string) => void;
+  setAiBynaraApiKey: (key: string) => void;
+  setAiDahlApiKey: (key: string) => void;
+  setAiFallbackEnabled: (enabled: boolean) => void;
+  setAiActiveModel: (model: string) => void;
 }
 
 /** Serializable UI preferences (localStorage + Supabase). */
@@ -260,6 +268,10 @@ export type PersistedUiSlice = {
   aiApiKey: string;
   aiBaseUrl: string;
   aiModel: string;
+  aiBynaraApiKey: string;
+  aiDahlApiKey: string;
+  aiFallbackEnabled: boolean;
+  aiActiveModel: string;
 };
 
 export const useUIStore = create<UIState>()(
@@ -438,14 +450,22 @@ export const useUIStore = create<UIState>()(
       setTasksUseModalForCreate: (tasksUseModalForCreate) => set({ tasksUseModalForCreate }),
 
       // AI Default values & Setters
-      aiEnabled: Boolean(import.meta.env.VITE_AI_API_KEY),
+      aiEnabled: Boolean(import.meta.env.VITE_AI_API_KEY || import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_AI_BYNARA_API_KEY || import.meta.env.VITE_DAHL_KEY || import.meta.env.VITE_BYNARA_KEY),
       aiApiKey: import.meta.env.VITE_AI_API_KEY || '',
-      aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://inference.dahl.global/v1',
-      aiModel: import.meta.env.VITE_AI_MODEL || 'MiniMaxAI/MiniMax-M2.7',
+      aiBaseUrl: import.meta.env.VITE_AI_BASE_URL || 'https://router.bynara.id/v1',
+      aiModel: import.meta.env.VITE_AI_MODEL || 'auto',
+      aiBynaraApiKey: import.meta.env.VITE_AI_BYNARA_API_KEY || import.meta.env.VITE_BYNARA_KEY || '',
+      aiDahlApiKey: import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_DAHL_KEY || '',
+      aiFallbackEnabled: true,
+      aiActiveModel: 'deepseek-v4-flash',
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       setAiApiKey: (aiApiKey) => set({ aiApiKey, ...(aiApiKey.trim() ? { aiEnabled: true } : {}) }),
       setAiBaseUrl: (aiBaseUrl) => set({ aiBaseUrl }),
       setAiModel: (aiModel) => set({ aiModel }),
+      setAiBynaraApiKey: (aiBynaraApiKey) => set({ aiBynaraApiKey }),
+      setAiDahlApiKey: (aiDahlApiKey) => set({ aiDahlApiKey }),
+      setAiFallbackEnabled: (aiFallbackEnabled) => set({ aiFallbackEnabled }),
+      setAiActiveModel: (aiActiveModel) => set({ aiActiveModel }),
 
       pageWidgetOrder: {
         dashboard: [...DASHBOARD_WIDGET_IDS],
@@ -578,5 +598,9 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     aiApiKey: state.aiApiKey,
     aiBaseUrl: state.aiBaseUrl,
     aiModel: state.aiModel,
+    aiBynaraApiKey: state.aiBynaraApiKey,
+    aiDahlApiKey: state.aiDahlApiKey,
+    aiFallbackEnabled: state.aiFallbackEnabled,
+    aiActiveModel: state.aiActiveModel,
   };
 }
