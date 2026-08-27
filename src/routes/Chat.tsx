@@ -273,14 +273,24 @@ export default function Chat() {
   }, [activeMessages.length, isGenerating]);
 
   const [viewportHeight, setViewportHeight] = useState('100%');
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
-  // iOS keyboard: use visualViewport to dynamically resize container height
+  // iOS keyboard: listen to visualViewport to dynamically elevate input ONLY when typing
   useEffect(() => {
     const vv = window.visualViewport;
     if (!vv) return;
     const update = () => {
-      setViewportHeight(`${vv.height}px`);
-      // Force viewport scroll position to 0 to prevent iOS layout shift bugs
+      const isMobile = typeof window !== 'undefined' && (Capacitor.isNativePlatform() || window.innerWidth < 768);
+      const isKeyboardVisible = window.innerHeight - vv.height > 120;
+      setIsKeyboardOpen(isKeyboardVisible);
+      setKeyboardHeight(isKeyboardVisible ? Math.max(0, window.innerHeight - vv.height) : 0);
+
+      if (isMobile) {
+        setViewportHeight(`${vv.height}px`);
+      } else {
+        setViewportHeight('100%');
+      }
       window.scrollTo(0, 0);
     };
     update();
@@ -975,10 +985,15 @@ ${knowledgeContext}`;
         </div>
       </main>
 
-      {/* FLOATING LIQUID GLASS CHAT INPUT CAPSULE (Matching Bottom Bar & Audio Player) */}
+      {/* FLOATING LIQUID GLASS CHAT INPUT CAPSULE (Fixed to bottom on PC, Elevated on Mobile ONLY when typing) */}
       <footer
         ref={footerRef}
-        className="fixed z-30 bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[92%] max-w-[480px] md:max-w-3xl rounded-[34px] px-2 sm:px-3 py-1.5 bg-card/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-border/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex items-center gap-1.5 sm:gap-2 transition-all"
+        style={{
+          bottom: isKeyboardOpen ? `${keyboardHeight + 12}px` : 'calc(16px + env(safe-area-inset-bottom))',
+        }}
+        className={cn(
+          "fixed z-30 left-1/2 -translate-x-1/2 w-[92%] max-w-[480px] md:max-w-3xl rounded-[34px] px-2 sm:px-3 py-1.5 bg-card/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-border/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex items-center gap-1.5 sm:gap-2 transition-all duration-200"
+        )}
       >
         {/* Knowledge Context & Threads Trigger Button */}
         <button

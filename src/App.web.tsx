@@ -166,8 +166,57 @@ function AppInner() {
       };
     }
 
+    // Midnight Automated Brain Dump Note Creation & AI Organization
+    const scheduleMidnightBrainDumpCheck = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(24, 0, 0, 0); // Next 12:00 AM
+      const msUntilMidnight = midnight.getTime() - now.getTime();
+
+      return setTimeout(async () => {
+        try {
+          const todayDate = new Date().toISOString().slice(0, 10);
+          const store = useUIStore.getState();
+
+          // Fetch latest notes for user
+          const { data: userNotes } = await supabase
+            .from('notes')
+            .select('*')
+            .eq('is_brain_dump', true)
+            .order('created_at', { ascending: false });
+
+          if (userNotes && userNotes.length > 0) {
+            const yesterdayBrainDump = userNotes.find((n) => !n.ai_analysis && n.body && n.body.trim().length > 10);
+            if (yesterdayBrainDump && store.aiEnabled) {
+              const systemPrompt = `You are lifeOS Cognitive Organizer. Summarize and organize this unorganized midnight brain dump note into a clean structured journal entry with bullet points and action items. Return JSON: {"summary": "...", "tasks": [{"title": "..."}], "insights": ["..."]}`;
+              const resText = await askAI(systemPrompt, yesterdayBrainDump.body, true);
+              const parsed = extractJSON(resText);
+              await supabase.from('notes').update({ ai_analysis: parsed }).eq('id', yesterdayBrainDump.id);
+            }
+          }
+
+          // Create fresh empty brain dump note for the new day
+          const firstLine = 'Midnight Journal';
+          await supabase.from('notes').insert({
+            title: `Brain Dump Journal (${todayDate})`,
+            body: `**🕒 12:00 AM:**\nNew Day Started. Capture your thoughts...`,
+            note_date: todayDate,
+            is_brain_dump: true,
+          });
+        } catch (e) {
+          console.error('Midnight brain dump auto-organize failed:', e);
+        } finally {
+          // Re-schedule for next midnight
+          scheduleMidnightBrainDumpCheck();
+        }
+      }, msUntilMidnight);
+    };
+
+    const midnightTimer = scheduleMidnightBrainDumpCheck();
+
     return () => {
       clearInterval(pollInterval);
+      clearTimeout(midnightTimer);
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
