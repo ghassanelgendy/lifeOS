@@ -271,13 +271,16 @@ export function AppShell() {
     setSlideDirection(dir);
   }, [location.pathname, currentIndex]);
 
+  const isOnQuran = location.pathname.startsWith('/quran');
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (isOnQuran) return;
     const t = e.touches[0];
     touchStart.current = { x: t.clientX, y: t.clientY };
-  }, []);
+  }, [isOnQuran]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!touchStart.current) return;
+    if (isOnQuran || !touchStart.current) return;
     const t = e.touches[0];
     const deltaX = t.clientX - touchStart.current.x;
     const deltaY = t.clientY - touchStart.current.y;
@@ -286,10 +289,10 @@ export function AppShell() {
     if (horizontalSwipe && fromLeftEdge) {
       e.preventDefault();
     }
-  }, []);
+  }, [isOnQuran]);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (!touchStart.current) return;
+    if (isOnQuran || !touchStart.current) return;
     const t = e.changedTouches[0];
     const deltaX = t.clientX - touchStart.current.x;
     const deltaY = t.clientY - touchStart.current.y;
@@ -324,7 +327,7 @@ export function AppShell() {
       navigate(mobileNavigationMapped[currentIndex + 1].href);
     }
     touchStart.current = null;
-  }, [isOnTasks, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
+  }, [isOnTasks, isOnQuran, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">

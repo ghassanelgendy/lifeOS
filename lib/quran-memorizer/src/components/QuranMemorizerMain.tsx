@@ -378,7 +378,11 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   return (
     <div dir="rtl" className="flex flex-col font-arabic-body text-right">
       {/* Native iOS Segmented Control Navbar */}
-      <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/30 px-3 py-2.5 -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4">
+      <header
+        className={`sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/30 px-3 py-2.5 -mx-4 md:-mx-6 -mt-4 md:-mt-6 ${
+          activeTab === 'reader' ? 'mb-2 sm:mb-3' : 'mb-4'
+        }`}
+      >
         <div className="max-w-2xl mx-auto w-full">
           {/* iOS Native Segmented Tabs Pill */}
           <div dir="rtl" className="w-full grid grid-cols-4 bg-muted/60 p-1 rounded-2xl border border-border/50 shadow-inner">
@@ -475,7 +479,11 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         )}
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-6 pb-36 md:pb-40 text-right space-y-6">
+      <main
+        className={`flex-1 max-w-6xl w-full mx-auto pb-32 md:pb-40 text-right ${
+          activeTab === 'reader' ? 'p-1.5 sm:p-4 md:p-6 space-y-3' : 'p-4 md:p-6 space-y-6'
+        }`}
+      >
         {activeTab === 'khatmah' && (
           <KhatmahPlannerView
             linkedTasks={linkedTasks}

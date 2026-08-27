@@ -334,10 +334,11 @@ export function AppShell() {
   }, [location.pathname]);
 
   const gestureContainerRef = useRef<HTMLDivElement>(null);
+  const isOnQuran = location.pathname.startsWith('/quran');
 
   useEffect(() => {
     const container = gestureContainerRef.current;
-    if (!container) return;
+    if (!container || isOnQuran) return;
 
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -382,7 +383,7 @@ export function AppShell() {
       container.removeEventListener('touchmove', onTouchMove);
       container.removeEventListener('touchend', onTouchEnd);
     };
-  }, [isOnTasks, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
+  }, [isOnTasks, isOnQuran, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">
