@@ -59,6 +59,21 @@ function noteTitle(title: string, body: string): string {
   return firstLine ? firstLine.slice(0, 80) : 'New Note';
 }
 
+function cleanMarkdownPreview(text: string | null | undefined): string {
+  if (!text) return 'No content...';
+  return text
+    .replace(/#{1,6}\s+/g, '') // remove headers #, ##, ###
+    .replace(/\*\*(.*?)\*\*/g, '$1') // remove bold **text**
+    .replace(/\*(.*?)\*/g, '$1') // remove italics *text*
+    .replace(/__(.*?)__/g, '$1') // remove underline __text__
+    .replace(/`{1,3}(.*?)`{1,3}/g, '$1') // remove code ticks
+    .replace(/\[(.*?)\]\(.*?\)/g, '$1') // remove markdown links [text](url)
+    .replace(/^>\s+/gm, '') // remove blockquotes
+    .replace(/^[-*+]\s+/gm, '• ') // clean list bullets
+    .replace(/^\d+\.\s+/gm, '') // clean numbered lists
+    .trim();
+}
+
 function formatNoteDate(value: string | null | undefined): string {
   if (!value) return '';
   try {
@@ -499,7 +514,7 @@ export default function NotesIOS() {
                                 </h3>
                               </div>
                               <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 leading-relaxed whitespace-pre-wrap">
-                                {note.body || 'No content...'}
+                                {cleanMarkdownPreview(note.body)}
                               </p>
                               <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground">
                                 <span>{formatNoteDate(note.updated_at || note.note_date)}</span>
@@ -620,18 +635,11 @@ export default function NotesIOS() {
                 ) : (
                   <div
                     className="flex-1 min-h-[14rem] p-4 rounded-xl border border-border bg-card prose prose-sm dark:prose-invert max-w-none select-text note-selectable cursor-text"
-                    onClick={(e) => {
-                      const selection = window.getSelection();
-                      if (!selection || selection.toString().length === 0) {
-                        if ((e.target as HTMLElement).tagName === 'DIV') {
-                          setIsEditing(true);
-                        }
-                      }
-                    }}
+                    onDoubleClick={() => setIsEditing(true)}
                     dangerouslySetInnerHTML={{
                       __html: draftBody
                         ? (marked.parse(draftBody) as string)
-                        : '<p class="text-muted-foreground italic">Tap to edit note...</p>',
+                        : '<p class="text-muted-foreground italic">Double tap or tap Edit above to write...</p>',
                     }}
                   />
                 )}

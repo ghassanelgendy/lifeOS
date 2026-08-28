@@ -115,16 +115,52 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     return 1;
   });
 
-  const [reciter, setReciter] = useState<Reciter>(RECITERS[0]);
+  const QURAN_SETTINGS_KEY = 'quran_audio_settings_v1';
+
+  const [reciter, setReciter] = useState<Reciter>(() => {
+    try {
+      const saved = localStorage.getItem(QURAN_SETTINGS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.reciterId) {
+          const found = RECITERS.find((r) => r.id === parsed.reciterId);
+          if (found) return found;
+        }
+      }
+    } catch {}
+    return RECITERS[0];
+  });
 
   // Repeat & Blind mode settings
-  const [repeatSettings, setRepeatSettings] = useState<RepeatSettings>({
-    verseRepeats: 3,
-    rangeRepeats: 1,
-    delaySeconds: 2,
-    autoAdvance: true,
-    blindMode: false,
+  const [repeatSettings, setRepeatSettings] = useState<RepeatSettings>(() => {
+    try {
+      const saved = localStorage.getItem(QURAN_SETTINGS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.repeatSettings) return parsed.repeatSettings;
+      }
+    } catch {}
+    return {
+      verseRepeats: 1,
+      rangeRepeats: 1,
+      delaySeconds: 0,
+      autoAdvance: true,
+      blindMode: false,
+    };
   });
+
+  // Persist Audio & Repeat Settings whenever changed
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        QURAN_SETTINGS_KEY,
+        JSON.stringify({
+          reciterId: reciter.id,
+          repeatSettings,
+        })
+      );
+    } catch {}
+  }, [reciter, repeatSettings]);
 
   const memorizerStore = useQuranMemorizer();
 
@@ -135,7 +171,21 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setSelectedSurah(surahNum);
     setStartAyah(1);
     const meta = SURAHS.find((s) => s.id === surahNum);
-    setEndAyah(meta ? Math.min(meta.versesCount, 7) : 7);
+    setEndAyah(meta ? meta.versesCount : 7);
+  };
+
+  // Quick Preset: Play entire Surah with pause & no repetition
+  const handlePlayFullSurah = (delaySec = 2) => {
+    const meta = SURAHS.find((s) => s.id === selectedSurah) || SURAHS[0];
+    setStartAyah(1);
+    setEndAyah(meta.versesCount);
+    setRepeatSettings((prev) => ({
+      ...prev,
+      verseRepeats: 1,
+      rangeRepeats: 1,
+      delaySeconds: delaySec,
+      autoAdvance: true,
+    }));
   };
 
   // Audio Hook

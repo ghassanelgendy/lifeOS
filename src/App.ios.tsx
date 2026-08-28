@@ -279,11 +279,81 @@ function AppInner() {
       }
     };
 
+    // Catch-up & Midnight Automated Brain Dump Note AI Organization on iOS
+    const getLocalDateString = () => {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const processYesterdayUnorganizedBrainDumps = async () => {
+      try {
+        const todayStr = getLocalDateString();
+        const store = useUIStore.getState();
+
+        const { data: existingFolders } = await supabase.from('note_folders').select('*');
+        let orgFolder = (existingFolders || []).find((f: any) => f.name.toLowerCase() === 'organized brain dumps');
+        if (!orgFolder) {
+          const { data: createdFolder } = await supabase.from('note_folders').insert({ name: 'Organized Brain Dumps', sort_order: 1 }).select().single();
+          orgFolder = createdFolder;
+        }
+
+        const { data: userNotes } = await supabase
+          .from('notes')
+          .select('*')
+          .eq('is_brain_dump', true)
+          .lt('note_date', todayStr)
+          .is('ai_analysis', null)
+          .order('created_at', { ascending: false });
+
+        if (userNotes && userNotes.length > 0 && store.aiEnabled) {
+          for (const rawDump of userNotes) {
+            if (!rawDump.body || rawDump.body.trim().length < 5) continue;
+            try {
+              const briefSystemPrompt = `You are lifeOS Executive Summarizer. Analyze this brain dump. Produce a BRIEF, CONCISE, bulleted summary of key insights, action points, and ideas. DO NOT extend or add conversational fluff. Keep it strictly focused and brief. Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks": [{"title": "..."}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
+              const resText = await askAI(briefSystemPrompt, rawDump.body, true);
+              const parsed = extractJSON(resText);
+
+              const d = rawDump.note_date ? new Date(rawDump.note_date) : new Date();
+              const organizedTitle = `${d.getDate()}/${d.getMonth() + 1} organized`;
+
+              const formattedContent = [
+                `### 📌 Brief Summary\n${parsed?.summary || 'Concise daily dump organization.'}`,
+                parsed?.insights?.length ? `\n### 💡 Key Takeaways\n${parsed.insights.map((i: string) => `- ${i}`).join('\n')}` : '',
+                parsed?.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t: any) => `- ${t.title}`).join('\n')}` : '',
+                parsed?.projects_or_notes?.length ? `\n### 📝 Core Ideas\n${parsed.projects_or_notes.map((p: any) => `**${p.title}:** ${p.content}`).join('\n')}` : '',
+              ].filter(Boolean).join('\n');
+
+              await supabase.from('notes').insert({
+                title: organizedTitle,
+                body: formattedContent,
+                note_date: rawDump.note_date,
+                is_brain_dump: false,
+                ai_analysis: parsed,
+                folder_id: orgFolder?.id || null,
+              });
+
+              await supabase.from('notes').update({ ai_analysis: parsed }).eq('id', rawDump.id);
+            } catch (err) {
+              console.warn('Auto-organize note failed for', rawDump.id, err);
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Catch-up brain dump auto-organize failed:', e);
+      }
+    };
+
+    void processYesterdayUnorganizedBrainDumps();
+
     window.addEventListener('online', handleOnline);
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible' && isOnline()) {
         void handleOnline();
+        void processYesterdayUnorganizedBrainDumps();
       }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);

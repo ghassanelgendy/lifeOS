@@ -106,12 +106,19 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
     );
   }, [brainDumpNotes, inboxSearch]);
 
-  // Today's date string
-  const todayStr = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  // Dynamic Local Calendar Date (YYYY-MM-DD)
+  const getLocalDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
   const todayBrainDumpNote = useMemo(() => {
-    return brainDumpNotes.find((n) => n.note_date?.slice(0, 10) === todayStr);
-  }, [brainDumpNotes, todayStr]);
+    const currentToday = getLocalDateString();
+    return brainDumpNotes.find((n) => n.note_date?.slice(0, 10) === currentToday);
+  }, [brainDumpNotes]);
 
   // Listen to deep link event
   useEffect(() => {
@@ -146,27 +153,22 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
     }
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
       recognition.continuous = true;
-      recognition.interimResults = false;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
 
-      if (isListening) {
-        setIsListening(false);
-        return;
-      }
-
-      setIsListening(true);
-      void triggerHaptics('light');
-
+      recognition.onstart = () => setIsListening(true);
       recognition.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((r: any) => r[0]?.transcript)
-          .join(' ');
-        if (transcript) {
-          setRawText((prev) => (prev ? `${prev}\n${transcript}` : transcript));
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
+        setRawText((prev) => (prev ? `${prev} ${transcript}` : transcript));
       };
-      recognition.onerror = () => setIsListening(false);
+      recognition.onerror = (e: any) => {
+        console.error('Speech recognition error:', e);
+        setIsListening(false);
+      };
       recognition.onend = () => setIsListening(false);
       recognition.start();
     } catch (e) {
@@ -183,33 +185,46 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
     const text = rawText.trim();
     if (!text) return;
 
+    const currentToday = getLocalDateString();
     const timeString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    // Always find latest note matching local date at this exact moment
+    const targetTodayNote = brainDumpNotes.find((n) => n.note_date?.slice(0, 10) === currentToday);
 
     try {
       void triggerHaptics('medium');
 
-      if (appendToToday && todayBrainDumpNote) {
+      // Ensure 'Unorganized Brain Dumps' folder exists
+      let unorganizedFolder = noteFolders.find((f) => f.name.toLowerCase() === 'unorganized brain dumps' || f.name.toLowerCase() === 'unorganized');
+      if (!unorganizedFolder) {
+        try {
+          unorganizedFolder = await createNoteFolder.mutateAsync({ name: 'Unorganized Brain Dumps', sort_order: 2 });
+        } catch {}
+      }
+
+      if (targetTodayNote) {
         // Append to today's brain dump note
-        const updatedBody = `${todayBrainDumpNote.body.trim()}\n\n---\n**🕒 ${timeString}:**\n${text}`;
+        const updatedBody = `${targetTodayNote.body.trim()}\n\n---\n**🕒 ${timeString}:**\n${text}`;
         await updateNote.mutateAsync({
-          id: todayBrainDumpNote.id,
+          id: targetTodayNote.id,
           data: {
             body: updatedBody,
+            folder_id: targetTodayNote.folder_id || unorganizedFolder?.id || null,
             ai_analysis: null, // Reset analysis to mark as pending fresh organization
           },
         });
         setSaveSuccessMsg(`Appended thought to Today's Brain Dump at ${timeString}`);
       } else {
-        // Create new atomic thought note named after the date (e.g., 27/8)
+        // Create new atomic thought note named after the date (e.g., 28/8)
         const d = new Date();
         const dateFormattedTitle = `${d.getDate()}/${d.getMonth() + 1}`;
         const newNote = await createNote.mutateAsync({
           title: dateFormattedTitle,
           body: `**🕒 ${timeString}:**\n${text}`,
-          note_date: todayStr,
+          note_date: currentToday,
           is_brain_dump: true,
           ai_analysis: null,
-          folder_id: null,
+          folder_id: unorganizedFolder?.id || null,
         });
         if (onSavedNote) onSavedNote(newNote.id);
         setSaveSuccessMsg(`Saved thought to Inbox (${dateFormattedTitle} - ${timeString})`);

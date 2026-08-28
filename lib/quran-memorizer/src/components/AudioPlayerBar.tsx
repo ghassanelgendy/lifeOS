@@ -398,6 +398,41 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
               </div>
             </div>
 
+            {/* Quick Presets */}
+            <div className="space-y-1.5 pt-1">
+              <label className="text-xs font-bold text-muted-foreground">أوضاع سريعة:</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChangeRepeatSettings({
+                      ...repeatSettings,
+                      verseRepeats: 1,
+                      rangeRepeats: 1,
+                      delaySeconds: 2,
+                    });
+                  }}
+                  className="px-2.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold text-center transition-colors cursor-pointer"
+                >
+                  🎧 سورة كاملة مع سكتة (2ث)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChangeRepeatSettings({
+                      ...repeatSettings,
+                      verseRepeats: 1,
+                      rangeRepeats: 1,
+                      delaySeconds: 0,
+                    });
+                  }}
+                  className="px-2.5 py-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground border border-border/60 text-xs font-bold text-center transition-colors cursor-pointer"
+                >
+                  ▶️ استماع مستمر (بدون توقف)
+                </button>
+              </div>
+            </div>
+
             <button
               onClick={() => setShowSettingsDrawer(false)}
               className="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer mt-2"
