@@ -34,7 +34,7 @@ export function useQuranAudio({
   const repeatSettingsRef = useRef(repeatSettings);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const delayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const delayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstMountRef = useRef(true);
 
   // Sync refs when settings or selections change

@@ -62,6 +62,6 @@
       ]
     }
   },
-  "include": ["src"],
-  "exclude": ["src/db", "**/*.test.ts", "src/sw.ts"]
+  "include": ["src", "lib"],
+  "exclude": ["src/db", "**/*.test.ts", "src/sw.ts", "lib/quran-memorizer/node_modules"]
 }

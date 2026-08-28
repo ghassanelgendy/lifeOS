@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BookOpen, Calendar, Layers, Award, Sparkles, Target, X } from 'lucide-react';
-import { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps } from '../types/quran';
+import { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps, KhatmahPlan, ReadingWirdPlan } from '../types/quran';
 import { RECITERS, SURAHS } from '../services/quranData';
 import { useQuranAudio } from '../hooks/useQuranAudio';
 import { useQuranMemorizer } from '../hooks/useQuranMemorizer';
@@ -30,6 +30,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   onUpdateHabitDescription,
   onCreateQuranTask,
   onCreateHalqahNote,
+  onBookmarkAyah,
 }) => {
   const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>(() => {
     try {
@@ -263,7 +264,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     };
   }, []);
 
-  const memorizationMarker = (() => {
+  const [memorizationMarker, setMemorizationMarker] = useState<{ surahNumber: number; ayahNumber: number; page: number }>(() => {
     try {
       const saved = localStorage.getItem('quran_memorization_marker_v1');
       if (saved) return JSON.parse(saved);
@@ -275,9 +276,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       return s.pageStart <= page && page <= pageEnd;
     }) || SURAHS[73];
     return { surahNumber: surah.id, ayahNumber: 1, page };
-  })();
+  });
 
-  const readingMarker = (() => {
+  const [readingMarker, setReadingMarker] = useState<{ surahNumber: number; ayahNumber: number; page: number }>(() => {
     try {
       const saved = localStorage.getItem('quran_reading_marker_v1');
       if (saved) return JSON.parse(saved);
@@ -289,7 +290,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       return s.pageStart <= page && page <= pageEnd;
     }) || SURAHS[0];
     return { surahNumber: surah.id, ayahNumber: 1, page };
-  })();
+  });
 
   const handleSetMemorizationMarker = (surahNumber: number, ayahNumber: number, page: number) => {
     const marker = { surahNumber, ayahNumber, page };

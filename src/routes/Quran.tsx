@@ -1,5 +1,6 @@
 import React from 'react';
 import { QuranMemorizerMain, type SheikhHalqahNote } from '../../lib/quran-memorizer';
+import { supabase } from '../lib/supabase';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
