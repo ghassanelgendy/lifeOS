@@ -88,12 +88,12 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           bg-card/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl
           border border-border/80 dark:border-white/10
           shadow-[0_12px_40px_rgba(0,0,0,0.25)]
-          /* Desktop / MD+: Docked Bottom Bar */
-          md:bottom-0 md:translate-x-0 md:left-0 md:right-0 md:w-auto md:max-w-none md:h-auto md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/50 md:bg-card/95 md:px-6 md:py-3 md:pb-safe
+          /* Desktop / MD+: Perfectly docked and aligned with the sidebar line */
+          md:bottom-0 md:translate-x-0 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/40 md:bg-card/80 md:backdrop-blur-xl md:px-6 md:py-2
           ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
         `}
       >
-        <div className="w-full max-w-6xl mx-auto flex items-center justify-between gap-2 md:gap-4 text-foreground">
+        <div className="w-full max-w-7xl mx-auto flex items-center justify-between gap-2 md:gap-4 text-foreground h-full">
           
           {/* Reciter & Current Ayah Badge */}
           <div className="flex items-center gap-2 min-w-0 shrink">
