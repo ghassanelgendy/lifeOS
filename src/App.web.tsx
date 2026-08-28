@@ -273,8 +273,25 @@ function AppInner() {
     };
 
     window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
+
+    // Global shortcut to open Brain Dump (Cmd/Ctrl + B or Alt + B)
+    const handleBrainDumpGlobalKey = (e: KeyboardEvent) => {
+      const isBKey = e.key.toLowerCase() === 'b';
+      if (isBKey && (e.metaKey || e.ctrlKey || e.altKey)) {
+        // If not typing in input/textarea or if Alt+B is used
+        const active = document.activeElement;
+        const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.getAttribute('contenteditable') === 'true');
+        if (!isTyping || e.altKey) {
+          e.preventDefault();
+          window.dispatchEvent(new CustomEvent('lifeos:openBrainDump'));
+        }
+      }
+    };
+    window.addEventListener('keydown', handleBrainDumpGlobalKey);
+
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
+      window.removeEventListener('keydown', handleBrainDumpGlobalKey);
     };
   }, []);
 

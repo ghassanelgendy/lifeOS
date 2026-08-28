@@ -668,8 +668,16 @@ export default function NotesWeb() {
                 />
               ) : (
                 <div
-                  className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-border bg-background p-4 prose prose-sm dark:prose-invert max-w-none cursor-pointer"
-                  onClick={() => setIsEditing(true)}
+                  className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-border bg-background p-4 prose prose-sm dark:prose-invert max-w-none select-text note-selectable cursor-text"
+                  onClick={(e) => {
+                    // Only switch to editing if clicking outside text selection or on empty area
+                    const selection = window.getSelection();
+                    if (!selection || selection.toString().length === 0) {
+                      if ((e.target as HTMLElement).tagName === 'DIV') {
+                        setIsEditing(true);
+                      }
+                    }
+                  }}
                   dangerouslySetInnerHTML={{
                     __html: draftBody
                       ? (marked.parse(draftBody) as string)

@@ -510,7 +510,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Cognitive Brain Dump & Thought Vault" className="max-w-3xl">
+    <Modal isOpen={isOpen} onClose={onClose} title="Brain Dump" className="max-w-3xl">
       <div className="space-y-4">
         {/* Navigation Tabs Header */}
         <div className="flex items-center justify-between border-b border-border pb-2.5 flex-wrap gap-2">
@@ -566,43 +566,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
               )}
             </button>
           </div>
-
-          <div className="flex items-center gap-2 text-xs">
-            <button
-              type="button"
-              onClick={() => setShowIosGuide((v) => !v)}
-              className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
-            >
-              <Smartphone size={13} />
-              <span className="hidden sm:inline">Back Tap</span>
-              {showIosGuide ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-            </button>
-            {aiEnabled && (
-              <span className="flex items-center gap-1 text-emerald-500 font-medium">
-                <ShieldCheck size={13} /> AI
-              </span>
-            )}
-          </div>
         </div>
-
-        {/* Expandable iOS Back Tap Guide */}
-        <AnimatePresence>
-          {showIosGuide && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="overflow-hidden bg-purple-500/10 border border-purple-500/20 rounded-xl p-3 text-xs space-y-2 text-foreground"
-            >
-              <div className="flex items-center gap-1.5 font-bold text-purple-600 dark:text-purple-400">
-                <Zap size={14} /> iOS Triple-Tap Back Setup
-              </div>
-              <p className="text-muted-foreground leading-relaxed">
-                Create a Shortcut with <strong>Open URLs</strong>: <code className="px-1 py-0.5 bg-background border border-border rounded font-mono text-[11px] text-primary">lifeos://braindump?text=</code>. Assign to <strong>Settings &gt; Accessibility &gt; Touch &gt; Back Tap</strong>.
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Save Toast Feedback */}
         {saveSuccessMsg && (
@@ -616,29 +580,12 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
         {activeTab === 'capture' && (
           <div className="space-y-3 animate-in fade-in duration-200">
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Instant Stream of Consciousness
-                </label>
-                <div className="flex items-center gap-2">
-                  <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={appendToToday}
-                      onChange={(e) => setAppendToToday(e.target.checked)}
-                      className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5"
-                    />
-                    <span>Append to Today's Journal</span>
-                  </label>
-                </div>
-              </div>
-
               <div className="relative">
                 <textarea
                   value={rawText}
                   onChange={(e) => setRawText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Dump any thought, task, or realization without friction... (Press ⌘+Enter to save instantly)"
+                  placeholder="Dump any thought, task, or realization without friction..."
                   className="w-full h-44 p-3.5 text-sm rounded-xl border border-border bg-background focus:ring-2 focus:ring-primary focus:outline-none resize-none leading-relaxed"
                   autoFocus
                 />
@@ -659,37 +606,31 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
             </div>
 
             {/* Action Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-              <div className="text-[11px] text-muted-foreground">
-                Shortcut: <kbd className="px-1.5 py-0.5 rounded bg-secondary border border-border font-mono text-[10px]">⌘ + Enter</kbd>
-              </div>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setActiveTab('plan');
+                  void handleAnalyzeText(rawText);
+                }}
+                disabled={!rawText.trim() || isAnalyzing}
+                className="text-xs gap-1.5"
+              >
+                <Sparkles size={13} className="text-purple-400" />
+                <span>Organize with AI Now</span>
+              </Button>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setActiveTab('plan');
-                    void handleAnalyzeText(rawText);
-                  }}
-                  disabled={!rawText.trim() || isAnalyzing}
-                  className="text-xs gap-1.5"
-                >
-                  <Sparkles size={13} className="text-purple-400" />
-                  <span>Organize with AI Now</span>
-                </Button>
-
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleQuickSave}
-                  disabled={!rawText.trim()}
-                  className="text-xs gap-1.5 shadow-md font-bold px-4"
-                >
-                  <Zap size={13} />
-                  <span>Quick Save ({appendToToday && todayBrainDumpNote ? 'Append' : 'New'})</span>
-                </Button>
-              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleQuickSave}
+                disabled={!rawText.trim()}
+                className="text-xs gap-1.5 shadow-md font-bold px-4"
+              >
+                <Zap size={13} />
+                <span>Save</span>
+              </Button>
             </div>
           </div>
         )}
