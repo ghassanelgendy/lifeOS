@@ -263,41 +263,33 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     };
   }, []);
 
-  const [memorizationMarker, setMemorizationMarker] = useState<{ surahNumber: number; ayahNumber: number; page: number }>(() => {
+  const memorizationMarker = (() => {
     try {
       const saved = localStorage.getItem('quran_memorization_marker_v1');
       if (saved) return JSON.parse(saved);
-      const planSaved = localStorage.getItem('quran_khatmah_plan_v1');
-      const p = planSaved ? JSON.parse(planSaved) : null;
-      const page = p ? p.currentPage : 604;
-      const surah = SURAHS.find((s, idx) => {
-        const nextS = SURAHS[idx + 1];
-        const pageEnd = nextS ? nextS.pageStart - 1 : 604;
-        return s.pageStart <= page && page <= pageEnd;
-      }) || SURAHS[113];
-      return { surahNumber: surah.id, ayahNumber: 1, page };
-    } catch {
-      return { surahNumber: 114, ayahNumber: 1, page: 604 };
-    }
-  });
+    } catch {}
+    const page = memorizationPlan ? memorizationPlan.currentPage : 575; // Default to Al-Muddaththir ص 575
+    const surah = SURAHS.find((s, idx) => {
+      const nextS = SURAHS[idx + 1];
+      const pageEnd = nextS ? nextS.pageStart - 1 : 604;
+      return s.pageStart <= page && page <= pageEnd;
+    }) || SURAHS[73];
+    return { surahNumber: surah.id, ayahNumber: 1, page };
+  })();
 
-  const [readingMarker, setReadingMarker] = useState<{ surahNumber: number; ayahNumber: number; page: number }>(() => {
+  const readingMarker = (() => {
     try {
       const saved = localStorage.getItem('quran_reading_marker_v1');
       if (saved) return JSON.parse(saved);
-      const wirdSaved = localStorage.getItem('quran_reading_wird_v1');
-      const r = wirdSaved ? JSON.parse(wirdSaved) : null;
-      const page = r ? r.currentPage : 1;
-      const surah = SURAHS.find((s, idx) => {
-        const nextS = SURAHS[idx + 1];
-        const pageEnd = nextS ? nextS.pageStart - 1 : 604;
-        return s.pageStart <= page && page <= pageEnd;
-      }) || SURAHS[0];
-      return { surahNumber: surah.id, ayahNumber: 1, page };
-    } catch {
-      return { surahNumber: 1, ayahNumber: 1, page: 1 };
-    }
-  });
+    } catch {}
+    const page = readingWird ? readingWird.currentPage : 1;
+    const surah = SURAHS.find((s, idx) => {
+      const nextS = SURAHS[idx + 1];
+      const pageEnd = nextS ? nextS.pageStart - 1 : 604;
+      return s.pageStart <= page && page <= pageEnd;
+    }) || SURAHS[0];
+    return { surahNumber: surah.id, ayahNumber: 1, page };
+  })();
 
   const handleSetMemorizationMarker = (surahNumber: number, ayahNumber: number, page: number) => {
     const marker = { surahNumber, ayahNumber, page };
@@ -578,6 +570,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onSyncMemorization={handleSyncMemorization}
             onSyncReading={handleSyncReading}
             onOpenHalqahNote={() => setActiveTab('khatmah')}
+            onBookmarkAyah={onBookmarkAyah}
           />
         )}
 

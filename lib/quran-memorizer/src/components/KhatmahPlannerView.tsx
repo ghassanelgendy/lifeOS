@@ -420,18 +420,63 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               </button>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground font-semibold">الموقع الحالي:</span>
-                <span className="font-bold text-foreground">صفحة {plan.currentPage} (سورة {currentSurah.name})</span>
+            <div className="space-y-3">
+              {/* Quick Jump / Change Current Memorization Surah/Page */}
+              <div className="p-2.5 rounded-2xl bg-background/50 border border-border/50 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground font-bold">موضعك الحالي في الحفظ:</span>
+                  <span className="font-extrabold text-emerald-400">صفحة {plan.currentPage} (سورة {currentSurah.name})</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-semibold block mb-0.5">تغيير السورة:</label>
+                    <select
+                      value={currentSurah.id}
+                      onChange={(e) => {
+                        const surahId = Number(e.target.value);
+                        const meta = SURAHS.find((s) => s.id === surahId);
+                        if (meta) {
+                          const updated = { ...plan, currentPage: meta.pageStart };
+                          setPlan(updated);
+                          localStorage.setItem(KHATMAH_STORAGE_KEY, JSON.stringify(updated));
+                          window.dispatchEvent(new Event('quran_plan_updated'));
+                        }
+                      }}
+                      className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border focus:outline-none"
+                    >
+                      {SURAHS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.id}. سورة {s.name} (ص {s.pageStart})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-muted-foreground font-semibold block mb-0.5">رقم الصفحة (1-604):</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={604}
+                      value={plan.currentPage}
+                      onChange={(e) => {
+                        const p = Math.min(604, Math.max(1, Number(e.target.value)));
+                        const updated = { ...plan, currentPage: p };
+                        setPlan(updated);
+                        localStorage.setItem(KHATMAH_STORAGE_KEY, JSON.stringify(updated));
+                        window.dispatchEvent(new Event('quran_plan_updated'));
+                      }}
+                      className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border text-center focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center justify-between text-xs px-1">
                 <span className="text-muted-foreground font-semibold">الورد القادم:</span>
                 <span className="font-bold text-emerald-400">صفحة {nextTargetPage} (سورة {nextSurah.name})</span>
               </div>
 
-              <div className="pt-2 flex flex-col gap-2">
+              <div className="pt-1 flex flex-col gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
                     <Flame className="size-3.5 fill-current" /> سلسلة {plan.streakDays} أيام
@@ -440,7 +485,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     onClick={handleLogProgress}
                     className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
-                    <CheckCircle2 className="size-3.5" /> تسجيل إنجاز الحفظ
+                    <CheckCircle2 className="size-3.5" /> تسجيل إنجاز الحفظ (+{plan.pagesPerDay} ص)
                   </button>
                 </div>
                 <button
@@ -467,13 +512,58 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             </span>
           </div>
 
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground font-semibold">وصلت الآن في التلاوة إلى:</span>
-              <span className="font-bold text-foreground">صفحة {readingWird.currentPage} (سورة {currentReadingSurah.name})</span>
+          <div className="space-y-3">
+            {/* Quick Jump / Change Current Reading Surah/Page */}
+            <div className="p-2.5 rounded-2xl bg-background/50 border border-border/50 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground font-bold">موضعك الحالي في التلاوة:</span>
+                <span className="font-extrabold text-indigo-400">صفحة {readingWird.currentPage} (سورة {currentReadingSurah.name})</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-semibold block mb-0.5">تغيير السورة:</label>
+                  <select
+                    value={currentReadingSurah.id}
+                    onChange={(e) => {
+                      const surahId = Number(e.target.value);
+                      const meta = SURAHS.find((s) => s.id === surahId);
+                      if (meta) {
+                        const updated = { ...readingWird, currentPage: meta.pageStart };
+                        setReadingWird(updated);
+                        localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(updated));
+                        window.dispatchEvent(new Event('quran_plan_updated'));
+                      }
+                    }}
+                    className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border focus:outline-none"
+                  >
+                    {SURAHS.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.id}. سورة {s.name} (ص {s.pageStart})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-muted-foreground font-semibold block mb-0.5">رقم الصفحة (1-604):</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={604}
+                    value={readingWird.currentPage}
+                    onChange={(e) => {
+                      const p = Math.min(604, Math.max(1, Number(e.target.value)));
+                      const updated = { ...readingWird, currentPage: p };
+                      setReadingWird(updated);
+                      localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(updated));
+                      window.dispatchEvent(new Event('quran_plan_updated'));
+                    }}
+                    className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border text-center focus:outline-none"
+                  />
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs px-1">
               <span className="text-muted-foreground font-semibold">الهدف اليومي للتلاوة:</span>
               <span className="font-bold text-indigo-400">صفحة {Math.min(604, readingWird.currentPage + readingWird.pagesPerDay)}</span>
             </div>
