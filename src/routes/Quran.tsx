@@ -89,10 +89,57 @@ ${note.mistakesNote}
 
     createNoteMutation.mutate({
       title: `ملاحظات حلقة تسميع - ${note.surahName} (${note.ayahRange})`,
-      content: noteContent,
+      body: noteContent,
+      note_date: todayStr,
       folder_id: folderId,
       tags: ['قرآن', 'تسميع', 'ملاحظات_الشيخ'],
     });
+  };
+
+  const handleBookmarkAyah = async (surahName: string, surahNumber: number, ayahNumber: number, ayahText: string) => {
+    let quranFolder = noteFolders.find(
+      (f) => f.name.includes('قرآن') || f.name.toLowerCase().includes('quran') || f.name.includes('علامات')
+    );
+    let folderId = quranFolder?.id;
+
+    if (!folderId) {
+      try {
+        const createdFolder = await createNoteFolderMutation.mutateAsync({ name: 'علامات القرآن (Quran Bookmarks)', sort_order: 3 });
+        folderId = createdFolder?.id;
+      } catch (e) {
+        console.warn('Folder creation warning:', e);
+      }
+    }
+
+    const bookmarkSnippet = `### 📖 سورة ${surahName} (الآية ${ayahNumber})\n> «${ayahText}»\n*تم الحفظ في: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}*`;
+
+    // Check if a note titled 'Quran Bookmarks' already exists
+    try {
+      const { data: existingNotes } = await supabase
+        .from('notes')
+        .select('*')
+        .ilike('title', '%Quran Bookmarks%')
+        .limit(1);
+
+      const targetNote = existingNotes?.[0];
+      if (targetNote) {
+        const updatedBody = `${targetNote.body.trim()}\n\n---\n${bookmarkSnippet}`;
+        await supabase
+          .from('notes')
+          .update({ body: updatedBody, folder_id: targetNote.folder_id || folderId || null })
+          .eq('id', targetNote.id);
+      } else {
+        createNoteMutation.mutate({
+          title: 'Quran Bookmarks',
+          body: `# 📑 علامات وحفظ الآيات (Quran Bookmarks)\n\n${bookmarkSnippet}`,
+          note_date: todayStr,
+          folder_id: folderId || null,
+          tags: ['قرآن', 'علامات', 'quran_bookmarks'],
+        });
+      }
+    } catch (e) {
+      console.warn('Bookmark ayah failed:', e);
+    }
   };
 
   const formattedTasks = tasks.map((t) => ({
@@ -129,6 +176,7 @@ ${note.mistakesNote}
       onUpdateHabitDescription={handleUpdateHabitDescription}
       onCreateQuranTask={handleCreateQuranTask}
       onCreateHalqahNote={handleCreateHalqahNote}
+      onBookmarkAyah={handleBookmarkAyah}
     />
   );
 }
