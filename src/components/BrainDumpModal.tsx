@@ -530,33 +530,35 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
         {/* Navigation Tabs Header */}
         <div className="flex items-center justify-between border-b border-border pb-2.5 flex-wrap gap-2">
           {/* iOS Segmented Navigation Pills */}
-          <div className="flex items-center p-1 bg-secondary/60 rounded-xl border border-border text-xs font-semibold">
+          <div className="flex items-center p-1 bg-secondary/60 rounded-xl border border-border text-xs font-semibold w-full sm:w-auto justify-between sm:justify-start">
             <button
               type="button"
               onClick={() => setActiveTab('capture')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer flex-1 sm:flex-initial",
                 activeTab === 'capture'
                   ? "bg-card text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <PenTool size={13} />
-              <span>Quick Dump</span>
+              <span className="sm:hidden">Dump</span>
+              <span className="hidden sm:inline">Quick Dump</span>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveTab('inbox')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer flex-1 sm:flex-initial",
                 activeTab === 'inbox'
                   ? "bg-card text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Inbox size={13} />
-              <span>Thought Inbox</span>
+              <span className="sm:hidden">Inbox</span>
+              <span className="hidden sm:inline">Thought Inbox</span>
               {unprocessedNotes.length > 0 && (
                 <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold">
                   {unprocessedNotes.length}
@@ -568,14 +570,15 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
               type="button"
               onClick={() => setActiveTab('plan')}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer",
+                "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer flex-1 sm:flex-initial",
                 activeTab === 'plan'
                   ? "bg-card text-primary shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Brain size={13} />
-              <span>AI Organizer</span>
+              <span className="sm:hidden">Organize</span>
+              <span className="hidden sm:inline">AI Organizer</span>
               {analysis && (
                 <span className="ml-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
