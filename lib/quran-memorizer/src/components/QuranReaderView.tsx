@@ -7,6 +7,7 @@ import {
   Volume2,
   Target,
   Bookmark,
+  BookmarkPlus,
   Book,
   LayoutList,
   Award,
@@ -20,6 +21,9 @@ import {
   Settings2,
   X,
   Search,
+  Maximize2,
+  Minimize2,
+  Palette,
 } from 'lucide-react';
 import { Ayah, RepeatSettings, RatingGrade, MemorizationStatus } from '../types/quran';
 import { fetchSurahVerses } from '../services/quranApi';
@@ -43,6 +47,23 @@ const JUZ_START_PAGES = Array.from({ length: 30 }, (_, i) => {
   if (juzNum === 1) return { juz: 1, page: 1 };
   return { juz: juzNum, page: (juzNum - 2) * 20 + 22 };
 });
+
+// Tajweed Color Highlighter for Uthmani Text
+const renderTajweedText = (text: string) => {
+  const parts = text.split(/([ن|م]ّ|[قطبجد]ْ|[~ٓ])/g);
+  return parts.map((part, idx) => {
+    if (/[ن|م]ّ/.test(part)) {
+      return <span key={idx} className="text-amber-500 dark:text-amber-400 font-extrabold">{part}</span>;
+    }
+    if (/[قطبجد]ْ/.test(part)) {
+      return <span key={idx} className="text-rose-500 dark:text-rose-400 font-extrabold">{part}</span>;
+    }
+    if (/[~ٓ]/.test(part)) {
+      return <span key={idx} className="text-sky-500 dark:text-sky-400 font-extrabold">{part}</span>;
+    }
+    return part;
+  });
+};
 
 interface WirdMarker {
   surahNumber: number;
@@ -78,6 +99,7 @@ interface QuranReaderViewProps {
   onSyncMemorization?: () => void;
   onSyncReading?: () => void;
   onOpenHalqahNote?: () => void;
+  onBookmarkAyah?: (surahName: string, surahNumber: number, ayahNumber: number, ayahText: string) => void;
 }
 
 export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
@@ -106,6 +128,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onSyncMemorization,
   onSyncReading,
   onOpenHalqahNote,
+  onBookmarkAyah,
 }) => {
   const [verses, setVerses] = useState<Ayah[]>([]);
   const [viewMode, setViewMode] = useState<'page' | 'ayah'>(() => {
@@ -124,11 +147,27 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
   const [loading, setLoading] = useState(true);
   const [showTranslation, setShowTranslation] = useState(false);
+  const [showTajweed, setShowTajweed] = useState(() => {
+    try {
+      return localStorage.getItem('quran_tajweed_enabled_v1') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showToolsSheet, setShowToolsSheet] = useState(false);
   const [showSurahPicker, setShowSurahPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
   const [pickerTab, setPickerTab] = useState<'surahs' | 'juz' | 'page'>('surahs');
   const [pageInputVal, setPageInputVal] = useState('');
+  const [bookmarkToast, setBookmarkToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('quran_tajweed_enabled_v1', showTajweed.toString());
+    } catch {}
+  }, [showTajweed]);
 
   // Lock background scroll when modal sheets are open
   useEffect(() => {
@@ -337,8 +376,22 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           </button>
         </div>
 
-        {/* Left: Tafseer & Secondary Tools Sheet */}
+        {/* Left: Tajweed, Tafseer, Fullscreen & Secondary Tools Sheet */}
         <div className="flex items-center gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => setShowTajweed(!showTajweed)}
+            className={`h-8 px-2 rounded-xl border text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+              showTajweed
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                : 'bg-secondary/60 text-muted-foreground border-border hover:bg-secondary'
+            }`}
+            title="تلوين أحرف التجويد"
+          >
+            <Palette className="size-3.5" />
+            <span className="hidden sm:inline text-[11px]">التجويد</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setShowTranslation(!showTranslation)}
@@ -351,6 +404,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           >
             <BookOpen className="size-3.5" />
             <span className="hidden sm:inline text-[11px]">التفسير</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className={`h-8 w-8 rounded-xl border flex items-center justify-center cursor-pointer transition-all active:scale-95 ${
+              isFullscreen
+                ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                : 'bg-secondary/60 text-muted-foreground hover:text-foreground border-border hover:bg-secondary'
+            }`}
+            title={isFullscreen ? 'إلغاء وضع ملء الشاشة' : 'وضع ملء الشاشة والمطالعة'}
+          >
+            {isFullscreen ? <Minimize2 className="size-3.5" /> : <Maximize2 className="size-3.5" />}
           </button>
 
           <button
@@ -426,16 +492,24 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         )}
       </div>
 
+      {/* Bookmark Added Toast Notification */}
+      {bookmarkToast && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[300] bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <BookmarkPlus className="size-4 shrink-0 text-amber-300" />
+          <span>{bookmarkToast}</span>
+        </div>
+      )}
+
       {/* 3. iOS NATIVE SURAH & JUZ PICKER MODAL/SHEET (Portaled to Body with z-[999]) */}
       {showSurahPicker &&
         createPortal(
           <div
-            className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
+            className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
             onClick={() => setShowSurahPicker(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:max-w-lg bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-4 sm:p-6 space-y-3.5 shadow-2xl animate-in slide-in-from-bottom-6 duration-200 font-arabic-title h-[88vh] sm:h-[82vh] flex flex-col overscroll-contain text-right"
+              className="w-full sm:max-w-lg bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-4 sm:p-6 space-y-3.5 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 ease-out font-arabic-title h-[88vh] sm:h-[82vh] flex flex-col overscroll-contain text-right"
               dir="rtl"
             >
               {/* iOS Drag Handle */}
@@ -788,8 +862,31 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   onTouchStart={handleTouchStart}
                   onTouchMove={handleTouchMove}
                   onTouchEnd={handleTouchEnd}
-                  className="px-2.5 py-3 sm:px-5 sm:py-6 rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-card/95 backdrop-blur-xl shadow-lg relative space-y-3 touch-pan-y"
+                  onDoubleClick={() => setIsFullscreen(!isFullscreen)}
+                  className={`transition-all touch-pan-y ${
+                    isFullscreen
+                      ? 'fixed inset-0 z-[200] bg-background/98 overflow-y-auto p-3 sm:p-8 space-y-4 font-arabic-title'
+                      : 'px-2.5 py-3 sm:px-5 sm:py-6 rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-card/95 backdrop-blur-xl shadow-lg relative space-y-3'
+                  }`}
                 >
+                  {/* Floating Fullscreen Exit Button */}
+                  {isFullscreen && (
+                    <div className="sticky top-2 z-50 flex items-center justify-between bg-card/90 backdrop-blur-xl border border-border/80 p-2 rounded-2xl shadow-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-emerald-400">سورة {pageSurah.name}</span>
+                        <span className="text-[11px] text-muted-foreground">• صفحة {pageNum} (اسحب لليمين/اليسار للتقليب)</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsFullscreen(false)}
+                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
+                      >
+                        <Minimize2 className="size-3.5" />
+                        <span>إنهاء ملء الشاشة</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* Top Header Inside Page Frame */}
                   <div className="border-b border-emerald-500/20 pb-2 flex items-center justify-between text-xs text-muted-foreground font-arabic-title font-bold">
                     <span className="flex items-center gap-1 text-emerald-400">
@@ -869,6 +966,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                   {w}{' '}
                                 </span>
                               ))
+                            ) : showTajweed ? (
+                              renderTajweedText(ayah.textUthmani)
                             ) : (
                               ayah.textUthmani
                             )}
@@ -904,6 +1003,27 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                           <span className="text-[11px] font-bold text-foreground px-2 py-0.5">
                             آية {currentAyahIndex}:
                           </span>
+
+                          {/* Add to Notes / Quran Bookmarks */}
+                          {onBookmarkAyah && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const target = pageAyahs.find((a) => a.numberInSurah === currentAyahIndex);
+                                if (target) {
+                                  onBookmarkAyah(pageSurah.name, pageSurah.id, target.numberInSurah, target.textUthmani);
+                                  setBookmarkToast(`تمت إضافة الآية ${target.numberInSurah} سورة ${pageSurah.name} إلى دفتر "Quran Bookmarks" في الملاحظات`);
+                                  setTimeout(() => setBookmarkToast(null), 3500);
+                                }
+                              }}
+                              className="px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer text-amber-400 hover:bg-amber-500/15"
+                              title="حفظ الآية في دفتر علامات القرآن بالملاحظات"
+                            >
+                              <BookmarkPlus className="size-3" />
+                              <span>حفظ بالملاحظات</span>
+                            </button>
+                          )}
 
                           {onSetMemorizationMarker && (
                             <button
