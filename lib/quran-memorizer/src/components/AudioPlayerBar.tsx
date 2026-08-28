@@ -400,8 +400,37 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
 
             {/* Quick Presets */}
             <div className="space-y-1.5 pt-1">
-              <label className="text-xs font-bold text-muted-foreground">أوضاع سريعة:</label>
-              <div className="grid grid-cols-2 gap-2">
+              <label className="text-xs font-bold text-muted-foreground">طرق وأنماط الحفظ:</label>
+              
+              {/* Method 1: Cumulative Memorization Mode */}
+              <button
+                type="button"
+                onClick={() => {
+                  onChangeRepeatSettings({
+                    ...repeatSettings,
+                    verseRepeats: 3,
+                    delaySeconds: 4,
+                    cumulativeMemorizationMode: true,
+                    blindMode: true,
+                  });
+                }}
+                className={`w-full p-2.5 rounded-xl border text-xs font-bold text-right transition-all flex items-center justify-between cursor-pointer ${
+                  repeatSettings.cumulativeMemorizationMode
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-md'
+                    : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4 shrink-0" />
+                  <div>
+                    <div className="font-extrabold text-[12px]">✨ طريقة الحفظ التراكمي الذهبية</div>
+                    <div className="text-[10px] opacity-80 font-normal">تكرار الآية ٣ مرات ➔ سكوت للتسميع مغمضاً ➔ ربط من أول السورة ➔ الآية التالية</div>
+                  </div>
+                </div>
+                {repeatSettings.cumulativeMemorizationMode && <span className="text-[10px] font-black bg-white/20 px-2 py-0.5 rounded-full">مُفعّل</span>}
+              </button>
+
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -410,9 +439,10 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                       verseRepeats: 1,
                       rangeRepeats: 1,
                       delaySeconds: 2,
+                      cumulativeMemorizationMode: false,
                     });
                   }}
-                  className="px-2.5 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold text-center transition-colors cursor-pointer"
+                  className="px-2.5 py-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground border border-border/60 text-xs font-bold text-center transition-colors cursor-pointer"
                 >
                   🎧 سورة كاملة مع سكتة (2ث)
                 </button>
@@ -424,6 +454,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                       verseRepeats: 1,
                       rangeRepeats: 1,
                       delaySeconds: 0,
+                      cumulativeMemorizationMode: false,
                     });
                   }}
                   className="px-2.5 py-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground border border-border/60 text-xs font-bold text-center transition-colors cursor-pointer"

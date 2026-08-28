@@ -51,6 +51,7 @@ export interface RepeatSettings {
   delaySeconds: number; // Pause between repeats for user to recite
   autoAdvance: boolean;
   blindMode: boolean;
+  cumulativeMemorizationMode?: boolean; // 3x verse -> closed eyes -> play from surah start to current verse -> next verse
 }
 
 export interface MutashabihItem {
@@ -132,5 +133,6 @@ export interface LifeOSIntegrationProps {
   onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateQuranTask?: (title: string, dueDate: string) => void;
   onCreateHalqahNote?: (note: SheikhHalqahNote) => void;
+  onBookmarkAyah?: (surahName: string, surahNumber: number, ayahNumber: number, ayahText: string) => void;
 }
 

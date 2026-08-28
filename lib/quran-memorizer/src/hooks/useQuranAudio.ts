@@ -68,6 +68,9 @@ export function useQuranAudio({
     };
   }, []);
 
+  const cumulativePhaseRef = useRef<'verse_repeat' | 'recite_pause' | 'review_chain'>('verse_repeat');
+  const targetChainVerseRef = useRef<number>(initialAyahIndex ?? startAyah);
+
   const playAyahTrack = useCallback(
     (ayahNum: number) => {
       if (audioRef.current) {
@@ -91,7 +94,77 @@ export function useQuranAudio({
       audio.onended = () => {
         const settings = repeatSettingsRef.current;
 
-        // Check if verse repeat is less than requested repeats
+        // --- CUMULATIVE MEMORIZATION METHOD ---
+        // (Method: 3x verse -> recitation pause -> chain review from startAyah to current verse -> next verse)
+        if (settings.cumulativeMemorizationMode) {
+          if (cumulativePhaseRef.current === 'verse_repeat') {
+            const targetRepeats = settings.verseRepeats > 1 ? settings.verseRepeats : 3;
+            if (verseRepeatRef.current < targetRepeats) {
+              verseRepeatRef.current += 1;
+              setCurrentVerseRepeat(verseRepeatRef.current);
+              playAyahTrack(ayahNum);
+              return;
+            } else {
+              // Finished 3x repeats for this new verse!
+              verseRepeatRef.current = 1;
+              setCurrentVerseRepeat(1);
+              cumulativePhaseRef.current = 'recite_pause';
+
+              // Pause for user to recite with closed eyes (e.g. 4 seconds)
+              setIsDelaying(true);
+              const pauseSec = Math.max(3, settings.delaySeconds || 4);
+              delayTimerRef.current = setTimeout(() => {
+                setIsDelaying(false);
+                if (ayahNum > startAyah) {
+                  // Chain review from startAyah up to this ayah
+                  cumulativePhaseRef.current = 'review_chain';
+                  targetChainVerseRef.current = ayahNum;
+                  currentAyahRef.current = startAyah;
+                  setCurrentAyahIndex(startAyah);
+                  playAyahTrack(startAyah);
+                } else {
+                  // If on first ayah, advance immediately to next verse
+                  cumulativePhaseRef.current = 'verse_repeat';
+                  if (ayahNum < endAyah) {
+                    const next = ayahNum + 1;
+                    currentAyahRef.current = next;
+                    setCurrentAyahIndex(next);
+                    playAyahTrack(next);
+                  } else {
+                    setIsPlaying(false);
+                  }
+                }
+              }, pauseSec * 1000);
+              return;
+            }
+          } else if (cumulativePhaseRef.current === 'review_chain') {
+            // Playing consecutive chain from startAyah to targetChainVerse
+            if (ayahNum < targetChainVerseRef.current) {
+              const nextInChain = ayahNum + 1;
+              currentAyahRef.current = nextInChain;
+              setCurrentAyahIndex(nextInChain);
+              playAyahTrack(nextInChain);
+              return;
+            } else {
+              // Finished chain review! Advance to the next fresh ayah
+              const target = targetChainVerseRef.current;
+              cumulativePhaseRef.current = 'verse_repeat';
+              if (target < endAyah) {
+                const nextFreshAyah = target + 1;
+                targetChainVerseRef.current = nextFreshAyah;
+                currentAyahRef.current = nextFreshAyah;
+                setCurrentAyahIndex(nextFreshAyah);
+                playAyahTrack(nextFreshAyah);
+                return;
+              } else {
+                setIsPlaying(false);
+                return;
+              }
+            }
+          }
+        }
+
+        // --- STANDARD REPEAT MODE ---
         if (verseRepeatRef.current < settings.verseRepeats) {
           verseRepeatRef.current += 1;
           setCurrentVerseRepeat(verseRepeatRef.current);
