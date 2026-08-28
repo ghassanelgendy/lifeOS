@@ -226,6 +226,12 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     if (targetSurah.id !== surahNumber) {
       onSelectSurah(targetSurah.id);
     }
+    // Scroll window/container to top of the new page
+    try {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    } catch {}
   };
 
   useEffect(() => {
@@ -972,6 +978,29 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     <span>سورة {pageSurah.name}</span>
                     <span className="text-emerald-400 font-extrabold text-xs">ـ صفحة {pageNum} ـ</span>
                     <span>الجزء {pageSurah.juzStart}</span>
+                  </div>
+
+                  {/* Easy Large Page Shift Buttons */}
+                  <div className="pt-2 flex items-center justify-between gap-3 font-arabic-title border-t border-border/40">
+                    <button
+                      type="button"
+                      onClick={() => handlePageChange(pageNum - 1)}
+                      disabled={pageNum <= 1}
+                      className="flex-1 py-2.5 px-3 rounded-2xl bg-secondary/80 hover:bg-secondary active:scale-95 disabled:opacity-30 border border-border flex items-center justify-center gap-2 text-xs font-bold text-foreground transition-all cursor-pointer shadow-sm"
+                    >
+                      <ChevronRight className="size-4 text-emerald-400" />
+                      <span>الصفحة السابقة ({pageNum > 1 ? pageNum - 1 : 1})</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handlePageChange(pageNum + 1)}
+                      disabled={pageNum >= 604}
+                      className="flex-1 py-2.5 px-3 rounded-2xl bg-emerald-600/15 hover:bg-emerald-600/25 active:scale-95 disabled:opacity-30 border border-emerald-500/30 flex items-center justify-center gap-2 text-xs font-bold text-emerald-300 transition-all cursor-pointer shadow-sm"
+                    >
+                      <span>الصفحة التالية ({pageNum < 604 ? pageNum + 1 : 604})</span>
+                      <ChevronLeft className="size-4 text-emerald-400" />
+                    </button>
                   </div>
                 </div>
               );
