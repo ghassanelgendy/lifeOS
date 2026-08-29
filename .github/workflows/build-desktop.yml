@@ -182,7 +182,10 @@ jobs:
           workspaces: '~/.cargo -> ~/.cargo'
 
       - name: Install Pake CLI
-        run: sudo npm install -g pake-cli
+        run: |
+          npm install -g pake-cli || sudo npm install -g pake-cli
+          sudo chown -R $USER:$(id -gn) "$(npm root -g)" 2>/dev/null || true
+          sudo chown -R $USER:$(id -gn) /usr/local/lib/node_modules 2>/dev/null || true
 
       - name: Patch Pake configuration
         env:
