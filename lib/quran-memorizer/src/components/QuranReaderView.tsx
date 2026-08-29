@@ -48,25 +48,76 @@ const JUZ_START_PAGES = Array.from({ length: 30 }, (_, i) => {
   return { juz: juzNum, page: (juzNum - 2) * 20 + 22 };
 });
 
-// Tajweed Color Highlighter — colors at the WORD level to preserve Arabic OpenType shaping.
-// Splitting a word across <span> elements causes the text shaper to treat each span as an
-// isolated text run, rendering wider isolated Arabic forms instead of connected cursive forms,
-// creating visible gaps between letters. Coloring the whole word keeps it as one text run.
+// ─── Tajweed Color System ────────────────────────────────────────────────────
+// Colors at the WORD level to preserve Arabic OpenType shaping.
+// Each rule group maps to a color from the academic Tajweed color wheel.
+// Priority: green > cyan > dark-blue > red > dark-red > orange > yellow > grey
 const TAJWEED_COLORS = {
-  ghunna: '#f59e0b',   // amber-500 – nun/mim with shadda (غُنَّة)
-  qalqala: '#f43f5e',  // rose-500 – qalqala letters with sukun (قَلْقَلَة)
-  madd: '#38bdf8',     // sky-400 – madd / wasl hamza (~ٓ)
+  // GREEN – غنة, إدغام بغنة, إقلاب, إخفاء شفوي/حقيقي, إدغام المتماثلين والمتقاربين
+  green:    '#22c55e',
+  // CYAN (Light Blue) – قلقلة
+  cyan:     '#22d3ee',
+  // DARK BLUE – تفخيم الراء
+  darkBlue: '#3b82f6',
+  // RED – مد الصلة الكبرى، مد الواجب (متصل/منفصل)، مد الفرق، مد اللازم
+  red:      '#ef4444',
+  // DARK RED (Maroon) – مد الطبيعي والعوض والبدل
+  maroon:   '#b91c1c',
+  // ORANGE – الألف الخنجرية، مد اللين والعارض للسكون
+  orange:   '#f97316',
+  // YELLOW – مد الصلة الصغرى
+  yellow:   '#eab308',
+  // GREY – إدغام المتجانسين، إدغام بدون غنة، همزة الوصل، اللام الشمسية، ألف التفريق
+  grey:     '#9ca3af',
+};
+
+// Detect Tajweed features in a word using Uthmani text patterns.
+// Returns the highest-priority color, or null if no feature detected.
+const getTajweedColor = (word: string): string | null => {
+  // GREEN: نون/ميم مشددتين (غنة), إخفاء (ن ساكنة + حروف إخفاء), إقلاب (ن + ب)
+  // نّ / مّ = nun or mim with shadda
+  if (/[نم]ّ/.test(word)) return TAJWEED_COLORS.green;
+  // إقلاب: ن ساكنة + ب
+  if (/نْ(?=\s*ب)|نً(?=\s*ب)|نٍ(?=\s*ب)/.test(word)) return TAJWEED_COLORS.green;
+  // إخفاء حقيقي: letters of ikhfa after noon sakin/tanwin (approximate detection)
+  if (/[نً][^\s]*[تثجدذزسشصضطظفقك]/.test(word)) return TAJWEED_COLORS.green;
+
+  // CYAN: قلقلة – [قطبجد] with sukun
+  if (/[قطبجد]ْ/.test(word)) return TAJWEED_COLORS.cyan;
+
+  // DARK BLUE: تفخيم الراء – ر (simplified: all raa, refined versions check context)
+  if (/رَ|رُ|رً|رٌ|رَّ|رُّ/.test(word)) return TAJWEED_COLORS.darkBlue;
+
+  // RED: مد واجب متصل (mad letter + همز in same word) or مد لازم (ّ after mad)
+  if (/[اوي]ء|[اوي][ٔأإ]/.test(word)) return TAJWEED_COLORS.red;
+  if (/[اوي]ّ/.test(word)) return TAJWEED_COLORS.red;
+
+  // DARK RED: مد طبيعي – simple mad letters (ا و ي) in regular context
+  if (/[اوي]/.test(word) && !/[اوي]ء|[اوي][ٔأإ]|[اوي]ّ/.test(word)) {
+    // Only color if it's a clear natural madd (preceded by matching short vowel)
+    if (/َا|ُو|ِي/.test(word)) return TAJWEED_COLORS.maroon;
+  }
+
+  // ORANGE: الألف الخنجرية ٰ or مد اللين (واو/ياء ساكنة بعد فتح)
+  if (/ٰ/.test(word)) return TAJWEED_COLORS.orange;
+  if (/َو[ْ]|َي[ْ]/.test(word)) return TAJWEED_COLORS.orange;
+
+  // YELLOW: مد الصلة الصغرى (ه ضمير mim/ha between vowels – hard to detect precisely)
+  // Approximate: ه followed by vowel at word end
+  if (/هِ$|هُ$|هٍ$|هٌ$/.test(word)) return TAJWEED_COLORS.yellow;
+
+  // GREY: همزة الوصل ٱ, لام شمسية (ال + sun letters), إدغام بدون غنة
+  if (/ٱ/.test(word)) return TAJWEED_COLORS.grey;
+  if (/^ٱل[تثدذرزسشصضطظلن]/.test(word)) return TAJWEED_COLORS.grey;
+  // إدغام بدون غنة: ن ساكنة/تنوين + ل أو ر
+  if (/نْ[لر]|[ًٌٍ][لر]/.test(word)) return TAJWEED_COLORS.grey;
+
+  return null;
 };
 
 const renderTajweedWord = (word: string, wordIdx: number) => {
-  // Determine word-level tajweed color (priority: ghunna > qalqala > madd)
-  let color: string | null = null;
-  if (/[نم]ّ/.test(word)) color = TAJWEED_COLORS.ghunna;
-  else if (/[قطبجد]ْ/.test(word)) color = TAJWEED_COLORS.qalqala;
-  else if (/[~ٓ]/.test(word)) color = TAJWEED_COLORS.madd;
-
+  const color = getTajweedColor(word);
   if (color) {
-    // Whole word as ONE text run → Arabic shaping/ligatures fully preserved, no spacing gaps
     return (
       <span key={wordIdx} style={{ color }} className="inline">
         {word}{' '}
@@ -886,18 +937,20 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   }`}
                 >
 
-                  {/* Top Header Inside Page Frame */}
-                  <div className="border-b border-emerald-500/20 pb-2 flex items-center justify-between text-xs text-muted-foreground font-arabic-title font-bold">
-                    <span className="flex items-center gap-1 text-emerald-400">
+                  {/* Breadcrumb + Swipe Hint Bar */}
+                  <div className="pb-2 mb-1 flex items-center justify-between text-[11px] text-muted-foreground font-arabic-title font-bold border-b border-border/40">
+                    <span className="flex items-center gap-1 text-emerald-400 font-extrabold">
                       <BookOpen className="size-3.5 text-emerald-400 shrink-0" />
                       <span>سورة {pageSurah.name}</span>
+                      <span className="text-muted-foreground/60 font-normal">•</span>
+                      <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-extrabold text-[10px]">صفحة {pageNum}</span>
                     </span>
-
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-extrabold text-[11px]">
-                      صفحة {pageNum}
+                    <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1 select-none">
+                      <span>←</span>
+                      <span>اسحب للتنقل بين الصفحات</span>
+                      <span>→</span>
                     </span>
-
-                    <span className="text-foreground/80 font-mono text-[11px]">
+                    <span className="text-foreground/60 font-mono text-[10px]">
                       الجزء {pageSurah.juzStart}
                     </span>
                   </div>
@@ -1092,34 +1145,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     </>
                   )}
 
-                  {/* Page Bottom Footer Inside Frame */}
-                  <div className="border-t border-emerald-500/20 pt-2 flex items-center justify-between text-xs text-muted-foreground font-arabic-title font-bold">
-                    <span>سورة {pageSurah.name}</span>
-                    <span className="text-emerald-400 font-extrabold text-xs">ـ صفحة {pageNum} ـ</span>
-                    <span>الجزء {pageSurah.juzStart}</span>
-                  </div>
-
-                  {/* Easy Large Page Shift Buttons */}
-                  <div className="pt-2 flex items-center justify-between gap-3 font-arabic-title border-t border-border/40">
-                    <button
-                      type="button"
-                      onClick={() => handlePageChange(pageNum - 1)}
-                      disabled={pageNum <= 1}
-                      className="flex-1 py-2.5 px-3 rounded-2xl bg-secondary/80 hover:bg-secondary active:scale-95 disabled:opacity-30 border border-border flex items-center justify-center gap-2 text-xs font-bold text-foreground transition-all cursor-pointer shadow-sm"
-                    >
-                      <ChevronRight className="size-4 text-emerald-400" />
-                      <span>الصفحة السابقة ({pageNum > 1 ? pageNum - 1 : 1})</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handlePageChange(pageNum + 1)}
-                      disabled={pageNum >= 604}
-                      className="flex-1 py-2.5 px-3 rounded-2xl bg-emerald-600/15 hover:bg-emerald-600/25 active:scale-95 disabled:opacity-30 border border-emerald-500/30 flex items-center justify-center gap-2 text-xs font-bold text-emerald-300 transition-all cursor-pointer shadow-sm"
-                    >
-                      <span>الصفحة التالية ({pageNum < 604 ? pageNum + 1 : 604})</span>
-                      <ChevronLeft className="size-4 text-emerald-400" />
-                    </button>
+                  {/* Slim bottom footer */}
+                  <div className="border-t border-border/30 pt-1.5 flex items-center justify-center text-[10px] text-muted-foreground/60 font-arabic-title font-bold select-none">
+                    <span>ـ صفحة {pageNum} ـ</span>
                   </div>
                 </div>
               );
