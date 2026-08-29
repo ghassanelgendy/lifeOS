@@ -48,22 +48,55 @@ const JUZ_START_PAGES = Array.from({ length: 30 }, (_, i) => {
   return { juz: juzNum, page: (juzNum - 2) * 20 + 22 };
 });
 
-// Tajweed Color Highlighter for Uthmani Text
+// Tajweed Color Highlighter for Uthmani Text with Arabic Cursive Wasl preservation
+const renderTajweedWord = (word: string, wordIdx: number) => {
+  const parts = word.split(/([نم]ّ|[قطبجد]ْ|[~ٓ])/g);
+  if (parts.length <= 1) {
+    return <React.Fragment key={wordIdx}>{word} </React.Fragment>;
+  }
+
+  return (
+    <span key={wordIdx} className="inline whitespace-normal">
+      {parts.map((part, idx) => {
+        if (!part) return null;
+        const isTajweed = /[نم]ّ|[قطبجد]ْ|[~ٓ]/.test(part);
+        const prevPart = parts[idx - 1];
+        const nextPart = parts[idx + 1];
+
+        // Add Zero-Width Joiner (\u200D) to maintain Arabic cursive joining across spans
+        let formatted = part;
+        if (isTajweed) {
+          if (prevPart) formatted = '\u200D' + formatted;
+          if (nextPart) formatted = formatted + '\u200D';
+
+          let colorClass = 'text-sky-500 dark:text-sky-400';
+          if (/[نم]ّ/.test(part)) colorClass = 'text-amber-500 dark:text-amber-400';
+          else if (/[قطبجد]ْ/.test(part)) colorClass = 'text-rose-500 dark:text-rose-400';
+
+          return (
+            <span key={idx} className={`${colorClass} inline p-0 m-0`}>
+              {formatted}
+            </span>
+          );
+        }
+
+        if (idx > 0 && parts[idx - 1] && /[نم]ّ|[قطبجد]ْ|[~ٓ]/.test(parts[idx - 1])) {
+          formatted = '\u200D' + formatted;
+        }
+        if (nextPart && /[نم]ّ|[قطبجد]ْ|[~ٓ]/.test(nextPart)) {
+          formatted = formatted + '\u200D';
+        }
+
+        return <React.Fragment key={idx}>{formatted}</React.Fragment>;
+      })}
+      {' '}
+    </span>
+  );
+};
+
 const renderTajweedText = (text: string) => {
-  const parts = text.split(/([نم]ّ|[قطبجد]ْ|[~ٓ])/g);
-  return parts.map((part, idx) => {
-    if (!part) return null;
-    if (/[نم]ّ/.test(part)) {
-      return <span key={idx} className="text-amber-500 dark:text-amber-400">{part}</span>;
-    }
-    if (/[قطبجد]ْ/.test(part)) {
-      return <span key={idx} className="text-rose-500 dark:text-rose-400">{part}</span>;
-    }
-    if (/[~ٓ]/.test(part)) {
-      return <span key={idx} className="text-sky-500 dark:text-sky-400">{part}</span>;
-    }
-    return part;
-  });
+  const words = text.split(/\s+/);
+  return words.map((word, idx) => renderTajweedWord(word, idx));
 };
 
 interface WirdMarker {

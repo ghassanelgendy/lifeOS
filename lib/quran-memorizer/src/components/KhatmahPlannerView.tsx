@@ -196,21 +196,50 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const [juzCount, setJuzCount] = useState(1);
   const [targetDays, setTargetDays] = useState(30);
 
+  // Listen for background updates & cloud sync hydration
   useEffect(() => {
+    const handleSync = () => {
+      try {
+        const savedPlan = localStorage.getItem(KHATMAH_STORAGE_KEY);
+        if (savedPlan) setPlan(JSON.parse(savedPlan));
+
+        const savedReading = localStorage.getItem(READING_WIRD_STORAGE_KEY);
+        if (savedReading) setReadingWird(JSON.parse(savedReading));
+
+        const savedNotes = localStorage.getItem(HALQAH_NOTES_STORAGE_KEY);
+        if (savedNotes) setHalqahNotes(JSON.parse(savedNotes));
+      } catch {}
+    };
+
+    window.addEventListener('quran_plan_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('quran_plan_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
+
+  const isInitialMount = React.useRef(true);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (plan) {
       localStorage.setItem(KHATMAH_STORAGE_KEY, JSON.stringify(plan));
-    } else {
-      localStorage.removeItem(KHATMAH_STORAGE_KEY);
+      window.dispatchEvent(new Event('quran_plan_updated'));
     }
-    window.dispatchEvent(new Event('quran_plan_updated'));
   }, [plan]);
 
   useEffect(() => {
+    if (isInitialMount.current) return;
     localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(readingWird));
     window.dispatchEvent(new Event('quran_plan_updated'));
   }, [readingWird]);
 
   useEffect(() => {
+    if (isInitialMount.current) return;
     localStorage.setItem(HALQAH_NOTES_STORAGE_KEY, JSON.stringify(halqahNotes));
     window.dispatchEvent(new Event('quran_plan_updated'));
   }, [halqahNotes]);
