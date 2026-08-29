@@ -5,11 +5,10 @@ export function screentimeDateKey(date: string | null | undefined): string {
   return s.length >= 10 ? s.slice(0, 10) : s;
 }
 
-export type ScreentimeUiPlatform = 'ios' | 'windows';
+export type ScreentimeUiPlatform = 'ios' | 'windows' | 'linux';
 
 /**
- * Map DB/platform strings to the UI bucket. Windows agents may send Win32, etc.
- * Only iOS and Windows are tracked on the Screen Time page.
+ * Map DB/platform strings to the UI bucket. Windows agents may send Win32, Linux agents send linux/ubuntu, etc.
  */
 export function screentimeUiPlatform(platform: string | null | undefined): ScreentimeUiPlatform | null {
   const n = String(platform ?? '')
@@ -27,6 +26,17 @@ export function screentimeUiPlatform(platform: string | null | undefined): Scree
   ) {
     return 'windows';
   }
+  if (
+    n === 'linux' ||
+    n === 'ubuntu' ||
+    n === 'debian' ||
+    n === 'fedora' ||
+    n === 'arch' ||
+    n.includes('linux') ||
+    n.includes('ubuntu')
+  ) {
+    return 'linux';
+  }
   return null;
 }
 
@@ -34,5 +44,6 @@ export function platformLabelTracked(platform: string | null | undefined): strin
   const b = screentimeUiPlatform(platform);
   if (b === 'ios') return 'IOS';
   if (b === 'windows') return 'windows';
+  if (b === 'linux') return 'Linux';
   return '';
 }

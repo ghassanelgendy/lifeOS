@@ -178,12 +178,12 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 ### 5.7 Digital Wellbeing (Screen Time)
 **Purpose:** Take back your attention.
 
-- Screen time data upload via Edge Function
+- Screen time data upload via Edge Function (`upload-screentime` & `upload-screentime-chronos`)
 - App usage: Duration, session count, switches per app (categorized)
 - Website visits: Duration, sessions per domain
 - Daily summary: Total usage, top apps, top websites
 - Screen time goal: Configurable limit (default 8 hours)
-- Platform support: Standard format and Chronos format ingestion
+- Multi-Platform support: Native tracking across iOS, Windows, and Linux (Ubuntu / Debian / Fedora / Arch) with dedicated platform filters, device sync indicators, and multi-tier platform breakdown charts.
 
 ### 5.8 Health & Body Metrics
 **Purpose:** Track physical wellness over time.

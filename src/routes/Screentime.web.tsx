@@ -33,7 +33,7 @@ import { useUIStore } from '../stores/useUIStore';
   const [customEndDate, setCustomEndDate] = useState(todayStr);
   const [showAllApps, setShowAllApps] = useState(false);
   const [weekStart, setWeekStart] = useState<string>(() => format(startOfWeek(today), 'yyyy-MM-dd'));
-  const [platformFilter, setPlatformFilter] = useState<'all' | 'ios' | 'windows'>('all');
+  const [platformFilter, setPlatformFilter] = useState<'all' | 'ios' | 'windows' | 'linux'>('all');
   const [appSearchQuery, setAppSearchQuery] = useState('');
 
   const getDateRange = (): { start: string; end: string } => {
@@ -122,7 +122,7 @@ import { useUIStore } from '../stores/useUIStore';
       });
     }, [summaries, displayStart, displayEnd, period, isLoading, todayData]);
 
-    // Only iOS and Windows; aggregate by (app_name, platform) — use statsForDisplay so cards show selected day only when Today
+    // Aggregate by (app_name, platform)
     const aggregatedApps = statsForDisplay.reduce((acc, stat) => {
       const bucket = screentimeUiPlatform(stat.platform);
       if (!bucket) return acc;
@@ -146,7 +146,7 @@ import { useUIStore } from '../stores/useUIStore';
       .filter((app) => {
         if (platformFilter === 'all') return true;
         const b = screentimeUiPlatform(app.platform);
-        return platformFilter === 'ios' ? b === 'ios' : b === 'windows';
+        return platformFilter === b;
       })
       .sort((a, b) => b.total_time_seconds - a.total_time_seconds)
       .map((app) => ({
@@ -173,7 +173,7 @@ import { useUIStore } from '../stores/useUIStore';
 
     // Category breakdown: aggregate by category
     const categoryBreakdown = useMemo(() => {
-      const byCategory = new Map<string, { ios: number; windows: number }>();
+      const byCategory = new Map<string, { ios: number; windows: number; linux: number }>();
       
       // Normalize category names (merge variations like "WebBrowsing" and "Web Browsing")
       const normalizeCategory = (cat: string): string => {
@@ -187,14 +187,16 @@ import { useUIStore } from '../stores/useUIStore';
         const bucket = screentimeUiPlatform(stat.platform);
         if (!bucket) return;
         const category = normalizeCategory(stat.category || 'Uncategorized');
-        const existing = byCategory.get(category) || { ios: 0, windows: 0 };
+        const existing = byCategory.get(category) || { ios: 0, windows: 0, linux: 0 };
         if (bucket === 'ios') existing.ios += stat.total_time_seconds;
-        else existing.windows += stat.total_time_seconds;
+        else if (bucket === 'windows') existing.windows += stat.total_time_seconds;
+        else if (bucket === 'linux') existing.linux += stat.total_time_seconds;
         byCategory.set(category, existing);
       });
 
       const hasIOSBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'ios' && isBrowserApp(s.app_name));
       const hasWindowsBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'windows' && isBrowserApp(s.app_name));
+      const hasLinuxBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'linux' && isBrowserApp(s.app_name));
 
       const webCategory = 'Web domains';
       websitesForDisplay.forEach((stat) => {
@@ -202,48 +204,55 @@ import { useUIStore } from '../stores/useUIStore';
         if (!bucket) return;
         if (bucket === 'ios' && hasIOSBrowser) return; // skip websites if browser is counted
         if (bucket === 'windows' && hasWindowsBrowser) return; // skip websites if browser is counted
+        if (bucket === 'linux' && hasLinuxBrowser) return; // skip websites if browser is counted
         
-        const existing = byCategory.get(webCategory) || { ios: 0, windows: 0 };
+        const existing = byCategory.get(webCategory) || { ios: 0, windows: 0, linux: 0 };
         if (bucket === 'ios') existing.ios += stat.total_time_seconds;
-        else existing.windows += stat.total_time_seconds;
+        else if (bucket === 'windows') existing.windows += stat.total_time_seconds;
+        else if (bucket === 'linux') existing.linux += stat.total_time_seconds;
         byCategory.set(webCategory, existing);
       });
-      const total = Array.from(byCategory.values()).reduce((sum, times) => sum + times.ios + times.windows, 0);
+      const total = Array.from(byCategory.values()).reduce((sum, times) => sum + times.ios + times.windows + times.linux, 0);
       const allUseHours = Array.from(byCategory.values()).some(times => {
         const iosMin = Math.round(times.ios / 60);
         const winMin = Math.round(times.windows / 60);
-        return iosMin >= 60 || winMin >= 60;
+        const linMin = Math.round(times.linux / 60);
+        return iosMin >= 60 || winMin >= 60 || linMin >= 60;
       });
       
       return Array.from(byCategory.entries())
         .map(([category, times]) => {
           const iosMinutes = Math.round(times.ios / 60);
           const windowsMinutes = Math.round(times.windows / 60);
-          const totalMinutes = iosMinutes + windowsMinutes;
-          const totalSeconds = times.ios + times.windows;
+          const linuxMinutes = Math.round(times.linux / 60);
+          const totalMinutes = iosMinutes + windowsMinutes + linuxMinutes;
+          const totalSeconds = times.ios + times.windows + times.linux;
           const percentage = total > 0 ? Math.round((totalSeconds / total) * 100) : 0;
           
           // Convert all to the same unit for chart (hours if any category >= 60min, else minutes)
-          // This ensures correct ratios
           const iosForChart = allUseHours ? Math.round((times.ios / 3600) * 10) / 10 : iosMinutes;
           const windowsForChart = allUseHours ? Math.round((times.windows / 3600) * 10) / 10 : windowsMinutes;
+          const linuxForChart = allUseHours ? Math.round((times.linux / 3600) * 10) / 10 : linuxMinutes;
           
           return {
             category,
-            ios: iosForChart, // For chart dataKey (all in same unit)
-            windows: windowsForChart, // For chart dataKey (all in same unit)
+            ios: iosForChart,
+            windows: windowsForChart,
+            linux: linuxForChart,
             iosMinutes,
             windowsMinutes,
+            linuxMinutes,
             totalMinutes,
             iosHours: Math.round((times.ios / 3600) * 10) / 10,
             windowsHours: Math.round((times.windows / 3600) * 10) / 10,
+            linuxHours: Math.round((times.linux / 3600) * 10) / 10,
             totalHours: Math.round((totalSeconds / 3600) * 10) / 10,
             percentage,
-            useHours: allUseHours, // Flag for display
+            useHours: allUseHours,
           };
         })
         .sort((a, b) => b.totalMinutes - a.totalMinutes)
-        .filter(cat => cat.totalMinutes > 0); // Only show categories with time
+        .filter(cat => cat.totalMinutes > 0);
     }, [statsForDisplay, websitesForDisplay]);
 
     // Only iOS and Windows — use websitesForDisplay for cards
@@ -278,12 +287,14 @@ import { useUIStore } from '../stores/useUIStore';
       }));
 
      // Total = app + domain (browser) time per device (deduplicated to avoid double counting browser and websites)
-    const { totalSeconds, totalMinutes, totalHours, remainingMinutes, iosSeconds, windowsSeconds } = useMemo(() => {
+    const { totalSeconds, totalMinutes, totalHours, remainingMinutes, iosSeconds, windowsSeconds, linuxSeconds } = useMemo(() => {
       let ios = 0;
       let win = 0;
+      let linux = 0;
       
       const hasIOSBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'ios' && isBrowserApp(s.app_name));
       const hasWindowsBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'windows' && isBrowserApp(s.app_name));
+      const hasLinuxBrowser = statsForDisplay.some(s => screentimeUiPlatform(s.platform) === 'linux' && isBrowserApp(s.app_name));
 
       const add = (platform: string | null | undefined, seconds: number, isWebsite: boolean) => {
         const b = screentimeUiPlatform(platform);
@@ -293,11 +304,14 @@ import { useUIStore } from '../stores/useUIStore';
         } else if (b === 'windows') {
           if (isWebsite && hasWindowsBrowser) return; // skip websites if browser is counted
           win += seconds;
+        } else if (b === 'linux') {
+          if (isWebsite && hasLinuxBrowser) return; // skip websites if browser is counted
+          linux += seconds;
         }
       };
       statsForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds, false));
       websitesForDisplay.forEach((stat) => add(stat.platform, stat.total_time_seconds, true));
-      const total = ios + win;
+      const total = ios + win + linux;
       const mins = Math.round(total / 60);
       return {
         totalSeconds: total,
@@ -306,22 +320,25 @@ import { useUIStore } from '../stores/useUIStore';
         remainingMinutes: mins % 60,
         iosSeconds: ios,
         windowsSeconds: win,
+        linuxSeconds: linux,
       };
     }, [statsForDisplay, websitesForDisplay]);
 
-    // Chart data: only iOS and Windows. When period is 'week' use full week (start..end); else first-to-last day with data.
+    // Chart data: iOS, Windows, Linux. When period is 'week' use full week (start..end); else first-to-last day with data.
     const chartData = useMemo(() => {
-      const byDate = new Map<string, { ios: number; windows: number }>();
+      const byDate = new Map<string, { ios: number; windows: number; linux: number }>();
 
-      // Pre-calculate which dates have browser apps for iOS/Windows to avoid double counting
+      // Pre-calculate which dates have browser apps for iOS/Windows/Linux to avoid double counting
       const browserDatesIOS = new Set<string>();
       const browserDatesWindows = new Set<string>();
+      const browserDatesLinux = new Set<string>();
       appStats.forEach(stat => {
         const d = screentimeDateKey(stat.date);
         const b = screentimeUiPlatform(stat.platform);
         if (d && b && isBrowserApp(stat.app_name)) {
           if (b === 'ios') browserDatesIOS.add(d);
           else if (b === 'windows') browserDatesWindows.add(d);
+          else if (b === 'linux') browserDatesLinux.add(d);
         }
       });
 
@@ -334,11 +351,13 @@ import { useUIStore } from '../stores/useUIStore';
         if (isWebsite) {
           if (b === 'ios' && browserDatesIOS.has(d)) return;
           if (b === 'windows' && browserDatesWindows.has(d)) return;
+          if (b === 'linux' && browserDatesLinux.has(d)) return;
         }
 
-        const existing = byDate.get(d) || { ios: 0, windows: 0 };
+        const existing = byDate.get(d) || { ios: 0, windows: 0, linux: 0 };
         if (b === 'ios') existing.ios += seconds;
-        else existing.windows += seconds;
+        else if (b === 'windows') existing.windows += seconds;
+        else if (b === 'linux') existing.linux += seconds;
         byDate.set(d, existing);
       };
 
@@ -352,7 +371,7 @@ import { useUIStore } from '../stores/useUIStore';
         maxDate = end;
       } else {
         const datesWithData = Array.from(byDate.keys()).filter(
-          (date) => (byDate.get(date)?.ios ?? 0) > 0 || (byDate.get(date)?.windows ?? 0) > 0
+          (date) => (byDate.get(date)?.ios ?? 0) > 0 || (byDate.get(date)?.windows ?? 0) > 0 || (byDate.get(date)?.linux ?? 0) > 0
         ).sort();
         if (datesWithData.length === 0) return [];
         minDate = datesWithData[0];
@@ -368,13 +387,14 @@ import { useUIStore } from '../stores/useUIStore';
       }
 
       return dates.map((date) => {
-        const row = byDate.get(date) || { ios: 0, windows: 0 };
+        const row = byDate.get(date) || { ios: 0, windows: 0, linux: 0 };
         return {
           date,
           dateLabel: format(parseISO(date), 'MMM d'),
           ios: Math.round(row.ios / 60),
           windows: Math.round(row.windows / 60),
-          minutes: Math.round((row.ios + row.windows) / 60),
+          linux: Math.round(row.linux / 60),
+          minutes: Math.round((row.ios + row.windows + row.linux) / 60),
         };
       });
     }, [appStats, websiteStats, period, start, end]);
@@ -383,6 +403,7 @@ import { useUIStore } from '../stores/useUIStore';
     const deviceLastPush = useMemo(() => {
       let windowsLast: string | null = null;
       let iosLast: string | null = null;
+      let linuxLast: string | null = null;
       const toTime = (s: {
         date: string;
         last_active_at?: string | null;
@@ -417,18 +438,20 @@ import { useUIStore } from '../stores/useUIStore';
         if (!picked) return;
         if (b === 'windows' && (!windowsLast || t > new Date(windowsLast).getTime())) windowsLast = picked;
         if (b === 'ios' && (!iosLast || t > new Date(iosLast).getTime())) iosLast = picked;
+        if (b === 'linux' && (!linuxLast || t > new Date(linuxLast).getTime())) linuxLast = picked;
       };
       appStats.forEach(consider);
       websiteStats.forEach(consider);
       if (todayData?.rawAppStats) todayData.rawAppStats.forEach(consider);
       if (todayData?.rawWebsiteStats) todayData.rawWebsiteStats.forEach(consider);
-      return { windowsLast, iosLast };
+      return { windowsLast, iosLast, linuxLast };
     }, [appStats, websiteStats, todayData]);
 
-    // Weekly pattern: aggregate by day of week (in hours) - separate iOS and Windows
+    // Weekly pattern: aggregate by day of week (in hours) - separate iOS, Windows, Linux
     const weeklyPattern = useMemo(() => {
       const dayTotalsIOS: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       const dayTotalsWindows: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
+      const dayTotalsLinux: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       const dayCounts: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 };
       
       const addWeekMinutes = (dateRaw: string, platform: string | null | undefined, seconds: number) => {
@@ -439,7 +462,8 @@ import { useUIStore } from '../stores/useUIStore';
         const dayOfWeek = getDay(parseISO(key));
         const minutes = Math.round(seconds / 60);
         if (b === 'ios') dayTotalsIOS[dayOfWeek] += minutes;
-        else dayTotalsWindows[dayOfWeek] += minutes;
+        else if (b === 'windows') dayTotalsWindows[dayOfWeek] += minutes;
+        else if (b === 'linux') dayTotalsLinux[dayOfWeek] += minutes;
         dayCounts[dayOfWeek] += 1;
       };
 
@@ -450,12 +474,14 @@ import { useUIStore } from '../stores/useUIStore';
       return dayNames.map((name, idx) => {
         const iosHours = dayCounts[idx] > 0 ? Math.round((dayTotalsIOS[idx] / 60) * 10) / 10 : 0;
         const windowsHours = dayCounts[idx] > 0 ? Math.round((dayTotalsWindows[idx] / 60) * 10) / 10 : 0;
+        const linuxHours = dayCounts[idx] > 0 ? Math.round((dayTotalsLinux[idx] / 60) * 10) / 10 : 0;
         return {
           day: name,
           ios: iosHours,
           windows: windowsHours,
-          hours: iosHours + windowsHours, // Total for backward compatibility
-          total: dayTotalsIOS[idx] + dayTotalsWindows[idx],
+          linux: linuxHours,
+          hours: iosHours + windowsHours + linuxHours, // Total for backward compatibility
+          total: dayTotalsIOS[idx] + dayTotalsWindows[idx] + dayTotalsLinux[idx],
         };
       });
     }, [appStats, websiteStats]);
@@ -678,7 +704,7 @@ import { useUIStore } from '../stores/useUIStore';
         </div>
 
         {/* Tiny indicator: which devices pushed and when (date + time, 12h AM/PM) */}
-        {(deviceLastPush.windowsLast || deviceLastPush.iosLast) && (
+        {(deviceLastPush.windowsLast || deviceLastPush.iosLast || deviceLastPush.linuxLast) && (
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
             {deviceLastPush.windowsLast && (
               <span title="Windows last synced at this time">
@@ -704,6 +730,18 @@ import { useUIStore } from '../stores/useUIStore';
                 })()}</span>
               </span>
             )}
+            {deviceLastPush.linuxLast && (
+              <span title="Linux last synced at this time">
+                <span className="font-medium text-foreground/80">Linux</span>
+                <span className="opacity-70"> · {(() => {
+                  try {
+                    return format(new Date(deviceLastPush.linuxLast as string), 'd MMM, h:mm a');
+                  } catch {
+                    return 'Recent';
+                  }
+                })()}</span>
+              </span>
+            )}
           </div>
         )}
 
@@ -722,11 +760,10 @@ import { useUIStore } from '../stores/useUIStore';
               </div>
             </div>
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              <span>windows: {privacyMode ? '•••' : formatDurationMinutes(Math.round(windowsSeconds / 60))}</span>
-              <span>IOS: {privacyMode ? '•••' : formatDurationMinutes(Math.round(iosSeconds / 60))}</span>
+              <span>Windows: {privacyMode ? '•••' : formatDurationMinutes(Math.round(windowsSeconds / 60))}</span>
+              <span>iOS: {privacyMode ? '•••' : formatDurationMinutes(Math.round(iosSeconds / 60))}</span>
+              <span>Linux: {privacyMode ? '•••' : formatDurationMinutes(Math.round(linuxSeconds / 60))}</span>
             </div>
-           
-          
           </div>
 
           <div className="rounded-xl border border-border bg-card p-6">
@@ -860,11 +897,11 @@ import { useUIStore } from '../stores/useUIStore';
 
         {/* Charts Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Daily usage: stacked bar by iOS / Windows */}
+          {/* Daily usage: stacked bar by iOS / Windows / Linux */}
           {chartData.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="text-lg font-semibold mb-4">Daily usage by device</h2>
-              <p className="text-sm text-muted-foreground mb-2">Minutes per day (iOS & Windows)</p>
+              <p className="text-sm text-muted-foreground mb-2">Minutes per day (iOS, Windows & Linux)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
                   <XAxis dataKey="dateLabel" />
@@ -885,18 +922,19 @@ import { useUIStore } from '../stores/useUIStore';
                   <Legend formatter={(value) => platformLabel(value)} />
                   <Bar dataKey="windows" name="windows" stackId="usage" fill={accentShades.base} isAnimationActive={false} />
                   <Bar dataKey="ios" name="IOS" stackId="usage" fill={accentShades.light} isAnimationActive={false} />
+                  <Bar dataKey="linux" name="Linux" stackId="usage" fill="#f59e0b" isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
 
-          {/* Usage trend: two overlapping lines (iOS + Windows), same x-axis = days/weeks/months */}
+          {/* Usage trend: overlapping lines (iOS + Windows + Linux) */}
           {chartData.length > 0 && (
             <div className="rounded-xl border border-border bg-card p-6">
               <div className="flex items-center justify-between gap-4 mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold">Usage trend (iOS vs Windows)</h2>
-                  <p className="text-sm text-muted-foreground mt-0.5">Minutes per day — both lines share the same dates so you can compare</p>
+                  <h2 className="text-lg font-semibold">Usage trend (cross-platform)</h2>
+                  <p className="text-sm text-muted-foreground mt-0.5">Minutes per day — compare across all your active devices</p>
                 </div>
                 {period === 'week' && (
                   <div className="flex items-center gap-1 shrink-0">
@@ -943,6 +981,7 @@ import { useUIStore } from '../stores/useUIStore';
                   <Legend formatter={(value) => platformLabel(value)} />
                   <Line type="monotone" dataKey="windows" name="windows" stroke={accentShades.base} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
                   <Line type="monotone" dataKey="ios" name="IOS" stroke={accentShades.light} strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
+                  <Line type="monotone" dataKey="linux" name="Linux" stroke="#f59e0b" strokeWidth={2} dot={{ r: 3 }} connectNulls isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -994,7 +1033,7 @@ import { useUIStore } from '../stores/useUIStore';
                       
                       if (useHours) {
                         // Convert hours back to minutes for display
-                        const minutes = name === 'IOS' ? payload?.iosMinutes : payload?.windowsMinutes || 0;
+                        const minutes = name === 'IOS' ? payload?.iosMinutes : name === 'Linux' ? payload?.linuxMinutes : payload?.windowsMinutes || 0;
                         return [`${formatDurationMinutes(minutes)}`, platformLabel(String(name ?? ''))];
                       } else {
                         return [`${formatDurationMinutes(numValue)}`, platformLabel(String(name ?? ''))];
@@ -1013,6 +1052,7 @@ import { useUIStore } from '../stores/useUIStore';
                   <Legend formatter={(value) => platformLabel(value)} />
                   <Bar dataKey="ios" name="IOS" stackId="category" fill={accentShades.light} isAnimationActive={false} />
                   <Bar dataKey="windows" name="windows" stackId="category" fill={accentShades.base} isAnimationActive={false} />
+                  <Bar dataKey="linux" name="Linux" stackId="category" fill="#f59e0b" isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1022,7 +1062,7 @@ import { useUIStore } from '../stores/useUIStore';
           {weeklyPattern.some(d => d.hours > 0) && (
             <div className="rounded-xl border border-border bg-card p-6 lg:col-span-2">
               <h2 className="text-lg font-semibold mb-4">Weekly Pattern</h2>
-              <p className="text-sm text-muted-foreground mb-4">Average hours per day of week (iOS vs Windows)</p>
+              <p className="text-sm text-muted-foreground mb-4">Average hours per day of week (iOS vs Windows vs Linux)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={weeklyPattern}>
                   <XAxis dataKey="day" />
@@ -1042,6 +1082,7 @@ import { useUIStore } from '../stores/useUIStore';
                   <Legend formatter={(value) => platformLabel(value)} />
                   <Bar dataKey="ios" name="IOS" fill={accentShades.light} isAnimationActive={false} />
                   <Bar dataKey="windows" name="windows" fill={accentShades.base} isAnimationActive={false} />
+                  <Bar dataKey="linux" name="Linux" fill="#f59e0b" isAnimationActive={false} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -1092,12 +1133,12 @@ import { useUIStore } from '../stores/useUIStore';
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h2 className="text-lg font-semibold">Apps</h2>
-                  <p className="text-sm text-muted-foreground">Source (IOS, windows) shown per app</p>
+                  <p className="text-sm text-muted-foreground">Source (iOS, Windows, Linux) shown per app</p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* Platform filter */}
                   <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1">
-                    {(['all', 'ios', 'windows'] as const).map((pf) => (
+                    {(['all', 'ios', 'windows', 'linux'] as const).map((pf) => (
                       <button
                         key={pf}
                         type="button"
@@ -1109,7 +1150,7 @@ import { useUIStore } from '../stores/useUIStore';
                             : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                         )}
                       >
-                        {pf === 'all' ? 'All' : pf === 'ios' ? 'IOS' : 'Windows'}
+                        {pf === 'all' ? 'All' : pf === 'ios' ? 'iOS' : pf === 'windows' ? 'Windows' : 'Linux'}
                       </button>
                     ))}
                   </div>
@@ -1193,7 +1234,7 @@ import { useUIStore } from '../stores/useUIStore';
           <div className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="p-6 border-b border-border">
               <h2 className="text-lg font-semibold">Top Websites</h2>
-              <p className="text-sm text-muted-foreground">Source (iOS, Windows) shown per site</p>
+              <p className="text-sm text-muted-foreground">Source (iOS, Windows, Linux) shown per site</p>
             </div>
             <div className="divide-y divide-border">
               {topWebsites.map((site, idx) => (
