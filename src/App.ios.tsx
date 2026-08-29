@@ -136,6 +136,20 @@ function AppInner() {
     enabled: !!user?.id,
   });
 
+  const [quranSyncTrigger, setQuranSyncTrigger] = useState(0);
+
+  useEffect(() => {
+    const handleQuranPlanChange = () => {
+      setQuranSyncTrigger((prev) => prev + 1);
+    };
+    window.addEventListener('quran_plan_updated', handleQuranPlanChange);
+    window.addEventListener('storage', handleQuranPlanChange);
+    return () => {
+      window.removeEventListener('quran_plan_updated', handleQuranPlanChange);
+      window.removeEventListener('storage', handleQuranPlanChange);
+    };
+  }, []);
+
   useEffect(() => {
     if (!tasks || !habits || !events) return;
     // Use [] fallback for prayerSettings so tasks/habits/events are scheduled
@@ -151,7 +165,7 @@ function AppInner() {
       todayPrayerLogs,
       habitAverages
     );
-  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled, habitAverages]);
+  }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled, habitAverages, quranSyncTrigger]);
 
   useEffect(() => {
     if (isOnline()) seedDatabase();

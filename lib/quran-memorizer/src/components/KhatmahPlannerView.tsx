@@ -42,6 +42,7 @@ interface KhatmahPlannerViewProps {
   onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateTask?: (title: string, dueDate: string) => void;
   onCreateHalqahNote?: (note: SheikhHalqahNote) => void;
+  onOpenReader?: (page: number, surahNumber?: number) => void;
 }
 
 const getSurahForPage = (page: number) => {
@@ -84,6 +85,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   onUpdateHabitDescription,
   onCreateTask,
   onCreateHalqahNote,
+  onOpenReader,
 }) => {
   // Memorization Plan State
   const [plan, setPlan] = useState<KhatmahPlan | null>(() => {
@@ -439,7 +441,10 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                           const updated = { ...plan, currentPage: meta.pageStart };
                           setPlan(updated);
                           localStorage.setItem(KHATMAH_STORAGE_KEY, JSON.stringify(updated));
+                          localStorage.setItem('quran_memorization_marker_v1', JSON.stringify({ surahNumber: meta.id, ayahNumber: 1, page: meta.pageStart }));
+                          localStorage.setItem('quran_active_page_v1', meta.pageStart.toString());
                           window.dispatchEvent(new Event('quran_plan_updated'));
+                          window.dispatchEvent(new Event('quran_active_page_updated'));
                         }
                       }}
                       className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border focus:outline-none"
@@ -460,10 +465,14 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                       value={plan.currentPage}
                       onChange={(e) => {
                         const p = Math.min(604, Math.max(1, Number(e.target.value)));
+                        const meta = getSurahForPage(p);
                         const updated = { ...plan, currentPage: p };
                         setPlan(updated);
                         localStorage.setItem(KHATMAH_STORAGE_KEY, JSON.stringify(updated));
+                        localStorage.setItem('quran_memorization_marker_v1', JSON.stringify({ surahNumber: meta.id, ayahNumber: 1, page: p }));
+                        localStorage.setItem('quran_active_page_v1', p.toString());
                         window.dispatchEvent(new Event('quran_plan_updated'));
+                        window.dispatchEvent(new Event('quran_active_page_updated'));
                       }}
                       className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border text-center focus:outline-none"
                     />
@@ -477,20 +486,31 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               </div>
 
               <div className="pt-1 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
                     <Flame className="size-3.5 fill-current" /> سلسلة {plan.streakDays} أيام
                   </span>
                   <button
                     onClick={handleLogProgress}
-                    className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                    className="px-3.5 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                   >
                     <CheckCircle2 className="size-3.5" /> تسجيل إنجاز الحفظ (+{plan.pagesPerDay} ص)
                   </button>
                 </div>
+                
+                {onOpenReader && (
+                  <button
+                    onClick={() => onOpenReader(plan.currentPage, currentSurah.id)}
+                    className="w-full py-2 px-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold text-xs border border-emerald-500/40 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  >
+                    <BookOpen className="size-3.5 text-emerald-400" />
+                    <span>📖 فتح ورد الحفظ في المصحف (ص {plan.currentPage})</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => handleOpenSmartHalqahNoteModal('memorization')}
-                  className="w-full py-2 px-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm mt-1"
+                  className="w-full py-2 px-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                 >
                   <FileText className="size-3.5 text-emerald-400" />
                   <span>📝 تدوين ملاحظة تسميع لورد الحفظ اليومي</span>
@@ -531,7 +551,10 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                         const updated = { ...readingWird, currentPage: meta.pageStart };
                         setReadingWird(updated);
                         localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(updated));
+                        localStorage.setItem('quran_reading_marker_v1', JSON.stringify({ surahNumber: meta.id, ayahNumber: 1, page: meta.pageStart }));
+                        localStorage.setItem('quran_active_page_v1', meta.pageStart.toString());
                         window.dispatchEvent(new Event('quran_plan_updated'));
+                        window.dispatchEvent(new Event('quran_active_page_updated'));
                       }
                     }}
                     className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border focus:outline-none"
@@ -552,10 +575,14 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     value={readingWird.currentPage}
                     onChange={(e) => {
                       const p = Math.min(604, Math.max(1, Number(e.target.value)));
+                      const meta = getSurahForPage(p);
                       const updated = { ...readingWird, currentPage: p };
                       setReadingWird(updated);
                       localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(updated));
+                      localStorage.setItem('quran_reading_marker_v1', JSON.stringify({ surahNumber: meta.id, ayahNumber: 1, page: p }));
+                      localStorage.setItem('quran_active_page_v1', p.toString());
                       window.dispatchEvent(new Event('quran_plan_updated'));
+                      window.dispatchEvent(new Event('quran_active_page_updated'));
                     }}
                     className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border text-center focus:outline-none"
                   />
@@ -569,20 +596,31 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             </div>
 
             <div className="pt-2 flex flex-col gap-2">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
                   <Flame className="size-3.5 fill-current" /> سلسلة {readingWird.streakDays} أيام قراءة
                 </span>
                 <button
                   onClick={handleLogReadingWird}
-                  className="px-4 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
                 >
                   <Bookmark className="size-3.5" /> تسجيل إنجاز التلاوة (+{readingWird.pagesPerDay} صفحة)
                 </button>
               </div>
+
+              {onOpenReader && (
+                <button
+                  onClick={() => onOpenReader(readingWird.currentPage, currentReadingSurah.id)}
+                  className="w-full py-2 px-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-bold text-xs border border-indigo-500/40 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
+                >
+                  <BookOpen className="size-3.5 text-indigo-400" />
+                  <span>📖 فتح ورد التلاوة في المصحف (ص {readingWird.currentPage})</span>
+                </button>
+              )}
+
               <button
                 onClick={() => handleOpenSmartHalqahNoteModal('reading')}
-                className="w-full py-2 px-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm mt-1"
+                className="w-full py-2 px-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
               >
                 <FileText className="size-3.5 text-indigo-400" />
                 <span>📝 تدوين ملاحظة على ورد التلاوة اليومي</span>

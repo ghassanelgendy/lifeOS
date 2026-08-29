@@ -218,7 +218,8 @@ export function getCurrentWirdInfo() {
       memPage = memPlan.currentPage;
       memSurahId = getSurahForPage(memPage).id;
     }
-    memSurahName = getSurahForPage(memPage).name;
+    const foundMemSurah = SURAHS.find((s) => s.id === memSurahId);
+    memSurahName = foundMemSurah ? foundMemSurah.name : getSurahForPage(memPage).name;
 
     const readMarkerStr = localStorage.getItem('quran_reading_marker_v1');
     const readPlanStr = localStorage.getItem('quran_reading_wird_v1');
@@ -232,7 +233,8 @@ export function getCurrentWirdInfo() {
       readPage = readPlan.currentPage;
       readSurahId = getSurahForPage(readPage).id;
     }
-    readSurahName = getSurahForPage(readPage).name;
+    const foundReadSurah = SURAHS.find((s) => s.id === readSurahId);
+    readSurahName = foundReadSurah ? foundReadSurah.name : getSurahForPage(readPage).name;
   } catch {}
 
   return {

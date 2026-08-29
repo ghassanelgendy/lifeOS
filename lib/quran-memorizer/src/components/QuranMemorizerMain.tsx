@@ -292,11 +292,23 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     return { surahNumber: surah.id, ayahNumber: 1, page };
   });
 
+  const handleOpenReaderFromKhatmah = (page: number, surahNumber?: number) => {
+    const targetSurah = surahNumber || getSurahForPage(page).id;
+    setSelectedSurah(targetSurah);
+    try {
+      localStorage.setItem('quran_active_page_v1', page.toString());
+      localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: targetSurah }));
+      window.dispatchEvent(new Event('quran_active_page_updated'));
+    } catch {}
+    setActiveTab('reader');
+  };
+
   const handleSetMemorizationMarker = (surahNumber: number, ayahNumber: number, page: number) => {
     const marker = { surahNumber, ayahNumber, page };
     setMemorizationMarker(marker);
     try {
       localStorage.setItem('quran_memorization_marker_v1', JSON.stringify(marker));
+      localStorage.setItem('quran_active_page_v1', page.toString());
       
       // Update plan currentPage as well
       const planSaved = localStorage.getItem('quran_khatmah_plan_v1');
@@ -306,6 +318,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       setMemorizationPlan(updatedPlan);
 
       window.dispatchEvent(new Event('quran_plan_updated'));
+      window.dispatchEvent(new Event('quran_active_page_updated'));
     } catch {}
   };
 
@@ -314,6 +327,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     setReadingMarker(marker);
     try {
       localStorage.setItem('quran_reading_marker_v1', JSON.stringify(marker));
+      localStorage.setItem('quran_active_page_v1', page.toString());
 
       // Update reading wird currentPage as well
       const wirdSaved = localStorage.getItem('quran_reading_wird_v1');
@@ -323,6 +337,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       setReadingWird(updatedWird);
 
       window.dispatchEvent(new Event('quran_plan_updated'));
+      window.dispatchEvent(new Event('quran_active_page_updated'));
     } catch {}
   };
 
@@ -341,6 +356,10 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     audio.setCurrentAyahIndex(memorizationMarker.ayahNumber);
     setStartAyah(memorizationMarker.ayahNumber);
     setEndAyah(Math.min(memorizationMarker.ayahNumber + 4, SURAHS.find(s => s.id === memorizationMarker.surahNumber)?.versesCount || 7));
+    try {
+      localStorage.setItem('quran_active_page_v1', memorizationMarker.page.toString());
+      window.dispatchEvent(new Event('quran_active_page_updated'));
+    } catch {}
     setActiveTab('reader');
   };
 
@@ -349,6 +368,10 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     audio.setCurrentAyahIndex(readingMarker.ayahNumber);
     setStartAyah(readingMarker.ayahNumber);
     setEndAyah(Math.min(readingMarker.ayahNumber + 4, SURAHS.find(s => s.id === readingMarker.surahNumber)?.versesCount || 7));
+    try {
+      localStorage.setItem('quran_active_page_v1', readingMarker.page.toString());
+      window.dispatchEvent(new Event('quran_active_page_updated'));
+    } catch {}
     setActiveTab('reader');
   };
 
@@ -358,7 +381,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       let targetPage = e?.detail?.page;
       let targetSurah = e?.detail?.surah;
       let targetMode = e?.detail?.mode;
-      let targetTab = e?.detail?.tab || 'reader';
+      let targetTab = e?.detail?.tab;
 
       // Check URL query parameters if event details are missing
       if (!targetPage && !targetSurah && typeof window !== 'undefined') {
@@ -405,16 +428,23 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         setSelectedSurah(targetSurah);
       }
 
-      window.dispatchEvent(new Event('quran_active_page_updated'));
+      if (targetPage || targetSurah) {
+        window.dispatchEvent(new Event('quran_active_page_updated'));
+      }
     };
 
-    handleOpenQuran();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('page') || params.get('surah') || params.get('tab') || params.get('mode')) {
+        handleOpenQuran();
+      }
+    }
 
     window.addEventListener('lifeos:openQuran', handleOpenQuran);
     return () => {
       window.removeEventListener('lifeos:openQuran', handleOpenQuran);
     };
-  }, [memorizationPlan, readingWird]);
+  }, []);
 
   const currentHadith = QURAN_HADITHS[currentHadithIdx] || QURAN_HADITHS[0];
 
@@ -537,6 +567,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onUpdateHabitDescription={onUpdateHabitDescription}
             onCreateTask={onCreateQuranTask}
             onCreateHalqahNote={onCreateHalqahNote}
+            onOpenReader={handleOpenReaderFromKhatmah}
           />
         )}
 
