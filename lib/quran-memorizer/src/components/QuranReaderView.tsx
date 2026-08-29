@@ -1058,17 +1058,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             onClick={() => onSelectAyah(ayah.numberInSurah)}
                             className={`cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
                               isMemMarker && isReadMarker
-                                ? 'bg-gradient-to-r from-emerald-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
+                                ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
                                 : isMemMarker
-                                ? 'bg-emerald-500/25 text-emerald-200 ring-2 ring-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
+                                ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
                                 : isReadMarker
-                                ? 'bg-indigo-500/25 text-indigo-200 ring-2 ring-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.25)]'
-                                 : isActive
-                                ? 'bg-gray-500/20 text-foreground ring-2 ring-gray-400/60 shadow-md'
+                                ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
+                                : isActive
+                                ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
                                 : inStudyRange
-                                ? 'bg-gray-500/10 border-b-2 border-gray-400/50'
-                                : isMemorized
-                                ? 'text-emerald-400'
+                                ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
                                 : 'hover:bg-accent/40'
                             }`}
                           >
@@ -1091,16 +1089,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             onClick={() => onSelectAyah(ayah.numberInSurah)}
                             className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
                               isMemWirdEnd
-                                ? 'bg-emerald-600 text-white font-black ring-2 ring-emerald-500/50 scale-105 shadow-md'
+                                ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
                                 : isMemMarker
-                                ? 'bg-emerald-500 text-white font-black shadow-[0_0_8px_rgba(16,185,129,0.5)] scale-105'
+                                ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
                                 : isReadMarker
-                                ? 'bg-indigo-600 text-white font-black shadow-[0_0_8px_rgba(99,102,241,0.5)] scale-105'
+                                ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
                                 : isMemorized
-                                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/80'
+                                ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
                                 : inStudyRange
-                                ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/50'
-                                : 'border border-emerald-500/40 text-emerald-400/90 bg-emerald-500/5 hover:bg-emerald-500/20'
+                                ? 'bg-secondary text-foreground border border-zinc-700'
+                                : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
                             }`}
                           >
                             ﴿{ayah.numberInSurah}﴾
@@ -1152,8 +1150,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               }}
                               className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer ${
                                 memorizationMarker?.surahNumber === surahNumber && memorizationMarker?.ayahNumber === currentAyahIndex
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'text-emerald-400 hover:bg-emerald-500/15'
+                                  ? 'bg-amber-600 text-white shadow-sm'
+                                  : 'text-amber-400 hover:bg-amber-500/15'
                               }`}
                             >
                               <Target className="size-3" />
@@ -1190,9 +1188,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               e.stopPropagation();
                               onMarkMemorized();
                             }}
-                            className="px-2 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-bold border border-emerald-500/25 text-[11px] flex items-center gap-1 active:scale-95 cursor-pointer transition-all"
+                            className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold border border-amber-500/25 text-[11px] flex items-center gap-1 active:scale-95 cursor-pointer transition-all"
                           >
-                            <Award className="size-3 text-emerald-400" />
+                            <Award className="size-3 text-amber-400" />
                             <span>اعتماد كمُتقَن</span>
                           </button>
                         )}
