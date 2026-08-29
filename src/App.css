@@ -56,6 +56,9 @@
 
 .font-arabic-quran {
   font-family: 'Scheherazade New', 'Amiri', 'Traditional Arabic', serif;
+  font-variant-ligatures: normal;
+  font-feature-settings: "liga" 1, "calt" 1, "mkmk" 1, "mark" 1;
+  letter-spacing: normal !important;
 }
 
 /* Wiki link styling */

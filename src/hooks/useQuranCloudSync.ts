@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import type { HifdhRecord } from '../../lib/quran-memorizer/src/types/quran';
+import { SURAHS } from '../../lib/quran-memorizer/src/services/quranData';
 
 // Local storage identifiers (named without triggering generic secret patterns)
 const LOCAL_PLAN_STORE = 'quran_khatmah_plan_v1';
@@ -67,6 +68,28 @@ export function useQuranCloudSync() {
     const p = planQuery.data;
 
     try {
+      // Resolve Memorization Surah and Page
+      const memSurahId = p.current_surah || 74;
+      const memSurahMeta = SURAHS.find((s) => s.id === memSurahId) || SURAHS[73];
+      const nextMemSurah = SURAHS.find((s) => s.id === memSurahId + 1);
+      const memMaxPage = nextMemSurah ? nextMemSurah.pageStart - 1 : 604;
+
+      let memPage = p.current_page || memSurahMeta.pageStart;
+      if (memPage < memSurahMeta.pageStart || memPage > memMaxPage) {
+        memPage = memSurahMeta.pageStart;
+      }
+
+      // Resolve Reading Surah and Page
+      const readSurahId = p.reading_current_surah || 1;
+      const readSurahMeta = SURAHS.find((s) => s.id === readSurahId) || SURAHS[0];
+      const nextReadSurah = SURAHS.find((s) => s.id === readSurahId + 1);
+      const readMaxPage = nextReadSurah ? nextReadSurah.pageStart - 1 : 604;
+
+      let readPage = p.reading_current_page || readSurahMeta.pageStart;
+      if (readPage < readSurahMeta.pageStart || readPage > readMaxPage) {
+        readPage = readSurahMeta.pageStart;
+      }
+
       // Hydrate Memorization Plan
       const memPlan = {
         title: p.title || 'خطة حفظ القرآن الكريم',
@@ -74,7 +97,7 @@ export function useQuranCloudSync() {
         pagesPerDay: p.pages_per_day || 1,
         startPage: p.start_page || 1,
         endPage: p.end_page || 604,
-        currentPage: p.current_page || 1,
+        currentPage: memPage,
         startDate: p.start_date || new Date().toISOString(),
         streakDays: p.streak_days || 0,
         lastCompletedDate: p.last_completed_date || null,
@@ -84,7 +107,7 @@ export function useQuranCloudSync() {
 
       // Hydrate Reading Plan
       const readPlan = {
-        currentPage: p.reading_current_page || 1,
+        currentPage: readPage,
         pagesPerDay: p.reading_pages_per_day || 4,
         streakDays: p.reading_streak_days || 0,
         lastCompletedDate: p.reading_last_completed_date || null,
@@ -93,17 +116,17 @@ export function useQuranCloudSync() {
 
       // Hydrate Memorization Marker
       const memMarker = {
-        surahNumber: p.current_surah || 1,
+        surahNumber: memSurahId,
         ayahNumber: p.current_ayah || 1,
-        page: p.current_page || 1,
+        page: memPage,
       };
       localStorage.setItem(LOCAL_MEM_MARKER_STORE, JSON.stringify(memMarker));
 
       // Hydrate Reading Marker
       const readMarker = {
-        surahNumber: p.reading_current_surah || 1,
+        surahNumber: readSurahId,
         ayahNumber: p.reading_current_ayah || 1,
-        page: p.reading_current_page || 1,
+        page: readPage,
       };
       localStorage.setItem(LOCAL_READ_MARKER_STORE, JSON.stringify(readMarker));
 

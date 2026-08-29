@@ -394,16 +394,23 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         if (s) targetSurah = Number(s);
         if (m) targetMode = m;
         if (t) targetTab = t;
+
+        // Clean up URL search params so tab toggling isn't re-routed on re-renders
+        if (p || s || m || t) {
+          try {
+            window.history.replaceState({}, '', window.location.pathname);
+          } catch {}
+        }
       }
 
-      if (targetTab) {
+      if (targetTab && (targetTab === 'reader' || targetTab === 'khatmah' || targetTab === 'revision' || targetTab === 'mutashabihat')) {
         setActiveTab(targetTab);
       }
 
       if (targetMode === 'memorization') {
         const mSaved = localStorage.getItem('quran_memorization_marker_v1');
         const marker = mSaved ? JSON.parse(mSaved) : null;
-        targetPage = targetPage || marker?.page || (memorizationPlan ? memorizationPlan.currentPage : 604);
+        targetPage = targetPage || marker?.page || (memorizationPlan ? memorizationPlan.currentPage : 575);
         targetSurah = targetSurah || marker?.surahNumber;
       } else if (targetMode === 'reading') {
         const rSaved = localStorage.getItem('quran_reading_marker_v1');

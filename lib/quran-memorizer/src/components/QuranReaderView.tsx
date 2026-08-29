@@ -50,16 +50,17 @@ const JUZ_START_PAGES = Array.from({ length: 30 }, (_, i) => {
 
 // Tajweed Color Highlighter for Uthmani Text
 const renderTajweedText = (text: string) => {
-  const parts = text.split(/([ن|م]ّ|[قطبجد]ْ|[~ٓ])/g);
+  const parts = text.split(/([نم]ّ|[قطبجد]ْ|[~ٓ])/g);
   return parts.map((part, idx) => {
-    if (/[ن|م]ّ/.test(part)) {
-      return <span key={idx} className="text-amber-500 dark:text-amber-400 font-extrabold">{part}</span>;
+    if (!part) return null;
+    if (/[نم]ّ/.test(part)) {
+      return <span key={idx} className="text-amber-500 dark:text-amber-400">{part}</span>;
     }
     if (/[قطبجد]ْ/.test(part)) {
-      return <span key={idx} className="text-rose-500 dark:text-rose-400 font-extrabold">{part}</span>;
+      return <span key={idx} className="text-rose-500 dark:text-rose-400">{part}</span>;
     }
     if (/[~ٓ]/.test(part)) {
-      return <span key={idx} className="text-sky-500 dark:text-sky-400 font-extrabold">{part}</span>;
+      return <span key={idx} className="text-sky-500 dark:text-sky-400">{part}</span>;
     }
     return part;
   });
@@ -902,13 +903,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                   {/* Basmalah if Ayah 1 is present & Surah != 9 */}
                   {hasAyahOne && pageSurah.id !== 9 && (
-                    <div className="text-center py-1 font-arabic-quran text-xl sm:text-2xl text-emerald-400/90 select-none tracking-wide">
+                    <div className="text-center py-1 font-arabic-quran text-xl sm:text-2xl text-emerald-400/90 select-none tracking-normal">
                       بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                     </div>
                   )}
 
                   {/* Continuous Mushaf Page Text (Maximized reading area) */}
-                  <div className="dir-rtl text-justify font-arabic-quran text-2xl sm:text-3xl leading-[2.4] sm:leading-[2.8] text-foreground tracking-wide select-none font-bold">
+                  <div className="dir-rtl text-justify font-arabic-quran text-2xl sm:text-3xl leading-[2.4] sm:leading-[2.8] text-foreground tracking-normal select-none font-bold">
                     {pageAyahs.map((ayah) => {
                       const isActive = currentAyahIndex === ayah.numberInSurah;
                       const inStudyRange = startAyah <= ayah.numberInSurah && ayah.numberInSurah <= endAyah;
@@ -924,19 +925,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                         <React.Fragment key={ayah.number}>
                           <span
                             onClick={() => onSelectAyah(ayah.numberInSurah)}
-                            className={`cursor-pointer rounded-lg px-1 py-0.5 transition-all inline ${
+                            className={`cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
                               isMemMarker && isReadMarker
-                                ? 'bg-gradient-to-r from-emerald-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 font-extrabold shadow-md'
+                                ? 'bg-gradient-to-r from-emerald-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
                                 : isMemMarker
-                                ? 'bg-emerald-500/25 text-emerald-200 ring-2 ring-emerald-500 font-extrabold shadow-[0_0_10px_rgba(16,185,129,0.25)]'
+                                ? 'bg-emerald-500/25 text-emerald-200 ring-2 ring-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
                                 : isReadMarker
-                                ? 'bg-indigo-500/25 text-indigo-200 ring-2 ring-indigo-500 font-extrabold shadow-[0_0_10px_rgba(99,102,241,0.25)]'
+                                ? 'bg-indigo-500/25 text-indigo-200 ring-2 ring-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.25)]'
                                 : isActive
-                                ? 'bg-emerald-500/20 text-emerald-300 ring-2 ring-emerald-500/50 shadow-md font-extrabold'
+                                ? 'bg-emerald-500/20 text-emerald-300 ring-2 ring-emerald-500/50 shadow-md'
                                 : inStudyRange
-                                ? 'bg-emerald-500/15 text-emerald-300 font-bold border-b-2 border-emerald-500/50'
+                                ? 'bg-emerald-500/15 text-emerald-300 border-b-2 border-emerald-500/50'
                                 : isMemorized
-                                ? 'text-emerald-400 font-bold'
+                                ? 'text-emerald-400'
                                 : 'hover:bg-accent/40'
                             }`}
                           >
@@ -1185,7 +1186,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     onGrade={onGradeVerse}
                   />
                 ) : (
-                  <div className="dir-rtl text-right font-arabic-quran text-2xl sm:text-3xl leading-[2.2] sm:leading-[2.5] text-foreground tracking-wide select-none font-bold">
+                  <div className="dir-rtl text-right font-arabic-quran text-2xl sm:text-3xl leading-[2.2] sm:leading-[2.5] text-foreground tracking-normal select-none font-bold">
                     {ayah.textUthmani}
                     <span className="inline-flex items-center justify-center min-w-[2rem] h-7 sm:h-8 px-1.5 mx-1.5 rounded-full border border-emerald-500/40 text-emerald-400 font-mono text-xs font-bold align-middle whitespace-nowrap select-none">
                       ﴿{ayah.numberInSurah}﴾
