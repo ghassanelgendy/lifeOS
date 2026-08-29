@@ -1,7 +1,7 @@
 name: Build & Release Desktop (Pake)
 
 # Triggers on version tag push only (e.g. v1.0.3, v2.0.0).
-# Each tag push creates/updates a GitHub Release with the built MSI + changelog.
+# Each tag push creates/updates a GitHub Release with Windows and Linux packages + changelog.
 on:
   push:
     tags:
@@ -14,7 +14,7 @@ on:
         type: string
 
 jobs:
-  build:
+  build-windows:
     name: Build Windows MSI
     runs-on: windows-latest
     outputs:
@@ -101,7 +101,7 @@ jobs:
           APP_VERSION: ${{ env.VERSION }}
         run: node scripts/generate-tauri-updater.js
 
-      - name: Upload Desktop Artifacts
+      - name: Upload Windows Artifacts
         uses: actions/upload-artifact@v7
         with:
           name: desktop-app-windows
@@ -113,9 +113,98 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  build-linux:
+    name: Build Linux (.deb & .AppImage)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Determine Version
+        id: get_version
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "✅ Building Linux version: ${VERSION}"
+
+      - name: Install system dependencies (WebKitGTK & build tools)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libwebkit2gtk-4.0-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf libfuse2
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build web bundle for Pake
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
+        run: pnpm run build:pake
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: '~/.cargo -> ~/.cargo'
+
+      - name: Install Pake CLI
+        run: sudo npm install -g pake-cli
+
+      - name: Patch Pake configuration
+        env:
+          APP_VERSION: ${{ env.VERSION }}
+        run: node scripts/patch-pake-config.js
+
+      - name: Build Linux Native Packages with Pake
+        shell: bash
+        run: |
+          pake dist/index.html \
+            --name "lifeOS" \
+            --icon public/icon-main.png \
+            --show-system-tray \
+            --hide-on-close \
+            --inject scripts/pake-inject.js \
+            --iterative-build \
+            --use-local-file \
+            --app-version "${{ env.VERSION }}"
+          # Find and normalise output files (.deb, .AppImage)
+          mkdir -p linux-dist
+          find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.deb" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.deb \;
+          find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.AppImage" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.AppImage \;
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: desktop-app-linux
+          path: linux-dist/*
+          if-no-files-found: warn
+          retention-days: 7
+
   release:
     name: Publish GitHub Release
-    needs: build
+    needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -135,7 +224,7 @@ jobs:
         id: changelog
         shell: bash
         run: |
-          VERSION="v${{ needs.build.outputs.app_version }}"
+          VERSION="v${{ needs.build-windows.outputs.app_version }}"
           DATE_READABLE=$(date +'%B %d, %Y')
 
           # Find the previous release tag to diff against (ignores date-based tags, sorts semver correctly)
