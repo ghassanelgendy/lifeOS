@@ -49,6 +49,13 @@ const JUZ_START_PAGES = Array.from({ length: 30 }, (_, i) => {
 });
 
 // Tajweed Color Highlighter for Uthmani Text with Arabic Cursive Wasl preservation
+// Uses inline styles (not Tailwind classes) so child colors always override parent span color on iOS WebKit
+const TAJWEED_COLORS = {
+  ghunna: '#f59e0b',   // amber-500 – nun/mim with shadda (غُنَّة)
+  qalqala: '#f43f5e',  // rose-500 – qalqala letters with sukun (قَلْقَلَة)
+  madd: '#38bdf8',     // sky-400 – madd / wasl hamza (~ٓ)
+};
+
 const renderTajweedWord = (word: string, wordIdx: number) => {
   const parts = word.split(/([نم]ّ|[قطبجد]ْ|[~ٓ])/g);
   if (parts.length <= 1) {
@@ -69,12 +76,13 @@ const renderTajweedWord = (word: string, wordIdx: number) => {
           if (prevPart) formatted = '\u200D' + formatted;
           if (nextPart) formatted = formatted + '\u200D';
 
-          let colorClass = 'text-sky-500 dark:text-sky-400';
-          if (/[نم]ّ/.test(part)) colorClass = 'text-amber-500 dark:text-amber-400';
-          else if (/[قطبجد]ْ/.test(part)) colorClass = 'text-rose-500 dark:text-rose-400';
+          // Use inline style so color overrides parent span's Tailwind text color on iOS
+          let color = TAJWEED_COLORS.madd;
+          if (/[نم]ّ/.test(part)) color = TAJWEED_COLORS.ghunna;
+          else if (/[قطبجد]ْ/.test(part)) color = TAJWEED_COLORS.qalqala;
 
           return (
-            <span key={idx} className={`${colorClass} inline p-0 m-0`}>
+            <span key={idx} style={{ color }} className="inline p-0 m-0">
               {formatted}
             </span>
           );
@@ -965,10 +973,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                 ? 'bg-emerald-500/25 text-emerald-200 ring-2 ring-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.25)]'
                                 : isReadMarker
                                 ? 'bg-indigo-500/25 text-indigo-200 ring-2 ring-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.25)]'
-                                : isActive
-                                ? 'bg-emerald-500/20 text-emerald-300 ring-2 ring-emerald-500/50 shadow-md'
+                                 : isActive
+                                ? 'bg-gray-500/20 text-foreground ring-2 ring-gray-400/60 shadow-md'
                                 : inStudyRange
-                                ? 'bg-emerald-500/15 text-emerald-300 border-b-2 border-emerald-500/50'
+                                ? 'bg-gray-500/10 border-b-2 border-gray-400/50'
                                 : isMemorized
                                 ? 'text-emerald-400'
                                 : 'hover:bg-accent/40'
