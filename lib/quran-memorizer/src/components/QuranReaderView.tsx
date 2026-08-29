@@ -865,27 +865,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   onDoubleClick={() => setIsFullscreen(!isFullscreen)}
                   className={`transition-all touch-pan-y ${
                     isFullscreen
-                      ? 'fixed inset-0 z-[200] bg-background/98 overflow-y-auto p-3 sm:p-8 space-y-4 font-arabic-title'
+                      ? 'fixed inset-0 z-[200] bg-background/98 overflow-y-auto p-3 sm:p-8 pb-24 sm:pb-28 space-y-4 font-arabic-title'
                       : 'px-2.5 py-3 sm:px-5 sm:py-6 rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-card/95 backdrop-blur-xl shadow-lg relative space-y-3'
                   }`}
                 >
-                  {/* Floating Fullscreen Exit Button */}
-                  {isFullscreen && (
-                    <div className="sticky top-2 z-50 flex items-center justify-between bg-card/90 backdrop-blur-xl border border-border/80 p-2 rounded-2xl shadow-lg">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-emerald-400">سورة {pageSurah.name}</span>
-                        <span className="text-[11px] text-muted-foreground">• صفحة {pageNum} (اسحب لليمين/اليسار للتقليب)</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsFullscreen(false)}
-                        className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
-                      >
-                        <Minimize2 className="size-3.5" />
-                        <span>إنهاء ملء الشاشة</span>
-                      </button>
-                    </div>
-                  )}
 
                   {/* Top Header Inside Page Frame */}
                   <div className="border-b border-emerald-500/20 pb-2 flex items-center justify-between text-xs text-muted-foreground font-arabic-title font-bold">

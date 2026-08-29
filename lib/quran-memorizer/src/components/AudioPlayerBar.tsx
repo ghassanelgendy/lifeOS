@@ -81,13 +81,13 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
     <>
       <div
         dir="rtl"
-        className={`fixed z-30 font-arabic-title text-right transition-all
-          /* iOS Mobile: Crisp Docked/Floating Pill matching iOS navigation */
-          bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[92%] max-w-[440px] h-[68px]
-          rounded-[34px] px-3.5 flex items-center justify-between
-          bg-card/95 dark:bg-[#1c1c1e]/95 backdrop-blur-xl
-          border border-border/80 dark:border-white/10
-          shadow-[0_12px_40px_rgba(0,0,0,0.25)]
+        className={`fixed z-[250] font-arabic-title text-right transition-all
+          /* iOS Mobile: Crisp Compact Floating Pill matching iOS bottom tab bar */
+          bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-[390px] h-[52px]
+          rounded-full px-3 flex items-center justify-between
+          bg-white/45 dark:bg-[#141416]/60 backdrop-blur-2xl
+          border border-white/30 dark:border-white/10
+          shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]
           /* Desktop / MD+: Perfectly docked and aligned with the sidebar line */
           md:bottom-0 md:translate-x-0 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/40 md:bg-card/80 md:backdrop-blur-xl md:px-6 md:py-2
           ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
@@ -119,19 +119,19 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
             {/* Compact Mobile Sheikh & Ayah Pill */}
             <div
               onClick={() => setShowSettingsDrawer(true)}
-              className="flex items-center gap-1.5 text-[11px] bg-secondary/80 hover:bg-secondary border border-border/60 px-2.5 py-1.5 rounded-full cursor-pointer active:scale-95 transition-all truncate"
+              className="flex items-center gap-1.5 text-[10px] bg-secondary/50 hover:bg-secondary/70 border border-border/40 px-2 py-1 rounded-full cursor-pointer active:scale-95 transition-all truncate"
             >
-              <span className="md:hidden text-emerald-400 font-bold truncate max-w-[75px]">
+              <span className="md:hidden text-emerald-400 font-bold truncate max-w-[70px]">
                 {getSheikhLastName(reciter)}
               </span>
               <span className="text-foreground font-bold shrink-0">آية {currentAyahIndex}</span>
               {repeatSettings.verseRepeats > 1 && (
-                <span className="text-[10px] text-emerald-400 font-mono font-bold bg-emerald-500/15 px-1.5 py-0.2 rounded-md shrink-0">
+                <span className="text-[9px] text-emerald-400 font-mono font-bold bg-emerald-500/15 px-1 py-0.2 rounded-md shrink-0">
                   {currentVerseRepeat}/{repeatSettings.verseRepeats}
                 </span>
               )}
               {isPlaying && isDelaying && (
-                <span className="animate-pulse text-amber-400 text-[10px] font-bold shrink-0">
+                <span className="animate-pulse text-amber-400 text-[9px] font-bold shrink-0">
                   سكوت...
                 </span>
               )}
@@ -139,41 +139,41 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           </div>
 
           {/* Center Playback Controls (Ultra-Compact on Mobile) */}
-          <div dir="rtl" className="flex items-center gap-1 md:gap-2 shrink-0">
+          <div dir="rtl" className="flex items-center gap-0.5 md:gap-2 shrink-0">
             <button
               onClick={onPrev}
-              className="p-2 rounded-full hover:bg-secondary text-foreground active:scale-90 transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-secondary/50 text-foreground active:scale-90 transition-all cursor-pointer"
               title="الآية السابقة"
             >
-              <SkipForward className="size-4 shrink-0" />
+              <SkipForward className="size-3.5 shrink-0" />
             </button>
 
             <button
               onClick={onTogglePlayPause}
-              className={`p-2.5 md:p-3 rounded-full font-bold text-white shadow-md active:scale-90 transition-all cursor-pointer ${
+              className={`p-2 md:p-2.5 rounded-full font-bold text-white shadow-md active:scale-90 transition-all cursor-pointer ${
                 isPlaying
                   ? 'bg-amber-500 hover:bg-amber-600'
                   : 'bg-emerald-600 hover:bg-emerald-500'
               }`}
               title={isPlaying ? 'إيقاف مؤقت' : 'تشغيل التكرار'}
             >
-              {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 fill-current ml-0.5" />}
+              {isPlaying ? <Pause className="size-3.5" /> : <Play className="size-3.5 fill-current ml-0.5" />}
             </button>
 
             <button
               onClick={onNext}
-              className="p-2 rounded-full hover:bg-secondary text-foreground active:scale-90 transition-all cursor-pointer"
+              className="p-1.5 rounded-full hover:bg-secondary/50 text-foreground active:scale-90 transition-all cursor-pointer"
               title="الآية التالية"
             >
-              <SkipBack className="size-4 shrink-0" />
+              <SkipBack className="size-3.5 shrink-0" />
             </button>
 
             <button
               onClick={onStop}
-              className="p-1.5 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground active:scale-90 transition-all cursor-pointer"
+              className="p-1 rounded-full hover:bg-secondary/50 text-muted-foreground hover:text-foreground active:scale-90 transition-all cursor-pointer"
               title="إيقاف"
             >
-              <Square className="size-3.5" />
+              <Square className="size-3" />
             </button>
           </div>
 
@@ -254,10 +254,10 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setShowSettingsDrawer(true)}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-secondary/90 hover:bg-secondary text-foreground text-xs font-bold border border-border/60 active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-1 px-2 py-1 rounded-full bg-secondary/50 hover:bg-secondary/70 text-foreground text-[10px] font-bold border border-border/40 active:scale-95 transition-all cursor-pointer"
               title="إعدادات الصوت والتكرار"
             >
-              <SlidersHorizontal className="size-3.5 text-emerald-400" />
+              <SlidersHorizontal className="size-3 text-emerald-400" />
               <span className="text-[10px]">خيارات</span>
             </button>
           </div>
@@ -268,7 +268,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
       {/* iOS Native Bottom Sheet Drawer for Audio & Repeat Settings */}
       {showSettingsDrawer && (
         <div
-          className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
+          className="fixed inset-0 z-[300] flex items-end justify-center bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
           onClick={() => setShowSettingsDrawer(false)}
         >
           <div
