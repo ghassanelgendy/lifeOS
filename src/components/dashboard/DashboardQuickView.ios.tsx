@@ -175,6 +175,10 @@ function DueTodayRow({
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
   const handleRowClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
+      return;
+    }
     if (onClick) {
       void triggerLightTap();
       onClick();
@@ -956,14 +960,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       return;
     }
 
-    // If the tap landed on the checkbox button, let it handle the toggle and prevent default browser click/double-triggering
+    // If the tap landed on any interactive element (checkbox, button, input, etc.), ignore and don't open entry details
     const tappedEl = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
-    const checkboxBtn = tappedEl?.closest('[role="checkbox"]') as HTMLElement | null;
-    if (checkboxBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-      checkboxBtn.click();
+    if (tappedEl?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
       activeTouchId.current = null;
+      pressEntryRef.current = null;
       return;
     }
 
@@ -982,6 +983,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   };
 
   const startPress = (entry: any, e: React.TouchEvent | React.MouseEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
+      return;
+    }
+
     isLongPressActive.current = false;
     pressEntryRef.current = entry;
     hoveredMenuActionRef.current = null;
@@ -1025,9 +1031,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       isLongPressActive.current = false;
       return;
     }
-    // If clicking a checkbox, ignore so we don't open details modal
-    const target = e.target as HTMLElement;
-    if (target.closest('[role="checkbox"]')) {
+    // If clicking a button or checkbox, ignore so we don't open details modal
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
       return;
     }
     const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));

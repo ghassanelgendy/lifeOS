@@ -446,6 +446,14 @@ export default function Tasks() {
       return;
     }
 
+    // If the tap landed on an interactive element (checkbox, button, input, etc.), do not trigger edit
+    const elem = document.elementFromPoint(endedTouch.clientX, endedTouch.clientY);
+    if (elem?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
+      activeTouchId.current = null;
+      pressTaskRef.current = null;
+      return;
+    }
+
     // Prevent the browser's synthetic click event from firing on the newly opened modal/sheet overlay
     e.preventDefault();
     e.stopPropagation();
@@ -463,6 +471,11 @@ export default function Tasks() {
   };
 
   const startPress = (task: Task, e: React.TouchEvent | React.MouseEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
+      return;
+    }
+
     isLongPressActive.current = false;
     pressTaskRef.current = task;
     hoveredMenuActionRef.current = null;
@@ -505,6 +518,10 @@ export default function Tasks() {
       e.preventDefault();
       e.stopPropagation();
       isLongPressActive.current = false;
+      return;
+    }
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
       return;
     }
     const isHabitTask = task.id.startsWith('habit-');
@@ -3518,7 +3535,11 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
     >
       <div 
         className="flex items-start gap-3.5 w-full py-4"
-        onClick={() => {
+        onClick={(e) => {
+          const target = e.target as HTMLElement | null;
+          if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
+            return;
+          }
           if (!task.id.startsWith('habit-')) {
             onEdit();
           }
@@ -3531,9 +3552,15 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             if (!task.is_completed) void triggerSuccessTap();
             else void triggerLightTap();
           }}
+          onTouchEnd={(e) => {
+            e.stopPropagation();
+          }}
           onMouseDown={(e) => {
             e.stopPropagation();
           }}
+          role="checkbox"
+          aria-checked={task.is_completed}
+          data-interactive="true"
           className={cn(
             "w-5 h-5 mt-[2px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
             task.is_completed
