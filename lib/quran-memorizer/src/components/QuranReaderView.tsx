@@ -115,16 +115,79 @@ const getTajweedColor = (word: string): string | null => {
   return null;
 };
 
+const canConnectForward = (text: string): boolean => {
+  if (!text) return false;
+  // Strip all harakat, tashkeel, and small symbols
+  const clean = text.replace(/[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06EC\u06ED]/g, '');
+  if (!clean) return false;
+  const lastChar = clean.slice(-1);
+  const nonConnecting = ['ا', 'أ', 'إ', 'آ', 'د', 'ذ', 'ر', 'ز', 'و', 'ؤ', 'ة', 'ء', 'ٱ'];
+  return !nonConnecting.includes(lastChar);
+};
+
+const canConnectBackward = (text: string): boolean => {
+  if (!text) return false;
+  const clean = text.replace(/[\u064B-\u065F\u0670\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06EC\u06ED]/g, '');
+  if (!clean) return false;
+  const firstChar = clean.charAt(0);
+  return firstChar !== 'ء';
+};
+
+const getPartColor = (part: string): string | null => {
+  if (/نّ|مّ/.test(part)) return TAJWEED_COLORS.green;
+  if (/[قطبجد]ْ/.test(part)) return TAJWEED_COLORS.cyan;
+  if (/رَّ|رُّ|[ر]َ|[ر]ُ|[ر]ً|[ر]ٌ/.test(part)) return TAJWEED_COLORS.darkBlue;
+  if (/[اوي][~ٓ]|[~ٓ]/.test(part)) return TAJWEED_COLORS.red;
+  if (/ٰ/.test(part)) return TAJWEED_COLORS.orange;
+  if (/ٱ/.test(part)) return TAJWEED_COLORS.grey;
+  return null;
+};
+
 const renderTajweedWord = (word: string, wordIdx: number) => {
-  const color = getTajweedColor(word);
-  if (color) {
-    return (
-      <span key={wordIdx} style={{ color }} className="inline">
-        {word}{' '}
-      </span>
-    );
+  // Regex to split the word into segments, capturing the target letters for coloring
+  const parts = word.split(/(نّ|مّ|[قطبجد]ْ|[اوي][~ٓ]|[~ٓ]|ٰ|ٱ|رَّ|رُّ|[ر]َ|[ر]ُ|[ر]ً|[ر]ٌ)/g);
+  if (parts.length <= 1) {
+    return <React.Fragment key={wordIdx}>{word} </React.Fragment>;
   }
-  return <React.Fragment key={wordIdx}>{word} </React.Fragment>;
+
+  return (
+    <span key={wordIdx} className="inline">
+      {parts.map((part, idx) => {
+        if (!part) return null;
+
+        const color = getPartColor(part);
+        const prevPart = parts[idx - 1];
+        const nextPart = parts[idx + 1];
+
+        if (color) {
+          let formatted = part;
+          if (prevPart && canConnectForward(prevPart) && canConnectBackward(part)) {
+            formatted = '\u200D' + formatted;
+          }
+          if (nextPart && canConnectForward(part) && canConnectBackward(nextPart)) {
+            formatted = formatted + '\u200D';
+          }
+
+          return (
+            <span key={idx} style={{ color }} className="inline p-0 m-0">
+              {formatted}
+            </span>
+          );
+        }
+
+        let formatted = part;
+        if (idx > 0 && prevPart && getPartColor(prevPart) && canConnectForward(prevPart) && canConnectBackward(part)) {
+          formatted = '\u200D' + formatted;
+        }
+        if (nextPart && getPartColor(nextPart) && canConnectForward(part) && canConnectBackward(nextPart)) {
+          formatted = formatted + '\u200D';
+        }
+
+        return <React.Fragment key={idx}>{formatted}</React.Fragment>;
+      })}
+      {' '}
+    </span>
+  );
 };
 
 const renderTajweedText = (text: string) => {
