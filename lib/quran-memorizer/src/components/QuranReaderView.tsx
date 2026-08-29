@@ -48,8 +48,10 @@ const JUZ_START_PAGES = Array.from({ length: 30 }, (_, i) => {
   return { juz: juzNum, page: (juzNum - 2) * 20 + 22 };
 });
 
-// Tajweed Color Highlighter for Uthmani Text with Arabic Cursive Wasl preservation
-// Uses inline styles (not Tailwind classes) so child colors always override parent span color on iOS WebKit
+// Tajweed Color Highlighter — colors at the WORD level to preserve Arabic OpenType shaping.
+// Splitting a word across <span> elements causes the text shaper to treat each span as an
+// isolated text run, rendering wider isolated Arabic forms instead of connected cursive forms,
+// creating visible gaps between letters. Coloring the whole word keeps it as one text run.
 const TAJWEED_COLORS = {
   ghunna: '#f59e0b',   // amber-500 – nun/mim with shadda (غُنَّة)
   qalqala: '#f43f5e',  // rose-500 – qalqala letters with sukun (قَلْقَلَة)
@@ -57,49 +59,21 @@ const TAJWEED_COLORS = {
 };
 
 const renderTajweedWord = (word: string, wordIdx: number) => {
-  const parts = word.split(/([نم]ّ|[قطبجد]ْ|[~ٓ])/g);
-  if (parts.length <= 1) {
-    return <React.Fragment key={wordIdx}>{word} </React.Fragment>;
+  // Determine word-level tajweed color (priority: ghunna > qalqala > madd)
+  let color: string | null = null;
+  if (/[نم]ّ/.test(word)) color = TAJWEED_COLORS.ghunna;
+  else if (/[قطبجد]ْ/.test(word)) color = TAJWEED_COLORS.qalqala;
+  else if (/[~ٓ]/.test(word)) color = TAJWEED_COLORS.madd;
+
+  if (color) {
+    // Whole word as ONE text run → Arabic shaping/ligatures fully preserved, no spacing gaps
+    return (
+      <span key={wordIdx} style={{ color }} className="inline">
+        {word}{' '}
+      </span>
+    );
   }
-
-  return (
-    <span key={wordIdx} className="inline whitespace-normal">
-      {parts.map((part, idx) => {
-        if (!part) return null;
-        const isTajweed = /[نم]ّ|[قطبجد]ْ|[~ٓ]/.test(part);
-        const prevPart = parts[idx - 1];
-        const nextPart = parts[idx + 1];
-
-        // Add Zero-Width Joiner (\u200D) to maintain Arabic cursive joining across spans
-        let formatted = part;
-        if (isTajweed) {
-          if (prevPart) formatted = '\u200D' + formatted;
-          if (nextPart) formatted = formatted + '\u200D';
-
-          // Use inline style so color overrides parent span's Tailwind text color on iOS
-          let color = TAJWEED_COLORS.madd;
-          if (/[نم]ّ/.test(part)) color = TAJWEED_COLORS.ghunna;
-          else if (/[قطبجد]ْ/.test(part)) color = TAJWEED_COLORS.qalqala;
-
-          return (
-            <span key={idx} style={{ color }} className="inline p-0 m-0">
-              {formatted}
-            </span>
-          );
-        }
-
-        if (idx > 0 && parts[idx - 1] && /[نم]ّ|[قطبجد]ْ|[~ٓ]/.test(parts[idx - 1])) {
-          formatted = '\u200D' + formatted;
-        }
-        if (nextPart && /[نم]ّ|[قطبجد]ْ|[~ٓ]/.test(nextPart)) {
-          formatted = formatted + '\u200D';
-        }
-
-        return <React.Fragment key={idx}>{formatted}</React.Fragment>;
-      })}
-      {' '}
-    </span>
-  );
+  return <React.Fragment key={wordIdx}>{word} </React.Fragment>;
 };
 
 const renderTajweedText = (text: string) => {
