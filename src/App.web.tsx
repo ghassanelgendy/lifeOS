@@ -197,12 +197,13 @@ function AppInner() {
           .is('ai_analysis', null)
           .order('created_at', { ascending: false });
 
-        if (userNotes && userNotes.length > 0 && store.aiEnabled) {
+        if (userNotes && userNotes.length > 0) {
           for (const rawDump of userNotes) {
-            if (!rawDump.body || rawDump.body.trim().length < 5) continue;
+            const cleanBody = (rawDump.body || '').replace(/\*\*🕒[^\n]+\*\*/g, '').replace(/New Day Started\. Capture your thoughts\.\.\./g, '').trim();
+            if (!cleanBody || cleanBody.length < 5) continue;
             try {
               const briefSystemPrompt = `You are lifeOS Executive Summarizer. Analyze this brain dump. Produce a BRIEF, CONCISE, bulleted summary of key insights, action points, and ideas. DO NOT extend or add conversational fluff. Keep it strictly focused and brief. Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks": [{"title": "..."}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
-              const resText = await askAI(briefSystemPrompt, rawDump.body, true);
+              const resText = await askAI(briefSystemPrompt, cleanBody, true);
               const parsed = extractJSON(resText);
 
               const d = rawDump.note_date ? new Date(rawDump.note_date) : new Date();

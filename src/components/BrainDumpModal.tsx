@@ -624,7 +624,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
             </div>
 
             {/* Action Bar */}
-            <div className="flex items-center justify-end gap-2 pt-1">
+            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
               <Button
                 variant="outline"
                 size="sm"
@@ -636,7 +636,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                 className="text-xs gap-1.5"
               >
                 <Sparkles size={13} className="text-purple-400" />
-                <span>Organize with AI Now</span>
+                <span>Organize with AI</span>
               </Button>
 
               <Button
@@ -653,12 +653,12 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
           </div>
         )}
 
-        {/* TAB 2: THOUGHT INBOX */}
+        {/* TAB 2: INBOX & SEARCH */}
         {activeTab === 'inbox' && (
           <div className="space-y-3 animate-in fade-in duration-200">
             {/* Search & Batch Actions Header */}
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-[160px]">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   type="text"
@@ -675,10 +675,10 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                   size="sm"
                   onClick={handleBatchAnalyzeSelected}
                   disabled={isAnalyzing}
-                  className="text-xs gap-1.5 font-bold"
+                  className="text-xs gap-1.5 font-bold shrink-0"
                 >
                   <Sparkles size={13} />
-                  <span>Organize Selected ({selectedNoteIds.size})</span>
+                  <span>Organize ({selectedNoteIds.size})</span>
                 </Button>
               )}
             </div>
@@ -704,8 +704,8 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                           : "bg-secondary/20 border-border hover:bg-secondary/40"
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <input
                             type="checkbox"
                             checked={isSelected}
@@ -715,18 +715,18 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                               else newSet.delete(note.id);
                               setSelectedNoteIds(newSet);
                             }}
-                            className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer"
+                            className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer shrink-0"
                           />
-                          <span className="text-xs font-bold text-foreground truncate max-w-[240px]">
+                          <span className="text-xs font-bold text-foreground truncate max-w-[130px] sm:max-w-[220px]">
                             {note.title}
                           </span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono">
+                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono shrink-0">
                             <Clock size={10} />
                             {note.note_date?.slice(0, 10)}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 shrink-0">
                           {isAnalyzed ? (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                               ✓ Organized
@@ -742,7 +742,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
                             onClick={() => {
                               void handleOrganizeAndMoveToFolder(note);
                             }}
-                            className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
                             title="Organize with AI and move into 'Organized Brain Dumps' folder"
                           >
                             <Sparkles size={11} />
