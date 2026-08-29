@@ -4,6 +4,7 @@ import { addSystemLog } from './logger';
 import packageJson from '../../package.json';
 
 const CURRENT_VERSION_KEY = 'lifeos_local_ota_version';
+const CURRENT_COMMIT_KEY = 'lifeos_local_ota_commit';
 // We use the supabase URL defined in env variables
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const VERSION_URL = `${SUPABASE_URL}/storage/v1/object/public/app-updates/version.json`;
@@ -43,29 +44,34 @@ export async function checkAndApplyUpdates() {
 
     const latest = await response.json();
     const currentVersion = localStorage.getItem(CURRENT_VERSION_KEY) || packageJson.version;
-    addSystemLog(`OTA check: Latest version = ${latest?.version}, Local version = ${currentVersion}`, 'info');
+    const currentCommit = localStorage.getItem(CURRENT_COMMIT_KEY) || '';
+    addSystemLog(`OTA check: Latest version = ${latest?.version} (${latest?.commit?.slice(0, 7)}), Local = ${currentVersion} (${currentCommit.slice(0, 7)})`, 'info');
 
-    if (latest && latest.version && latest.url && latest.version !== currentVersion) {
+    const isDifferentVersion = latest?.version && latest.version !== currentVersion;
+    const isDifferentCommit = latest?.commit && latest.commit !== currentCommit;
+
+    if (latest && latest.url && (isDifferentVersion || isDifferentCommit)) {
       const bundleUrl = resolveOtaBundleUrl(latest.url);
       if (!bundleUrl) {
         addSystemLog(`OTA check: Invalid bundle URL in manifest: ${String(latest.url)}`, 'error');
         return;
       }
 
-      addSystemLog(`OTA check: New update found (${latest.version}). Downloading...`, 'info');
+      addSystemLog(`OTA check: New update found (${latest.version} / ${latest.commit?.slice(0, 7)}). Downloading...`, 'info');
       
       // 3. Download the zip bundle
       const updateBundle = await CapacitorUpdater.download({
         url: bundleUrl,
-        version: latest.version,
+        version: latest.version || latest.commit,
       });
       addSystemLog(`OTA check: Download completed. Setting active bundle...`, 'info');
 
       // 4. Set the new version as active, which reloads the webview
       await CapacitorUpdater.set({ id: updateBundle.id });
       
-      // 5. Save the updated version locally
-      localStorage.setItem(CURRENT_VERSION_KEY, latest.version);
+      // 5. Save the updated version and commit locally
+      if (latest.version) localStorage.setItem(CURRENT_VERSION_KEY, latest.version);
+      if (latest.commit) localStorage.setItem(CURRENT_COMMIT_KEY, latest.commit);
       addSystemLog('OTA check: Update applied successfully. WebView reloading...', 'info');
     } else {
       addSystemLog(`OTA check: App is up-to-date. (Version: ${currentVersion})`, 'info');
