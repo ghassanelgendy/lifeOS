@@ -48,7 +48,7 @@ async function executeCandidateCompletion(
   const apiKey = candidate.apiKey.trim();
 
   if (isNative) {
-    // 1. On native (iOS/Android), execute direct HTTPS request first via CapacitorHttp (bypasses browser CORS & proxies)
+    // 1. On native (iOS/Android), execute direct HTTPS request via CapacitorHttp
     const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
     try {
       const response = await CapacitorHttp.post({
@@ -56,11 +56,10 @@ async function executeCandidateCompletion(
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         },
         data: payload,
-        connectTimeout: 12000,
-        readTimeout: 30000,
+        connectTimeout: 15000,
+        readTimeout: 35000,
       });
 
       if (response.status === 200) {
@@ -80,39 +79,67 @@ async function executeCandidateCompletion(
         throw err;
       }
     } catch (nativeErr: any) {
-      if (nativeErr?.status && nativeErr.status !== 502 && nativeErr.status !== 504) {
+      // If error is 429/401/402/404, propagate so candidate engine can cascade to next candidate
+      if (nativeErr?.status && (nativeErr.status === 429 || nativeErr.status === 401 || nativeErr.status === 402 || nativeErr.status === 404)) {
         throw nativeErr;
       }
 
+      // Try direct web fetch from WebView
+      try {
+        const directController = new AbortController();
+        const directTimer = setTimeout(() => directController.abort(), 20000);
+        const directResponse = await fetch(nativeEndpoint, {
+          method: 'POST',
+          signal: directController.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        clearTimeout(directTimer);
+
+        if (directResponse.ok) {
+          const directData = await directResponse.json();
+          const text = directData?.choices?.[0]?.message?.content || '';
+          const latencyMs = Math.round(performance.now() - startTime);
+          return { text, latencyMs };
+        }
+      } catch {}
+
       // Fallback: try proxy server if direct native fails
       const proxyEndpoint = 'https://life-os-tan.vercel.app/api/ai';
-      const proxyResponse = await CapacitorHttp.post({
-        url: proxyEndpoint,
-        headers: {
-          'Content-Type': 'application/json',
-          'X-AI-Api-Key': apiKey,
-          'X-AI-Base-Url': cleanBaseUrl,
-        },
-        data: payload,
-        connectTimeout: 10000,
-        readTimeout: 25000,
-      });
+      try {
+        const proxyResponse = await CapacitorHttp.post({
+          url: proxyEndpoint,
+          headers: {
+            'Content-Type': 'application/json',
+            'X-AI-Api-Key': apiKey,
+            'X-AI-Base-Url': cleanBaseUrl,
+          },
+          data: payload,
+          connectTimeout: 12000,
+          readTimeout: 30000,
+        });
 
-      if (proxyResponse.status === 200) {
-        let resData = proxyResponse.data;
-        if (typeof resData === 'string') {
-          try {
-            resData = JSON.parse(resData);
-          } catch {}
+        if (proxyResponse.status === 200) {
+          let resData = proxyResponse.data;
+          if (typeof resData === 'string') {
+            try {
+              resData = JSON.parse(resData);
+            } catch {}
+          }
+          const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
+          const latencyMs = Math.round(performance.now() - startTime);
+          return { text, latencyMs };
+        } else {
+          const errorMsg = proxyResponse.data?.error?.message || proxyResponse.data?.error || proxyResponse.data || `HTTP ${proxyResponse.status}`;
+          const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
+          err.status = proxyResponse.status;
+          throw err;
         }
-        const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-        const latencyMs = Math.round(performance.now() - startTime);
-        return { text, latencyMs };
-      } else {
-        const errorMsg = proxyResponse.data?.error?.message || proxyResponse.data?.error || proxyResponse.data || `HTTP ${proxyResponse.status}`;
-        const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-        err.status = proxyResponse.status;
-        throw err;
+      } catch (proxyErr: any) {
+        throw proxyErr?.status ? proxyErr : nativeErr;
       }
     }
   }

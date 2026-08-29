@@ -14,6 +14,7 @@ import {
   Server,
   KeyRound,
   Check,
+  Info,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { Input, Button } from './ui';
