@@ -219,29 +219,29 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     };
   }, []);
 
-  const isInitialMount = React.useRef(true);
-
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
-    if (plan) {
-      localStorage.setItem(KHATMAH_STORAGE_KEY, JSON.stringify(plan));
+    if (!plan) return;
+    const str = JSON.stringify(plan);
+    if (localStorage.getItem(KHATMAH_STORAGE_KEY) !== str) {
+      localStorage.setItem(KHATMAH_STORAGE_KEY, str);
       window.dispatchEvent(new Event('quran_plan_updated'));
     }
   }, [plan]);
 
   useEffect(() => {
-    if (isInitialMount.current) return;
-    localStorage.setItem(READING_WIRD_STORAGE_KEY, JSON.stringify(readingWird));
-    window.dispatchEvent(new Event('quran_plan_updated'));
+    const str = JSON.stringify(readingWird);
+    if (localStorage.getItem(READING_WIRD_STORAGE_KEY) !== str) {
+      localStorage.setItem(READING_WIRD_STORAGE_KEY, str);
+      window.dispatchEvent(new Event('quran_plan_updated'));
+    }
   }, [readingWird]);
 
   useEffect(() => {
-    if (isInitialMount.current) return;
-    localStorage.setItem(HALQAH_NOTES_STORAGE_KEY, JSON.stringify(halqahNotes));
-    window.dispatchEvent(new Event('quran_plan_updated'));
+    const str = JSON.stringify(halqahNotes);
+    if (localStorage.getItem(HALQAH_NOTES_STORAGE_KEY) !== str) {
+      localStorage.setItem(HALQAH_NOTES_STORAGE_KEY, str);
+      window.dispatchEvent(new Event('quran_plan_updated'));
+    }
   }, [halqahNotes]);
 
   const handleDirectionChange = (newDir: KhatmahDirection) => {

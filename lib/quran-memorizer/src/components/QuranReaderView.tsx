@@ -996,17 +996,17 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                   className={`transition-all touch-pan-y ${
                     isFullscreen
                       ? 'fixed inset-0 z-[200] bg-background/98 overflow-y-auto p-3 sm:p-8 pb-24 sm:pb-28 space-y-4 font-arabic-title'
-                      : 'px-2.5 py-3 sm:px-5 sm:py-6 rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-card/95 backdrop-blur-xl shadow-lg relative space-y-3'
+                      : 'px-2.5 py-3 sm:px-5 sm:py-6 rounded-2xl sm:rounded-3xl border border-border bg-card/95 backdrop-blur-xl shadow-lg relative space-y-3'
                   }`}
                 >
 
                   {/* Breadcrumb + Swipe Hint Bar */}
                   <div className="pb-2 mb-1 flex items-center justify-between text-[11px] text-muted-foreground font-arabic-title font-bold border-b border-border/40">
-                    <span className="flex items-center gap-1 text-emerald-400 font-extrabold">
-                      <BookOpen className="size-3.5 text-emerald-400 shrink-0" />
+                    <span className="flex items-center gap-1 text-amber-500 font-extrabold">
+                      <BookOpen className="size-3.5 text-amber-500 shrink-0" />
                       <span>سورة {pageSurah.name}</span>
                       <span className="text-muted-foreground/60 font-normal">•</span>
-                      <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 font-extrabold text-[10px]">صفحة {pageNum}</span>
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-extrabold text-[10px]">صفحة {pageNum}</span>
                     </span>
                     <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1 select-none">
                       <span>←</span>
@@ -1020,11 +1020,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                   {/* Ornate Surah Title Banner if Ayah 1 is present */}
                   {hasAyahOne && (
-                    <div className="my-2 p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-emerald-950/60 via-emerald-900/80 to-emerald-950/60 border border-emerald-500/40 text-center space-y-0.5 shadow-md font-arabic-title">
-                      <div className="text-lg sm:text-2xl font-extrabold text-emerald-200 tracking-wide">
+                    <div className="my-2 p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-amber-950/20 via-zinc-900/80 to-amber-950/20 border border-amber-500/20 text-center space-y-0.5 shadow-md font-arabic-title">
+                      <div className="text-lg sm:text-2xl font-extrabold text-amber-200 tracking-wide">
                         سُورَةُ {pageSurah.name}
                       </div>
-                      <div className="text-[10px] text-emerald-400 font-bold flex items-center justify-center gap-3">
+                      <div className="text-[10px] text-amber-400 font-bold flex items-center justify-center gap-3">
                         <span>{pageSurah.type === 'Meccan' ? 'مَكِّيَّةٌ' : 'مَدَنِيَّةٌ'}</span>
                         <span>•</span>
                         <span>آيَاتُهَا {pageSurah.versesCount}</span>
@@ -1034,7 +1034,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                   {/* Basmalah if Ayah 1 is present & Surah != 9 */}
                   {hasAyahOne && pageSurah.id !== 9 && (
-                    <div className="text-center py-1 font-arabic-quran text-xl sm:text-2xl text-emerald-400/90 select-none tracking-normal">
+                    <div className="text-center py-1 font-arabic-quran text-xl sm:text-2xl text-foreground/90 select-none tracking-normal">
                       بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                     </div>
                   )}
