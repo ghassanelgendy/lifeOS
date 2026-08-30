@@ -141,7 +141,7 @@ The system shall support three dashboard modes: **Quick View**, **Strategic**, a
 The Dashboard shall display customizable widgets including: Daily Hadith, Prayer, Stats, Overdue Tasks, Events, Quick Stats, and Habits.
 
 #### FR-DASH-010: Daily Hadith Widget
-The system shall display a Daily Hadith banner on the Dashboard featuring concise Arabic Hadiths, Zunburk and Zain/Amiri calligraphic font styling, daily date-based rotation, manual refresh/shuffle, one-click copy to clipboard, and optional English translation.
+The system shall display a Daily Hadith banner on the Dashboard featuring a curated collection of 365+ authentic concise Hadiths, ensuring a unique Hadith every single day of the year with zero repetitions across the cycle. The widget shall support Zunburk and Zain/Amiri calligraphic font styling, deterministic and persistent date-based assignment (`getDailyHadith`), random in-session rotation avoiding recently seen hadiths (`getRandomHadith`), one-click copy to clipboard, category badges, and optional English translation.
 
 #### FR-DASH-004: Widget Visibility Toggle
 Users shall be able to toggle the visibility of individual dashboard widgets.
@@ -580,8 +580,8 @@ The reader shall provide an iOS-native liquid glass header with compact Surah an
 #### FR-QURAN-007: Relative Wird Notifications & Deep Link Routing
 The system shall automatically compute dynamic relative Wird information (page number and Surah name) inside notifications scheduled for Quran Memorization Habits, Quran Reading Habits, and Sheikh Halqah Calendar Events. Tapping the notification banner shall route the user directly to the target Medina Mushaf page.
 
-#### FR-QURAN-008: Immersive Desktop & Mobile Fullscreen Mushaf Reader
-The system shall provide a dedicated full-viewport Mushaf portal with persistent top control bar (Surah/Juz picker, previous/next page arrows, font zoom controls `A-`/`A+`, Tajweed and Tafsir toggles, exit button), proportional vertical height distribution to eliminate blank lower halves on PC screens, and keyboard shortcuts (`Escape`, `ArrowLeft`/`ArrowRight`, `+`/`-`).
+#### FR-QURAN-008: Immersive Fullscreen Mushaf Reader with Audio Pill HUD, Multi-Surah Support & Pinch-to-Zoom
+The system shall provide dedicated full-page fetching (`fetchPageVerses`) guaranteeing complete Medina Mushaf pages without cutting multi-page or shared-page surahs. In Fullscreen mode, the system shall provide two-finger touch pinch-to-zoom scaling (`0.65x` to `2.0x`), desktop sticky controls, and a mobile safe-area floating bottom HUD styled identically to the Audio Player floating pill (`backdrop-blur-2xl` glass geometry) with full audio controls (Play/Pause, Next/Prev Ayah, Audio Controls & Repeats drawer trigger), page navigation, and font zoom tools, avoiding top notch / Dynamic Island interference.
 
 #### FR-QURAN-009: 12-Hour Non-Repeating Quran Hadith Modal (Mobile Only)
 The system shall automatically present an inspiring Hadith dialog exclusively on mobile devices at 12-hour intervals. The Hadith shall be selected from an authentic Quran-virtues collection using a non-repeating queue, rendered with enhanced Arabic typography, and display the source/narrator in Cairo font (`font-cairo`). This modal is disabled on desktop/PC to prevent duplication with the Dashboard Hadith widget.
@@ -603,7 +603,7 @@ The system shall maintain strictly one unified Brain Dump Journal note per day (
 #### FR-DUMP-005: Smart Awake-Time Task Distribution & Bi-directional Note-Task Sync
 The system shall intelligently analyze extracted brain dump action items and automatically:
 1. Map them to matching user task lists (e.g. `Work`, `Learn`, `Personal`) and tags (e.g. `servixa`, `ischool`, `research`, `urgent`).
-2. Distribute tasks across conflict-free awake hours (respecting user sleep/wake metrics, scheduled tasks with due times, and calendar events) with 1-click individual or batch addition.
+2. Distribute tasks across conflict-free awake hours across up to 35 days / next month (respecting user sleep/wake metrics, scheduled tasks with due times, and calendar events) with 1-click individual or batch addition.
 3. Establish bi-directional sync via `source_note_id` so that checking off a task in To-Do list or Dashboard automatically toggles the corresponding checkbox (`- [ ]` <-> `- [x]`) in the organized Brain Dump note and vice-versa.
 
 ---
@@ -880,8 +880,8 @@ The system shall generate secure tokenized URLs for iCal calendar feeds.
 
 ### 3.19 AI Assistant & Copilot
 
-#### FR-AI-001: Model API Call Proxying
-The system shall communicate with configured AI models via the secure `/api/ai` proxy or direct native Capacitor Http calls, completely bypassing CORS constraints.
+#### FR-AI-001: Model API Call Execution & Native Transport
+The system shall communicate with configured AI models via direct native HTTPS calls using `CapacitorHttp` on mobile/iOS with browser-standard User-Agent and headers (completely bypassing CORS and eliminating external proxy hops), or via the local/serverless `/api/ai` proxy on web browsers.
 
 #### FR-AI-002: Dynamic Context Aggregation
 The system shall compile user-scoped tasks, habits, recent notes, calendar events, financial transactions, and wellness statistics (sleep metrics, screentime, health scans) as Markdown text to feed into the AI system prompt.

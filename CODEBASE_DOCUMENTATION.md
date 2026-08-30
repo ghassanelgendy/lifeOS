@@ -1269,11 +1269,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Renders the interactive Medina Mushaf reader with full-screen reading mode, dynamic font scaling, single/all page views, Tajweed color rendering, Tafseer sheet, ayah quick bookmarking, memorization/reading markers, and keyboard navigation.
+**File Purpose:** Renders the interactive Medina Mushaf reader with full-page fetching (`fetchPageVerses`) supporting multi-surah pages seamlessly without verse cut-offs, 2-finger touch pinch-to-zoom gesture scaling, immersive full-screen reading mode with mobile safe-area floating HUD, dynamic font scaling, single/all page views, Tajweed color rendering, Tafseer sheet, ayah quick bookmarking, memorization/reading markers, and keyboard navigation.
 
 **Functions & Classes:** `QuranReaderView`, `renderTajweedText`, `renderTajweedWord`, `getSurahForPage`
 
-**Lines:** 1520
+**Lines:** 1890
 
 ---
 
@@ -2935,13 +2935,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `getDailyHadith` (Function)
 - `getRandomHadith` (Function)
+- `getLocalDateString` (Function)
 - `ShortHadith` (Interface)
 
 **Function Details:**
-- **`getDailyHadith`** — Utility function for get daily hadith.
-- **`getRandomHadith`** — Utility function for get random hadith.
-
-**Lines:** 207
+- **`getDailyHadith`** — Computes and returns the unique daily Hadith for any given date using a deterministic non-repeating permutation cycle across 365+ authentic hadiths with persistent history in localStorage.
+- **`getRandomHadith`** — Returns a randomized Hadith while preventing duplicates against excluded/recent IDs.
+- **`getLocalDateString`** — Returns the local calendar date string formatted as YYYY-MM-DD.
 
 ---
 
@@ -4142,17 +4142,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-ai-ts"></a>
 ### src/lib/ai.ts
 
-**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+**File Purpose:** Core AI completion engine providing multi-provider routing (Dahl, Bynara, Custom/OpenAI), direct native HTTPS execution on iOS via `CapacitorHttp` with browser-standard User-Agent and headers (eliminating WAF blocks and external proxy dependencies), intelligent health-scored model fallbacks, cooldown recovery, and automated action extraction (`[ACTION:create_task]`, `[ACTION:create_event]`, etc.).
 
 **Functions & Classes:**
 - `cleanAiResponse` (Function)
 - `extractJSON` (Function)
+- `askAI` (Function)
+- `testSingleModel` (Function)
+- `testAllCatalogModels` (Function)
 
-**Function Details:**
-- **`cleanAiResponse`** — Utility function for clean ai response.
-- **`extractJSON`** — Utility function for extract j s o n.
-
-**Lines:** 419
+**Lines:** 395
 
 ---
 
