@@ -48,43 +48,72 @@ async function executeCandidateCompletion(
   const apiKey = candidate.apiKey.trim();
 
   if (isNative) {
-    // 1. On native (iOS/Android), execute direct HTTPS request via CapacitorHttp
+    // On native (iOS/Android) the provider endpoints (dahl.global / bynara.id) sit behind
+    // Cloudflare WAF and reject direct native HTTP requests. The web app works because it
+    // goes through the Vercel proxy (/api/ai). So on native we route through that same proxy
+    // FIRST via CapacitorHttp (native requests bypass WebView CORS), falling back to a direct
+    // native call only if the proxy itself is unreachable.
     const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
-    try {
-      const response = await CapacitorHttp.post({
-        url: nativeEndpoint,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-        },
-        data: payload,
-        connectTimeout: 15000,
-        readTimeout: 35000,
-      });
+    const proxyEndpoint = 'https://life-os-tan.vercel.app/api/ai';
 
-      if (response.status === 200) {
-        let resData = response.data;
-        if (typeof resData === 'string') {
-          try {
-            resData = JSON.parse(resData);
-          } catch {}
-        }
-        const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-        const latencyMs = Math.round(performance.now() - startTime);
-        return { text, latencyMs };
-      } else {
-        const errorMsg = response.data?.error?.message || response.data?.error || response.data || `HTTP ${response.status}`;
-        const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-        err.status = response.status;
-        throw err;
+    const postViaCapacitor = async (url: string, headers: Record<string, string>, data: any, connectTimeout: number, readTimeout: number) => {
+      const response = await CapacitorHttp.post({ url, headers, data, connectTimeout, readTimeout });
+      let resData = response.data;
+      if (typeof resData === 'string') {
+        try {
+          resData = JSON.parse(resData);
+        } catch {}
       }
+      const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
+      const latencyMs = Math.round(performance.now() - startTime);
+      return { status: response.status, text, latencyMs, raw: resData };
+    };
+
+    // 1. Primary: Vercel proxy (same path that demonstrably works on web)
+    let proxyErr: any;
+    try {
+      const proxyRes = await postViaCapacitor(
+        proxyEndpoint,
+        { 'Content-Type': 'application/json', 'X-AI-Api-Key': apiKey, 'X-AI-Base-Url': cleanBaseUrl },
+        payload,
+        12000,
+        30000
+      );
+      if (proxyRes.status === 200) return { text: proxyRes.text, latencyMs: proxyRes.latencyMs };
+      const errMsg = proxyRes.raw?.error?.message || proxyRes.raw?.error || JSON.stringify(proxyRes.raw) || `HTTP ${proxyRes.status}`;
+      const err: any = new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+      err.status = proxyRes.status;
+      throw err;
+    } catch (proxyRunErr: any) {
+      proxyErr = proxyRunErr;
+      // For specific client/rate-limit codes, propagate so the candidate engine cascades
+      if (proxyErr?.status && (proxyErr.status === 429 || proxyErr.status === 401 || proxyErr.status === 402 || proxyErr.status === 404)) {
+        throw proxyErr;
+      }
+      // NOTE: other proxy failures are swallowed here so we can attempt direct native below.
+    }
+
+    // 2. Secondary: direct native HTTPS to the provider
+    try {
+      const directRes = await postViaCapacitor(
+        nativeEndpoint,
+        { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        payload,
+        15000,
+        35000
+      );
+      if (directRes.status === 200) return { text: directRes.text, latencyMs: directRes.latencyMs };
+      const errMsg = directRes.raw?.error?.message || directRes.raw?.error || JSON.stringify(directRes.raw) || `HTTP ${directRes.status}`;
+      const err: any = new Error(typeof errMsg === 'string' ? errMsg : JSON.stringify(errMsg));
+      err.status = directRes.status;
+      throw err;
     } catch (nativeErr: any) {
       // If error is 429/401/402/404, propagate so candidate engine can cascade to next candidate
       if (nativeErr?.status && (nativeErr.status === 429 || nativeErr.status === 401 || nativeErr.status === 402 || nativeErr.status === 404)) {
         throw nativeErr;
       }
 
-      // Try direct web fetch from WebView
+      // 3. Last resort: direct web fetch from the WebView (CORS permitting)
       try {
         const directController = new AbortController();
         const directTimer = setTimeout(() => directController.abort(), 20000);
@@ -107,40 +136,9 @@ async function executeCandidateCompletion(
         }
       } catch {}
 
-      // Fallback: try proxy server if direct native fails
-      const proxyEndpoint = 'https://life-os-tan.vercel.app/api/ai';
-      try {
-        const proxyResponse = await CapacitorHttp.post({
-          url: proxyEndpoint,
-          headers: {
-            'Content-Type': 'application/json',
-            'X-AI-Api-Key': apiKey,
-            'X-AI-Base-Url': cleanBaseUrl,
-          },
-          data: payload,
-          connectTimeout: 12000,
-          readTimeout: 30000,
-        });
-
-        if (proxyResponse.status === 200) {
-          let resData = proxyResponse.data;
-          if (typeof resData === 'string') {
-            try {
-              resData = JSON.parse(resData);
-            } catch {}
-          }
-          const text = resData?.choices?.[0]?.message?.content || (typeof resData === 'string' ? resData : '');
-          const latencyMs = Math.round(performance.now() - startTime);
-          return { text, latencyMs };
-        } else {
-          const errorMsg = proxyResponse.data?.error?.message || proxyResponse.data?.error || proxyResponse.data || `HTTP ${proxyResponse.status}`;
-          const err: any = new Error(typeof errorMsg === 'string' ? errorMsg : JSON.stringify(errorMsg));
-          err.status = proxyResponse.status;
-          throw err;
-        }
-      } catch (proxyErr: any) {
-        throw proxyErr?.status ? proxyErr : nativeErr;
-      }
+      // If direct failed with a non-specific transport error, surface the proxy error if it was
+      // a concrete HTTP failure, otherwise the native transport error.
+      throw proxyErr?.status ? proxyErr : nativeErr;
     }
   }
 

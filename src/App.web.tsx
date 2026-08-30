@@ -13,6 +13,7 @@ import { usePakeLocalNotifications } from './hooks/usePakeLocalNotifications';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { FaviconSync } from './components/FaviconSync';
 import { LoadingScreen } from './components/LoadingScreen';
 import Dashboard from './routes/Dashboard';
@@ -437,7 +438,9 @@ function App() {
   return (
     <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: PERSIST_MAX_AGE }}>
       <AuthProvider>
-        <AppInner />
+        <ErrorBoundary>
+          <AppInner />
+        </ErrorBoundary>
       </AuthProvider>
     </PersistQueryClientProvider>
   );
