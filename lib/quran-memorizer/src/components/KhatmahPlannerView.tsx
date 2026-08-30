@@ -346,6 +346,18 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   };
 
   const handleLogReadingWird = () => {
+    const readingHabit = linkedHabits.find(
+      (h) => /ورد|تلاوة|قراءة|reading|tilawah/i.test(h.title) && !/حفظ|memoriz|تحفيظ|تسميع/i.test(h.title)
+    );
+
+    // If a linked reading habit exists, completing it (via useLogHabit → the
+    // wird-advance helper) is what updates progress AND advances the reading
+    // wird — so avoid advancing manually here to prevent double-advancing.
+    if (readingHabit && !readingHabit.is_completed_today && onToggleHabit) {
+      onToggleHabit(readingHabit.id, true);
+      return;
+    }
+
     const todayStr = new Date().toISOString().split('T')[0];
     const isConsecutive = readingWird.lastReadDate
       ? (new Date(todayStr).getTime() - new Date(readingWird.lastReadDate).getTime()) / (1000 * 3600 * 24) <= 1
@@ -394,6 +406,13 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const quranHabits = linkedHabits.filter((h) =>
     /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
   );
+
+  // The reading streak is driven by the linked reading habit (e.g. الورد اليومي)
+  // as the source of truth, falling back to the wird's own counter when no
+  // reading habit is linked.
+  const readingHabitStreak =
+    linkedHabits.find((h) => /ورد|تلاوة|قراءة|reading|tilawah/i.test(h.title) && !/حفظ|memoriz|تحفيظ|تسميع/i.test(h.title))?.streakDays ??
+    readingWird.streakDays;
 
   const sheikhEvents = linkedEvents.filter((e) =>
     /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran/i.test(e.title)
@@ -619,7 +638,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <div className="pt-2 flex flex-col gap-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
-                  <Flame className="size-3.5 fill-current" /> سلسلة {readingWird.streakDays} أيام قراءة
+                  <Flame className="size-3.5 fill-current" /> سلسلة {readingHabitStreak} أيام قراءة
                 </span>
                 <button
                   onClick={handleLogReadingWird}
@@ -682,13 +701,15 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                   <div
                     onClick={() => {
                       const nextState = !habit.is_completed_today;
+                      // Completion is persisted via useLogHabit, which also advances
+                      // the linked Quran wird (الورد اليومي → reading, حفظ صفحه → memorization).
                       if (onToggleHabit) onToggleHabit(habit.id, nextState);
-                      if (nextState) {
-                        if (/حفظ|memoriz|تحفيظ/i.test(habit.title)) {
-                          handleLogProgress();
-                        } else if (/ورد|تلاوة|قراءة|reading|tilawah/i.test(habit.title)) {
-                          handleLogReadingWird();
-                        }
+                      if (nextState && onUpdateHabitDescription && /حفظ|memoriz|تحفيظ/i.test(habit.title)) {
+                        const surah = getSurahForPage(nextTargetPage);
+                        onUpdateHabitDescription(
+                          habit.id,
+                          `الورد القادم للحفظ: الصفحة ${nextTargetPage} (سورة ${surah.name})`
+                        );
                       }
                     }}
                     className="flex items-center justify-between cursor-pointer"

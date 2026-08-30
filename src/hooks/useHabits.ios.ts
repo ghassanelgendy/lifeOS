@@ -10,6 +10,7 @@ import { round1 } from '../lib/utils';
 import { format, startOfWeek, differenceInCalendarDays, subDays } from 'date-fns';
 import { idbAddPointsTransaction, idbSaveHabits, idbGetHabits, idbSaveHabitLogs, idbGetHabitLogs } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
+import { advanceWirdOnHabitComplete } from '../../lib/quran-memorizer/src/services/quranData';
 import { v4 as uuidv4 } from 'uuid';
 
 const HABITS_KEY = ['habits'];
@@ -418,6 +419,19 @@ export function useLogHabit() {
       // Apply points adjust locally
       if (user?.id) {
         await adjustPointsForHabitLog(habitId, date, completed, user.id, queryClient, note);
+      }
+
+      // Advancing a linked Quran wird (reading/memorization) lives on habit
+      // completion so e.g. completing "الورد اليومي" pushes the reading wird.
+      if (completed) {
+        try {
+          const { data: h } = await supabase
+            .from('habits')
+            .select('title')
+            .eq('id', habitId)
+            .maybeSingle();
+          if (h?.title) advanceWirdOnHabitComplete(h.title);
+        } catch {}
       }
 
       // Check if exists

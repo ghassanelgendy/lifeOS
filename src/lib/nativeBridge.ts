@@ -9,7 +9,7 @@ import { Badge } from '@capawesome/capacitor-badge';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { Coordinates, CalculationMethod, PrayerTimes, Madhab } from 'adhan';
 import { addSystemLog } from './logger';
-import { getCurrentWirdInfo } from '../../lib/quran-memorizer/src/services/quranData';
+import { getCurrentWirdInfo, advanceWirdOnHabitComplete } from '../../lib/quran-memorizer/src/services/quranData';
 
 // Trigger device haptics
 export async function triggerHaptics(style: 'light' | 'medium' | 'heavy' | 'success' | 'error' = 'medium') {
@@ -821,6 +821,16 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
           void queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
           void queryClient.invalidateQueries({ queryKey: ['habits'] });
           console.log('[Notif] Habit logged done:', extra.habitId, extra.date);
+
+          // Completing a linked Quran habit (الورد اليومي / حفظ صفحه) advances the wird.
+          try {
+            const { data: h } = await supabaseClient
+              .from('habits')
+              .select('title')
+              .eq('id', extra.habitId)
+              .maybeSingle();
+            if (h?.title) advanceWirdOnHabitComplete(h.title);
+          } catch {}
         } catch (e) {
           console.error('[Notif] Failed to log habit:', e);
         }

@@ -96,6 +96,9 @@ export interface LinkedLifeOSHabit {
   title: string;
   description?: string;
   is_completed_today: boolean;
+  // The habit's actual streak from lifeOS Habits — used as the source of truth
+  // for the reading wird streak.
+  streakDays?: number;
 }
 
 export interface LinkedLifeOSEvent {

@@ -2,7 +2,7 @@ import React from 'react';
 import { QuranMemorizerMain, type SheikhHalqahNote } from '../../lib/quran-memorizer';
 import { supabase } from '../lib/supabase';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
-import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit } from '../hooks/useHabits';
+import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit, useHabitStreaks } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
 import { useCreateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
 import { useQuranCloudSync } from '../hooks/useQuranCloudSync';
@@ -13,6 +13,7 @@ export function QuranRoute() {
   const { data: habits = [] } = useHabits();
   const { data: todayLogs = [] } = useTodayHabitLogs();
   const { data: calendarEvents = [] } = useCalendarEvents();
+  const habitStreaks = useHabitStreaks(habits.map((h) => h.id));
   const toggleTaskMutation = useToggleTask();
   const createTaskMutation = useCreateTask();
   const logHabitMutation = useLogHabit();
@@ -157,6 +158,7 @@ ${note.mistakesNote}
       title: h.title,
       description: h.description,
       is_completed_today: !!log?.completed,
+      streakDays: habitStreaks.data?.[h.id] ?? 0,
     };
   });
 

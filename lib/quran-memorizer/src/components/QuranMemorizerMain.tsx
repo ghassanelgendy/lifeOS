@@ -46,6 +46,10 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   const [showHadithModal, setShowHadithModal] = useState(false);
   const [currentHadithIdx, setCurrentHadithIdx] = useState(0);
 
+  // Full-screen reading mode shared with the reader + audio player bar so the
+  // player can collapse to its small state while reading full-screen.
+  const [readerFullscreen, setReaderFullscreen] = useState(false);
+
   // 12-Hour Hadith Toast Auto-Show logic on Mobile
   useEffect(() => {
     try {
@@ -321,6 +325,15 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       localStorage.setItem('quran_active_page_v1', page.toString());
       window.dispatchEvent(new Event('quran_active_page_updated'));
     } catch {}
+
+    // Vice-versa sync: marking/advancing the reading wird completes the linked
+    // reading habit (الورد اليومي) so its progress & streak update in lifeOS.
+    const readingHabit = linkedHabits.find(
+      (h) => /ورد|تلاوة|قراءة|reading|tilawah/i.test(h.title) && !/حفظ|memoriz|تحفيظ|تسميع/i.test(h.title)
+    );
+    if (readingHabit && !readingHabit.is_completed_today && onToggleHabit) {
+      onToggleHabit(readingHabit.id, true);
+    }
   };
 
   const memorizationPage = memorizationPlan ? memorizationPlan.currentPage : memorizationMarker.page;
@@ -592,6 +605,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onSyncReading={handleSyncReading}
             onOpenHalqahNote={() => setActiveTab('khatmah')}
             onBookmarkAyah={onBookmarkAyah}
+            isFullscreen={readerFullscreen}
+            onFullscreenChange={setReaderFullscreen}
           />
         )}
 
@@ -630,6 +645,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onNext={audio.nextAyah}
             onPrev={audio.prevAyah}
             onChangeSpeed={audio.changePlaybackRate}
+            forceSmall={readerFullscreen}
           />
         )}
       </main>

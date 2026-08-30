@@ -1,4 +1,4 @@
-import { SurahMeta, Reciter, MutashabihItem } from '../types/quran';
+import { SurahMeta, Reciter, MutashabihItem, ReadingWirdPlan, KhatmahPlan } from '../types/quran';
 
 export const RECITERS: Reciter[] = [
   { id: 'alafasy', name: 'Mishary Rashid Alafasy', subfolder: 'Alafasy_128kbps' },
@@ -249,5 +249,83 @@ export function getCurrentWirdInfo() {
       surahName: readSurahName,
     },
   };
+}
+
+const READING_WIRD_KEY = 'quran_reading_wird_v1';
+const KHATMAH_KEY = 'quran_khatmah_plan_v1';
+
+/**
+ * Classify a habit/event title as a Quran READING (تلاوة/ورد/قراءة) or
+ * MEMORIZATION (حفظ/تحفيظ/تسميع) wird — title takes precedence over anything
+ * else so "الورد اليومي" is always treated as reading.
+ */
+export function classifyQuranHabitTitle(title: string): 'reading' | 'memorization' | null {
+  const titleIsMem = /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(title);
+  const titleIsRead = /read|تلاوة|قراءة|ورد/i.test(title);
+  if (titleIsMem && !titleIsRead) return 'memorization';
+  if (titleIsRead) return 'reading';
+  return null;
+}
+
+/**
+ * Advances the Quran wird (reading OR memorization) in localStorage when the
+ * matching lifeOS habit is completed. Reading (الورد اليومي) pushes
+ * `quran_reading_wird_v1` forward; memorization (حفظ صفحه) pushes
+ * `quran_khatmah_plan_v1` forward. Dispatches `quran_plan_updated` so open
+ * planners re-read the new positions. Returns the kind advanced, or null.
+ */
+export function advanceWirdOnHabitComplete(habitTitle: string): 'reading' | 'memorization' | null {
+  const kind = classifyQuranHabitTitle(habitTitle);
+  if (!kind) return null;
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  if (kind === 'reading') {
+    let wird: ReadingWirdPlan = { currentPage: 1, pagesPerDay: 4, streakDays: 0 };
+    try {
+      const saved = localStorage.getItem(READING_WIRD_KEY);
+      if (saved) wird = { ...wird, ...JSON.parse(saved) };
+    } catch {}
+    const isConsecutive = wird.lastReadDate
+      ? (new Date(todayStr).getTime() - new Date(wird.lastReadDate).getTime()) / (1000 * 3600 * 24) <= 1
+      : true;
+    const nextStreak = isConsecutive ? wird.streakDays + 1 : 1;
+    const nextPage = Math.min(604, wird.currentPage + (wird.pagesPerDay || 4));
+    const updated: ReadingWirdPlan = {
+      ...wird,
+      currentPage: nextPage === 604 ? 1 : nextPage,
+      streakDays: nextStreak,
+      lastReadDate: todayStr,
+    };
+    localStorage.setItem(READING_WIRD_KEY, JSON.stringify(updated));
+    window.dispatchEvent(new Event('quran_plan_updated'));
+    return 'reading';
+  }
+
+  // Memorization — advance the khatmah plan (respecting its direction)
+  let plan: KhatmahPlan | null = null;
+  try {
+    const saved = localStorage.getItem(KHATMAH_KEY);
+    if (saved) plan = JSON.parse(saved);
+  } catch {}
+  if (plan) {
+    const isConsecutive = plan.lastCompletedDate
+      ? (new Date(todayStr).getTime() - new Date(plan.lastCompletedDate).getTime()) / (1000 * 3600 * 24) <= 1
+      : true;
+    const nextStreak = isConsecutive ? (plan.streakDays || 0) + 1 : 1;
+    const isReverse = plan.direction === 'reverse';
+    const nextCurrentPage = isReverse
+      ? Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay)
+      : Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay);
+    plan = {
+      ...plan,
+      currentPage: nextCurrentPage,
+      streakDays: nextStreak,
+      lastCompletedDate: todayStr,
+    };
+    localStorage.setItem(KHATMAH_KEY, JSON.stringify(plan));
+    window.dispatchEvent(new Event('quran_plan_updated'));
+  }
+  return 'memorization';
 }
 
