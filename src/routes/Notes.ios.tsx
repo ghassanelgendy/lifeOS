@@ -605,36 +605,72 @@ export default function NotesIOS() {
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
                 placeholder="Title"
-                className="w-full text-xl font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground"
+                className="w-full text-xl sm:text-2xl font-bold bg-transparent border-none outline-none text-foreground placeholder:text-muted-foreground/50 tracking-tight"
               />
 
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="date"
-                  value={draftDate}
-                  onChange={(e) => setDraftDate(e.target.value)}
-                  className="text-xs h-8"
-                />
-                <Select
-                  value={draftFolderId}
-                  onChange={(e) => setDraftFolderId(e.target.value)}
-                  options={folderOptions}
-                  className="text-xs h-8 py-0"
-                />
+              {/* Compact Metadata Strip (Folder, Date, Pin) */}
+              <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                {/* Folder Selector Pill */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/50 border border-border/60 text-xs font-medium hover:bg-secondary transition-colors">
+                  <Folder size={13} className="text-primary shrink-0" />
+                  <select
+                    value={draftFolderId}
+                    onChange={(e) => setDraftFolderId(e.target.value)}
+                    className="bg-transparent border-none outline-none text-xs font-medium text-foreground cursor-pointer pr-1"
+                  >
+                    {folderOptions.map((opt) => (
+                      <option key={opt.value} value={opt.value} className="bg-popover text-popover-foreground">
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date Picker Pill */}
+                <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/50 border border-border/60 text-xs font-medium cursor-pointer hover:bg-secondary transition-colors">
+                  <Calendar size={13} className="text-muted-foreground shrink-0" />
+                  <span>{formatNoteDate(draftDate) || 'Set Date'}</span>
+                  <input
+                    type="date"
+                    value={draftDate}
+                    onChange={(e) => setDraftDate(e.target.value)}
+                    className="sr-only"
+                  />
+                </label>
+
+                {/* Pin Pill */}
+                <button
+                  type="button"
+                  onClick={() => setDraftIsPinned(!draftIsPinned)}
+                  className={cn(
+                    "inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer",
+                    draftIsPinned
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-500 font-semibold"
+                      : "bg-secondary/50 border-border/60 text-muted-foreground hover:bg-secondary"
+                  )}
+                >
+                  <Pin size={12} className={cn(draftIsPinned && "fill-amber-500")} />
+                  <span>{draftIsPinned ? 'Pinned' : 'Pin'}</span>
+                </button>
+
+                {draftIsBrainDump && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-semibold text-xs">
+                    <Brain size={12} /> Brain Dump
+                  </span>
+                )}
               </div>
 
-              <div className="flex-1 flex flex-col min-h-[14rem]">
+              <div className="flex-1 flex flex-col min-h-[16rem] pt-1">
                 {isEditing ? (
-                  <TextArea
+                  <textarea
                     value={draftBody}
                     onChange={(e) => setDraftBody(e.target.value)}
                     placeholder="Start writing..."
-                    wrapperClassName="flex-1 flex flex-col min-h-0"
-                    className="flex-1 min-h-[14rem] text-xs font-mono leading-relaxed"
+                    className="flex-1 w-full min-h-[16rem] bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none border-none resize-none font-sans p-0"
                   />
                 ) : (
                   <div
-                    className="flex-1 min-h-[12rem] rounded-xl border border-border bg-card prose prose-sm dark:prose-invert max-w-none select-text note-selectable cursor-text px-1 py-0.5"
+                    className="flex-1 min-h-[16rem] text-sm sm:text-base leading-relaxed text-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none select-text note-selectable cursor-text font-sans p-0"
                     onDoubleClick={() => setIsEditing(true)}
                     dangerouslySetInnerHTML={{
                       __html: draftBody

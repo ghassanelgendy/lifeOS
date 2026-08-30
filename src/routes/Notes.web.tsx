@@ -14,6 +14,7 @@ import {
   Pin,
   Brain,
   Check,
+  Calendar,
   Tag as TagIcon,
   X,
   MoreVertical,
@@ -639,54 +640,64 @@ export default function NotesWeb() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <Input
-                type="date"
-                value={draftDate}
-                onChange={(e) => setDraftDate(e.target.value)}
-                className="text-xs h-8"
-              />
-              <Select
-                value={draftFolderId}
-                onChange={(e) => setDraftFolderId(e.target.value)}
-                options={folderOptions}
-                className="text-xs h-8 py-0"
-              />
-            </div>
+            {/* Compact Metadata Strip (Folder, Date, Pin) */}
+            <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+              {/* Folder Selector Pill */}
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/50 border border-border/60 text-xs font-medium hover:bg-secondary transition-colors">
+                <Folder size={13} className="text-primary shrink-0" />
+                <select
+                  value={draftFolderId}
+                  onChange={(e) => setDraftFolderId(e.target.value)}
+                  className="bg-transparent border-none outline-none text-xs font-medium text-foreground cursor-pointer pr-1"
+                >
+                  {folderOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value} className="bg-popover text-popover-foreground">
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <div className="flex items-center justify-between text-xs border-b border-border pb-2">
-              <div className="flex items-center gap-2 text-muted-foreground">
+              {/* Date Picker Pill */}
+              <label className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/50 border border-border/60 text-xs font-medium cursor-pointer hover:bg-secondary transition-colors">
+                <Calendar size={13} className="text-muted-foreground shrink-0" />
+                <span>{formatNoteDate(draftDate) || 'Set Date'}</span>
+                <input
+                  type="date"
+                  value={draftDate}
+                  onChange={(e) => setDraftDate(e.target.value)}
+                  className="sr-only"
+                />
+              </label>
+
+              {/* Word & Char Counts */}
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground ml-auto">
                 <span>{wordCount} words</span>
                 <span>•</span>
                 <span>{charCount} chars</span>
-                {draftIsBrainDump && (
-                  <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold text-[10px] flex items-center gap-1">
-                    <Brain size={11} /> Brain Dump
-                  </span>
-                )}
               </div>
+
               <button
                 type="button"
                 onClick={() => setIsEditing((v) => !v)}
-                className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+                className="flex items-center gap-1 text-xs text-primary font-medium hover:underline ml-2"
               >
                 {isEditing ? <Eye size={14} /> : <Pencil size={14} />}
                 {isEditing ? 'Preview' : 'Edit'}
               </button>
             </div>
 
-            <div className="flex-1 min-h-[16rem] flex flex-col">
+            <div className="flex-1 min-h-[16rem] flex flex-col pt-1">
               {isEditing ? (
-                <TextArea
+                <textarea
                   value={draftBody}
                   onChange={(e) => setDraftBody(e.target.value)}
                   placeholder="Start typing your note or paste research in markdown..."
-                  wrapperClassName="flex-1 flex flex-col min-h-0"
-                  className="flex-1 min-h-0 resize-none font-mono text-xs leading-relaxed p-3"
+                  className="flex-1 w-full min-h-[16rem] bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none border-none resize-none font-sans p-0"
                 />
               ) : (
                 <div
-                  className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-border bg-background p-4 prose prose-sm dark:prose-invert max-w-none select-text note-selectable cursor-text"
+                  className="flex-1 min-h-[16rem] overflow-y-auto text-sm sm:text-base leading-relaxed text-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none select-text note-selectable cursor-text font-sans p-0"
                   onDoubleClick={() => setIsEditing(true)}
                   dangerouslySetInnerHTML={{
                     __html: draftBody
