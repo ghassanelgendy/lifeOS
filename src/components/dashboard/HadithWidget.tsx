@@ -20,14 +20,17 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
 
   const isDaily = currentHadith.id === dailyHadith.id;
 
+  const [seenIds, setSeenIds] = useState<string[]>([dailyHadith.id]);
+
   const handleNextHadith = useCallback(() => {
     setIsRotating(true);
     void triggerHaptics('light');
     const currentIndex = SHORT_HADITHS.findIndex((h) => h.id === currentHadith.id);
-    const { hadith } = getRandomHadith(currentIndex);
+    const { hadith } = getRandomHadith(currentIndex, seenIds);
+    setSeenIds((prev) => (prev.length > 100 ? [hadith.id] : [...prev, hadith.id]));
     setCurrentHadith(hadith);
     setTimeout(() => setIsRotating(false), 300);
-  }, [currentHadith.id]);
+  }, [currentHadith.id, seenIds]);
 
   const handleCopy = useCallback(async () => {
     try {
