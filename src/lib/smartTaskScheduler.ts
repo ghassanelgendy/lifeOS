@@ -115,7 +115,7 @@ export function distributeTasksAcrossAwakeSlots(
     let slotFound = false;
     let attempts = 0;
 
-    while (!slotFound && attempts < 14) { // Look ahead up to 14 days
+    while (!slotFound && attempts < 35) { // Look ahead up to 35 days (next month)
       const dateStr = `${currentDateObj.getFullYear()}-${String(currentDateObj.getMonth() + 1).padStart(2, '0')}-${String(currentDateObj.getDate()).padStart(2, '0')}`;
       const isToday = dateStr === todayStr;
 
