@@ -341,26 +341,32 @@ function AppInner() {
               const resText = await askAI(briefSystemPrompt, cleanBody, true);
               const parsed = extractJSON(resText);
 
-              const d = rawDump.note_date ? new Date(rawDump.note_date) : new Date();
-              const organizedTitle = `${d.getDate()}/${d.getMonth() + 1} organized`;
-
               const formattedContent = [
                 `### 📌 Brief Summary\n${parsed?.summary || 'Concise daily dump organization.'}`,
                 parsed?.insights?.length ? `\n### 💡 Key Takeaways\n${parsed.insights.map((i: string) => `- ${i}`).join('\n')}` : '',
                 parsed?.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t: any) => `- ${t.title}`).join('\n')}` : '',
                 parsed?.projects_or_notes?.length ? `\n### 📝 Core Ideas\n${parsed.projects_or_notes.map((p: any) => `**${p.title}:** ${p.content}`).join('\n')}` : '',
+                `\n---\n### 🕒 Raw Thoughts Log\n${rawDump.body || ''}`,
               ].filter(Boolean).join('\n');
 
-              await supabase.from('notes').insert({
-                title: organizedTitle,
+              // Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
+              await supabase.from('notes').update({
                 body: formattedContent,
-                note_date: rawDump.note_date,
-                is_brain_dump: false,
                 ai_analysis: parsed,
                 folder_id: orgFolder?.id || null,
-              });
+                is_brain_dump: true,
+                updated_at: new Date().toISOString(),
+              }).eq('id', rawDump.id);
 
-              await supabase.from('notes').update({ ai_analysis: parsed }).eq('id', rawDump.id);
+              // Delete any duplicate organized note for this date if it existed previously
+              if (rawDump.note_date) {
+                await supabase
+                  .from('notes')
+                  .delete()
+                  .eq('note_date', rawDump.note_date)
+                  .ilike('title', '% organized%')
+                  .neq('id', rawDump.id);
+              }
             } catch (err) {
               console.warn('Auto-organize note failed for', rawDump.id, err);
             }

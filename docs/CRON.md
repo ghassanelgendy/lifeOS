@@ -93,3 +93,12 @@ Behavior:
 - If there is not enough history yet, the reminder falls back to `09:00` local time.
 - Push must already be enabled in the app; there is no separate habit reminder toggle.
 - Push subscriptions are now authenticated-only: each subscription row must belong to a signed-in user, and the test-notification Edge Function will only send to a subscription owned by the caller.
+
+## Brain Dump Auto-Organizer (`braindump-organizer`)
+
+Server-side cron for automatically summarizing unorganized brain dumps from past days and filing structured bulleted insights/tasks into the user's `Organized Brain Dumps` folder.
+
+- **Supabase Edge Function**: `POST https://<project-ref>.supabase.co/functions/v1/braindump-organizer`
+- **Vercel Cron Proxy**: `GET /api/cron/braindump-organizer`
+- **Supabase pg_cron**: Scheduled via `midnight-braindump-organizer` (`5 0 * * *`) calling `public.process_midnight_braindumps()`.
+- **Secrets**: Uses user AI API keys configured in `user_app_settings` (Dahl/Bynara/OpenAI fallback) and optional `CRON_SECRET` / `BRAINDUMP_CRON_SECRET`.
