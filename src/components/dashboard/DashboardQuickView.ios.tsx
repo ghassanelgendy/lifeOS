@@ -1670,6 +1670,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               kind={item.kind as DueKind}
               title={item.title}
               subtitle={subtitle}
+              done={isDone}
               busy={
                 isTask
                   ? toggleTask.isPending && toggleTask.variables === item.entityId

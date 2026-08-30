@@ -92,6 +92,39 @@ export function useDeleteCalendarEvent() {
   });
 }
 
+export function useToggleCalendarEvent() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, isCompleted }: { id: string; isCompleted: boolean }) => {
+      const payload = {
+        is_completed: isCompleted,
+        completed_at: isCompleted ? new Date().toISOString() : null,
+      };
+
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'calendar_events', op: 'update', id, payload });
+        queryClient.setQueryData(QUERY_KEY, (old: CalendarEvent[] | undefined) =>
+          (old ?? []).map((e) => (e.id === id ? { ...e, ...payload } : e))
+        );
+        return { id, ...payload } as unknown as CalendarEvent;
+      }
+
+      const { data: updated, error } = await supabase
+        .from('calendar_events')
+        .update(payload)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return updated as CalendarEvent;
+    },
+    onSuccess: () => {
+      if (isOnline()) queryClient.invalidateQueries({ queryKey: QUERY_KEY });
+    },
+  });
+}
+
 // Generate recurring event instances for display
 export function useExpandedCalendarEvents(startDate: Date, endDate: Date) {
   const { data: events = [] } = useCalendarEvents();
