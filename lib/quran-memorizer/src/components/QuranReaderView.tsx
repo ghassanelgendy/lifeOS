@@ -1199,7 +1199,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       {/* Tafsir in Page Mode if enabled */}
                       {showTranslation && (
                         <div className="text-xs text-foreground/90 leading-relaxed border-t border-border/30 pt-2 text-right dir-rtl font-arabic-body bg-secondary/30 p-2.5 rounded-xl border border-border/40">
-                          <span className="font-bold text-amber-400 block mb-0.5 text-[11px]">📖 التفسير الميسر (آية {currentAyahIndex}):</span>
+                          <span className="font-bold text-amber-400 block mb-0.5 text-[11px]">التفسير الميسر (آية {currentAyahIndex}):</span>
                           {pageAyahs.find((a) => a.numberInSurah === currentAyahIndex)?.translation}
                         </div>
                       )}
@@ -1267,7 +1267,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                     {isMemorized && (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 font-bold text-[10px]">
-                        ✨ مُتقَن
+                        مُتقَن
                       </span>
                     )}
 
@@ -1301,7 +1301,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 {/* Tafsir Al-Muyassar Display */}
                 {showTranslation && ayah.translation && (
                   <div className="mt-3 text-xs text-foreground/90 leading-relaxed border-t border-border/30 pt-2.5 text-right dir-rtl font-arabic-body bg-secondary/30 p-2.5 rounded-xl border border-border/40">
-                    <span className="font-bold text-amber-400 block mb-0.5 text-[11px]">📖 التفسير الميسر:</span>
+                    <span className="font-bold text-amber-400 block mb-0.5 text-[11px]">التفسير الميسر:</span>
                     {ayah.translation}
                   </div>
                 )}

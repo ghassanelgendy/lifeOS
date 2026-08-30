@@ -528,8 +528,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-md rounded-3xl border border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl text-center overscroll-contain animate-in fade-in zoom-in-95 duration-300 ease-out"
             >
-              <div className="size-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto text-2xl border border-emerald-500/20">
-                ✨
+              <div className="size-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
+                <Sparkles className="size-7" />
               </div>
 
               <div className="space-y-1">

@@ -66,7 +66,7 @@ export const RevisionScheduler: React.FC<RevisionSchedulerProps> = ({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          ⏱️ التثبيت اليومي المتباعد (Spaced Repetition)
+          التثبيت اليومي المتباعد (Spaced Repetition)
         </button>
 
         <button
@@ -78,7 +78,7 @@ export const RevisionScheduler: React.FC<RevisionSchedulerProps> = ({
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
-          🔄 مراجعة تراكمية شاملة (Cumulative Review)
+          مراجعة تراكمية شاملة (Cumulative Review)
         </button>
       </div>
 
@@ -147,7 +147,7 @@ export const RevisionScheduler: React.FC<RevisionSchedulerProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
-                🔄 المراجعة التراكمية (الربط المستمر من البداية)
+                المراجعة التراكمية (الربط المستمر من البداية)
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 مراجعة السور والمحفوظات السابقة كاملة للتأكد من عدم نسيان البدايات مع التقدم في الحفظ

@@ -406,7 +406,12 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   );
 
   const totalPages = plan ? Math.abs(plan.endPage - plan.startPage) + 1 : 604;
-  const pagesCompleted = plan ? Math.abs(plan.currentPage - plan.startPage) : 0;
+  // Direction-aware progress: count pages traversed from the START toward the END.
+  // For a reversed khatmah (604 -> 1) the currentPage decreases, so the distance from
+  // the start (604) is the number of pages actually completed.
+  const pagesCompleted = plan
+    ? Math.max(0, Math.min(totalPages - 1, Math.abs(plan.currentPage - plan.startPage)))
+    : 0;
   const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
 
   const currentSurah = getSurahForPage(plan ? plan.currentPage : 604);
@@ -431,7 +436,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-emerald-400 flex items-center gap-2 font-arabic-title">
               <Target className="size-4 text-emerald-400 shrink-0" />
-              <span>🎯 ورد الحفظ الجديد والتكرار</span>
+              <span>ورد الحفظ الجديد والتكرار</span>
             </h3>
             {plan && (
               <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
@@ -533,7 +538,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     className="w-full py-2 px-3 rounded-2xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 font-bold text-xs border border-emerald-500/40 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                   >
                     <BookOpen className="size-3.5 text-emerald-400" />
-                    <span>📖 فتح ورد الحفظ في المصحف (ص {plan.currentPage})</span>
+                    <span>فتح ورد الحفظ في المصحف (ص {plan.currentPage})</span>
                   </button>
                 )}
 
@@ -542,7 +547,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                   className="w-full py-2 px-3 rounded-2xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                 >
                   <FileText className="size-3.5 text-emerald-400" />
-                  <span>📝 تدوين ملاحظة تسميع لورد الحفظ اليومي</span>
+                  <span>تدوين ملاحظة تسميع لورد الحفظ اليومي</span>
                 </button>
               </div>
             </div>
@@ -554,7 +559,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-bold text-indigo-400 flex items-center gap-2 font-arabic-title">
               <BookOpen className="size-4 text-indigo-400 shrink-0" />
-              <span>📖 ورد التلاوة والقراءة اليومية</span>
+              <span>ورد التلاوة والقراءة اليومية</span>
             </h3>
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               {readingWird.pagesPerDay} صفحة يومياً
@@ -643,7 +648,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                   className="w-full py-2 px-3 rounded-2xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 font-bold text-xs border border-indigo-500/40 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
                 >
                   <BookOpen className="size-3.5 text-indigo-400" />
-                  <span>📖 فتح ورد التلاوة في المصحف (ص {readingWird.currentPage})</span>
+                  <span>فتح ورد التلاوة في المصحف (ص {readingWird.currentPage})</span>
                 </button>
               )}
 
@@ -652,7 +657,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 className="w-full py-2 px-3 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-300 font-bold text-xs border border-indigo-500/30 flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-sm"
               >
                 <FileText className="size-3.5 text-indigo-400" />
-                <span>📝 تدوين ملاحظة على ورد التلاوة اليومي</span>
+                <span>تدوين ملاحظة على ورد التلاوة اليومي</span>
               </button>
             </div>
           </div>
@@ -672,10 +677,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                معدل الإنجاز: <span className="font-bold text-foreground">{plan.pagesPerDay} صفحة / يومياً</span> • الانتهاء المتوقع:{' '}
-                <span className="font-semibold text-emerald-400">
-                  {new Date(plan.targetEndDate).toLocaleDateString('ar-EG')}
-                </span>
+                معدل الإنجاز: <span className="font-bold text-foreground">{plan.pagesPerDay} صفحة / يومياً</span>
               </p>
             </div>
 
@@ -872,7 +874,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                     </div>
 
                     <p className="text-xs text-foreground bg-background/60 p-2.5 rounded-xl border border-border/40 leading-relaxed font-semibold">
-                      📝 {note.mistakesNote}
+                      {note.mistakesNote}
                     </p>
 
                     <span className="text-[9px] text-muted-foreground block text-left font-mono">
@@ -1060,7 +1062,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                 {/* Smart Wird Presets Quick Select */}
                 <div className="space-y-2 pb-1">
                   <label className="text-xs font-bold text-muted-foreground block">
-                    ⚡ تعبئة تلقائية سريعة من ورد اليوم:
+                    تعبئة تلقائية سريعة من ورد اليوم:
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {plan && (
@@ -1074,7 +1076,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                         }`}
                       >
                         <div className="flex items-center justify-between text-[11px] font-bold">
-                          <span>🎯 ورد الحفظ اليومي</span>
+                          <span>ورد الحفظ اليومي</span>
                           <span className="text-[10px] opacity-75">صفحة {getSmartWirdInfo('memorization').page}</span>
                         </div>
                         <div className="text-xs font-bold mt-0.5 text-foreground">
@@ -1093,7 +1095,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                       }`}
                     >
                       <div className="flex items-center justify-between text-[11px] font-bold">
-                        <span>📖 ورد التلاوة اليومي</span>
+                        <span>ورد التلاوة اليومي</span>
                         <span className="text-[10px] opacity-75">صفحة {getSmartWirdInfo('reading').page}</span>
                       </div>
                       <div className="text-xs font-bold mt-0.5 text-foreground">

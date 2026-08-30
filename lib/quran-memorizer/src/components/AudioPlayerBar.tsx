@@ -423,7 +423,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                 <div className="flex items-center gap-2">
                   <Sparkles className="size-4 shrink-0" />
                   <div>
-                    <div className="font-extrabold text-[12px]">✨ طريقة الحفظ التراكمي الذهبية</div>
+                    <div className="font-extrabold text-[12px]">طريقة الحفظ التراكمي الذهبية</div>
                     <div className="text-[10px] opacity-80 font-normal">تكرار الآية ٣ مرات ➔ سكوت للتسميع مغمضاً ➔ ربط من أول السورة ➔ الآية التالية</div>
                   </div>
                 </div>
@@ -444,7 +444,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                   }}
                   className="px-2.5 py-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground border border-border/60 text-xs font-bold text-center transition-colors cursor-pointer"
                 >
-                  🎧 سورة كاملة مع سكتة (2ث)
+                  سورة كاملة مع سكتة (2ث)
                 </button>
                 <button
                   type="button"
@@ -459,7 +459,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
                   }}
                   className="px-2.5 py-2 rounded-xl bg-secondary/80 hover:bg-secondary text-foreground border border-border/60 text-xs font-bold text-center transition-colors cursor-pointer"
                 >
-                  ▶️ استماع مستمر (بدون توقف)
+                  استماع مستمر (بدون توقف)
                 </button>
               </div>
             </div>

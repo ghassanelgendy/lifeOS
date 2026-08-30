@@ -84,7 +84,7 @@ export function QuranRoute() {
 - **تقييم الجلسة**: ${ratingLabel}
 - **السورة والآيات**: ${note.surahName} (${note.ayahRange})
 
-## 📝 ملاحظات الأخطاء والمتشابهات:
+## ملاحظات الأخطاء والمتشابهات:
 ${note.mistakesNote}
 `.trim();
 
@@ -112,7 +112,7 @@ ${note.mistakesNote}
       }
     }
 
-    const bookmarkSnippet = `### 📖 سورة ${surahName} (الآية ${ayahNumber})\n> «${ayahText}»\n*تم الحفظ في: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}*`;
+    const bookmarkSnippet = `### سورة ${surahName} (الآية ${ayahNumber})\n> «${ayahText}»\n*تم الحفظ في: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}*`;
 
     // Check if a note titled 'Quran Bookmarks' already exists
     try {
@@ -132,7 +132,7 @@ ${note.mistakesNote}
       } else {
         createNoteMutation.mutate({
           title: 'Quran Bookmarks',
-          body: `# 📑 علامات وحفظ الآيات (Quran Bookmarks)\n\n${bookmarkSnippet}`,
+          body: `# علامات وحفظ الآيات (Quran Bookmarks)\n\n${bookmarkSnippet}`,
           note_date: todayStr,
           folder_id: folderId || null,
           tags: ['قرآن', 'علامات', 'quran_bookmarks'],
