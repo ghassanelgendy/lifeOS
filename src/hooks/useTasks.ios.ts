@@ -30,6 +30,7 @@ const TASK_INSERT_KEYS = [
   'url', 'is_urgent', 'is_flagged', 'early_reminder_minutes', 'location', 'when_messaging',
   'list_id', 'project_id', 'tag_ids', 'recurrence', 'recurrence_interval', 'recurrence_end',
   'reminders_enabled', 'recurrence_end_type', 'recurrence_count', 'calendar_event_id', 'calendar_source_key',
+  'source_note_id',
   'ios_reminders_enabled', 'ios_reminder_id', 'ios_reminder_list', 'ios_reminder_updated_at',
   'parent_id', 'sort_order', 'strategic_quarter_id', 'points_value',
 ] as const;
@@ -699,6 +700,10 @@ export function useUpdateTask() {
         }
       }
 
+      if (updatedData.is_completed !== undefined) {
+        void syncTaskCompletionToLinkedNote(updatedTask, Boolean(updatedData.is_completed));
+      }
+
       return updatedTask;
     },
     onSuccess: () => {
@@ -775,6 +780,73 @@ async function adjustPointsForTaskToggle(task: any, newCompleted: boolean) {
     }
   } else {
     await idbAddPointsTransaction({ ...payload, is_synced: false });
+  }
+}
+
+/**
+ * Bi-directionally syncs task completion status with its source brain dump note.
+ * Updates checkboxes in the note body (- [ ] <title> <-> - [x] <title>) and ai_analysis JSON.
+ */
+export async function syncTaskCompletionToLinkedNote(
+  task: { id: string; title: string; source_note_id?: string | null },
+  isCompleted: boolean
+) {
+  try {
+    if (!task.title) return;
+
+    let note: any = null;
+    if (task.source_note_id) {
+      const { data } = await supabase.from('notes').select('*').eq('id', task.source_note_id).single();
+      note = data;
+    }
+
+    if (!note) {
+      const { data } = await supabase
+        .from('notes')
+        .select('*')
+        .eq('is_brain_dump', true)
+        .ilike('body', `%${task.title.trim()}%`)
+        .limit(1);
+      note = data?.[0];
+    }
+
+    if (!note || !note.body) return;
+
+    const taskTitleEscaped = task.title.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let updatedBody = note.body;
+
+    if (isCompleted) {
+      const regexUnchecked = new RegExp(`(-\\s*\\[\\s*\\]\\s*|(?<=### ⚡ Action Items[\\s\\S]*?)-\\s*)(${taskTitleEscaped})`, 'gi');
+      updatedBody = updatedBody.replace(regexUnchecked, `- [x] $2`);
+    } else {
+      const regexChecked = new RegExp(`(-\\s*\\[x\\]\\s*)(${taskTitleEscaped})`, 'gi');
+      updatedBody = updatedBody.replace(regexChecked, `- [ ] $2`);
+    }
+
+    let updatedAnalysis = note.ai_analysis;
+    if (updatedAnalysis?.tasks && Array.isArray(updatedAnalysis.tasks)) {
+      updatedAnalysis = {
+        ...updatedAnalysis,
+        tasks: updatedAnalysis.tasks.map((t: any) =>
+          t.title && t.title.trim().toLowerCase() === task.title.trim().toLowerCase()
+            ? { ...t, is_completed: isCompleted }
+            : t
+        ),
+      };
+    }
+
+    if (updatedBody !== note.body || updatedAnalysis !== note.ai_analysis) {
+      await supabase
+        .from('notes')
+        .update({
+          body: updatedBody,
+          ai_analysis: updatedAnalysis,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', note.id);
+    }
+  } catch (err) {
+    console.warn('Sync task completion to linked note failed:', err);
   }
 }
 
@@ -903,6 +975,9 @@ export function useToggleTask() {
           if (insertErr) throw insertErr;
         }
       }
+
+      void syncTaskCompletionToLinkedNote(updatedTask, newCompleted);
+
       return updatedTask;
     },
     onMutate: async (id: string) => {

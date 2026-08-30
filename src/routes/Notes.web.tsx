@@ -604,14 +604,17 @@ export default function NotesWeb() {
         {/* Right Main Panel: Editor & Reader (5 cols) */}
         <section className="lg:col-span-5 rounded-xl border border-border bg-card overflow-hidden flex flex-col min-h-0">
           <div className="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-y-auto">
-            <div className="flex items-center justify-between gap-2">
-              <Input
-                value={draftTitle}
-                onChange={(e) => setDraftTitle(e.target.value)}
-                placeholder="Untitled Note..."
-                className="text-base font-bold bg-transparent border-none focus:ring-0 px-0 h-auto"
-              />
-              <div className="flex items-center gap-1">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <input
+                  type="text"
+                  value={draftTitle}
+                  onChange={(e) => setDraftTitle(e.target.value)}
+                  placeholder="Untitled Note..."
+                  className="w-full text-base sm:text-lg font-bold bg-transparent border-none focus:outline-none focus:ring-0 px-0 h-auto text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
                 <button
                   type="button"
                   onClick={handleTogglePinCurrent}

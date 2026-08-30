@@ -158,8 +158,15 @@ export interface CalendarEvent {
 // ========================
 export interface BrainDumpSuggestionTask {
   title: string;
-  priority?: 'low' | 'medium' | 'high';
-  due?: string;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  due?: string; // YYYY-MM-DD
+  due_time?: string; // HH:mm
+  suggested_list?: string;
+  suggested_tag?: string;
+  estimated_duration?: number;
+  scheduling_reason?: string;
+  is_completed?: boolean;
+  task_id?: string;
 }
 
 export interface BrainDumpSuggestionHabit {
@@ -293,6 +300,7 @@ export interface Task {
   // Integrations
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;
+  source_note_id?: string | null;
 
   ios_reminders_enabled?: boolean;
   ios_reminder_id?: string | null;

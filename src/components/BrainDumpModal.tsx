@@ -33,12 +33,14 @@ import { Button, Modal, Input } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useUIStore } from '../stores/useUIStore';
 import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
-import { useTasks, useCreateTask } from '../hooks/useTasks';
+import { useTasks, useCreateTask, useTaskLists, useTags } from '../hooks/useTasks';
 import { useHabits, useCreateHabit } from '../hooks/useHabits';
 import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
+import { useSleepMetrics } from '../hooks/useSleep';
+import { distributeTasksAcrossAwakeSlots } from '../lib/smartTaskScheduler';
 import { format } from 'date-fns';
 import { triggerHaptics } from '../lib/nativeBridge';
-import type { Note, BrainDumpAnalysis } from '../types/schema';
+import type { Note, BrainDumpAnalysis, BrainDumpSuggestionTask } from '../types/schema';
 import { cn } from '../lib/utils';
 
 interface BrainDumpModalProps {
@@ -53,8 +55,11 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const { data: allNotes = [] } = useNotes();
   const { data: noteFolders = [] } = useNoteFolders();
   const { data: tasks = [] } = useTasks();
+  const { data: taskLists = [] } = useTaskLists();
+  const { data: tags = [] } = useTags();
   const { data: habits = [] } = useHabits();
   const { data: calendarEvents = [] } = useCalendarEvents();
+  const { avgBedtimeMinutes } = useSleepMetrics(7);
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
@@ -82,6 +87,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<BrainDumpAnalysis | null>(null);
   const [selectedTaskIndexes, setSelectedTaskIndexes] = useState<Set<number>>(new Set());
+  const [addedTasksMap, setAddedTasksMap] = useState<Record<number, boolean>>({});
   const [exportedTasksSuccess, setExportedTasksSuccess] = useState(false);
   const [createdHabitTitle, setCreatedHabitTitle] = useState<string | null>(null);
   const [createdEventTitle, setCreatedEventTitle] = useState<string | null>(null);
@@ -283,7 +289,9 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
         .map((e) => `- ${e.title} (${e.start_time.slice(0, 16).replace('T', ' ')})`)
         .join('\n');
 
-      // Existing Note Folders / Projects
+      // Task lists & tags
+      const availableLists = taskLists.map((l) => l.name).join(', ') || 'Work, Learn, Personal, Ideas, Reminders, Shopping, Someday';
+      const availableTags = tags.map((t) => t.name).join(', ') || 'servixa, ischool, assignment, research, quiz, mov, lifeos, urgent, important, quick win, waiting';
       const folders = noteFolders.map((f) => f.name).join(', ');
 
       // Quran Progress
@@ -298,7 +306,9 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
 - Today's Date: ${todayDate}
 - Tomorrow's Date: ${tomorrowDate}
 ${quranPage ? `- Active Quran Reading/Memorization Page: Page ${quranPage}` : ''}
-${folders ? `- Available Project/Note Folders: ${folders}` : ''}
+${folders ? `- Available Note Folders: ${folders}` : ''}
+- Available Task Lists: ${availableLists}
+- Available Tags: ${availableTags}
 
 ### User's Current Workspace State:
 **Active Tasks (${tasks.filter((t) => !t.is_completed).length} pending):**
@@ -313,20 +323,23 @@ ${upcomingEvents || '(No upcoming events scheduled)'}
     };
 
     const contextSummary = compileBrainDumpContext();
+    const availableListNames = taskLists.map((l) => l.name).join(', ') || 'Work, Learn, Personal, Ideas, Reminders, Shopping, Someday';
+    const availableTagNames = tags.map((t) => t.name).join(', ') || 'servixa, ischool, assignment, research, quiz, mov, lifeos, urgent, important, quick win, waiting';
 
     const systemPrompt = `You are lifeOS Cognitive Classifier & Executive Day Planner.
 You understand English and Egyptian Arabic dialect (اللهجة المصرية) as well as Franco-Arabic.
 Your goal is to parse raw stream-of-consciousness thoughts and classify them accurately with FULL CONTEXT of what the user is currently doing.
 
-You have access to the user's current date/time, active tasks, habits, calendar events, and note folders.
+You have access to the user's current date/time, active tasks, habits, calendar events, task lists (${availableListNames}), and tags (${availableTagNames}).
 
 Instructions:
-1. Contextual Awareness:
-   - When the user mentions relative time like "tomorrow", "tonight", "this Friday", "next week", "النهارده", "بكره", compute exact dates in "YYYY-MM-DD" based on today (${format(new Date(), 'yyyy-MM-dd')}).
-   - Cross-reference with existing tasks and habits to avoid duplicate items or to create relevant follow-ups.
-   - If the thought relates to Quran memorization, reading, fitness, work, studies, or personal life, classify it into the appropriate action category.
+1. Contextual Task Categorization:
+   - Identify which task list best fits each task (from: ${availableListNames}) in "suggested_list".
+   - Identify which tag best applies (from: ${availableTagNames}) in "suggested_tag" (e.g. servixa, ischool, research, etc.).
+   - Estimate realistic duration in minutes (15, 30, 45, 60) in "estimated_duration".
+   - Assess priority: "urgent" | "high" | "medium" | "low".
 2. Structure:
-   - "tasks": Discrete actionable tasks to do (with realistic priority high/medium/low and computed due date).
+   - "tasks": Discrete actionable tasks to do.
    - "habits": Recurring daily or weekly routines/habits to build (frequency Daily or Weekly).
    - "events": Meetings, appointments, or time-blocked events (with date YYYY-MM-DD, time HH:mm, and description).
    - "projects_or_notes": Long-term ideas, reflections, project outlines, or takeaways.
@@ -339,8 +352,10 @@ Instructions:
   "tasks": [
     {
       "title": "Actionable task title",
-      "priority": "high" | "medium" | "low",
-      "due": "YYYY-MM-DD or null"
+      "priority": "high" | "medium" | "low" | "urgent",
+      "suggested_list": "Best matching list name",
+      "suggested_tag": "Best matching tag name",
+      "estimated_duration": 30
     }
   ],
   "habits": [
@@ -373,11 +388,30 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
       const resText = await askAI(systemPrompt, userPrompt, true);
       const parsed = extractJSON(resText) as BrainDumpAnalysis;
       parsed.analyzed_at = new Date().toISOString();
-      setAnalysis(parsed);
 
       if (parsed.tasks && parsed.tasks.length > 0) {
+        const wakeHour = 8;
+        const bedHour = avgBedtimeMinutes !== null ? avgBedtimeMinutes / 60 : 23.5;
+        const slots = distributeTasksAcrossAwakeSlots(parsed.tasks.length, {
+          avgWakeHour: wakeHour,
+          avgBedHour: bedHour,
+          existingTasks: tasks,
+          calendarEvents,
+        });
+
+        parsed.tasks = parsed.tasks.map((task, i) => ({
+          ...task,
+          due: slots[i]?.dueDate || task.due || todayStr,
+          due_time: slots[i]?.dueTime || '14:00',
+          estimated_duration: task.estimated_duration || slots[i]?.durationMinutes || 30,
+          scheduling_reason: slots[i]?.reason || 'Distributed during awake hours',
+        }));
+
         setSelectedTaskIndexes(new Set(parsed.tasks.map((_, i) => i)));
       }
+
+      setAnalysis(parsed);
+      setAddedTasksMap({});
 
       // If we analyzed a specific note, attach the analysis to the note in DB
       if (noteContext) {
@@ -400,55 +434,69 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
   };
 
   /**
-   * Manual trigger: Organize a brain dump note into a separate brief note named "DD/M organized" in 'Organized Brain Dumps' folder
+   * Manual trigger: Organize a brain dump note into a unified brief note in 'Organized Brain Dumps' folder
    */
   const handleOrganizeAndMoveToFolder = async (note: Note) => {
     if (!note || !note.body) return;
     try {
-      // 1. Ensure 'Organized Brain Dumps' folder exists
       let folder = noteFolders.find((f) => f.name.toLowerCase() === 'organized brain dumps');
       if (!folder) {
         folder = await createNoteFolder.mutateAsync({ name: 'Organized Brain Dumps', sort_order: 1 });
       }
 
-      // 2. Perform AI brief organization prompt
-      const briefSystemPrompt = `You are lifeOS Executive Summarizer. Analyze this brain dump. Produce a BRIEF, CONCISE, bulleted summary of key insights, action points, and ideas. DO NOT extend or add conversational fluff. Keep it strictly focused and brief. Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks": [{"title": "..."}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
+      const availableListNames = taskLists.map((l) => l.name).join(', ') || 'Work, Learn, Personal, Ideas, Reminders, Shopping, Someday';
+      const availableTagNames = tags.map((t) => t.name).join(', ') || 'servixa, ischool, assignment, research, quiz, mov, lifeos, urgent, important, quick win, waiting';
+
+      const briefSystemPrompt = `You are lifeOS Executive Summarizer & Task Classifier. Analyze this brain dump. Produce a BRIEF, CONCISE summary of key insights, action points, and ideas.
+Available Task Lists: ${availableListNames}
+Available Tags: ${availableTagNames}
+
+Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks": [{"title": "...", "priority": "high", "suggested_list": "...", "suggested_tag": "...", "estimated_duration": 30}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
       const resText = await askAI(briefSystemPrompt, note.body, true);
       const parsed = extractJSON(resText) as BrainDumpAnalysis;
 
-      // 3. Create a NEW separate note named "DD/M organized" in the Organized folder
-      const d = note.note_date ? new Date(note.note_date) : new Date();
-      const organizedTitle = `${d.getDate()}/${d.getMonth() + 1} organized`;
+      if (parsed.tasks && parsed.tasks.length > 0) {
+        const slots = distributeTasksAcrossAwakeSlots(parsed.tasks.length, {
+          avgWakeHour: 8,
+          avgBedHour: avgBedtimeMinutes !== null ? avgBedtimeMinutes / 60 : 23.5,
+          existingTasks: tasks,
+          calendarEvents,
+        });
+        parsed.tasks = parsed.tasks.map((task, i) => ({
+          ...task,
+          due: slots[i]?.dueDate || todayStr,
+          due_time: slots[i]?.dueTime || '14:00',
+          estimated_duration: task.estimated_duration || 30,
+          scheduling_reason: slots[i]?.reason || 'Distributed during awake hours',
+        }));
+      }
 
+      // Unify note in-place with structured AI summary + raw thoughts
       const formattedContent = [
         `### 📌 Brief Summary\n${parsed.summary || 'Concise daily dump organization.'}`,
         parsed.insights?.length ? `\n### 💡 Key Takeaways\n${parsed.insights.map((i) => `- ${i}`).join('\n')}` : '',
-        parsed.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t) => `- ${t.title}`).join('\n')}` : '',
+        parsed.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t) => `- [ ] ${t.title}`).join('\n')}` : '',
         parsed.projects_or_notes?.length ? `\n### 📝 Core Ideas\n${parsed.projects_or_notes.map((p) => `**${p.title}:** ${p.content}`).join('\n')}` : '',
+        `\n---\n### 🕒 Raw Thoughts Log\n${note.body || ''}`,
       ].filter(Boolean).join('\n');
 
-      await createNote.mutateAsync({
-        title: organizedTitle,
-        body: formattedContent,
-        note_date: note.note_date || todayStr,
-        is_brain_dump: false,
-        ai_analysis: parsed,
-        folder_id: folder.id,
-      });
-
-      // Mark original note as organized
+      // Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
       await updateNote.mutateAsync({
         id: note.id,
         data: {
+          body: formattedContent,
           ai_analysis: parsed,
+          folder_id: folder.id,
+          is_brain_dump: true,
         },
       });
 
-      setSaveSuccessMsg(`Created separate note "${organizedTitle}" in Organized folder!`);
+      setSaveSuccessMsg(`Organized Brain Dump note in-place!`);
       setTimeout(() => setSaveSuccessMsg(null), 3000);
       setActiveTab('inbox');
     } catch (err: any) {
-      console.error('Organize & move folder error:', err);
+      console.error('Organize note failed:', err);
+      setSaveSuccessMsg(`Failed organizing note: ${err.message || err}`);
     }
   };
 
@@ -460,23 +508,87 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
     void handleAnalyzeText(combinedText, null);
   };
 
+  /**
+   * 1-Click Convert Individual Brain Dump Task into To-Do List
+   */
+  const handleCreateSuggestedTask = async (
+    task: BrainDumpSuggestionTask,
+    taskIndex: number,
+    customListId?: string,
+    customTagId?: string
+  ) => {
+    try {
+      const targetList =
+        customListId ||
+        taskLists.find((l) => l.name.toLowerCase() === task.suggested_list?.toLowerCase())?.id ||
+        taskLists[0]?.id;
+
+      const targetTagIds = customTagId
+        ? [customTagId]
+        : task.suggested_tag
+        ? [tags.find((t) => t.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id].filter(Boolean) as string[]
+        : [];
+
+      await createTask.mutateAsync({
+        title: task.title,
+        priority: (task.priority as any) || 'medium',
+        due_date: task.due || todayStr,
+        due_time: task.due_time || undefined,
+        duration_minutes: task.estimated_duration || 30,
+        list_id: targetList,
+        tag_ids: targetTagIds,
+        source_note_id: targetNoteToAnalyze?.id || null,
+        is_completed: false,
+      });
+
+      setAddedTasksMap((prev) => ({ ...prev, [taskIndex]: true }));
+      void triggerHaptics('success');
+      const listObj = taskLists.find((l) => l.id === targetList);
+      setSaveSuccessMsg(`Added "${task.title}" to ${listObj?.name || 'To-Do List'} (${task.due} @ ${task.due_time || 'anytime'})!`);
+      setTimeout(() => setSaveSuccessMsg(null), 3500);
+    } catch (err: any) {
+      console.error('Create task failed:', err);
+      setSaveSuccessMsg(`Error adding task: ${err.message || err}`);
+    }
+  };
+
+  /**
+   * Batch Convert All Selected Tasks into To-Do List
+   */
   const handleExportSelectedTasks = async () => {
     if (!analysis?.tasks || selectedTaskIndexes.size === 0) return;
     try {
-      const tasksToExport = analysis.tasks.filter((_, i) => selectedTaskIndexes.has(i));
-      for (const t of tasksToExport) {
+      const tasksToExport = analysis.tasks
+        .map((t, idx) => ({ t, idx }))
+        .filter(({ idx }) => selectedTaskIndexes.has(idx));
+
+      for (const { t, idx } of tasksToExport) {
+        const targetList =
+          taskLists.find((l) => l.name.toLowerCase() === t.suggested_list?.toLowerCase())?.id ||
+          taskLists[0]?.id;
+
+        const targetTagIds = t.suggested_tag
+          ? [tags.find((tag) => tag.name.toLowerCase() === t.suggested_tag?.toLowerCase())?.id].filter(Boolean) as string[]
+          : [];
+
         await createTask.mutateAsync({
           title: t.title,
-          priority: t.priority || 'medium',
-          due_date: t.due || undefined,
+          priority: (t.priority as any) || 'medium',
+          due_date: t.due || todayStr,
+          due_time: t.due_time || undefined,
+          duration_minutes: t.estimated_duration || 30,
+          list_id: targetList,
+          tag_ids: targetTagIds,
+          source_note_id: targetNoteToAnalyze?.id || null,
           is_completed: false,
-          tag_ids: [],
-          recurrence: 'none',
         });
+
+        setAddedTasksMap((prev) => ({ ...prev, [idx]: true }));
       }
+
       setExportedTasksSuccess(true);
       void triggerHaptics('success');
-      setTimeout(() => setExportedTasksSuccess(false), 3000);
+      setTimeout(() => setExportedTasksSuccess(false), 3500);
     } catch (err) {
       console.error('Export tasks failed:', err);
     }
@@ -826,46 +938,111 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
 
                 {/* 1. Actionable Tasks */}
                 {analysis.tasks && analysis.tasks.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <ListTodo size={13} className="text-primary" />
                         Actionable Tasks ({analysis.tasks.length})
                       </label>
+                      <span className="text-[11px] text-muted-foreground">
+                        {selectedTaskIndexes.size} selected
+                      </span>
                     </div>
 
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {analysis.tasks.map((task, idx) => {
                         const isChecked = selectedTaskIndexes.has(idx);
+                        const isAdded = !!addedTasksMap[idx];
+
                         return (
                           <div
                             key={idx}
-                            onClick={() => {
-                              const newSet = new Set(selectedTaskIndexes);
-                              if (isChecked) newSet.delete(idx);
-                              else newSet.add(idx);
-                              setSelectedTaskIndexes(newSet);
-                            }}
                             className={cn(
-                              "p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 cursor-pointer text-xs",
-                              isChecked
-                                ? "bg-primary/10 border-primary/40 text-foreground font-medium"
+                              "p-3 rounded-2xl border transition-all flex flex-col gap-2",
+                              isAdded
+                                ? "bg-emerald-500/5 border-emerald-500/30"
+                                : isChecked
+                                ? "bg-primary/5 border-primary/30 text-foreground shadow-sm"
                                 : "bg-secondary/20 border-border text-muted-foreground"
                             )}
                           >
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                checked={isChecked}
-                                onChange={() => {}}
-                                className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5"
-                              />
-                              <span>{task.title}</span>
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => {
+                                    const newSet = new Set(selectedTaskIndexes);
+                                    if (isChecked) newSet.delete(idx);
+                                    else newSet.add(idx);
+                                    setSelectedTaskIndexes(newSet);
+                                  }}
+                                  className="rounded border-border text-primary focus:ring-primary w-4 h-4 mt-0.5 shrink-0 cursor-pointer"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <span className={cn("text-xs font-bold text-foreground block", isAdded && "line-through text-muted-foreground")}>
+                                    {task.title}
+                                  </span>
+                                  {task.scheduling_reason && (
+                                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug flex items-center gap-1">
+                                      <Clock size={10} className="text-primary shrink-0" />
+                                      <span>{task.scheduling_reason}</span>
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+
+                              <Button
+                                variant={isAdded ? "secondary" : "outline"}
+                                size="sm"
+                                disabled={isAdded}
+                                onClick={() => handleCreateSuggestedTask(task, idx)}
+                                className={cn("h-7 text-[11px] px-2.5 shrink-0 gap-1 rounded-xl cursor-pointer", isAdded && "text-emerald-400 bg-emerald-500/10 border-emerald-500/30")}
+                              >
+                                {isAdded ? (
+                                  <>
+                                    <Check size={12} className="text-emerald-500" />
+                                    <span>Added</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus size={12} />
+                                    <span>Add Task</span>
+                                  </>
+                                )}
+                              </Button>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0 font-mono text-[10px]">
-                              {task.due && <span>📅 {task.due}</span>}
-                              <span className="uppercase px-1.5 py-0.5 rounded bg-secondary border border-border">
+                            {/* Metadata Pills: List, Tag, Scheduled Slot, Priority */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-border/40 text-[10px]">
+                              {/* List Pill */}
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-background border border-border text-foreground font-medium shadow-2xs">
+                                <span className="text-primary">📁</span>
+                                <span>{task.suggested_list || 'Personal'}</span>
+                              </div>
+
+                              {/* Tag Pill */}
+                              {task.suggested_tag && (
+                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-background border border-border text-purple-400 font-medium shadow-2xs">
+                                  <span>🏷️ #{task.suggested_tag}</span>
+                                </div>
+                              )}
+
+                              {/* Time Pill */}
+                              {task.due && (
+                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-lg bg-background border border-border text-emerald-400 font-medium shadow-2xs">
+                                  <Clock size={10} />
+                                  <span>{task.due} {task.due_time ? `@ ${task.due_time}` : ''}</span>
+                                </div>
+                              )}
+
+                              {/* Priority Pill */}
+                              <span className={cn(
+                                "uppercase px-1.5 py-0.5 rounded-lg text-[9px] font-bold border ml-auto",
+                                task.priority === 'urgent' || task.priority === 'high'
+                                  ? "bg-red-500/10 text-red-400 border-red-500/30"
+                                  : "bg-secondary text-muted-foreground border-border"
+                              )}>
                                 {task.priority || 'med'}
                               </span>
                             </div>

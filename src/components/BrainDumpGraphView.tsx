@@ -247,9 +247,11 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
   return (
     <div className={cn("space-y-4 font-sans", className)}>
       {/* Header controls */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-card border border-border p-3 rounded-xl shadow-sm">
-        <div className="flex items-center gap-2">
-          <Brain className="text-purple-500 animate-pulse" size={20} />
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-card border border-border p-3.5 rounded-2xl shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shrink-0">
+            <Brain className="animate-pulse" size={18} />
+          </div>
           <div>
             <h3 className="text-sm font-bold text-foreground">Thought Network & Memory Hub</h3>
             <p className="text-[11px] text-muted-foreground">
@@ -258,34 +260,34 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <button
             type="button"
             onClick={() => window.dispatchEvent(new CustomEvent('lifeos:openBrainDump'))}
-            className="px-2.5 py-1 rounded-lg bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 border border-purple-500/30 text-xs font-bold flex items-center gap-1 cursor-pointer transition-all active:scale-95"
+            className="h-8 px-3 rounded-xl bg-purple-500/15 hover:bg-purple-500/25 text-purple-400 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 shrink-0 whitespace-nowrap cursor-pointer transition-all active:scale-95 shadow-sm"
             title="Instant Quick Thought Dump"
           >
             <Brain size={13} />
             <span>+ Quick Dump</span>
           </button>
 
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative flex-1 min-w-[130px] sm:min-w-[160px] sm:w-44">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search thoughts..."
-              className="pl-7 pr-3 py-1 text-xs rounded-lg border border-border bg-background text-foreground outline-none focus:ring-1 focus:ring-primary w-32 sm:w-44"
+              className="w-full pl-7 pr-3 py-1.5 text-xs rounded-xl border border-border bg-background text-foreground outline-none focus:ring-1 focus:ring-primary h-8"
             />
           </div>
 
-          <div className="flex items-center bg-secondary p-0.5 rounded-lg border border-border">
+          <div className="flex items-center shrink-0 bg-secondary/80 p-0.5 rounded-xl border border-border">
             <button
               type="button"
               onClick={() => setViewMode('graph')}
               className={cn(
-                "px-2.5 py-1 text-xs font-semibold rounded-md transition-all",
-                viewMode === 'graph' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap",
+                viewMode === 'graph' ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Graph View
@@ -294,8 +296,8 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
               type="button"
               onClick={() => setViewMode('timeline')}
               className={cn(
-                "px-2.5 py-1 text-xs font-semibold rounded-md transition-all",
-                viewMode === 'timeline' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+                "px-2.5 py-1 text-xs font-semibold rounded-lg transition-all whitespace-nowrap",
+                viewMode === 'timeline' ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
               )}
             >
               Timeline Stream
