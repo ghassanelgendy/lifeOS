@@ -314,8 +314,12 @@ export async function syncAllLocalNotifications(
 
         if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
           const isAr = isArabic(habit.title);
-          const isMemHabit = /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title) || habit.habit_type === 'quran_memorization';
-          const isReadHabit = /read|تلاوة|قراءة|ورد/i.test(habit.title) || habit.habit_type === 'quran_reading';
+          const titleIsMem = /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title);
+          const titleIsRead = /read|تلاوة|قراءة|ورد/i.test(habit.title);
+          // Title-based reading/memorization takes precedence over habit_type so a
+          // reading-wird habit (e.g. الورد اليومي) is never treated as memorization.
+          const isMemHabit = titleIsMem || (!titleIsRead && !titleIsMem && habit.habit_type === 'quran_memorization');
+          const isReadHabit = titleIsRead || (!titleIsMem && !titleIsRead && habit.habit_type === 'quran_reading');
           const isQuranHabit = isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
 
           let notifTitle = isAr ? `تذكير بالعادات: ${habit.title}` : 'Habit Reminder';
@@ -325,7 +329,7 @@ export async function syncAllLocalNotifications(
           if (isQuranHabit) {
             const wird = getCurrentWirdInfo();
             if (isReadHabit && !isMemHabit) {
-              notifTitle = isAr ? 'ورد تلاوة القرآن الكريم 📖' : 'Quran Reading 📖';
+              notifTitle = isAr ? 'ورد تلاوة القرآن الكريم' : 'Quran Reading';
               notifBody = isAr
                 ? `حان وقت ورد التلاوة — صفحة ${wird.reading.page} (سورة ${wird.reading.surahName})`
                 : `Time for Quran Reading — Page ${wird.reading.page} (Surah ${wird.reading.surahName})`;
@@ -337,7 +341,7 @@ export async function syncAllLocalNotifications(
                 targetRoute: 'quran',
               };
             } else {
-              notifTitle = isAr ? 'ورد حفظ القرآن الكريم 🎯' : 'Quran Memorization 🎯';
+              notifTitle = isAr ? 'ورد حفظ القرآن الكريم' : 'Quran Memorization';
               notifBody = isAr
                 ? `حان وقت ورد الحفظ — صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
                 : `Time for Quran Memorization — Page ${wird.memorization.page} (Surah ${wird.memorization.surahName})`;
@@ -380,7 +384,7 @@ export async function syncAllLocalNotifications(
 
           if (isQuranEvent) {
             const wird = getCurrentWirdInfo();
-            notifTitle = isAr ? `موعد ${event.title} 🕌` : `${event.title} 🕌`;
+            notifTitle = isAr ? `موعد ${event.title}` : `${event.title}`;
             notifBody = isAr
               ? `حان موعد الجلسة والتسميع — موضع الحفظ: صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
               : `${event.title} is starting — Memorization: Page ${wird.memorization.page} (${wird.memorization.surahName})`;
