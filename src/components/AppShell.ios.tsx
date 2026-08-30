@@ -635,9 +635,11 @@ export function AppShell() {
                   "flex flex-col w-full flex-1",
                   location.pathname === '/chat'
                     ? "h-full min-h-0 overflow-hidden p-0"
-                    : (isOnTasks
-                        ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
-                        : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6")
+                    : (location.pathname === '/notes'
+                        ? "h-full min-h-0 overflow-hidden p-0"
+                        : (isOnTasks
+                            ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
+                            : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6"))
                 )}
                 style={{
                   backfaceVisibility: 'hidden',

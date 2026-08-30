@@ -320,11 +320,11 @@ export default function NotesIOS() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -15 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="flex-1 flex flex-col min-h-0 overflow-y-auto pb-24 space-y-4 px-1"
+            className="flex-1 flex flex-col min-h-0 overflow-y-auto pb-24 space-y-4 px-4"
           >
             {/* Header matching lifeOS module headers */}
-            <div className="space-y-3 pt-1">
-              <div className="flex items-center justify-between px-1">
+            <div className="space-y-3 pt-4">
+              <div className="flex items-center justify-between px-0">
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
                     <FileText className="text-primary" size={22} />
@@ -344,7 +344,7 @@ export default function NotesIOS() {
               </div>
 
               {/* LifeOS Theme Search Bar */}
-              <div className="relative px-1">
+              <div className="relative px-0">
                 <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={search}
@@ -355,7 +355,7 @@ export default function NotesIOS() {
               </div>
 
               {/* Horizontal Folder Chips */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 px-1 scrollbar-none">
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 px-0 scrollbar-none">
                 <button
                   type="button"
                   onClick={() => {
@@ -619,7 +619,7 @@ export default function NotesIOS() {
                   value={draftFolderId}
                   onChange={(e) => setDraftFolderId(e.target.value)}
                   options={folderOptions}
-                  className="text-xs h-8"
+                  className="text-xs h-8 py-0"
                 />
               </div>
 
@@ -634,7 +634,7 @@ export default function NotesIOS() {
                   />
                 ) : (
                   <div
-                    className="flex-1 min-h-[14rem] p-4 rounded-xl border border-border bg-card prose prose-sm dark:prose-invert max-w-none select-text note-selectable cursor-text"
+                    className="flex-1 min-h-[12rem] rounded-xl border border-border bg-card prose prose-sm dark:prose-invert max-w-none select-text note-selectable cursor-text px-1 py-0.5"
                     onDoubleClick={() => setIsEditing(true)}
                     dangerouslySetInnerHTML={{
                       __html: draftBody

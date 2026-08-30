@@ -325,7 +325,7 @@ export default function NotesWeb() {
   const charCount = draftBody.length;
 
   return (
-    <div className="flex flex-col h-full min-h-0 space-y-4">
+    <div className="flex flex-col h-full min-h-0 space-y-4 pt-3 md:pt-0">
       {/* Desktop Top Header Bar */}
       <header className="flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div>
@@ -647,7 +647,7 @@ export default function NotesWeb() {
                 value={draftFolderId}
                 onChange={(e) => setDraftFolderId(e.target.value)}
                 options={folderOptions}
-                className="text-xs h-8"
+                className="text-xs h-8 py-0"
               />
             </div>
 
