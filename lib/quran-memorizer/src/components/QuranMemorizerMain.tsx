@@ -608,7 +608,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
       {/* Main Content Body */}
       <main
         className={`flex-1 max-w-6xl w-full mx-auto pb-32 md:pb-40 text-right ${
-          activeTab === 'reader' ? 'p-1.5 sm:p-4 md:p-6 space-y-3' : 'p-4 md:p-6 space-y-6'
+          activeTab === 'reader' ? 'px-2 sm:px-4 md:px-6 pt-1 sm:pt-2 space-y-3' : 'p-4 md:p-6 space-y-6'
         }`}
       >
         {activeTab === 'khatmah' && (
@@ -657,6 +657,10 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onSyncReading={handleSyncReading}
             onOpenHalqahNote={() => setActiveTab('khatmah')}
             onBookmarkAyah={onBookmarkAyah}
+            onTogglePlayPause={audio.togglePlayPause}
+            onNextAyah={audio.nextAyah}
+            onPrevAyah={audio.prevAyah}
+            reciterName={reciter.name}
             isFullscreen={readerFullscreen}
             onFullscreenChange={setReaderFullscreen}
           />

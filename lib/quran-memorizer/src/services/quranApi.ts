@@ -2,6 +2,7 @@ import { Ayah } from '../types/quran';
 
 // Cache in-memory for fast switching
 const verseCache = new Map<number, Ayah[]>();
+const pageCache = new Map<number, Ayah[]>();
 
 export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
   if (verseCache.has(surahNumber)) {
@@ -43,6 +44,58 @@ export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
     return ayahs;
   } catch (err) {
     console.error('Failed to fetch surah verses:', err);
+    throw err;
+  }
+}
+
+export async function fetchPageVerses(pageNumber: number): Promise<Ayah[]> {
+  const p = Math.max(1, Math.min(604, pageNumber));
+  if (pageCache.has(p)) {
+    return pageCache.get(p)!;
+  }
+
+  try {
+    const [uthmaniRes, tafsirRes] = await Promise.all([
+      fetch(`https://api.alquran.cloud/v1/page/${p}/quran-uthmani`),
+      fetch(`https://api.alquran.cloud/v1/page/${p}/ar.muyassar`)
+    ]);
+
+    if (!uthmaniRes.ok) throw new Error(`HTTP ${uthmaniRes.status}`);
+    const uthmaniJson = await uthmaniRes.json();
+    const tafsirJson = tafsirRes.ok ? await tafsirRes.json() : { data: { ayahs: [] } };
+
+    const uthmaniAyahs = uthmaniJson.data?.ayahs || [];
+    const tafsirAyahs = tafsirJson.data?.ayahs || [];
+
+    const ayahs: Ayah[] = uthmaniAyahs.map((a: any, idx: number) => {
+      let text = a.text;
+      const sNumber = a.surah?.number || 1;
+
+      // Strip prefixed Basmalah from Ayah 1 for surahs 2-114 (except surah 9 At-Tawbah)
+      if (a.numberInSurah === 1 && sNumber !== 1 && sNumber !== 9) {
+        text = text
+          .replace(/^بِسْمِ\s+ٱللَّهِ\s+ٱلرَّحْمَٰنِ\s+ٱلرَّحِيمِ\s*/, '')
+          .replace(/^بِسْمِ\s+اللَّهِ\s+الرَّحْمَٰنِ\s+الرَّحِيمِ\s*/, '')
+          .replace(/^بْسمِ\s+اللَّهِ\s+الرَّحْمٰنِ\s+الرَّحيمِ\s*/, '')
+          .trim();
+      }
+
+      return {
+        number: a.number,
+        numberInSurah: a.numberInSurah,
+        surahNumber: sNumber,
+        textUthmani: text,
+        translation: tafsirAyahs[idx]?.text || '',
+        juz: a.juz,
+        page: a.page || p,
+        hizbQuarter: a.hizbQuarter,
+      };
+    });
+
+    pageCache.set(p, ayahs);
+    return ayahs;
+  } catch (err) {
+    console.error(`Failed to fetch page ${p} verses:`, err);
     throw err;
   }
 }
