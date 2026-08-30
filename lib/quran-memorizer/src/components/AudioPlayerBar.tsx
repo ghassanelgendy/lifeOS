@@ -110,16 +110,19 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
     <>
       <div
         dir="rtl"
-        className={`fixed z-[250] font-arabic-title text-right transition-all duration-300
+        className={`fixed z-[250] font-arabic-title text-right
+          /* Smooth recede on scroll-down matching the dashboard bottom tab bar (shrink, don't fly away) */
+          transition-all duration-500 ease-[cubic-bezier(0.25,1,0.3,1)] will-change-transform
           /* iOS Mobile: Crisp Compact Floating Pill matching iOS bottom tab bar */
           bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-[390px] h-[52px]
-          ${isBarHidden ? 'translate-y-[calc(100%+16px)] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}
           rounded-full px-3 flex items-center justify-between
-          bg-white/45 dark:bg-[#141416]/60 backdrop-blur-2xl
+          ${isBarHidden
+            ? 'scale-[0.78] translate-y-[10px] opacity-55 bg-white/40 dark:bg-[#141416]/50 backdrop-blur-md'
+            : 'scale-100 translate-y-0 opacity-100 bg-white/45 dark:bg-[#141416]/60 backdrop-blur-2xl'}
           border border-white/30 dark:border-white/10
           shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]
           /* Desktop / MD+: Perfectly docked and aligned with the sidebar line */
-          md:bottom-0 md:translate-x-0 md:translate-y-0 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/40 md:bg-card/80 md:backdrop-blur-xl md:px-6 md:py-2
+          md:bottom-0 md:translate-x-0 md:translate-y-0 md:scale-100 md:opacity-100 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/40 md:bg-card/80 md:backdrop-blur-xl md:px-6 md:py-2
           ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
         `}
       >

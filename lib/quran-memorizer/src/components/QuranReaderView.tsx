@@ -293,6 +293,61 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const [pageInputVal, setPageInputVal] = useState('');
   const [bookmarkToast, setBookmarkToast] = useState<string | null>(null);
 
+  // Long-press on an ayah appends it to the Quran Bookmarks note in lifeOS Notes
+  const longPressRef = React.useRef<{ ayahNumber: number; timer: number | null; triggered: boolean }>({
+    ayahNumber: -1,
+    timer: null,
+    triggered: false,
+  });
+  // Which ayah is currently pressed (drives the iOS native 3D "lift" effect)
+  const [pressingAyah, setPressingAyah] = useState<number | null>(null);
+  const pressingTimerRef = React.useRef<number | null>(null);
+
+  const showBookmarkToast = (surahName: string, ayahNumber: number) => {
+    setBookmarkToast(`تمت إضافة الآية ${ayahNumber} سورة ${surahName} إلى دفتر "Quran Bookmarks" في الملاحظات`);
+    window.setTimeout(() => setBookmarkToast(null), 3500);
+  };
+
+  const startLongPress = (_e: React.PointerEvent, ayahNumber: number, surah: { name: string; id: number }, ayahs: { numberInSurah: number; textUthmani: string }[]) => {
+    cancelLongPress();
+    // Immediately show the iOS 3D press lift, then bookmark after holding
+    setPressingAyah(ayahNumber);
+    if (pressingTimerRef.current != null) window.clearTimeout(pressingTimerRef.current);
+    pressingTimerRef.current = window.setTimeout(() => setPressingAyah(null), 600);
+    longPressRef.current = {
+      ayahNumber,
+      triggered: false,
+      timer: window.setTimeout(() => {
+        const cur = longPressRef.current;
+        if (cur && cur.ayahNumber === ayahNumber) {
+          cur.triggered = true;
+          const ayah = ayahs.find((a) => a.numberInSurah === ayahNumber);
+          if (ayah && onBookmarkAyah) {
+            onBookmarkAyah(surah.name, surah.id, ayah.numberInSurah, ayah.textUthmani);
+            showBookmarkToast(surah.name, ayah.numberInSurah);
+          }
+        }
+        setPressingAyah(null);
+      }, 450),
+    };
+  };
+
+  const cancelLongPress = () => {
+    const cur = longPressRef.current;
+    if (cur && cur.timer != null) {
+      window.clearTimeout(cur.timer);
+      cur.timer = null;
+    }
+    if (pressingTimerRef.current != null) {
+      window.clearTimeout(pressingTimerRef.current);
+      pressingTimerRef.current = null;
+    }
+    setPressingAyah(null);
+  };
+
+  const wasLongPress = (ayahNumber: number) =>
+    longPressRef.current?.ayahNumber === ayahNumber && longPressRef.current?.triggered;
+
   useEffect(() => {
     try {
       localStorage.setItem('quran_tajweed_enabled_v1', showTajweed.toString());
@@ -469,9 +524,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         <button
           type="button"
           onClick={() => setShowSurahPicker(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 max-w-[200px] truncate"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 max-w-[200px] truncate leading-none"
         >
-          <Book className="size-3 text-emerald-400 shrink-0" />
+          <span className="inline-flex items-center justify-center shrink-0 leading-none">
+            <Book className="size-3 text-emerald-400" strokeWidth={2.2} />
+          </span>
           <span className="truncate">سورة {currentSurah.name}</span>
           <span className="text-[10px] text-emerald-400 font-mono shrink-0">ص {activePage}</span>
           <ChevronDown className="size-3 text-muted-foreground shrink-0" />
@@ -1055,8 +1112,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       return (
                         <React.Fragment key={ayah.number}>
                           <span
-                            onClick={() => onSelectAyah(ayah.numberInSurah)}
-                            className={`cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
+                            onClick={() => {
+                              if (wasLongPress(ayah.numberInSurah)) return;
+                              onSelectAyah(ayah.numberInSurah);
+                            }}
+                            onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, pageSurah, pageAyahs)}
+                            onPointerUp={cancelLongPress}
+                            onPointerCancel={cancelLongPress}
+                            onPointerMove={cancelLongPress}
+                            onContextMenu={(e) => e.preventDefault()}
+                            className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
                               isMemMarker && isReadMarker
                                 ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
                                 : isMemMarker
@@ -1068,6 +1133,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                 : inStudyRange
                                 ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
                                 : 'hover:bg-accent/40'
+                            } ${
+                              pressingAyah === ayah.numberInSurah
+                                ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)]'
+                                : ''
                             }`}
                           >
                             {repeatSettings.blindMode ? (
@@ -1086,7 +1155,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             )}
                           </span>
                           <span
-                            onClick={() => onSelectAyah(ayah.numberInSurah)}
+                            onClick={() => {
+                              if (wasLongPress(ayah.numberInSurah)) return;
+                              onSelectAyah(ayah.numberInSurah);
+                            }}
+                            onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, pageSurah, pageAyahs)}
+                            onPointerUp={cancelLongPress}
+                            onPointerCancel={cancelLongPress}
+                            onPointerMove={cancelLongPress}
+                            onContextMenu={(e) => e.preventDefault()}
                             className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
                               isMemWirdEnd
                                 ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
@@ -1099,6 +1176,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                 : inStudyRange
                                 ? 'bg-secondary text-foreground border border-zinc-700'
                                 : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
+                            } ${
+                              pressingAyah === ayah.numberInSurah
+                                ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
+                                : ''
                             }`}
                           >
                             ﴿{ayah.numberInSurah}﴾
@@ -1231,7 +1312,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             return (
               <div
                 key={ayah.number}
-                onClick={() => onSelectAyah(ayah.numberInSurah)}
+                onClick={() => {
+                  if (wasLongPress(ayah.numberInSurah)) return;
+                  onSelectAyah(ayah.numberInSurah);
+                }}
+                onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, currentSurah, verses)}
+                onPointerUp={cancelLongPress}
+                onPointerCancel={cancelLongPress}
+                onPointerMove={cancelLongPress}
+                onContextMenu={(e) => e.preventDefault()}
                 className={`p-3.5 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
                   isMemWirdEnd
                     ? 'border-emerald-500 ring-2 ring-emerald-500/40 bg-emerald-950/20 shadow-lg'
@@ -1244,6 +1333,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     : inStudyRange
                     ? 'border-emerald-500/40 bg-emerald-950/10'
                     : 'border-border/60 bg-card hover:border-border hover:bg-accent/20'
+                } ${
+                  pressingAyah === ayah.numberInSurah
+                    ? 'scale-[1.03] -translate-y-[2px] shadow-2xl shadow-emerald-500/20 ring-2 ring-emerald-400/50 z-10'
+                    : ''
                 }`}
               >
                 {/* Verse Header Info */}
