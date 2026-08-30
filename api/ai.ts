@@ -46,8 +46,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json, text/plain, */*',
         'Authorization': `Bearer ${apiKey.toString().trim()}`,
-        'User-Agent': 'lifeOS/1.0',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 lifeOS/1.0',
       },
       body: JSON.stringify(req.body),
     });
