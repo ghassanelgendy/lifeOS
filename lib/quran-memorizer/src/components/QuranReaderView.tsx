@@ -292,6 +292,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const [pickerTab, setPickerTab] = useState<'surahs' | 'juz' | 'page'>('surahs');
   const [pageInputVal, setPageInputVal] = useState('');
   const [bookmarkToast, setBookmarkToast] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const toastHideTimerRef = React.useRef<number | null>(null);
 
   // Long-press on an ayah appends it to the Quran Bookmarks note in lifeOS Notes
   const longPressRef = React.useRef<{ ayahNumber: number; timer: number | null; triggered: boolean }>({
@@ -303,9 +305,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const [pressingAyah, setPressingAyah] = useState<number | null>(null);
   const pressingTimerRef = React.useRef<number | null>(null);
 
+  // Brief transient overlay toast: fades in, holds ~1s, then fades out.
   const showBookmarkToast = (surahName: string, ayahNumber: number) => {
-    setBookmarkToast(`تمت إضافة الآية ${ayahNumber} سورة ${surahName} إلى دفتر "Quran Bookmarks" في الملاحظات`);
-    window.setTimeout(() => setBookmarkToast(null), 3500);
+    setBookmarkToast(`أُضيفت آية ${ayahNumber} سورة ${surahName}`);
+    setToastVisible(true);
+    if (toastHideTimerRef.current != null) window.clearTimeout(toastHideTimerRef.current);
+    toastHideTimerRef.current = window.setTimeout(() => {
+      setToastVisible(false);
+      window.setTimeout(() => setBookmarkToast(null), 250);
+    }, 1000);
   };
 
   const startLongPress = (_e: React.PointerEvent, ayahNumber: number, surah: { name: string; id: number }, ayahs: { numberInSurah: number; textUthmani: string }[]) => {
@@ -524,14 +532,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         <button
           type="button"
           onClick={() => setShowSurahPicker(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 max-w-[200px] truncate leading-none"
+          className="flex items-center justify-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 max-w-[36px] md:max-w-[200px] leading-none shrink-0"
+          title={`فهرس القرآن - سورة ${currentSurah.name} (ص ${activePage})`}
         >
           <span className="inline-flex items-center justify-center shrink-0 leading-none">
-            <Book className="size-3 text-emerald-400" strokeWidth={2.2} />
+            <Book className="size-4 md:size-3.5 text-emerald-400" strokeWidth={2.2} />
           </span>
-          <span className="truncate">سورة {currentSurah.name}</span>
-          <span className="text-[10px] text-emerald-400 font-mono shrink-0">ص {activePage}</span>
-          <ChevronDown className="size-3 text-muted-foreground shrink-0" />
+          <span className="hidden md:inline truncate">سورة {currentSurah.name}</span>
+          <span className="hidden md:inline text-[10px] text-emerald-400 font-mono shrink-0">ص {activePage}</span>
+          <ChevronDown className="hidden md:block size-3 text-muted-foreground shrink-0" />
         </button>
 
         {/* Center: Segmented Pill (المصحف / الآيات) */}
@@ -679,11 +688,17 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         )}
       </div>
 
-      {/* Bookmark Added Toast Notification */}
+      {/* Bookmark Added Toast Notification (brief transient overlay) */}
       {bookmarkToast && (
-        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[300] bg-emerald-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <BookmarkPlus className="size-4 shrink-0 text-amber-300" />
-          <span>{bookmarkToast}</span>
+        <div className="pointer-events-none fixed inset-0 z-[300] flex items-start justify-center pt-16">
+          <div
+            className={`flex items-center gap-1.5 rounded-full bg-emerald-600/95 text-white font-bold text-[11px] px-3.5 py-2 shadow-2xl shadow-black/20 transition-all duration-200 ease-out ${
+              toastVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-1 scale-95'
+            }`}
+          >
+            <BookmarkPlus className="size-3.5 shrink-0 text-white" />
+            <span>{bookmarkToast}</span>
+          </div>
         </div>
       )}
 
@@ -1207,8 +1222,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                 const target = pageAyahs.find((a) => a.numberInSurah === currentAyahIndex);
                                 if (target) {
                                   onBookmarkAyah(pageSurah.name, pageSurah.id, target.numberInSurah, target.textUthmani);
-                                  setBookmarkToast(`تمت إضافة الآية ${target.numberInSurah} سورة ${pageSurah.name} إلى دفتر "Quran Bookmarks" في الملاحظات`);
-                                  setTimeout(() => setBookmarkToast(null), 3500);
+                                  showBookmarkToast(pageSurah.name, target.numberInSurah);
                                 }
                               }}
                               className="px-2 py-0.5 rounded-lg text-[11px] font-bold transition-all flex items-center gap-1 active:scale-95 cursor-pointer text-amber-400 hover:bg-amber-500/15"
