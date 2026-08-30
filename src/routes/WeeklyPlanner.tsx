@@ -18,6 +18,7 @@ import { useUIStore } from '../stores/useUIStore';
 import { useSleepStages, groupSegmentsByNight } from '../hooks/useSleep';
 import { useScreentimeAppStats } from '../hooks/useScreentime';
 import { askAI } from '../lib/ai';
+import { marked } from 'marked';
 import {
   format,
   startOfWeek,
@@ -639,9 +640,10 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
           </div>
 
           {coachFeedback ? (
-            <div className="text-sm text-zinc-350 leading-relaxed bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/50">
-              {coachFeedback}
-            </div>
+            <div
+              className="text-sm text-foreground/90 leading-relaxed bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/50 prose prose-sm dark:prose-invert max-w-none font-sans"
+              dangerouslySetInnerHTML={{ __html: marked.parse(coachFeedback) as string }}
+            />
           ) : (
             <p className="text-xs text-zinc-450 italic">
               Tap "Coach Me" to compile this week's sleep segments, screentime logs, checklist success rates, and task metrics, generating direct lifestyle insights.
