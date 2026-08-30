@@ -704,9 +704,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
               {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-border pb-2.5 shrink-0">
-                <div className="flex items-center gap-2">
-                  <Book className="size-4 text-emerald-400" />
-                  <h3 className="text-sm font-bold text-foreground">فهرس القرآن الكريم</h3>
+                <div className="flex items-center gap-2.5 me-px">
+                  <Book className="size-4 text-emerald-400 translate-x-0.5" />
+                  <h3 className="text-sm font-bold text-foreground leading-tight">فهرس القرآن الكريم</h3>
                 </div>
                 <button
                   type="button"
