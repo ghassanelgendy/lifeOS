@@ -415,7 +415,8 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
 
   const currentSurah = getSurahForPage(plan ? plan.currentPage : 604);
-  const isReverse = plan ? plan.direction === 'reverse' : true;
+  // Reverse if stored direction says so, OR if the page order descends (end < start).
+  const isReverse = plan ? (plan.direction === 'reverse' || plan.endPage < plan.startPage) : true;
   const nextTargetPage = plan
     ? isReverse
       ? Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay)

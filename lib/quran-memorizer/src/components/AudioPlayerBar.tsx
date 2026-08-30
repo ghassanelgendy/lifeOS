@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Play,
@@ -69,6 +69,35 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onChangeSpeed,
 }) => {
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
+  // Hide the floating bar on scroll-down (compact mobile UX), matching the main dashboard bottom bar
+  const [isBarHidden, setIsBarHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement;
+      if (!target || typeof target.hasAttribute !== 'function' || !target.hasAttribute('data-lifeos-scroll-root')) {
+        return;
+      }
+      const scrollTop = target.scrollTop;
+      if (scrollTop <= 10) {
+        setIsBarHidden(false);
+        lastScrollTopRef.current = scrollTop;
+        return;
+      }
+      const diff = scrollTop - lastScrollTopRef.current;
+      if (Math.abs(diff) > 6) {
+        if (diff > 0) {
+          setIsBarHidden(true); // scrolling down -> hide
+        } else {
+          setIsBarHidden(false); // scrolling up -> show
+        }
+        lastScrollTopRef.current = scrollTop;
+      }
+    };
+    document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    return () => document.removeEventListener('scroll', handleScroll, { capture: true });
+  }, []);
 
   let isSidebarCollapsed = false;
   try {
@@ -81,15 +110,16 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
     <>
       <div
         dir="rtl"
-        className={`fixed z-[250] font-arabic-title text-right transition-all
+        className={`fixed z-[250] font-arabic-title text-right transition-all duration-300
           /* iOS Mobile: Crisp Compact Floating Pill matching iOS bottom tab bar */
           bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-[390px] h-[52px]
+          ${isBarHidden ? 'translate-y-[calc(100%+16px)] opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}
           rounded-full px-3 flex items-center justify-between
           bg-white/45 dark:bg-[#141416]/60 backdrop-blur-2xl
           border border-white/30 dark:border-white/10
           shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.35)]
           /* Desktop / MD+: Perfectly docked and aligned with the sidebar line */
-          md:bottom-0 md:translate-x-0 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/40 md:bg-card/80 md:backdrop-blur-xl md:px-6 md:py-2
+          md:bottom-0 md:translate-x-0 md:translate-y-0 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border/40 md:bg-card/80 md:backdrop-blur-xl md:px-6 md:py-2
           ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
         `}
       >

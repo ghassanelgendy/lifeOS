@@ -471,7 +471,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           onClick={() => setShowSurahPicker(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 max-w-[200px] truncate"
         >
-          <Book className="size-3.5 text-emerald-400 shrink-0" />
+          <Book className="size-3 text-emerald-400 shrink-0" />
           <span className="truncate">سورة {currentSurah.name}</span>
           <span className="text-[10px] text-emerald-400 font-mono shrink-0">ص {activePage}</span>
           <ChevronDown className="size-3 text-muted-foreground shrink-0" />
@@ -762,7 +762,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                         </span>
                         <span>الجزء {j.juz}</span>
                       </div>
-                      <span className="text-emerald-400 font-mono font-bold">صفحة {j.page}</span>
+                      <span className="text-emerald-400 font-mono font-bold">ص {j.page}</span>
                     </button>
                   ))}
                 </div>
@@ -1006,7 +1006,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       <BookOpen className="size-3.5 text-amber-500 shrink-0" />
                       <span>سورة {pageSurah.name}</span>
                       <span className="text-muted-foreground/60 font-normal">•</span>
-                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-extrabold text-[10px]">صفحة {pageNum}</span>
+                      <span className="px-1.5 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-extrabold text-[10px]">{pageNum}</span>
                     </span>
                     <span className="text-[10px] text-muted-foreground/70 flex items-center gap-1 select-none">
                       <span>←</span>
@@ -1208,7 +1208,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
                   {/* Slim bottom footer */}
                   <div className="border-t border-border/30 pt-1.5 flex items-center justify-center text-[10px] text-muted-foreground/60 font-arabic-title font-bold select-none">
-                    <span>ـ صفحة {pageNum} ـ</span>
+                    <span>ـ {pageNum} ـ</span>
                   </div>
                 </div>
               );
