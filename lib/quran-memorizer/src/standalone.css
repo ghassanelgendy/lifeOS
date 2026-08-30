@@ -7,6 +7,9 @@
   .font-arabic-body {
     font-family: 'Cairo', sans-serif;
   }
+  .font-cairo {
+    font-family: 'Cairo', sans-serif !important;
+  }
   .font-arabic-quran {
     font-family: 'Scheherazade New', 'Amiri', serif;
   }

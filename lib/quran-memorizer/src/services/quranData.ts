@@ -313,12 +313,24 @@ export function advanceWirdOnHabitComplete(habitTitle: string): 'reading' | 'mem
       ? (new Date(todayStr).getTime() - new Date(plan.lastCompletedDate).getTime()) / (1000 * 3600 * 24) <= 1
       : true;
     const nextStreak = isConsecutive ? (plan.streakDays || 0) + 1 : 1;
-    const isReverse = plan.direction === 'reverse';
+    const isReverse =
+      plan.direction === 'reverse' ||
+      (plan.startPage !== undefined && plan.endPage !== undefined && plan.startPage > plan.endPage) ||
+      plan.startPage === 604 ||
+      /reverse|الناس إلى.*البقرة/i.test(plan.title || '');
+
+    const targetMin = Math.min(plan.startPage ?? 1, plan.endPage ?? 1);
+    const targetMax = Math.max(plan.startPage ?? 604, plan.endPage ?? 604);
+
     const nextCurrentPage = isReverse
-      ? Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay)
-      : Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay);
+      ? Math.max(targetMin, plan.currentPage - (plan.pagesPerDay || 1))
+      : Math.min(targetMax, plan.currentPage + (plan.pagesPerDay || 1));
+
     plan = {
       ...plan,
+      direction: isReverse ? 'reverse' : (plan.direction || 'forward'),
+      startPage: plan.startPage || (isReverse ? 604 : 1),
+      endPage: plan.endPage || (isReverse ? 1 : 604),
       currentPage: nextCurrentPage,
       streakDays: nextStreak,
       lastCompletedDate: todayStr,

@@ -57,6 +57,16 @@ const getSurahForPage = (page: number) => {
   return found;
 };
 
+export const isReversePlan = (plan: KhatmahPlan | null): boolean => {
+  if (!plan) return true;
+  return (
+    plan.direction === 'reverse' ||
+    (plan.startPage !== undefined && plan.endPage !== undefined && plan.startPage > plan.endPage) ||
+    plan.startPage === 604 ||
+    /reverse|الناس إلى.*البقرة/i.test(plan.title || '')
+  );
+};
+
 const calculateSmartAyahRange = (page: number, surah: typeof SURAHS[0]) => {
   const nextSurah = SURAHS.find((s) => s.id === surah.id + 1);
   const nextSurahPageStart = nextSurah ? nextSurah.pageStart : 605;
@@ -313,17 +323,22 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
       : true;
 
     const nextStreak = isConsecutive ? (plan.streakDays || 0) + 1 : 1;
-    const isReverse = plan.direction === 'reverse';
+    const isReverse = isReversePlan(plan);
+    const targetMin = Math.min(plan.startPage ?? 1, plan.endPage ?? 1);
+    const targetMax = Math.max(plan.startPage ?? 604, plan.endPage ?? 604);
 
     let nextCurrentPage = plan.currentPage;
     if (isReverse) {
-      nextCurrentPage = Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay);
+      nextCurrentPage = Math.max(targetMin, plan.currentPage - (plan.pagesPerDay || 1));
     } else {
-      nextCurrentPage = Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay);
+      nextCurrentPage = Math.min(targetMax, plan.currentPage + (plan.pagesPerDay || 1));
     }
 
     const updated: KhatmahPlan = {
       ...plan,
+      direction: isReverse ? 'reverse' : (plan.direction || 'forward'),
+      startPage: plan.startPage || (isReverse ? 604 : 1),
+      endPage: plan.endPage || (isReverse ? 1 : 604),
       currentPage: nextCurrentPage,
       streakDays: nextStreak,
       lastCompletedDate: todayStr,
@@ -419,13 +434,15 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   );
 
   // Reverse if stored direction says so, OR if the page order descends (end < start).
-  const isReverse = plan ? (plan.direction === 'reverse' || plan.endPage < plan.startPage) : true;
+  const isReverse = isReversePlan(plan);
+  const targetMin = Math.min(plan?.startPage ?? 1, plan?.endPage ?? 1);
+  const targetMax = Math.max(plan?.startPage ?? 604, plan?.endPage ?? 604);
 
   const currentSurah = getSurahForPage(plan ? plan.currentPage : 604);
   const nextTargetPage = plan
     ? isReverse
-      ? Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay)
-      : Math.min(plan.endPage, plan.currentPage + plan.pagesPerDay)
+      ? Math.max(targetMin, plan.currentPage - (plan.pagesPerDay || 1))
+      : Math.min(targetMax, plan.currentPage + (plan.pagesPerDay || 1))
     : 603;
   const nextSurah = getSurahForPage(nextTargetPage);
 

@@ -13,12 +13,30 @@ import { KhatmahPlannerView } from './KhatmahPlannerView';
 
 const QURAN_LAST_POSITION_KEY = 'quran_last_position_v1';
 const HADITH_LAST_SHOWN_KEY = 'quran_hadith_last_shown_v1';
+const HADITH_CURRENT_INDEX_KEY = 'quran_hadith_current_idx_v1';
+const HADITH_SEEN_HISTORY_KEY = 'quran_hadith_seen_history_v1';
 
 const QURAN_HADITHS = [
   { text: 'خَيْرُكُمْ مَنْ تَعَلَّمَ القُرْآنَ وَعَلَّمَهُ', narrator: 'رواه البخاري' },
   { text: 'اقْرَؤُوا القُرْآنَ فَإِنَّهُ يَأْتِي يَوْمَ القِيَامَةِ شَفِيعًا لِأَصْحَابِهِ', narrator: 'رواه مسلم' },
-  { text: 'الَّذِي يَقْرَأُ القُرْآنَ وَهُوَ مَاهِرٌ بِهِ مَعَ السَّفَرَةِ الكِرَامِ البَرَرَةِ', narrator: 'متفق عليه' },
+  { text: 'الَّذِي يَقْرَأُ القُرْآنَ وَهُوَ مَاهِرٌ بِهِ مَعَ السَّفَرَةِ الكِرَامِ البَرَرَةِ، وَالَّذِي يَقْرَأُ القُرْآنَ وَيَتَتَعْتَعُ فِيهِ وَهُوَ عَلَيْهِ شَاقٌّ لَهُ أَجْرَانِ', narrator: 'متفق عليه' },
   { text: 'إِنَّ اللَّهَ يَرْفَعُ بِهَذَا الكِتَابِ أَقْوَامًا وَيَضَعُ بِهِ آخَرِينَ', narrator: 'رواه مسلم' },
+  { text: 'يُقَالُ لِصَاحِبِ القُرْآنِ: اقْرَأْ وَارْتَقِ وَرَتِّلْ كَمَا كُنْتَ تُرَتِّلُ فِي الدُّنْيَا، فَإِنَّ مَنْزِلَتَكَ عِنْدَ آخِرِ آيَةٍ تَقْرَؤُهَا', narrator: 'رواه الترمذي وأبو داود' },
+  { text: 'مَنْ قَرَأَ حَرْفًا مِنْ كِتَابِ اللَّهِ فَلَهُ بِهِ حَسَنَةٌ، وَالحَسَنَةُ بِعَشْرِ أَمْثَالِهَا', narrator: 'رواه الترمذي' },
+  { text: 'مَثَلُ المُؤْمِنِ الَّذِي يَقْرَأُ القُرْآنَ كَمَثَلِ الأُتْرُجَّةِ؛ رِيحُهَا طَيِّبٌ وَطَعْمُهَا طَيِّبٌ', narrator: 'متفق عليه' },
+  { text: 'تَعَاهَدُوا هَذَا القُرْآنَ، فَوَالَّذِي نَفْسِي بِيَدِهِ لَهُوَ أَشَدُّ تَفَلُّتًا مِنَ الإِبِلِ فِي عُقُلِهَا', narrator: 'متفق عليه' },
+  { text: 'لا حَسَدَ إِلا فِي اثْنَتَيْنِ: رَجُلٌ آتَاهُ اللَّهُ القُرْآنَ فَهُوَ يَقُومُ بِهِ آنَاءَ اللَّيْلِ وَآنَاءَ النَّهَارِ', narrator: 'متفق عليه' },
+  { text: 'إِنَّ الَّذِي لَيْسَ فِي جَوْفِهِ شَيْءٌ مِنَ القُرْآنِ كَالْبَيْتِ الخَرِبِ', narrator: 'رواه الترمذي' },
+  { text: 'أَبْشِرُوا؛ فَإِنَّ هَذَا القُرْآنَ طَرَفُهُ بِيَدِ اللَّهِ، وَطَرَفُهُ بِأَيْدِيكُمْ، فَتَمَسَّكُوا بِهِ', narrator: 'رواه الطبراني وصححه الألباني' },
+  { text: 'الصِّيَامُ وَالقُرْآنُ يَشْفَعَانِ لِلْعَبْدِ يَوْمَ القِيَامَةِ', narrator: 'رواه أحمد وصححه الألباني' },
+  { text: 'مَنْ سَرَّهُ أَنْ يُحِبَّ اللَّهَ وَرَسُولَهُ فَلْيَقْرَأْ فِي المُصْحَفِ', narrator: 'رواه أبو نعيم وحسنه الألباني' },
+  { text: 'أَفَلا يَغْدُو أَحَدُكُمْ إِلَى المَسْجِدِ فَيَعْلَمَ أَوْ يَقْرَأَ آيَتَيْنِ مِنْ كِتَابِ اللَّهِ عَزَّ وَجَلَّ خَيْرٌ لَهُ مِنْ نَاقَتَيْنِ', narrator: 'رواه مسلم' },
+  { text: 'يَجِيءُ القُرْآنُ يَوْمَ القِيَامَةِ فَيَقُولُ: يَا رَبِّ حَلِّهِ، فَيُلْبَسُ تَاجَ الكَرَامَةِ، ثُمَّ يَقُولُ: يَا رَبِّ زِدْهُ، فَيُلْبَسُ حُلَّةَ الكَرَامَةِ', narrator: 'رواه الترمذي' },
+  { text: 'القُرْآنُ حُجَّةٌ لَكَ أَوْ عَلَيْكَ', narrator: 'رواه مسلم' },
+  { text: 'مَنْ قَرَأَ القُرْآنَ وَعَمِلَ بِمَا فِيهِ أُلْبِسَ وَالِدَاهُ تَاجًا يَوْمَ القِيَامَةِ ضَوْؤُهُ أَحْسَنُ مِنْ ضَوْءِ الشَّمْسِ', narrator: 'رواه أبو داود' },
+  { text: 'مَا اجْتَمَعَ قَوْمٌ فِي بَيْتٍ مِنْ بُيُوتِ اللَّهِ يَتْلُونَ كِتَابَ اللَّهِ وَيَتَدَارَسُونَهُ بَيْنَهُمْ إِلَّا نَزَلَتْ عَلَيْهِمُ السَّكِينَةُ وَغَشِيَتْهُمُ الرَّحْمَةُ', narrator: 'رواه مسلم' },
+  { text: 'زَيِّنُوا القُرْآنَ بِأَصْوَاتِكُمْ، فَإِنَّ الصَّوْتَ الحَسَنَ يَزِيدُ القُرْآنَ حُسْنًا', narrator: 'رواه الحاكم وأبو داود' },
+  { text: 'اقْرَؤُوا الزَّهْرَاوَيْنِ: البَقَرَةَ وَسُورَةَ آلِ عِمْرَانَ، فَإِنَّهُمَا تَأْتِيَانِ يَوْمَ القِيَامَةِ كَأَنَّهُمَا غَمَامَتَانِ تُحَاجَّانِ عَنْ أَصْحَابِهِمَا', narrator: 'رواه مسلم' },
 ];
 
 export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
@@ -45,35 +63,64 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
   const [showHadithModal, setShowHadithModal] = useState(false);
   const [currentHadithIdx, setCurrentHadithIdx] = useState(0);
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Full-screen reading mode shared with the reader + audio player bar so the
   // player can collapse to its small state while reading full-screen.
   const [readerFullscreen, setReaderFullscreen] = useState(false);
 
-  // 12-Hour Hadith Toast Auto-Show logic on Mobile
+  // 12-Hour Non-Repeating Hadith Dialog logic (Mobile Only - Never on PC)
   useEffect(() => {
     try {
-      const isMobile = window.innerWidth < 768;
-      if (!isMobile) return;
+      if (typeof window === 'undefined' || window.innerWidth >= 768) {
+        setShowHadithModal(false);
+        return;
+      }
 
-      const lastShown = localStorage.getItem(HADITH_LAST_SHOWN_KEY);
       const now = Date.now();
       const twelveHoursMs = 12 * 60 * 60 * 1000;
+      const lastShown = Number(localStorage.getItem(HADITH_LAST_SHOWN_KEY) || 0);
+      const isElapsed = !lastShown || now - lastShown >= twelveHoursMs;
 
-      if (!lastShown || now - Number(lastShown) > twelveHoursMs) {
-        const randomIdx = Math.floor(Math.random() * QURAN_HADITHS.length);
-        setCurrentHadithIdx(randomIdx);
-        setShowHadithModal(true);
+      if (isElapsed) {
+        let seen: number[] = [];
+        try {
+          const raw = localStorage.getItem(HADITH_SEEN_HISTORY_KEY);
+          if (raw) seen = JSON.parse(raw);
+        } catch {}
+
+        let available = QURAN_HADITHS.map((_, i) => i).filter((i) => !seen.includes(i));
+        if (available.length === 0) {
+          const lastSeen = seen[seen.length - 1];
+          seen = [];
+          available = QURAN_HADITHS.map((_, i) => i).filter((i) => i !== lastSeen);
+        }
+
+        const chosenIdx = available[Math.floor(Math.random() * available.length)];
+        const updatedSeen = [...seen, chosenIdx];
+
+        setCurrentHadithIdx(chosenIdx);
+        localStorage.setItem(HADITH_CURRENT_INDEX_KEY, chosenIdx.toString());
+        localStorage.setItem(HADITH_SEEN_HISTORY_KEY, JSON.stringify(updatedSeen));
         localStorage.setItem(HADITH_LAST_SHOWN_KEY, now.toString());
+        setShowHadithModal(true);
+      } else {
+        const savedIdx = Number(localStorage.getItem(HADITH_CURRENT_INDEX_KEY) || 0);
+        setCurrentHadithIdx(savedIdx >= 0 && savedIdx < QURAN_HADITHS.length ? savedIdx : 0);
       }
     } catch {}
   }, []);
-
-  const openHadithModalManual = () => {
-    const randomIdx = Math.floor(Math.random() * QURAN_HADITHS.length);
-    setCurrentHadithIdx(randomIdx);
-    setShowHadithModal(true);
-  };
 
   // Selection state
   const [selectedSurah, setSelectedSurah] = useState<number>(() => {
@@ -512,39 +559,44 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         </div>
       </header>
 
-      {/* 12-Hour Message of the Day Hadith Animated Dialog */}
-      {showHadithModal &&
+      {/* 12-Hour Daily Hadith Modal (Mobile Only - Never on PC/Desktop) */}
+      {isMobile &&
+        showHadithModal &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-300 md:hidden font-arabic-title"
             onClick={() => setShowHadithModal(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-3xl border border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl text-center overscroll-contain animate-in fade-in zoom-in-95 duration-300 ease-out"
+              className="w-full max-w-sm rounded-3xl border border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-5 space-y-4 shadow-2xl text-center overscroll-contain animate-in fade-in zoom-in-95 duration-300 ease-out"
             >
-              <div className="size-14 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/20">
-                <Sparkles className="size-7" />
+              {/* Header Badge */}
+              <div className="flex items-center justify-center">
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-cairo font-bold shadow-sm">
+                  <Sparkles className="size-3.5 text-emerald-400" />
+                  <span>حديث اليوم في فضل القرآن</span>
+                </div>
               </div>
 
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-foreground font-arabic-title">
-                  حديث اليوم في فضل القرآن الكريم
-                </h3>
-                <p className="text-[11px] text-muted-foreground">رسالة تذكير وإلهام يومية</p>
+              {/* Enhanced Hadith Box for Mobile */}
+              <div className="p-4 sm:p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/40 via-emerald-950/20 to-zinc-950/50 shadow-inner space-y-3">
+                <blockquote className="font-arabic-quran text-xl sm:text-2xl text-emerald-200 font-bold leading-[2.3] text-center drop-shadow-sm select-none">
+                  «{currentHadith.text}»
+                </blockquote>
+
+                {/* Narrator Section in Cairo Font */}
+                <div className="pt-2.5 border-t border-emerald-500/20 text-center">
+                  <span className="font-cairo text-xs font-bold text-muted-foreground/90 tracking-wide block">
+                    {currentHadith.narrator}
+                  </span>
+                </div>
               </div>
 
-              <blockquote className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-950/20 font-arabic-quran text-lg md:text-xl text-emerald-300 font-bold leading-relaxed">
-                «{currentHadith.text}»
-              </blockquote>
-
-              <p className="text-xs text-muted-foreground font-mono font-medium">
-                {currentHadith.narrator}
-              </p>
-
+              {/* Dismiss Button */}
               <button
                 onClick={() => setShowHadithModal(false)}
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
+                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-cairo font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer"
               >
                 متابعة القراءة
               </button>

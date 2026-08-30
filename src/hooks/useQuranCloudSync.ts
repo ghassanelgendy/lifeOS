@@ -90,13 +90,25 @@ export function useQuranCloudSync() {
         readPage = readSurahMeta.pageStart;
       }
 
+      // Determine Plan Direction
+      const isReverse =
+        p.direction === 'reverse' ||
+        (p.start_page && p.end_page && p.start_page > p.end_page) ||
+        p.start_page === 604 ||
+        /reverse|الناس إلى.*البقرة/i.test(p.title || '');
+
+      const planDirection = p.direction || (isReverse ? 'reverse' : 'forward');
+      const planStartPage = p.start_page || (isReverse ? 604 : 1);
+      const planEndPage = p.end_page || (isReverse ? 1 : 604);
+
       // Hydrate Memorization Plan
       const memPlan = {
-        title: p.title || 'خطة حفظ القرآن الكريم',
+        title: p.title || (isReverse ? 'خطة حفظ القرآن (من سورة الناس إلى سورة البقرة)' : 'خطة حفظ القرآن الكريم'),
         goalType: p.goal_type || 'pages_per_day',
+        direction: planDirection,
         pagesPerDay: p.pages_per_day || 1,
-        startPage: p.start_page || 1,
-        endPage: p.end_page || 604,
+        startPage: planStartPage,
+        endPage: planEndPage,
         currentPage: memPage,
         startDate: p.start_date || new Date().toISOString(),
         streakDays: p.streak_days || 0,
@@ -172,6 +184,11 @@ export function useQuranCloudSync() {
       currentPage?: number;
       currentSurah?: number;
       currentAyah?: number;
+      title?: string;
+      goalType?: string;
+      direction?: string;
+      startPage?: number;
+      endPage?: number;
       readingCurrentPage?: number;
       readingCurrentSurah?: number;
       readingCurrentAyah?: number;
@@ -186,6 +203,11 @@ export function useQuranCloudSync() {
 
       const record = {
         user_id: user.id,
+        ...(payload.title !== undefined && { title: payload.title }),
+        ...(payload.goalType !== undefined && { goal_type: payload.goalType }),
+        ...(payload.direction !== undefined && { direction: payload.direction }),
+        ...(payload.startPage !== undefined && { start_page: payload.startPage }),
+        ...(payload.endPage !== undefined && { end_page: payload.endPage }),
         ...(payload.currentPage !== undefined && { current_page: payload.currentPage }),
         ...(payload.currentSurah !== undefined && { current_surah: payload.currentSurah }),
         ...(payload.currentAyah !== undefined && { current_ayah: payload.currentAyah }),
@@ -236,6 +258,11 @@ export function useQuranCloudSync() {
           const readMarker = readMarkerStr ? JSON.parse(readMarkerStr) : null;
 
           syncPlanMutation.mutate({
+            title: memPlan?.title,
+            goalType: memPlan?.goalType,
+            direction: memPlan?.direction,
+            startPage: memPlan?.startPage,
+            endPage: memPlan?.endPage,
             currentPage: memPlan?.currentPage || memMarker?.page,
             currentSurah: memMarker?.surahNumber,
             currentAyah: memMarker?.ayahNumber,
