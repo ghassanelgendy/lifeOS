@@ -56,6 +56,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [api/calendar/tasks.ts](#api-calendar-tasks-ts)
 
 ### api/cron
+- [api/cron/braindump-organizer.ts](#api-cron-braindump-organizer-ts)
 - [api/cron/calendar-notifications-dispatch.ts](#api-cron-calendar-notifications-dispatch-ts)
 - [api/cron/habit-notifications-dispatch.ts](#api-cron-habit-notifications-dispatch-ts)
 - [api/cron/prayer-notifications-dispatch.ts](#api-cron-prayer-notifications-dispatch-ts)
@@ -422,6 +423,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [supabase/functions/deno.d.ts](#supabase-functions-deno-d-ts)
 - [supabase/functions/tsconfig.json](#supabase-functions-tsconfig-json)
 
+### supabase/functions/braindump-organizer
+- [supabase/functions/braindump-organizer/index.ts](#supabase-functions-braindump-organizer-index-ts)
+
 ### supabase/functions/calendar-feed
 - [supabase/functions/calendar-feed/index.ts](#supabase-functions-calendar-feed-index-ts)
 
@@ -658,6 +662,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`sanitizeUrl`** — Utility function for sanitize url.
 
 **Lines:** 434
+
+<a name="api-cron-braindump-organizer-ts"></a>
+### api/cron/braindump-organizer.ts
+
+**File Purpose:** Vercel serverless API route. Forwards cron triggers to the `braindump-organizer` Supabase Edge Function to summarize past unorganized brain dumps.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 45
 
 ---
 
@@ -1256,11 +1269,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Renders the interactive Medina Mushaf reader with full-screen reading mode, dynamic font scaling, single/all page views, Tajweed color rendering, Tafseer sheet, ayah quick bookmarking, memorization/reading markers, and keyboard navigation.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:** `QuranReaderView`, `renderTajweedText`, `renderTajweedWord`, `getSurahForPage`
 
-**Lines:** 1316
+**Lines:** 1520
 
 ---
 
@@ -5709,6 +5722,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration file)
 
 **Lines:** 25
+
+---
+
+<a name="supabase-functions-braindump-organizer-index-ts"></a>
+### supabase/functions/braindump-organizer/index.ts
+
+**File Purpose:** Supabase Edge Function. Automatically processes and summarizes unorganized past brain dumps using configured AI model providers (Dahl/Bynara/OpenAI) and stores organized insights and tasks in the `Organized Brain Dumps` folder.
+
+**Functions & Classes:**
+- `getAllowedOrigins` (Function)
+- `corsHeadersFor` (Function)
+- `cleanAiResponse` (Function)
+- `extractJSON` (Function)
+- `callChatCompletion` (Function)
+
+**Lines:** 352
 
 ---
 

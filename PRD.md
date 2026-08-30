@@ -250,15 +250,19 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Sidebar Swipe Gesture Isolation:** On the Quran route, the global sidebar swipe-to-open drawer and tab horizontal swipe transitions are isolated, ensuring left-to-right touch gestures turn pages smoothly without opening the drawer.
 - **Smart Automated Wird Detection for Halaqa Notes:** Opening note creation automatically detects today's active wird page and calculates precise Surah & Ayah range.
 - **Relative Wird Notifications & 1-Tap Routing:** Local and desktop notifications for Quran Memorization Habits, Quran Reading Habits, and Sheikh Recitation Calendar Events dynamically compute the user's latest Wird (Page number and Surah name), allowing users to jump directly to the target Medina Mushaf page with a single tap.
+- **Immersive Fullscreen Mushaf Reader (PC & Mobile):** Full-screen reading mode with dynamic vertical height distribution and font scaling (`A-` / `A+`) to fill large desktop screens without blank lower halves, pinned header controls (Surah picker, page navigation, Tajweed/Tafsir toggles, exit button), and keyboard shortcuts (`Escape`, `ArrowLeft`/`ArrowRight`, `+`/`-`).
 - **1-Click Quick Preset Pills:** Preset pills in the note creation modal to switch between today's memorization wird and reading wird.
+- **12-Hour Non-Repeating Hadith of the Day (Mobile Only):** Displays an inspiring Hadith dialog on mobile every 12 hours from a non-repeating queue, featuring enhanced Arabic typography, Cairo font for the narrator, and zero desktop overlap (PC already features the Hadith widget in Dashboard).
 - **Recitation Session Logs:** Log Sheikh feedback, ratings (ممتاز, جيد جداً, جيد, يحتاج تثبيت), and detailed mistake/mutashabihat notes synced with lifeOS Notes engine.
 
 ### 5.14 Cognitive Brain Dump & Asynchronous Thought Vault
-**Purpose:** Frictionless, instant thought capture with deferred AI planning and structured extraction.
+**Purpose:** Frictionless, instant thought capture with deferred AI planning, smart conflict-free awake-time task distribution, and bi-directional checklist synchronization.
 
 - **Instant Quick-Save & Append (<100ms):** Quick thought capture with `Cmd+Enter` keyboard shortcut and voice dictation. Users can append thoughts to today's daily log or save discrete atomic cards without waiting for AI analysis.
 - **Thought Inbox & Search:** Chronological stream of all captured thoughts with full-text search, time stamps, and organization status badges (`Pending / Unprocessed` vs `Organized`).
-- **Deferred AI Batch Planning:** On-demand batch organization during planning sessions. AI extracts actionable tasks (with due dates & priorities), recurring habits, and calendar events with 1-click database synchronization.
+- **Unified Single Daily Journal Lifecycle:** Maintains strictly one unified daily Brain Dump Journal note (`Brain Dump Journal (YYYY-MM-DD)`). When organized via midnight cron or batch organizer, structured AI insights and action items are formatted above the raw thought log in-place without creating duplicate notes.
+- **Smart Awake-Time Task Distribution Engine:** Analyzes action items against user wake/bedtimes (from sleep tracking metrics), existing scheduled tasks, and calendar events to distribute tasks into open, conflict-free awake slots with recommended lists (`Work`, `Learn`, etc.) and tags (`#servixa`, etc.).
+- **Bi-Directional Note & Task List Sync:** Tasks created from Brain Dumps maintain bi-directional linking via `source_note_id`. Toggling a task as complete in the To-Do list, Tasks page, or Dashboard automatically checks off the corresponding `- [x]` item in the organized Brain Dump note and vice-versa.
 - **iOS Triple-Tap Back Tap Integration:** Launch LifeOS directly into Brain Dump quick-capture from any screen or app via `lifeos://braindump?text=`.
 
 ### 5.13 Gamification (Points System)
@@ -377,6 +381,7 @@ Supabase Edge Functions (scheduled via cron):
   calendar-notifications-dispatch → Queries upcoming events → Sends push
   send-task-reminders → Queries task due times → Sends push
   report-notification-dispatch → Triggers weekly/monthly report ready
+  braindump-organizer → Server-side AI summarization and organization of past brain dumps
 
 Client Handlers:
   Service Worker (web): Receives push → Shows notification with actions
@@ -825,6 +830,7 @@ interface FocusSession {
 | `/api/cron/habit-notifications-dispatch` | POST | Cron: dispatch habit reminders |
 | `/api/cron/prayer-notifications-dispatch` | POST | Cron: dispatch prayer notifications |
 | `/api/cron/calendar-notifications-dispatch` | POST | Cron: dispatch calendar reminders |
+| `/api/cron/braindump-organizer` | POST | Cron: auto-organize past brain dumps with AI |
 
 ### Supabase Edge Functions
 | Endpoint | Purpose |
@@ -835,6 +841,7 @@ interface FocusSession {
 | `prayer-notifications-dispatch` | Calculate and dispatch prayer time pushes |
 | `calendar-notifications-dispatch` | Query and dispatch calendar event pushes |
 | `report-notification-dispatch` | Trigger report ready notifications |
+| `braindump-organizer` | Server-side AI summarization and organization of past brain dumps |
 | `process-sms` | Parse bank SMS and insert transactions |
 | `upload-screentime` | Parse and ingest screen time data |
 | `upload-screentime-chronos` | Parse Chronos-format screen time data |

@@ -496,6 +496,9 @@ The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`,
 #### FR-NOTE-009: iOS Back Tap & Deep Link Integration
 The system shall register a URL scheme listener (`lifeos://braindump?text=`) in `App.ios.tsx` to handle iPhone Back Tap gestures via Apple Shortcuts, pre-filling text and triggering auto-classification upon app launch.
 
+#### FR-NOTE-010: Server-Side AI Brain Dump Organizer
+The system shall provide a server-side cron service (`braindump-organizer` Supabase Edge Function & `public.process_midnight_braindumps()` pg_cron job) executing nightly to summarize unorganized past brain dumps with configured AI providers and write structured notes to the `Organized Brain Dumps` folder.
+
 ---
 
 ### 3.11 Focus Sessions
@@ -577,6 +580,12 @@ The reader shall provide an iOS-native liquid glass header with compact Surah an
 #### FR-QURAN-007: Relative Wird Notifications & Deep Link Routing
 The system shall automatically compute dynamic relative Wird information (page number and Surah name) inside notifications scheduled for Quran Memorization Habits, Quran Reading Habits, and Sheikh Halqah Calendar Events. Tapping the notification banner shall route the user directly to the target Medina Mushaf page.
 
+#### FR-QURAN-008: Immersive Desktop & Mobile Fullscreen Mushaf Reader
+The system shall provide a dedicated full-viewport Mushaf portal with persistent top control bar (Surah/Juz picker, previous/next page arrows, font zoom controls `A-`/`A+`, Tajweed and Tafsir toggles, exit button), proportional vertical height distribution to eliminate blank lower halves on PC screens, and keyboard shortcuts (`Escape`, `ArrowLeft`/`ArrowRight`, `+`/`-`).
+
+#### FR-QURAN-009: 12-Hour Non-Repeating Quran Hadith Modal (Mobile Only)
+The system shall automatically present an inspiring Hadith dialog exclusively on mobile devices at 12-hour intervals. The Hadith shall be selected from an authentic Quran-virtues collection using a non-repeating queue, rendered with enhanced Arabic typography, and display the source/narrator in Cairo font (`font-cairo`). This modal is disabled on desktop/PC to prevent duplication with the Dashboard Hadith widget.
+
 ### 3.12.2 Cognitive Brain Dump & Asynchronous Thought Vault
 
 #### FR-DUMP-001: Instant Quick-Capture & Append
@@ -587,6 +596,15 @@ The system shall provide a search-enabled Thought Inbox displaying all captured 
 
 #### FR-DUMP-003: Deferred AI Batch Planning
 The system shall allow users to select single or multiple captured thoughts during planning sessions to trigger batch AI structuring, extracting actionable tasks, recurring habits, and calendar events with 1-click database synchronization.
+
+#### FR-DUMP-004: Unified Single Daily Journal Lifecycle
+The system shall maintain strictly one unified Brain Dump Journal note per day (`Brain Dump Journal (YYYY-MM-DD)`). When organized via the Supabase midnight cron (`process_midnight_braindumps` + `braindump-organizer` Edge Function) or client-side batch organizer, the existing daily note shall be updated in-place (incorporating the AI summary, key takeaways, and action items above the raw thoughts log) without creating duplicate notes.
+
+#### FR-DUMP-005: Smart Awake-Time Task Distribution & Bi-directional Note-Task Sync
+The system shall intelligently analyze extracted brain dump action items and automatically:
+1. Map them to matching user task lists (e.g. `Work`, `Learn`, `Personal`) and tags (e.g. `servixa`, `ischool`, `research`, `urgent`).
+2. Distribute tasks across conflict-free awake hours (respecting user sleep/wake metrics, scheduled tasks with due times, and calendar events) with 1-click individual or batch addition.
+3. Establish bi-directional sync via `source_note_id` so that checking off a task in To-Do list or Dashboard automatically toggles the corresponding checkbox (`- [ ]` <-> `- [x]`) in the organized Brain Dump note and vice-versa.
 
 ---
 
