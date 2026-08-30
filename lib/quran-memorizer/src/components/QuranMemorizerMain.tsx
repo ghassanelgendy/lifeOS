@@ -309,15 +309,6 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     try {
       localStorage.setItem('quran_memorization_marker_v1', JSON.stringify(marker));
       localStorage.setItem('quran_active_page_v1', page.toString());
-      
-      // Update plan currentPage as well
-      const planSaved = localStorage.getItem('quran_khatmah_plan_v1');
-      const p = planSaved ? JSON.parse(planSaved) : {};
-      const updatedPlan = { ...p, currentPage: page };
-      localStorage.setItem('quran_khatmah_plan_v1', JSON.stringify(updatedPlan));
-      setMemorizationPlan(updatedPlan);
-
-      window.dispatchEvent(new Event('quran_plan_updated'));
       window.dispatchEvent(new Event('quran_active_page_updated'));
     } catch {}
   };
@@ -328,15 +319,6 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     try {
       localStorage.setItem('quran_reading_marker_v1', JSON.stringify(marker));
       localStorage.setItem('quran_active_page_v1', page.toString());
-
-      // Update reading wird currentPage as well
-      const wirdSaved = localStorage.getItem('quran_reading_wird_v1');
-      const r = wirdSaved ? JSON.parse(wirdSaved) : {};
-      const updatedWird = { ...r, currentPage: page };
-      localStorage.setItem('quran_reading_wird_v1', JSON.stringify(updatedWird));
-      setReadingWird(updatedWird);
-
-      window.dispatchEvent(new Event('quran_plan_updated'));
       window.dispatchEvent(new Event('quran_active_page_updated'));
     } catch {}
   };
@@ -629,24 +611,27 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
           />
         )}
 
-        {/* Sticky Audio Player Bar inside container */}
-        <AudioPlayerBar
-          reciter={reciter}
-          onSelectReciter={setReciter}
-          isPlaying={audio.isPlaying}
-          isDelaying={audio.isDelaying}
-          currentAyahIndex={audio.currentAyahIndex}
-          currentVerseRepeat={audio.currentVerseRepeat}
-          currentRangeLoop={audio.currentRangeLoop}
-          playbackRate={audio.playbackRate}
-          repeatSettings={repeatSettings}
-          onChangeRepeatSettings={setRepeatSettings}
-          onTogglePlayPause={audio.togglePlayPause}
-          onStop={audio.stop}
-          onNext={audio.nextAyah}
-          onPrev={audio.prevAyah}
-          onChangeSpeed={audio.changePlaybackRate}
-        />
+        {/* Sticky Audio Player Bar — only on the reader tab so it never covers
+            the khatmah / revision / mutashabihat action buttons */}
+        {activeTab === 'reader' && (
+          <AudioPlayerBar
+            reciter={reciter}
+            onSelectReciter={setReciter}
+            isPlaying={audio.isPlaying}
+            isDelaying={audio.isDelaying}
+            currentAyahIndex={audio.currentAyahIndex}
+            currentVerseRepeat={audio.currentVerseRepeat}
+            currentRangeLoop={audio.currentRangeLoop}
+            playbackRate={audio.playbackRate}
+            repeatSettings={repeatSettings}
+            onChangeRepeatSettings={setRepeatSettings}
+            onTogglePlayPause={audio.togglePlayPause}
+            onStop={audio.stop}
+            onNext={audio.nextAyah}
+            onPrev={audio.prevAyah}
+            onChangeSpeed={audio.changePlaybackRate}
+          />
+        )}
       </main>
     </div>
   );

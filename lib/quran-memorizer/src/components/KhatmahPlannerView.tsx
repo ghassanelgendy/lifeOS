@@ -391,12 +391,6 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     setHalqahNotes(halqahNotes.filter((n) => n.id !== id));
   };
 
-  const handleDeletePlan = () => {
-    if (confirm('هل أنت تأكد من رغبتك في حذف خطة الخاتمة الحالية؟')) {
-      setPlan(null);
-    }
-  };
-
   const quranHabits = linkedHabits.filter((h) =>
     /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
   );
@@ -405,18 +399,10 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
     /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran/i.test(e.title)
   );
 
-  const totalPages = plan ? Math.abs(plan.endPage - plan.startPage) + 1 : 604;
-  // Direction-aware progress: count pages traversed from the START toward the END.
-  // For a reversed khatmah (604 -> 1) the currentPage decreases, so the distance from
-  // the start (604) is the number of pages actually completed.
-  const pagesCompleted = plan
-    ? Math.max(0, Math.min(totalPages - 1, Math.abs(plan.currentPage - plan.startPage)))
-    : 0;
-  const progressPercent = Math.min(100, Math.round((pagesCompleted / totalPages) * 100));
-
-  const currentSurah = getSurahForPage(plan ? plan.currentPage : 604);
   // Reverse if stored direction says so, OR if the page order descends (end < start).
   const isReverse = plan ? (plan.direction === 'reverse' || plan.endPage < plan.startPage) : true;
+
+  const currentSurah = getSurahForPage(plan ? plan.currentPage : 604);
   const nextTargetPage = plan
     ? isReverse
       ? Math.max(plan.endPage, plan.currentPage - plan.pagesPerDay)
@@ -482,7 +468,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                           window.dispatchEvent(new Event('quran_active_page_updated'));
                         }
                       }}
-                      className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border focus:outline-none"
+                      className="w-full h-10 bg-secondary/80 text-foreground font-bold text-xs rounded-xl px-2 border border-border focus:outline-none"
                     >
                       {SURAHS.map((s) => (
                         <option key={s.id} value={s.id}>
@@ -509,7 +495,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                         window.dispatchEvent(new Event('quran_plan_updated'));
                         window.dispatchEvent(new Event('quran_active_page_updated'));
                       }}
-                      className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border text-center focus:outline-none"
+                      className="w-full h-10 bg-secondary/80 text-foreground font-bold text-xs rounded-xl px-2 border border-border text-center focus:outline-none"
                     />
                   </div>
                 </div>
@@ -592,7 +578,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                         window.dispatchEvent(new Event('quran_active_page_updated'));
                       }
                     }}
-                    className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border focus:outline-none"
+                    className="w-full h-10 bg-secondary/80 text-foreground font-bold text-xs rounded-xl px-2 border border-border focus:outline-none"
                   >
                     {SURAHS.map((s) => (
                       <option key={s.id} value={s.id}>
@@ -619,7 +605,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                       window.dispatchEvent(new Event('quran_plan_updated'));
                       window.dispatchEvent(new Event('quran_active_page_updated'));
                     }}
-                    className="w-full bg-secondary/80 text-foreground font-bold text-xs rounded-xl p-2 border border-border text-center focus:outline-none"
+                    className="w-full h-10 bg-secondary/80 text-foreground font-bold text-xs rounded-xl px-2 border border-border text-center focus:outline-none"
                   />
                 </div>
               </div>
@@ -665,55 +651,6 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
         </div>
 
       </div>
-
-      {/* Main Plan Overview Banner */}
-      {plan && (
-        <div className="p-6 rounded-3xl border border-border/60 bg-card/90 backdrop-blur-xl shadow-lg space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-foreground">{plan.title}</h2>
-                <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {plan.direction === 'reverse' ? 'من الناس إلى البقرة' : 'خطة نشطة'}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                معدل الإنجاز: <span className="font-bold text-foreground">{plan.pagesPerDay} صفحة / يومياً</span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowNewPlanModal(true)}
-                className="px-3.5 py-2 rounded-2xl bg-secondary text-xs font-bold text-muted-foreground hover:text-foreground active:scale-95 transition-all cursor-pointer"
-              >
-                تغيير الخطة
-              </button>
-              <button
-                onClick={handleDeletePlan}
-                className="p-2 rounded-2xl text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                title="حذف الخاتمة"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-bold">
-              <span className="text-muted-foreground">نسبة التقدم الكلي في خطة الحفظ</span>
-              <span className="text-emerald-400">{progressPercent}% ({pagesCompleted} من {totalPages} صفحة)</span>
-            </div>
-            <div className="w-full h-3 rounded-full bg-secondary overflow-hidden border border-border/40 p-0.5">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-indigo-500 transition-all duration-500"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* lifeOS Connected Habits & Sheikh Halqah Recitation Sessions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
