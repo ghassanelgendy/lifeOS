@@ -34,6 +34,8 @@ interface AudioPlayerBarProps {
   onNext: () => void;
   onPrev: () => void;
   onChangeSpeed: (speed: number) => void;
+  // Force the bar into its small/compact state (e.g. while full-screen reading)
+  forceSmall?: boolean;
 }
 
 function getSheikhLastName(reciter: Reciter): string {
@@ -67,6 +69,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   onNext,
   onPrev,
   onChangeSpeed,
+  forceSmall = false,
 }) => {
   const [showSettingsDrawer, setShowSettingsDrawer] = useState(false);
   // Hide the floating bar on scroll-down (compact mobile UX), matching the main dashboard bottom bar
@@ -116,7 +119,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           /* iOS Mobile: Crisp Compact Floating Pill matching iOS bottom tab bar */
           bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-[390px] h-[52px]
           rounded-full px-3 flex items-center justify-between
-          ${isBarHidden
+          ${isBarHidden || forceSmall
             ? 'scale-[0.78] translate-y-[10px] opacity-55 bg-white/40 dark:bg-[#141416]/50 backdrop-blur-md'
             : 'scale-100 translate-y-0 opacity-100 bg-white/45 dark:bg-[#141416]/60 backdrop-blur-2xl'}
           border border-white/30 dark:border-white/10

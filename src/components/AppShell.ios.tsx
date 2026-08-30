@@ -392,7 +392,7 @@ export function AppShell() {
       <>
         <div
           className={cn(
-            "md:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-150",
+            "md:hidden fixed inset-0 z-[270] bg-black/50 transition-opacity duration-150",
             isMobileSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => setMobileSidebarOpen(false)}
@@ -400,7 +400,7 @@ export function AppShell() {
         />
         <aside
           className={cn(
-            "md:hidden fixed z-50 w-[min(20rem,85vw)] min-w-[16rem] flex flex-col transition-transform duration-250 ease-out will-change-transform transform-gpu rounded-[24px]",
+            "md:hidden fixed z-[280] w-[min(20rem,85vw)] min-w-[16rem] flex flex-col transition-transform duration-250 ease-out will-change-transform transform-gpu rounded-[24px]",
             "bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl",
             isMobileSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+24px)]"
           )}

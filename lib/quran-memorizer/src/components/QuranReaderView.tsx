@@ -230,6 +230,11 @@ interface QuranReaderViewProps {
   onSyncReading?: () => void;
   onOpenHalqahNote?: () => void;
   onBookmarkAyah?: (surahName: string, surahNumber: number, ayahNumber: number, ayahText: string) => void;
+
+  // Full-screen "reading/mutala'a" mode — lifted to parent so the audio player bar
+  // can collapse into its small state while full-screen reading is active.
+  isFullscreen?: boolean;
+  onFullscreenChange?: (value: boolean) => void;
 }
 
 export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
@@ -259,6 +264,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onSyncReading,
   onOpenHalqahNote,
   onBookmarkAyah,
+  isFullscreen: isFullscreenProp,
+  onFullscreenChange,
 }) => {
   const [verses, setVerses] = useState<Ayah[]>([]);
   const [viewMode, setViewMode] = useState<'page' | 'ayah'>(() => {
@@ -285,7 +292,12 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     }
   });
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [internalFullscreen, setInternalFullscreen] = useState(false);
+  const isFullscreen = onFullscreenChange !== undefined ? !!isFullscreenProp : internalFullscreen;
+  const setIsFullscreen = (v: boolean) => {
+    if (onFullscreenChange) onFullscreenChange(v);
+    else setInternalFullscreen(v);
+  };
   const [showToolsSheet, setShowToolsSheet] = useState(false);
   const [showSurahPicker, setShowSurahPicker] = useState(false);
   const [pickerSearch, setPickerSearch] = useState('');
