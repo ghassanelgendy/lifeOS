@@ -159,6 +159,7 @@ export function AppShell() {
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
   const isOnTasks = location.pathname === '/tasks';
+  const isOnNotes = location.pathname === '/notes';
 
   const prevPathRef = useRef<string>(location.pathname);
   const prevIndexRef = useRef<number>(currentIndex);
@@ -608,7 +609,7 @@ export function AppShell() {
               "flex flex-col section-slide-in",
               location.pathname === '/chat'
                 ? "h-full min-h-0 overflow-hidden p-0"
-                : (isOnTasks
+                : (isOnTasks || isOnNotes
                     ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
                     : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6")
             )}

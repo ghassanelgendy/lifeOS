@@ -168,6 +168,7 @@ export function AppShell() {
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
   );
   const isOnTasks = location.pathname === '/tasks';
+  const isOnNotes = location.pathname === '/notes';
 
   const prevPathRef = useRef<string>(location.pathname);
   const prevIndexRef = useRef<number>(currentIndex);
@@ -472,7 +473,7 @@ export function AppShell() {
                 className={cn(
                   "flex flex-col p-4 md:p-6 section-slide-in bg-transparent",
                   "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
-                  isOnTasks ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
+                  (isOnTasks || isOnNotes) ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
                 )}
                 style={
                   {

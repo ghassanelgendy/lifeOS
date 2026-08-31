@@ -424,6 +424,12 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
       }
 
       void triggerHaptics('success');
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('Brain Dump Organized', {
+          body: 'AI finished organizing your thoughts into action items and insights.',
+          tag: 'brain-dump-organized',
+        });
+      }
       setActiveTab('plan');
     } catch (err: any) {
       console.error('Brain dump AI analysis failed:', err);
@@ -492,6 +498,12 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
       });
 
       setSaveSuccessMsg(`Organized Brain Dump note in-place!`);
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('Brain Dump Organized', {
+          body: 'AI finished organizing your thoughts into action items and insights.',
+          tag: 'brain-dump-organized',
+        });
+      }
       setTimeout(() => setSaveSuccessMsg(null), 3000);
       setActiveTab('inbox');
     } catch (err: any) {

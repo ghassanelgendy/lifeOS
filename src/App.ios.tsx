@@ -367,6 +367,12 @@ function AppInner() {
                   .ilike('title', '% organized%')
                   .neq('id', rawDump.id);
               }
+              if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification('Brain Dump Organized', {
+                  body: 'AI finished organizing your past brain dump notes.',
+                  tag: 'brain-dump-auto-organized',
+                });
+              }
             } catch (err) {
               console.warn('Auto-organize note failed for', rawDump.id, err);
             }

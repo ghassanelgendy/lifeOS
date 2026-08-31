@@ -13,7 +13,7 @@ interface PullToRefreshProps {
 export function PullToRefresh({ children }: PullToRefreshProps) {
     const location = useLocation();
     const queryClient = useQueryClient();
-    const isTasks = location.pathname === '/tasks';
+    const isFixedLayout = location.pathname === '/tasks' || location.pathname === '/notes';
     const [startY, setStartY] = useState<number | null>(null);
     const [pullDistance, setPullDistance] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -163,7 +163,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
 
             {/* Elastic content container that slides down and springs back */}
             <div 
-                className={cn("relative origin-top will-change-transform", isTasks ? "h-full" : "min-h-full")}
+                className={cn("relative origin-top will-change-transform", isFixedLayout ? "h-full" : "min-h-full")}
                 style={{
                     transform: `translateY(${pullDistance}px)`,
                     transition: startY === null ? 'transform 0.45s cubic-bezier(0.25, 1, 0.3, 1.18)' : 'none'

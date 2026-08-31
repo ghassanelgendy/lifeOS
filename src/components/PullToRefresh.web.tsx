@@ -11,7 +11,7 @@ interface PullToRefreshProps {
 export function PullToRefresh({ children }: PullToRefreshProps) {
     const location = useLocation();
     const queryClient = useQueryClient();
-    const isTasks = location.pathname === '/tasks';
+    const isFixedLayout = location.pathname === '/tasks' || location.pathname === '/notes';
     const [startY, setStartY] = useState<number | null>(null);
     const [pullDistance, setPullDistance] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -117,8 +117,8 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                 </div>
             </div>
 
-            {/* Content: on Tasks, h-full constrains to viewport so sidebar spans to bottom; elsewhere min-h-full allows scroll */}
-            <div className={cn("relative", isTasks ? "h-full" : "min-h-full")}>
+            {/* Content: on Tasks/Notes, h-full constrains to viewport so sidebar/columns span to bottom; elsewhere min-h-full allows scroll */}
+            <div className={cn("relative", isFixedLayout ? "h-full" : "min-h-full")}>
                 {children}
             </div>
         </div>
