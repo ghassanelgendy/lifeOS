@@ -423,6 +423,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [supabase/functions/deno.d.ts](#supabase-functions-deno-d-ts)
 - [supabase/functions/tsconfig.json](#supabase-functions-tsconfig-json)
 
+### supabase/functions/append-braindump
+- [supabase/functions/append-braindump/index.ts](#supabase-functions-append-braindump-index-ts)
+
 ### supabase/functions/braindump-organizer
 - [supabase/functions/braindump-organizer/index.ts](#supabase-functions-braindump-organizer-index-ts)
 
@@ -5104,7 +5107,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`GoogleIcon`** — Utility function for google icon.
 - **`Login`** — Utility function for login.
 
-**Lines:** 164
+**Lines:** 202
 
 ---
 
@@ -5147,7 +5150,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-notes-web-tsx"></a>
 ### src/routes/Notes.web.tsx
 
-**File Purpose:** Page-level route component for the Notes module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Notes module on desktop web. Implements a responsive 3-column fixed-height layout (folders sidebar, note list, and markdown editor/reader pane) where each column scrolls independently within `flex-1 min-h-0 overflow-y-auto` containers without causing full-page scrolling.
 
 **Functions & Classes:**
 - `NotesWeb` (React Component)
@@ -5165,7 +5168,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`formatNoteDate`** — Utility function for format note date.
 - **`NotesWeb`** — Utility function for notes web.
 
-**Lines:** 779
+**Lines:** 795
 
 ---
 
@@ -5519,7 +5522,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`DailyHabitsList`** — Utility function for daily habits list.
 - **`DailyNoteArea`** — Utility function for daily note area.
 
-**Lines:** 1146
+**Lines:** 1196
 
 ---
 
@@ -5721,6 +5724,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration file)
 
 **Lines:** 25
+
+---
+
+<a name="supabase-functions-append-braindump-index-ts"></a>
+### supabase/functions/append-braindump/index.ts
+
+**File Purpose:** Supabase Edge Function. Appends thoughts directly to the current day's unified Brain Dump note in-place with timestamps, supporting iOS Apple Shortcuts, HTTP requests, query params, and JSON/plain text payloads.
+
+**Functions & Classes:**
+- `getLocalTimeInfo` (Function)
+
+**Lines:** 185
 
 ---
 

@@ -198,7 +198,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 
 - Rich-text notes with title, markdown preview/editing, date, and body
 - Platform-Specific UI/UX:
-  - **PC/Web Desktop View (`Notes.web.tsx`)**: 3-column layout (folder sidebar, search & notes list, editor/reader pane) with keyboard shortcuts (`/`), word/char counts, pin indicators, and folder management.
+  - **PC/Web Desktop View (`Notes.web.tsx`)**: 3-column layout (folder sidebar, search & notes list, editor/reader pane) with fixed viewport height, independent column scrolling, keyboard shortcuts (`/`), word/char counts, pin indicators, and folder management.
   - **iOS Native View (`Notes.ios.tsx`)**: Apple Notes aesthetic, grouped inset card lists, iOS header, swipe gestures, haptic feedback, 3D long-press touch context menus, and screen navigation.
 - **Cognitive Brain Dump AI Processor**: Unstructured stream-of-consciousness thought capture with voice dictation, automated AI analysis (mental clarity score 1-100, sentiment/mood, core summary, key insights).
 - **Auto-Classification (Tasks, Habits, Events)**: Automatically detects tasks, recurring habits, and calendar events with 1-click action buttons (+ Add Task, + Add Habit, + Add Event).
@@ -253,6 +253,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Immersive Fullscreen Mushaf Reader (PC & Mobile):** Full-screen reading mode with full-page multi-surah fetching (`fetchPageVerses`) preventing ayah cutoffs across surah boundaries, two-finger pinch-to-zoom dynamic scaling (`0.65x` to `2.0x`), desktop top controls, mobile safe-area floating thumb HUD (preventing top notch / status bar overlap), Tajweed/Tafsir toggles, and keyboard shortcuts (`Escape`, `ArrowLeft`/`ArrowRight`, `+`/`-`).
 - **1-Click Quick Preset Pills:** Preset pills in the note creation modal to switch between today's memorization wird and reading wird.
 - **12-Hour Non-Repeating Hadith of the Day (Mobile Only):** Displays an inspiring Hadith dialog on mobile every 12 hours from a non-repeating queue, featuring enhanced Arabic typography, Cairo font for the narrator, and zero desktop overlap (PC already features the Hadith widget in Dashboard).
+- **Per-Ayah Mastery Toggling & Elevated Fullscreen Controls:** Users can mark and toggle individual ayahs as memorized (`motqan`) with isolated verse-level precision. Audio player bar, audio settings drawer, and surah picker modals are elevated to `z-[10000+]` above fullscreen viewports with native iOS keyboard avoidance.
+- **Dynamic Day-by-Day Weekly Planner Wird & Spaced Repetition Badges:** Renders day-specific projected Wird targets (`ورد أساسي: ص XX سورة YY`) and weekly rotated Spaced Repetition review portions (`مراجعة: XX`) for each individual day in the Weekly Planner, with 1-click deep routing to each day's target Medina Mushaf page.
 - **Recitation Session Logs:** Log Sheikh feedback, ratings (ممتاز, جيد جداً, جيد, يحتاج تثبيت), and detailed mistake/mutashabihat notes synced with lifeOS Notes engine.
 
 ### 5.14 Cognitive Brain Dump & Asynchronous Thought Vault
@@ -264,6 +266,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Smart Awake-Time Task Distribution Engine:** Analyzes action items against user wake/bedtimes (from sleep tracking metrics), existing scheduled tasks, and calendar events to distribute tasks into open, conflict-free awake slots with recommended lists (`Work`, `Learn`, etc.) and tags (`#servixa`, etc.).
 - **Bi-Directional Note & Task List Sync:** Tasks created from Brain Dumps maintain bi-directional linking via `source_note_id`. Toggling a task as complete in the To-Do list, Tasks page, or Dashboard automatically checks off the corresponding `- [x]` item in the organized Brain Dump note and vice-versa.
 - **iOS Triple-Tap Back Tap Integration:** Launch LifeOS directly into Brain Dump quick-capture from any screen or app via `lifeos://braindump?text=`.
+- **Remote Brain Dump Append Endpoint (`append-braindump`):** Supabase Edge Function and PostgreSQL RPC (`append_to_daily_braindump`) allowing iOS Apple Shortcuts, Siri, and external webhooks to append thoughts directly to today's unified Brain Dump note with automated timestamps.
 
 ### 5.13 Gamification (Points System)
 **Purpose:** Behavioral reinforcement through reward mechanics.

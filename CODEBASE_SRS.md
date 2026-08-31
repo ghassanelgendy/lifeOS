@@ -481,7 +481,7 @@ Notes shall display creation and update dates.
 
 #### FR-NOTE-006: Platform-Optimized Responsive Views
 The system shall deliver tailored user experiences per target platform:
-- **PC Desktop (`Notes.web.tsx`)**: 3-column layout (folder sidebar, search/notes list, markdown live editor), `/` search shortcut, word/character counter, pin toggles.
+- **PC Desktop (`Notes.web.tsx`)**: 3-column layout (folder sidebar, search/notes list, markdown live editor) with fixed viewport height and independent column scrolling, `/` search shortcut, word/character counter, pin toggles.
 - **iOS Native (`Notes.ios.tsx`)**: Apple Notes aesthetic, grouped inset card lists, iOS header navigation, touch gestures, haptics (`triggerHaptics`), and 3D long-press context menus.
 
 #### FR-NOTE-007: Cognitive Brain Dump AI Processor
@@ -586,6 +586,12 @@ The system shall provide dedicated full-page fetching (`fetchPageVerses`) guaran
 #### FR-QURAN-009: 12-Hour Non-Repeating Quran Hadith Modal (Mobile Only)
 The system shall automatically present an inspiring Hadith dialog exclusively on mobile devices at 12-hour intervals. The Hadith shall be selected from an authentic Quran-virtues collection using a non-repeating queue, rendered with enhanced Arabic typography, and display the source/narrator in Cairo font (`font-cairo`). This modal is disabled on desktop/PC to prevent duplication with the Dashboard Hadith widget.
 
+#### FR-QURAN-010: Per-Ayah Mastery Toggling & Elevated Fullscreen Controls
+The system shall support marking and toggling individual ayahs as memorized (`motqan`) with isolated verse-level precision rather than blanket-marking entire chapter sections. Player settings, surah picker, and tools drawers shall be elevated to layer `z-[10000+]` above fullscreen viewports with native iOS keyboard avoidance.
+
+#### FR-QURAN-011: Dynamic Day-by-Day Weekly Planner Wird & Spaced Repetition (مراجعة) Badges
+The system shall dynamically calculate and display day-specific projected Wird pages and weekly partitioned Spaced Repetition review portions across the 7 days of the Weekly Planner habit grid for Quran habits (`ورد أساسي: ص XX سورة YY • مراجعة: ZZ`), with single-click deep navigation directly to each day's target Medina Mushaf page.
+
 ### 3.12.2 Cognitive Brain Dump & Asynchronous Thought Vault
 
 #### FR-DUMP-001: Instant Quick-Capture & Append
@@ -605,6 +611,9 @@ The system shall intelligently analyze extracted brain dump action items and aut
 1. Map them to matching user task lists (e.g. `Work`, `Learn`, `Personal`) and tags (e.g. `servixa`, `ischool`, `research`, `urgent`).
 2. Distribute tasks across conflict-free awake hours across up to 35 days / next month (respecting user sleep/wake metrics, scheduled tasks with due times, and calendar events) with 1-click individual or batch addition.
 3. Establish bi-directional sync via `source_note_id` so that checking off a task in To-Do list or Dashboard automatically toggles the corresponding checkbox (`- [ ]` <-> `- [x]`) in the organized Brain Dump note and vice-versa.
+
+#### FR-DUMP-007: Remote Apple Shortcuts / Supabase Endpoint
+The system shall expose the `append-braindump` Supabase Edge Function and `append_to_daily_braindump` stored procedure to append thoughts from iOS Apple Shortcuts, Siri dictation, or external webhooks directly into the active day's journal with timestamps.
 
 ---
 
