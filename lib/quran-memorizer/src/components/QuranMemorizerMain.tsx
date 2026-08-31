@@ -636,14 +636,20 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
             onStartAyahChange={setStartAyah}
             onEndAyahChange={setEndAyah}
             isAudioPlaying={audio.isPlaying}
+            isDelaying={audio.isDelaying}
             repeatSettings={repeatSettings}
             onChangeRepeatSettings={setRepeatSettings}
             onGradeVerse={(grade) =>
               memorizerStore.reviewRecord(selectedSurah, startAyah, endAyah, grade)
             }
-            onMarkMemorized={() =>
-              memorizerStore.updateRecordStatus(selectedSurah, startAyah, endAyah, 'memorized')
-            }
+            onMarkMemorized={(surahNum, sAyah, eAyah) => {
+              const targetSurah = surahNum ?? selectedSurah;
+              const targetStart = sAyah ?? startAyah;
+              const targetEnd = eAyah ?? endAyah;
+              const existing = memorizerStore.getVerseMastery(targetSurah, targetStart);
+              const nextStatus = existing?.status === 'memorized' ? 'reviewing' : 'memorized';
+              memorizerStore.updateRecordStatus(targetSurah, targetStart, targetEnd, nextStatus);
+            }}
             getVerseMastery={memorizerStore.getVerseMastery}
             memorizationPage={memorizationPage}
             memorizationEndPage={memorizationEndPage}

@@ -875,7 +875,11 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl border border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh] overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200"
+              className="w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl border border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh] overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200 transition-all"
+              style={{
+                bottom: 'var(--keyboard-height, 0px)',
+                maxHeight: 'calc(90dvh - var(--keyboard-height, 0px))',
+              }}
             >
               {/* iOS Sheet Drag Handle Pill */}
               <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-1" />
@@ -1015,7 +1019,11 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl border border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh] overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200"
+              className="w-full max-w-lg rounded-t-[2.5rem] sm:rounded-3xl border border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl overflow-y-auto max-h-[85vh] sm:max-h-[90vh] overscroll-contain pb-safe animate-in slide-in-from-bottom-5 duration-200 transition-all"
+              style={{
+                bottom: 'var(--keyboard-height, 0px)',
+                maxHeight: 'calc(90dvh - var(--keyboard-height, 0px))',
+              }}
             >
               {/* iOS Sheet Drag Handle Pill */}
               <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto mb-1" />

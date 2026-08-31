@@ -218,10 +218,11 @@ interface QuranReaderViewProps {
   onStartAyahChange: (val: number) => void;
   onEndAyahChange: (val: number) => void;
   isAudioPlaying: boolean;
+  isDelaying?: boolean;
   repeatSettings: RepeatSettings;
   onChangeRepeatSettings: (settings: RepeatSettings) => void;
   onGradeVerse?: (grade: RatingGrade) => void;
-  onMarkMemorized?: () => void;
+  onMarkMemorized?: (surahNumber: number, startAyah: number, endAyah: number) => void;
   getVerseMastery?: (surahNumber: number, ayahNumber: number) => { status: MemorizationStatus; masteryScore: number } | null;
 
   // Sync Locations & Highlights
@@ -260,6 +261,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onStartAyahChange,
   onEndAyahChange,
   isAudioPlaying,
+  isDelaying = false,
   repeatSettings,
   onChangeRepeatSettings,
   onGradeVerse,
@@ -856,16 +858,20 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         </div>
       )}
 
-      {/* 3. iOS NATIVE SURAH & JUZ PICKER MODAL/SHEET (Portaled to Body with z-[999]) */}
+      {/* 3. iOS NATIVE SURAH & JUZ PICKER MODAL/SHEET (Portaled to Body with z-[10001]) */}
       {showSurahPicker &&
         createPortal(
           <div
-            className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
+            className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
             onClick={() => setShowSurahPicker(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:max-w-lg bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-4 sm:p-6 space-y-3.5 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 ease-out font-arabic-title h-[88vh] sm:h-[82vh] flex flex-col overscroll-contain text-right"
+              className="w-full sm:max-w-lg bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-4 sm:p-6 space-y-3.5 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 ease-out font-arabic-title h-[88vh] sm:h-[82vh] flex flex-col overscroll-contain text-right pb-safe transition-all"
+              style={{
+                bottom: 'var(--keyboard-height, 0px)',
+                maxHeight: 'calc(90dvh - var(--keyboard-height, 0px))',
+              }}
               dir="rtl"
             >
               {/* iOS Drag Handle */}
@@ -1034,16 +1040,20 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           document.body
         )}
 
-      {/* 4. iOS NATIVE READING SETTINGS & TOOLS MODAL/SHEET (Portaled to Body with z-[999]) */}
+      {/* 4. iOS NATIVE READING SETTINGS & TOOLS MODAL/SHEET (Portaled to Body with z-[10001]) */}
       {showToolsSheet &&
         createPortal(
           <div
-            className="fixed inset-0 z-[999] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
+            className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-200"
             onClick={() => setShowToolsSheet(false)}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:max-w-md bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom-6 duration-200 font-arabic-title max-h-[85vh] flex flex-col overscroll-contain text-right"
+              className="w-full sm:max-w-md bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom-6 duration-200 font-arabic-title max-h-[85vh] flex flex-col overscroll-contain text-right pb-safe transition-all"
+              style={{
+                bottom: 'var(--keyboard-height, 0px)',
+                maxHeight: 'calc(90dvh - var(--keyboard-height, 0px))',
+              }}
               dir="rtl"
             >
               {/* iOS Drag Handle */}
@@ -1319,7 +1329,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       : ''
                                   }`}
                                 >
-                                  {repeatSettings.blindMode ? (
+                                  {repeatSettings.blindMode && (isActive ? isDelaying : !isAudioPlaying) ? (
                                     words.map((w, wIdx) => (
                                       <span
                                         key={wIdx}
@@ -1447,12 +1457,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    onMarkMemorized();
+                                    onMarkMemorized(surahNumber, currentAyahIndex, currentAyahIndex);
                                   }}
-                                  className="px-2 py-1 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold border border-amber-500/25 text-[11px] flex items-center gap-1 active:scale-95 cursor-pointer transition-all"
+                                  className={`px-2 py-1 rounded-lg font-bold border text-[11px] flex items-center gap-1 active:scale-95 cursor-pointer transition-all ${
+                                    getVerseMastery?.(surahNumber, currentAyahIndex)?.status === 'memorized'
+                                      ? 'bg-amber-500 text-black border-amber-500 shadow-sm'
+                                      : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/25'
+                                  }`}
                                 >
-                                  <Award className="size-3 text-amber-400" />
-                                  <span>اعتماد كمُتقَن</span>
+                                  <Award className={`size-3 ${getVerseMastery?.(surahNumber, currentAyahIndex)?.status === 'memorized' ? 'text-black' : 'text-amber-400'}`} />
+                                  <span>{getVerseMastery?.(surahNumber, currentAyahIndex)?.status === 'memorized' ? '✓ مُتقَن' : 'اعتماد كمُتقَن'}</span>
                                 </button>
                               )}
                             </div>
@@ -1691,11 +1705,12 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                               : ''
                                           }`}
                                         >
-                                          {repeatSettings.blindMode ? (
+                                          {repeatSettings.blindMode && isActive ? (
                                             words.map((w, wIdx) => (
                                               <span
                                                 key={wIdx}
                                                 className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
+                                                title="انقر لإظهار الكلمة"
                                               >
                                                 {w}{' '}
                                               </span>
@@ -1819,12 +1834,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       type="button"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        onMarkMemorized();
+                                        onMarkMemorized(surahNumber, currentAyahIndex, currentAyahIndex);
                                       }}
-                                      className="px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-bold border border-amber-500/25 text-xs flex items-center gap-1.5 active:scale-95 cursor-pointer transition-all"
+                                      className={`px-3 py-1.5 rounded-xl font-bold border text-xs flex items-center gap-1.5 active:scale-95 cursor-pointer transition-all ${
+                                        getVerseMastery?.(surahNumber, currentAyahIndex)?.status === 'memorized'
+                                          ? 'bg-amber-500 text-black border-amber-500 shadow-sm'
+                                          : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/25'
+                                      }`}
                                     >
-                                      <Award className="size-3.5 text-amber-400" />
-                                      <span>اعتماد كمُتقَن</span>
+                                      <Award className={`size-3.5 ${getVerseMastery?.(surahNumber, currentAyahIndex)?.status === 'memorized' ? 'text-black' : 'text-amber-400'}`} />
+                                      <span>{getVerseMastery?.(surahNumber, currentAyahIndex)?.status === 'memorized' ? '✓ مُتقَن' : 'اعتماد كمُتقَن'}</span>
                                     </button>
                                   )}
                                 </div>
@@ -2037,7 +2056,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 </div>
 
                 {/* Verse Text Display */}
-                {repeatSettings.blindMode && isActive ? (
+                {repeatSettings.blindMode && isActive && (!isAudioPlaying || isDelaying) ? (
                   <BlindModeOverlay
                     isBlindMode={repeatSettings.blindMode}
                     onToggleBlindMode={() =>

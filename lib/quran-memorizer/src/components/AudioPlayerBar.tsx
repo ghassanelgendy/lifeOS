@@ -113,7 +113,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
     <>
       <div
         dir="rtl"
-        className={`fixed z-[250] font-arabic-title text-right
+        className={`fixed z-[10000] font-arabic-title text-right
           /* Smooth recede on scroll-down matching the dashboard bottom tab bar (shrink, don't fly away) */
           transition-all duration-500 ease-[cubic-bezier(0.25,1,0.3,1)] will-change-transform
           /* iOS Mobile: Crisp Compact Floating Pill matching iOS bottom tab bar */
@@ -304,13 +304,17 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
       {/* iOS Native Bottom Sheet Drawer for Audio & Repeat Settings */}
       {showSettingsDrawer && (
         <div
-          className="fixed inset-0 z-[300] flex items-end justify-center bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
+          className="fixed inset-0 z-[10002] flex items-end justify-center bg-black/60 backdrop-blur-md transition-opacity duration-300 animate-in fade-in"
           onClick={() => setShowSettingsDrawer(false)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             dir="rtl"
-            className="w-full max-w-md rounded-t-[2.5rem] border-t border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl text-right pb-safe animate-in slide-in-from-bottom duration-300 ease-out fill-mode-both"
+            className="w-full max-w-md rounded-t-[2.5rem] border-t border-border/60 bg-card/95 backdrop-blur-2xl p-6 space-y-4 shadow-2xl text-right pb-safe animate-in slide-in-from-bottom duration-300 ease-out fill-mode-both transition-all"
+            style={{
+              bottom: 'var(--keyboard-height, 0px)',
+              maxHeight: 'calc(90dvh - var(--keyboard-height, 0px))',
+            }}
           >
             {/* iOS Sheet Drag Handle Pill */}
             <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto -mt-2 mb-1" />

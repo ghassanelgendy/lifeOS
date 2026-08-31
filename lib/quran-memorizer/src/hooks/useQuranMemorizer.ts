@@ -53,12 +53,16 @@ export function useQuranMemorizer() {
 
   const getVerseMastery = useCallback(
     (surahNumber: number, ayahNumber: number): { status: MemorizationStatus; masteryScore: number } | null => {
-      const match = records.find(
+      const matches = records.filter(
         (r) =>
           r.surahNumber === surahNumber &&
           ayahNumber >= r.ayahStart &&
           ayahNumber <= r.ayahEnd
       );
+      if (matches.length === 0) return null;
+      // Prioritize single-ayah / narrowest range first so individual ayah statuses override section defaults
+      matches.sort((a, b) => (a.ayahEnd - a.ayahStart) - (b.ayahEnd - b.ayahStart));
+      const match = matches[0];
       return match ? { status: match.status, masteryScore: match.masteryScore } : null;
     },
     [records]
@@ -216,9 +220,17 @@ export function useQuranMemorizer() {
     return new Date(r.nextReviewAt) <= new Date();
   });
 
-  const totalVersesMemorized = records
-    .filter((r) => r.status === 'memorized')
-    .reduce((sum, r) => sum + (r.ayahEnd - r.ayahStart + 1), 0);
+  const totalVersesMemorized = useMemo(() => {
+    const uniqueVerses = new Set<string>();
+    for (const r of records) {
+      if (r.status === 'memorized') {
+        for (let a = r.ayahStart; a <= r.ayahEnd; a++) {
+          uniqueVerses.add(`${r.surahNumber}:${a}`);
+        }
+      }
+    }
+    return uniqueVerses.size;
+  }, [records]);
 
   return {
     records,
