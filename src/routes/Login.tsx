@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button, Input } from '../components/ui';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Copy, Check } from 'lucide-react';
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -35,6 +35,18 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [copiedField, setCopiedField] = useState<'email' | 'password' | null>(null);
+
+  const handleCopy = (text: string, field: 'email' | 'password') => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const handleAutoFill = () => {
+    setEmail('ghesso@best.com');
+    setPassword('123');
+  };
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -58,8 +70,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background select-text">
+      <div className="w-full max-w-md space-y-8 select-text">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
           <p className="text-muted-foreground mt-1 text-sm">Sign in to your LifeOS account</p>
@@ -108,10 +120,48 @@ export default function Login() {
             required
             disabled={loading}
           />
-          <p className="text-[11px] leading-snug text-muted-foreground text-center">
-            Hint: to test without an account, use <span className="font-medium">ghesso@best.com</span> /{' '}
-            <span className="font-medium">123</span>
-          </p>
+
+          {/* Test Account Credentials Box with Copy & Auto-fill */}
+          <div className="rounded-xl border border-border/80 bg-secondary/30 p-3 text-xs space-y-2 select-text">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground font-medium">🧪 Test Account Credentials:</span>
+              <button
+                type="button"
+                onClick={handleAutoFill}
+                className="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-1 active:scale-95 transition-transform"
+              >
+                Auto-fill
+              </button>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 font-mono text-[11px]">
+              {/* Email */}
+              <div className="flex-1 flex items-center justify-between gap-1.5 bg-background/80 px-2.5 py-1.5 rounded-lg border border-border/50 select-text">
+                <span className="select-all font-medium text-foreground select-text cursor-text">ghesso@best.com</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy('ghesso@best.com', 'email')}
+                  className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-secondary cursor-pointer transition-colors active:scale-90"
+                  title="Copy Email"
+                >
+                  {copiedField === 'email' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                </button>
+              </div>
+
+              {/* Password */}
+              <div className="sm:w-28 flex items-center justify-between gap-1.5 bg-background/80 px-2.5 py-1.5 rounded-lg border border-border/50 select-text">
+                <span className="select-all font-medium text-foreground select-text cursor-text">123</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy('123', 'password')}
+                  className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-secondary cursor-pointer transition-colors active:scale-90"
+                  title="Copy Password"
+                >
+                  {copiedField === 'password' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {error && (
             <p className="text-sm text-destructive" role="alert">
               {error}
