@@ -604,7 +604,8 @@ export default function NotesWeb() {
 
         {/* Right Main Panel: Editor & Reader (5 cols) */}
         <section className="lg:col-span-5 rounded-xl border border-border bg-card overflow-hidden flex flex-col min-h-0">
-          <div className="flex-1 min-h-0 p-4 flex flex-col gap-3 overflow-y-auto">
+          {/* Top Header & Metadata (Fixed at Top) */}
+          <div className="p-4 pb-3 border-b border-border bg-card/50 flex flex-col gap-2.5 shrink-0">
             <div className="flex items-center justify-between gap-3">
               <div className="flex-1 min-w-0">
                 <input
@@ -686,72 +687,73 @@ export default function NotesWeb() {
                 {isEditing ? 'Preview' : 'Edit'}
               </button>
             </div>
+          </div>
 
-            <div className="flex-1 min-h-[16rem] flex flex-col pt-1">
-              {isEditing ? (
-                <textarea
-                  value={draftBody}
-                  onChange={(e) => setDraftBody(e.target.value)}
-                  placeholder="Start typing your note or paste research in markdown..."
-                  className="flex-1 w-full min-h-[16rem] bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none border-none resize-none font-sans p-0"
-                />
-              ) : (
-                <div
-                  className="flex-1 min-h-[16rem] overflow-y-auto text-sm sm:text-base leading-relaxed text-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none select-text note-selectable cursor-text font-sans p-0"
-                  onDoubleClick={() => setIsEditing(true)}
-                  dangerouslySetInnerHTML={{
-                    __html: draftBody
-                      ? (marked.parse(draftBody) as string)
-                      : '<p class="text-muted-foreground italic">Empty note — double-click or tap Edit above to start writing.</p>',
-                  }}
-                />
-              )}
+          {/* Scrollable Note Content (Fills available space) */}
+          <div className="flex-1 min-h-0 p-4 flex flex-col overflow-y-auto">
+            {isEditing ? (
+              <textarea
+                value={draftBody}
+                onChange={(e) => setDraftBody(e.target.value)}
+                placeholder="Start typing your note or paste research in markdown..."
+                className="flex-1 w-full h-full min-h-[16rem] bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none border-none resize-none font-sans p-0"
+              />
+            ) : (
+              <div
+                className="flex-1 min-h-[16rem] text-sm sm:text-base leading-relaxed text-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none select-text note-selectable cursor-text font-sans p-0"
+                onDoubleClick={() => setIsEditing(true)}
+                dangerouslySetInnerHTML={{
+                  __html: draftBody
+                    ? (marked.parse(draftBody) as string)
+                    : '<p class="text-muted-foreground italic">Empty note — double-click or tap Edit above to start writing.</p>',
+                }}
+              />
+            )}
+          </div>
+
+          {/* Bottom Actions & AI Tools (Permanently Docked at Bottom of Note Card) */}
+          <div className="p-3 border-t border-border bg-card/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-2 shrink-0">
+            <div className="text-xs text-muted-foreground">
+              {saveMessage || (isDirty ? 'Unsaved changes' : activeNote ? `Saved` : 'New note')}
             </div>
 
-            {/* Bottom Actions & AI Tools */}
-            <div className="pt-2 border-t border-border flex flex-wrap items-center justify-between gap-2 shrink-0">
-              <div className="text-xs text-muted-foreground">
-                {saveMessage || (isDirty ? 'Unsaved changes' : activeNote ? `Saved` : 'New note')}
-              </div>
-
-              <div className="flex items-center gap-2 flex-wrap">
-                {aiEnabled && (
-                  <>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAiSummarize}
-                      disabled={isProcessingAi || !draftBody.trim()}
-                      className="text-xs h-8 gap-1"
-                    >
-                      <Sparkles size={13} className={cn(aiActionType === 'summary' && "animate-spin")} />
-                      Summarize
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleAiCleanDraft}
-                      disabled={isProcessingAi || !draftBody.trim()}
-                      className="text-xs h-8 gap-1"
-                    >
-                      <Sparkles size={13} className={cn(aiActionType === 'clean' && "animate-spin")} />
-                      Clean
-                    </Button>
-                  </>
-                )}
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => void handleSave()}
-                  disabled={createNote.isPending || updateNote.isPending || !isDirty}
-                  className="text-xs h-8 gap-1.5"
-                >
-                  <Save size={14} />
-                  Save
-                </Button>
-              </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              {aiEnabled && (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAiSummarize}
+                    disabled={isProcessingAi || !draftBody.trim()}
+                    className="text-xs h-8 gap-1"
+                  >
+                    <Sparkles size={13} className={cn(aiActionType === 'summary' && "animate-spin")} />
+                    Summarize
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAiCleanDraft}
+                    disabled={isProcessingAi || !draftBody.trim()}
+                    className="text-xs h-8 gap-1"
+                  >
+                    <Sparkles size={13} className={cn(aiActionType === 'clean' && "animate-spin")} />
+                    Clean
+                  </Button>
+                </>
+              )}
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => void handleSave()}
+                disabled={createNote.isPending || updateNote.isPending || !isDirty}
+                className="text-xs h-8 gap-1.5"
+              >
+                <Save size={14} />
+                Save
+              </Button>
             </div>
           </div>
         </section>
