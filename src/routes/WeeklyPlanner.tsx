@@ -48,6 +48,7 @@ import {
   useCreateNoteFolder,
 } from '../hooks/useNotes';
 import { useHabits, isHabitScheduledForDate } from '../hooks/useHabits';
+import { getQuranWirdAndReviewSummary, advanceWirdOnHabitComplete } from '../../lib/quran-memorizer/src/services/quranData';
 import { Button } from '../components/ui';
 import type { Task, Note, Habit, HabitLog } from '../types/schema';
 
@@ -222,6 +223,14 @@ export default function WeeklyPlanner() {
   // 4. Direction/Trajectory Habits Tracker
   const { data: habits = [] } = useHabits();
 
+  // Listen to Quran plan updates (when habits advance wird) to refresh UI
+  const [quranPlanTick, setQuranPlanTick] = useState(0);
+  useEffect(() => {
+    const handleUpdate = () => setQuranPlanTick((t) => t + 1);
+    window.addEventListener('quran_plan_updated', handleUpdate);
+    return () => window.removeEventListener('quran_plan_updated', handleUpdate);
+  }, []);
+
   // Fetch all logs for this week for the mapped habits
   const { data: weekLogs = [] } = useQuery({
     queryKey: ['weekly-planner-logs', sundayDateStr, user?.id],
@@ -395,8 +404,14 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
   const handleToggleHabitLog = async (habitId: string, dateStr: string) => {
     if (!habitId || !user?.id) return;
+    const targetHabit = habits.find((h) => h.id === habitId);
     const existing = weekLogs.find((l) => l.habit_id === habitId && l.date === dateStr);
     const nextCompleted = !existing?.completed;
+
+    // If completing a Quran habit, advance the Quran wird and broadcast update
+    if (nextCompleted && targetHabit) {
+      advanceWirdOnHabitComplete(targetHabit.title);
+    }
 
     if (existing) {
       const { error } = await supabase
@@ -901,39 +916,72 @@ function DailyHabitsList({
   isHabitLoggedOn: (habitId: string, dateStr: string) => boolean;
   handleToggleHabitLog: (habitId: string, dateStr: string) => void;
 }) {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-1">
       <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 block">
         Habits:
       </label>
-      <div className="space-y-1.5 max-h-[110px] overflow-y-auto pr-0.5">
+      <div className="space-y-2 max-h-[140px] overflow-y-auto pr-0.5 custom-scrollbar">
         {dayHabits.length > 0 ? (
           dayHabits.map((habit) => {
             const isCompleted = isHabitLoggedOn(habit.id, dateStr);
+            const quranSummary = getQuranWirdAndReviewSummary(habit.title, dateStr);
 
             return (
-              <div key={habit.id} className="flex items-center justify-between group gap-2">
-                <button
-                  onClick={() => handleToggleHabitLog(habit.id, dateStr)}
-                  className="flex items-center gap-1.5 text-xs text-left flex-1 min-w-0"
-                >
-                  <div
-                    className={cn(
-                      'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors border-zinc-700 hover:border-zinc-500',
-                      isCompleted
-                        ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                        : 'border-zinc-750'
-                    )}
+              <div key={habit.id} className="flex flex-col gap-1 group">
+                <div className="flex items-center justify-between gap-2">
+                  <button
+                    onClick={() => handleToggleHabitLog(habit.id, dateStr)}
+                    className="flex items-center gap-1.5 text-xs text-left flex-1 min-w-0"
                   >
-                    {isCompleted && <Check className="w-2 h-2" />}
+                    <div
+                      className={cn(
+                        'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors border-zinc-700 hover:border-zinc-500',
+                        isCompleted
+                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
+                          : 'border-zinc-750'
+                      )}
+                    >
+                      {isCompleted && <Check className="w-2 h-2" />}
+                    </div>
+                    <span
+                      className={cn(
+                        'truncate leading-tight font-medium text-zinc-350',
+                        isCompleted ? 'text-zinc-650 line-through font-normal' : 'text-zinc-200 font-semibold'
+                      )}
+                    >
+                      {habit.title}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Quran Wird & Spaced Repetition (مراجعة) Dynamic Badge */}
+                {quranSummary?.isQuran && (
+                  <div
+                    onClick={() => {
+                      if (quranSummary.page) {
+                        localStorage.setItem('quran_active_page_v1', quranSummary.page.toString());
+                        localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: quranSummary.surahId }));
+                        window.dispatchEvent(new CustomEvent('lifeos:openQuran', { detail: { page: quranSummary.page, surah: quranSummary.surahId, mode: quranSummary.isReading ? 'reading' : 'memorization', tab: 'reader' } }));
+                        navigate('/quran');
+                      }
+                    }}
+                    className="ml-5 flex flex-wrap items-center gap-1 font-arabic-title text-[10px] cursor-pointer"
+                    dir="rtl"
+                    title="انقر لفتح موضع الورد في المصحف"
+                  >
+                    <span className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded px-1.5 py-0.5 transition-colors font-medium">
+                      📖 {quranSummary.wirdLabel}
+                    </span>
+                    {quranSummary.reviewLabel && (
+                      <span className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/25 rounded px-1.5 py-0.5 transition-colors font-medium">
+                        🔄 {quranSummary.reviewLabel}
+                      </span>
+                    )}
                   </div>
-                  <span className={cn(
-                    "truncate leading-tight font-medium text-zinc-350",
-                    isCompleted ? "text-zinc-650 line-through font-normal" : "text-zinc-200 font-semibold"
-                  )}>
-                    {habit.title}
-                  </span>
-                </button>
+                )}
               </div>
             );
           })

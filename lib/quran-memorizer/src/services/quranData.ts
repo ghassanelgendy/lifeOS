@@ -341,3 +341,199 @@ export function advanceWirdOnHabitComplete(habitTitle: string): 'reading' | 'mem
   return 'memorization';
 }
 
+export interface QuranWirdSummary {
+  isQuran: boolean;
+  isMemorization: boolean;
+  isReading: boolean;
+  page: number;
+  surahId: number;
+  surahName: string;
+  wirdLabel: string;
+  reviewLabel?: string;
+  combinedLabel: string;
+}
+
+/**
+ * Formats the Surah and estimated Ayah span for a given Medina Mushaf page.
+ */
+export function formatSurahAndAyahSpan(pageNum: number): { surah: SurahMeta; label: string; shortLabel: string } {
+  const surah = getSurahForPage(pageNum);
+  const nextSurah = SURAHS.find((s) => s.id === surah.id + 1);
+  const surahEndPage = nextSurah ? nextSurah.pageStart - 1 : 604;
+  const totalPagesInSurah = Math.max(1, surahEndPage - surah.pageStart + 1);
+  const pageIndexInSurah = pageNum - surah.pageStart;
+
+  if (totalPagesInSurah === 1) {
+    return {
+      surah,
+      label: `سورة ${surah.name} كاملة (ص ${pageNum})`,
+      shortLabel: `سورة ${surah.name} (١-${surah.versesCount})`,
+    };
+  }
+
+  const approxAyahsPerPage = Math.ceil(surah.versesCount / totalPagesInSurah);
+  const startAyah = Math.min(surah.versesCount, pageIndexInSurah * approxAyahsPerPage + 1);
+  const endAyah = Math.min(surah.versesCount, (pageIndexInSurah + 1) * approxAyahsPerPage);
+
+  return {
+    surah,
+    label: `سورة ${surah.name}: الآيات ${startAyah}-${endAyah} (ص ${pageNum})`,
+    shortLabel: `سورة ${surah.name} (${startAyah}-${endAyah})`,
+  };
+}
+
+/**
+ * Computes live or projected Wird details and Spaced Repetition (مراجعة) due content for a specific date.
+ */
+export function getQuranWirdAndReviewSummary(
+  habitTitle: string = '',
+  targetDateStr?: string,
+  isCompletedForDate?: boolean
+): QuranWirdSummary | null {
+  const kind = classifyQuranHabitTitle(habitTitle);
+  if (!kind) return null; // STRICT: Returns null for non-Quran habits (Fajr, Dhuhr, Shower, etc.)
+
+  const isMem = kind === 'memorization';
+  const isRead = kind === 'reading';
+  const wird = getCurrentWirdInfo();
+
+  // Calculate day difference from today if targetDateStr is provided
+  let diffDays = 0;
+  let targetDate = new Date();
+  if (targetDateStr) {
+    try {
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+      const targetParts = targetDateStr.split('-').map(Number);
+      targetDate = new Date(targetParts[0], targetParts[1] - 1, targetParts[2]);
+      const targetMidnight = targetDate.getTime();
+      diffDays = Math.round((targetMidnight - todayMidnight) / (1000 * 60 * 60 * 24));
+    } catch {}
+  }
+
+  if (isRead) {
+    let readPagesPerDay = 4;
+    try {
+      const saved = localStorage.getItem('quran_reading_wird_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.pagesPerDay) readPagesPerDay = parsed.pagesPerDay;
+      }
+    } catch {}
+
+    const projectedReadPage = Math.min(604, Math.max(1, wird.reading.page + (diffDays * readPagesPerDay)));
+    const span = formatSurahAndAyahSpan(projectedReadPage);
+    const label = `ورد التلاوة: ${span.label}`;
+
+    return {
+      isQuran: true,
+      isMemorization: false,
+      isReading: true,
+      page: projectedReadPage,
+      surahId: span.surah.id,
+      surahName: span.surah.name,
+      wirdLabel: label,
+      combinedLabel: label,
+    };
+  }
+
+  // Memorization: Project target page based on plan direction & pagesPerDay
+  let memPagesPerDay = 1;
+  let isReverse = false;
+  let memPlan: any = null;
+  try {
+    const planStr = localStorage.getItem('quran_khatmah_plan_v1');
+    if (planStr) {
+      memPlan = JSON.parse(planStr);
+      if (memPlan.pagesPerDay) memPagesPerDay = memPlan.pagesPerDay;
+      isReverse =
+        memPlan.direction === 'reverse' ||
+        (memPlan.startPage !== undefined && memPlan.endPage !== undefined && memPlan.startPage > memPlan.endPage) ||
+        memPlan.startPage === 604 ||
+        /reverse|الناس إلى.*البقرة/i.test(memPlan.title || '');
+    }
+  } catch {}
+
+  const projectedMemPage = isReverse
+    ? Math.max(1, Math.min(604, wird.memorization.page - (diffDays * memPagesPerDay)))
+    : Math.min(604, Math.max(1, wird.memorization.page + (diffDays * memPagesPerDay)));
+  const span = formatSurahAndAyahSpan(projectedMemPage);
+
+  // Dynamic Spaced Repetition (مراجعة) for the specific day
+  let reviewText = '';
+  try {
+    const recordsStr = localStorage.getItem('quran_memorizer_records_v1');
+    const records: any[] = recordsStr ? JSON.parse(recordsStr) : [];
+
+    // 1. Check if specific records are scheduled for review on this target date
+    const dateDue = targetDateStr
+      ? records.filter((r) => r.nextReviewAt && r.nextReviewAt.startsWith(targetDateStr))
+      : records.filter((r) => r.nextReviewAt && new Date(r.nextReviewAt) <= new Date());
+
+    if (dateDue.length > 0) {
+      const surahIds = Array.from(new Set(dateDue.map((r) => r.surahNumber)));
+      const surahNames = surahIds
+        .map((id) => SURAHS.find((s) => s.id === id)?.name)
+        .filter(Boolean)
+        .slice(0, 2);
+      reviewText = `مراجعة: ${surahNames.join('، ')}${surahIds.length > 2 ? ` (+${surahIds.length - 2})` : ''}`;
+    } else {
+      // 2. Cumulative Spaced Repetition rotation across the 7 days of the week
+      const currentSurahId = span.surah.id;
+      const dayOfWeek = targetDate.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+
+      if (isReverse || /reverse|الناس/i.test(memPlan?.title || '')) {
+        // In reverse khatmah (from 114 towards 1), all surahs between currentSurahId and 114 are memorized
+        const memorizedSurahs = SURAHS.filter((s) => s.id >= currentSurahId && s.id <= 114);
+
+        if (memorizedSurahs.length > 0) {
+          const chunkSize = Math.max(1, Math.ceil(memorizedSurahs.length / 7));
+          const startIndex = (dayOfWeek * chunkSize) % memorizedSurahs.length;
+          const chunk = memorizedSurahs.slice(startIndex, startIndex + chunkSize);
+
+          if (chunk.length === 1) {
+            reviewText = `مراجعة: سورة ${chunk[0].name}`;
+          } else if (chunk.length > 1) {
+            reviewText = `مراجعة: ${chunk[0].name} إلى ${chunk[chunk.length - 1].name}`;
+          }
+        }
+      } else {
+        // Forward khatmah (from 1 upwards to currentSurahId)
+        const memorizedSurahs = SURAHS.filter((s) => s.id <= currentSurahId);
+        if (memorizedSurahs.length > 0) {
+          const chunkSize = Math.max(1, Math.ceil(memorizedSurahs.length / 7));
+          const startIndex = (dayOfWeek * chunkSize) % memorizedSurahs.length;
+          const chunk = memorizedSurahs.slice(startIndex, startIndex + chunkSize);
+
+          if (chunk.length === 1) {
+            reviewText = `مراجعة: سورة ${chunk[0].name}`;
+          } else if (chunk.length > 1) {
+            reviewText = `مراجعة: ${chunk[0].name} إلى ${chunk[chunk.length - 1].name}`;
+          }
+        }
+      }
+
+      if (!reviewText) {
+        reviewText = 'مراجعة: ورد المراجعة اليومي';
+      }
+    }
+  } catch {
+    reviewText = 'مراجعة: ورد المراجعة والتثبيت';
+  }
+
+  const baseWirdLabel = `ورد أساسي: ${span.label}`;
+  const combined = reviewText ? `${baseWirdLabel} • ${reviewText}` : baseWirdLabel;
+
+  return {
+    isQuran: true,
+    isMemorization: true,
+    isReading: false,
+    page: projectedMemPage,
+    surahId: span.surah.id,
+    surahName: span.surah.name,
+    wirdLabel: baseWirdLabel,
+    reviewLabel: reviewText,
+    combinedLabel: combined,
+  };
+}
+
