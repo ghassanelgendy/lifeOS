@@ -23,6 +23,7 @@ import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToggleCalendarEvent } from '../../hooks/useCalendar';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
@@ -572,6 +573,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const toggleTask = useToggleTask();
   const createTask = useCreateTask();
   const logHabit = useLogHabit();
+  const toggleCalendarEvent = useToggleCalendarEvent();
   const { tracker: prayerTracker, togglePrayerStatus, isLoading: prayerLoading } = usePrayerTracker(today);
   const { times: prayerTimesList } = usePrayerTimes();
 
@@ -1646,8 +1648,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       }
     }
 
-    const currentDoneState = isEvent ? isManuallyDone || isAutoDone : false;
-    const isDone = currentDoneState;
+    const isDone = isTask
+      ? !!item.is_completed
+      : isHabit
+        ? !!todayHabitLogs[item.entityId || '']
+        : Boolean(item.is_completed || isManuallyDone);
 
     timelineRawItems.push({
       key: item.id,
@@ -1676,7 +1681,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   ? toggleTask.isPending && toggleTask.variables === item.entityId
                   : isHabit
                     ? logHabit.isPending && logHabit.variables?.habitId === item.entityId
-                    : (toggleTask.isPending && toggleTask.variables === item.entityId) || (createTask.isPending && (createTask.variables as any)?.calendar_event_id === item.id)
+                    : toggleCalendarEvent.isPending || (toggleTask.isPending && toggleTask.variables === item.entityId)
               }
               showToggle={showToggle}
               label={isTask ? `Complete task ${item.title}` : isHabit ? `Log habit ${item.title}` : isEvent ? `Complete event ${item.title}` : ''}
@@ -1693,18 +1698,24 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         togglingEventsRef.current[item.id] = true;
                         setTimeout(() => {
                           delete togglingEventsRef.current[item.id];
-                        }, 1000);
+                        }, 800);
+
+                        const nextCompleted = !isDone;
+                        const evId = item.originalId || item.id.replace('event-', '');
+
+                        // Toggle calendar event in database
+                        if (item.type !== 'ical') {
+                          void toggleCalendarEvent.mutate({ id: evId, isCompleted: nextCompleted });
+                        }
 
                         const evKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-                        const evId = item.originalId || item.id.replace('event-', '');
                         const evDate = format(parsedStart, 'yyyy-MM-dd');
-                        // Re-check all lists at call time to avoid stale closure causing 409
                         let currentLinked =
                           completedTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
                           todayTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
                           overdueTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate);
 
-                        if (!currentLinked && user?.id) {
+                        if (!currentLinked && user?.id && item.type === 'ical') {
                           const { data: existingTasks } = await supabase
                             .from('tasks')
                             .select('id, is_completed')
@@ -1716,35 +1727,23 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           }
                         }
 
-                        const penalizedTx = pointsTransactions.find(
-                          (tx) => tx.reference_type === 'calendar_event_penalty' && tx.reference_id === item.id
-                        );
                         if (currentLinked) {
-                          const willUncomplete = currentLinked.is_completed;
                           await toggleTask.mutateAsync(currentLinked.id);
-                          if (!willUncomplete) {
-                            void addPointsTx.mutateAsync({ amount: 10, description: `Completed event: ${item.title}`, reference_type: 'calendar_event_complete', reference_id: item.id });
-                            if (penalizedTx) void addPointsTx.mutateAsync({ amount: 10, description: `Penalty reversal: ${item.title}`, reference_type: 'calendar_event_penalty_reversal', reference_id: item.id });
-                          } else {
-                            void addPointsTx.mutateAsync({ amount: -10, description: `Uncompleted event: ${item.title}`, reference_type: 'calendar_event_complete', reference_id: item.id });
-                          }
-                        } else {
+                        } else if (item.type === 'ical') {
                           await createTask.mutateAsync({
                             title: item.title,
-                            is_completed: true,
+                            is_completed: nextCompleted,
                             priority: 'none',
                             due_date: evDate,
                             due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
                             calendar_source_key: evKey,
-                            calendar_event_id: item.type === 'ical' ? null : evId,
+                            calendar_event_id: null,
                             tag_ids: [],
                             recurrence: 'none',
                           });
-                          void addPointsTx.mutateAsync({ amount: 10, description: `Completed event: ${item.title}`, reference_type: 'calendar_event_complete', reference_id: item.id });
-                          if (penalizedTx) void addPointsTx.mutateAsync({ amount: 10, description: `Penalty reversal: ${item.title}`, reference_type: 'calendar_event_penalty_reversal', reference_id: item.id });
                         }
                       }
-                      : undefined
+                    : undefined
               }
             />
           </div>
