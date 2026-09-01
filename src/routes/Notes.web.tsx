@@ -39,6 +39,7 @@ import {
 } from '../hooks/useNotes';
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
+import { AINoteOrganizerSheet } from '../components/AINoteOrganizerSheet';
 import type { Note } from '../types/schema';
 
 const NEW_NOTE_ID = 'new';
@@ -117,6 +118,7 @@ export default function NotesWeb() {
   const [saveMessage, setSaveMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
   const [isBrainDumpModalOpen, setIsBrainDumpModalOpen] = useState(false);
+  const [isAiOrganizerOpen, setIsAiOrganizerOpen] = useState(false);
 
   // AI loading states
   const aiEnabled = useUIStore((s) => s.aiEnabled);
@@ -320,6 +322,16 @@ export default function NotesWeb() {
       setIsProcessingAi(false);
       setAiActionType(null);
     }
+  };
+
+  const handleApplyAiResult = (newContent: string, isAppendMode: boolean) => {
+    if (isAppendMode) {
+      setDraftBody((prev) => (prev.trim() ? `${prev.trim()}\n\n${newContent}` : newContent));
+    } else {
+      setDraftBody(newContent);
+    }
+    setSaveMessage('AI changes applied to draft');
+    window.setTimeout(() => setSaveMessage(''), 2500);
   };
 
   const wordCount = useMemo(() => draftBody.trim() ? draftBody.trim().split(/\s+/).length : 0, [draftBody]);
@@ -724,6 +736,17 @@ export default function NotesWeb() {
                     type="button"
                     variant="outline"
                     size="sm"
+                    onClick={() => setIsAiOrganizerOpen(true)}
+                    disabled={!draftBody.trim()}
+                    className="text-xs h-8 gap-1.5 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                  >
+                    <Sparkles size={13} />
+                    <span>AI Organize & Extract Tasks</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
                     onClick={handleAiSummarize}
                     disabled={isProcessingAi || !draftBody.trim()}
                     className="text-xs h-8 gap-1"
@@ -788,6 +811,15 @@ export default function NotesWeb() {
           setActiveId(noteId);
           setIsBrainDumpModalOpen(false);
         }}
+      />
+
+      {/* AI Note Organizer & Action Extractor Sheet */}
+      <AINoteOrganizerSheet
+        isOpen={isAiOrganizerOpen}
+        onClose={() => setIsAiOrganizerOpen(false)}
+        noteTitle={draftTitle}
+        noteBody={draftBody}
+        onApplyToNote={handleApplyAiResult}
       />
     </div>
   );

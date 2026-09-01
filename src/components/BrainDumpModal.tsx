@@ -25,6 +25,8 @@ import {
   ListTodo,
   Search,
   ArrowRight,
+  ArrowLeft,
+  Eye,
   Filter,
   Trash2,
 } from 'lucide-react';
@@ -81,6 +83,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   // Inbox & Search State
   const [inboxSearch, setInboxSearch] = useState('');
   const [selectedNoteIds, setSelectedNoteIds] = useState<Set<string>>(new Set());
+  const [previewNote, setPreviewNote] = useState<Note | null>(null);
 
   // Planning & AI Analysis State
   const [targetNoteToAnalyze, setTargetNoteToAnalyze] = useState<Note | null>(null);
@@ -777,112 +780,179 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
           </div>
         )}
 
-        {/* TAB 2: INBOX & SEARCH */}
+        {/* TAB 2: INBOX & SEARCH & PREVIEW */}
         {activeTab === 'inbox' && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Search & Batch Actions Header */}
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="relative flex-1 min-w-[160px]">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Search captured thoughts..."
-                  value={inboxSearch}
-                  onChange={(e) => setInboxSearch(e.target.value)}
-                  className="w-full pl-9 pr-3 py-1.5 bg-secondary/40 border border-border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-
-              {selectedNoteIds.size > 0 && (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleBatchAnalyzeSelected}
-                  disabled={isAnalyzing}
-                  className="text-xs gap-1.5 font-bold shrink-0"
-                >
-                  <Sparkles size={13} />
-                  <span>Organize ({selectedNoteIds.size})</span>
-                </Button>
-              )}
-            </div>
-
-            {/* Thoughts List */}
-            <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
-              {filteredInboxNotes.length === 0 ? (
-                <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
-                  No brain dump thoughts found. Use Quick Dump to capture your first thought!
-                </div>
-              ) : (
-                filteredInboxNotes.map((note) => {
-                  const isSelected = selectedNoteIds.has(note.id);
-                  const isAnalyzed = Boolean(note.ai_analysis);
-
-                  return (
-                    <div
-                      key={note.id}
-                      className={cn(
-                        "p-3 rounded-xl border transition-all flex flex-col gap-2",
-                        isSelected
-                          ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
-                          : "bg-secondary/20 border-border hover:bg-secondary/40"
-                      )}
+            {previewNote ? (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2 border-b border-border pb-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewNote(null)}
+                    className="text-xs font-bold text-primary hover:underline flex items-center gap-1.5 cursor-pointer py-1 px-1.5 rounded hover:bg-secondary/50 transition-colors"
+                  >
+                    <ArrowLeft size={14} />
+                    <span>Back to Inbox</span>
+                  </button>
+                  <div className="flex items-center gap-1.5">
+                    {previewNote.ai_analysis?.tasks && previewNote.ai_analysis.tasks.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAnalysis(previewNote.ai_analysis as any);
+                          setTargetNoteToAnalyze(previewNote);
+                          if (previewNote.ai_analysis?.tasks) {
+                            setSelectedTaskIndexes(new Set(previewNote.ai_analysis.tasks.map((_, i) => i)));
+                          }
+                          setActiveTab('plan');
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Review and confirm extracted tasks"
+                      >
+                        <ListTodo size={12} />
+                        <span>Review Tasks ({previewNote.ai_analysis.tasks.length})</span>
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleOrganizeAndMoveToFolder(previewNote);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <input
-                            type="checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              const newSet = new Set(selectedNoteIds);
-                              if (e.target.checked) newSet.add(note.id);
-                              else newSet.delete(note.id);
-                              setSelectedNoteIds(newSet);
-                            }}
-                            className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer shrink-0"
-                          />
-                          <span className="text-xs font-bold text-foreground truncate max-w-[130px] sm:max-w-[220px]">
-                            {note.title}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono shrink-0">
-                            <Clock size={10} />
-                            {note.note_date?.slice(0, 10)}
-                          </span>
-                        </div>
+                      <Sparkles size={12} />
+                      <span>{previewNote.ai_analysis ? 'Re-Organize' : 'Organize'}</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="max-h-[380px] overflow-y-auto pr-1">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <h3 className="text-sm font-bold text-foreground">{previewNote.title}</h3>
+                    {previewNote.ai_analysis ? (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                        ✓ Organized by AI
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                        Pending Organization
+                      </span>
+                    )}
+                  </div>
+                  <div className="p-3.5 rounded-xl bg-secondary/30 border border-border text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
+                    {previewNote.body || '(Empty note)'}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Search & Batch Actions Header */}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="relative flex-1 min-w-[160px]">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Search captured thoughts..."
+                      value={inboxSearch}
+                      onChange={(e) => setInboxSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-1.5 bg-secondary/40 border border-border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
 
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {isAnalyzed ? (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                              ✓ Organized
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
-                              Pending
-                            </span>
-                          )}
+                  {selectedNoteIds.size > 0 && (
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={handleBatchAnalyzeSelected}
+                      disabled={isAnalyzing}
+                      className="text-xs gap-1.5 font-bold shrink-0"
+                    >
+                      <Sparkles size={13} />
+                      <span>Organize ({selectedNoteIds.size})</span>
+                    </Button>
+                  )}
+                </div>
 
-                          <button
-                            type="button"
-                            onClick={() => {
-                              void handleOrganizeAndMoveToFolder(note);
-                            }}
-                            className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
-                            title="Organize with AI and move into 'Organized Brain Dumps' folder"
-                          >
-                            <Sparkles size={11} />
-                            <span>Organize & File</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed whitespace-pre-wrap">
-                        {note.body}
-                      </p>
+                {/* Thoughts List */}
+                <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+                  {filteredInboxNotes.length === 0 ? (
+                    <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl">
+                      No brain dump thoughts found. Use Quick Dump to capture your first thought!
                     </div>
-                  );
-                })
-              )}
-            </div>
+                  ) : (
+                    filteredInboxNotes.map((note) => {
+                      const isSelected = selectedNoteIds.has(note.id);
+                      const isAnalyzed = Boolean(note.ai_analysis);
+
+                      return (
+                        <div
+                          key={note.id}
+                          onClick={() => setPreviewNote(note)}
+                          className={cn(
+                            "p-3 rounded-xl border transition-all flex flex-col gap-2 cursor-pointer",
+                            isSelected
+                              ? "bg-primary/10 border-primary/40 ring-1 ring-primary/30"
+                              : "bg-secondary/20 border-border hover:bg-secondary/40"
+                          )}
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onClick={(e) => e.stopPropagation()}
+                                onChange={(e) => {
+                                  const newSet = new Set(selectedNoteIds);
+                                  if (e.target.checked) newSet.add(note.id);
+                                  else newSet.delete(note.id);
+                                  setSelectedNoteIds(newSet);
+                                }}
+                                className="rounded border-border text-primary focus:ring-primary w-3.5 h-3.5 cursor-pointer shrink-0"
+                              />
+                              <span className="text-xs font-bold text-foreground truncate max-w-[130px] sm:max-w-[220px]">
+                                {note.title}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1 font-mono shrink-0">
+                                <Clock size={10} />
+                                {note.note_date?.slice(0, 10)}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                              {isAnalyzed ? (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                                  ✓ Organized
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/15 text-amber-500 border border-amber-500/25">
+                                  Pending
+                                </span>
+                              )}
+
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  void handleOrganizeAndMoveToFolder(note);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shrink-0"
+                                title="Organize with AI and move into 'Organized Brain Dumps' folder"
+                              >
+                                <Sparkles size={11} />
+                                <span>Organize & File</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                            {note.body}
+                          </p>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 

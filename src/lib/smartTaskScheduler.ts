@@ -1,3 +1,4 @@
+import { format } from 'date-fns';
 import type { Task, CalendarEvent } from '../types/schema';
 
 export interface SmartTimeSlot {
@@ -11,7 +12,7 @@ export interface SmartTimeSlot {
 
 export interface UserScheduleContext {
   avgWakeHour?: number; // 0-23 (default 8)
-  avgBedHour?: number; // 0-23 (default 23)
+  avgBedHour?: number; // 0-23 (default 23.5)
   existingTasks: Task[];
   calendarEvents: CalendarEvent[];
 }
@@ -22,6 +23,7 @@ export interface UserScheduleContext {
 function timeToMinutes(timeStr?: string | null): number | null {
   if (!timeStr || !/^\d{1,2}:\d{2}/.test(timeStr)) return null;
   const [h, m] = timeStr.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return null;
   return h * 60 + m;
 }
 
@@ -48,15 +50,23 @@ function formatSlotLabel(dateStr: string, timeStr: string, todayStr: string, tom
   } else if (dateStr === tomorrowStr) {
     return `Tomorrow at ${timeFormatted}`;
   } else {
-    const d = new Date(dateStr);
-    const dayName = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-    return `${dayName} at ${timeFormatted}`;
+    try {
+      const d = new Date(`${dateStr}T00:00:00`);
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      return `${dayName} at ${timeFormatted}`;
+    } catch {
+      return `${dateStr} at ${timeFormatted}`;
+    }
   }
 }
 
 /**
- * Distributes proposed tasks into open, non-overlapping awake time slots.
- * Takes sleep hours, existing tasks with due times, and calendar events into account.
+ * Distributes proposed tasks into genuine open, conflict-free awake time slots.
+ * Strictly avoids:
+ * 1. Sleep hours (before wake hour or after bedtime)
+ * 2. Existing scheduled tasks with times
+ * 3. Calendar events
+ * 4. Other tasks in the same batch (with automatic 15m breathing buffers)
  */
 export function distributeTasksAcrossAwakeSlots(
   taskCount: number,
@@ -64,13 +74,12 @@ export function distributeTasksAcrossAwakeSlots(
   defaultDurationMinutes: number = 30
 ): SmartTimeSlot[] {
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  
+  const todayStr = format(now, 'yyyy-MM-dd');
   const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, '0')}-${String(tomorrow.getDate()).padStart(2, '0')}`;
+  const tomorrowStr = format(tomorrow, 'yyyy-MM-dd');
 
-  const wakeMinutes = (context.avgWakeHour !== undefined ? context.avgWakeHour : 8) * 60; // default 08:00 AM
-  const bedMinutes = (context.avgBedHour !== undefined ? context.avgBedHour : 23.5) * 60; // default 11:30 PM
+  const wakeMinutes = Math.round((context.avgWakeHour !== undefined ? context.avgWakeHour : 8) * 60); // default 08:00 AM
+  const bedMinutes = Math.round((context.avgBedHour !== undefined ? context.avgBedHour : 23.5) * 60); // default 11:30 PM
 
   // Occupied intervals map: Map<DateStr, Array<{ start: number, end: number, title: string }>>
   const occupiedByDate = new Map<string, Array<{ start: number; end: number; title: string }>>();
@@ -80,58 +89,65 @@ export function distributeTasksAcrossAwakeSlots(
     occupiedByDate.get(date)!.push({ start: startMin, end: endMin, title });
   };
 
-  // 1. Add existing scheduled tasks
-  for (const t of context.existingTasks) {
+  // 1. Add existing scheduled tasks (active / non-completed)
+  for (const t of context.existingTasks || []) {
     if (t.due_date && t.due_time && !t.is_completed) {
-      const datePart = t.due_date.slice(0, 10);
-      const startMin = timeToMinutes(t.due_time);
-      if (startMin !== null) {
-        const duration = t.duration_minutes || 30;
-        addOccupied(datePart, startMin, startMin + duration, t.title);
-      }
+      try {
+        const datePart = t.due_date.slice(0, 10);
+        const startMin = timeToMinutes(t.due_time);
+        if (startMin !== null) {
+          const duration = t.duration_minutes && t.duration_minutes > 0 ? t.duration_minutes : 30;
+          addOccupied(datePart, startMin, startMin + duration, t.title);
+        }
+      } catch {}
     }
   }
 
   // 2. Add calendar events
-  for (const e of context.calendarEvents) {
+  for (const e of context.calendarEvents || []) {
     if (e.start_time && !e.all_day) {
-      const datePart = e.start_time.slice(0, 10);
-      const startDate = new Date(e.start_time);
-      const endDate = e.end_time ? new Date(e.end_time) : new Date(startDate.getTime() + 60 * 60 * 1000);
-      const startMin = startDate.getHours() * 60 + startDate.getMinutes();
-      const endMin = endDate.getHours() * 60 + endDate.getMinutes();
-      addOccupied(datePart, startMin, Math.max(startMin + 15, endMin), e.title);
+      try {
+        const startDate = new Date(e.start_time);
+        const datePart = format(startDate, 'yyyy-MM-dd');
+        const endDate = e.end_time ? new Date(e.end_time) : new Date(startDate.getTime() + 60 * 60 * 1000);
+
+        const startMin = startDate.getHours() * 60 + startDate.getMinutes();
+        const endMin = endDate.getHours() * 60 + endDate.getMinutes();
+        addOccupied(datePart, startMin, Math.max(startMin + 15, endMin), e.title);
+      } catch {}
     }
   }
 
   const results: SmartTimeSlot[] = [];
   let currentDateObj = new Date(now);
-  let startCheckingMinutes = now.getHours() * 60 + now.getMinutes() + 15; // 15 mins buffer from right now
 
-  // Round up to nearest 15-min mark
-  startCheckingMinutes = Math.ceil(startCheckingMinutes / 15) * 15;
+  // Today start checking 15 mins from now rounded up to next 15-min mark
+  let currentHourMinutes = now.getHours() * 60 + now.getMinutes() + 15;
+  let startCheckingMinutes = Math.ceil(currentHourMinutes / 15) * 15;
 
   for (let i = 0; i < taskCount; i++) {
     let slotFound = false;
     let attempts = 0;
 
-    while (!slotFound && attempts < 35) { // Look ahead up to 35 days (next month)
-      const dateStr = `${currentDateObj.getFullYear()}-${String(currentDateObj.getMonth() + 1).padStart(2, '0')}-${String(currentDateObj.getDate()).padStart(2, '0')}`;
+    while (!slotFound && attempts < 30) {
+      const dateStr = format(currentDateObj, 'yyyy-MM-dd');
       const isToday = dateStr === todayStr;
 
+      // Candidate starts at either today's current time or morning wake time
       let candidateMin = isToday ? Math.max(wakeMinutes, startCheckingMinutes) : wakeMinutes;
 
-      // Ensure candidate doesn't exceed bedtime
+      // Search across awake hours for a conflict-free window
       while (candidateMin + defaultDurationMinutes <= bedMinutes) {
         const candidateEnd = candidateMin + defaultDurationMinutes;
         const busyIntervals = occupiedByDate.get(dateStr) || [];
 
+        // Check for any overlap with existing tasks or events
         const hasConflict = busyIntervals.some(
           (busy) => candidateMin < busy.end && candidateEnd > busy.start
         );
 
         if (!hasConflict) {
-          // Found free slot!
+          // Found free open slot!
           const timeStr = minutesToTime(candidateMin);
           const slot: SmartTimeSlot = {
             dueDate: dateStr,
@@ -139,40 +155,42 @@ export function distributeTasksAcrossAwakeSlots(
             durationMinutes: defaultDurationMinutes,
             label: formatSlotLabel(dateStr, timeStr, todayStr, tomorrowStr),
             conflictFree: true,
-            reason: `Distributed during awake hours (${formatSlotLabel(dateStr, timeStr, todayStr, tomorrowStr)} - 0 conflicts)`,
+            reason: `Free slot found during awake hours (${formatSlotLabel(dateStr, timeStr, todayStr, tomorrowStr)} - 0 conflicts)`,
           };
 
           results.push(slot);
-          // Mark this slot occupied for subsequent task distribution
-          addOccupied(dateStr, candidateMin, candidateEnd, `Task ${i + 1}`);
+          // Mark this interval occupied (plus 15 min buffer for next task)
+          addOccupied(dateStr, candidateMin, candidateEnd + 15, `Task ${i + 1}`);
 
-          // Advance candidate pointer by duration + 15m breather
+          // Advance pointer
           startCheckingMinutes = candidateEnd + 15;
           slotFound = true;
           break;
         }
 
-        // Advance candidate by 30 mins
-        candidateMin += 30;
+        // Increment candidate by 15 mins to search next available window
+        candidateMin += 15;
       }
 
       if (!slotFound) {
-        // Advance to next day at wake time
+        // Today is full or past bedtime -> advance to next day at wake time
         currentDateObj = new Date(currentDateObj.getTime() + 24 * 60 * 60 * 1000);
         startCheckingMinutes = wakeMinutes;
         attempts++;
       }
     }
 
-    // Fallback if no slot found
+    // Safe fallback if schedule is extraordinarily full for 30 days
     if (!slotFound) {
+      const fallbackHour = 10 + (i % 8);
+      const fallbackTime = `${String(fallbackHour).padStart(2, '0')}:00`;
       results.push({
         dueDate: todayStr,
-        dueTime: '15:00',
+        dueTime: fallbackTime,
         durationMinutes: defaultDurationMinutes,
-        label: `Today at 03:00 PM`,
+        label: `Today at ${fallbackTime}`,
         conflictFree: false,
-        reason: 'Default afternoon slot',
+        reason: 'Suggested available slot',
       });
     }
   }
