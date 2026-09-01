@@ -57,3 +57,6 @@ supabase/supabase_logs (1).json
 /.agents
 /supabase/.temp
 /scratch
+
+# testing b_k
+/testing

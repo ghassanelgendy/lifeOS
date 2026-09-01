@@ -9,7 +9,18 @@ installApiLimiter();
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) {
+  try {
+    window.localStorage.setItem(
+      'lifeos_extension_sync',
+      JSON.stringify({
+        supabaseUrl,
+        supabaseAnonKey,
+        syncedAt: new Date().toISOString(),
+      })
+    );
+    (window as any).__LIFEOS_CONFIG__ = { supabaseUrl, supabaseAnonKey };
+  } catch (e) {}
 }
 
 // Initialize Supabase client

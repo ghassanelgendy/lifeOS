@@ -24,6 +24,7 @@ import {
   BookOpen,
   ChevronRight,
   Sparkles,
+  Puzzle,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
@@ -90,6 +91,7 @@ const SETTINGS_NAV = [
   { id: 'habits', label: 'Habits' },
   { id: 'privacy', label: 'Privacy & analytics' },
   { id: 'data', label: 'Data & backup' },
+  { id: 'extension', label: 'Browser Extension' },
   { id: 'help', label: 'Help & Docs' },
   { id: 'about', label: 'About' },
 ] as const;
@@ -1269,6 +1271,50 @@ export default function SettingsPage() {
             <Button variant="destructive" onClick={handleClearAll}>
               Delete
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Browser Extension */}
+      <section id="settings-extension" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Puzzle size={18} className="text-primary" />
+            <h2 className="font-semibold">Browser Companion Extension</h2>
+          </div>
+          <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Manifest V3</span>
+        </div>
+        <div className="p-4 space-y-4">
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Clip websites directly to your notes (defaults to <strong>"Projects I wanna try"</strong>), run AI summarization with custom prompts & append/replace toggles, track screentime at the top, and manage today's tasks and habits straight from your browser toolbar.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="p-3 rounded-lg border border-border/70 bg-background/50 space-y-1.5">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Sparkles size={14} className="text-primary" />
+                <span>Web Clipper & AI Note Organizer</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Clip title, URL, snippets or full articles with 1-click AI summarizer and custom prompt instructions.
+              </p>
+            </div>
+            <div className="p-3 rounded-lg border border-border/70 bg-background/50 space-y-1.5">
+              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Check size={14} className="text-emerald-500" />
+                <span>Today's Actions & Screentime</span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Quickly add tasks, check off pending items, toggle daily habits, and monitor active screentime.
+              </p>
+            </div>
+          </div>
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="text-xs text-muted-foreground bg-muted/60 px-3 py-2 rounded-md font-mono select-all">
+              Load Unpacked Path: <strong>extension/</strong>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              (Go to <code>chrome://extensions</code> → Enable <em>Developer mode</em> → Click <em>Load unpacked</em>)
+            </span>
           </div>
         </div>
       </section>

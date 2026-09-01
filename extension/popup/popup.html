@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifeOS Companion</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body class="dark-theme">
+  <div id="app-container">
+    <!-- Top Compact Header & Screentime -->
+    <header class="app-header">
+      <div class="brand-row">
+        <div class="brand-title">
+          <img class="brand-avatar" src="../icons/icon-32.png" width="18" height="18" alt="lifeOS" />
+          <span class="brand-name">lifeOS</span>
+        </div>
+        
+        <!-- Inline Screentime Display -->
+        <div class="screentime-pill" id="screentime-widget" title="Active Screentime Today">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg>
+          <span class="screentime-val" id="screentime-value">0m</span>
+        </div>
+
+        <div class="header-actions">
+          <button id="btn-refresh" class="icon-btn" title="Refresh">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+          </button>
+          <a id="btn-open-lifeos" class="icon-btn" href="#" title="Open lifeOS App" target="_blank">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <!-- Compact Tab Bar -->
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-tab="tab-clip">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+        </svg>
+        <span>Clip</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-today">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"></path>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>Today</span>
+        <span class="tab-count-badge" id="today-tasks-badge">0</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-notes">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span>Notes</span>
+      </button>
+      <button class="nav-tab" data-tab="tab-settings">
+        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- Tab Contents -->
+    <main class="tab-panels">
+
+      <!-- ================= TAB 1: WEB CLIPPER ================= -->
+      <section id="tab-clip" class="tab-panel active">
+        <!-- Compact Page Preview -->
+        <div class="card page-preview-card">
+          <div class="page-preview-header">
+            <img id="clip-favicon" class="page-favicon" src="../icons/icon-16.png" alt="" />
+            <input type="text" id="clip-title" class="input-text clean-input title-input" placeholder="Page Title..." />
+          </div>
+          <div class="page-url-row" id="clip-url">https://...</div>
+          <textarea id="clip-snippet" class="input-textarea excerpt-input" placeholder="Selected text or excerpt..." rows="2"></textarea>
+        </div>
+
+        <!-- Destination Note Selection -->
+        <div class="form-row">
+          <div class="select-row w-full">
+            <select id="clip-target-note" class="input-select select-sm">
+              <option value="" disabled selected>Loading notes...</option>
+            </select>
+            <button id="btn-new-note-modal" class="btn-secondary btn-icon-only btn-sm" title="New Note">+</button>
+          </div>
+        </div>
+
+        <!-- Optional AI Instructions Box -->
+        <div class="ai-box-card">
+          <div class="form-group">
+            <input
+              type="text"
+              id="ai-custom-prompt"
+              class="input-text input-xs"
+              placeholder="Optional prompt (e.g. summarize, extract tasks)..."
+            />
+          </div>
+
+          <div class="ai-options-row">
+            <label class="checkbox-label checkbox-xs" title="Append to note or overwrite">
+              <input type="checkbox" id="ai-append-checkbox" checked />
+              <span class="custom-checkbox"></span>
+              <span class="checkbox-text">Append</span>
+            </label>
+            <span class="mode-hint" id="ai-mode-hint">Default: Projects I wanna try</span>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="clip-actions-grid">
+          <button id="btn-ai-analyze-clip" class="btn-primary btn-sm">
+            <span>Summarize & Save</span>
+          </button>
+          <button id="btn-quick-clip" class="btn-secondary btn-sm" title="Save formatted link directly">
+            <span>Clip to Note</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: TODAY ================= -->
+      <section id="tab-today" class="tab-panel">
+        <!-- Quick Add Task -->
+        <form id="quick-add-task-form" class="quick-add-card">
+          <div class="quick-add-row">
+            <input
+              type="text"
+              id="task-title-input"
+              class="input-text quick-task-input input-xs"
+              placeholder="Quick add task for today..."
+              required
+            />
+            <select id="task-priority-select" class="input-select select-xs" style="width: 75px;">
+              <option value="none">Normal</option>
+              <option value="low">Low</option>
+              <option value="medium">Med</option>
+              <option value="high">High</option>
+            </select>
+            <button type="submit" class="btn-primary btn-xs" id="btn-add-task">+</button>
+          </div>
+        </form>
+
+        <!-- Tasks List -->
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-title">Tasks</span>
+            <span class="badge-count" id="tasks-count">0</span>
+          </div>
+          <div class="items-list" id="today-tasks-list">
+            <div class="empty-state">Loading...</div>
+          </div>
+        </div>
+
+        <!-- Habits List -->
+        <div class="section-container">
+          <div class="section-header">
+            <span class="section-title">Habits</span>
+            <span class="badge-count" id="habits-count">0</span>
+          </div>
+          <div class="items-list habits-grid" id="today-habits-list">
+            <div class="empty-state" style="grid-column: span 2;">Loading...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: NOTES ================= -->
+      <section id="tab-notes" class="tab-panel">
+        <input type="text" id="notes-search-input" class="input-text input-xs mb-1" placeholder="Search notes..." />
+        <div class="notes-container">
+          <div class="notes-list" id="notes-list-view">
+            <div class="empty-state">Loading notes...</div>
+          </div>
+
+          <div class="note-viewer-pane hidden" id="note-viewer-pane">
+            <div class="note-viewer-header">
+              <button id="btn-back-to-notes" class="btn-link">Back</button>
+              <h4 id="note-viewer-title" class="note-viewer-title truncate">Note Title</h4>
+            </div>
+            <div class="note-viewer-body" id="note-viewer-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: SETTINGS ================= -->
+      <section id="tab-settings" class="tab-panel">
+        <div class="settings-card">
+          <div class="status-box" id="connection-status-box">
+            <div class="status-indicator connected" id="status-dot"></div>
+            <span id="status-message">Connected & Ready</span>
+          </div>
+
+          <button id="btn-auto-sync-lifeos" class="btn-accent w-full btn-sm">
+            Sync with lifeOS Tab
+          </button>
+
+          <p class="field-hint text-center">
+            Credentials and AI models are auto-loaded from your lifeOS environment.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Global Toast -->
+    <div id="toast" class="toast hidden">
+      <span id="toast-text">Message</span>
+    </div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

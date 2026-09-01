@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lifeOS Companion — Preferences</title>
+  <link rel="stylesheet" href="../popup/popup.css" />
+  <style>
+    body.dark-theme {
+      width: 100%;
+      max-width: 520px;
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    .options-wrapper {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .options-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .options-title {
+      font-size: 16px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body class="dark-theme">
+  <div class="options-wrapper">
+    <div class="options-header">
+      <img src="../icons/icon-32.png" width="24" height="24" alt="lifeOS" />
+      <div>
+        <h1 class="options-title">lifeOS Companion Preferences</h1>
+        <p class="field-hint">Companion extension settings & synchronization status</p>
+      </div>
+    </div>
+
+    <div class="status-box" id="connection-status-box">
+      <div class="status-indicator connected" id="status-dot"></div>
+      <span id="status-message">Connected & Auto-Configured</span>
+    </div>
+
+    <div class="form-group">
+      <label for="opt-default-note">Default Clipping Note Destination</label>
+      <input type="text" id="opt-default-note" class="input-text" placeholder="Projects I wanna try" />
+      <p class="field-hint">The extension will auto-select this note when clipping web pages.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="opt-lifeos-url">lifeOS Web App URL</label>
+      <input type="text" id="opt-lifeos-url" class="input-text" placeholder="http://localhost:5173" />
+    </div>
+
+    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px;">
+      <button id="btn-save-options" class="btn-primary btn-sm">Save Preferences</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden">
+    <span id="toast-text"></span>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

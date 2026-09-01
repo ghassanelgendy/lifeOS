@@ -56,11 +56,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, s) => {
+    } = supabase.auth.onAuthStateChange((event, s) => {
       const nextUserId = s?.user?.id ?? null;
       const prevUserId = previousUserIdRef.current;
       setSession(s);
       setUser(s?.user ?? null);
+
+      // Keep extension sync token fresh in localStorage
+      if (s?.access_token && typeof window !== 'undefined') {
+        try {
+          const syncData = JSON.parse(window.localStorage.getItem('lifeos_extension_sync') || '{}');
+          window.localStorage.setItem('lifeos_extension_sync', JSON.stringify({
+            ...syncData,
+            accessToken: s.access_token,
+            refreshToken: s.refresh_token || syncData.refreshToken || '',
+            userId: s.user?.id || '',
+            userEmail: s.user?.email || '',
+            syncedAt: new Date().toISOString(),
+          }));
+        } catch (e) {}
+      }
+
       // Clear cache only when the logged-in user actually changes (switch account or logout)
       if (prevUserId !== nextUserId) {
         previousUserIdRef.current = nextUserId;
