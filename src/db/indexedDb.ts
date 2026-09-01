@@ -415,6 +415,20 @@ export interface IdbQuranPage {
   cachedAt: number;
 }
 
+export async function idbGetQuranCachedCount(): Promise<number> {
+  try {
+    return await withStore(STORES.quranPages, 'readonly', (store) => {
+      return new Promise<number>((resolve, reject) => {
+        const req = store.count();
+        req.onsuccess = () => resolve(req.result || 0);
+        req.onerror = () => reject(req.error ?? new Error('IndexedDB count failed'));
+      });
+    });
+  } catch {
+    return 0;
+  }
+}
+
 export async function idbGetQuranPage(page: number): Promise<IdbQuranPage | null> {
   try {
     return await withStore(STORES.quranPages, 'readonly', (store) => {
@@ -438,4 +452,18 @@ export async function idbSetQuranPage(page: number, ayahs: any[]): Promise<void>
     // best-effort
   }
 }
+
+export async function idbSetQuranPagesBatch(pages: { page: number; ayahs: any[] }[]): Promise<void> {
+  try {
+    await withStore(STORES.quranPages, 'readwrite', (store) => {
+      const now = Date.now();
+      for (const item of pages) {
+        store.put({ page: item.page, ayahs: item.ayahs, cachedAt: now });
+      }
+    });
+  } catch {
+    // best-effort
+  }
+}
+
 

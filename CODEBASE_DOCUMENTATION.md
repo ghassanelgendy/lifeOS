@@ -1558,15 +1558,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-services-quranapi-ts"></a>
 ### lib/quran-memorizer/src/services/quranApi.ts
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Quran API networking and IndexedDB storage service. Handles verse fetching, Medina Mushaf pagination, and fast bulk whole-Quran + Tafseer downloading.
 
 **Functions & Classes:**
-- `getAyahAudioUrl` (Function)
-
-**Function Details:**
-- **`getAyahAudioUrl`** — Utility function for get ayah audio url.
-
-**Lines:** 112
+- `fetchPageVerses` (Function) — Fetches verses for a Medina Mushaf page with IDB cache and offline detection.
+- `fetchSurahVerses` (Function) — Fetches all verses and translations for a surah.
+- `downloadAndCacheFullQuran` (Function) — Fast 2-request bulk download and local caching of all 604 pages + Tafsir Al-Muyassar into IndexedDB.
+- `getAyahAudioUrl` (Function) — Generates audio recitation stream URLs.
 
 ---
 

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { QuranMemorizerMain, type SheikhHalqahNote } from '../../lib/quran-memorizer';
-import { fetchPageVerses } from '../../lib/quran-memorizer/src/services/quranApi';
+import { fetchPageVerses, downloadAndCacheFullQuran } from '../../lib/quran-memorizer/src/services/quranApi';
 import { supabase } from '../lib/supabase';
 import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
@@ -22,20 +22,14 @@ export function QuranRoute() {
       window.sessionStorage.setItem('lifeos_quran_prefill_v1', '1');
     } catch {}
 
-    let cancelled = false;
     const prefill = async () => {
-      for (let p = 1; p <= 604; p++) {
-        if (cancelled || !isOnline()) break;
-        try {
-          await fetchPageVerses(p);
-          await new Promise((r) => setTimeout(r, 80));
-        } catch {}
+      try {
+        await downloadAndCacheFullQuran();
+      } catch (e) {
+        console.debug('Background Quran prefill skipped:', e);
       }
     };
     void prefill();
-    return () => {
-      cancelled = true;
-    };
   }, []);
   const { data: tasks = [] } = useTasks();
   const { data: habits = [] } = useHabits();
