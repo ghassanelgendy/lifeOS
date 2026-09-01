@@ -4,12 +4,66 @@ import { Ayah } from '../types/quran';
 const verseCache = new Map<number, Ayah[]>();
 const pageCache = new Map<number, Ayah[]>();
 
+async function getPageFromIdb(p: number): Promise<Ayah[] | null> {
+  try {
+    if (typeof indexedDB === 'undefined') return null;
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('lifeos-indexeddb', 6);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject();
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains('quran_pages')) {
+          req.result.createObjectStore('quran_pages', { keyPath: 'page' });
+        }
+      };
+    });
+    return new Promise((resolve) => {
+      try {
+        const tx = db.transaction('quran_pages', 'readonly');
+        const req = tx.objectStore('quran_pages').get(p);
+        req.onsuccess = () => resolve(req.result?.ayahs ?? null);
+        req.onerror = () => resolve(null);
+      } catch {
+        resolve(null);
+      }
+    });
+  } catch {
+    return null;
+  }
+}
+
+async function setPageToIdb(p: number, ayahs: Ayah[]): Promise<void> {
+  try {
+    if (typeof indexedDB === 'undefined') return;
+    const db = await new Promise<IDBDatabase>((resolve, reject) => {
+      const req = indexedDB.open('lifeos-indexeddb', 6);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject();
+    });
+    await new Promise<void>((resolve) => {
+      try {
+        const tx = db.transaction('quran_pages', 'readwrite');
+        tx.objectStore('quran_pages').put({ page: p, ayahs, cachedAt: Date.now() });
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+      } catch {
+        resolve();
+      }
+    });
+  } catch {
+    // best-effort
+  }
+}
+
 export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
   if (verseCache.has(surahNumber)) {
     return verseCache.get(surahNumber)!;
   }
 
   try {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('quran_offline');
+    }
     const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/editions/quran-uthmani,ar.muyassar`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const json = await res.json();
@@ -50,8 +104,22 @@ export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
 
 export async function fetchPageVerses(pageNumber: number): Promise<Ayah[]> {
   const p = Math.max(1, Math.min(604, pageNumber));
+
+  // 1. In-memory cache
   if (pageCache.has(p)) {
     return pageCache.get(p)!;
+  }
+
+  // 2. IDB persistent cache
+  const idbData = await getPageFromIdb(p);
+  if (idbData && idbData.length > 0) {
+    pageCache.set(p, idbData);
+    return idbData;
+  }
+
+  // 3. Network fetch (online only)
+  if (typeof navigator !== 'undefined' && !navigator.onLine) {
+    throw new Error('quran_offline');
   }
 
   try {
@@ -93,6 +161,7 @@ export async function fetchPageVerses(pageNumber: number): Promise<Ayah[]> {
     });
 
     pageCache.set(p, ayahs);
+    void setPageToIdb(p, ayahs);
     return ayahs;
   } catch (err) {
     console.error(`Failed to fetch page ${p} verses:`, err);

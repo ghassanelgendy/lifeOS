@@ -67,6 +67,31 @@ export const isReversePlan = (plan: KhatmahPlan | null): boolean => {
   );
 };
 
+export const advanceReverseKhatmah = (
+  currentPage: number,
+  pagesPerDay: number,
+  targetMin: number = 1
+): number => {
+  const currentSurah = getSurahForPage(currentPage);
+  const nextSurahInQuran = SURAHS.find((s) => s.id === currentSurah.id + 1);
+  const currentSurahLastPage = nextSurahInQuran ? nextSurahInQuran.pageStart - 1 : 604;
+
+  const proposedNext = currentPage + pagesPerDay;
+
+  if (proposedNext <= currentSurahLastPage) {
+    // Still within the current surah, advance forward
+    return proposedNext;
+  }
+
+  // Finished current surah; jump to the FIRST page of the next lower-numbered surah
+  const prevSurahInSequence = SURAHS.find((s) => s.id === currentSurah.id - 1);
+  if (!prevSurahInSequence || prevSurahInSequence.pageStart < targetMin) {
+    return targetMin;
+  }
+
+  return Math.max(targetMin, prevSurahInSequence.pageStart);
+};
+
 const calculateSmartAyahRange = (page: number, surah: typeof SURAHS[0]) => {
   const nextSurah = SURAHS.find((s) => s.id === surah.id + 1);
   const nextSurahPageStart = nextSurah ? nextSurah.pageStart : 605;
@@ -329,7 +354,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
     let nextCurrentPage = plan.currentPage;
     if (isReverse) {
-      nextCurrentPage = Math.max(targetMin, plan.currentPage - (plan.pagesPerDay || 1));
+      nextCurrentPage = advanceReverseKhatmah(plan.currentPage, plan.pagesPerDay || 1, targetMin);
     } else {
       nextCurrentPage = Math.min(targetMax, plan.currentPage + (plan.pagesPerDay || 1));
     }
@@ -441,7 +466,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
   const currentSurah = getSurahForPage(plan ? plan.currentPage : 604);
   const nextTargetPage = plan
     ? isReverse
-      ? Math.max(targetMin, plan.currentPage - (plan.pagesPerDay || 1))
+      ? advanceReverseKhatmah(plan.currentPage, plan.pagesPerDay || 1, targetMin)
       : Math.min(targetMax, plan.currentPage + (plan.pagesPerDay || 1))
     : 603;
   const nextSurah = getSurahForPage(nextTargetPage);

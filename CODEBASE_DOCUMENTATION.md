@@ -1447,11 +1447,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-khatmahplannerview-tsx"></a>
 ### lib/quran-memorizer/src/components/KhatmahPlannerView.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Khatmah planning and dual wird management view (Memorization & Reading). Contains `advanceReverseKhatmah` helper for sequential intra-surah traversal in reverse khatmah plans (Surah 114 to 1).
 
-**Functions & Classes:** None (configuration or re-export module)
-
-**Lines:** 1202
+**Functions & Classes:**
+- `isReversePlan` (Function) — Checks if plan is in reverse direction (114 to 1).
+- `advanceReverseKhatmah` (Function) — Advances pages forward within a surah and transitions to the first page of the next lower-numbered surah upon boundary crossing.
+- `KhatmahPlannerView` (React Component) — Renders the dual wird planner cards, progress logger, and calendar sync.
 
 ---
 
@@ -1480,11 +1481,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Interactive Medina Mushaf reader with single-page and two-page layouts, 3D long-press ayah context menu (Hide, Memorization checkpoint, Reading checkpoint, Bookmark to Notes, Tafseer), Tafsir Al-Muyassar drawer, and offline caching support.
 
-**Functions & Classes:** None (configuration or re-export module)
-
-**Lines:** 2092
+**Functions & Classes:**
+- `QuranReaderView` (React Component) — Full Quran reading canvas with tajweed color rendering, blind mode testing, and 3D action menu.
 
 ---
 

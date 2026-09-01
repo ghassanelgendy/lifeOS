@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { QuranMemorizerMain, type SheikhHalqahNote } from '../../lib/quran-memorizer';
+import { fetchPageVerses } from '../../lib/quran-memorizer/src/services/quranApi';
 import { supabase } from '../lib/supabase';
+import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit, useUpdateHabit, useHabitStreaks } from '../hooks/useHabits';
 import { useCalendarEvents } from '../hooks/useCalendar';
@@ -9,6 +11,32 @@ import { useQuranCloudSync } from '../hooks/useQuranCloudSync';
 
 export function QuranRoute() {
   useQuranCloudSync();
+
+  // Silently warm up the Quran IndexedDB cache in background when online
+  useEffect(() => {
+    if (!isOnline()) return;
+    if (typeof window === 'undefined') return;
+
+    try {
+      if (window.sessionStorage.getItem('lifeos_quran_prefill_v1')) return;
+      window.sessionStorage.setItem('lifeos_quran_prefill_v1', '1');
+    } catch {}
+
+    let cancelled = false;
+    const prefill = async () => {
+      for (let p = 1; p <= 604; p++) {
+        if (cancelled || !isOnline()) break;
+        try {
+          await fetchPageVerses(p);
+          await new Promise((r) => setTimeout(r, 80));
+        } catch {}
+      }
+    };
+    void prefill();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const { data: tasks = [] } = useTasks();
   const { data: habits = [] } = useHabits();
   const { data: todayLogs = [] } = useTodayHabitLogs();
@@ -114,6 +142,21 @@ ${note.mistakesNote}
     }
 
     const bookmarkSnippet = `### سورة ${surahName} (الآية ${ayahNumber})\n> «${ayahText}»\n*تم الحفظ في: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}*`;
+
+    if (!isOnline()) {
+      addToOfflineQueue({
+        entity: 'notes',
+        op: 'create',
+        payload: {
+          title: 'Quran Bookmarks',
+          body: `# علامات وحفظ الآيات (Quran Bookmarks)\n\n${bookmarkSnippet}`,
+          note_date: todayStr,
+          folder_id: folderId || null,
+          tags: ['قرآن', 'علامات', 'quran_bookmarks'],
+        },
+      });
+      return;
+    }
 
     // Check if a note titled 'Quran Bookmarks' already exists
     try {

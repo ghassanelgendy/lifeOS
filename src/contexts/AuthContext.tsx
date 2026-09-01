@@ -18,7 +18,7 @@ async function clearAllUserDataCache() {
   }
   
   // Clear ALL IndexedDB stores (critical for preventing data leakage between users)
-  await idbClearAll();
+  void idbClearAll();
 }
 
 interface AuthState {
@@ -33,6 +33,32 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
+function tryGetLocalSession(): Session | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null;
+    const key = Object.keys(localStorage).find(
+      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    );
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.access_token && parsed?.user) {
+      return parsed as Session;
+    }
+  } catch {}
+  return null;
+}
+
+function getSessionWithTimeout(timeoutMs: number): Promise<{ data: { session: Session | null }; error: Error | null }> {
+  return Promise.race([
+    supabase.auth.getSession() as Promise<{ data: { session: Session | null }; error: Error | null }>,
+    new Promise<{ data: { session: Session | null }; error: Error | null }>((_, reject) =>
+      setTimeout(() => reject(new Error('auth_timeout')), timeoutMs)
+    ),
+  ]);
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -41,16 +67,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const previousUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession()
+    // ── Immediate offline bootstrap ──────────────────────────────────────────
+    // Read session from localStorage immediately so the app can render offline
+    // without waiting or hanging on Supabase network calls.
+    const localSession = tryGetLocalSession();
+    if (localSession) {
+      setSession(localSession);
+      setUser(localSession.user ?? null);
+      previousUserIdRef.current = localSession.user?.id ?? null;
+      setLoading(false);
+    }
+
+    // ── Background validation / refresh with hard timeout ────────────────────
+    getSessionWithTimeout(5000)
       .then(({ data: { session: s } }) => {
-        setSession(s);
-        setUser(s?.user ?? null);
-        previousUserIdRef.current = s?.user?.id ?? null;
+        if (s) {
+          setSession(s);
+          setUser(s.user ?? null);
+          previousUserIdRef.current = s.user?.id ?? null;
+        } else if (!localSession) {
+          setSession(null);
+          setUser(null);
+          previousUserIdRef.current = null;
+        }
       })
       .catch(() => {
-        setSession(null);
-        setUser(null);
-        previousUserIdRef.current = null;
+        // If we don't have a local session, clear out state
+        if (!localSession) {
+          setSession(null);
+          setUser(null);
+          previousUserIdRef.current = null;
+        }
       })
       .finally(() => setLoading(false));
 

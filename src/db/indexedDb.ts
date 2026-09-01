@@ -3,7 +3,7 @@
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 const STORES = {
   tasks: 'tasks',
@@ -23,6 +23,7 @@ const STORES = {
   screentimeAppStats: 'screentime_app_stats',
   screentimeWebsiteStats: 'screentime_website_stats',
   screentimeDailySummaries: 'screentime_daily_summaries',
+  quranPages: 'quran_pages',
 } as const;
 
 type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -96,6 +97,9 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.screentimeDailySummaries)) {
         db.createObjectStore(STORES.screentimeDailySummaries, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.quranPages)) {
+        db.createObjectStore(STORES.quranPages, { keyPath: 'page' });
       }
     };
 
@@ -328,6 +332,7 @@ export async function idbClearAll(): Promise<void> {
     STORES.screentimeAppStats,
     STORES.screentimeWebsiteStats,
     STORES.screentimeDailySummaries,
+    STORES.quranPages,
   ];
   
   // Clear all stores in parallel
@@ -401,5 +406,36 @@ export async function idbAddCustomReward(reward: any): Promise<void> {
 
 export async function idbDeleteCustomReward(id: string): Promise<void> {
   await idbDelete(STORES.customRewards, id);
+}
+
+// Quran Pages Cache helpers
+export interface IdbQuranPage {
+  page: number;
+  ayahs: any[];
+  cachedAt: number;
+}
+
+export async function idbGetQuranPage(page: number): Promise<IdbQuranPage | null> {
+  try {
+    return await withStore(STORES.quranPages, 'readonly', (store) => {
+      return new Promise<IdbQuranPage | null>((resolve, reject) => {
+        const req = store.get(page);
+        req.onsuccess = () => resolve((req.result as IdbQuranPage) ?? null);
+        req.onerror = () => reject(req.error ?? new Error('IndexedDB getQuranPage failed'));
+      });
+    });
+  } catch {
+    return null;
+  }
+}
+
+export async function idbSetQuranPage(page: number, ayahs: any[]): Promise<void> {
+  try {
+    await withStore(STORES.quranPages, 'readwrite', (store) => {
+      store.put({ page, ayahs, cachedAt: Date.now() });
+    });
+  } catch {
+    // best-effort
+  }
 }
 

@@ -39,6 +39,18 @@ const QURAN_HADITHS = [
   { text: 'اقْرَؤُوا الزَّهْرَاوَيْنِ: البَقَرَةَ وَسُورَةَ آلِ عِمْرَانَ، فَإِنَّهُمَا تَأْتِيَانِ يَوْمَ القِيَامَةِ كَأَنَّهُمَا غَمَامَتَانِ تُحَاجَّانِ عَنْ أَصْحَابِهِمَا', narrator: 'رواه مسلم' },
 ];
 
+const getSurahForPage = (page: number) => {
+  let found = SURAHS[0];
+  for (const s of SURAHS) {
+    if (s.pageStart <= page) {
+      found = s;
+    } else {
+      break;
+    }
+  }
+  return found;
+};
+
 export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   linkedTasks = [],
   linkedHabits = [],

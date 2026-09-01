@@ -386,7 +386,21 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const [toastVisible, setToastVisible] = useState(false);
   const toastHideTimerRef = React.useRef<number | null>(null);
 
-  // Long-press on an ayah appends it to the Quran Bookmarks note in lifeOS Notes
+  // Ayah Action Context Menu & Tafseer Sheet
+  const [ayahContextMenu, setAyahContextMenu] = useState<{
+    ayah: Ayah;
+    surah: { id: number; name: string };
+  } | null>(null);
+  const [tafseerAyah, setTafseerAyah] = useState<{
+    ayah: Ayah;
+    surah: { id: number; name: string };
+  } | null>(null);
+
+  // Session-only hidden ayahs (set of global verse numbers)
+  const [hiddenAyahs, setHiddenAyahs] = useState<Set<number>>(new Set());
+  const [isPageOffline, setIsPageOffline] = useState(false);
+
+  // Long-press on an ayah opens the 3D action menu
   const longPressRef = React.useRef<{ ayahNumber: number; timer: number | null; triggered: boolean }>({
     ayahNumber: -1,
     timer: null,
@@ -396,18 +410,27 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const [pressingAyah, setPressingAyah] = useState<number | null>(null);
   const pressingTimerRef = React.useRef<number | null>(null);
 
-  // Brief transient overlay toast: fades in, holds ~1s, then fades out.
-  const showBookmarkToast = (surahName: string, ayahNumber: number) => {
-    setBookmarkToast(`أُضيفت آية ${ayahNumber} سورة ${surahName}`);
+  // Brief transient overlay toast
+  const showBookmarkToast = (surahName: string, ayahNumber: number, customMsg?: string) => {
+    setBookmarkToast(
+      customMsg
+        ? `${customMsg} (آية ${ayahNumber} سورة ${surahName})`
+        : `أُضيفت آية ${ayahNumber} سورة ${surahName}`
+    );
     setToastVisible(true);
     if (toastHideTimerRef.current != null) window.clearTimeout(toastHideTimerRef.current);
     toastHideTimerRef.current = window.setTimeout(() => {
       setToastVisible(false);
       window.setTimeout(() => setBookmarkToast(null), 250);
-    }, 1000);
+    }, 1200);
   };
 
-  const startLongPress = (_e: React.PointerEvent, ayahNumber: number, surah: { name: string; id: number }, ayahs: { numberInSurah: number; textUthmani: string }[]) => {
+  const startLongPress = (
+    _e: React.PointerEvent,
+    ayahNumber: number,
+    surah: { name: string; id: number },
+    ayahs: Ayah[]
+  ) => {
     cancelLongPress();
     setPressingAyah(ayahNumber);
     if (pressingTimerRef.current != null) window.clearTimeout(pressingTimerRef.current);
@@ -419,10 +442,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         const cur = longPressRef.current;
         if (cur && cur.ayahNumber === ayahNumber) {
           cur.triggered = true;
-          const ayah = ayahs.find((a) => a.numberInSurah === ayahNumber);
-          if (ayah && onBookmarkAyah) {
-            onBookmarkAyah(surah.name, surah.id, ayah.numberInSurah, ayah.textUthmani);
-            showBookmarkToast(surah.name, ayah.numberInSurah);
+          const foundAyah = ayahs.find((a) => a.numberInSurah === ayahNumber);
+          if (foundAyah) {
+            setAyahContextMenu({ ayah: foundAyah, surah });
           }
         }
         setPressingAyah(null);
@@ -445,6 +467,35 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
   const wasLongPress = (ayahNumber: number) =>
     longPressRef.current?.ayahNumber === ayahNumber && longPressRef.current?.triggered;
+
+  const handleAyahAction = (
+    action: 'hide' | 'mem_checkpoint' | 'read_checkpoint' | 'bookmark' | 'tafseer'
+  ) => {
+    if (!ayahContextMenu) return;
+    const { ayah, surah } = ayahContextMenu;
+    setAyahContextMenu(null);
+
+    switch (action) {
+      case 'hide':
+        setHiddenAyahs((prev) => new Set([...prev, ayah.number]));
+        break;
+      case 'mem_checkpoint':
+        onSetMemorizationMarker?.(surah.id, ayah.numberInSurah, ayah.page || activePage);
+        showBookmarkToast(surah.name, ayah.numberInSurah, 'تم تحديد علامة الحفظ');
+        break;
+      case 'read_checkpoint':
+        onSetReadingMarker?.(surah.id, ayah.numberInSurah, ayah.page || activePage);
+        showBookmarkToast(surah.name, ayah.numberInSurah, 'تم تحديد علامة القراءة');
+        break;
+      case 'bookmark':
+        onBookmarkAyah?.(surah.name, surah.id, ayah.numberInSurah, ayah.textUthmani);
+        showBookmarkToast(surah.name, ayah.numberInSurah, 'تم حفظ الآية في الملاحظات');
+        break;
+      case 'tafseer':
+        setTafseerAyah({ ayah, surah });
+        break;
+    }
+  };
 
   useEffect(() => {
     try {
@@ -618,16 +669,22 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   useEffect(() => {
     let isMounted = true;
     setPageLoading(true);
+    setIsPageOffline(false);
     fetchPageVerses(activePage)
       .then((data) => {
         if (isMounted) {
           setPageVerses(data);
+          setIsPageOffline(false);
           setPageLoading(false);
         }
       })
       .catch((err) => {
-        console.error(`Failed to fetch verses for page ${activePage}:`, err);
-        if (isMounted) setPageLoading(false);
+        if (isMounted) {
+          if (String(err?.message).includes('quran_offline')) {
+            setIsPageOffline(true);
+          }
+          setPageLoading(false);
+        }
       });
     return () => {
       isMounted = false;
@@ -1203,6 +1260,21 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             }
 
             if (pageLayout === 'single' && (pageLoading || pageVerses.length === 0)) {
+              if (isPageOffline && pageVerses.length === 0) {
+                return (
+                  <div className="p-10 text-center border border-dashed border-border/80 rounded-3xl space-y-3 bg-card/60 font-arabic-body">
+                    <div className="size-14 rounded-full bg-secondary/80 flex items-center justify-center text-2xl mx-auto">
+                      📵
+                    </div>
+                    <h3 className="text-sm font-bold text-foreground font-arabic-title">
+                      هذه الصفحة لم تُحمَّل بعد بدون إنترنت
+                    </h3>
+                    <p className="text-xs text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                      افتح هذه الصفحة (صفحة {activePage}) مرة واحدة عند توفر اتصال بالإنترنت لتحميلها وحفظها للاستخدام أوفلاين.
+                    </p>
+                  </div>
+                );
+              }
               return (
                 <div className="p-8 text-center text-xs font-bold text-muted-foreground border border-dashed border-border rounded-3xl space-y-3 bg-card/60">
                   <p className="text-sm">جاري تحميل آيات صفحة {activePage}...</p>
@@ -1300,81 +1372,100 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                   </div>
                                 )}
 
-                                <span
-                                  onClick={() => {
-                                    if (wasLongPress(ayah.numberInSurah)) return;
-                                    if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
-                                    onSelectAyah(ayah.numberInSurah);
-                                  }}
-                                  onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
-                                  onPointerUp={cancelLongPress}
-                                  onPointerCancel={cancelLongPress}
-                                  onPointerMove={cancelLongPress}
-                                  onContextMenu={(e) => e.preventDefault()}
-                                  className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
-                                    isMemMarker && isReadMarker
-                                      ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
-                                      : isMemMarker
-                                      ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
-                                      : isReadMarker
-                                      ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
-                                      : isActive
-                                      ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
-                                      : inStudyRange
-                                      ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
-                                      : 'hover:bg-accent/40'
-                                  } ${
-                                    pressingAyah === ayah.numberInSurah
-                                      ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)]'
-                                      : ''
-                                  }`}
-                                >
-                                  {repeatSettings.blindMode && (isActive ? isDelaying : !isAudioPlaying) ? (
-                                    words.map((w, wIdx) => (
-                                      <span
-                                        key={wIdx}
-                                        className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
-                                      >
-                                        {w}{' '}
-                                      </span>
-                                    ))
-                                  ) : showTajweed ? (
-                                    renderTajweedText(ayah.textUthmani)
-                                  ) : (
-                                    ayah.textUthmani
-                                  )}
-                                </span>
-                                <span
-                                  onClick={() => {
-                                    if (wasLongPress(ayah.numberInSurah)) return;
-                                    if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
-                                    onSelectAyah(ayah.numberInSurah);
-                                  }}
-                                  onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
-                                  onPointerUp={cancelLongPress}
-                                  onPointerCancel={cancelLongPress}
-                                  onPointerMove={cancelLongPress}
-                                  onContextMenu={(e) => e.preventDefault()}
-                                  className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
-                                    isMemWirdEnd
-                                      ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
-                                      : isMemMarker
-                                      ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
-                                      : isReadMarker
-                                      ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
-                                      : isMemorized
-                                      ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
-                                      : inStudyRange
-                                      ? 'bg-secondary text-foreground border border-zinc-700'
-                                      : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
-                                  } ${
-                                    pressingAyah === ayah.numberInSurah
-                                      ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
-                                      : ''
-                                  }`}
-                                >
-                                  ﴿{ayah.numberInSurah}﴾
-                                </span>
+                                {hiddenAyahs.has(ayah.number) ? (
+                                  <span
+                                    onClick={() => {
+                                      setHiddenAyahs((prev) => {
+                                        const next = new Set(prev);
+                                        next.delete(ayah.number);
+                                        return next;
+                                      });
+                                    }}
+                                    className="inline-flex items-center gap-1 mx-1 px-2.5 py-0.5 rounded-full bg-secondary/80 border border-border/70 text-xs font-bold text-muted-foreground cursor-pointer hover:bg-secondary transition-all select-none align-middle shadow-sm"
+                                    title="اضغط لإظهار الآية"
+                                  >
+                                    <EyeOff className="size-3 text-muted-foreground" />
+                                    <span>﴿{ayah.numberInSurah}﴾ [مخفية - اضغط للإظهار]</span>
+                                  </span>
+                                ) : (
+                                  <>
+                                    <span
+                                      onClick={() => {
+                                        if (wasLongPress(ayah.numberInSurah)) return;
+                                        if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
+                                        onSelectAyah(ayah.numberInSurah);
+                                      }}
+                                      onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
+                                      onPointerUp={cancelLongPress}
+                                      onPointerCancel={cancelLongPress}
+                                      onPointerMove={cancelLongPress}
+                                      onContextMenu={(e) => e.preventDefault()}
+                                      className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
+                                        isMemMarker && isReadMarker
+                                          ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
+                                          : isMemMarker
+                                          ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
+                                          : isReadMarker
+                                          ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
+                                          : isActive
+                                          ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
+                                          : inStudyRange
+                                          ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
+                                          : 'hover:bg-accent/40'
+                                      } ${
+                                        pressingAyah === ayah.numberInSurah
+                                          ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105 inline-block'
+                                          : ''
+                                      }`}
+                                    >
+                                      {repeatSettings.blindMode && (isActive ? isDelaying : !isAudioPlaying) ? (
+                                        words.map((w, wIdx) => (
+                                          <span
+                                            key={wIdx}
+                                            className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
+                                          >
+                                            {w}{' '}
+                                          </span>
+                                        ))
+                                      ) : showTajweed ? (
+                                        renderTajweedText(ayah.textUthmani)
+                                      ) : (
+                                        ayah.textUthmani
+                                      )}
+                                    </span>
+                                    <span
+                                      onClick={() => {
+                                        if (wasLongPress(ayah.numberInSurah)) return;
+                                        if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
+                                        onSelectAyah(ayah.numberInSurah);
+                                      }}
+                                      onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
+                                      onPointerUp={cancelLongPress}
+                                      onPointerCancel={cancelLongPress}
+                                      onPointerMove={cancelLongPress}
+                                      onContextMenu={(e) => e.preventDefault()}
+                                      className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
+                                        isMemWirdEnd
+                                          ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
+                                          : isMemMarker
+                                          ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
+                                          : isReadMarker
+                                          ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
+                                          : isMemorized
+                                          ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
+                                          : inStudyRange
+                                          ? 'bg-secondary text-foreground border border-zinc-700'
+                                          : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
+                                      } ${
+                                        pressingAyah === ayah.numberInSurah
+                                          ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
+                                          : ''
+                                      }`}
+                                    >
+                                      ﴿{ayah.numberInSurah}﴾
+                                    </span>
+                                  </>
+                                )}
                               </React.Fragment>
                             );
                           })}
@@ -1676,82 +1767,102 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                           </div>
                                         )}
 
-                                        <span
-                                          onClick={() => {
-                                            if (wasLongPress(ayah.numberInSurah)) return;
-                                            if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
-                                            onSelectAyah(ayah.numberInSurah);
-                                          }}
-                                          onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
-                                          onPointerUp={cancelLongPress}
-                                          onPointerCancel={cancelLongPress}
-                                          onPointerMove={cancelLongPress}
-                                          onContextMenu={(e) => e.preventDefault()}
-                                          className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
-                                            isMemMarker && isReadMarker
-                                              ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
-                                              : isMemMarker
-                                              ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
-                                              : isReadMarker
-                                              ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
-                                              : isActive
-                                              ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
-                                              : inStudyRange
-                                              ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
-                                              : 'hover:bg-accent/40'
-                                          } ${
-                                            pressingAyah === ayah.numberInSurah
-                                              ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)]'
-                                              : ''
-                                          }`}
-                                        >
-                                          {repeatSettings.blindMode && isActive ? (
-                                            words.map((w, wIdx) => (
-                                              <span
-                                                key={wIdx}
-                                                className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
-                                                title="انقر لإظهار الكلمة"
-                                              >
-                                                {w}{' '}
-                                              </span>
-                                            ))
-                                          ) : showTajweed ? (
-                                            renderTajweedText(ayah.textUthmani)
-                                          ) : (
-                                            ayah.textUthmani
-                                          )}
-                                        </span>
-                                        <span
-                                          onClick={() => {
-                                            if (wasLongPress(ayah.numberInSurah)) return;
-                                            if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
-                                            onSelectAyah(ayah.numberInSurah);
-                                          }}
-                                          onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
-                                          onPointerUp={cancelLongPress}
-                                          onPointerCancel={cancelLongPress}
-                                          onPointerMove={cancelLongPress}
-                                          onContextMenu={(e) => e.preventDefault()}
-                                          className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-8 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
-                                            isMemWirdEnd
-                                              ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
-                                              : isMemMarker
-                                              ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
-                                              : isReadMarker
-                                              ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
-                                              : isMemorized
-                                              ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
-                                              : inStudyRange
-                                              ? 'bg-secondary text-foreground border border-zinc-700'
-                                              : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
-                                          } ${
-                                            pressingAyah === ayah.numberInSurah
-                                              ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
-                                              : ''
-                                          }`}
-                                        >
-                                          ﴿{ayah.numberInSurah}﴾
-                                        </span>
+                                        <span className="inline-block">
+                                        {hiddenAyahs.has(ayah.number) ? (
+                                          <span
+                                            onClick={() => {
+                                              setHiddenAyahs((prev) => {
+                                                const next = new Set(prev);
+                                                next.delete(ayah.number);
+                                                return next;
+                                              });
+                                            }}
+                                            className="inline-flex items-center gap-1 mx-1 px-2.5 py-0.5 rounded-full bg-secondary/80 border border-border/70 text-xs font-bold text-muted-foreground cursor-pointer hover:bg-secondary transition-all select-none align-middle shadow-sm"
+                                            title="اضغط لإظهار الآية"
+                                          >
+                                            <EyeOff className="size-3 text-muted-foreground" />
+                                            <span>﴿{ayah.numberInSurah}﴾ [مخفية]</span>
+                                          </span>
+                                        ) : (
+                                          <>
+                                            <span
+                                              onClick={() => {
+                                                if (wasLongPress(ayah.numberInSurah)) return;
+                                                if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
+                                                onSelectAyah(ayah.numberInSurah);
+                                              }}
+                                              onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
+                                              onPointerUp={cancelLongPress}
+                                              onPointerCancel={cancelLongPress}
+                                              onPointerMove={cancelLongPress}
+                                              onContextMenu={(e) => e.preventDefault()}
+                                              className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
+                                                isMemMarker && isReadMarker
+                                                  ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
+                                                  : isMemMarker
+                                                  ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
+                                                  : isReadMarker
+                                                  ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
+                                                  : isActive
+                                                  ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
+                                                  : inStudyRange
+                                                  ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
+                                                  : 'hover:bg-accent/40'
+                                              } ${
+                                                pressingAyah === ayah.numberInSurah
+                                                  ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105 inline-block'
+                                                  : ''
+                                              }`}
+                                            >
+                                              {repeatSettings.blindMode && isActive ? (
+                                                words.map((w, wIdx) => (
+                                                  <span
+                                                    key={wIdx}
+                                                    className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
+                                                    title="انقر لإظهار الكلمة"
+                                                  >
+                                                    {w}{' '}
+                                                  </span>
+                                                ))
+                                              ) : showTajweed ? (
+                                                renderTajweedText(ayah.textUthmani)
+                                              ) : (
+                                                ayah.textUthmani
+                                              )}
+                                            </span>
+                                            <span
+                                              onClick={() => {
+                                                if (wasLongPress(ayah.numberInSurah)) return;
+                                                if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
+                                                onSelectAyah(ayah.numberInSurah);
+                                              }}
+                                              onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
+                                              onPointerUp={cancelLongPress}
+                                              onPointerCancel={cancelLongPress}
+                                              onPointerMove={cancelLongPress}
+                                              onContextMenu={(e) => e.preventDefault()}
+                                              className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-8 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
+                                                isMemWirdEnd
+                                                  ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
+                                                  : isMemMarker
+                                                  ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
+                                                  : isReadMarker
+                                                  ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
+                                                  : isMemorized
+                                                  ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
+                                                  : inStudyRange
+                                                  ? 'bg-secondary text-foreground border border-zinc-700'
+                                                  : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
+                                              } ${
+                                                pressingAyah === ayah.numberInSurah
+                                                  ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
+                                                  : ''
+                                              }`}
+                                            >
+                                              ﴿{ayah.numberInSurah}﴾
+                                            </span>
+                                          </>
+                                        )}</span>
                                       </React.Fragment>
                                     );
                                   })}
@@ -2056,7 +2167,25 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 </div>
 
                 {/* Verse Text Display */}
-                {repeatSettings.blindMode && isActive && (!isAudioPlaying || isDelaying) ? (
+                {hiddenAyahs.has(ayah.number) ? (
+                  <div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setHiddenAyahs((prev) => {
+                        const next = new Set(prev);
+                        next.delete(ayah.number);
+                        return next;
+                      });
+                    }}
+                    className="p-3 rounded-xl bg-secondary/60 border border-border/70 flex items-center justify-between text-xs text-muted-foreground cursor-pointer hover:bg-secondary transition-all"
+                  >
+                    <span className="flex items-center gap-2 font-bold font-arabic-title">
+                      <EyeOff className="size-3.5 text-muted-foreground" />
+                      <span>الآية {ayah.numberInSurah} مخفية لهذه الجلسة</span>
+                    </span>
+                    <span className="text-[11px] underline">اضغط للإظهار</span>
+                  </div>
+                ) : repeatSettings.blindMode && isActive && (!isAudioPlaying || isDelaying) ? (
                   <BlindModeOverlay
                     isBlindMode={repeatSettings.blindMode}
                     onToggleBlindMode={() =>
@@ -2075,7 +2204,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 )}
 
                 {/* Tafsir Al-Muyassar Display */}
-                {showTranslation && ayah.translation && (
+                {!hiddenAyahs.has(ayah.number) && showTranslation && ayah.translation && (
                   <div className="mt-3 text-xs text-foreground/90 leading-relaxed border-t border-border/30 pt-2.5 text-right dir-rtl font-arabic-body bg-secondary/30 p-2.5 rounded-xl border border-border/40">
                     <span className="font-bold text-amber-400 block mb-0.5 text-[11px]">التفسير الميسر:</span>
                     {ayah.translation}
@@ -2086,6 +2215,141 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           })}
         </div>
       )}
+
+      {/* 6. 3D AYAH ACTION CONTEXT MENU (Portaled to Body) */}
+      {ayahContextMenu &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+            onClick={() => setAyahContextMenu(null)}
+            dir="rtl"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative z-10 w-full max-w-[320px] flex flex-col items-center select-none animate-in zoom-in-95 duration-200 font-arabic-title"
+            >
+              {/* Ayah Preview Card */}
+              <div className="w-full bg-[#f9f9f9]/95 dark:bg-[#1c1c1e]/95 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-right space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    سورة {ayahContextMenu.surah.name} — الآية {ayahContextMenu.ayah.numberInSurah}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-mono">
+                    صفحة {ayahContextMenu.ayah.page || activePage}
+                  </span>
+                </div>
+                <p className="font-arabic-quran text-base leading-relaxed text-foreground line-clamp-3">
+                  {ayahContextMenu.ayah.textUthmani}
+                </p>
+              </div>
+
+              {/* 5-Action iOS Rounded Stack Menu */}
+              <div className="w-full bg-[#f9f9f9]/95 dark:bg-[#1c1c1e]/95 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-right mt-3">
+                {/* 1. Hide */}
+                <button
+                  type="button"
+                  onClick={() => handleAyahAction('hide')}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <span>إخفاء الآية (لهذه الجلسة)</span>
+                  <EyeOff className="size-4 text-muted-foreground" />
+                </button>
+
+                {/* 2. Memorization Checkpoint */}
+                <button
+                  type="button"
+                  onClick={() => handleAyahAction('mem_checkpoint')}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <span>تحديد كعلامة حفظ</span>
+                  <Target className="size-4 text-amber-500" />
+                </button>
+
+                {/* 3. Reading Checkpoint */}
+                <button
+                  type="button"
+                  onClick={() => handleAyahAction('read_checkpoint')}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <span>تحديد كعلامة قراءة وتلاوة</span>
+                  <BookOpen className="size-4 text-indigo-500" />
+                </button>
+
+                {/* 4. Bookmark to Notes */}
+                <button
+                  type="button"
+                  onClick={() => handleAyahAction('bookmark')}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <span>حفظ الآية في الملاحظات</span>
+                  <BookmarkPlus className="size-4 text-emerald-500" />
+                </button>
+
+                {/* 5. Explain / Tafseer */}
+                <button
+                  type="button"
+                  onClick={() => handleAyahAction('tafseer')}
+                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
+                >
+                  <span>تفسير الآية (التفسير الميسر)</span>
+                  <Sparkles className="size-4 text-violet-500" />
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* 7. TAFSEER BOTTOM SHEET (Portaled to Body) */}
+      {tafseerAyah &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-[10003] flex items-end justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+            onClick={() => setTafseerAyah(null)}
+            dir="rtl"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-card/95 backdrop-blur-2xl border-t border-border/70 rounded-t-[2rem] p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom-6 duration-200 max-h-[75vh] flex flex-col font-arabic-body text-right"
+            >
+              <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto -mt-1 shrink-0" />
+              <div className="flex items-center justify-between border-b border-border pb-2.5 shrink-0">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-4 text-violet-400" />
+                  <h3 className="text-sm font-bold text-foreground font-arabic-title">
+                    تفسير سورة {tafseerAyah.surah.name} — آية {tafseerAyah.ayah.numberInSurah}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTafseerAyah(null)}
+                  className="h-7 w-7 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-3.5 pr-1 text-right">
+                <div className="p-3.5 rounded-2xl bg-secondary/40 border border-border/40 font-arabic-quran text-xl leading-loose text-foreground">
+                  ﴿{tafseerAyah.ayah.textUthmani}﴾
+                </div>
+                <div className="space-y-1">
+                  <span className="text-xs font-bold text-amber-400 block font-arabic-title">التفسير الميسر:</span>
+                  <p className="text-sm leading-relaxed text-foreground/90 font-arabic-body">
+                    {tafseerAyah.ayah.translation || 'التفسير غير متاح لهذه الآية حالياً.'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTafseerAyah(null)}
+                className="w-full py-3 rounded-2xl bg-secondary hover:bg-secondary/80 text-foreground font-bold text-xs transition-all cursor-pointer shrink-0"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };

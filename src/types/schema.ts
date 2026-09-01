@@ -380,6 +380,8 @@ export interface Transaction {
   entity?: string;
   direction?: 'In' | 'Out';
   account?: string; // e.g. ***50
+  reference?: string;
+  statement_verified?: boolean;
   created_at: string;
   updated_at: string;
 }

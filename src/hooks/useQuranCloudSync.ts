@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { HifdhRecord } from '../../lib/quran-memorizer/src/types/quran';
 import { SURAHS } from '../../lib/quran-memorizer/src/services/quranData';
 
@@ -222,6 +223,15 @@ export function useQuranCloudSync() {
         ...(payload.readingLastCompletedDate !== undefined && { reading_last_completed_date: payload.readingLastCompletedDate }),
         updated_at: new Date().toISOString(),
       };
+
+      if (!isOnline()) {
+        addToOfflineQueue({
+          entity: 'quran_khatmah_plans',
+          op: 'upsert',
+          payload: record,
+        });
+        return;
+      }
 
       const { error } = await supabase.from('quran_khatmah_plans').upsert(record, {
         onConflict: 'user_id',

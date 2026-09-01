@@ -51,7 +51,12 @@ export type QueuedOp =
   | { entity: 'custom_rewards'; op: 'delete'; id: string }
   | { entity: 'prayer_logs'; op: 'upsert'; payload: Record<string, unknown> }
   | { entity: 'prayer_logs'; op: 'create'; payload: Record<string, unknown> }
-  | { entity: 'prayer_logs'; op: 'update'; id: string; payload: Record<string, unknown> };
+  | { entity: 'prayer_logs'; op: 'update'; id: string; payload: Record<string, unknown> }
+  | { entity: 'quran_khatmah_plans'; op: 'upsert'; payload: Record<string, unknown> }
+  | { entity: 'quran_hifdh_records'; op: 'upsert'; payload: Record<string, unknown> }
+  | { entity: 'notes'; op: 'create'; payload: Record<string, unknown> }
+  | { entity: 'notes'; op: 'update'; id: string; payload: Record<string, unknown> }
+  | { entity: 'notes'; op: 'delete'; id: string };
 
 export function addToOfflineQueue(op: QueuedOp): void {
   // Fire-and-forget; best-effort persistence.
@@ -99,7 +104,8 @@ async function replayOne(entry: IdbQueueEntry): Promise<void> {
   }
 
   if (op === 'upsert' && 'payload' in entry.op) {
-    const { error } = await supabase.from(table).upsert(entry.op.payload as Record<string, unknown>, { onConflict: 'id' });
+    const conflictCol = entity === 'quran_khatmah_plans' ? 'user_id' : 'id';
+    const { error } = await supabase.from(table).upsert(entry.op.payload as Record<string, unknown>, { onConflict: conflictCol });
     if (error) throw new Error(`${entity}.upsert: ${error.message}`);
     return;
   }

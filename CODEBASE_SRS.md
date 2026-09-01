@@ -611,6 +611,15 @@ The system shall support marking and toggling individual ayahs as memorized (`mo
 #### FR-QURAN-011: Dynamic Day-by-Day Weekly Planner Wird & Spaced Repetition (مراجعة) Badges
 The system shall dynamically calculate and display day-specific projected Wird pages and weekly partitioned Spaced Repetition review portions across the 7 days of the Weekly Planner habit grid for Quran habits (`ورد أساسي: ص XX سورة YY • مراجعة: ZZ`), with single-click deep navigation directly to each day's target Medina Mushaf page.
 
+#### FR-QURAN-012: Reversed Khatmah Sequential Traversal (الناس إلى البقرة)
+In reverse khatmah plans (Surahs 114 to 1), page progression within any surah shall advance forward sequentially from its first page to its last page. Once the current surah's final page is completed, the cursor shall automatically transition to the first page (`pageStart`) of the next lower-numbered chapter.
+
+#### FR-QURAN-013: 3D Ayah Action Context Menu & Tafseer Sheet
+Long-pressing any verse in the reader shall trigger an iOS 3D lift visual effect and open a frosted glass context menu providing 5 distinct actions: Hide Ayah (temporary session test), Set Memorization Checkpoint, Set Reading Checkpoint, Bookmark to Notes, and Explain (Tafsir Al-Muyassar sheet drawer).
+
+#### FR-QURAN-014: Full Offline-First Quran Storage & Startup Bootstrapping
+All 604 Medina Mushaf pages shall be cached locally in IndexedDB (`quran_pages` store) with automatic background prefilling. Offline queueing shall handle plan mutations and note bookmarks when disconnected, and auth session state shall be bootstrapped synchronously from localStorage to guarantee instant offline app launches without network stalls.
+
 ### 3.12.2 Cognitive Brain Dump & Asynchronous Thought Vault
 
 #### FR-DUMP-001: Instant Quick-Capture & Append
