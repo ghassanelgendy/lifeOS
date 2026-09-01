@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2 } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useUpdateTask, useDeleteTask } from '../../hooks/useTasks.web';
@@ -168,6 +168,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
   onContextMenu?: (e: React.MouseEvent) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
 
@@ -343,26 +344,48 @@ const ACCENT_DOT: Record<DueKind, string> = {
             {subtitle ? <p className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums font-medium">{subtitle}</p> : null}
           </div>
 
-          {onRescue && !done && (
+          <div className="flex items-center gap-1 shrink-0 ml-1">
             <button
               type="button"
-              disabled={balance < rescueCost}
               onClick={(e) => {
                 e.stopPropagation();
-                onRescue();
+                void navigator.clipboard.writeText(title).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                });
               }}
               className={cn(
-                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
-                balance >= rescueCost
-                  ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
-                  : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+                "p-1 rounded transition-all",
+                copied
+                  ? "text-green-500"
+                  : "text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-muted-foreground"
               )}
-              title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
+              title="Copy title"
             >
-              <Coins className="size-3.5" />
-              Rescue
+              <Copy size={12} />
             </button>
-          )}
+
+            {onRescue && !done && (
+              <button
+                type="button"
+                disabled={balance < rescueCost}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onRescue();
+                }}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm",
+                  balance >= rescueCost
+                    ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
+                    : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
+                )}
+                title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
+              >
+                <Coins className="size-3.5" />
+                Rescue
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
