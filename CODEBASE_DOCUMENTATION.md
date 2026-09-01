@@ -2927,6 +2927,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `intersectSegments` (Function)
 - `subtractSegments` (Function)
 - `parseDueForSort` (Function)
+- `DueTodayRow` (Function) — Renders a single due-today entry (task/habit/event/prayer). Includes a small **copy title button** (clipboard icon) that appears on hover, providing one-click copying of the entry title.
 - `DashboardQuickView` (Function)
 
 **Function Details:**
@@ -2935,8 +2936,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`timeStringToMinutes`** — Utility function for time string to minutes.
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
+- **`DueTodayRow`** — Card row component for dashboard timeline entries. Shows kind badge (Task/Habit/Event/Prayer), marquee title, subtask progress ring, rescue button (if applicable), and a hover-revealed copy-title button that briefly turns green on success.
 
-**Lines:** 1744
+**Lines:** 1745
+
 
 ---
 
@@ -5762,7 +5765,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:**
 - `Tasks` (React Component)
-- `TaskItem` (React Component)
+- `TaskItem` (React Component) — Renders an individual task row with checkbox, title, tags, due date, and action buttons (copy title, won't-do, delete).
 - `parseDueDateTime` (Function)
 - `Tasks` (Function)
 - `getDefaultEditFormForNewTask` (Function)
@@ -5770,13 +5773,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Function Details:**
 - **`Tasks`** — React component rendering UI for Tasks.
-- **`TaskItem`** — React component rendering UI for TaskItem.
+- **`TaskItem`** — Individual task row component. Displays task title, priority icon, recurrence indicator, tags, due date, and subtask progress. Shows an action button group on hover containing: **copy title** (clipboard icon, turns green briefly on success), won't-do (circle-slash), and delete (trash) buttons.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 - **`Tasks`** — Utility function for tasks.
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
-- **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2988
+**Lines:** 2990
 
 ---
 
