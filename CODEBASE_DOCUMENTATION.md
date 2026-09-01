@@ -1991,6 +1991,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-quranofflinedownloader-tsx"></a>
+### src/components/QuranOfflineDownloader.tsx
+
+**File Purpose:** Settings UI widget for full-text Medina Mushaf and Tafsir Al-Muyassar offline pre-caching (604 pages) with live progress bar, cancel, and verification controls.
+
+**Functions & Classes:**
+- `QuranOfflineDownloader` (React Component) — Component allowing users to manually download and cache all 604 Quran pages with Tafsir into IndexedDB.
+
+---
+
 <a name="src-components-appfooter-ios-tsx"></a>
 ### src/components/AppFooter.ios.tsx
 

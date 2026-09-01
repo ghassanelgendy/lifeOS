@@ -396,6 +396,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     surah: { id: number; name: string };
   } | null>(null);
 
+  // Hovered menu action for slide-to-select gesture
+  const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
+
   // Session-only hidden ayahs (set of global verse numbers)
   const [hiddenAyahs, setHiddenAyahs] = useState<Set<number>>(new Set());
   const [isPageOffline, setIsPageOffline] = useState(false);
@@ -406,7 +409,6 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     timer: null,
     triggered: false,
   });
-  // Which ayah is currently pressed (drives the iOS native 3D "lift" effect)
   const [pressingAyah, setPressingAyah] = useState<number | null>(null);
   const pressingTimerRef = React.useRef<number | null>(null);
 
@@ -445,6 +447,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           const foundAyah = ayahs.find((a) => a.numberInSurah === ayahNumber);
           if (foundAyah) {
             setAyahContextMenu({ ayah: foundAyah, surah });
+            setHoveredMenuAction(null);
           }
         }
         setPressingAyah(null);
@@ -474,6 +477,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     if (!ayahContextMenu) return;
     const { ayah, surah } = ayahContextMenu;
     setAyahContextMenu(null);
+    setHoveredMenuAction(null);
 
     switch (action) {
       case 'hide':
@@ -1400,21 +1404,21 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       onPointerCancel={cancelLongPress}
                                       onPointerMove={cancelLongPress}
                                       onContextMenu={(e) => e.preventDefault()}
-                                      className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
+                                      className={`inline cursor-pointer rounded px-0.5 transition-colors tracking-normal font-bold ${
                                         isMemMarker && isReadMarker
-                                          ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
+                                          ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-foreground border-b-2 border-amber-400'
                                           : isMemMarker
-                                          ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
+                                          ? 'bg-amber-500/15 text-foreground border-b-2 border-amber-500'
                                           : isReadMarker
-                                          ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
+                                          ? 'bg-indigo-500/15 text-foreground border-b-2 border-indigo-500'
                                           : isActive
-                                          ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
+                                          ? 'border-b-2 border-emerald-500/80 dark:border-emerald-400/80 bg-emerald-500/10 text-foreground'
                                           : inStudyRange
-                                          ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
-                                          : 'hover:bg-accent/40'
+                                          ? 'bg-secondary/40 border-b border-zinc-500/40'
+                                          : 'hover:bg-accent/30'
                                       } ${
                                         pressingAyah === ayah.numberInSurah
-                                          ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105 inline-block'
+                                          ? 'bg-emerald-500/20 border-b-2 border-emerald-400'
                                           : ''
                                       }`}
                                     >
@@ -1444,22 +1448,18 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       onPointerCancel={cancelLongPress}
                                       onPointerMove={cancelLongPress}
                                       onContextMenu={(e) => e.preventDefault()}
-                                      className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
+                                      className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-colors whitespace-nowrap select-none ${
                                         isMemWirdEnd
-                                          ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
+                                          ? 'bg-amber-600 text-white font-black ring-1 ring-amber-500/50'
                                           : isMemMarker
-                                          ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
+                                          ? 'bg-amber-500 text-zinc-950 font-black shadow-sm'
                                           : isReadMarker
-                                          ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
+                                          ? 'bg-indigo-600 text-white font-black shadow-sm'
                                           : isMemorized
                                           ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
                                           : inStudyRange
                                           ? 'bg-secondary text-foreground border border-zinc-700'
                                           : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
-                                      } ${
-                                        pressingAyah === ayah.numberInSurah
-                                          ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
-                                          : ''
                                       }`}
                                     >
                                       ﴿{ayah.numberInSurah}﴾
@@ -1767,7 +1767,6 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                           </div>
                                         )}
 
-                                        <span className="inline-block">
                                         {hiddenAyahs.has(ayah.number) ? (
                                           <span
                                             onClick={() => {
@@ -1796,21 +1795,21 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                               onPointerCancel={cancelLongPress}
                                               onPointerMove={cancelLongPress}
                                               onContextMenu={(e) => e.preventDefault()}
-                                              className={`inline cursor-pointer rounded-lg px-1 py-0.5 transition-all inline tracking-normal font-bold ${
+                                              className={`inline cursor-pointer rounded px-0.5 transition-colors tracking-normal font-bold ${
                                                 isMemMarker && isReadMarker
-                                                  ? 'bg-gradient-to-r from-amber-500/30 to-indigo-500/30 text-foreground ring-2 ring-amber-400 shadow-md'
+                                                  ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-foreground border-b-2 border-amber-400'
                                                   : isMemMarker
-                                                  ? 'bg-amber-500/20 text-foreground ring-2 ring-amber-500/80 shadow-md'
+                                                  ? 'bg-amber-500/15 text-foreground border-b-2 border-amber-500'
                                                   : isReadMarker
-                                                  ? 'bg-indigo-500/20 text-foreground ring-2 ring-indigo-500/80 shadow-md'
+                                                  ? 'bg-indigo-500/15 text-foreground border-b-2 border-indigo-500'
                                                   : isActive
-                                                  ? 'bg-secondary/90 text-foreground ring-2 ring-zinc-500/70 shadow-md'
+                                                  ? 'border-b-2 border-emerald-500/80 dark:border-emerald-400/80 bg-emerald-500/10 text-foreground'
                                                   : inStudyRange
-                                                  ? 'bg-secondary/40 border-b-2 border-zinc-500/60'
-                                                  : 'hover:bg-accent/40'
+                                                  ? 'bg-secondary/40 border-b border-zinc-500/40'
+                                                  : 'hover:bg-accent/30'
                                               } ${
                                                 pressingAyah === ayah.numberInSurah
-                                                  ? 'bg-emerald-500/25 ring-2 ring-emerald-400/70 text-foreground shadow-[0_0_12px_rgba(16,185,129,0.35)] scale-105 inline-block'
+                                                  ? 'bg-emerald-500/20 border-b-2 border-emerald-400'
                                                   : ''
                                               }`}
                                             >
@@ -1841,28 +1840,24 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                               onPointerCancel={cancelLongPress}
                                               onPointerMove={cancelLongPress}
                                               onContextMenu={(e) => e.preventDefault()}
-                                              className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-8 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-all whitespace-nowrap select-none ${
+                                              className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-8 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-colors whitespace-nowrap select-none ${
                                                 isMemWirdEnd
-                                                  ? 'bg-amber-600 text-white font-black ring-2 ring-amber-500/50 scale-105 shadow-md'
+                                                  ? 'bg-amber-600 text-white font-black ring-1 ring-amber-500/50'
                                                   : isMemMarker
-                                                  ? 'bg-amber-500 text-zinc-950 font-black shadow-md scale-105'
+                                                  ? 'bg-amber-500 text-zinc-950 font-black shadow-sm'
                                                   : isReadMarker
-                                                  ? 'bg-indigo-600 text-white font-black shadow-md scale-105'
+                                                  ? 'bg-indigo-600 text-white font-black shadow-sm'
                                                   : isMemorized
                                                   ? 'bg-amber-500/10 text-amber-300 border border-amber-500/40'
                                                   : inStudyRange
                                                   ? 'bg-secondary text-foreground border border-zinc-700'
                                                   : 'border border-border/70 text-muted-foreground bg-secondary/30 hover:bg-secondary/60'
-                                              } ${
-                                                pressingAyah === ayah.numberInSurah
-                                                  ? 'scale-110 ring-2 ring-emerald-400 shadow-lg'
-                                                  : ''
                                               }`}
                                             >
                                               ﴿{ayah.numberInSurah}﴾
                                             </span>
                                           </>
-                                        )}</span>
+                                        )}
                                       </React.Fragment>
                                     );
                                   })}
@@ -2123,13 +2118,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                     : isReadMarker
                     ? 'border-indigo-500 bg-indigo-950/20 ring-2 ring-indigo-500/40 shadow-lg'
                     : isActive
-                    ? 'border-emerald-500/60 bg-emerald-500/5 ring-2 ring-emerald-500/30 shadow-lg'
+                    ? 'border-emerald-500/80 bg-emerald-500/10'
                     : inStudyRange
                     ? 'border-emerald-500/40 bg-emerald-950/10'
                     : 'border-border/60 bg-card hover:border-border hover:bg-accent/20'
                 } ${
                   pressingAyah === ayah.numberInSurah
-                    ? 'scale-[1.03] -translate-y-[2px] shadow-2xl shadow-emerald-500/20 ring-2 ring-emerald-400/50 z-10'
+                    ? 'border-emerald-400 bg-emerald-500/15'
                     : ''
                 }`}
               >
@@ -2216,17 +2211,38 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         </div>
       )}
 
-      {/* 6. 3D AYAH ACTION CONTEXT MENU (Portaled to Body) */}
+      {/* 6. 3D AYAH ACTION CONTEXT MENU (Portaled to Body with Drag-to-Select) */}
       {ayahContextMenu &&
         createPortal(
           <div
-            className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
-            onClick={() => setAyahContextMenu(null)}
+            className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200 transition-opacity"
+            onClick={() => {
+              setAyahContextMenu(null);
+              setHoveredMenuAction(null);
+            }}
+            onTouchMove={(e) => {
+              const touch = e.touches[0];
+              if (!touch) return;
+              const el = document.elementFromPoint(touch.clientX, touch.clientY);
+              const btn = el?.closest('[data-menu-action]') as HTMLElement | null;
+              const action = btn?.getAttribute('data-menu-action') || null;
+              if (action !== hoveredMenuAction) {
+                setHoveredMenuAction(action);
+              }
+            }}
+            onTouchEnd={(e) => {
+              if (hoveredMenuAction) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleAyahAction(hoveredMenuAction as any);
+                setHoveredMenuAction(null);
+              }
+            }}
             dir="rtl"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative z-10 w-full max-w-[320px] flex flex-col items-center select-none animate-in zoom-in-95 duration-200 font-arabic-title"
+              className="relative z-10 w-full max-w-[320px] flex flex-col items-center select-none animate-in zoom-in-90 fade-in duration-200 ease-out font-arabic-title"
             >
               {/* Ayah Preview Card */}
               <div className="w-full bg-[#f9f9f9]/95 dark:bg-[#1c1c1e]/95 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-right space-y-2">
@@ -2245,72 +2261,48 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
               {/* 5-Action iOS Rounded Stack Menu */}
               <div className="w-full bg-[#f9f9f9]/95 dark:bg-[#1c1c1e]/95 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-right mt-3">
-                {/* 1. Hide */}
-                <button
-                  type="button"
-                  onClick={() => handleAyahAction('hide')}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <span>إخفاء الآية (لهذه الجلسة)</span>
-                  <EyeOff className="size-4 text-muted-foreground" />
-                </button>
-
-                {/* 2. Memorization Checkpoint */}
-                <button
-                  type="button"
-                  onClick={() => handleAyahAction('mem_checkpoint')}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <span>تحديد كعلامة حفظ</span>
-                  <Target className="size-4 text-amber-500" />
-                </button>
-
-                {/* 3. Reading Checkpoint */}
-                <button
-                  type="button"
-                  onClick={() => handleAyahAction('read_checkpoint')}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <span>تحديد كعلامة قراءة وتلاوة</span>
-                  <BookOpen className="size-4 text-indigo-500" />
-                </button>
-
-                {/* 4. Bookmark to Notes */}
-                <button
-                  type="button"
-                  onClick={() => handleAyahAction('bookmark')}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <span>حفظ الآية في الملاحظات</span>
-                  <BookmarkPlus className="size-4 text-emerald-500" />
-                </button>
-
-                {/* 5. Explain / Tafseer */}
-                <button
-                  type="button"
-                  onClick={() => handleAyahAction('tafseer')}
-                  className="w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors cursor-pointer"
-                >
-                  <span>تفسير الآية (التفسير الميسر)</span>
-                  <Sparkles className="size-4 text-violet-500" />
-                </button>
+                {([
+                  { id: 'hide', label: 'إخفاء الآية (لهذه الجلسة)', icon: <EyeOff className="size-4 text-muted-foreground" /> },
+                  { id: 'mem_checkpoint', label: 'تحديد كعلامة حفظ', icon: <Target className="size-4 text-amber-500" /> },
+                  { id: 'read_checkpoint', label: 'تحديد كعلامة قراءة وتلاوة', icon: <BookOpen className="size-4 text-indigo-500" /> },
+                  { id: 'bookmark', label: 'حفظ الآية في الملاحظات', icon: <BookmarkPlus className="size-4 text-emerald-500" /> },
+                  { id: 'tafseer', label: 'تفسير الآية (التفسير الميسر)', icon: <Sparkles className="size-4 text-violet-500" /> },
+                ] as const).map((item) => {
+                  const isHovered = hoveredMenuAction === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      data-menu-action={item.id}
+                      onClick={() => handleAyahAction(item.id)}
+                      className={`w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-all duration-150 cursor-pointer ${
+                        isHovered
+                          ? 'bg-emerald-500/25 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold scale-[1.02] shadow-inner'
+                          : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                      {item.icon}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>,
           document.body
         )}
 
-      {/* 7. TAFSEER BOTTOM SHEET (Portaled to Body) */}
+      {/* 7. TAFSEER BOTTOM SHEET (Portaled to Body with Smooth Slide-in Animation) */}
       {tafseerAyah &&
         createPortal(
           <div
-            className="fixed inset-0 z-[10003] flex items-end justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-200"
+            className="fixed inset-0 z-[10003] flex items-end justify-center bg-black/65 backdrop-blur-md animate-in fade-in duration-300"
             onClick={() => setTafseerAyah(null)}
             dir="rtl"
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg bg-card/95 backdrop-blur-2xl border-t border-border/70 rounded-t-[2rem] p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom-6 duration-200 max-h-[75vh] flex flex-col font-arabic-body text-right"
+              className="w-full max-w-lg bg-card/95 backdrop-blur-2xl border-t border-border/70 rounded-t-[2.2rem] p-5 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-300 ease-out max-h-[75vh] flex flex-col font-arabic-body text-right"
             >
               <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full mx-auto -mt-1 shrink-0" />
               <div className="flex items-center justify-between border-b border-border pb-2.5 shrink-0">
@@ -2323,7 +2315,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setTafseerAyah(null)}
-                  className="h-7 w-7 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer"
+                  className="h-7 w-7 rounded-full bg-secondary hover:bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground cursor-pointer transition-all active:scale-90"
                 >
                   <X className="size-3.5" />
                 </button>
@@ -2342,7 +2334,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
               <button
                 type="button"
                 onClick={() => setTafseerAyah(null)}
-                className="w-full py-3 rounded-2xl bg-secondary hover:bg-secondary/80 text-foreground font-bold text-xs transition-all cursor-pointer shrink-0"
+                className="w-full py-3 rounded-2xl bg-secondary hover:bg-secondary/80 text-foreground font-bold text-xs transition-all cursor-pointer shrink-0 active:scale-98"
               >
                 إغلاق
               </button>

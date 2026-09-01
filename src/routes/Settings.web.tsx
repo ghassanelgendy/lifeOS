@@ -52,6 +52,7 @@ import { Link } from 'react-router-dom';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 import { AISettingsSection } from '../components/AISettingsSection';
+import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -1199,8 +1200,11 @@ export default function SettingsPage() {
           <h2 className="font-semibold">Data Management</h2>
         </div>
         <div className="p-4 space-y-4">
+          {/* Quran Offline Storage Downloader */}
+          <QuranOfflineDownloader />
+
           {/* Export */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <div className="flex items-center gap-3">
               <Download size={20} />
               <div>
