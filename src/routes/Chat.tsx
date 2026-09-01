@@ -486,12 +486,29 @@ export default function Chat() {
   const parseActionsFromResponse = (text: string) => {
     const actions: ChatAction[] = [];
     let cleanedContent = text;
-    const matches = [...text.matchAll(/\[ACTION:(create_task|create_event|create_note|create_transaction)\|([^\]]+)\]/g)];
+    const actionMatches = [...text.matchAll(/\[ACTION:(create_task|create_event|create_note|create_transaction)\|([^\]]+)\]/g)];
 
-    matches.forEach((match) => {
-      const [fullMatch, type, rawPayload] = match;
-      cleanedContent = cleanedContent.replace(fullMatch, '');
-      const parts = rawPayload.split('|');
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const offsetMinutes = -new Date().getTimezoneOffset();
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+    const tzOffsetStr = `${sign}${pad(offsetMinutes / 60)}:${pad(offsetMinutes % 60)}`;
+
+    function normalizeIsoWithLocalTz(dateStr?: string | null): string {
+      if (!dateStr) return '';
+      let s = dateStr.trim();
+      if (s.endsWith('Z')) s = s.slice(0, -1);
+      if (/[+-]\d{2}:\d{2}$/.test(s)) return s;
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(s)) {
+        return `${s.length === 16 ? s + ':00' : s}${tzOffsetStr}`;
+      }
+      return s;
+    }
+
+    actionMatches.forEach((match) => {
+      cleanedContent = cleanedContent.replace(match[0], '');
+      const parts = match[2].split('|');
+      const type = match[1];
 
       if (type === 'create_task') {
         const [title, dueDate, priority, description] = parts;
@@ -507,13 +524,16 @@ export default function Chat() {
         });
       } else if (type === 'create_event') {
         const [title, startTime, endTime, description] = parts;
+        const normalizedStart = normalizeIsoWithLocalTz(startTime);
+        const normalizedEnd = normalizeIsoWithLocalTz(endTime) || normalizedStart;
+
         actions.push({
           type,
           status: 'idle',
           payload: {
             title: title?.trim(),
-            start_time: startTime?.trim(),
-            end_time: endTime?.trim() || startTime?.trim(),
+            start_time: normalizedStart,
+            end_time: normalizedEnd,
             description: description?.trim() || null,
             recurrence: 'none',
             type: 'Event',
@@ -598,22 +618,32 @@ export default function Chat() {
     try {
       const knowledgeContext = compileKnowledgeContext(finalQuery);
 
+      const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      const offsetMinutes = -new Date().getTimezoneOffset();
+      const sign = offsetMinutes >= 0 ? '+' : '-';
+      const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+      const tzOffsetStr = `${sign}${pad(offsetMinutes / 60)}:${pad(offsetMinutes % 60)}`;
+      const todayFormatted = new Date().toISOString().slice(0, 10);
+
       const systemPrompt = `You are lifeOS AI, an intelligent, helpful, and privacy-focused personal life assistant. You understand English and Egyptian Arabic dialect (اللهجة المصرية). You have access to the user's workspace knowledge (tasks, habits, notes, calendar events, transactions, sleep logs, screen time, and health biometrics).
 
 When answering, analyze the provided data context to give personalized, precise, and actionable recommendations. Maintain a professional, encouraging, and clear tone.
 
 CRITICAL FEATURE: You can recommend action steps (tasks, calendar events, notes, transactions) for the user. When recommending them, you MUST append one or more special ACTION blocks at the very end of your response using this exact syntax:
 [ACTION:create_task|Title|Due Date (YYYY-MM-DD)|Priority (none/low/medium/high)|Description]
-[ACTION:create_event|Title|Start Time (ISO-8601 YYYY-MM-DDTHH:mm:ss)|End Time (ISO-8601 YYYY-MM-DDTHH:mm:ss)|Description]
+[ACTION:create_event|Title|Start Time (ISO-8601 with offset YYYY-MM-DDTHH:mm:ss${tzOffsetStr})|End Time (ISO-8601 with offset YYYY-MM-DDTHH:mm:ss${tzOffsetStr})|Description]
 [ACTION:create_note|Title|Body Content]
 [ACTION:create_transaction|Description|Amount|Type (income/expense)|Category (salary/freelance/investment/other_income/food/transport/utilities/entertainment/health/education/shopping/ipn/other_expense)]
 
+CRITICAL TIMEZONE & EVENT RULES:
+- User Timezone: ${userTimeZone} (UTC${tzOffsetStr})
+- When creating events or scheduling times from user requests (e.g. "from 4pm till 8pm" or "at 3pm"), the times stated by the user are ALWAYS in their local timezone (${userTimeZone}, UTC${tzOffsetStr}).
+- Always format event start_time and end_time with the user's timezone offset: e.g. YYYY-MM-DDTHH:mm:ss${tzOffsetStr}.
+
 Example responses with actions:
 "I noticed you have low sleep. I suggest scheduling an early bedtime event and creating a task to wind down.
-[ACTION:create_task|Bedtime prep|2026-07-21|high|Turn off screens and read a book]
-[ACTION:create_event|Sleep Bedtime|2026-07-21T22:00:00|2026-07-21T22:30:00|Wind down for sleep]"
-
-Current Date/Time: ${new Date().toLocaleString()}
+[ACTION:create_task|Bedtime prep|${todayFormatted}|high|Turn off screens and read a book]
+[ACTION:create_event|Sleep Bedtime|${todayFormatted}T22:00:00${tzOffsetStr}|${todayFormatted}T22:30:00${tzOffsetStr}|Wind down for sleep]"
 
 Use the following workspace knowledge to answer the user's queries:
 ${knowledgeContext}`;
