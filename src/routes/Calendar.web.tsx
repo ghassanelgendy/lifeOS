@@ -1022,22 +1022,22 @@ export default function CalendarPage() {
 
         {/* Sidebar - Selected Day Events */}
         <div className="lg:col-span-1">
-          <div className="rounded-xl border border-border bg-card p-4 sticky top-4">
-            <h3 className="font-semibold mb-4">
+          <div className="rounded-xl border border-border bg-card p-4 sticky top-4 flex flex-col max-h-[calc(100vh-6rem)]">
+            <h3 className="font-semibold mb-4 shrink-0">
               {format(activeDay, 'EEEE, MMM d')}
             </h3>
 
             <Button
               variant="outline"
               size="sm"
-              className="w-full mb-4"
+              className="w-full mb-4 shrink-0"
               onClick={() => void handleOpenModal(undefined, activeDay)}
             >
               <Plus size={14} />
               Add Event
             </Button>
 
-            <div className="space-y-3">
+            <div className="space-y-3 overflow-y-auto pr-1 flex-1 min-h-0">
               {selectedDayEvents.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No events scheduled
