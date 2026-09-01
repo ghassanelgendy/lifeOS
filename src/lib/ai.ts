@@ -126,7 +126,7 @@ async function executeCandidateCompletion(
 
   // 2. Web Browser environment: execute via /api/ai proxy
   const proxyController = new AbortController();
-  const proxyTimer = setTimeout(() => proxyController.abort(), 25000);
+  const proxyTimer = setTimeout(() => proxyController.abort(), 60000);
   let proxyResponse;
 
   try {
@@ -143,10 +143,16 @@ async function executeCandidateCompletion(
     clearTimeout(proxyTimer);
   } catch (netErr: any) {
     clearTimeout(proxyTimer);
-    // If proxy itself is unreachable (e.g. pure Vite dev server), attempt direct fetch
+    
+    // If proxy failed and the domain is known to block CORS in browsers, fail fast to candidate router
+    if (cleanBaseUrl.includes('bynara.id')) {
+      throw new Error(`Proxy unreachable for ${cleanBaseUrl}: ${netErr.message || netErr}`);
+    }
+
+    // Otherwise attempt direct fetch
     const directEndpoint = `${cleanBaseUrl}/chat/completions`;
     const directController = new AbortController();
-    const directTimer = setTimeout(() => directController.abort(), 25000);
+    const directTimer = setTimeout(() => directController.abort(), 45000);
 
     try {
       const directResponse = await fetch(directEndpoint, {

@@ -100,5 +100,5 @@ Server-side cron for automatically summarizing unorganized brain dumps from past
 
 - **Supabase Edge Function**: `POST https://<project-ref>.supabase.co/functions/v1/braindump-organizer`
 - **Vercel Cron Proxy**: `GET /api/cron/braindump-organizer`
-- **Supabase pg_cron**: Scheduled via `midnight-braindump-organizer` (`5 0 * * *`) calling `public.process_midnight_braindumps()`.
+- **Supabase pg_cron**: Scheduled via `midnight-braindump-organizer` (`5 21 * * *`, which corresponds to 12:05 AM Cairo / UTC+3) calling `public.process_midnight_braindumps()`.
 - **Secrets**: Uses user AI API keys configured in `user_app_settings` (Dahl/Bynara/OpenAI fallback) and optional `CRON_SECRET` / `BRAINDUMP_CRON_SECRET`.
