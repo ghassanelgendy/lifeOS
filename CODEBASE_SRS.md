@@ -499,6 +499,22 @@ The system shall register a URL scheme listener (`lifeos://braindump?text=`) in 
 #### FR-NOTE-010: Server-Side AI Brain Dump Organizer
 The system shall provide a server-side cron service (`braindump-organizer` Supabase Edge Function & `public.process_midnight_braindumps()` pg_cron job) executing nightly to summarize unorganized past brain dumps with configured AI providers and write structured notes to the `Organized Brain Dumps` folder.
 
+#### FR-NOTE-011: Browser Extension Companion & Chronos Screentime Tracker
+The system shall provide a Manifest V3 browser extension companion (`extension/`) supporting:
+- **Chronos Screentime Tracker:** Tracking active website domains and URLs in the background and batch syncing stats to `screentime_daily_website_stats`.
+- **Real-time Screentime:** Aggregated active screentime for today displayed prominently at top.
+- **Smart Web Clipper:** Extracting title, URL, user selection, and article content with auto-detection of default destination note (`"Projects I wanna try"`).
+- **Today's Action Hub:** Quick task adder with priority/due time, today's pending tasks, and 1-tap habit completion toggles.
+- **1-Click Sync:** Auto-detecting and importing auth credentials and Supabase configuration from open lifeOS tabs.
+
+#### FR-NOTE-012: In-App AI Note Organizer & Smart Action Extractor
+The system shall provide an in-app AI Note Organizer Sheet (`AINoteOrganizerSheet.tsx` in `Notes.web.tsx`):
+- **Custom Prompt Instructions:** Enabling custom user prompts and instruction modifiers.
+- **Append vs Replace Toggle:** Allowing users to choose whether to append organized results or replace note content.
+- **Cognitive Action Items Extractor:** Parsing raw timestamps and bullets into discrete actionable tasks (e.g. calls, meetings, coding branches, emails, events).
+- **Context-Aware Scheduling:** Suggesting realistic due dates (e.g. mapping explicit dates like "Oct 2"), times distributed across awake slots based on sleep tracking metrics, and mapping to existing user task lists and tags.
+- **Interactive Review & Batch Creation:** Displaying an interactive task confirmation table where users can edit titles, dates, times, lists, and tags before committing them to the database.
+
 ---
 
 ### 3.11 Focus Sessions

@@ -438,7 +438,16 @@ On Reconnect:
 - Title Bar: Hidden, frameless window
 - Inject: Custom JS for desktop-specific behavior
 - Local Notifications: setInterval-based polling
-- Storage: Same as web (localStorage + IndexedDB)
+
+### 8.4 Browser Extension (Companion & Web Clipper)
+- Target: Chrome, Brave, Edge, Firefox (Manifest V3)
+- Chronos Screentime Companion: Accurately tracks active website domains and URLs in background, logging duration and sessions to `screentime_daily_website_stats`.
+- Real-time Screentime: Aggregated active screen time for today displayed at top of popup.
+- Web Clipper: Smart capture of title, URL, selection, article text with custom prompt instructions.
+- Target Note Selection: Defaults to `"Projects I wanna try"` (or user setting) with auto-detect.
+- Daily Action Hub: Today's pending tasks, quick task creator with priority/time, and 1-tap habit completion toggles.
+- Auth & Sync: 1-Click credential sync from open lifeOS tabs + direct Supabase PostgREST client.
+- Storage: Chrome sync/local storage.
 - Base URL: `./` (relative paths)
 
 ### 8.4 Platform Resolution (Build-Time)
