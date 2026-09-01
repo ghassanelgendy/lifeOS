@@ -79,59 +79,75 @@ function parseDateAndTime(
       dueDate = today;
     } else if (lower === 'tomorrow' || lower === 'غدا' || lower === 'بكرة') {
       dueDate = tomorrow;
-    } else if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
-      dueDate = dateStr;
-    } else if (/^\d{4}\/\d{2}\/\d{2}$/.test(dateStr)) {
-      dueDate = dateStr.replace(/\//g, '-');
-    } else if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateStr)) {
-      // DD/MM/YYYY or MM/DD/YYYY
-      const parts = dateStr.split('/');
-      const d1 = parseInt(parts[0], 10);
-      const d2 = parseInt(parts[1], 10);
-      const y = parseInt(parts[2], 10);
-      if (d1 > 12) {
-        // DD/MM/YYYY
-        dueDate = `${y}-${String(d2).padStart(2, '0')}-${String(d1).padStart(2, '0')}`;
-      } else {
-        // Assume YYYY-MM-DD format preference
-        dueDate = `${y}-${String(d1).padStart(2, '0')}-${String(d2).padStart(2, '0')}`;
-      }
     } else {
-      // Try full Date parse (e.g. ISO string or RFC email date)
-      const parsed = new Date(dateStr);
-      if (!Number.isNaN(parsed.getTime())) {
-        try {
-          const formatter = new Intl.DateTimeFormat('en-CA', {
-            timeZone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          });
-          dueDate = formatter.format(parsed);
+      // 1. Check DD-MM-YYYY or DD/MM/YYYY with optional time, e.g. "30-08-2026 14:20:17" or "30-08-2026"
+      const dmyMatch = dateStr.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (dmyMatch) {
+        const d = parseInt(dmyMatch[1], 10);
+        const m = parseInt(dmyMatch[2], 10);
+        const y = parseInt(dmyMatch[3], 10);
+        dueDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (dmyMatch[4] && dmyMatch[5]) {
+          const h = String(parseInt(dmyMatch[4], 10)).padStart(2, '0');
+          const min = String(parseInt(dmyMatch[5], 10)).padStart(2, '0');
+          const s = dmyMatch[6] ? String(parseInt(dmyMatch[6], 10)).padStart(2, '0') : '00';
+          dueTime = `${h}:${min}:${s}`;
+        }
+      }
 
-          // If time is not explicitly given, extract from parsed date
-          if (!timeStr) {
-            const timeFormatter = new Intl.DateTimeFormat('en-GB', {
-              timeZone,
-              hour: '2-digit',
-              minute: '2-digit',
-              second: '2-digit',
-              hour12: false,
-            });
-            const extractedTime = timeFormatter.format(parsed);
-            if (extractedTime && extractedTime !== '00:00:00') {
-              dueTime = extractedTime;
-            }
+      // 2. Check YYYY-MM-DD or YYYY/MM/DD with optional time, e.g. "2026-08-30 14:20:17" or "2026-08-30"
+      if (!dueDate) {
+        const ymdMatch = dateStr.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+        if (ymdMatch) {
+          const y = parseInt(ymdMatch[1], 10);
+          const m = parseInt(ymdMatch[2], 10);
+          const d = parseInt(ymdMatch[3], 10);
+          dueDate = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+          if (ymdMatch[4] && ymdMatch[5]) {
+            const h = String(parseInt(ymdMatch[4], 10)).padStart(2, '0');
+            const min = String(parseInt(ymdMatch[5], 10)).padStart(2, '0');
+            const s = ymdMatch[6] ? String(parseInt(ymdMatch[6], 10)).padStart(2, '0') : '00';
+            dueTime = `${h}:${min}:${s}`;
           }
-        } catch {
-          dueDate = parsed.toISOString().split('T')[0];
+        }
+      }
+
+      // 3. Fallback to ISO / RFC date parse if not matched yet
+      if (!dueDate) {
+        const parsed = new Date(dateStr);
+        if (!Number.isNaN(parsed.getTime())) {
+          try {
+            const formatter = new Intl.DateTimeFormat('en-CA', {
+              timeZone,
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            });
+            dueDate = formatter.format(parsed);
+
+            if (!timeStr && !dueTime) {
+              const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+                timeZone,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false,
+              });
+              const extractedTime = timeFormatter.format(parsed);
+              if (extractedTime && extractedTime !== '00:00:00') {
+                dueTime = extractedTime;
+              }
+            }
+          } catch {
+            dueDate = parsed.toISOString().split('T')[0];
+          }
         }
       }
     }
   }
 
+  // If timeInput is explicitly provided, it takes precedence over time extracted from dateStr
   if (timeStr) {
-    // Check HH:mm or HH:mm:ss
     const match24 = timeStr.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
     if (match24) {
       const h = String(parseInt(match24[1], 10)).padStart(2, '0');
@@ -139,7 +155,6 @@ function parseDateAndTime(
       const s = match24[3] ? String(parseInt(match24[3], 10)).padStart(2, '0') : '00';
       dueTime = `${h}:${m}:${s}`;
     } else {
-      // Check 12-hour format e.g. "5:00 PM" or "5 PM"
       const match12 = timeStr.match(/^(\d{1,2})(?::(\d{2}))?\s*(am|pm)$/i);
       if (match12) {
         let h = parseInt(match12[1], 10);
@@ -312,15 +327,13 @@ Deno.serve(async (req: Request) => {
           usage: {
             method: 'POST',
             body: {
-              title: 'Complete project proposal (from Email)',
-              description: 'Email details...',
-              due_date: '2026-09-05',
-              due_time: '14:00',
+              title: 'Task Title',
+              description: 'Task details / email body',
+              due_date: '30-08-2026 14:20:17',
               priority: 'high',
               list: 'Work',
-              tags: ['company', 'action-required'],
-              sender: 'colleague@company.com',
-              url: 'https://mail.google.com/...',
+              tags: ['servixa'],
+              url: 'message://...',
             },
           },
         }),
@@ -336,12 +349,7 @@ Deno.serve(async (req: Request) => {
       body.details ??
       body.email_body ??
       '';
-    let descriptionStr = typeof rawDescription === 'string' ? rawDescription.trim() : (rawDescription ? String(rawDescription).trim() : '');
-
-    const sender = typeof body.sender === 'string' ? body.sender.trim() : (typeof body.from === 'string' ? body.from.trim() : null);
-    if (sender && !descriptionStr.includes(sender)) {
-      descriptionStr = `📩 **From:** ${sender}\n\n${descriptionStr}`.trim();
-    }
+    const descriptionStr = typeof rawDescription === 'string' ? rawDescription.trim() : (rawDescription ? String(rawDescription).trim() : '');
 
     const timeZone = typeof body.timezone === 'string' ? body.timezone : 'Africa/Cairo';
 
@@ -399,7 +407,7 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 4. Resolve Tags
+    // 4. Resolve Tags (defaults to ['servixa'] if no tags provided)
     const rawTags = body.tags ?? body.tag_names ?? body.tag_ids;
     let tagNamesToMatch: string[] = [];
     let explicitTagIds: string[] = [];
@@ -417,6 +425,11 @@ Deno.serve(async (req: Request) => {
         if (isValidUuid(p)) explicitTagIds.push(p);
         else tagNamesToMatch.push(p);
       }
+    }
+
+    // If no tags were provided, default to 'servixa'
+    if (tagNamesToMatch.length === 0 && explicitTagIds.length === 0) {
+      tagNamesToMatch.push('servixa');
     }
 
     const finalTagIds: string[] = [...explicitTagIds];
@@ -437,7 +450,7 @@ Deno.serve(async (req: Request) => {
             resolvedTagNames.push(found.name);
           }
         } else {
-          // Optionally create missing tag
+          // Auto-create missing tag
           const { data: newTag } = await supabase
             .from('tags')
             .insert({ name, color: '#6366f1' })
