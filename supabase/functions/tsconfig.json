@@ -6,7 +6,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ESNext",
-    "lib": ["ESNext"],
+    "lib": ["ESNext", "DOM"],
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "allowImportingTsExtensions": true
