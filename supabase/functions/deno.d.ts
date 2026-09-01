@@ -18,15 +18,20 @@ declare namespace Deno {
   function serve(handler: (req: Request) => Response | Promise<Response>): void;
 }
 
-interface SupabaseQueryBuilder<T = unknown> {
+interface SupabaseQueryBuilder<T = any> {
   select(columns?: string): this;
   eq(column: string, value: unknown): this;
+  neq(column: string, value: unknown): this;
   not(column: string, op: string, value: unknown): this;
-  is(column: string, value: null): this;
+  is(column: string, value: unknown): this;
   in(column: string, values: unknown[]): this;
   order(column: string, opts?: { ascending?: boolean }): this;
   gte(column: string, value: string): this;
   gt(column: string, value: string): this;
+  lte(column: string, value: string): this;
+  lt(column: string, value: string): this;
+  ilike(column: string, pattern: string): this;
+  or(filters: string): this;
   limit(count: number): this;
   insert(data: Record<string, unknown> | Record<string, unknown>[]): this;
   upsert(data: Record<string, unknown> | Record<string, unknown>[], opts?: { onConflict?: string; ignoreDuplicates?: boolean }): this;
@@ -34,16 +39,27 @@ interface SupabaseQueryBuilder<T = unknown> {
   delete(): this;
   single(): this;
   maybeSingle(): this;
-  then<TResult>(onfulfilled?: (value: { data: T | null; error: { message: string } | null } | { data: T[] | null; error: { message: string } | null }) => TResult | PromiseLike<TResult>): PromiseLike<TResult>;
+  then<TResult>(onfulfilled?: (value: { data: any; error: { message: string } | null }) => TResult | PromiseLike<TResult>): PromiseLike<TResult>;
 }
 
 interface SupabaseClient {
-  from(table: string): SupabaseQueryBuilder;
+  from(table: string): SupabaseQueryBuilder<any>;
   auth: any;
 }
 
 declare module "npm:@supabase/supabase-js@2" {
   export function createClient(url: string, key: string, options?: any): SupabaseClient;
+}
+
+declare module "npm:web-push@3.6.7" {
+  const webpush: {
+    setVapidDetails(mailto: string, publicKey: string, privateKey: string): void;
+    sendNotification(
+      subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
+      payload: string
+    ): Promise<unknown>;
+  };
+  export default webpush;
 }
 
 declare module "https://esm.sh/web-push@3.6.7" {
@@ -56,3 +72,5 @@ declare module "https://esm.sh/web-push@3.6.7" {
   };
   export default webpush;
 }
+
+

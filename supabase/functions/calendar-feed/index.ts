@@ -342,7 +342,7 @@ Deno.serve(async (req: Request) => {
           if (event.recurrence.startsWith('weekly:')) {
             const dayNums = event.recurrence.split(':')[1].split(',').map(Number);
             const icalDays = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-            const byDay = dayNums.map((d) => icalDays[d]).filter(Boolean).join(',');
+            const byDay = dayNums.map((d: number) => icalDays[d]).filter(Boolean).join(',');
             let rrule = `RRULE:FREQ=WEEKLY;BYDAY=${byDay}`;
             if (event.recurrence_end) {
               rrule += `;UNTIL=${formatUtcStamp(event.recurrence_end)}`;
