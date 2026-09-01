@@ -459,6 +459,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### supabase/functions/calendar-notifications-dispatch
 - [supabase/functions/calendar-notifications-dispatch/index.ts](#supabase-functions-calendar-notifications-dispatch-index-ts)
 
+### supabase/functions/create-task
+- [supabase/functions/create-task/index.ts](#supabase-functions-create-task-index-ts)
+
 ### supabase/functions/habit-notifications-dispatch
 - [supabase/functions/habit-notifications-dispatch/index.ts](#supabase-functions-habit-notifications-dispatch-index-ts)
 
@@ -468,6 +471,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### supabase/functions/process-sms
 - [supabase/functions/process-sms/index.ts](#supabase-functions-process-sms-index-ts)
 - [supabase/functions/process-sms/parser.ts](#supabase-functions-process-sms-parser-ts)
+
+### supabase/functions/reconcile-statement
+- [supabase/functions/reconcile-statement/index.ts](#supabase-functions-reconcile-statement-index-ts)
 
 ### supabase/functions/report-notification-dispatch
 - [supabase/functions/report-notification-dispatch/index.ts](#supabase-functions-report-notification-dispatch-index-ts)
@@ -614,7 +620,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6528
+**Lines:** 6554
 
 ---
 
@@ -625,7 +631,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1234
+**Lines:** 1237
 
 ---
 
@@ -636,7 +642,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 892
+**Lines:** 893
 
 ---
 
@@ -841,7 +847,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 828
+**Lines:** 829
 
 ---
 
@@ -6098,6 +6104,29 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="supabase-functions-create-task-index-ts"></a>
+### supabase/functions/create-task/index.ts
+
+**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations.
+
+**Functions & Classes:**
+- `isValidUuid` (Function)
+- `parsePriority` (Function)
+- `getLocalTodayAndTomorrow` (Function)
+- `parseDateAndTime` (Function)
+- `extractSubtasksAndCleanDescription` (Function)
+
+**Function Details:**
+- **`isValidUuid`** — Utility function for is valid uuid.
+- **`parsePriority`** — Utility function for parse priority.
+- **`getLocalTodayAndTomorrow`** — Utility function for get local today and tomorrow.
+- **`parseDateAndTime`** — Utility function for parse date and time.
+- **`extractSubtasksAndCleanDescription`** — Utility function for extract subtasks and clean description.
+
+**Lines:** 590
+
+---
+
 <a name="supabase-functions-deno-d-ts"></a>
 ### supabase/functions/deno.d.ts
 
@@ -6115,7 +6144,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`get`** — Utility function for get.
 - **`createClient`** — Utility function for create client.
 
-**Lines:** 59
+**Lines:** 77
 
 ---
 
@@ -6206,6 +6235,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `ParsedTransaction` (Interface)
 
 **Lines:** 472
+
+---
+
+<a name="supabase-functions-reconcile-statement-index-ts"></a>
+### supabase/functions/reconcile-statement/index.ts
+
+**File Purpose:** Supabase Edge Function for bank statement reconciliation. Performs smart multi-factor matching (exact amount, cash flow direction, and ±4-day date proximity window) against existing database transactions to enrich records in-place with bank references, cleaned merchant/IPN recipient names, and verified status without creating duplicates.
+
+**Functions & Classes:**
+- `parseDaysDifference` (Function)
+- `normalizeAmount` (Function)
+- `inferDirection` (Function)
+
+**Function Details:**
+- **`parseDaysDifference`** — Calculates absolute day difference between two dates for proximity matching.
+- **`normalizeAmount`** — Normalizes floating point and string amounts to two decimal places.
+- **`inferDirection`** — Infers cash flow direction ('In' vs 'Out') from transaction type and direction fields.
 
 ---
 

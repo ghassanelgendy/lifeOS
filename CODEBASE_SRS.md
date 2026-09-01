@@ -368,13 +368,16 @@ The system shall accept forwarded bank SMS messages via Supabase Edge Function, 
 #### FR-FIN-012: Smart Category Inference
 The system shall attempt to infer transaction categories from description/merchant using predefined rules.
 
-#### FR-FIN-013: Privacy Mode
+#### FR-FIN-013: Bank Statement Parsing & Smart Reconciliation
+The system shall support parsing encrypted monthly PDF bank statements (Debit & Credit), extracting structured transaction records (entry/value dates, bank references, clean merchant and Instapay recipient entities, amounts, post-transaction balances), and smartly reconciling them against existing database transactions using exact amount, cash flow direction, and a smart date window. Matched records are enriched in-place with verified bank references, clean entities, and statement-verified status without inserting redundant duplicates.
+
+#### FR-FIN-014: Privacy Mode
 The system shall support a "privacy mode" that blurs financial data until hovered, for public screen viewing.
 
-#### FR-FIN-014: Transaction Rules
+#### FR-FIN-015: Transaction Rules
 Users shall be able to configure automatic categorization rules based on transaction descriptions.
 
-#### FR-FIN-015: Deep Link Transaction Entry
+#### FR-FIN-016: Deep Link Transaction Entry
 Users shall be able to add transactions via deep links (`lifeos://add-transaction?amount=...&category=...`).
 
 ---
@@ -900,6 +903,9 @@ Supabase Edge Function shall sync iOS reminders/tasks via external API.
 
 #### FR-DL-009: Calendar Feed Token
 The system shall generate secure tokenized URLs for iCal calendar feeds.
+
+#### FR-DL-010: Automated Task Creation Webhook Integration
+Supabase Edge Function (`create-task`) shall accept automated POST requests from iOS Mail Automations, Apple Shortcuts, and external webhooks to create tasks with intelligent parsing of subject, body, due date/time, priorities, lists, subtasks, and tags.
 
 ---
 

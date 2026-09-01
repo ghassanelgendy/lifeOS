@@ -609,6 +609,7 @@ Vite Custom Plugin:
 - [x] Autopilot targets
 - [x] Deep insights
 - [x] Bank SMS automation
+- [x] Bank Statement Parsing & Smart Database Reconciliation
 - [x] Edge Function notifications
 - [x] AI NLP Quick Add & Subtask Breakdown (Bynara)
 - [x] AI Notes Summarization, Refinement & Wiki Linker (Bynara)
@@ -860,6 +861,7 @@ interface FocusSession {
 | `upload-sleep` | Parse Chronos-format sleep data |
 | `sync-inbody` | Sync InBody scan data from external API |
 | `sync-reminders` | Sync iOS reminders/tasks |
+| `create-task` | Automated task creation webhook/API for email triggers, iOS Shortcuts, and external automations |
 | `send-test-notification` | Send test push notification |
 
 ---

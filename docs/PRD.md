@@ -796,6 +796,7 @@ interface FocusSession {
 | `upload-sleep` | Parse Chronos-format sleep data |
 | `sync-inbody` | Sync InBody scan data from external API |
 | `sync-reminders` | Sync iOS reminders/tasks |
+| `create-task` | Automated task creation webhook/API for email triggers, iOS Shortcuts, and external automations |
 | `send-test-notification` | Send test push notification |
 
 ---
