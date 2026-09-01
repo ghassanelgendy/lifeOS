@@ -22,6 +22,7 @@ import {
   ArrowUpDown,
   Mic,
   Users,
+  Copy,
 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
@@ -2800,6 +2801,7 @@ interface TaskItemProps {
 
 function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate, onToggleSubtask }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
   const priorityConfig = PRIORITY_CONFIG[task.priority];
@@ -2923,6 +2925,24 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
 
         {!task.id.startsWith('habit-') && (
           <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                void navigator.clipboard.writeText(task.title).then(() => {
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                });
+              }}
+              className={cn(
+                "p-1.5 rounded transition-all",
+                copied
+                  ? "text-green-500"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+              )}
+              title="Copy title"
+            >
+              <Copy size={14} />
+            </button>
             <button
               onClick={(e) => {
                 e.stopPropagation();
