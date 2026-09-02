@@ -108,6 +108,12 @@
     "workbox-routing": "^7.4.1"
   },
   "pnpm": {
+    "overrides": {
+      "undici": "^8.10.1",
+      "uuid": "^14.0.2",
+      "@xmldom/xmldom": "^0.9.12",
+      "esbuild": "^0.28.2"
+    },
     "supportedArchitectures": {
       "os": [
         "current",
