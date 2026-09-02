@@ -209,6 +209,31 @@ jobs:
           find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.deb" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.deb \;
           find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.AppImage" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.AppImage \;
 
+      - name: Clean up Linux desktop entries
+        shell: bash
+        run: |
+          # Find the generated .deb file
+          DEB=$(find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.deb" | head -n1)
+          if [ -z "$DEB" ]; then
+            echo "⚠️ No .deb found; skipping desktop entry cleanup."
+            exit 0
+          fi
+
+          # Extract it to a temporary folder
+          mkdir -p deb-unpacked
+          dpkg-deb -R "$DEB" deb-unpacked
+
+          # Remove the unwanted duplicate entry
+          rm -f deb-unpacked/usr/share/applications/lifeos.desktop
+
+          # Edit the remaining entry to enable GPU compositing
+          sed -i 's|^Exec=pake-lifeos|Exec=env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0 pake-lifeos|' \
+            deb-unpacked/usr/share/applications/com.pake.lifeos.desktop
+
+          # Re-package the .deb
+          dpkg-deb -b deb-unpacked cleaned.deb
+          mv cleaned.deb "$DEB"
+
       - name: Upload Linux Artifacts
         uses: actions/upload-artifact@v7
         with:

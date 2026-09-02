@@ -1145,7 +1145,7 @@ All icon buttons and non-text controls shall have descriptive `aria-label` attri
 ### 5.1 User Interfaces
 - **Web:** Responsive SPA with PWA manifest, installable on mobile/desktop
 - **iOS:** Native wrapper via Capacitor with WebView rendering, native status bar, keyboard handling, and push notifications
-- **Desktop:** Pake-wrapped web app with HashRouter, system tray, and hide-on-close behavior
+- **Desktop:** Pake-wrapped web app with HashRouter, system tray, and hide-on-close behavior. On Linux it uses native GNOME / Adwaita styling (via the `linux` platform UI override) with CSS blur disabled. The launcher enables GPU compositing for WebKitGTK (via an `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix in the desktop entry) to keep the dashboard smooth. A single deduplicated `.desktop` entry is installed to avoid duplicate application-menu icons.
 
 ### 5.2 Hardware Interfaces
 - **iOS:** Camera/Photos (for profile), Haptics, Push Notifications, Local Notifications, Badge, Deep Links

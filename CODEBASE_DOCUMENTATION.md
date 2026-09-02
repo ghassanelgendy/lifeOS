@@ -558,7 +558,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 314
+**Notes:**
+- Builds & releases Desktop (Pake) packages: Windows MSI and Linux `.deb`/`.AppImage`.
+- **Linux desktop entry cleanup:** A post-build step extracts the generated `.deb`, removes the duplicate `lifeos.desktop` entry (leaving only the single `com.pake.lifeos.desktop`), and edits its `Exec=` line with an `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix to enable GPU compositing for WebKitGTK, then repackages the `.deb`.
+
+**Lines:** 338
 
 ---
 
@@ -624,7 +628,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6656
+**Lines:** 6659
 
 ---
 
@@ -646,7 +650,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 897
+**Lines:** 902
 
 ---
 
@@ -3225,7 +3229,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`AuthProvider`** — Utility function for auth provider.
 - **`useAuth`** — Utility function for use auth.
 
-**Lines:** 182
+**Lines:** 206
 
 ---
 
@@ -6519,7 +6523,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`parseTimestamp`** — Utility function for parse timestamp.
 - **`buildUploadedAt`** — Utility function for build uploaded at.
 
-**Lines:** 1454
+**Lines:** 1538
 
 ---
 

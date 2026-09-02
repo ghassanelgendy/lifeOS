@@ -442,6 +442,12 @@ On Reconnect:
 - Inject: Custom JS for desktop-specific behavior
 - Local Notifications: setInterval-based polling
 
+#### 8.3.1 Linux Desktop (GNOME / Adwaita) UI
+- **Native Styling:** On Linux the desktop UI applies native GNOME / Adwaita styling (via the `linux` platform UI override in `Settings.ios.tsx`).
+- **CSS Blur Disabled:** Backdrop-filter / CSS blur effects are disabled on Linux to keep WebKitGTK rendering fast and visually correct.
+- **Performance:** The launcher enables GPU compositing for the WebKitGTK dashboard (see the `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix in the desktop entry). Without this, Pake's default environment variables force software rasterisation, making the dashboard laggy and sluggish.
+- **Packaging:** A single, correctly-configured `.desktop` entry is installed (deduplicated during the CI post-build step), so only one icon appears in the application menu.
+
 ### 8.4 Browser Extension (Companion & Web Clipper)
 - Target: Chrome, Brave, Edge, Firefox (Manifest V3)
 - Chronos Screentime Companion: Accurately tracks active website domains and URLs in background, logging duration and sessions to `screentime_daily_website_stats`.
@@ -817,7 +823,7 @@ interface FocusSession {
 
 | Feature | Web/PWA | iOS Native | Desktop (Pake) |
 |---------|---------|------------|----------------|
-| Installable | Yes (PWA) | App Store / TestFlight | DMG/MSI/AppImage |
+| Installable | Yes (PWA) | App Store / TestFlight | DMG/MSI/AppImage/.deb |
 | Offline Support | Service Worker + Cache | Service Worker + Cache | Service Worker + Cache |
 | Push Notifications | Web Push (VAPID) | APNs (Capacitor) | Simulated polling |
 | Local Notifications | Service Worker | Capacitor Local Notifications | setInterval polling |
