@@ -106,8 +106,8 @@ interface UIState {
   setTheme: (theme: 'dark' | 'light') => void;
   accentTheme: AccentTheme;
   setAccentTheme: (accent: AccentTheme) => void;
-  platformUIOverride: 'auto' | 'web' | 'pake';
-  setPlatformUIOverride: (override: 'auto' | 'web' | 'pake') => void;
+  platformUIOverride: 'auto' | 'web' | 'pake' | 'linux';
+  setPlatformUIOverride: (override: 'auto' | 'web' | 'pake' | 'linux') => void;
   showSystemTray: boolean;
   setShowSystemTray: (show: boolean) => void;
 
@@ -231,7 +231,7 @@ export type PersistedUiSlice = {
   prayerLocationLabel: string;
   theme: 'dark' | 'light';
   accentTheme: AccentTheme;
-  platformUIOverride: 'auto' | 'web' | 'pake';
+  platformUIOverride: 'auto' | 'web' | 'pake' | 'linux';
   showSystemTray: boolean;
   mobileNavItems: string[];
   desktopNavOrder: string[];

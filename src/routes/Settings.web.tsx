@@ -445,12 +445,13 @@ export default function SettingsPage() {
             </p>
             <select
               value={platformUIOverride}
-              onChange={(e) => setPlatformUIOverride(e.target.value as 'auto' | 'web' | 'pake')}
+              onChange={(e) => setPlatformUIOverride(e.target.value as 'auto' | 'web' | 'pake' | 'linux')}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="auto">Auto (Detect desktop wrapper)</option>
               <option value="web">Web UI Style</option>
-              <option value="pake">Desktop (Fluent UI) Style</option>
+              <option value="linux">Linux Desktop (GNOME / Adwaita) Style</option>
+              <option value="pake">Windows Desktop (Fluent UI) Style</option>
             </select>
           </div>
 

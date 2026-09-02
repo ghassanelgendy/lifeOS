@@ -555,12 +555,43 @@ html.light[data-accent="amber"] {
 }
 
 .linux-platform .bg-card,
-.linux-platform [class*="bg-card"] {
+.linux-platform [class*="bg-card"],
+.linux-platform .fui-Card {
   border: 1px solid var(--color-border) !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.12), 0 1px 2px -1px rgba(0, 0, 0, 0.08) !important;
+  border-radius: 12px !important;
 }
 
-/* Linux GNOME clean scrollbars */
+/* Linux GNOME Adwaita-style buttons & badges */
+.linux-platform .fui-Badge {
+  border-radius: 6px !important;
+  font-weight: 600 !important;
+}
+
+.linux-platform .fui-Button,
+.linux-platform button {
+  border-radius: 8px;
+}
+
+/* Disable expensive backdrop-filter blur on Linux WebKitGTK to ensure 60fps smooth rendering */
+.linux-platform [class*="backdrop-blur-"],
+.linux-platform .backdrop-blur-xl,
+.linux-platform .backdrop-blur-2xl,
+.linux-platform .backdrop-blur-md,
+.linux-platform .backdrop-blur-lg,
+.linux-platform .liquid-glass-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.linux-platform [data-fab-container] .backdrop-blur-xl,
+.linux-platform [data-fab-container] .backdrop-blur-2xl,
+.linux-platform [data-fab-container] button {
+  background-color: var(--color-card) !important;
+  border: 1px solid var(--color-border) !important;
+}
+
+/* Linux GNOME clean overlay scrollbars */
 .linux-platform ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -571,12 +602,12 @@ html.light[data-accent="amber"] {
 }
 
 .linux-platform ::-webkit-scrollbar-thumb {
-  background: rgba(140, 140, 140, 0.25);
+  background: rgba(140, 140, 140, 0.3);
   border-radius: 9999px;
 }
 
 .linux-platform ::-webkit-scrollbar-thumb:hover {
-  background: rgba(140, 140, 140, 0.5);
+  background: rgba(140, 140, 140, 0.6);
 }
 
 /* Utility to hide scrollbars */

@@ -98,15 +98,16 @@ function ThemeSync() {
 
     const isPakeMode = import.meta.env.MODE === 'pake' || (typeof window !== 'undefined' && (window as any).pake);
     const isWindows = typeof navigator !== 'undefined' && (/windows|win32|win64/i.test(navigator.userAgent));
+    const isLinuxOS = typeof navigator !== 'undefined' && (/linux|x11/i.test(navigator.userAgent));
     const isPakeWindows = isPakeMode && isWindows && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
-    const isPakeLinux = isPakeMode && !isWindows && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
+    const isPakeLinux = (isPakeMode && isLinuxOS && platformUIOverride === 'auto') || platformUIOverride === 'linux';
 
-    if (platformUIOverride === 'pake' || isPakeWindows) {
-      document.documentElement.classList.add('pake-platform');
-      document.documentElement.classList.remove('linux-platform');
-    } else if (isPakeLinux) {
+    if (isPakeLinux) {
       document.documentElement.classList.add('linux-platform');
       document.documentElement.classList.remove('pake-platform');
+    } else if (platformUIOverride === 'pake' || isPakeWindows) {
+      document.documentElement.classList.add('pake-platform');
+      document.documentElement.classList.remove('linux-platform');
     } else {
       document.documentElement.classList.remove('pake-platform', 'linux-platform');
     }

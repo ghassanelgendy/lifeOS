@@ -124,7 +124,7 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
     : 'zinc';
 
   const po = remote.platformUIOverride;
-  patch.platformUIOverride = po === 'auto' || po === 'web' || po === 'pake' ? po : 'auto';
+  patch.platformUIOverride = po === 'auto' || po === 'web' || po === 'pake' || po === 'linux' ? po : 'auto';
 
   {
     const nav = asStrArray(remote.mobileNavItems, DEFAULT_MOBILE_NAV);
