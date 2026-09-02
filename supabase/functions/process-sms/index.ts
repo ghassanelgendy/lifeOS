@@ -322,11 +322,10 @@ serve(async (req: Request) => {
 
   } catch (error: unknown) {
     console.error('Error:', error);
-    const message = error instanceof Error ? error.message : String(error);
     return new Response(
       JSON.stringify({
         success: false,
-        error: message
+        error: 'Failed to process SMS request'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

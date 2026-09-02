@@ -262,9 +262,8 @@ serve(async (req: Request) => {
     );
   } catch (error: unknown) {
     console.error('Reconciliation error:', error);
-    const message = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ success: false, error: message }),
+      JSON.stringify({ success: false, error: 'Failed to reconcile statement' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     );
   }

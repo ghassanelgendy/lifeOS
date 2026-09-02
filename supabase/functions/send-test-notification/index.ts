@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
             );
         } catch (pushError: any) {
             console.error('Web Push Error:', pushError);
-            return new Response(JSON.stringify({ error: `Web Push Failed: ${pushError.message || pushError}` }), {
+            return new Response(JSON.stringify({ error: 'Web push failed' }), {
                 status: 502, // Bad Gateway
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -133,7 +133,7 @@ Deno.serve(async (req: Request) => {
         });
     } catch (err) {
         console.error(err);
-        return new Response(JSON.stringify({ error: String(err) }), {
+        return new Response(JSON.stringify({ error: 'Internal server error' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });

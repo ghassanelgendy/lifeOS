@@ -26,7 +26,11 @@ function wikiLinkExtension() {
       };
     },
     renderer(token: { type: string; raw: string; text: string }) {
-      const safe = token.text.replace(/"/g, '"');
+      const safe = token.text
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
       return `<a href="#" class="wiki-link text-primary hover:underline font-medium" data-title="${safe}">${safe}</a>`;
     },
   };

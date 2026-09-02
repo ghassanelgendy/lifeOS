@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -24,8 +24,9 @@ try {
     const staging = path.join(rootDir, '.extension-staging');
     fs.rmSync(staging, { recursive: true, force: true });
     fs.cpSync(extDir, staging, { recursive: true });
-    execSync(
-      `powershell -Command "Compress-Archive -Path '${staging}\\*' -DestinationPath '${outZip}' -Force"`,
+    execFileSync(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-Command', "Compress-Archive -Path '.extension-staging\\*' -DestinationPath 'lifeOS-extension.zip' -Force"],
       { cwd: rootDir, stdio: 'inherit' }
     );
     fs.rmSync(staging, { recursive: true, force: true });
@@ -34,7 +35,7 @@ try {
     const staging = path.join(rootDir, '.extension-staging');
     fs.rmSync(staging, { recursive: true, force: true });
     fs.cpSync(extDir, staging, { recursive: true });
-    execSync(`zip -r -q '${outZip}' . -x '*.DS_Store'`, {
+    execFileSync('zip', ['-r', '-q', '../lifeOS-extension.zip', '.', '-x', '*.DS_Store'], {
       cwd: staging,
       stdio: 'inherit',
     });
