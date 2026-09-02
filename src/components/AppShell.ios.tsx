@@ -10,6 +10,7 @@ import { OfflineBanner } from './OfflineBanner';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
 import { BrainDumpModal } from './BrainDumpModal';
+import { AIChatModal } from './AIChatModal';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
@@ -97,32 +98,65 @@ export function AppShell() {
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [showTabBar, setShowTabBar] = useState(true);
-  const lastScrollTop = useRef(0);
   const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
   const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [chatModalPrompt, setChatModalPrompt] = useState('');
 
   useEffect(() => {
-    const handleOpen = (e: Event) => {
+    const handleOpenBrainDump = (e: Event) => {
       const customEvent = e as CustomEvent<{ text?: string; autoAnalyze?: boolean }>;
       if (customEvent.detail?.text) {
         setBrainDumpInitialText(customEvent.detail.text);
       }
       setIsBrainDumpOpen(true);
     };
-    window.addEventListener('lifeos:openBrainDump', handleOpen as EventListener);
+
+    const handleOpenAIChat = (e: Event) => {
+      const customEvent = e as CustomEvent<{ prompt?: string }>;
+      setChatModalPrompt(customEvent.detail?.prompt || '');
+      setIsChatModalOpen(true);
+    };
+
+    window.addEventListener('lifeos:openBrainDump', handleOpenBrainDump as EventListener);
+    window.addEventListener('lifeos:openAIChat', handleOpenAIChat as EventListener);
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      const isAltB = e.altKey && e.key.toLowerCase() === 'b';
-      if (isAltB) {
+      const key = (e.key || '').toLowerCase();
+      const code = (e.code || '').toLowerCase();
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.getAttribute('contenteditable') === 'true');
+
+      // Ctrl+B / Cmd+B / Alt+B
+      const isB = ((e.ctrlKey || e.metaKey || e.altKey) && (key === 'b' || code === 'keyb' || key === 'لا'));
+      if (isB) {
+        if (!isTyping || e.altKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsBrainDumpOpen((v) => !v);
+          return;
+        }
+      }
+
+      // Ctrl+A / Cmd+A / Alt+A
+      const isA = ((e.ctrlKey || e.metaKey) && (key === 'a' || code === 'keya' || key === 'ش') && !isTyping) ||
+                  (e.altKey && (key === 'a' || code === 'keya' || key === 'ش')) ||
+                  ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'a' || code === 'keya'));
+
+      if (isA) {
         e.preventDefault();
-        setIsBrainDumpOpen((v) => !v);
+        e.stopPropagation();
+        const selectedText = window.getSelection()?.toString().trim() || '';
+        setChatModalPrompt(selectedText);
+        setIsChatModalOpen((v) => !v);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
 
     return () => {
-      window.removeEventListener('lifeos:openBrainDump', handleOpen as EventListener);
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('lifeos:openBrainDump', handleOpenBrainDump as EventListener);
+      window.removeEventListener('lifeos:openAIChat', handleOpenAIChat as EventListener);
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
   }, []);
 
@@ -653,6 +687,7 @@ export function AppShell() {
           <FocusSessionManager />
           <FocusPiPWindow />
           <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
+          <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
 
         {/* iOS Quick Plus Dashboard Menu */}
         <AnimatePresence>

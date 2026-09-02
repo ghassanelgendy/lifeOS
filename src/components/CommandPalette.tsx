@@ -16,6 +16,7 @@ import {
   Sun,
   BarChart3,
   Brain,
+  Sparkles,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
@@ -79,11 +80,18 @@ export function CommandPalette() {
 
           <Command.Group heading="Quick Actions" className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
             <Command.Item
+              onSelect={() => runCommand(() => window.dispatchEvent(new CustomEvent('lifeos:openAIChat')))}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground font-semibold text-primary"
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-primary animate-pulse" />
+              <span>AI Assistant (Ctrl + A)</span>
+            </Command.Item>
+            <Command.Item
               onSelect={() => runCommand(() => window.dispatchEvent(new CustomEvent('lifeos:openBrainDump')))}
               className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground font-semibold text-purple-600 dark:text-purple-400"
             >
               <Brain className="mr-2 h-4 w-4 text-purple-500 animate-pulse" />
-              <span>Cognitive Brain Dump (AI Analysis)</span>
+              <span>Cognitive Brain Dump (Ctrl + B)</span>
             </Command.Item>
             <Command.Item
               onSelect={() => runCommand(() => {

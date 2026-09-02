@@ -96,12 +96,19 @@ function ThemeSync() {
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
 
-    const isPake = import.meta.env.MODE === 'pake' && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
+    const isPakeMode = import.meta.env.MODE === 'pake' || (typeof window !== 'undefined' && (window as any).pake);
+    const isWindows = typeof navigator !== 'undefined' && (/windows|win32|win64/i.test(navigator.userAgent));
+    const isPakeWindows = isPakeMode && isWindows && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
+    const isPakeLinux = isPakeMode && !isWindows && (platformUIOverride === 'pake' || platformUIOverride === 'auto');
 
-    if (isPake) {
+    if (platformUIOverride === 'pake' || isPakeWindows) {
       document.documentElement.classList.add('pake-platform');
-    } else {
+      document.documentElement.classList.remove('linux-platform');
+    } else if (isPakeLinux) {
+      document.documentElement.classList.add('linux-platform');
       document.documentElement.classList.remove('pake-platform');
+    } else {
+      document.documentElement.classList.remove('pake-platform', 'linux-platform');
     }
   }, [theme, accentTheme, platformUIOverride]);
   return null;
@@ -216,7 +223,15 @@ function AppInner() {
               ].filter(Boolean).join('\n');
 
               // Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
+              let organizedTitle = rawDump.title;
+              if (rawDump.note_date) {
+                const parts = rawDump.note_date.split('T')[0].split('-');
+                if (parts.length === 3) {
+                  organizedTitle = `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+                }
+              }
               await supabase.from('notes').update({
+                title: organizedTitle,
                 body: formattedContent,
                 ai_analysis: parsed,
                 folder_id: orgFolder?.id || null,
@@ -325,26 +340,44 @@ function AppInner() {
       }
     };
 
-    window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
+    // Global shortcuts:
+    // Ctrl + B or Cmd + B -> Open Brain Dump Modal
+    // Ctrl + A or Cmd + A (when not editing text) -> Open AI Assistant Chat Modal
+    const handleGlobalShortcuts = (e: KeyboardEvent) => {
+      const key = (e.key || '').toLowerCase();
+      const code = (e.code || '').toLowerCase();
+      const active = document.activeElement;
+      const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.getAttribute('contenteditable') === 'true');
 
-    // Global shortcut to open Brain Dump (Cmd/Ctrl + B or Alt + B)
-    const handleBrainDumpGlobalKey = (e: KeyboardEvent) => {
-      const isBKey = e.key.toLowerCase() === 'b';
-      if (isBKey && (e.metaKey || e.ctrlKey || e.altKey)) {
-        // If not typing in input/textarea or if Alt+B is used
-        const active = document.activeElement;
-        const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.getAttribute('contenteditable') === 'true');
+      // Check Ctrl+B / Cmd+B / Alt+B -> Brain Dump Modal
+      const isB = ((e.ctrlKey || e.metaKey || e.altKey) && (key === 'b' || code === 'keyb' || key === 'لا'));
+      if (isB) {
         if (!isTyping || e.altKey) {
           e.preventDefault();
+          e.stopPropagation();
           window.dispatchEvent(new CustomEvent('lifeos:openBrainDump'));
+          return;
         }
       }
+
+      // Check Ctrl+A / Cmd+A (when not typing) or Alt+A / Ctrl+Shift+A -> AI Chat Modal
+      const isA = ((e.ctrlKey || e.metaKey) && (key === 'a' || code === 'keya' || key === 'ش') && !isTyping) ||
+                  (e.altKey && (key === 'a' || code === 'keya' || key === 'ش')) ||
+                  ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'a' || code === 'keya'));
+
+      if (isA) {
+        e.preventDefault();
+        e.stopPropagation();
+        const selectedText = window.getSelection()?.toString().trim() || '';
+        window.dispatchEvent(new CustomEvent('lifeos:openAIChat', { detail: { prompt: selectedText } }));
+      }
     };
-    window.addEventListener('keydown', handleBrainDumpGlobalKey);
+
+    window.addEventListener('keydown', handleGlobalShortcuts, { capture: true });
 
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
-      window.removeEventListener('keydown', handleBrainDumpGlobalKey);
+      window.removeEventListener('keydown', handleGlobalShortcuts, { capture: true });
     };
   }, []);
 

@@ -79,7 +79,13 @@ Ask me to **create tasks, schedule events, write notes, or log expenses** for yo
   timestamp: new Date().toISOString(),
 };
 
-export default function Chat() {
+interface ChatProps {
+  isModal?: boolean;
+  initialPrompt?: string;
+  onCloseModal?: () => void;
+}
+
+export default function Chat({ isModal = false, initialPrompt = '', onCloseModal }: ChatProps = {}) {
   const { aiEnabled, aiApiKey, aiDahlApiKey, aiBynaraApiKey, aiModel, aiActiveModel, aiFallbackEnabled } = useUIStore();
   const hasAiKey = Boolean(
     aiApiKey?.trim() ||
@@ -695,16 +701,18 @@ ${knowledgeContext}`;
   };
 
   useEffect(() => {
-    const prompt = searchParams.get('prompt');
+    const prompt = initialPrompt || searchParams.get('prompt');
     if (prompt && !promptConsumedRef.current) {
       promptConsumedRef.current = true;
-      setSearchParams((p) => {
-        p.delete('prompt');
-        return p;
-      }, { replace: true });
+      if (searchParams.get('prompt')) {
+        setSearchParams((p) => {
+          p.delete('prompt');
+          return p;
+        }, { replace: true });
+      }
       void handleSendMessage(prompt);
     }
-  }, [searchParams, setSearchParams]);
+  }, [searchParams, setSearchParams, initialPrompt]);
 
   // Copy message text helper
   const handleCopyText = (id: string, content: string) => {

@@ -108,6 +108,26 @@ export function KeyboardShortcutsModal({
                 <span className="inline-flex items-center gap-1">
                   <Kbd>Ctrl</Kbd>
                   <span className="text-muted-foreground text-xs">+</span>
+                  <Kbd>A</Kbd>
+                </span>
+              }
+              action="Open AI Assistant Modal"
+            />
+            <ShortcutRow
+              keys={
+                <span className="inline-flex items-center gap-1">
+                  <Kbd>Ctrl</Kbd>
+                  <span className="text-muted-foreground text-xs">+</span>
+                  <Kbd>B</Kbd>
+                </span>
+              }
+              action="Open Brain Dump Journal Modal"
+            />
+            <ShortcutRow
+              keys={
+                <span className="inline-flex items-center gap-1">
+                  <Kbd>Ctrl</Kbd>
+                  <span className="text-muted-foreground text-xs">+</span>
                   <Kbd>K</Kbd>
                 </span>
               }
@@ -135,7 +155,7 @@ export function KeyboardShortcutsModal({
             />
             <ShortcutRow
               keys={<Kbd>Escape</Kbd>}
-              action="Close command palette"
+              action="Close active modal / sheet"
             />
           </div>
         </div>

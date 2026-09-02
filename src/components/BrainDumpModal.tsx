@@ -490,9 +490,17 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
       ].filter(Boolean).join('\n');
 
       // Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
+      let organizedTitle = note.title;
+      if (note.note_date) {
+        const parts = note.note_date.split('T')[0].split('-');
+        if (parts.length === 3) {
+          organizedTitle = `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+        }
+      }
       await updateNote.mutateAsync({
         id: note.id,
         data: {
+          title: organizedTitle,
           body: formattedContent,
           ai_analysis: parsed,
           folder_id: folder.id,
