@@ -315,7 +315,6 @@ function AppInner() {
     const processYesterdayUnorganizedBrainDumps = async () => {
       try {
         const todayStr = getLocalDateString();
-        const store = useUIStore.getState();
 
         const { data: existingFolders } = await supabase.from('note_folders').select('*');
         let orgFolder = (existingFolders || []).find((f: any) => f.name.toLowerCase() === 'organized brain dumps');

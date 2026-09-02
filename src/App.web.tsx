@@ -187,7 +187,6 @@ function AppInner() {
     const processYesterdayUnorganizedBrainDumps = async () => {
       try {
         const todayStr = getLocalDateString();
-        const store = useUIStore.getState();
 
         // 1. Ensure 'Organized Brain Dumps' folder exists
         const { data: existingFolders } = await supabase.from('note_folders').select('*');

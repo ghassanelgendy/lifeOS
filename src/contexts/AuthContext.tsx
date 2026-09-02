@@ -111,7 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           previousUserIdRef.current = null;
         }
       })
-      .catch((err) => {
+      .catch((_err) => {
         // Network timeout / offline / limiter pause:
         // If we have a local session or any session in localStorage, KEEP IT active. Do NOT log the user out!
         if (!localSession && !tryGetLocalSession()) {
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             userEmail: s.user?.email || '',
             syncedAt: new Date().toISOString(),
           }));
-        } catch (e) {}
+        } catch {}
       }
 
       // Clear cache only when switching from one valid user to a DIFFERENT valid user.
