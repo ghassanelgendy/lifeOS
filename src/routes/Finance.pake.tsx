@@ -133,32 +133,6 @@ const QNB_CREDIT = /1473|\*\*\*1473/;
 export default function Finance() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [theme, setTheme] = useState<Theme>(webDarkTheme);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      const baseTheme = isDark ? webDarkTheme : webLightTheme;
-      setTheme({
-        ...baseTheme,
-        colorNeutralBackground1: 'transparent',
-        colorNeutralBackground3: isDark ? 'rgba(43, 43, 43, 0.6)' : 'rgba(255, 255, 255, 0.7)',
-        colorNeutralStroke1: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-        colorNeutralStroke2: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-        colorNeutralForeground1: isDark ? '#ffffff' : '#111111',
-        colorNeutralForeground2: isDark ? '#e0e0e0' : '#2f2f2f',
-        colorNeutralForeground3: isDark ? '#b3b3b3' : '#595959',
-        colorBrandBackground: '#0078d4',
-        colorBrandForeground1: isDark ? '#479ef5' : '#005a9e',
-        colorBrandForeground2: isDark ? '#2890f5' : '#0078d4',
-      });
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
   const [activeTab, setActiveTab] = useState<FinanceTab>('transactions');
   const { data: transactions = [], isLoading } = useTransactions();
   const { data: banks = [], isLoading: banksLoading } = useUserBanks();
@@ -756,8 +730,7 @@ export default function Finance() {
   }
 
   return (
-    <FluentProvider theme={theme} className="w-full">
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans text-foreground">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -1766,6 +1739,5 @@ export default function Finance() {
         isLoading={deleteInvestmentTransaction.isPending}
       />
       </div>
-    </FluentProvider>
   );
 }

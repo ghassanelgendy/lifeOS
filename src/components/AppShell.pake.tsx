@@ -106,33 +106,21 @@ export function AppShell() {
 
   const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus();
 
-  const [theme, setTheme] = useState<Theme>(webDarkTheme);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      const baseTheme = isDark ? webDarkTheme : webLightTheme;
-      setTheme({
-        ...baseTheme,
-        // Match the background surfaces precisely
-        colorNeutralBackground1: isDark ? '#121214' : '#f8f9fa', 
-        colorNeutralBackground3: isDark ? '#1a1a1e' : '#ffffff', 
-        
-        // Match border colors and styling
-        colorNeutralStroke1: isDark ? '#3a3a3f' : '#d1d1d6', 
-        colorNeutralStroke2: isDark ? '#2e2e33' : '#e5e5ea', 
-
-        // Match text styles
-        colorNeutralForeground1: isDark ? '#ffffff' : '#000000', 
-        colorNeutralForeground2: isDark ? '#e0e0e0' : '#2f2f2f', 
-        colorNeutralForeground3: isDark ? '#b3b3b3' : '#595959', 
-      });
+  const currentTheme = useUIStore((s) => s.theme);
+  const theme = useMemo<Theme>(() => {
+    const isDark = currentTheme === 'dark';
+    const baseTheme = isDark ? webDarkTheme : webLightTheme;
+    return {
+      ...baseTheme,
+      colorNeutralBackground1: isDark ? '#121214' : '#f8f9fa',
+      colorNeutralBackground3: isDark ? '#1a1a1e' : '#ffffff',
+      colorNeutralStroke1: isDark ? '#3a3a3f' : '#d1d1d6',
+      colorNeutralStroke2: isDark ? '#2e2e33' : '#e5e5ea',
+      colorNeutralForeground1: isDark ? '#ffffff' : '#000000',
+      colorNeutralForeground2: isDark ? '#e0e0e0' : '#2f2f2f',
+      colorNeutralForeground3: isDark ? '#b3b3b3' : '#595959',
     };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
+  }, [currentTheme]);
 
   const showWrappedTakeover = useMemo(() => {
     const showWeekly = isWeeklyWrapDay && lastViewedWeeklyWrap !== weeklyWrapKey;

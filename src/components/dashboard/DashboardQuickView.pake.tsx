@@ -337,39 +337,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const [parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  const [theme, setTheme] = useState<Theme>(webDarkTheme);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      const baseTheme = isDark ? webDarkTheme : webLightTheme;
-      setTheme({
-        ...baseTheme,
-        // Match the background surfaces precisely
-        colorNeutralBackground1: 'transparent', 
-        colorNeutralBackground3: isDark ? 'rgba(43, 43, 43, 0.6)' : 'rgba(255, 255, 255, 0.7)', 
-        
-        // Match border colors and styling
-        colorNeutralStroke1: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)', 
-        colorNeutralStroke2: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)', 
-
-        // Match text styles
-        colorNeutralForeground1: isDark ? '#ffffff' : '#111111', 
-        colorNeutralForeground2: isDark ? '#e0e0e0' : '#2f2f2f', 
-        colorNeutralForeground3: isDark ? '#b3b3b3' : '#595959', 
-        
-        // Brand styling
-        colorBrandBackground: '#0078d4',
-        colorBrandForeground1: isDark ? '#479ef5' : '#005a9e',
-        colorBrandForeground2: isDark ? '#2890f5' : '#0078d4',
-      });
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
   const handleTooltipClick = (id: string) => {
     setActiveTooltip(id);
     setTimeout(() => {
@@ -1184,8 +1151,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   }
 
   return (
-    <FluentProvider theme={theme} className="w-full">
-      <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 text-foreground font-sans select-none">
+    <div className="space-y-6 max-w-5xl mx-auto p-4 sm:p-6 text-foreground font-sans select-none">
         {/* Header/Title */}
         <section aria-labelledby="qv-today-heading">
           <div className="flex items-center justify-between mb-4">
@@ -1442,6 +1408,5 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           </Card>
         </section>
       </div>
-    </FluentProvider>
   );
 }

@@ -157,32 +157,6 @@ function buildSessions(segments: SleepStage[]): NightSession[] {
 
 
 export default function Sleep() {
-  const [theme, setTheme] = useState<Theme>(webDarkTheme);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      const baseTheme = isDark ? webDarkTheme : webLightTheme;
-      setTheme({
-        ...baseTheme,
-        colorNeutralBackground1: 'transparent',
-        colorNeutralBackground3: isDark ? 'rgba(43, 43, 43, 0.6)' : 'rgba(255, 255, 255, 0.7)',
-        colorNeutralStroke1: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-        colorNeutralStroke2: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
-        colorNeutralForeground1: isDark ? '#ffffff' : '#111111',
-        colorNeutralForeground2: isDark ? '#e0e0e0' : '#2f2f2f',
-        colorNeutralForeground3: isDark ? '#b3b3b3' : '#595959',
-        colorBrandBackground: '#0078d4',
-        colorBrandForeground1: isDark ? '#479ef5' : '#005a9e',
-        colorBrandForeground2: isDark ? '#2890f5' : '#0078d4',
-      });
-    };
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
-
   const [sessionLimit, setSessionLimit] = useState<7 | 30>(7);
   const periodDays = 180;
   // Always query 180 days from today to allow instant switching between sessions
@@ -236,8 +210,7 @@ export default function Sleep() {
   }, [weekly]);
 
   return (
-    <FluentProvider theme={theme} className="w-full">
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 font-sans text-foreground">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24 font-sans text-foreground">
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div>
@@ -644,6 +617,5 @@ export default function Sleep() {
         )}
       </DetailsSheet>
       </div>
-    </FluentProvider>
   );
 }
