@@ -40,7 +40,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const normalizedHost = normalizedBaseUrl.hostname.toLowerCase();
   if (!isAllowedAiHost(normalizedHost)) {
-    return res.status(400).json({ error: 'Unsupported AI provider host' });
+    console.error('[ai-proxy] Unsupported AI_BASE_URL host:', normalizedHost);
+    return res.status(500).json({ error: 'AI proxy is misconfigured' });
   }
 
   let apiKey = req.headers['x-ai-api-key'] || req.headers['authorization']?.toString().replace('Bearer ', '');
