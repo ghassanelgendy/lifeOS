@@ -37,6 +37,7 @@ import {
   useUpdateNote,
   useUpdateNoteFolder,
 } from '../hooks/useNotes';
+import { useTasks, useToggleTask } from '../hooks/useTasks';
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
 import { AINoteOrganizerSheet } from '../components/AINoteOrganizerSheet';
@@ -52,11 +53,23 @@ function todayInputDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function noteTitle(title: string, body: string): string {
+function noteTitle(title: string, body: string, isBrainDump?: boolean, noteDate?: string | null): string {
+  if (isBrainDump && noteDate) {
+    const parts = noteDate.split('T')[0].split('-');
+    if (parts.length === 3) return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+  }
   const trimmedTitle = title.trim();
   if (trimmedTitle) return trimmedTitle;
   const firstLine = body.trim().split(/\r?\n/)[0]?.trim();
   return firstLine ? firstLine.slice(0, 80) : 'Untitled note';
+}
+
+function getNoteEffectiveTimestamp(note: { note_date?: string | null; updated_at?: string | null; created_at?: string | null }): number {
+  if (note.note_date) {
+    const time = new Date(note.note_date.split('T')[0] + 'T23:59:59').getTime();
+    if (!isNaN(time)) return time;
+  }
+  return new Date(note.updated_at || note.created_at || 0).getTime();
 }
 
 function cleanMarkdownPreview(text: string | null | undefined): string {
@@ -86,6 +99,9 @@ function formatNoteDate(value: string | null | undefined): string {
 export default function NotesWeb() {
   const { data: notes = [], isLoading, error } = useNotes();
   const { data: folders = [], isLoading: foldersLoading } = useNoteFolders();
+
+  const { data: tasks = [] } = useTasks();
+  const toggleTask = useToggleTask();
 
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
@@ -174,7 +190,7 @@ export default function NotesWeb() {
       .sort((a, b) => {
         if (a.is_pinned && !b.is_pinned) return -1;
         if (!a.is_pinned && b.is_pinned) return 1;
-        return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        return getNoteEffectiveTimestamp(b) - getNoteEffectiveTimestamp(a);
       });
   }, [notes, activeFolderFilter, search]);
 
@@ -332,6 +348,50 @@ export default function NotesWeb() {
     }
     setSaveMessage('AI changes applied to draft');
     window.setTimeout(() => setSaveMessage(''), 2500);
+  };
+
+  const handleToggleTaskInPreview = async (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target.tagName === 'INPUT' && (target as HTMLInputElement).type === 'checkbox') {
+      const listItem = target.closest('li');
+      if (!listItem) return;
+      const text = listItem.textContent?.trim() || '';
+      if (!text) return;
+
+      const isChecked = (target as HTMLInputElement).checked;
+      
+      // Update note body
+      const taskTitleEscaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let newBody = draftBody;
+      if (isChecked) {
+        const regexUnchecked = new RegExp(`(-\\s*\\[\\s*\\]\\s*)(${taskTitleEscaped})`, 'gi');
+        newBody = newBody.replace(regexUnchecked, `- [x] $2`);
+      } else {
+        const regexChecked = new RegExp(`(-\\s*\\[x\\]\\s*)(${taskTitleEscaped})`, 'gi');
+        newBody = newBody.replace(regexChecked, `- [ ] $2`);
+      }
+      setDraftBody(newBody);
+
+      // If note exists in DB, save update
+      if (activeNote) {
+        void updateNote.mutateAsync({
+          id: activeNote.id,
+          data: { body: newBody },
+        });
+      }
+
+      // Check if there is a matching task in lifeOS and toggle it as well
+      const matchingTask = tasks.find(
+        (t) => t.title.trim().toLowerCase() === text.toLowerCase() ||
+               (t.source_note_id === activeNote?.id && t.title.trim().toLowerCase() === text.toLowerCase())
+      );
+      if (matchingTask && matchingTask.is_completed !== isChecked) {
+        void toggleTask.mutateAsync({
+          id: matchingTask.id,
+          data: { is_completed: isChecked },
+        });
+      }
+    }
   };
 
   const wordCount = useMemo(() => draftBody.trim() ? draftBody.trim().split(/\s+/).length : 0, [draftBody]);
@@ -590,7 +650,7 @@ export default function NotesWeb() {
                         {note.is_pinned && <Pin size={13} className="text-amber-500 shrink-0 fill-amber-500" />}
                         {note.is_brain_dump && <Brain size={13} className="text-purple-500 shrink-0" />}
                         <span className="font-medium text-xs text-foreground truncate">
-                          {noteTitle(note.title, note.body)}
+                          {noteTitle(note.title, note.body, note.is_brain_dump, note.note_date)}
                         </span>
                       </div>
                     </div>
@@ -714,6 +774,7 @@ export default function NotesWeb() {
               <div
                 className="flex-1 min-h-[16rem] text-sm sm:text-base leading-relaxed text-foreground prose prose-sm sm:prose-base dark:prose-invert max-w-none select-text note-selectable cursor-text font-sans p-0"
                 onDoubleClick={() => setIsEditing(true)}
+                onClick={handleToggleTaskInPreview}
                 dangerouslySetInnerHTML={{
                   __html: draftBody
                     ? (marked.parse(draftBody) as string)
@@ -741,7 +802,11 @@ export default function NotesWeb() {
                     className="text-xs h-8 gap-1.5 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
                   >
                     <Sparkles size={13} />
-                    <span>AI Organize & Extract Tasks</span>
+                    <span>
+                      {activeNote?.ai_analysis?.tasks && activeNote.ai_analysis.tasks.length > 0
+                        ? `View Proposed Tasks (${activeNote.ai_analysis.tasks.length})`
+                        : 'AI Organize & Extract Tasks'}
+                    </span>
                   </Button>
                   <Button
                     type="button"
@@ -819,6 +884,8 @@ export default function NotesWeb() {
         onClose={() => setIsAiOrganizerOpen(false)}
         noteTitle={draftTitle}
         noteBody={draftBody}
+        noteId={activeNote?.id}
+        existingAnalysis={activeNote?.ai_analysis}
         onApplyToNote={handleApplyAiResult}
       />
     </div>

@@ -38,14 +38,14 @@ function getLocalTimeInfo(timeZone = 'Africa/Cairo') {
     const parts = dateStr.split('-');
     const day = parseInt(parts[2], 10);
     const month = parseInt(parts[1], 10);
-    const shortTitle = `Brain Dump (${day}/${month})`;
+    const shortTitle = `${day}/${month}`;
 
     return { dateStr, timeStr, shortTitle };
   } catch {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const shortTitle = `Brain Dump (${now.getDate()}/${now.getMonth() + 1})`;
+    const shortTitle = `${now.getDate()}/${now.getMonth() + 1}`;
     return { dateStr, timeStr, shortTitle };
   }
 }

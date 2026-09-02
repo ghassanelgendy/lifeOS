@@ -40,6 +40,7 @@ import {
 } from '../hooks/useNotes';
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
+import { AINoteOrganizerSheet } from '../components/AINoteOrganizerSheet';
 import type { Note } from '../types/schema';
 
 const NEW_NOTE_ID = 'new';
@@ -52,11 +53,23 @@ function todayInputDate(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function noteTitle(title: string, body: string): string {
+function noteTitle(title: string, body: string, isBrainDump?: boolean, noteDate?: string | null): string {
+  if (isBrainDump && noteDate) {
+    const parts = noteDate.split('T')[0].split('-');
+    if (parts.length === 3) return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+  }
   const trimmedTitle = title.trim();
   if (trimmedTitle) return trimmedTitle;
   const firstLine = body.trim().split(/\r?\n/)[0]?.trim();
   return firstLine ? firstLine.slice(0, 80) : 'New Note';
+}
+
+function getNoteEffectiveTimestamp(note: { note_date?: string | null; updated_at?: string | null; created_at?: string | null }): number {
+  if (note.note_date) {
+    const time = new Date(note.note_date.split('T')[0] + 'T23:59:59').getTime();
+    if (!isNaN(time)) return time;
+  }
+  return new Date(note.updated_at || note.created_at || 0).getTime();
 }
 
 function cleanMarkdownPreview(text: string | null | undefined): string {
@@ -117,6 +130,7 @@ export default function NotesIOS() {
   const [saveMessage, setSaveMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
   const [isBrainDumpModalOpen, setIsBrainDumpModalOpen] = useState(false);
+  const [isAiOrganizerOpen, setIsAiOrganizerOpen] = useState(false);
 
   // iOS 3D Touch / Context Menu State
   const [contextMenuNote, setContextMenuNote] = useState<Note | null>(null);
@@ -152,22 +166,28 @@ export default function NotesIOS() {
   // Filtered Notes
   const filteredNotes = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return notes.filter((note) => {
-      if (activeFolderFilter === PINNED_NOTES && !note.is_pinned) return false;
-      if (activeFolderFilter === BRAIN_DUMP_NOTES && !note.is_brain_dump) return false;
-      if (activeFolderFilter === NO_FOLDER && note.folder_id) return false;
-      if (
-        activeFolderFilter !== ALL_NOTES &&
-        activeFolderFilter !== PINNED_NOTES &&
-        activeFolderFilter !== BRAIN_DUMP_NOTES &&
-        activeFolderFilter !== NO_FOLDER &&
-        note.folder_id !== activeFolderFilter
-      ) {
-        return false;
-      }
-      if (!q) return true;
-      return `${note.title}\n${note.body}`.toLowerCase().includes(q);
-    });
+    return notes
+      .filter((note) => {
+        if (activeFolderFilter === PINNED_NOTES && !note.is_pinned) return false;
+        if (activeFolderFilter === BRAIN_DUMP_NOTES && !note.is_brain_dump) return false;
+        if (activeFolderFilter === NO_FOLDER && note.folder_id) return false;
+        if (
+          activeFolderFilter !== ALL_NOTES &&
+          activeFolderFilter !== PINNED_NOTES &&
+          activeFolderFilter !== BRAIN_DUMP_NOTES &&
+          activeFolderFilter !== NO_FOLDER &&
+          note.folder_id !== activeFolderFilter
+        ) {
+          return false;
+        }
+        if (!q) return true;
+        return `${note.title}\n${note.body}`.toLowerCase().includes(q);
+      })
+      .sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return getNoteEffectiveTimestamp(b) - getNoteEffectiveTimestamp(a);
+      });
   }, [notes, activeFolderFilter, search]);
 
   const pinnedNotes = useMemo(() => filteredNotes.filter((n) => n.is_pinned), [filteredNotes]);
@@ -510,7 +530,7 @@ export default function NotesIOS() {
                               <div className="flex items-center gap-1.5">
                                 {note.is_brain_dump && <Brain size={13} className="text-purple-500 shrink-0" />}
                                 <h3 className="text-xs font-semibold text-foreground truncate">
-                                  {noteTitle(note.title, note.body)}
+                                  {noteTitle(note.title, note.body, note.is_brain_dump, note.note_date)}
                                 </h3>
                               </div>
                               <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 leading-relaxed whitespace-pre-wrap">
@@ -683,25 +703,56 @@ export default function NotesIOS() {
 
               {/* AI Toolbar */}
               {aiEnabled && (
-                <div className="pt-2 border-t border-border flex items-center justify-between shrink-0">
+                <div className="pt-2 border-t border-border flex items-center justify-between gap-2 shrink-0">
                   <span className="text-[10px] text-muted-foreground">{saveMessage || (isDirty ? 'Unsaved' : 'Saved')}</span>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleAiSummarize}
-                    disabled={isProcessingAi || !draftBody.trim()}
-                    className="text-xs h-8 gap-1 border-primary/20 text-primary"
-                  >
-                    <Sparkles size={14} className={cn(isProcessingAi && "animate-spin")} />
-                    AI Summarize
-                  </Button>
+                  <div className="flex items-center gap-1.5">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        void triggerHaptics('light');
+                        setIsAiOrganizerOpen(true);
+                      }}
+                      disabled={!draftBody.trim()}
+                      className="text-xs h-8 gap-1.5 bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
+                    >
+                      <Sparkles size={13} />
+                      <span>AI Organize & Extract Tasks</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAiSummarize}
+                      disabled={isProcessingAi || !draftBody.trim()}
+                      className="text-xs h-8 gap-1 border-border text-foreground"
+                    >
+                      <Sparkles size={13} className={cn(isProcessingAi && "animate-spin")} />
+                      Summarize
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* AI Note Organizer & Task Extractor Sheet */}
+      <AINoteOrganizerSheet
+        isOpen={isAiOrganizerOpen}
+        onClose={() => setIsAiOrganizerOpen(false)}
+        noteTitle={draftTitle || activeNote?.title || 'Note'}
+        noteBody={draftBody}
+        onApplyToNote={(newContent, isAppend) => {
+          if (isAppend) {
+            setDraftBody((prev) => `${prev.trim()}\n\n${newContent}`);
+          } else {
+            setDraftBody(newContent);
+          }
+        }}
+      />
 
       {/* iOS Folder Creation Sheet */}
       <ConfirmSheet

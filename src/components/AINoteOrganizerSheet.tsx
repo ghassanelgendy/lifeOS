@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Sparkles,
   Check,
@@ -23,13 +23,17 @@ import {
 import { Button, Input, Modal } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useTaskLists, useTags, useCreateTask, useTasks } from '../hooks/useTasks';
-import { useCalendarEvents } from '../hooks/useCalendar';
+import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
 import { distributeTasksAcrossAwakeSlots } from '../lib/smartTaskScheduler';
 import { format } from 'date-fns';
 import { triggerHaptics } from '../lib/nativeBridge';
 import type { TaskPriority } from '../types/schema';
 import { cn } from '../lib/utils';
+
+function todayInputDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
 export interface ExtractedActionTask {
   id: string;
@@ -51,6 +55,8 @@ interface AINoteOrganizerSheetProps {
   onClose: () => void;
   noteTitle: string;
   noteBody: string;
+  noteId?: string;
+  existingAnalysis?: any;
   onApplyToNote: (newContent: string, isAppend: boolean) => void;
 }
 
@@ -59,6 +65,8 @@ export function AINoteOrganizerSheet({
   onClose,
   noteTitle,
   noteBody,
+  noteId,
+  existingAnalysis,
   onApplyToNote,
 }: AINoteOrganizerSheetProps) {
   const { data: tasks = [] } = useTasks();
@@ -67,6 +75,7 @@ export function AINoteOrganizerSheet({
   const { data: calendarEvents = [] } = useCalendarEvents();
   const { avgBedtimeMinutes } = useSleepMetrics(7);
   const createTask = useCreateTask();
+  const createCalendarEvent = useCreateCalendarEvent();
 
   // Settings
   const [customPrompt, setCustomPrompt] = useState('');
@@ -81,6 +90,32 @@ export function AINoteOrganizerSheet({
   const [summary, setSummary] = useState<string>('');
   const [hasRun, setHasRun] = useState(false);
   const [createdCount, setCreatedCount] = useState<number | null>(null);
+
+  // Initialize from existing analysis if available
+  useEffect(() => {
+    if (existingAnalysis && !hasRun) {
+      if (existingAnalysis.summary) setSummary(existingAnalysis.summary);
+      if (existingAnalysis.insights) setInsights(existingAnalysis.insights);
+      if (existingAnalysis.organized_markdown) setOrganizedMarkdown(existingAnalysis.organized_markdown);
+      if (Array.isArray(existingAnalysis.tasks) && existingAnalysis.tasks.length > 0) {
+        const loadedTasks: ExtractedActionTask[] = existingAnalysis.tasks.map((t: any, idx: number) => ({
+          id: t.id || `task_${idx}_${Date.now()}`,
+          title: t.title || 'Untitled Task',
+          priority: t.priority === 'urgent' ? 'high' : t.priority || 'medium',
+          dueDate: t.due_date || t.due || todayInputDate(),
+          dueTime: t.due_time ? t.due_time.slice(0, 5) : undefined,
+          listName: t.suggested_list || '',
+          tagNames: t.suggested_tag ? [t.suggested_tag] : [],
+          tagIds: [],
+          actionType: t.action_type || 'task',
+          reason: t.scheduling_reason || t.reason,
+          isSelected: true,
+        }));
+        setExtractedTasks(loadedTasks);
+        setHasRun(true);
+      }
+    }
+  }, [existingAnalysis, isOpen]);
 
   const availableListNames = useMemo(() => taskLists.map((l) => l.name).join(', ') || 'Work, Personal, Learn, Ideas, Reminders', [taskLists]);
   const availableTagNames = useMemo(() => tags.map((t) => t.name).join(', ') || 'servixa, ischool, urgent, research, quick win, lifeos', [tags]);
@@ -254,23 +289,44 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
 
     try {
       for (const t of selectedTasks) {
-        await createTask.mutateAsync({
-          title: t.title,
-          priority: t.priority,
-          due_date: t.dueDate,
-          due_time: t.dueTime ? `${t.dueTime}:00` : null,
-          list_id: t.listId || null,
-          tag_ids: t.tagIds || [],
-          recurrence: 'none',
-          is_completed: false,
-        });
+        if (t.actionType === 'event') {
+          // Schedule calendar event
+          const datePart = t.dueDate || todayInputDate();
+          const timePart = t.dueTime || '10:00';
+          const startIso = new Date(`${datePart}T${timePart}:00`).toISOString();
+          const endObj = new Date(`${datePart}T${timePart}:00`);
+          endObj.setHours(endObj.getHours() + 1);
+          const endIso = endObj.toISOString();
+
+          await createCalendarEvent.mutateAsync({
+            title: t.title,
+            type: 'Event',
+            start_time: startIso,
+            end_time: endIso,
+            all_day: !t.dueTime,
+            recurrence: 'none',
+            description: t.reason || `Extracted from note: ${noteTitle || 'Brain Dump'}`,
+          });
+        } else {
+          await createTask.mutateAsync({
+            title: t.title,
+            priority: t.priority,
+            due_date: t.dueDate,
+            due_time: t.dueTime ? `${t.dueTime}:00` : null,
+            list_id: t.listId || null,
+            tag_ids: t.tagIds || [],
+            recurrence: 'none',
+            is_completed: false,
+            source_note_id: noteId || null,
+          } as any);
+        }
         successCount++;
       }
 
       setCreatedCount(successCount);
       void triggerHaptics('success');
     } catch (err: any) {
-      setErrorMsg(`Failed to create some tasks: ${err?.message}`);
+      setErrorMsg(`Failed to create some items: ${err?.message}`);
     } finally {
       setIsProcessing(false);
     }

@@ -305,9 +305,17 @@ Return ONLY valid JSON in this format:
         ].filter(Boolean).join('\n');
 
         // 6. Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
+        let organizedTitle = rawDump.title;
+        if (rawDump.note_date) {
+          const parts = rawDump.note_date.split('T')[0].split('-');
+          if (parts.length === 3) {
+            organizedTitle = `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+          }
+        }
         const { error: updateError } = await supabase
           .from('notes')
           .update({
+            title: organizedTitle,
             body: unifiedBody,
             ai_analysis: parsed,
             folder_id: orgFolderId,
