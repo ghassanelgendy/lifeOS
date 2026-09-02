@@ -1,6 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
 import { useTasks } from './useTasks';
 import { useHabits, useTodayHabitLogs, useHabitAverages } from './useHabits';
 import { useCalendarEvents } from './useCalendar';

@@ -31,7 +31,7 @@ export function useNativeInteraction() {
     if (!isNative) return;
     try {
       await Haptics.notification({ type: NotificationType.Success });
-    } catch (e) {
+    } catch {
       try {
         await Haptics.impact({ style: ImpactStyle.Medium });
       } catch (e2) {

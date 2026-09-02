@@ -275,9 +275,6 @@ export function useTodayScreentime() {
 
   // Compute total web browsing seconds (from website stats or browser apps)
   const websiteSeconds = aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
-  const browserAppSeconds = aggregatedApps
-    .filter(a => isBrowserApp(a.app_name))
-    .reduce((sum, stat) => sum + stat.total_time_seconds, 0);
 
   // App + domain rows (deduplicated to avoid double counting browser and website times)
   const totalSeconds =

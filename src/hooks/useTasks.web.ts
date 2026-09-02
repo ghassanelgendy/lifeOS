@@ -5,14 +5,7 @@ import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { useAuth } from '../contexts/AuthContext';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
-import {
-  idbSaveTasks,
-  idbSaveTaskLists,
-  idbSaveTags,
-  idbGetTasks,
-  idbGetPointsTransactions,
-  idbAddPointsTransaction,
-} from '../db/indexedDb';
+import { idbSaveTasks, idbSaveTaskLists, idbSaveTags, idbGetTasks, idbAddPointsTransaction } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints, isTaskCompletedOnTime } from './usePoints';
 
 const TASKS_KEY = ['tasks'];

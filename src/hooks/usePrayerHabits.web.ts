@@ -2,16 +2,13 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
-import {
-  getPrayerStatusChoices,
-  isPrayerStatusComplete,
-} from '../lib/prayerStatus';
+import { getPrayerStatusChoices, isPrayerStatusComplete } from '../lib/prayerStatus';
 import { useAuth } from '../contexts/AuthContext';
 import { usePrayerTimes } from './usePrayerTimes';
 import type { PrayerHabit, PrayerLog, PrayerName, PrayerNotificationSetting, PrayerStatus } from '../types/schema';
 import { isOnline } from '../lib/offlineSync';
 import { idbAddPointsTransaction } from '../db/indexedDb';
-import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
+import { isDateEligibleForPoints } from './usePoints';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -279,21 +276,6 @@ async function adjustPointsForPrayerToggle(
   }
 }
 
-function isPrayerOverdue(prayerName: PrayerName, dateStr: string, times: { name: string; time: Date }[]): boolean {
-  const todayStr = format(new Date(), 'yyyy-MM-dd');
-  if (dateStr < todayStr) return true;
-  if (dateStr > todayStr) return false;
-
-  const currentIndex = PRAYER_NAMES.indexOf(prayerName);
-  if (currentIndex === -1 || currentIndex === PRAYER_NAMES.length - 1) return false;
-
-  const nextPrayerName = PRAYER_NAMES[currentIndex + 1];
-  const nextPrayer = times.find(t => t.name === nextPrayerName);
-  if (!nextPrayer) return false;
-
-  return new Date() >= new Date(nextPrayer.time);
-}
-
 export function usePrayerTracker(date: Date = new Date()) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -318,7 +300,7 @@ export function usePrayerTracker(date: Date = new Date()) {
     void ensurePrayerRows(user.id, timesRef.current).then(() => {
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'habits'] });
       queryClient.invalidateQueries({ queryKey: [...QUERY_KEY, user.id, 'today', dateStr] });
-    }).catch((err) => {
+    }).catch(() => {
       syncedDatesWeb.delete(dateStr);
     });
   }, [user?.id, timesSignature, queryClient, dateStr]);
@@ -385,8 +367,6 @@ export function usePrayerTracker(date: Date = new Date()) {
     enabled: !!user?.id,
     staleTime: 1000 * 60 * 60, // 1 hour (almost static)
   });
-
-  const firedUpdatesRef = useRef<Set<string>>(new Set());
 
   // Auto-overdue marking disabled to prevent altering user prayer logs.
 

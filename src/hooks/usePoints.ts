@@ -4,15 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
 import { v4 as uuidv4 } from 'uuid';
-import {
-  idbGetPointsTransactions,
-  idbSavePointsTransactions,
-  idbAddPointsTransaction,
-  idbGetCustomRewards,
-  idbSaveCustomRewards,
-  idbAddCustomReward,
-  idbDeleteCustomReward,
-} from '../db/indexedDb';
+import { idbGetPointsTransactions, idbSavePointsTransactions, idbAddPointsTransaction, idbGetCustomRewards, idbSaveCustomRewards, idbAddCustomReward, idbDeleteCustomReward } from '../db/indexedDb';
 import type { PointTransaction, CustomReward } from '../types/schema';
 
 export const POINTS_TX_KEY = ['points-transactions'];
@@ -420,7 +412,7 @@ export function useDailyPointsSync() {
 
         if (unsynced.length > 0) {
           // Remove local helper properties before insert
-          const payload = unsynced.map(({ is_synced, ...rest }: any) => ({
+          const payload = unsynced.map(({ is_synced: _is_synced, ...rest }: any) => ({
             ...rest,
             user_id: user.id,
           }));
