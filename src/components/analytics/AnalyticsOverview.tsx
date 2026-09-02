@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DataCard } from '../DataCard';
-import { cn, formatCurrency } from '../../lib/utils';
+import { formatCurrency } from '../../lib/utils';
 import { formatMinutes, formatSeconds, aggregateWeekly } from '../../lib/analytics-utils';
 import { Sparkles } from 'lucide-react';
 import { askAI } from '../../lib/ai';

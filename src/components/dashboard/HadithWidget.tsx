@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RefreshCw, Copy, Check, Quote, BookOpen, ChevronRight, Languages } from 'lucide-react';
+import { RefreshCw, Copy, Check, Quote, BookOpen, Languages } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { getDailyHadith, getRandomHadith, SHORT_HADITHS, type ShortHadith } from '../../data/shortHadiths';
 import { triggerHaptics } from '../../lib/nativeBridge';

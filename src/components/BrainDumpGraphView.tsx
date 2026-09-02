@@ -1,27 +1,7 @@
 import { useMemo, useState } from 'react';
-import {
-  Brain,
-  FileText,
-  CheckCircle2,
-  Calendar,
-  Flame,
-  ShoppingCart,
-  Clock,
-  Sparkles,
-  Trash2,
-  Plus,
-  Search,
-  ArrowRight,
-  Maximize2,
-  X,
-  Zap,
-  Filter,
-  Check,
-  Tag as TagIcon,
-  HelpCircle,
-} from 'lucide-react';
+import { Brain, FileText, CheckCircle2, Calendar, Flame, ShoppingCart, Clock, Sparkles, Trash2, Search, ArrowRight, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, ConfirmSheet, Input, Select } from './ui';
+import { Button, ConfirmSheet } from './ui';
 import { useNotes, useDeleteNote } from '../hooks/useNotes';
 import { useCreateTask, useTaskLists, useCreateTaskList, useTags } from '../hooks/useTasks';
 import { useCreateHabit } from '../hooks/useHabits';
@@ -51,7 +31,7 @@ interface NodePosition {
 export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphViewProps) {
   const { data: notes = [] } = useNotes();
   const { data: taskLists = [] } = useTaskLists();
-  const { data: tags = [] } = useTags();
+  useTags();
 
   const deleteNote = useDeleteNote();
   const createTask = useCreateTask();

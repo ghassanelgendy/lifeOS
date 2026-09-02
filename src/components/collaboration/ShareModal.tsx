@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Users, UserPlus, X, Check, Mail, ShieldCheck } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { triggerHaptics } from '../../lib/nativeBridge';
-import { cn } from '../../lib/utils';
 
 interface ShareModalProps {
   isOpen: boolean;

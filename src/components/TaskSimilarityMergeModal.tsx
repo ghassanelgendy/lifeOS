@@ -1,18 +1,5 @@
 import { useState } from 'react';
-import {
-  Sparkles,
-  GitMerge,
-  ArrowRight,
-  Check,
-  AlertTriangle,
-  Layers,
-  CopyPlus,
-  RefreshCw,
-  X,
-  Clock,
-  Tag,
-  ListTodo
-} from 'lucide-react';
+import { Sparkles, GitMerge, AlertTriangle, Layers, CopyPlus, Clock, ListTodo } from 'lucide-react';
 import { Modal, Button } from './ui';
 import type { Task, TaskList, Tag as TagType } from '../types/schema';
 import type { TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
@@ -45,7 +32,7 @@ export function TaskSimilarityMergeModal({
   newDraftTask,
   matches,
   taskLists = [],
-  tags = [],
+  tags: _tags = [],
   onMergeIntoExisting,
   onAddAsSubtask,
   onKeepBothCreate,
@@ -63,7 +50,6 @@ export function TaskSimilarityMergeModal({
   if (!activeMatch) return null;
 
   const listMap = new Map(taskLists.map((l) => [l.id, l.name]));
-  const tagMap = new Map(tags.map((t) => [t.id, t.name]));
 
   const handleSelectMatch = (idx: number) => {
     setSelectedIndex(idx);

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Coins, TrendingUp, TrendingDown, ClipboardCheck, Award, HeartHandshake, History, Sparkles } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, ClipboardCheck, HeartHandshake, History, Sparkles } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '../../lib/utils';
 import type { PointTransaction } from '../../types/schema';
@@ -14,7 +14,7 @@ interface AnalyticsPointsProps {
 export function AnalyticsPoints({
   transactions,
   rangeDays,
-  rangeLabel,
+  rangeLabel: _rangeLabel,
   analyticsShowTips,
 }: AnalyticsPointsProps) {
   // Filter transactions within the selected range (7, 30, 90 days)

@@ -11,11 +11,7 @@ import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/u
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
 import { usePointsBalance, getPointsConfig, useRescueTask } from '../../hooks/usePoints';
-import {
-  useDashboardUpcomingItems,
-  habitMatchesDay,
-  isHabitShownInQuickView,
-} from '../../hooks/useDashboardUpcomingItems';
+import { useDashboardUpcomingItems, habitMatchesDay, isHabitShownInQuickView } from '../../hooks/useDashboardUpcomingItems';
 import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits.web';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
@@ -27,14 +23,6 @@ import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
-
-function formatSleepMinutes(m: number | null) {
-  if (m == null || m <= 0) return '—';
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  if (h <= 0) return `${min}m`;
-  return `${h}h ${min}m`;
-}
 
 function formatDurationMinutes(minutes: number) {
   if (minutes <= 0) return '0m';
@@ -491,8 +479,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const deleteTask = useDeleteTask();
   const pointsConfig = getPointsConfig();
 
-  const oneWeekAgo = useMemo(() => subDays(new Date(), 7), []);
-  
   const startOfDayStr = format(subDays(today, 1), 'yyyy-MM-dd') + 'T00:00:00.000Z';
   const endOfDayStr = format(today, 'yyyy-MM-dd') + 'T23:59:59.999Z';
   const { data: sleepSegments = [] } = useSleepStages(startOfDayStr, endOfDayStr);
@@ -676,11 +662,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     return tasksDueTodayOnly.length + dueTodayIncompleteHabits.length;
   }, [tasksDueTodayOnly.length, dueTodayIncompleteHabits]);
 
-
-  const screenLabel =
-    todayScreentime.totalMinutes > 0
-      ? `${Math.round(todayScreentime.totalMinutes / 60)}h`
-      : '—';
 
   const screenChart = useMemo(() => {
     const dayMinutes = 24 * 60;
@@ -1120,7 +1101,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
     let linkedTask: any = null;
     let isManuallyDone = false;
-    let isAutoDone = false;
     let sortTime = Infinity;
     let isAnytime = !!item.allDay;
 
@@ -1146,9 +1126,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       }
 
       const parsedEnd = parseISO(item.end_time || item.start_time);
-      if (parsedEnd < today) {
-        isAutoDone = true;
-      }
 
       if (today < parsedStart) {
         sortTime = parsedStart.getTime();

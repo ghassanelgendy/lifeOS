@@ -9,7 +9,6 @@ const REPULSION = 380; // increased from 140 to spread nodes apart
 const SPRING_LENGTH = 130; // increased from 60 to expand distances
 const SPRING_STRENGTH = 0.025; // softer spring force so they can relax
 const DAMPING = 0.85;
-const CENTER_FORCE = 0.008; // weaker centering force to let nodes spread out
 
 interface GraphNode extends WikiGraphNode {
   type?: 'page' | 'heading';

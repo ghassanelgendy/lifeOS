@@ -1,25 +1,4 @@
-import {
-  Calendar as CalendarIcon,
-  Clock,
-  AlarmClock,
-  Repeat,
-  Repeat1,
-  Bell,
-  ListTodo,
-  Tag as TagIcon,
-  ListChecks,
-  Flag,
-  AlertCircle,
-  MapPin,
-  MessageCircle,
-  ChevronRight,
-  Link as LinkIcon,
-  Trash2,
-  Plus,
-  Coins,
-  Sparkles,
-  Loader2,
-} from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, AlarmClock, Repeat, Repeat1, Bell, ListTodo, Tag as TagIcon, ListChecks, Flag, AlertCircle, MapPin, MessageCircle, ChevronRight, Link as LinkIcon, Trash2, Plus, Sparkles, Loader2 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI, extractJSON } from '../lib/ai';
 import { Button } from './ui';

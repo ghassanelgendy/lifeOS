@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
@@ -8,11 +8,7 @@ import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCr
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits';
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
-import {
-  useDashboardUpcomingItems,
-  habitMatchesDay,
-  isHabitShownInQuickView,
-} from '../../hooks/useDashboardUpcomingItems';
+import { useDashboardUpcomingItems, habitMatchesDay, isHabitShownInQuickView } from '../../hooks/useDashboardUpcomingItems';
 import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
@@ -24,29 +20,10 @@ import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
 // Fluent UI React Components
-import {
-  FluentProvider,
-  webDarkTheme,
-  webLightTheme,
-  Card,
-  Text,
-  Badge,
-  type Theme
-} from '@fluentui/react-components';
+import { Card, Text, Badge } from '@fluentui/react-components';
 
 // Fluent UI Icons
-import {
-  Fire24Regular,
-  Desktop24Regular,
-  WeatherMoon24Regular,
-  Sparkle24Regular,
-  ArrowRight16Regular,
-  CheckmarkCircle24Filled,
-  Circle24Regular,
-  ChevronDown16Regular,
-  ChevronRight16Regular,
-  Checkmark16Regular
-} from '@fluentui/react-icons';
+import { Fire24Regular, Desktop24Regular, WeatherMoon24Regular, Sparkle24Regular, ArrowRight16Regular, CheckmarkCircle24Filled, Circle24Regular, ChevronDown16Regular, ChevronRight16Regular, Checkmark16Regular } from '@fluentui/react-icons';
 
 function formatSleepMinutes(m: number | null) {
   if (m == null || m <= 0) return '—';
