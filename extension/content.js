@@ -6,28 +6,37 @@
 function getCleanPageText() {
   // Grab selected text first if available
   const selection = window.getSelection() ? window.getSelection().toString().trim() : '';
-  if (selection && selection.length > 10) {
+  if (selection && selection.length > 5) {
     return {
       text: selection,
       isSelection: true,
     };
   }
 
-  // Otherwise, extract main content from article or main body
-  const article = document.querySelector('article') || document.querySelector('main') || document.querySelector('[role="main"]');
-  const target = article || document.body;
+  // Target specific content containers (GitHub releases, blog posts, documentation, articles)
+  const candidate = 
+    document.querySelector('.markdown-body') ||
+    document.querySelector('.release-body') ||
+    document.querySelector('[data-test-selector="body-content"]') ||
+    document.querySelector('article') ||
+    document.querySelector('main') ||
+    document.querySelector('[role="main"]') ||
+    document.querySelector('#content') ||
+    document.querySelector('.post-content') ||
+    document.querySelector('.entry-content') ||
+    document.body;
 
-  if (!target) return { text: '', isSelection: false };
+  if (!candidate) return { text: '', isSelection: false };
 
   // Clone node to avoid altering DOM
-  const clone = target.cloneNode(true);
+  const clone = candidate.cloneNode(true);
 
   // Remove clutter elements
   const removeSelectors = [
     'script', 'style', 'noscript', 'nav', 'footer', 'header',
     'aside', '.ad', '.ads', '.advertisement', '.sidebar',
     '.comment', '.comments', '#comments', '.cookie-banner',
-    '.popup', '.modal', '.nav', '.menu'
+    '.popup', '.modal', '.menu', 'svg', 'canvas', 'iframe'
   ];
 
   removeSelectors.forEach(selector => {
@@ -38,9 +47,18 @@ function getCleanPageText() {
   // Collapse whitespace
   extracted = extracted.replace(/[ \t]+/g, ' ').replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
 
-  // Cap length to 10000 characters to keep payload fast and lightweight
-  if (extracted.length > 10000) {
-    extracted = extracted.slice(0, 10000) + '... [truncated]';
+  // If candidate was too sparse (e.g. nested main didn't catch whole body), fallback to document.body text
+  if (extracted.length < 50 && document.body && candidate !== document.body) {
+    const bodyClone = document.body.cloneNode(true);
+    removeSelectors.forEach(selector => {
+      bodyClone.querySelectorAll(selector).forEach(el => el.remove());
+    });
+    extracted = (bodyClone.innerText || bodyClone.textContent || '').replace(/[ \t]+/g, ' ').replace(/\n\s*\n\s*\n+/g, '\n\n').trim();
+  }
+
+  // Cap length to 15000 characters for high-density summaries
+  if (extracted.length > 15000) {
+    extracted = extracted.slice(0, 15000) + '... [truncated]';
   }
 
   return {

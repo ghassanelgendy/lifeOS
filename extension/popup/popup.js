@@ -607,6 +607,24 @@ async function syncFromOpenTabs(interactive = false) {
         }
       }
 
+      let aiApiKey = '';
+      let aiBaseUrl = '';
+      let aiModel = '';
+
+      if (storage['lifeos_ui_storage']) {
+        try {
+          const uiStore = JSON.parse(storage['lifeos_ui_storage']);
+          const s = uiStore.state || uiStore;
+          if (s.aiApiKey || s.aiDahlApiKey || s.aiBynaraApiKey) {
+            aiApiKey = s.aiDahlApiKey || s.aiApiKey || s.aiBynaraApiKey || '';
+          }
+          if (s.aiBaseUrl) aiBaseUrl = s.aiBaseUrl;
+          if (s.aiActiveModel || s.aiModel) {
+            aiModel = s.aiActiveModel || s.aiModel;
+          }
+        } catch (e) {}
+      }
+
       const syncPayload = {
         lifeOsUrl: origin,
         ...(supabaseUrl ? { supabaseUrl } : {}),
@@ -617,8 +635,15 @@ async function syncFromOpenTabs(interactive = false) {
         ...(userId ? { userId } : {}),
       };
 
+      const aiSyncPayload = {
+        lifeOsUrl: origin,
+        ...(aiApiKey ? { aiApiKey } : {}),
+        ...(aiBaseUrl ? { aiBaseUrl } : {}),
+        ...(aiModel ? { aiModel } : {}),
+      };
+
       await supabaseClient.saveConfig(syncPayload);
-      await aiClient.saveConfig({ lifeOsUrl: origin });
+      await aiClient.saveConfig(aiSyncPayload);
       return true;
     }
   } catch (err) {
