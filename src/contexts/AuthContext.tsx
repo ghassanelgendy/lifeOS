@@ -36,15 +36,24 @@ const AuthContext = createContext<AuthState | null>(null);
 function tryGetLocalSession(): Session | null {
   try {
     if (typeof window === 'undefined' || !window.localStorage) return null;
-    const key = Object.keys(localStorage).find(
-      (k) => k.startsWith('sb-') && k.endsWith('-auth-token')
+    // Check known Supabase token key patterns
+    const keys = Object.keys(localStorage);
+    // Supabase JS v2 stores auth token under `sb-${project-ref}-auth-token` or custom keys
+    const authKeys = keys.filter(
+      (k) => (k.startsWith('sb-') && k.endsWith('-auth-token')) || k.includes('-auth-token') || k.startsWith('supabase.auth.token')
     );
-    if (!key) return null;
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (parsed?.access_token && parsed?.user) {
-      return parsed as Session;
+    for (const authKey of authKeys) {
+      const raw = localStorage.getItem(authKey);
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw);
+        // Supabase v2: { access_token, refresh_token, user, ... }
+        // Some wrappers / older versions store: { currentSession: { access_token, user } }
+        const sessionCandidate = parsed?.currentSession || parsed;
+        if (sessionCandidate?.access_token && sessionCandidate?.user) {
+          return sessionCandidate as Session;
+        }
+      } catch {}
     }
   } catch {}
   return null;
@@ -78,22 +87,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
 
-    // ── Background validation / refresh with hard timeout ────────────────────
-    getSessionWithTimeout(5000)
-      .then(({ data: { session: s } }) => {
+    // ── Background validation / refresh with generous timeout ────────────────
+    // Never wipe an existing valid session on timeout / network error!
+    getSessionWithTimeout(15000)
+      .then(({ data: { session: s }, error }) => {
+        if (error) {
+          // An explicit Supabase auth error: only clear if we don't have a local session
+          if (!localSession && !tryGetLocalSession()) {
+            setSession(null);
+            setUser(null);
+            previousUserIdRef.current = null;
+          }
+          return;
+        }
         if (s) {
           setSession(s);
           setUser(s.user ?? null);
           previousUserIdRef.current = s.user?.id ?? null;
-        } else if (!localSession) {
+        } else if (!localSession && !tryGetLocalSession()) {
+          // Only clear if neither initial localSession nor current storage has any session
           setSession(null);
           setUser(null);
           previousUserIdRef.current = null;
         }
       })
-      .catch(() => {
-        // If we don't have a local session, clear out state
-        if (!localSession) {
+      .catch((err) => {
+        // Network timeout / offline / limiter pause:
+        // If we have a local session or any session in localStorage, KEEP IT active. Do NOT log the user out!
+        if (!localSession && !tryGetLocalSession()) {
           setSession(null);
           setUser(null);
           previousUserIdRef.current = null;
@@ -124,11 +145,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         } catch (e) {}
       }
 
-      // Clear cache only when the logged-in user actually changes (switch account or logout)
-      if (prevUserId !== nextUserId) {
+      // Clear cache only when switching from one valid user to a DIFFERENT valid user.
+      // Do NOT clear cache on cold-boot (null -> user) or transient null refreshes.
+      if (prevUserId && nextUserId && prevUserId !== nextUserId) {
         previousUserIdRef.current = nextUserId;
-        // Clear all caches including IndexedDB to prevent data leakage
+        // Clear all caches including IndexedDB to prevent data leakage between different users
         void clearAllUserDataCache();
+      } else if (nextUserId) {
+        previousUserIdRef.current = nextUserId;
       }
     });
 
