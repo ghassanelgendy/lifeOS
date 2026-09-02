@@ -58,6 +58,8 @@ import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { ShareModal } from '../components/collaboration/ShareModal';
+import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
+import { analyzeTaskSimilarityWithAI, type TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
 
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { SwipeableRow } from '../components/SwipeableRow';
@@ -224,6 +226,12 @@ export default function Tasks() {
   // New state for displaying highlighted date/time
   const [highlightedDate, setHighlightedDate] = useState<string | undefined>(undefined);
   const [highlightedTime, setHighlightedTime] = useState<string | undefined>(undefined);
+
+  // Task Similarity & Deduplication State
+  const [similarityModalOpen, setSimilarityModalOpen] = useState(false);
+  const [similarityMatches, setSimilarityMatches] = useState<TaskSimilarityMatch[]>([]);
+  const [pendingDraftTaskPayload, setPendingDraftTaskPayload] = useState<CreateInput<Task> | null>(null);
+  const [isCheckingSimilarity, setIsCheckingSimilarity] = useState(false);
 
   const TAGS_VISIBLE_COLLAPSED = 4;
   const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
@@ -1038,7 +1046,7 @@ export default function Tasks() {
     if (!titleToUse) return;
 
     const defaultListId = taskLists.find(l => l.is_default)?.id;
-    createTask.mutate({
+    const taskPayload: CreateInput<Task> = {
       title: titleToUse,
       is_completed: false,
       priority: newTaskPriority,
@@ -1057,12 +1065,40 @@ export default function Tasks() {
         (activeView === 'list' && activeListId ? activeListId : defaultListId),
       due_date: newTaskDate || (
         activeView === 'today' ? toDateString(new Date()) :
-        (activeView === 'week' || activeView === 'upcoming') ? toDateString(addDays(new Date(), 1)) : // Default to tomorrow for 'week' and 'upcoming' views
+        (activeView === 'week' || activeView === 'upcoming') ? toDateString(addDays(new Date(), 1)) :
         undefined
       ),
       due_time: newTaskTime || undefined,
       duration_minutes: newTaskDurationMinutes > 0 ? newTaskDurationMinutes : undefined,
-    }, {
+    };
+
+    // Active AI Analyzer: Check for duplicate/similar existing tasks before creation
+    if (aiEnabled && allTasks.length > 0) {
+      setIsCheckingSimilarity(true);
+      void analyzeTaskSimilarityWithAI(titleToUse, undefined, allTasks, taskLists, tags)
+        .then((result) => {
+          if (result.hasDuplicate && result.matches.length > 0) {
+            setPendingDraftTaskPayload(taskPayload);
+            setSimilarityMatches(result.matches);
+            setSimilarityModalOpen(true);
+          } else {
+            executeDirectTaskCreation(taskPayload);
+          }
+        })
+        .catch(() => {
+          executeDirectTaskCreation(taskPayload);
+        })
+        .finally(() => {
+          setIsCheckingSimilarity(false);
+        });
+      return;
+    }
+
+    executeDirectTaskCreation(taskPayload);
+  };
+
+  const executeDirectTaskCreation = (payload: CreateInput<Task>) => {
+    createTask.mutate(payload, {
       onSuccess: () => {
         setNewTaskTitle('');
         setNewTaskDate('');
@@ -1085,9 +1121,41 @@ export default function Tasks() {
         setSuggestionQuery('');
         setIsTagSelectorOpen(false);
         setIsAddingTask(false);
-        setHighlightedDate(undefined); // Clear highlights
-        setHighlightedTime(undefined); // Clear highlights
+        setHighlightedDate(undefined);
+        setHighlightedTime(undefined);
+        setPendingDraftTaskPayload(null);
       },
+    });
+  };
+
+  const handleMergeTaskWithExisting = (existingTask: Task, mergedTitle: string, mergedDescription?: string) => {
+    updateTask.mutate({
+      id: existingTask.id,
+      data: {
+        title: mergedTitle,
+        description: mergedDescription,
+      },
+    }, {
+      onSuccess: () => {
+        setSimilarityModalOpen(false);
+        setPendingDraftTaskPayload(null);
+        setNewTaskTitle('');
+        setIsAddingTask(false);
+      }
+    });
+  };
+
+  const handleAddDraftAsSubtask = (existingTask: Task, subtaskTitle: string) => {
+    createSubtask.mutate({
+      parentTaskId: existingTask.id,
+      title: subtaskTitle,
+    }, {
+      onSuccess: () => {
+        setSimilarityModalOpen(false);
+        setPendingDraftTaskPayload(null);
+        setNewTaskTitle('');
+        setIsAddingTask(false);
+      }
     });
   };
 
@@ -1425,6 +1493,41 @@ export default function Tasks() {
         payload.recurrence_count = Math.max(1, Number(editForm.recurrence_count || 1));
       }
     }
+
+    // Active AI Analyzer: Check for duplicate/similar existing tasks
+    if (aiEnabled && allTasks.length > 0) {
+      setIsCheckingSimilarity(true);
+      void analyzeTaskSimilarityWithAI(titleToSave, editForm.description ?? undefined, allTasks, taskLists, tags)
+        .then((result) => {
+          if (result.hasDuplicate && result.matches.length > 0) {
+            setPendingDraftTaskPayload(payload);
+            setSimilarityMatches(result.matches);
+            setSimilarityModalOpen(true);
+          } else {
+            createTask.mutate(payload, {
+              onSuccess: () => {
+                setIsEditModalOpen(false);
+                setSelectedTask(null);
+                setEditForm(getDefaultEditFormForNewTask());
+              },
+            });
+          }
+        })
+        .catch(() => {
+          createTask.mutate(payload, {
+            onSuccess: () => {
+              setIsEditModalOpen(false);
+              setSelectedTask(null);
+              setEditForm(getDefaultEditFormForNewTask());
+            },
+          });
+        })
+        .finally(() => {
+          setIsCheckingSimilarity(false);
+        });
+      return;
+    }
+
     createTask.mutate(payload, {
       onSuccess: () => {
         setIsEditModalOpen(false);
@@ -2782,6 +2885,32 @@ Return ONLY raw JSON.`;
         sharedWith={shareListTarget?.shared_with || []}
         onShare={handleShareList}
         onUnshare={handleUnshareList}
+      />
+      <TaskSimilarityMergeModal
+        isOpen={similarityModalOpen}
+        onClose={() => {
+          setSimilarityModalOpen(false);
+          setPendingDraftTaskPayload(null);
+        }}
+        newDraftTask={{
+          title: pendingDraftTaskPayload?.title || newTaskTitle,
+          description: pendingDraftTaskPayload?.description,
+          due_date: pendingDraftTaskPayload?.due_date,
+          due_time: pendingDraftTaskPayload?.due_time,
+          priority: pendingDraftTaskPayload?.priority,
+          list_id: pendingDraftTaskPayload?.list_id,
+          tag_ids: pendingDraftTaskPayload?.tag_ids,
+        }}
+        matches={similarityMatches}
+        taskLists={taskLists}
+        tags={tags}
+        onMergeIntoExisting={handleMergeTaskWithExisting}
+        onAddAsSubtask={handleAddDraftAsSubtask}
+        onKeepBothCreate={() => {
+          if (pendingDraftTaskPayload) {
+            executeDirectTaskCreation(pendingDraftTaskPayload);
+          }
+        }}
       />
     </div>
   );
