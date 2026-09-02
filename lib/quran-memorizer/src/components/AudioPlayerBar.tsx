@@ -49,7 +49,20 @@ function getSheikhLastName(reciter: Reciter): string {
     ghamadi: 'الغامدي',
   };
   if (map[reciter.id]) return map[reciter.id];
-  const words = reciter.name.replace(/\(.*?\)/g, '').trim().split(/\s+/);
+  let cleanedName = '';
+  let insideParentheses = 0;
+  for (const char of reciter.name) {
+    if (char === '(') {
+      insideParentheses += 1;
+      continue;
+    }
+    if (char === ')') {
+      insideParentheses = Math.max(insideParentheses - 1, 0);
+      continue;
+    }
+    if (insideParentheses === 0) cleanedName += char;
+  }
+  const words = cleanedName.trim().split(/\s+/);
   return words[words.length - 1] || reciter.name;
 }
 

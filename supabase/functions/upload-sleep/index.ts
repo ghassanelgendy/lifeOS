@@ -252,13 +252,10 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorPreview = errorMessage.substring(0, 200);
     return new Response(
       JSON.stringify({
         success: false,
         error: 'Failed to process request',
-        details: errorPreview,
       }),
       { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

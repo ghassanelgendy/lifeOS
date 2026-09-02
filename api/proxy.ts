@@ -4,6 +4,16 @@
  */
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+const defaultAllowedProxyHosts = ['prayercal.com'];
+const allowedProxyHosts = (process.env.ALLOWED_PROXY_HOSTS ?? defaultAllowedProxyHosts.join(','))
+  .split(',')
+  .map((host) => host.trim().toLowerCase())
+  .filter(Boolean);
+
+function isAllowedProxyHost(hostname: string): boolean {
+  return allowedProxyHosts.some((allowedHost) => hostname === allowedHost || hostname.endsWith(`.${allowedHost}`));
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -31,6 +41,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // SSRF Mitigation 2: Block requests to internal, private, and reserved IP ranges
   // This prevents attackers from scanning or accessing internal network resources
   const hostname = parsedUrl.hostname.toLowerCase();
+
+  if (parsedUrl.username || parsedUrl.password) {
+    return res.status(400).json({ error: 'Userinfo in URL is not allowed' });
+  }
+
+  if (!isAllowedProxyHost(hostname)) {
+    return res.status(403).json({ error: 'Target host is not allowed' });
+  }
   
   const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
   // Check for private IPv4 (10.x.x.x, 172.16-31.x.x, 192.168.x.x) and cloud metadata (169.254.x.x)
@@ -46,6 +64,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const response = await fetch(parsedUrl.toString(), {
       headers: { 'User-Agent': 'lifeOS/1.0', Accept: 'text/calendar, text/plain, */*' },
       cache: 'no-store',
+      redirect: 'error',
     });
     if (!response.ok) return res.status(response.status).json({ error: 'Upstream error' });
     const text = await response.text();

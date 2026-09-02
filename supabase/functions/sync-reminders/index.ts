@@ -567,7 +567,6 @@ Deno.serve(async (req: Request) => {
       cleaned_duplicates: cleanupDuplicateTaskIds.size,
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return jsonResponse({ error: message }, 400);
+    return jsonResponse({ error: 'Failed to sync reminders' }, 400);
   }
 });

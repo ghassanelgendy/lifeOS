@@ -99,7 +99,6 @@ Deno.serve(async (req: Request) => {
       console.error('Unauthorized cron invocation', {
         hasXCronSecret: Boolean(headerSecret),
         hasAuthorization: Boolean(req.headers.get('authorization')),
-        hasApiKey: Boolean(apiKeySecret),
         configuredSecretsCount: configuredSecrets.length,
       });
       return new Response(JSON.stringify({
@@ -236,7 +235,7 @@ Deno.serve(async (req: Request) => {
     });
   } catch (e) {
     console.error(e);
-    return new Response(JSON.stringify({ error: String(e) }), {
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

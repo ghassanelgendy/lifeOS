@@ -1,17 +1,54 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
+const DEFAULT_AI_BASE_URL = 'https://inference.dahl.global/v1';
+
+function trimTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) end -= 1;
+  return value.slice(0, end);
+}
+
+function normalizeAiBaseUrl(value: string): URL | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:') return null;
+    if (url.username || url.password) return null;
+    return url;
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedAiHost(hostname: string): boolean {
+  return hostname === 'inference.dahl.global' ||
+    hostname === 'dahl.global' ||
+    hostname === 'bynara.id' ||
+    hostname.endsWith('.bynara.id');
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const baseUrl = (req.headers['x-ai-base-url'] || 'https://inference.dahl.global/v1').toString().trim();
+  const configuredBaseUrl = (process.env.AI_BASE_URL || DEFAULT_AI_BASE_URL).trim();
+  const normalizedBaseUrl = normalizeAiBaseUrl(configuredBaseUrl);
+  if (!normalizedBaseUrl) {
+    return res.status(500).json({ error: 'AI proxy is misconfigured' });
+  }
+
+  const normalizedHost = normalizedBaseUrl.hostname.toLowerCase();
+  if (!isAllowedAiHost(normalizedHost)) {
+    console.error('[ai-proxy] Unsupported AI_BASE_URL host:', normalizedHost);
+    return res.status(500).json({ error: 'AI proxy is misconfigured' });
+  }
+
   let apiKey = req.headers['x-ai-api-key'] || req.headers['authorization']?.toString().replace('Bearer ', '');
 
   // If no API key is passed in headers, fallback to environment keys based on provider domain
   if (!apiKey) {
-    if (baseUrl.includes('bynara.id')) {
+    if (normalizedHost === 'bynara.id' || normalizedHost.endsWith('.bynara.id')) {
       apiKey =
         process.env.AI_BYNARA_API_KEY ||
         process.env.VITE_AI_BYNARA_API_KEY ||
@@ -19,7 +56,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         process.env.BYNARA_KEY ||
         process.env.BYNARA_API_KEY ||
         '';
-    } else if (baseUrl.includes('dahl.global')) {
+    } else if (normalizedHost === 'inference.dahl.global' || normalizedHost === 'dahl.global') {
       apiKey =
         process.env.AI_DAHL_API_KEY ||
         process.env.VITE_AI_DAHL_API_KEY ||
@@ -40,8 +77,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
-    const targetUrl = `${baseUrl.replace(/\/+$/, '')}/chat/completions`;
-    const response = await fetch(targetUrl, {
+    const basePath = trimTrailingSlashes(normalizedBaseUrl.pathname);
+    const targetPath = `${basePath}/chat/completions`;
+    const targetUrl = new URL(targetPath.startsWith('/') ? targetPath : `/${targetPath}`, normalizedBaseUrl.origin);
+    const response = await fetch(targetUrl.toString(), {
       method: 'POST',
       signal: controller.signal,
       headers: {
@@ -75,7 +114,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const isTimeout = err?.name === 'AbortError';
     return res.status(isTimeout ? 504 : 502).json({
       error: isTimeout ? 'Gateway Timeout' : 'Failed to communicate with AI Router',
-      details: err?.message || String(err),
     });
   }
 }

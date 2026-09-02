@@ -364,7 +364,7 @@ Return ONLY valid JSON in this format:
   } catch (globalErr: any) {
     console.error('[BrainDump Organizer] Global error:', globalErr);
     return new Response(
-      JSON.stringify({ error: String(globalErr) }),
+      JSON.stringify({ error: 'Internal server error' }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
