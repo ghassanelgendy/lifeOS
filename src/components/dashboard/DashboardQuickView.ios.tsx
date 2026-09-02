@@ -1154,10 +1154,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     const sleep = Math.min(dayMinutes, Math.max(0, todaySleepMinutes || 0));
     const pc = Math.max(0, todayScreentime.pcMinutes || 0);
     const phone = Math.max(0, todayScreentime.phoneMinutes || 0);
+    const web = Math.max(0, todayScreentime.webMinutes || 0);
     const other = Math.max(0, todayScreentime.otherMinutes || 0);
-    const rawUsed = pc + phone + other;
-
-
+    const rawUsed = pc + phone + web + other;
 
     // Use the mathematically exact overlap computed from the timeline blocks
     const exactOverlapMinutes = Math.round(timelineBlocks.overlap.reduce((sum, b) => sum + (b.end - b.start), 0));
@@ -1165,15 +1164,20 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
     let adjustedPc = pc;
     let adjustedPhone = phone;
+    let adjustedWeb = web;
     let adjustedOther = other;
 
     if (overlapDisplay > 0) {
-      const pcRatio = pc + phone > 0 ? pc / (pc + phone) : 0.5;
+      const activeTotal = pc + phone + web;
+      const pcRatio = activeTotal > 0 ? pc / activeTotal : 0.4;
+      const phoneRatio = activeTotal > 0 ? phone / activeTotal : 0.4;
+      const webRatio = activeTotal > 0 ? web / activeTotal : 0.2;
       adjustedPc = Math.max(0, pc - overlapDisplay * pcRatio);
-      adjustedPhone = Math.max(0, phone - overlapDisplay * (1 - pcRatio));
+      adjustedPhone = Math.max(0, phone - overlapDisplay * phoneRatio);
+      adjustedWeb = Math.max(0, web - overlapDisplay * webRatio);
     }
 
-    const used = adjustedPc + adjustedPhone + adjustedOther + overlapDisplay;
+    const used = adjustedPc + adjustedPhone + adjustedWeb + adjustedOther + overlapDisplay;
     const accounted = Math.min(dayMinutes, sleep + used);
     const rest = Math.max(0, dayMinutes - accounted);
 
@@ -1188,6 +1192,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     return {
       pc: adjustedPc,
       phone: adjustedPhone,
+      web: adjustedWeb,
       other: adjustedOther,
       sleep,
       used,
@@ -1201,13 +1206,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       nowPct: pct(elapsed),
       sleepPct: pct(sleep),
       pcPct: pct(adjustedPc),
+      phonePct: pct(adjustedPhone),
+      webPct: pct(adjustedWeb),
       overlapPct: pct(overlapDisplay),
       overlap: overlapDisplay,
-      phonePct: pct(adjustedPhone),
       otherPct: pct(adjustedOther),
       restPct: pct(rest),
     };
-  }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.otherMinutes, todaySleepMinutes, timelineBlocks]);
+  }, [today, todayScreentime.pcMinutes, todayScreentime.phoneMinutes, todayScreentime.webMinutes, todayScreentime.otherMinutes, todaySleepMinutes, timelineBlocks]);
 
   const progressMarkerClusters = useMemo(() => {
     const dayMinutes = 24 * 60;
@@ -1924,7 +1930,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-indigo-500" /> Sleep</span>
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-sky-500" /> PC</span>
                   <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-violet-500" /> Phone</span>
-                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-amber-500" /> Other</span>
+                  <span className="flex items-center gap-1.5"><span className="size-2 rounded-full bg-emerald-500" /> Web</span>
                 </div>
               </div>
             </div>
@@ -1935,9 +1941,12 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             >
               <div className="flex h-full w-full overflow-hidden rounded-full">
                 <div className={cn('bg-indigo-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
-                <div className={cn('bg-sky-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC: ${formatDurationMinutes(screenChart.pc)}`} />
-                <div className={cn('bg-violet-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone: ${formatDurationMinutes(screenChart.phone)}`} />
-                <div className={cn('bg-amber-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
+                <div className={cn('bg-sky-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC (Apps): ${formatDurationMinutes(screenChart.pc)}`} />
+                <div className={cn('bg-violet-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone (Apps): ${formatDurationMinutes(screenChart.phone)}`} />
+                <div className={cn('bg-emerald-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.webPct }} title={`Web Browsing: ${formatDurationMinutes(screenChart.web)}`} />
+                {screenChart.other > 0 && (
+                  <div className={cn('bg-amber-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
+                )}
                 {screenChart.overlap > 0 && (
                   <div className={cn('bg-red-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
                 )}

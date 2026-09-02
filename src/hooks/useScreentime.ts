@@ -273,10 +273,16 @@ export function useTodayScreentime() {
   const isBrowserApp = (name: string) => BROWSER_APP_NAMES.some(b => (name || '').toLowerCase().includes(b));
   const hasBrowserApp = aggregatedApps.some(a => isBrowserApp(a.app_name));
 
+  // Compute total web browsing seconds (from website stats or browser apps)
+  const websiteSeconds = aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0);
+  const browserAppSeconds = aggregatedApps
+    .filter(a => isBrowserApp(a.app_name))
+    .reduce((sum, stat) => sum + stat.total_time_seconds, 0);
+
   // App + domain rows (deduplicated to avoid double counting browser and website times)
   const totalSeconds =
     aggregatedApps.reduce((sum, stat) => sum + stat.total_time_seconds, 0) +
-    (hasBrowserApp ? 0 : aggregatedWebsites.reduce((sum, stat) => sum + stat.total_time_seconds, 0));
+    (hasBrowserApp ? 0 : websiteSeconds);
   
   const totalMinutes = Math.round(totalSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
@@ -295,32 +301,44 @@ export function useTodayScreentime() {
   // Calculate total switches for today (sum across all sources/devices)
   const totalSwitches = summaries.reduce((sum, s) => sum + (s.total_switches || 0), 0);
 
-  const classifyDevice = (source?: string | null, platform?: string | null): 'pc' | 'phone' | 'other' => {
-    const src = (source || '').toLowerCase();
-    const pf = (platform || '').toLowerCase();
-    if (src === 'mobile' || pf === 'ios' || pf === 'android') return 'phone';
-    if (src === 'pc' || pf === 'windows' || pf === 'macos' || pf === 'linux') return 'pc';
-    return 'other';
-  };
+  // Separate non-browser native PC vs Phone apps, plus unified Web browsing
+  let pcNonBrowserSeconds = 0;
+  let phoneNonBrowserSeconds = 0;
+  let webBrowsingSeconds = 0;
 
-  const deviceSeconds = { pc: 0, phone: 0, other: 0 };
   for (const stat of aggregatedApps) {
-    deviceSeconds[classifyDevice(stat.source, stat.platform)] += stat.total_time_seconds || 0;
-  }
-  if (!hasBrowserApp) {
-    for (const stat of aggregatedWebsites) {
-      deviceSeconds[classifyDevice(stat.source, stat.platform)] += stat.total_time_seconds || 0;
+    const src = (stat.source || '').toLowerCase();
+    const pf = (stat.platform || '').toLowerCase();
+    const isMobile = src === 'mobile' || pf === 'ios' || pf === 'android';
+    const isBrowser = isBrowserApp(stat.app_name);
+
+    if (isBrowser) {
+      webBrowsingSeconds += stat.total_time_seconds || 0;
+    } else if (isMobile) {
+      phoneNonBrowserSeconds += stat.total_time_seconds || 0;
+    } else {
+      pcNonBrowserSeconds += stat.total_time_seconds || 0;
     }
   }
+
+  // If website stats were logged directly (extension/web clipper/pwa without wrapper) and not counted in browser apps:
+  if (!hasBrowserApp) {
+    webBrowsingSeconds += websiteSeconds;
+  }
+
+  const pcMinutes = Math.round(pcNonBrowserSeconds / 60);
+  const phoneMinutes = Math.round(phoneNonBrowserSeconds / 60);
+  const webMinutes = Math.round(webBrowsingSeconds / 60);
 
   return {
     totalMinutes,
     totalHours: hours,
     remainingMinutes: minutes,
     totalSeconds,
-    pcMinutes: Math.round(deviceSeconds.pc / 60),
-    phoneMinutes: Math.round(deviceSeconds.phone / 60),
-    otherMinutes: Math.round(deviceSeconds.other / 60),
+    pcMinutes,
+    phoneMinutes,
+    webMinutes,
+    otherMinutes: 0,
     topApps,
     topWebsites,
     appCount: appStats.length,
