@@ -26,7 +26,7 @@ try {
     fs.cpSync(extDir, staging, { recursive: true });
     execFileSync(
       'powershell',
-      ['-NoProfile', '-NonInteractive', '-Command', "Compress-Archive -Path '.extension-staging\\*' -DestinationPath 'lifeOS-extension.zip' -Force"],
+      ['-NoProfile', '-NonInteractive', '-Command', 'Compress-Archive', '-Path', `${staging}\\*`, '-DestinationPath', outZip, '-Force'],
       { cwd: rootDir, stdio: 'inherit' }
     );
     fs.rmSync(staging, { recursive: true, force: true });
