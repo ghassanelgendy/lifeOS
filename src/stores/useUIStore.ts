@@ -108,6 +108,8 @@ interface UIState {
   setAccentTheme: (accent: AccentTheme) => void;
   platformUIOverride: 'auto' | 'web' | 'pake';
   setPlatformUIOverride: (override: 'auto' | 'web' | 'pake') => void;
+  showSystemTray: boolean;
+  setShowSystemTray: (show: boolean) => void;
 
   // Mobile Navigation Customization
   mobileNavItems: string[];
@@ -230,6 +232,7 @@ export type PersistedUiSlice = {
   theme: 'dark' | 'light';
   accentTheme: AccentTheme;
   platformUIOverride: 'auto' | 'web' | 'pake';
+  showSystemTray: boolean;
   mobileNavItems: string[];
   desktopNavOrder: string[];
   desktopNavVisible: Record<string, boolean>;
@@ -354,6 +357,8 @@ export const useUIStore = create<UIState>()(
       setAccentTheme: (accentTheme) => set({ accentTheme }),
       platformUIOverride: 'auto',
       setPlatformUIOverride: (platformUIOverride) => set({ platformUIOverride }),
+      showSystemTray: true,
+      setShowSystemTray: (showSystemTray) => set({ showSystemTray }),
 
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,
@@ -567,6 +572,8 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     prayerLocationLabel: state.prayerLocationLabel,
     theme: state.theme,
     accentTheme: state.accentTheme,
+    platformUIOverride: state.platformUIOverride,
+    showSystemTray: state.showSystemTray,
     mobileNavItems: state.mobileNavItems,
     desktopNavOrder: state.desktopNavOrder,
     desktopNavVisible: state.desktopNavVisible,

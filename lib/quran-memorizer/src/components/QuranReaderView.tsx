@@ -427,12 +427,33 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     }, 1200);
   };
 
-  const startLongPress = (
-    _e: React.PointerEvent,
+  const openAyahContextMenu = (
+    e: React.MouseEvent | React.TouchEvent | null,
     ayahNumber: number,
     surah: { name: string; id: number },
     ayahs: Ayah[]
   ) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const foundAyah = ayahs.find((a) => a.numberInSurah === ayahNumber);
+    if (foundAyah) {
+      setAyahContextMenu({ ayah: foundAyah, surah });
+      setHoveredMenuAction(null);
+    }
+    cancelLongPress();
+  };
+
+  const startLongPress = (
+    e: React.PointerEvent,
+    ayahNumber: number,
+    surah: { name: string; id: number },
+    ayahs: Ayah[]
+  ) => {
+    // If right click mouse, handle directly via onContextMenu
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
     cancelLongPress();
     setPressingAyah(ayahNumber);
     if (pressingTimerRef.current != null) window.clearTimeout(pressingTimerRef.current);
@@ -444,11 +465,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         const cur = longPressRef.current;
         if (cur && cur.ayahNumber === ayahNumber) {
           cur.triggered = true;
-          const foundAyah = ayahs.find((a) => a.numberInSurah === ayahNumber);
-          if (foundAyah) {
-            setAyahContextMenu({ ayah: foundAyah, surah });
-            setHoveredMenuAction(null);
-          }
+          openAyahContextMenu(null, ayahNumber, surah, ayahs);
         }
         setPressingAyah(null);
       }, 450),
@@ -1403,7 +1420,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       onPointerUp={cancelLongPress}
                                       onPointerCancel={cancelLongPress}
                                       onPointerMove={cancelLongPress}
-                                      onContextMenu={(e) => e.preventDefault()}
+                                      onContextMenu={(e) => openAyahContextMenu(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                       className={`inline cursor-pointer rounded px-0.5 transition-colors tracking-normal font-bold ${
                                         isMemMarker && isReadMarker
                                           ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-foreground border-b-2 border-amber-400'
@@ -2109,7 +2126,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 onPointerUp={cancelLongPress}
                 onPointerCancel={cancelLongPress}
                 onPointerMove={cancelLongPress}
-                onContextMenu={(e) => e.preventDefault()}
+                onContextMenu={(e) => openAyahContextMenu(e, ayah.numberInSurah, currentSurah, verses)}
                 className={`p-3.5 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
                   isMemWirdEnd
                     ? 'border-emerald-500 ring-2 ring-emerald-500/40 bg-emerald-950/20 shadow-lg'
@@ -2211,11 +2228,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         </div>
       )}
 
-      {/* 6. 3D AYAH ACTION CONTEXT MENU (Portaled to Body with Drag-to-Select) */}
+      {/* 6. NATIVE AYAH ACTION CONTEXT MENU (Portaled to Body) */}
       {ayahContextMenu &&
         createPortal(
           <div
-            className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200 transition-opacity"
+            className="fixed inset-0 z-[10002] flex items-center justify-center p-4 bg-background/80 md:bg-black/50 backdrop-blur-md animate-in fade-in duration-150 transition-opacity"
             onClick={() => {
               setAyahContextMenu(null);
               setHoveredMenuAction(null);
@@ -2242,15 +2259,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="relative z-10 w-full max-w-[320px] flex flex-col items-center select-none animate-in zoom-in-90 fade-in duration-200 ease-out font-arabic-title"
+              className="relative z-10 w-full max-w-[340px] flex flex-col items-center select-none animate-in zoom-in-95 fade-in duration-150 ease-out font-arabic-title space-y-2.5"
             >
               {/* Ayah Preview Card */}
-              <div className="w-full bg-[#f9f9f9]/95 dark:bg-[#1c1c1e]/95 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-right space-y-2">
+              <div className="w-full bg-card/95 border border-border/80 backdrop-blur-xl rounded-2xl p-4 shadow-xl text-right space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-xs font-bold text-emerald-500">
                     سورة {ayahContextMenu.surah.name} — الآية {ayahContextMenu.ayah.numberInSurah}
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-mono">
+                  <span className="text-[10px] text-muted-foreground font-mono bg-secondary/80 px-2 py-0.5 rounded-full border border-border/40">
                     صفحة {ayahContextMenu.ayah.page || activePage}
                   </span>
                 </div>
@@ -2259,14 +2276,14 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 </p>
               </div>
 
-              {/* 5-Action iOS Rounded Stack Menu */}
-              <div className="w-full bg-[#f9f9f9]/95 dark:bg-[#1c1c1e]/95 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-right mt-3">
+              {/* Action List */}
+              <div className="w-full bg-card/95 border border-border/80 backdrop-blur-xl rounded-2xl divide-y divide-border/50 overflow-hidden shadow-xl text-right">
                 {([
-                  { id: 'hide', label: 'إخفاء الآية (لهذه الجلسة)', icon: <EyeOff className="size-4 text-muted-foreground" /> },
                   { id: 'mem_checkpoint', label: 'تحديد كعلامة حفظ', icon: <Target className="size-4 text-amber-500" /> },
                   { id: 'read_checkpoint', label: 'تحديد كعلامة قراءة وتلاوة', icon: <BookOpen className="size-4 text-indigo-500" /> },
                   { id: 'bookmark', label: 'حفظ الآية في الملاحظات', icon: <BookmarkPlus className="size-4 text-emerald-500" /> },
                   { id: 'tafseer', label: 'تفسير الآية (التفسير الميسر)', icon: <Sparkles className="size-4 text-violet-500" /> },
+                  { id: 'hide', label: 'إخفاء الآية (لهذه الجلسة)', icon: <EyeOff className="size-4 text-muted-foreground" /> },
                 ] as const).map((item) => {
                   const isHovered = hoveredMenuAction === item.id;
                   return (
@@ -2275,10 +2292,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       type="button"
                       data-menu-action={item.id}
                       onClick={() => handleAyahAction(item.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium transition-all duration-150 cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-4 py-3 text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
                         isHovered
-                          ? 'bg-emerald-500/25 dark:bg-emerald-500/30 text-emerald-700 dark:text-emerald-300 font-bold scale-[1.02] shadow-inner'
-                          : 'text-foreground hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10'
+                          ? 'bg-primary/10 text-primary font-bold'
+                          : 'text-foreground hover:bg-secondary/70 active:bg-secondary'
                       }`}
                     >
                       <span>{item.label}</span>

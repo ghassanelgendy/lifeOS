@@ -845,11 +845,11 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
         {/* Calendar Grid */}
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-3 flex flex-col h-full min-h-0">
           {view === 'day' ? (
-            <div className="rounded-xl border border-border bg-card p-3 md:p-4">
+            <div className="rounded-xl border border-border bg-card p-3 md:p-4 flex-1 flex flex-col min-h-0">
               {dayAllDayEvents.length > 0 && (
                 <div className="mb-4 rounded-lg border border-border bg-secondary/20 p-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase mb-2">All Day</p>
@@ -927,9 +927,9 @@ export default function CalendarPage() {
               </div>
             </div>
           ) : (
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="rounded-xl border border-border bg-card overflow-hidden flex-1 flex flex-col min-h-0">
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 border-b border-border">
+            <div className="grid grid-cols-7 border-b border-border shrink-0">
               {WEEKDAYS.map((day) => (
                 <div key={day} className="p-2 text-center text-xs font-medium text-muted-foreground uppercase">
                   {day}
@@ -938,7 +938,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar Days */}
-            <div className="grid grid-cols-7">
+            <div className="grid grid-cols-7 flex-1">
               {calendarDays.map((day, index) => {
                 const dayEvents = getEventsForDay(day);
                 const dayTasks = getTasksForDay(day);
@@ -1020,29 +1020,31 @@ export default function CalendarPage() {
           )}
         </div>
 
-        {/* Sidebar - Selected Day Events */}
+        {/* Sidebar - Selected Day Events & Feeds */}
         <div className="lg:col-span-1">
-          <div className="rounded-xl border border-border bg-card p-4 sticky top-4 flex flex-col max-h-[calc(100vh-6rem)]">
-            <h3 className="font-semibold mb-4 shrink-0">
+          <div className="rounded-xl border border-border bg-card p-4 sticky top-4 flex flex-col max-h-[calc(100vh-5rem)] h-full">
+            <h3 className="font-semibold mb-3 shrink-0">
               {format(activeDay, 'EEEE, MMM d')}
             </h3>
 
             <Button
               variant="outline"
               size="sm"
-              className="w-full mb-4 shrink-0"
+              className="w-full mb-3 shrink-0"
               onClick={() => void handleOpenModal(undefined, activeDay)}
             >
               <Plus size={14} />
               Add Event
             </Button>
 
-            <div className="space-y-3 overflow-y-auto pr-1 flex-1 min-h-0">
-              {selectedDayEvents.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No events scheduled
-                </p>
-              ) : (
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1.5 space-y-4">
+              {/* Day Events Section */}
+              <div className="space-y-3">
+                {selectedDayEvents.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No events scheduled
+                  </p>
+                ) : (
                 selectedDayEvents.map((event) => {
                   const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
                   const isIcal = 'isIcal' in event && event.isIcal;
@@ -1409,6 +1411,7 @@ export default function CalendarPage() {
                   <span className="text-xs">Prayer</span>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>

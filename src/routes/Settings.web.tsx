@@ -114,6 +114,8 @@ export default function SettingsPage() {
     setAccentTheme,
     platformUIOverride,
     setPlatformUIOverride,
+    showSystemTray,
+    setShowSystemTray,
     mobileNavItems,
     setMobileNavItems,
     desktopNavOrder,
@@ -450,6 +452,31 @@ export default function SettingsPage() {
               <option value="web">Web UI Style</option>
               <option value="pake">Desktop (Fluent UI) Style</option>
             </select>
+          </div>
+
+          {/* Desktop Tray & App Indicator Toggle */}
+          <div className="pt-4 border-t border-border flex items-center justify-between">
+            <div>
+              <p className="font-medium mb-0.5">Desktop System Tray & App Indicator</p>
+              <p className="text-sm text-muted-foreground">
+                Show or hide the background status icon / AppIndicator in the Linux and Windows system tray.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowSystemTray(!showSystemTray)}
+              className={cn(
+                "relative w-12 h-6 rounded-full transition-colors shrink-0",
+                showSystemTray ? "bg-primary" : "bg-secondary"
+              )}
+            >
+              <div
+                className={cn(
+                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                  showSystemTray ? "translate-x-7" : "translate-x-1"
+                )}
+              />
+            </button>
           </div>
         </div>
       </section>

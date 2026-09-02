@@ -43,3 +43,12 @@ export function formatDuration(seconds: number): string {
   if (minutes > 0) return `${minutes}m ${secs}s`;
   return `${secs}s`;
 }
+
+export function formatDayMonth(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('T')[0].split('-');
+  if (parts.length === 3) {
+    return `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
+  }
+  return dateStr;
+}

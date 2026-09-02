@@ -212,84 +212,113 @@ export default function Sleep() {
       </div>
 
       {isLoading ? (
-        <div className="liquid-glass-card p-8 text-center text-muted-foreground">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground mx-auto mb-2" />
+        <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
           Loading sleep data...
         </div>
       ) : !active ? (
-        <div className="liquid-glass-card p-8 text-center text-muted-foreground">
-          <Moon className="mx-auto mb-2" size={28} />
-          <p className="text-sm">No sleep sessions yet.</p>
+        <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl">
+          <Moon className="mx-auto mb-2 text-primary" size={28} />
+          <p className="text-sm font-medium text-foreground">No sleep sessions yet.</p>
           <p className="text-xs mt-1">Start tracking your sleep to see insights here.</p>
         </div>
       ) : (
         sleepOrder.filter(visible).map((sectionId) => {
           if (sectionId === 'score') {
             return (
-              <div key="score" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
-                <div className="flex flex-col md:flex-row gap-8 items-center justify-between">
-                  <div className="flex-1 space-y-6">
-                    <div>
-                      <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                        <Moon size={20} className="text-primary" />
-                        <h2 className="text-xs font-semibold uppercase tracking-wider">
-                          Last Night
-                        </h2>
-                      </div>
-                      <p className={cn("text-5xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
-                        {formatDuration(active.sleepMinutes)}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-3 font-medium">
-                        {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
-                      </p>
+              <div key="score" className="liquid-glass-card p-5 rounded-2xl animate-in fade-in duration-300">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
+                      <Moon size={16} />
                     </div>
-                    
-                    <div className="flex items-center gap-6 pt-4 border-t border-white/5">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-0.5">Efficiency</p>
-                        <p className="text-lg font-bold">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-0.5">Wakes</p>
-                        <p className="text-lg font-bold">{active.wakeCount}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-0.5">Deep</p>
-                        <p className="text-lg font-bold">{formatDuration(active.deepMinutes)}</p>
-                      </div>
-                    </div>
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      Time Asleep
+                    </h2>
                   </div>
-                  
-                  <div className="w-full md:w-64 h-64 flex items-center justify-center relative">
-                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-                      <p className="text-4xl font-bold">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
-                      <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">Score</p>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {pct(active.sleepMinutes, active.totalMinutes)}% Efficiency
+                  </span>
+                </div>
+
+                <div className="flex items-baseline gap-2">
+                  <p className={cn("text-4xl font-extrabold text-foreground tracking-tight", privacyMode && "blur-md")}>
+                    {formatDuration(active.sleepMinutes)}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    ({formatDuration(active.totalMinutes)} in bed)
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1 font-medium">
+                  {format(active.bedtime, 'h:mm a')} – {format(active.waketime, 'h:mm a')}
+                </p>
+
+                {/* Apple Health Style Sleep Stage Horizontal Breakdown Bar */}
+                <div className="mt-5 space-y-2">
+                  <div className="h-3.5 rounded-full overflow-hidden flex bg-secondary/80 p-0.5 gap-0.5">
+                    {active.sleepMinutes > 0 && (
+                      <>
+                        <div
+                          style={{ width: `${Math.max(2, (active.deepMinutes / active.totalMinutes) * 100)}%`, background: STAGE_COLORS.Deep }}
+                          className="h-full rounded-full transition-all"
+                          title={`Deep: ${formatDuration(active.deepMinutes)}`}
+                        />
+                        <div
+                          style={{ width: `${Math.max(2, (active.coreMinutes / active.totalMinutes) * 100)}%`, background: STAGE_COLORS.Core }}
+                          className="h-full rounded-full transition-all"
+                          title={`Core: ${formatDuration(active.coreMinutes)}`}
+                        />
+                        <div
+                          style={{ width: `${Math.max(2, (active.remMinutes / active.totalMinutes) * 100)}%`, background: STAGE_COLORS.REM }}
+                          className="h-full rounded-full transition-all"
+                          title={`REM: ${formatDuration(active.remMinutes)}`}
+                        />
+                        <div
+                          style={{ width: `${Math.max(1, (active.awakeMinutes / active.totalMinutes) * 100)}%`, background: STAGE_COLORS.Awake }}
+                          className="h-full rounded-full transition-all"
+                          title={`Awake: ${formatDuration(active.awakeMinutes)}`}
+                        />
+                      </>
+                    )}
+                  </div>
+
+                  {/* Stage Metrics Grid */}
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/5">
+                    <div className="text-left">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                        <span className="w-2 h-2 rounded-full" style={{ background: STAGE_COLORS.Deep }} />
+                        <span>Deep</span>
+                      </div>
+                      <p className="text-xs font-bold text-foreground mt-0.5">{formatDuration(active.deepMinutes)}</p>
+                      <p className="text-[10px] text-muted-foreground">{pct(active.deepMinutes, active.sleepMinutes)}%</p>
                     </div>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie 
-                          data={donutData} 
-                          dataKey="value" 
-                          nameKey="name" 
-                          innerRadius={80} 
-                          outerRadius={100} 
-                          strokeWidth={0}
-                          cornerRadius={4}
-                          paddingAngle={2}
-                        />
-                        <Tooltip 
-                          formatter={(v: any) => `${v ?? 0} min`} 
-                          contentStyle={{ 
-                            backgroundColor: 'rgba(30, 30, 30, 0.45)', 
-                            backdropFilter: 'blur(10px)',
-                            border: '1px solid rgba(255, 255, 255, 0.08)', 
-                            borderRadius: '16px',
-                            boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)',
-                            color: 'white'
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+
+                    <div className="text-left">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                        <span className="w-2 h-2 rounded-full" style={{ background: STAGE_COLORS.Core }} />
+                        <span>Core</span>
+                      </div>
+                      <p className="text-xs font-bold text-foreground mt-0.5">{formatDuration(active.coreMinutes)}</p>
+                      <p className="text-[10px] text-muted-foreground">{pct(active.coreMinutes, active.sleepMinutes)}%</p>
+                    </div>
+
+                    <div className="text-left">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                        <span className="w-2 h-2 rounded-full" style={{ background: STAGE_COLORS.REM }} />
+                        <span>REM</span>
+                      </div>
+                      <p className="text-xs font-bold text-foreground mt-0.5">{formatDuration(active.remMinutes)}</p>
+                      <p className="text-[10px] text-muted-foreground">{pct(active.remMinutes, active.sleepMinutes)}%</p>
+                    </div>
+
+                    <div className="text-left">
+                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
+                        <span className="w-2 h-2 rounded-full" style={{ background: STAGE_COLORS.Awake }} />
+                        <span>Awake</span>
+                      </div>
+                      <p className="text-xs font-bold text-foreground mt-0.5">{formatDuration(active.awakeMinutes)}</p>
+                      <p className="text-[10px] text-muted-foreground">{active.wakeCount}x</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -304,56 +333,49 @@ export default function Sleep() {
             const thirtyDayAvg = monthly.length > 0 ? Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length) / 60 * 10) / 10 : 0;
             
             return (
-              <div key="weekly" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
-                <div className="flex items-start justify-between mb-8">
+              <div key="weekly" className="liquid-glass-card p-5 rounded-2xl animate-in fade-in duration-300">
+                <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h2 className="text-lg font-semibold">30-Day Overview</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Your sleep trends over the last 30 days</p>
+                    <h2 className="text-sm font-semibold text-foreground">30-Day Trends</h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">Average sleep per night</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider">30d Average</p>
-                    <p className={cn("text-2xl font-black text-foreground tracking-tighter leading-none mt-1.5", privacyMode && "blur-sm")}>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">30d Avg</p>
+                    <p className={cn("text-lg font-bold text-foreground tracking-tight mt-0.5", privacyMode && "blur-sm")}>
                       {monthly.length > 0 ? formatDuration(Math.round(thirtyDayAvg * 60)) : '0h 0m'}
                     </p>
                   </div>
                 </div>
                 
-                <div className="h-56 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
-                  <style>{`
-                    .recharts-bar-rectangle { transition: fill 0.2s, opacity 0.2s; }
-                    .recharts-bar-rectangle:hover {
-                      fill: hsl(var(--primary)) !important;
-                      opacity: 1 !important;
-                    }
-                  `}</style>
+                <div className="h-44 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={bars} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <BarChart data={bars} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                       <XAxis
                         dataKey="day"
-                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)' }}
+                        tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.45)' }}
                         tickLine={false}
                         axisLine={false}
-                        dy={10}
+                        dy={8}
                       />
                       <YAxis
-                        tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)' }}
+                        tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.45)' }}
                         tickLine={false}
                         axisLine={false}
-                        dx={-10}
+                        dx={-5}
                       />
                       <Tooltip 
-                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 8 }}
+                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 6 }}
                         formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
                         itemStyle={{ color: 'hsl(var(--foreground))' }}
                         labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
                         contentStyle={{
-                          backgroundColor: 'rgba(30, 30, 30, 0.45)',
-                          backdropFilter: 'blur(10px)',
-                          border: '1px solid rgba(255,255,255,0.08)',
-                          borderRadius: '16px',
+                          backgroundColor: 'rgba(30, 30, 30, 0.75)',
+                          backdropFilter: 'blur(12px)',
+                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          borderRadius: '12px',
                           color: 'hsl(var(--foreground))',
-                          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.25)'
+                          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)'
                         }}
                       />
                       <ReferenceLine 
@@ -363,16 +385,16 @@ export default function Sleep() {
                       />
                       <Bar
                         dataKey="sleep"
-                        radius={[4, 4, 4, 4]}
-                        className="fill-primary/65"
-                        barSize={18}
+                        radius={[3, 3, 3, 3]}
+                        className="fill-primary/75"
+                        barSize={14}
                       />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
                 
                 {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake && (
-                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-sm">
+                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Typical Window</span>
                     <span className="font-semibold text-foreground">
                       {format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – {format(weeklyAvgWindow.avgWake, 'h:mm a')}
@@ -385,9 +407,9 @@ export default function Sleep() {
 
           if (sectionId === 'timeline') {
             return (
-              <div key="timeline" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
-                <h2 className="text-lg font-semibold mb-6">Sleep Stages Timeline</h2>
-                <div className="h-20 rounded-xl overflow-hidden flex bg-black/15 dark:bg-white/5 ring-1 ring-inset ring-white/5">
+              <div key="timeline" className="liquid-glass-card p-5 rounded-2xl animate-in fade-in duration-300">
+                <h2 className="text-sm font-semibold mb-3">Sleep Stages Timeline</h2>
+                <div className="h-14 rounded-xl overflow-hidden flex bg-black/20 dark:bg-white/5 ring-1 ring-inset ring-white/5">
                   {active.segments.map((seg, idx) => (
                     <div
                       key={`${seg.started_at}-${idx}`}
@@ -400,14 +422,14 @@ export default function Sleep() {
                     />
                   ))}
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mt-4 font-semibold">
+                <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2 font-medium">
                   <span>{format(active.bedtime, 'h:mm a')}</span>
                   <span>{format(active.waketime, 'h:mm a')}</span>
                 </div>
-                <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/5">
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-white/5">
                   {Object.entries(STAGE_COLORS).map(([name, color]) => (
-                    <div key={name} className="flex items-center gap-2 text-xs font-semibold">
-                      <span className="w-2.5 h-2.5 rounded-full shadow-sm animate-pulse" style={{ background: color }} />
+                    <div key={name} className="flex items-center gap-1.5 text-xs font-medium">
+                      <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: color }} />
                       <span className="text-foreground">{name}</span>
                     </div>
                   ))}
