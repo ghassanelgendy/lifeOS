@@ -213,6 +213,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/sw.ts](#src-sw-ts)
 
 ### src/components
+- [src/components/AIChatModal.tsx](#src-components-aichatmodal-tsx)
 - [src/components/AINoteOrganizerSheet.tsx](#src-components-ainoteorganizersheet-tsx)
 - [src/components/AISettingsSection.tsx](#src-components-aisettingssection-tsx)
 - [src/components/AppFooter.ios.tsx](#src-components-appfooter-ios-tsx)
@@ -251,6 +252,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/PullToRefresh.ios.tsx](#src-components-pulltorefresh-ios-tsx)
 - [src/components/PullToRefresh.tsx](#src-components-pulltorefresh-tsx)
 - [src/components/PullToRefresh.web.tsx](#src-components-pulltorefresh-web-tsx)
+- [src/components/QuranOfflineDownloader.tsx](#src-components-quranofflinedownloader-tsx)
 - [src/components/SwipeableRow.ios.tsx](#src-components-swipeablerow-ios-tsx)
 - [src/components/SwipeableRow.pake.tsx](#src-components-swipeablerow-pake-tsx)
 - [src/components/SwipeableRow.tsx](#src-components-swipeablerow-tsx)
@@ -258,6 +260,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/TaskDetailsContent.ios.tsx](#src-components-taskdetailscontent-ios-tsx)
 - [src/components/TaskDetailsContent.tsx](#src-components-taskdetailscontent-tsx)
 - [src/components/TaskDetailsContent.web.tsx](#src-components-taskdetailscontent-web-tsx)
+- [src/components/TaskSimilarityMergeModal.tsx](#src-components-tasksimilaritymergemodal-tsx)
 - [src/components/navItems.ts](#src-components-navitems-ts)
 
 ### src/components/analytics
@@ -374,6 +377,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/smartTaskScheduler.ts](#src-lib-smarttaskscheduler-ts)
 - [src/lib/supabase.ts](#src-lib-supabase-ts)
 - [src/lib/taskInputSuggestions.ts](#src-lib-taskinputsuggestions-ts)
+- [src/lib/taskSimilarityAnalyzer.ts](#src-lib-tasksimilarityanalyzer-ts)
 - [src/lib/userAppSettings.ts](#src-lib-userappsettings-ts)
 - [src/lib/utils.test.ts](#src-lib-utils-test-ts)
 - [src/lib/utils.ts](#src-lib-utils-ts)
@@ -620,7 +624,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6554
+**Lines:** 6656
 
 ---
 
@@ -631,7 +635,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1237
+**Lines:** 1249
 
 ---
 
@@ -642,7 +646,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 893
+**Lines:** 897
 
 ---
 
@@ -925,7 +929,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getCleanPageText`** — Utility function for get clean page text.
 - **`getPageMetadata`** — Utility function for get page metadata.
 
-**Lines:** 106
+**Lines:** 124
 
 ---
 
@@ -937,7 +941,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `AIClient` (Class)
 
-**Lines:** 151
+**Lines:** 203
 
 ---
 
@@ -1053,7 +1057,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`initQuickAddTask`** — Utility function for init quick add task.
 - **`renderNotesList`** — Utility function for render notes list.
 
-**Lines:** 680
+**Lines:** 705
 
 ---
 
@@ -1447,12 +1451,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-khatmahplannerview-tsx"></a>
 ### lib/quran-memorizer/src/components/KhatmahPlannerView.tsx
 
-**File Purpose:** Khatmah planning and dual wird management view (Memorization & Reading). Contains `advanceReverseKhatmah` helper for sequential intra-surah traversal in reverse khatmah plans (Surah 114 to 1).
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:**
-- `isReversePlan` (Function) — Checks if plan is in reverse direction (114 to 1).
-- `advanceReverseKhatmah` (Function) — Advances pages forward within a surah and transitions to the first page of the next lower-numbered surah upon boundary crossing.
-- `KhatmahPlannerView` (React Component) — Renders the dual wird planner cards, progress logger, and calendar sync.
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 1227
 
 ---
 
@@ -1474,17 +1477,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 717
+**Lines:** 729
 
 ---
 
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Interactive Medina Mushaf reader with single-page and two-page layouts, 3D long-press ayah context menu (Hide, Memorization checkpoint, Reading checkpoint, Bookmark to Notes, Tafseer), Tafsir Al-Muyassar drawer, and offline caching support.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:**
-- `QuranReaderView` (React Component) — Full Quran reading canvas with tajweed color rendering, blind mode testing, and 3D action menu.
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2365
 
 ---
 
@@ -1558,13 +1562,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-services-quranapi-ts"></a>
 ### lib/quran-memorizer/src/services/quranApi.ts
 
-**File Purpose:** Quran API networking and IndexedDB storage service. Handles verse fetching, Medina Mushaf pagination, and fast bulk whole-Quran + Tafseer downloading.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
-- `fetchPageVerses` (Function) — Fetches verses for a Medina Mushaf page with IDB cache and offline detection.
-- `fetchSurahVerses` (Function) — Fetches all verses and translations for a surah.
-- `downloadAndCacheFullQuran` (Function) — Fast 2-request bulk download and local caching of all 604 pages + Tafsir Al-Muyassar into IndexedDB.
-- `getAyahAudioUrl` (Function) — Generates audio recitation stream URLs.
+- `getAyahAudioUrl` (Function)
+
+**Function Details:**
+- **`getAyahAudioUrl`** — Utility function for get ayah audio url.
+
+**Lines:** 297
 
 ---
 
@@ -1895,7 +1901,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 535
+**Lines:** 543
 
 ---
 
@@ -1954,7 +1960,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`UserAppSettingsBridge`** — Utility function for user app settings bridge.
 - **`ThemeSync`** — Utility function for theme sync.
 
-**Lines:** 460
+**Lines:** 493
+
+---
+
+<a name="src-components-aichatmodal-tsx"></a>
+### src/components/AIChatModal.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `AIChatModal` (Function)
+
+**Function Details:**
+- **`AIChatModal`** — Utility function for a i chat modal.
+
+**Lines:** 26
 
 ---
 
@@ -1964,13 +1985,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
+- `todayInputDate` (Function)
 - `AINoteOrganizerSheet` (Function)
 - `ExtractedActionTask` (Interface)
 
 **Function Details:**
+- **`todayInputDate`** — Utility function for today input date.
 - **`AINoteOrganizerSheet`** — Utility function for a i note organizer sheet.
 
-**Lines:** 540
+**Lines:** 596
 
 ---
 
@@ -1986,16 +2009,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`AISettingsSection`** — Utility function for a i settings section.
 
 **Lines:** 414
-
----
-
-<a name="src-components-quranofflinedownloader-tsx"></a>
-### src/components/QuranOfflineDownloader.tsx
-
-**File Purpose:** Settings UI widget for full-text Medina Mushaf and Tafsir Al-Muyassar offline pre-caching (604 pages) with live progress bar, cancel, and verification controls.
-
-**Functions & Classes:**
-- `QuranOfflineDownloader` (React Component) — Component allowing users to manually download and cache all 604 Quran pages with Tafsir into IndexedDB.
 
 ---
 
@@ -2070,7 +2083,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 832
+**Lines:** 867
 
 ---
 
@@ -2119,7 +2132,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 706
+**Lines:** 746
 
 ---
 
@@ -2149,7 +2162,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`BrainDumpModal`** — Utility function for brain dump modal.
 
-**Lines:** 1258
+**Lines:** 1266
 
 ---
 
@@ -2164,7 +2177,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`CommandPalette`** — Utility function for command palette.
 
-**Lines:** 236
+**Lines:** 244
 
 ---
 
@@ -2380,7 +2393,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ShortcutRow`** — Utility function for shortcut row.
 - **`KeyboardShortcutsModal`** — Utility function for keyboard shortcuts modal.
 
-**Lines:** 147
+**Lines:** 167
 
 ---
 
@@ -2533,6 +2546,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-quranofflinedownloader-tsx"></a>
+### src/components/QuranOfflineDownloader.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `QuranOfflineDownloader` (Function)
+
+**Function Details:**
+- **`QuranOfflineDownloader`** — Utility function for quran offline downloader.
+
+**Lines:** 146
+
+---
+
 <a name="src-components-swipeablerow-ios-tsx"></a>
 ### src/components/SwipeableRow.ios.tsx
 
@@ -2661,6 +2689,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`TaskDetailsContent`** — Utility function for task details content.
 
 **Lines:** 1132
+
+---
+
+<a name="src-components-tasksimilaritymergemodal-tsx"></a>
+### src/components/TaskSimilarityMergeModal.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `TaskSimilarityMergeModal` (Function)
+
+**Function Details:**
+- **`TaskSimilarityMergeModal`** — Utility function for task similarity merge modal.
+
+**Lines:** 275
 
 ---
 
@@ -2876,7 +2919,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 2314
+**Lines:** 2323
 
 ---
 
@@ -2906,7 +2949,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
 
-**Lines:** 1431
+**Lines:** 1448
 
 ---
 
@@ -2935,7 +2978,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `intersectSegments` (Function)
 - `subtractSegments` (Function)
 - `parseDueForSort` (Function)
-- `DueTodayRow` (Function) — Renders a single due-today entry (task/habit/event/prayer). Includes a small **copy title button** (clipboard icon) that appears on hover, providing one-click copying of the entry title.
 - `DashboardQuickView` (Function)
 
 **Function Details:**
@@ -2944,10 +2986,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`timeStringToMinutes`** — Utility function for time string to minutes.
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
-- **`DueTodayRow`** — Card row component for dashboard timeline entries. Shows kind badge (Task/Habit/Event/Prayer), marquee title, subtask progress ring, rescue button (if applicable), and a hover-revealed copy-title button that briefly turns green on success.
 
-**Lines:** 1745
-
+**Lines:** 1777
 
 ---
 
@@ -3173,15 +3213,19 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:**
 - `useAuth` (React Hook)
+- `tryGetLocalSession` (Function)
+- `getSessionWithTimeout` (Function)
 - `AuthProvider` (Function)
 - `useAuth` (Function)
 
 **Function Details:**
 - **`useAuth`** — Custom React hook managing auth state and side effects.
+- **`tryGetLocalSession`** — Utility function for try get local session.
+- **`getSessionWithTimeout`** — Utility function for get session with timeout.
 - **`AuthProvider`** — Utility function for auth provider.
 - **`useAuth`** — Utility function for use auth.
 
-**Lines:** 135
+**Lines:** 182
 
 ---
 
@@ -3249,11 +3293,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `openDb` (Function)
 - `IdbQueueEntry` (Interface)
+- `IdbQuranPage` (Interface)
 
 **Function Details:**
 - **`openDb`** — Utility function for open db.
 
-**Lines:** 406
+**Lines:** 470
 
 ---
 
@@ -3998,7 +4043,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useQuranCloudSync`** — Custom React hook managing qurancloudsync state and side effects.
 - **`useQuranCloudSync`** — Utility function for use quran cloud sync.
 
-**Lines:** 300
+**Lines:** 310
 
 ---
 
@@ -4083,7 +4128,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useScreentimeWebsiteStats`** — Utility function for use screentime website stats.
 - **`useScreentimeDailySummaries`** — Utility function for use screentime daily summaries.
 
-**Lines:** 462
+**Lines:** 480
 
 ---
 
@@ -4399,9 +4444,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, bg-card (+2 more)
+**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, linux-platform (+3 more)
 
-**Lines:** 587
+**Lines:** 594
 
 ---
 
@@ -4687,7 +4732,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getOfflineQueueLength`** — Utility function for get offline queue length.
 - **`getLastSyncAt`** — Utility function for get last sync at.
 
-**Lines:** 164
+**Lines:** 170
 
 ---
 
@@ -4879,6 +4924,27 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-lib-tasksimilarityanalyzer-ts"></a>
+### src/lib/taskSimilarityAnalyzer.ts
+
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+
+**Functions & Classes:**
+- `normalizeText` (Function)
+- `quickLexicalSimilarity` (Function)
+- `findLexicalCandidates` (Function)
+- `TaskSimilarityMatch` (Interface)
+- `TaskSimilarityAnalysisResult` (Interface)
+
+**Function Details:**
+- **`normalizeText`** — Utility function for normalize text.
+- **`quickLexicalSimilarity`** — Utility function for quick lexical similarity.
+- **`findLexicalCandidates`** — Utility function for find lexical candidates.
+
+**Lines:** 219
+
+---
+
 <a name="src-lib-userappsettings-ts"></a>
 ### src/lib/userAppSettings.ts
 
@@ -4934,6 +5000,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `formatCurrency` (Function)
 - `formatTime12h` (Function)
 - `formatDuration` (Function)
+- `formatDayMonth` (Function)
 
 **Function Details:**
 - **`CURRENCY_SYMBOL`** — React component rendering UI for CURRENCY_SYMBOL.
@@ -4943,7 +5010,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`formatTime12h`** — Utility function for format time12h.
 - **`formatDuration`** — Utility function for format duration.
 
-**Lines:** 46
+**Lines:** 55
 
 ---
 
@@ -5113,7 +5180,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`CalendarPage`** — React component rendering UI for CalendarPage.
 - **`CalendarPage`** — Utility function for calendar page.
 
-**Lines:** 1708
+**Lines:** 1711
 
 ---
 
@@ -5132,7 +5199,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Chat`** — Utility function for chat.
 - **`normalizeIsoWithLocalTz`** — Utility function for normalize iso with local tz.
 
-**Lines:** 1257
+**Lines:** 1265
 
 ---
 
@@ -5420,6 +5487,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `NotesIOS` (React Component)
 - `todayInputDate` (Function)
 - `noteTitle` (Function)
+- `getNoteEffectiveTimestamp` (Function)
 - `cleanMarkdownPreview` (Function)
 - `formatNoteDate` (Function)
 - `NotesIOS` (Function)
@@ -5428,11 +5496,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`NotesIOS`** — React component rendering UI for NotesIOS.
 - **`todayInputDate`** — Utility function for today input date.
 - **`noteTitle`** — Utility function for note title.
+- **`getNoteEffectiveTimestamp`** — Utility function for get note effective timestamp.
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
-- **`NotesIOS`** — Utility function for notes i o s.
 
-**Lines:** 749
+**Lines:** 800
 
 ---
 
@@ -5456,6 +5524,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `NotesWeb` (React Component)
 - `todayInputDate` (Function)
 - `noteTitle` (Function)
+- `getNoteEffectiveTimestamp` (Function)
 - `cleanMarkdownPreview` (Function)
 - `formatNoteDate` (Function)
 - `NotesWeb` (Function)
@@ -5464,11 +5533,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`NotesWeb`** — React component rendering UI for NotesWeb.
 - **`todayInputDate`** — Utility function for today input date.
 - **`noteTitle`** — Utility function for note title.
+- **`getNoteEffectiveTimestamp`** — Utility function for get note effective timestamp.
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
-- **`NotesWeb`** — Utility function for notes web.
 
-**Lines:** 827
+**Lines:** 894
 
 ---
 
@@ -5502,7 +5571,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 188
+**Lines:** 225
 
 ---
 
@@ -5580,7 +5649,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1496
+**Lines:** 1500
 
 ---
 
@@ -5608,7 +5677,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1413
+**Lines:** 1444
 
 ---
 
@@ -5652,7 +5721,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`buildSessions`** — Utility function for build sessions.
 - **`Sleep`** — Utility function for sleep.
 
-**Lines:** 624
+**Lines:** 646
 
 ---
 
@@ -5701,7 +5770,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`buildSessions`** — Utility function for build sessions.
 - **`Sleep`** — Utility function for sleep.
 
-**Lines:** 616
+**Lines:** 718
 
 ---
 
@@ -5726,7 +5795,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 3698
+**Lines:** 3828
 
 ---
 
@@ -5773,7 +5842,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:**
 - `Tasks` (React Component)
-- `TaskItem` (React Component) — Renders an individual task row with checkbox, title, tags, due date, and action buttons (copy title, won't-do, delete).
+- `TaskItem` (React Component)
 - `parseDueDateTime` (Function)
 - `Tasks` (Function)
 - `getDefaultEditFormForNewTask` (Function)
@@ -5781,12 +5850,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Function Details:**
 - **`Tasks`** — React component rendering UI for Tasks.
-- **`TaskItem`** — Individual task row component. Displays task title, priority icon, recurrence indicator, tags, due date, and subtask progress. Shows an action button group on hover containing: **copy title** (clipboard icon, turns green briefly on success), won't-do (circle-slash), and delete (trash) buttons.
+- **`TaskItem`** — React component rendering UI for TaskItem.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 - **`Tasks`** — Utility function for tasks.
 - **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
+- **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2990
+**Lines:** 3137
 
 ---
 
@@ -5905,7 +5975,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isDashboardMode`** — Utility function for is dashboard mode.
 - **`getPersistedUiSlice`** — Utility function for get persisted ui slice.
 
-**Lines:** 613
+**Lines:** 620
 
 ---
 
@@ -5985,7 +6055,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `CreateInput` (Type)
 - `UpdateInput` (Type)
 
-**Lines:** 461
+**Lines:** 463
 
 ---
 
@@ -6022,7 +6092,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 25
+**Lines:** 28
 
 ---
 
@@ -6058,7 +6128,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanAiResponse`** — Utility function for clean ai response.
 - **`extractJSON`** — Utility function for extract j s o n.
 
-**Lines:** 367
+**Lines:** 375
 
 ---
 
@@ -6251,7 +6321,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="supabase-functions-reconcile-statement-index-ts"></a>
 ### supabase/functions/reconcile-statement/index.ts
 
-**File Purpose:** Supabase Edge Function for bank statement reconciliation. Performs smart multi-factor matching (exact amount, cash flow direction, and ±4-day date proximity window) against existing database transactions to enrich records in-place with bank references, cleaned merchant/IPN recipient names, and verified status without creating duplicates.
+**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations.
 
 **Functions & Classes:**
 - `parseDaysDifference` (Function)
@@ -6259,9 +6329,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `inferDirection` (Function)
 
 **Function Details:**
-- **`parseDaysDifference`** — Calculates absolute day difference between two dates for proximity matching.
-- **`normalizeAmount`** — Normalizes floating point and string amounts to two decimal places.
-- **`inferDirection`** — Infers cash flow direction ('In' vs 'Out') from transaction type and direction fields.
+- **`parseDaysDifference`** — Utility function for parse days difference.
+- **`normalizeAmount`** — Utility function for normalize amount.
+- **`inferDirection`** — Utility function for infer direction.
+
+**Lines:** 272
 
 ---
 
@@ -6492,7 +6564,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 54
+**Lines:** 844
 
 ---
 
