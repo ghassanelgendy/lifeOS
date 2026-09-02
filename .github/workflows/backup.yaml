@@ -7,10 +7,15 @@ on:
   workflow_dispatch:
     # Allows manual trigger of backup
 
+permissions:
+  contents: read
+
 jobs:
   backup:
     name: Backup Supabase Database
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository
