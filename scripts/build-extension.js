@@ -35,7 +35,7 @@ try {
     const staging = path.join(rootDir, '.extension-staging');
     fs.rmSync(staging, { recursive: true, force: true });
     fs.cpSync(extDir, staging, { recursive: true });
-    execFileSync('zip', ['-r', '-q', '../lifeOS-extension.zip', '.', '-x', '*.DS_Store'], {
+    execFileSync('zip', ['-r', '-q', outZip, '.', '-x', '*.DS_Store'], {
       cwd: staging,
       stdio: 'inherit',
     });
