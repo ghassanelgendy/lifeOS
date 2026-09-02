@@ -1,40 +1,8 @@
-import { useEffect, useState, useMemo } from 'react';
-import {
-  Sparkles,
-  Brain,
-  Check,
-  Plus,
-  Loader2,
-  Mic,
-  MicOff,
-  Copy,
-  Save,
-  ShieldCheck,
-  Calendar,
-  Flame,
-  CheckCircle2,
-  Smartphone,
-  HelpCircle,
-  Zap,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  Inbox,
-  PenTool,
-  Clock,
-  ListTodo,
-  Search,
-  ArrowRight,
-  ArrowLeft,
-  Eye,
-  Filter,
-  Trash2,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button, Modal, Input } from './ui';
+import { useEffect, useRef, useState, useMemo } from 'react';
+import { Sparkles, Brain, Check, Plus, Loader2, Mic, MicOff, Calendar, Flame, CheckCircle2, Zap, Inbox, PenTool, Clock, ListTodo, Search, ArrowLeft } from 'lucide-react';
+import { Button, Modal } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
-import { useUIStore } from '../stores/useUIStore';
-import { useNotes, useCreateNote, useUpdateNote, useDeleteNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
+import { useNotes, useCreateNote, useUpdateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
 import { useTasks, useCreateTask, useTaskLists, useTags } from '../hooks/useTasks';
 import { useHabits, useCreateHabit } from '../hooks/useHabits';
 import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
@@ -53,7 +21,6 @@ interface BrainDumpModalProps {
 }
 
 export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote }: BrainDumpModalProps) {
-  const aiEnabled = useUIStore((s) => s.aiEnabled);
   const { data: allNotes = [] } = useNotes();
   const { data: noteFolders = [] } = useNoteFolders();
   const { data: tasks = [] } = useTasks();
@@ -64,7 +31,6 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const { avgBedtimeMinutes } = useSleepMetrics(7);
   const createNote = useCreateNote();
   const updateNote = useUpdateNote();
-  const deleteNote = useDeleteNote();
   const createNoteFolder = useCreateNoteFolder();
   const createTask = useCreateTask();
   const createHabit = useCreateHabit();
@@ -75,10 +41,8 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
 
   // Capture State
   const [rawText, setRawText] = useState(initialText);
-  const [appendToToday, setAppendToToday] = useState(true);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
-  const [showIosGuide, setShowIosGuide] = useState(false);
 
   // Inbox & Search State
   const [inboxSearch, setInboxSearch] = useState('');
@@ -92,8 +56,8 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const [selectedTaskIndexes, setSelectedTaskIndexes] = useState<Set<number>>(new Set());
   const [addedTasksMap, setAddedTasksMap] = useState<Record<number, boolean>>({});
   const [exportedTasksSuccess, setExportedTasksSuccess] = useState(false);
-  const [createdHabitTitle, setCreatedHabitTitle] = useState<string | null>(null);
-  const [createdEventTitle, setCreatedEventTitle] = useState<string | null>(null);
+  const [, setCreatedHabitTitle] = useState<string | null>(null);
+  const [, setCreatedEventTitle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Brain Dump notes list
@@ -124,10 +88,12 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
     return `${year}-${month}-${day}`;
   };
 
-  const todayBrainDumpNote = useMemo(() => {
-    const currentToday = getLocalDateString();
-    return brainDumpNotes.find((n) => n.note_date?.slice(0, 10) === currentToday);
-  }, [brainDumpNotes]);
+  // Keep a stable ref to the latest analyzer so the listener below doesn't
+  // need to be re-registered (and its effect re-run) on every render.
+  const handleAnalyzeTextRef = useRef<typeof handleAnalyzeText | null>(null);
+  useEffect(() => {
+    handleAnalyzeTextRef.current = handleAnalyzeText;
+  });
 
   // Listen to deep link event
   useEffect(() => {
@@ -138,7 +104,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
         if (customEvent.detail.autoAnalyze) {
           setActiveTab('plan');
           setTimeout(() => {
-            void handleAnalyzeText(customEvent.detail.text!);
+            void handleAnalyzeTextRef.current?.(customEvent.detail.text!);
           }, 300);
         } else {
           setActiveTab('capture');

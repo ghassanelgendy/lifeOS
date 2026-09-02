@@ -246,6 +246,13 @@ export function useQuranCloudSync() {
     },
   });
 
+  // Keep a stable ref to the latest mutation so the listener effect below
+  // doesn't tear down/re-register (and cancel any pending debounce) on every render.
+  const syncPlanMutationRef = useRef(syncPlanMutation);
+  useEffect(() => {
+    syncPlanMutationRef.current = syncPlanMutation;
+  });
+
   // Debounced live sync to prevent spamming DB on rapid interactions
   useEffect(() => {
     const handleLocalPlanUpdate = () => {
@@ -267,7 +274,7 @@ export function useQuranCloudSync() {
           const memMarker = memMarkerStr ? JSON.parse(memMarkerStr) : null;
           const readMarker = readMarkerStr ? JSON.parse(readMarkerStr) : null;
 
-          syncPlanMutation.mutate({
+          syncPlanMutationRef.current.mutate({
             title: memPlan?.title,
             goalType: memPlan?.goalType,
             direction: memPlan?.direction,

@@ -514,7 +514,7 @@ export function useWeeklyReport(weekOffset = 0): ReportData {
       weekScore: scores.current,
       prevWeekScore: scores.prev,
     };
-  }, [isLoading, curr, prev, thirty, dates, prevDates, bounds, thirtyStart, topAppsQ.data, topCatsQ.data, sleepTarget, screenTarget, reportTasksTarget, habitsTarget]);
+  }, [isLoading, curr, prev, thirty, dates, prevDates, bounds, thirtyStart, topAppsQ.data, topCatsQ.data, pointsQ.data, sleepTarget, screenTarget, reportTasksTarget, habitsTarget]);
 }
 
 export function useMonthlyReport(monthOffset = 0): ReportData {
@@ -649,7 +649,7 @@ export function useMonthlyReport(monthOffset = 0): ReportData {
       weekScore: scores.current,
       prevWeekScore: scores.prev,
     };
-  }, [isLoading, curr, prev, dates, prevDates, bounds, topAppsQ.data, topCatsQ.data, sleepTarget, screenTarget, reportTasksTarget, habitsTarget]);
+  }, [isLoading, curr, prev, dates, prevDates, bounds, topAppsQ.data, topCatsQ.data, pointsQ.data, sleepTarget, screenTarget, reportTasksTarget, habitsTarget]);
 }
 
 function emptyReport(type: 'weekly' | 'monthly', start: string, end: string, loading: boolean): ReportData {

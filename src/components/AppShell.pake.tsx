@@ -1,7 +1,7 @@
 import { Menu, X, Settings, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
-import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
@@ -14,69 +14,7 @@ import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 
 // Fluent UI React Components
-import {
-  FluentProvider,
-  webDarkTheme,
-  webLightTheme,
-  Text,
-  type Theme
-} from '@fluentui/react-components';
-
-function MobileNavLink({
-  item,
-  isMobileSidebarOpen,
-  setMobileSidebarOpen,
-  showDot,
-}: {
-  item: NavItem;
-  isMobileSidebarOpen: boolean;
-  setMobileSidebarOpen: (open: boolean) => void;
-  showDot?: boolean;
-}) {
-  const match = useMatch({ path: item.href, end: item.href === '/' });
-  const isActive = !!match;
-  const Icon = item.icon;
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isMobileSidebarOpen) {
-      setMobileSidebarOpen(false);
-      if (isActive && (item.href === '/dashboard' || item.href === '/')) {
-        e.preventDefault();
-      }
-      return;
-    }
-
-    if (isActive) {
-      if (item.href === '/dashboard' || item.href === '/') {
-        e.preventDefault();
-        setMobileSidebarOpen(true);
-      }
-    }
-  };
-
-  return (
-    <NavLink
-      to={item.href}
-      end={item.href === '/'}
-      onClick={handleClick}
-      className={({ isActive: active }) => cn(
-        "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150 relative",
-        active ? "text-foreground" : "text-muted-foreground"
-      )}
-    >
-      <div className="relative">
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
-        {showDot && (
-          <span className="absolute -top-1 -right-1 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-          </span>
-        )}
-      </div>
-      <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
-    </NavLink>
-  );
-}
+import { FluentProvider, webDarkTheme, webLightTheme, type Theme } from '@fluentui/react-components';
 
 const SWIPE_EDGE_PX = 24;
 const SWIPE_MIN_DELTA = 50;
@@ -150,7 +88,7 @@ export function AppShell() {
       .filter((item): item is NavItem => !!item);
     const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
     return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
-  }, [desktopNavOrder, desktopNavVisible]);
+  }, [desktopNavOrder, desktopNavVisible, aiEnabled]);
 
   const currentIndex = mobileNavigationMapped.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
@@ -162,7 +100,7 @@ export function AppShell() {
   const prevIndexRef = useRef<number>(currentIndex);
   const [slideDirection, setSlideDirection] = useState<number>(0);
 
-  const [activeToast, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
+  const [, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
 
   useEffect(() => {
     let localNotifiedWeekly: string | null = null;

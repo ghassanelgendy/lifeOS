@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles, Brain, Plus } from 'lucide-react';
+import { Menu, X, Settings, Sparkles, Brain } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
@@ -192,7 +192,7 @@ export function AppShell() {
       .filter((item): item is NavItem => !!item);
     const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
     return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
-  }, [desktopNavOrder, desktopNavVisible]);
+  }, [desktopNavOrder, desktopNavVisible, aiEnabled]);
 
   const currentIndex = mobileNavigationMapped.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')

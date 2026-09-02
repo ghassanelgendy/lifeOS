@@ -1,51 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import {
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  MapPin,
-  Edit2,
-  Trash2,
-  Repeat,
-  CheckSquare,
-  CalendarPlus,
-  Copy,
-  Link2,
-  RefreshCw,
-  X,
-  Circle
-} from 'lucide-react';
-import {
-  format,
-  addDays,
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  startOfDay,
-  endOfWeek,
-  endOfDay,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-  isToday,
-  addMonths,
-  subMonths,
-  addWeeks,
-  subWeeks,
-  parseISO
-} from 'date-fns';
+import { Plus, ChevronLeft, ChevronRight, Clock, MapPin, Edit2, Trash2, Repeat, CheckSquare, CalendarPlus, Copy, Link2, RefreshCw, X, Circle } from 'lucide-react';
+import { format, addDays, startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfWeek, endOfDay, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, addWeeks, subWeeks, parseISO } from 'date-fns';
 import { cn } from '../lib/utils';
-import {
-  useCreateCalendarEvent,
-  useUpdateCalendarEvent,
-  useDeleteCalendarEvent,
-  useExpandedCalendarEvents,
-  useCalendarEvents,
-  useIcalSubscriptionEvents,
-} from '../hooks/useCalendar';
+import { useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent, useExpandedCalendarEvents, useCalendarEvents, useIcalSubscriptionEvents } from '../hooks/useCalendar';
 import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, Task, TaskPriority } from '../types/schema';
 import { useCreateTask, useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasks';
@@ -76,15 +35,6 @@ export default function CalendarPage() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-
-  useEffect(() => {
-    const state = location.state as { triggerAdd?: boolean; date?: string } | null;
-    if (state?.triggerAdd) {
-      navigate(location.pathname, { replace: true, state: {} });
-      const targetDate = state.date ? new Date(state.date) : new Date();
-      void handleOpenModal(undefined, targetDate);
-    }
-  }, [location.state, navigate, location.pathname]);
   const [view, setView] = useState<'month' | 'day'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
@@ -594,7 +544,7 @@ export default function CalendarPage() {
   };
 
   // Modal handlers
-  const handleOpenModal = async (event?: ExtendedCalendarEvent, date?: Date) => {
+  const handleOpenModal = useCallback(async (event?: ExtendedCalendarEvent, date?: Date) => {
     if (event) {
       if ('isIcal' in event && event.isIcal) return;
       const calEvent = event as CalendarEvent & { isRecurringInstance?: boolean; originalId?: string };
@@ -661,7 +611,16 @@ export default function CalendarPage() {
       });
     }
     setIsModalOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    const state = location.state as { triggerAdd?: boolean; date?: string } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      const targetDate = state.date ? new Date(state.date) : new Date();
+      void handleOpenModal(undefined, targetDate);
+    }
+  }, [location.state, navigate, location.pathname, handleOpenModal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -768,7 +727,7 @@ export default function CalendarPage() {
     };
     window.addEventListener('app-trigger-add-calendar', handleHeaderPlus);
     return () => window.removeEventListener('app-trigger-add-calendar', handleHeaderPlus);
-  }, []);
+  }, [handleOpenModal]);
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Flag, Repeat, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Calendar as CalendarIcon, Coins, ChevronDown, ChevronRight, Mic } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
@@ -13,11 +13,7 @@ import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/u
 import { useTodayScreentime } from '../../hooks/useScreentime';
 import { useLastNightSleepMinutes, useSleepMinutesForDay, useSleepMetrics, useSleepStages } from '../../hooks/useSleep';
 import { usePointsBalance, usePointsTransactions, getPointsConfig, useRescueTask, useAddPointsTransaction } from '../../hooks/usePoints';
-import {
-  useDashboardUpcomingItems,
-  habitMatchesDay,
-  isHabitShownInQuickView,
-} from '../../hooks/useDashboardUpcomingItems';
+import { useDashboardUpcomingItems, habitMatchesDay, isHabitShownInQuickView } from '../../hooks/useDashboardUpcomingItems';
 import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
@@ -26,17 +22,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToggleCalendarEvent } from '../../hooks/useCalendar';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
-import { HadithWidget } from './HadithWidget';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
-
-function formatSleepMinutes(m: number | null) {
-  if (m == null || m <= 0) return '—';
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  if (h <= 0) return `${min}m`;
-  return `${h}h ${min}m`;
-}
 
 function formatDurationMinutes(minutes: number) {
   if (minutes <= 0) return '0m';
@@ -63,11 +50,6 @@ function isoToDayMinutes(value?: string | null): number | null {
   if (Number.isNaN(d.getTime())) return null;
   return d.getHours() * 60 + d.getMinutes();
 }
-
-/** Inline nav pills (Due today header, What’s next, metric cards, sleep). */
-const QV_LINK_PILL =
-  'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50';
-const QV_LINK_ARROW = 'size-3 shrink-0';
 
 type TimeSegment = { start: number; end: number }; // 0 to 1440
 
@@ -437,7 +419,7 @@ function DueTodayRow({
 }
 
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
-  const [parent] = useAutoAnimate();
+  const [_parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
   const togglingEventsRef = useRef<Record<string, boolean>>({});
@@ -662,7 +644,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       title,
       description,
     };
-  }, [contextMenuEntry, completedTasks, todayTasks, overdueTasks]);
+  }, [contextMenuEntry, completedTasks, todayTasks, overdueTasks, isHabitDoneToday]);
 
   const deleteTask = useDeleteTask();
   const updateTask = useUpdateTask();
@@ -1143,11 +1125,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   }, [tasksDueTodayOnly.length, dueTodayIncompleteHabits]);
 
 
-  const screenLabel =
-    todayScreentime.totalMinutes > 0
-      ? `${todayScreentime.totalHours}h ${todayScreentime.remainingMinutes}m`
-      : '—';
-
   const screenChart = useMemo(() => {
     const dayMinutes = 24 * 60;
     const elapsed = Math.min(dayMinutes, Math.max(0, today.getHours() * 60 + today.getMinutes()));
@@ -1613,7 +1590,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
     let linkedTask: any = null;
     let isManuallyDone = false;
-    let isAutoDone = false;
     let sortTime = Infinity;
     let isAnytime = !!item.allDay;
 
@@ -1639,9 +1615,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       }
 
       const parsedEnd = parseISO(item.end_time || item.start_time);
-      if (parsedEnd < today) {
-        isAutoDone = true;
-      }
 
       if (today < parsedStart) {
         sortTime = parsedStart.getTime();

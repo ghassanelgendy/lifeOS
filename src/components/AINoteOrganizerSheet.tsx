@@ -1,25 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import {
-  Sparkles,
-  Check,
-  Plus,
-  Loader2,
-  Calendar,
-  Clock,
-  Tag,
-  ListTodo,
-  Phone,
-  Mail,
-  Code2,
-  Bookmark,
-  CalendarDays,
-  Flame,
-  AlertCircle,
-  X,
-  FileText,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import { Sparkles, Check, Plus, Loader2, Calendar, Clock, ListTodo, Phone, Mail, Code2, Bookmark, CalendarDays, AlertCircle, FileText } from 'lucide-react';
 import { Button, Input, Modal } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useTaskLists, useTags, useCreateTask, useTasks } from '../hooks/useTasks';
@@ -86,8 +66,8 @@ export function AINoteOrganizerSheet({
   // Results
   const [organizedMarkdown, setOrganizedMarkdown] = useState<string | null>(null);
   const [extractedTasks, setExtractedTasks] = useState<ExtractedActionTask[]>([]);
-  const [insights, setInsights] = useState<string[]>([]);
-  const [summary, setSummary] = useState<string>('');
+  const [, setInsights] = useState<string[]>([]);
+  const [, setSummary] = useState<string>('');
   const [hasRun, setHasRun] = useState(false);
   const [createdCount, setCreatedCount] = useState<number | null>(null);
 
@@ -115,7 +95,7 @@ export function AINoteOrganizerSheet({
         setHasRun(true);
       }
     }
-  }, [existingAnalysis, isOpen]);
+  }, [existingAnalysis, isOpen, hasRun]);
 
   const availableListNames = useMemo(() => taskLists.map((l) => l.name).join(', ') || 'Work, Personal, Learn, Ideas, Reminders', [taskLists]);
   const availableTagNames = useMemo(() => tags.map((t) => t.name).join(', ') || 'servixa, ischool, urgent, research, quick win, lifeos', [tags]);

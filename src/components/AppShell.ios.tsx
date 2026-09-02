@@ -1,7 +1,7 @@
-import { Menu, X, Settings, Sparkles, Plus, Mic, Brain, Wallet, Calendar, Flame } from 'lucide-react';
+import { Menu, X, Settings, Sparkles, Plus, Brain, Wallet, Calendar, Flame } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
-import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
@@ -15,67 +15,6 @@ import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 import LiquidTabBar from './LiquidTabBar';
-
-function MobileNavLink({
-  item,
-  isMobileSidebarOpen,
-  setMobileSidebarOpen,
-  showDot,
-}: {
-  item: NavItem;
-  isMobileSidebarOpen: boolean;
-  setMobileSidebarOpen: (open: boolean) => void;
-  showDot?: boolean;
-}) {
-  const match = useMatch({ path: item.href, end: item.href === '/' });
-  const isActive = !!match;
-  const Icon = item.icon;
-
-  const handleClick = (e: React.MouseEvent) => {
-    if (isMobileSidebarOpen) {
-      setMobileSidebarOpen(false);
-      if (isActive && (item.href === '/dashboard' || item.href === '/')) {
-        e.preventDefault();
-      }
-      return;
-    }
-
-    if (isActive) {
-      if (item.href === '/dashboard' || item.href === '/') {
-        e.preventDefault();
-        setMobileSidebarOpen(true);
-      }
-    }
-  };
-
-  return (
-    <NavLink
-      to={item.href}
-      end={item.href === '/'}
-      onClick={handleClick}
-      className={({ isActive: active }) => cn(
-        "flex flex-col items-center justify-center w-full h-full active:scale-95 transition-all duration-100 relative transform-gpu",
-        active ? "text-[#007AFF] dark:text-[#0A84FF] font-medium" : "text-[#8E8E93]"
-      )}
-    >
-      <div className="relative">
-        <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
-        {showDot && (
-          <span className="absolute -top-1 -right-1 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-          </span>
-        )}
-      </div>
-      <span className="text-[10px] mt-0.5 tracking-tight font-medium">{item.label}</span>
-    </NavLink>
-  );
-}
-
-const SWIPE_EDGE_PX = 40;
-const SWIPE_MIN_DELTA = 50;
-const CENTER_SWIPE_MIN = 0.25;
-const CENTER_SWIPE_MAX = 0.75;
 
 export function AppShell() {
   const {
@@ -181,7 +120,7 @@ export function AppShell() {
       .filter((item): item is NavItem => !!item);
     const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
     return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
-  }, [desktopNavOrder, desktopNavVisible]);
+  }, [desktopNavOrder, desktopNavVisible, aiEnabled]);
 
   const currentIndex = mobileNavigationMapped.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
@@ -218,7 +157,7 @@ export function AppShell() {
 
   const prevPathRef = useRef<string>(location.pathname);
   const prevIndexRef = useRef<number>(currentIndex);
-  const [slideDirection, setSlideDirection] = useState<number>(0);
+  const [, setSlideDirection] = useState<number>(0);
 
   const [activeToast, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
 

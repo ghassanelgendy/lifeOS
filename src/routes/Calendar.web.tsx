@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
@@ -76,15 +76,6 @@ export default function CalendarPage() {
   const queryClient = useQueryClient();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-
-  useEffect(() => {
-    const state = location.state as { triggerAdd?: boolean; date?: string } | null;
-    if (state?.triggerAdd) {
-      navigate(location.pathname, { replace: true, state: {} });
-      const targetDate = state.date ? new Date(state.date) : new Date();
-      void handleOpenModal(undefined, targetDate);
-    }
-  }, [location.state, navigate, location.pathname]);
   const [view, setView] = useState<'month' | 'day'>('month');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteEventTarget, setDeleteEventTarget] = useState<ExtendedCalendarEvent | null>(null);
@@ -594,7 +585,7 @@ export default function CalendarPage() {
   };
 
   // Modal handlers
-  const handleOpenModal = async (event?: ExtendedCalendarEvent, date?: Date) => {
+  const handleOpenModal = useCallback(async (event?: ExtendedCalendarEvent, date?: Date) => {
     if (event) {
       if ('isIcal' in event && event.isIcal) return;
       const calEvent = event as CalendarEvent & { isRecurringInstance?: boolean; originalId?: string };
@@ -661,7 +652,16 @@ export default function CalendarPage() {
       });
     }
     setIsModalOpen(true);
-  };
+  }, []);
+
+  useEffect(() => {
+    const state = location.state as { triggerAdd?: boolean; date?: string } | null;
+    if (state?.triggerAdd) {
+      navigate(location.pathname, { replace: true, state: {} });
+      const targetDate = state.date ? new Date(state.date) : new Date();
+      void handleOpenModal(undefined, targetDate);
+    }
+  }, [location.state, navigate, location.pathname, handleOpenModal]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
