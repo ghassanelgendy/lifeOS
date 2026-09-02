@@ -1,47 +1,15 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Plus,
-  Flame,
-  Check,
-  Edit2,
-  Trash2,
-  Calendar as CalendarIcon,
-  TrendingUp,
-  Clock,
-  ListTodo,
-  Sparkles,
-  Info,
-  Archive
-} from 'lucide-react';
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isToday,
-  isYesterday,
-} from 'date-fns';
+import { Plus, Flame, Check, Edit2, TrendingUp, ListTodo, Sparkles, Archive } from 'lucide-react';
+import { format } from 'date-fns';
 import { cn } from '../lib/utils';
-import {
-  useHabits,
-  useCreateHabit,
-  useUpdateHabit,
-  useDeleteHabit,
-  useLogHabit,
-  useWeeklyAdherence,
-  useHabitStreaks,
-  useHabitInsights,
-  getHabitAdherenceWeight,
-  isHabitScheduledForDate,
-} from '../hooks/useHabits';
+import { useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit, useLogHabit, useWeeklyAdherence, useHabitStreaks, isHabitScheduledForDate } from '../hooks/useHabits';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
 import { supabase } from '../lib/supabase';
-import { useUIStore } from '../stores/useUIStore';
 
 const DEFAULT_COLORS = [
   '#22c55e', // Green
@@ -52,16 +20,6 @@ const DEFAULT_COLORS = [
   '#ec4899', // Pink
   '#eab308', // Yellow
   '#06b6d4', // Cyan
-];
-
-const WEEKDAY_OPTIONS = [
-  { value: 0, label: 'Sun' },
-  { value: 1, label: 'Mon' },
-  { value: 2, label: 'Tue' },
-  { value: 3, label: 'Wed' },
-  { value: 4, label: 'Thu' },
-  { value: 5, label: 'Fri' },
-  { value: 6, label: 'Sat' },
 ];
 
 interface DetoxConfig {
@@ -147,7 +105,6 @@ export default function Habits() {
   const { data: habits = [], isLoading } = useHabits();
   const { adherence, weekLogs } = useWeeklyAdherence();
   const { data: streaks = {} } = useHabitStreaks(habits.map((h: Habit) => h.id));
-  const { data: habitInsights = {} } = useHabitInsights(habits);
   const createHabit = useCreateHabit();
   const updateHabit = useUpdateHabit();
   const deleteHabit = useDeleteHabit();
@@ -176,9 +133,6 @@ export default function Habits() {
   });
 
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 0 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
   const todayStr = format(today, 'yyyy-MM-dd');
   const todayStart = new Date(`${todayStr}T00:00:00`);
 

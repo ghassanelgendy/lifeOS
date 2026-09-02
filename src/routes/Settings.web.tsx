@@ -156,14 +156,6 @@ export default function SettingsPage() {
     setReportSleepTargetCurrent,
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
-    aiEnabled,
-    aiApiKey,
-    aiBaseUrl,
-    aiModel,
-    setAiEnabled,
-    setAiApiKey,
-    setAiBaseUrl,
-    setAiModel,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
@@ -180,13 +172,6 @@ export default function SettingsPage() {
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
-  const [aiSaved, setAiSaved] = useState(false);
-
-  const handleAiFieldChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setter(e.target.value);
-    setAiSaved(true);
-    setTimeout(() => setAiSaved(false), 2000);
-  };
 
   useEffect(() => {
     if (prayerLocationMode !== 'city') {

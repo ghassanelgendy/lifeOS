@@ -1,13 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import {
-  FluentProvider,
-  webDarkTheme,
-  webLightTheme,
-  TabList,
-  Tab,
-  Button as FluentButton,
-  type Theme,
-} from '@fluentui/react-components';
+import { useState, useMemo } from 'react';
+import { TabList, Tab } from '@fluentui/react-components';
 import { format, parseISO, subDays } from 'date-fns';
 import { Moon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';

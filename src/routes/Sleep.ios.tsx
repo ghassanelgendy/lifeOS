@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useState } from 'react';
 import { format, parseISO, subDays } from 'date-fns';
 import { Moon } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../lib/utils';
 import { DataCard } from '../components/DataCard';
@@ -181,13 +181,6 @@ export default function Sleep() {
   const sleepOrder = pageWidgetOrder.sleep?.length ? pageWidgetOrder.sleep : (PAGE_WIDGET_DEFAULTS.sleep ?? []);
   const sleepVisible = pageWidgetVisible.sleep ?? {};
   const visible = (id: string) => sleepVisible[id] !== false;
-
-  const donutData = active ? [
-    { name: 'Deep', value: active.deepMinutes, fill: STAGE_COLORS.Deep },
-    { name: 'Core', value: active.coreMinutes, fill: STAGE_COLORS.Core },
-    { name: 'REM', value: active.remMinutes, fill: STAGE_COLORS.REM },
-    { name: 'Awake', value: active.awakeMinutes, fill: STAGE_COLORS.Awake },
-  ] : [];
 
   const weeklyMetrics = useMemo(() => {
     if (!weekly.length) return { deepPct: 0, corePct: 0, remPct: 0, continuity: 0, wakeCount: 0 };

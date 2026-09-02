@@ -1,43 +1,8 @@
 import { useState, useEffect } from 'react';
-import {
-  Shield,
-  Download,
-  Upload,
-  Trash2,
-  Moon,
-  Sun,
-  Database,
-  Info,
-  RefreshCw,
-  Smartphone,
-  Check,
-  Bell,
-  ChevronUp,
-  ChevronDown,
-  GripVertical,
-  LogOut,
-  User,
-  RotateCcw,
-  MapPin,
-  Loader2,
-  HelpCircle,
-  BookOpen,
-  ChevronRight,
-  Sparkles,
-} from 'lucide-react';
+import { Shield, Download, Upload, Trash2, Moon, Sun, Database, Info, RefreshCw, Smartphone, Check, Bell, ChevronUp, ChevronDown, GripVertical, LogOut, User, RotateCcw, MapPin, Loader2, HelpCircle, BookOpen, ChevronRight } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
-import {
-  useUIStore,
-  DASHBOARD_MODES,
-  DASHBOARD_MODE_LABELS,
-  PAGE_WIDGET_DEFAULTS,
-  DEFAULT_DESKTOP_NAV,
-  ACCENT_THEMES,
-  ACCENT_THEME_LABELS,
-  type AccentTheme,
-  type DashboardMode,
-} from '../stores/useUIStore';
+import { useUIStore, DASHBOARD_MODES, DASHBOARD_MODE_LABELS, PAGE_WIDGET_DEFAULTS, DEFAULT_DESKTOP_NAV, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme, type DashboardMode } from '../stores/useUIStore';
 import { useAuth } from '../contexts/AuthContext';
 import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
@@ -163,14 +128,6 @@ export default function SettingsPage() {
     setReportSleepTargetCurrent,
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
-    aiEnabled,
-    aiApiKey,
-    aiBaseUrl,
-    aiModel,
-    setAiEnabled,
-    setAiApiKey,
-    setAiBaseUrl,
-    setAiModel,
   } = useUIStore();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
@@ -188,13 +145,6 @@ export default function SettingsPage() {
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
-  const [aiSaved, setAiSaved] = useState(false);
-
-  const handleAiFieldChange = (setter: (v: string) => void) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setter(e.target.value);
-    setAiSaved(true);
-    setTimeout(() => setAiSaved(false), 2000);
-  };
 
   useEffect(() => {
     if (prayerLocationMode !== 'city') {

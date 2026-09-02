@@ -7,7 +7,7 @@ import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../lib/utils';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
-import { useUIStore, PAGE_WIDGET_DEFAULTS } from '../stores/useUIStore';
+import { useUIStore } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
 const STAGE_COLORS: Record<string, string> = {
@@ -177,10 +177,7 @@ export default function Sleep() {
     };
   }, [weekly]);
 
-  const { pageWidgetOrder, pageWidgetVisible, privacyMode } = useUIStore();
-  const sleepOrder = pageWidgetOrder.sleep?.length ? pageWidgetOrder.sleep : (PAGE_WIDGET_DEFAULTS.sleep ?? []);
-  const sleepVisible = pageWidgetVisible.sleep ?? {};
-  const visible = (id: string) => sleepVisible[id] !== false;
+  const { privacyMode } = useUIStore();
 
   const donutData = active ? [
     { name: 'Deep', value: active.deepMinutes, fill: STAGE_COLORS.Deep },

@@ -1,49 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  Plus,
-  Flame,
-  Check,
-  Edit2,
-  Trash2,
-  Calendar,
-  TrendingUp,
-  Clock,
-  ListTodo,
-  Bell,
-  BellOff,
-  ChevronDown,
-  ChevronRight,
-} from 'lucide-react';
-import {
-  format,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isToday,
-  isYesterday,
-  subDays,
-} from 'date-fns';
+import { Plus, Flame, Check, Edit2, Trash2, Calendar, TrendingUp, Clock, ListTodo, Bell, BellOff, ChevronDown, ChevronRight } from 'lucide-react';
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isYesterday, subDays } from 'date-fns';
 import { cn } from '../lib/utils';
-import {
-  useHabits,
-  useCreateHabit,
-  useUpdateHabit,
-  useDeleteHabit,
-  useLogHabit,
-  useWeeklyAdherence,
-  useHabitStreaks,
-  useHabitInsights,
-  getHabitAdherenceWeight,
-  isHabitScheduledForDate,
-  useHabitRescuableStreaks,
-  getHabitRescueCost,
-} from '../hooks/useHabits';
+import { useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit, useLogHabit, useWeeklyAdherence, useHabitStreaks, useHabitInsights, getHabitAdherenceWeight, isHabitScheduledForDate, useHabitRescuableStreaks, getHabitRescueCost } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
-import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';

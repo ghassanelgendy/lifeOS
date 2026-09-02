@@ -1,35 +1,10 @@
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import {
-  Coins,
-  Plus,
-  Trash2,
-  Gift,
-  History,
-  Settings,
-  Sparkles,
-  Award,
-  AlertTriangle,
-  ChevronRight,
-  TrendingUp,
-} from 'lucide-react';
+import { Coins, Plus, Trash2, Gift, History, Sparkles, Award, AlertTriangle, ChevronRight, TrendingUp } from 'lucide-react';
 import { cn } from '../lib/utils';
-import {
-  usePointsBalance,
-  usePointsTransactions,
-  useCustomRewards,
-  useCreateCustomReward,
-  useDeleteCustomReward,
-  useRedeemReward,
-  getPointsConfig,
-  savePointsConfig,
-} from '../hooks/usePoints';
-import type { PointsConfig } from '../hooks/usePoints';
-import { Modal } from '../components/ui';
+import { usePointsBalance, usePointsTransactions, useCustomRewards, useCreateCustomReward, useDeleteCustomReward, useRedeemReward } from '../hooks/usePoints';
 
 export default function Points() {
-  const queryClient = useQueryClient();
   const balance = usePointsBalance();
   const { data: transactions = [], isLoading: txsLoading } = usePointsTransactions();
   const { data: rewards = [], isLoading: rewardsLoading } = useCustomRewards();
@@ -38,14 +13,10 @@ export default function Points() {
   const deleteReward = useDeleteCustomReward();
   const redeemReward = useRedeemReward();
 
-  // Settings state
-  const [config, setConfig] = useState<PointsConfig>(getPointsConfig);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
   // New reward state
   const [newTitle, setNewTitle] = useState('');
   const [newCost, setNewCost] = useState<number | ''>('');
-  const [newIcon, setNewIcon] = useState('gift');
+  const [newIcon] = useState('gift');
   const [isAddingReward, setIsAddingReward] = useState(false);
 
   // Status/Error state
@@ -103,15 +74,6 @@ export default function Points() {
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to redeem reward');
     }
-  };
-
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    savePointsConfig(config);
-    setIsSettingsOpen(false);
-    showNotification('Points config saved!', false);
-    // Invalidate queries to update rescue calculations
-    queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
   };
 
   const showNotification = (msg: string, isError = false) => {

@@ -1,21 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  ArrowRight, 
-  BookOpen, 
-  GitGraph, 
-  Globe, 
-  Search, 
-  X, 
-  Menu, 
-  Sun, 
-  Moon, 
-  ChevronRight, 
-  ExternalLink,
-  HelpCircle,
-  Users
-} from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookOpen, GitGraph, Search, X, Menu, Sun, Moon, ChevronRight, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { WIKI_PAGES, getWikiPage, searchWikiPages, normalizeTitle } from '../lib/wikiData';
 import WikiMarkdown from '../components/wiki/WikiMarkdown';

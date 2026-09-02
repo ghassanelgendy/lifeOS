@@ -1,43 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
-import {
-  ChevronLeft,
-  FileText,
-  Folder,
-  Plus,
-  Save,
-  Search,
-  Trash2,
-  Sparkles,
-  Pin,
-  Brain,
-  Pencil,
-  Eye,
-  FolderPlus,
-  Check,
-  X,
-  MoreVertical,
-  Edit2,
-  Calendar,
-} from 'lucide-react';
+import { ChevronLeft, FileText, Folder, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Pencil, FolderPlus, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, ConfirmSheet, Input, Select, TextArea } from '../components/ui';
+import { Button, ConfirmSheet, Input } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
 import { triggerHaptics } from '../lib/nativeBridge';
-import {
-  useCreateNote,
-  useCreateNoteFolder,
-  useDeleteNote,
-  useDeleteNoteFolder,
-  useNoteFolders,
-  useNotes,
-  useTogglePinNote,
-  useUpdateNote,
-  useUpdateNoteFolder,
-} from '../hooks/useNotes';
+import { useCreateNote, useCreateNoteFolder, useDeleteNote, useNoteFolders, useNotes, useTogglePinNote, useUpdateNote } from '../hooks/useNotes';
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
 import { AINoteOrganizerSheet } from '../components/AINoteOrganizerSheet';
@@ -97,7 +68,7 @@ function formatNoteDate(value: string | null | undefined): string {
 }
 
 export default function NotesIOS() {
-  const { data: notes = [], isLoading, error } = useNotes();
+  const { data: notes = [], isLoading } = useNotes();
   const { data: folders = [] } = useNoteFolders();
 
   const createNote = useCreateNote();
@@ -105,7 +76,6 @@ export default function NotesIOS() {
   const deleteNote = useDeleteNote();
   const togglePin = useTogglePinNote();
   const createFolder = useCreateNoteFolder();
-  const deleteFolder = useDeleteNoteFolder();
 
   // Navigation State: 'list' or 'detail'
   const [currentScreen, setCurrentScreen] = useState<'list' | 'detail'>('list');
@@ -132,8 +102,7 @@ export default function NotesIOS() {
   const [isBrainDumpModalOpen, setIsBrainDumpModalOpen] = useState(false);
   const [isAiOrganizerOpen, setIsAiOrganizerOpen] = useState(false);
 
-  // iOS 3D Touch / Context Menu State
-  const [contextMenuNote, setContextMenuNote] = useState<Note | null>(null);
+  // iOS 3D Touch long-press timer
   const longPressTimer = useRef<number | null>(null);
 
   // AI loading state
@@ -305,10 +274,9 @@ export default function NotesIOS() {
   );
 
   // Context Menu Touch Handlers
-  const handleTouchStartNote = (note: Note) => {
+  const handleTouchStartNote = (_note: Note) => {
     longPressTimer.current = window.setTimeout(() => {
       void triggerHaptics('medium');
-      setContextMenuNote(note);
     }, 450);
   };
 

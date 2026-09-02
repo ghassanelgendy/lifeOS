@@ -1,42 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
-import {
-  Eye,
-  FileText,
-  Folder,
-  Pencil,
-  Plus,
-  Save,
-  Search,
-  Trash2,
-  Sparkles,
-  Pin,
-  Brain,
-  Check,
-  Calendar,
-  Tag as TagIcon,
-  X,
-  MoreVertical,
-  Edit2,
-  FolderPlus,
-  Share2,
-} from 'lucide-react';
-import { Button, ConfirmSheet, Input, Select, TextArea } from '../components/ui';
+import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus } from 'lucide-react';
+import { Button, ConfirmSheet } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
-import {
-  useCreateNote,
-  useCreateNoteFolder,
-  useDeleteNote,
-  useDeleteNoteFolder,
-  useNoteFolders,
-  useNotes,
-  useTogglePinNote,
-  useUpdateNote,
-  useUpdateNoteFolder,
-} from '../hooks/useNotes';
+import { useCreateNote, useCreateNoteFolder, useDeleteNote, useDeleteNoteFolder, useNoteFolders, useNotes, useTogglePinNote, useUpdateNote, useUpdateNoteFolder } from '../hooks/useNotes';
 import { useTasks, useToggleTask } from '../hooks/useTasks';
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
@@ -98,7 +68,7 @@ function formatNoteDate(value: string | null | undefined): string {
 
 export default function NotesWeb() {
   const { data: notes = [], isLoading, error } = useNotes();
-  const { data: folders = [], isLoading: foldersLoading } = useNoteFolders();
+  const { data: folders = [] } = useNoteFolders();
 
   const { data: tasks = [] } = useTasks();
   const toggleTask = useToggleTask();

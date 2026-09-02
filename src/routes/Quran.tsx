@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { QuranMemorizerMain, type SheikhHalqahNote } from '../../lib/quran-memorizer';
-import { fetchPageVerses, downloadAndCacheFullQuran } from '../../lib/quran-memorizer/src/services/quranApi';
+import { downloadAndCacheFullQuran } from '../../lib/quran-memorizer/src/services/quranApi';
 import { supabase } from '../lib/supabase';
 import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
 import { useTasks, useToggleTask, useCreateTask } from '../hooks/useTasks';

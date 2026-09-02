@@ -224,7 +224,7 @@ export default function WeeklyPlanner() {
   const { data: habits = [] } = useHabits();
 
   // Listen to Quran plan updates (when habits advance wird) to refresh UI
-  const [quranPlanTick, setQuranPlanTick] = useState(0);
+  const [, setQuranPlanTick] = useState(0);
   useEffect(() => {
     const handleUpdate = () => setQuranPlanTick((t) => t + 1);
     window.addEventListener('quran_plan_updated', handleUpdate);
