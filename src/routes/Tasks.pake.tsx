@@ -1,58 +1,15 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Plus,
-  Calendar as CalendarIcon,
-  Check,
-  Edit2,
-  ChevronRight,
-  ChevronDown,
-  Star,
-  CalendarDays,
-  CheckCircle2,
-  Flag,
-  Tag as TagIcon,
-  Repeat,
-  ListTodo,
-  Trash2,
-  Clock,
-  Sun,
-  ArrowRight,
-  CircleSlash2,
-  ArrowUpDown,
-} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
-import {
-  useTasks,
-  useTaskLists,
-  useTags,
-  useTodayTasks,
-  useUpcomingTasks,
-  useWeekTasks,
-  useCompletedTasks,
-  useOverdueTasks,
-  useCreateTask,
-  useUpdateTask,
-  useToggleTask,
-  useDeleteTask,
-  useCreateTaskList,
-  useUpdateTaskList,
-  useDeleteTaskList,
-  useCreateTag,
-  useUpdateTag,
-  useDeleteTag,
-  useConvertTaskToHabit,
-  useTaskWithSubtasks,
-  useCreateSubtask,
-} from '../hooks/useTasks';
+import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWeekTasks, useCompletedTasks, useOverdueTasks, useCreateTask, useUpdateTask, useToggleTask, useDeleteTask, useCreateTaskList, useUpdateTaskList, useDeleteTaskList, useCreateTag, useUpdateTag, useDeleteTag, useConvertTaskToHabit, useTaskWithSubtasks, useCreateSubtask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
-import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
@@ -1037,7 +994,7 @@ export default function Tasks() {
 
   const defaultListId = taskLists.find((l) => l.is_default)?.id ?? null;
 
-  function getDefaultEditFormForNewTask(): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null; ios_reminders_enabled?: boolean } {
+  const getDefaultEditFormForNewTask = useCallback((): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null; ios_reminders_enabled?: boolean } => {
     const defaultDueDate =
       activeView === 'today'
         ? toDateString(new Date())
@@ -1073,7 +1030,7 @@ export default function Tasks() {
       ios_reminders_enabled: false,
       focus_time_seconds: 0,
     };
-  }
+  }, [activeView, defaultListId, activeListId]);
 
   const handleOpenNewTaskSheet = () => {
     setSelectedTask(null);
@@ -1155,7 +1112,7 @@ export default function Tasks() {
         });
       }
     }
-  }, [location.state, allTasks, navigate, location.pathname]);
+  }, [location.state, allTasks, navigate, location.pathname, getDefaultEditFormForNewTask]);
 
   // Save task edits (date_enabled/time_enabled control whether due_date/due_time are sent)
   const handleSaveTask = () => {
@@ -2597,7 +2554,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
         <Checkbox
           checked={task.is_completed}
           shape="circular"
-          onChange={(e, data) => {
+          onChange={(e, _data) => {
             e.stopPropagation();
             onToggle();
           }}

@@ -749,30 +749,37 @@ Return ONLY raw JSON object.`;
     setDeleteInvestmentId(id);
   };
 
+  const handleOpenInvestmentModalRef = useRef(handleOpenInvestmentModal);
+  const handleOpenModalRef = useRef(handleOpenModal);
+  useEffect(() => {
+    handleOpenInvestmentModalRef.current = handleOpenInvestmentModal;
+    handleOpenModalRef.current = handleOpenModal;
+  });
+
   // Listen for mobile header "+" button clicks
   useEffect(() => {
     const handleHeaderPlus = () => {
       if (activeTab === 'investments') {
-        handleOpenInvestmentModal();
+        handleOpenInvestmentModalRef.current();
       } else {
-        handleOpenModal();
+        handleOpenModalRef.current();
       }
     };
     window.addEventListener('app-trigger-add-finance', handleHeaderPlus);
     return () => window.removeEventListener('app-trigger-add-finance', handleHeaderPlus);
-  }, [activeTab, investmentAccounts]);
+  }, [activeTab]);
 
   useEffect(() => {
     const state = location.state as { triggerAdd?: boolean } | null;
     if (state?.triggerAdd) {
       navigate(location.pathname, { replace: true, state: {} });
       if (activeTab === 'investments') {
-        handleOpenInvestmentModal();
+        handleOpenInvestmentModalRef.current();
       } else {
-        handleOpenModal();
+        handleOpenModalRef.current();
       }
     }
-  }, [location.state, navigate, location.pathname, activeTab, investmentAccounts]);
+  }, [location.state, navigate, location.pathname, activeTab]);
 
   if (isLoading) {
     return (

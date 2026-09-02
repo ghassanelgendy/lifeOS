@@ -1,28 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import {
-  Plus,
-  Calendar as CalendarIcon,
-  Check,
-  Edit2,
-  ChevronRight,
-  ChevronDown,
-  Star,
-  CalendarDays,
-  CheckCircle2,
-  Flag,
-  Tag as TagIcon,
-  Repeat,
-  ListTodo,
-  Trash2,
-  Clock,
-  Sun,
-  ArrowRight,
-  CircleSlash2,
-  ArrowUpDown,
-  Mic,
-  MicOff,
-} from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { triggerHaptics } from '../lib/nativeBridge';
@@ -31,38 +9,14 @@ import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMo
 import { Flame } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
-import { Sparkles, Loader2 } from 'lucide-react';
 import { askAI, extractJSON } from '../lib/ai';
-import {
-  useTasks,
-  useTaskLists,
-  useTags,
-  useTodayTasks,
-  useUpcomingTasks,
-  useWeekTasks,
-  useCompletedTasks,
-  useOverdueTasks,
-  useCreateTask,
-  useUpdateTask,
-  useToggleTask,
-  useDeleteTask,
-  useCreateTaskList,
-  useUpdateTaskList,
-  useDeleteTaskList,
-  useCreateTag,
-  useUpdateTag,
-  useDeleteTag,
-  useConvertTaskToHabit,
-  useTaskWithSubtasks,
-  useCreateSubtask,
-} from '../hooks/useTasks';
+import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWeekTasks, useCompletedTasks, useOverdueTasks, useCreateTask, useUpdateTask, useToggleTask, useDeleteTask, useCreateTaskList, useUpdateTaskList, useDeleteTaskList, useCreateTag, useUpdateTag, useDeleteTag, useConvertTaskToHabit, useTaskWithSubtasks, useCreateSubtask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
 import { analyzeTaskSimilarityWithAI, type TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
-import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
@@ -199,6 +153,44 @@ export default function Tasks() {
   const [sortFeedback, setSortFeedback] = useState<string | null>(null);
   const sortFeedbackTimeoutRef = useRef<number | null>(null);
   const [activeListId, setActiveListId] = useState<string | null>(null);
+  const defaultListId = taskLists.find((l) => l.is_default)?.id ?? null;
+  const getDefaultEditFormForNewTask = useCallback((): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null; ios_reminders_enabled?: boolean } => {
+    const defaultDueDate =
+      activeView === 'today'
+        ? toDateString(new Date())
+        : activeView === 'week' || activeView === 'upcoming'
+          ? toDateString(addDays(new Date(), 1))
+          : undefined;
+    return {
+      title: '',
+      description: '',
+      priority: 'none',
+      due_date: defaultDueDate?.split('T')[0],
+      due_time: undefined,
+      date_enabled: !!defaultDueDate,
+      time_enabled: false,
+      duration_minutes: 45,
+      list_id: defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
+      project_id: undefined,
+      tag_ids: [],
+      recurrence: 'none',
+      recurrence_interval: 1,
+      recurrence_days: [],
+      recurrence_end: undefined,
+      recurrence_end_type: 'never',
+      recurrence_count: 5,
+      reminders_enabled: false,
+      url: undefined,
+      is_urgent: false,
+      is_flagged: false,
+      location: undefined,
+      location_enabled: false,
+      when_messaging: false,
+      early_reminder_minutes: null,
+      ios_reminders_enabled: false,
+      focus_time_seconds: 0,
+    };
+  }, [activeView, defaultListId, activeListId]);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const { data: selectedTaskWithSubtasks } = useTaskWithSubtasks(selectedTask?.id || '');
@@ -249,7 +241,7 @@ export default function Tasks() {
   const [similarityModalOpen, setSimilarityModalOpen] = useState(false);
   const [similarityMatches, setSimilarityMatches] = useState<TaskSimilarityMatch[]>([]);
   const [pendingDraftTaskPayload, setPendingDraftTaskPayload] = useState<CreateInput<Task> | null>(null);
-  const [isCheckingSimilarity, setIsCheckingSimilarity] = useState(false);
+  const [_isCheckingSimilarity, setIsCheckingSimilarity] = useState(false);
 
   // 3D Haptic Touch Context Menu State
   const [contextMenuTask, setContextMenuTask] = useState<Task | null>(null);
@@ -950,7 +942,7 @@ export default function Tasks() {
       window.removeEventListener('app-trigger-add-task', handleAddTaskEvent);
       window.removeEventListener('app-trigger-voice-add-task', handleVoiceAddTaskEvent);
     };
-  }, [searchParams]);
+  }, [searchParams, getDefaultEditFormForNewTask]);
 
   // Swipe from left edge to open lists sidebar (mobile)
   useEffect(() => {
@@ -1456,46 +1448,6 @@ export default function Tasks() {
     });
   };
 
-  const defaultListId = taskLists.find((l) => l.is_default)?.id ?? null;
-
-  function getDefaultEditFormForNewTask(): Partial<CreateInput<Task>> & { date_enabled?: boolean; time_enabled?: boolean; url?: string; is_urgent?: boolean; is_flagged?: boolean; location?: string; location_enabled?: boolean; when_messaging?: boolean; early_reminder_minutes?: number | null; ios_reminders_enabled?: boolean } {
-    const defaultDueDate =
-      activeView === 'today'
-        ? toDateString(new Date())
-        : activeView === 'week' || activeView === 'upcoming'
-          ? toDateString(addDays(new Date(), 1))
-          : undefined;
-    return {
-      title: '',
-      description: '',
-      priority: 'none',
-      due_date: defaultDueDate?.split('T')[0],
-      due_time: undefined,
-      date_enabled: !!defaultDueDate,
-      time_enabled: false,
-      duration_minutes: 45,
-      list_id: defaultListId ?? (activeView === 'list' && activeListId ? activeListId : undefined),
-      project_id: undefined,
-      tag_ids: [],
-      recurrence: 'none',
-      recurrence_interval: 1,
-      recurrence_days: [],
-      recurrence_end: undefined,
-      recurrence_end_type: 'never',
-      recurrence_count: 5,
-      reminders_enabled: false,
-      url: undefined,
-      is_urgent: false,
-      is_flagged: false,
-      location: undefined,
-      location_enabled: false,
-      when_messaging: false,
-      early_reminder_minutes: null,
-      ios_reminders_enabled: false,
-      focus_time_seconds: 0,
-    };
-  }
-
   const handleOpenNewTaskSheet = () => {
     if (tasksUseModalForCreate) {
       setSelectedTask(null);
@@ -1581,7 +1533,7 @@ export default function Tasks() {
         });
       }
     }
-  }, [location.state, allTasks, navigate, location.pathname]);
+  }, [location.state, allTasks, navigate, location.pathname, getDefaultEditFormForNewTask]);
 
   // Save task edits (date_enabled/time_enabled control whether due_date/due_time are sent)
   const handleSaveTask = () => {
@@ -3622,7 +3574,7 @@ interface TaskItemProps {
   onToggleSubtask?: (subtaskId: string) => void;
 }
 
-function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueDate, isLast, onToggleSubtask }: TaskItemProps) {
+function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo: _onWontDo, formatDueDate, isLast, onToggleSubtask }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));

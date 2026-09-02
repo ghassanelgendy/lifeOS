@@ -231,7 +231,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
   const prayerName = useMemo(() => (isPrayer ? getPrayerNameFromEntry(entry) : null), [entry, isPrayer]);
   const prayerHadith = useMemo(
     () => (prayerName ? pickRandomPrayerHadith(prayerName) : null),
-    [prayerName, entry.id]
+    [prayerName]
   );
 
   if (isHabit) {
@@ -998,13 +998,6 @@ export default function Dashboard() {
     }
   }, [searchParams, setSearchParams, calendarEvents]);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 18) return 'Good afternoon';
-    return 'Good evening';
-  };
-
   const label = dashboardMode === 'quick_view' ? '' : DASHBOARD_MODE_LABELS[dashboardMode];
 
   return (
@@ -1137,6 +1130,7 @@ export default function Dashboard() {
               ref={buttonRef}
               type="button"
               onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               onTouchCancel={handleTouchEnd}
               onClick={() => {

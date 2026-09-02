@@ -1,32 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Marked } from 'marked';
-import {
-  Sparkles,
-  Send,
-  Brain,
-  Check,
-  Loader2,
-  Calendar,
-  CheckSquare,
-  Wallet,
-  Activity,
-  FileText,
-  Moon,
-  Info,
-  Settings,
-  AlertCircle,
-  Trash2,
-  User,
-  Plus,
-  PanelLeft,
-  Copy,
-  RotateCw,
-  X,
-  MessageSquare,
-  Mic,
-  MicOff,
-} from 'lucide-react';
+import { Sparkles, Send, Brain, Check, Loader2, Calendar, CheckSquare, Wallet, Activity, FileText, Moon, Settings, AlertCircle, Trash2, Plus, PanelLeft, Copy, RotateCw, X, MessageSquare, Mic } from 'lucide-react';
 import { Button } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
@@ -85,7 +60,7 @@ interface ChatProps {
   onCloseModal?: () => void;
 }
 
-export default function Chat({ isModal = false, initialPrompt = '', onCloseModal }: ChatProps = {}) {
+export default function Chat({ isModal: _isModal = false, initialPrompt = '', onCloseModal: _onCloseModal }: ChatProps = {}) {
   const { aiEnabled, aiApiKey, aiDahlApiKey, aiBynaraApiKey, aiModel, aiActiveModel, aiFallbackEnabled } = useUIStore();
   const hasAiKey = Boolean(
     aiApiKey?.trim() ||
@@ -494,7 +469,6 @@ export default function Chat({ isModal = false, initialPrompt = '', onCloseModal
     let cleanedContent = text;
     const actionMatches = [...text.matchAll(/\[ACTION:(create_task|create_event|create_note|create_transaction)\|([^\]]+)\]/g)];
 
-    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const offsetMinutes = -new Date().getTimezoneOffset();
     const sign = offsetMinutes >= 0 ? '+' : '-';
     const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
@@ -700,6 +674,11 @@ ${knowledgeContext}`;
     }
   };
 
+  const handleSendMessageRef = useRef(handleSendMessage);
+  useEffect(() => {
+    handleSendMessageRef.current = handleSendMessage;
+  });
+
   useEffect(() => {
     const prompt = initialPrompt || searchParams.get('prompt');
     if (prompt && !promptConsumedRef.current) {
@@ -710,7 +689,7 @@ ${knowledgeContext}`;
           return p;
         }, { replace: true });
       }
-      void handleSendMessage(prompt);
+      void handleSendMessageRef.current(prompt);
     }
   }, [searchParams, setSearchParams, initialPrompt]);
 

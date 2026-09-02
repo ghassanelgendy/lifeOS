@@ -1,76 +1,17 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import {
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  Edit2,
-  Trash2,
-  ChevronLeft,
-  ChevronRight,
-  Utensils,
-  Car,
-  Zap,
-  Gamepad2,
-  Heart,
-  GraduationCap,
-  ShoppingBag,
-  ArrowLeftRight,
-  MoreHorizontal,
-  Briefcase,
-  Code2,
-  TrendingUp as TrendingUpIcon,
-  Wallet,
-  PieChart,
-  Landmark,
-  type LucideIcon,
-} from 'lucide-react';
-import {
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-  Cell,
-  CartesianGrid
-} from 'recharts';
+import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, ChevronLeft, ChevronRight, Utensils, Car, Zap, Gamepad2, Heart, GraduationCap, ShoppingBag, ArrowLeftRight, MoreHorizontal, Briefcase, Code2, TrendingUp as TrendingUpIcon, Wallet, PieChart, Landmark, type LucideIcon } from 'lucide-react';
+import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid } from 'recharts';
 import { format, subMonths, addMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { cn, formatCurrency, formatTime12h } from '../lib/utils';
-import {
-  useTransactions,
-  useCreateTransaction,
-  useUpdateTransaction,
-  useDeleteTransaction,
-  getBreakdownFromTransactions,
-} from '../hooks/useFinance';
+import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction, getBreakdownFromTransactions } from '../hooks/useFinance';
 import { FinanceHeroCard } from '../components/FinanceHeroCard';
 import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
-import {
-  useInvestmentAccounts,
-  useInvestmentTransactions,
-  useEnsureDefaultInvestmentAccounts,
-  useCreateInvestmentTransaction,
-  useUpdateInvestmentTransaction,
-  useDeleteInvestmentTransaction,
-  getInvestmentBreakdown,
-} from '../hooks/useInvestments';
+import { useInvestmentAccounts, useInvestmentTransactions, useEnsureDefaultInvestmentAccounts, useCreateInvestmentTransaction, useUpdateInvestmentTransaction, useDeleteInvestmentTransaction, getInvestmentBreakdown } from '../hooks/useInvestments';
 import { useAuth } from '../contexts/AuthContext';
 import { useUIStore } from '../stores/useUIStore';
-import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
-import {
-  FluentProvider,
-  webDarkTheme,
-  webLightTheme,
-  Card,
-  Text,
-  TabList,
-  Tab,
-  Button as FluentButton,
-  type Theme,
-} from '@fluentui/react-components';
+import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
+import { TabList, Tab, Button as FluentButton } from '@fluentui/react-components';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
@@ -709,17 +650,24 @@ export default function Finance() {
     setDeleteInvestmentId(id);
   };
 
+  const handleOpenInvestmentModalRef = useRef(handleOpenInvestmentModal);
+  const handleOpenModalRef = useRef(handleOpenModal);
+  useEffect(() => {
+    handleOpenInvestmentModalRef.current = handleOpenInvestmentModal;
+    handleOpenModalRef.current = handleOpenModal;
+  });
+
   useEffect(() => {
     const state = location.state as { triggerAdd?: boolean } | null;
     if (state?.triggerAdd) {
       navigate(location.pathname, { replace: true, state: {} });
       if (activeTab === 'investments') {
-        handleOpenInvestmentModal();
+        handleOpenInvestmentModalRef.current();
       } else {
-        handleOpenModal();
+        handleOpenModalRef.current();
       }
     }
-  }, [location.state, navigate, location.pathname, activeTab, investmentAccounts]);
+  }, [location.state, navigate, location.pathname, activeTab]);
 
   if (isLoading) {
     return (
