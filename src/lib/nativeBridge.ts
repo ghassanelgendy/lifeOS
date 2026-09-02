@@ -221,7 +221,6 @@ export async function syncAllLocalNotifications(
     }
 
     const pending = await LocalNotifications.getPending();
-    const pendingIds = new Set(pending.notifications.map((n) => n.id));
     const now = new Date();
     const nowMs = now.getTime();
     const endLimit = new Date(nowMs + 7 * 24 * 60 * 60 * 1000);

@@ -1,17 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import {
-  AI_PROVIDERS,
-  ALL_MODELS,
-  getFallbackCandidates,
-  recordModelSuccess,
-  recordModelFailure,
-  resetModelHealth,
-  isModelInCooldown,
-  getModelStat,
-  getStoredBestModel,
-  calculateModelScore,
-  getProviderForModel,
-} from '../aiFallback';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { AI_PROVIDERS, ALL_MODELS, getFallbackCandidates, recordModelSuccess, recordModelFailure, resetModelHealth, isModelInCooldown, getModelStat, getStoredBestModel, calculateModelScore, getProviderForModel } from '../aiFallback';
 import { cleanAiResponse, extractJSON } from '../ai';
 
 describe('AI Fallback & Smart Health Routing Engine', () => {

@@ -5,7 +5,6 @@
 
 import prdRaw from '../../PRD.md?raw';
 import srsRaw from '../../CODEBASE_SRS.md?raw';
-import docsRaw from '../../CODEBASE_DOCUMENTATION.md?raw';
 
 export interface WikiDocPage {
   id: string;

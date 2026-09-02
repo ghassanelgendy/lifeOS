@@ -20,7 +20,7 @@ if (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) {
       })
     );
     (window as any).__LIFEOS_CONFIG__ = { supabaseUrl, supabaseAnonKey };
-  } catch (e) {}
+  } catch {}
 }
 
 // Initialize Supabase client
