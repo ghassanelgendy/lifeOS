@@ -180,7 +180,8 @@ function parseDurationToSeconds(value: unknown): number {
   }
 
   if (typeof value !== 'string') return 0;
-  const trimmed = value.trim();
+  // Normalize whitespace (including non-breaking spaces \u00A0) and strip commas
+  let trimmed = value.replace(/[\u00A0\u2000-\u200B\u202F\u205F]/g, ' ').replace(/,/g, '').trim();
   if (!trimmed) return 0;
 
   if (/^\d+(\.\d+)?$/.test(trimmed)) {
@@ -191,9 +192,10 @@ function parseDurationToSeconds(value: unknown): number {
     return parseTimeToSeconds(trimmed);
   }
 
-  const hoursMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*h/i);
-  const minutesMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*m(?:in)?/i);
-  const secondsMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*s(?:ec)?/i);
+  // Support patterns like: 1h 20m, 1 hr 20 min, 45m, 45 mins, 30s, 30 secs
+  const hoursMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/i);
+  const minutesMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*(?:minutes?|mins?|m)\b/i);
+  const secondsMatch = trimmed.match(/(\d+(?:\.\d+)?)\s*(?:seconds?|secs?|s)\b/i);
 
   if (hoursMatch || minutesMatch || secondsMatch) {
     const hours = hoursMatch ? parseFloat(hoursMatch[1]) : 0;
@@ -209,22 +211,52 @@ function parseDateToDateString(dateStr: string): string {
   const raw = String(dateStr || '').trim();
   if (!raw) return raw;
 
-  // iOS Shortcuts commonly sends dates like "2/17/26" (M/D/YY) or "2/17/2026".
-  // Parse explicitly to avoid environment-dependent Date parsing.
-  const slashMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:\s+.*)?$/);
+  // Already standard YYYY-MM-DD
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+  }
+
+  // Handle slash or dash formatted dates like "02/09/2026", "2/9/26", "02/09/2026, 11:40 PM"
+  const slashMatch = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2}|\d{4})(?:[\s,]+.*)?$/);
   if (slashMatch) {
-    let a = parseInt(slashMatch[1], 10);
-    let b = parseInt(slashMatch[2], 10);
+    const a = parseInt(slashMatch[1], 10);
+    const b = parseInt(slashMatch[2], 10);
     const yRaw = slashMatch[3];
     let year = parseInt(yRaw, 10);
     if (yRaw.length === 2) year = 2000 + year;
 
-    // Default M/D, but if it looks like D/M (e.g., 17/2/26) then swap.
     let month = a;
     let day = b;
+
+    const now = new Date();
+    const currentMonth = now.getUTCMonth() + 1; // 1-12
+    const currentDay = now.getUTCDate();       // 1-31
+
     if (a > 12 && b <= 12) {
-      month = b;
+      // Must be D/M (e.g. 25/09/2026)
       day = a;
+      month = b;
+    } else if (b > 12 && a <= 12) {
+      // Must be M/D (e.g. 09/25/2026)
+      month = a;
+      day = b;
+    } else {
+      // Both <= 12 (e.g. 02/09/2026): Check which matches current month / day
+      if (b === currentMonth && a === currentDay) {
+        // e.g. a=2, b=9 and today is September 2 -> Day=2, Month=9 (D/M format)
+        day = a;
+        month = b;
+      } else if (a === currentMonth && b === currentDay) {
+        // e.g. a=9, b=2 and today is September 2 -> Month=9, Day=2 (M/D format)
+        month = a;
+        day = b;
+      } else {
+        // Fallback default: assume D/M for device locales outside US, but if year matches current year
+        // prioritize D/M
+        day = a;
+        month = b;
+      }
     }
 
     if (
@@ -247,11 +279,11 @@ function parseDateToDateString(dateStr: string): string {
   try {
     const date = new Date(raw);
     if (isNaN(date.getTime())) {
-      return raw.split('T')[0];
+      return raw.split('T')[0].split(' ')[0];
     }
     return date.toISOString().split('T')[0];
   } catch {
-    return raw.split('T')[0];
+    return raw.split('T')[0].split(' ')[0];
   }
 }
 
@@ -585,13 +617,41 @@ function parseActivitySummary(text: string): FlatUsageItem[] {
     .map(line => line.trim())
     .filter(line => line.length > 0)
     .map((line) => {
-      const match = line.match(/^(.+?)\s*\(([^)]+)\)$/);
-      if (!match) return null;
-      const name = match[1].trim();
-      const durationLabel = match[2].trim();
+      // Clean non-breaking spaces
+      const cleanLine = line.replace(/[\u00A0\u2000-\u200B\u202F\u205F]/g, ' ').trim();
+      let name = '';
+      let durationLabel = '';
+
+      // Pattern 1: AppName (1h 20m) or AppName [1h 20m]
+      const parenMatch = cleanLine.match(/^(.+?)\s*[\(\[]([^\)\]]+)[\)\]]$/);
+      if (parenMatch) {
+        name = parenMatch[1].trim();
+        durationLabel = parenMatch[2].trim();
+      } else {
+        // Pattern 2: AppName: 1h 20m, AppName - 1h 20m, AppName -> 1h 20m, AppName | 1h 20m, AppName \t 1h 20m, AppName, 1h 20m
+        const sepMatch = cleanLine.match(/^(.+?)\s*(?::|->|-|—|–|\||\t|,)\s*(\d+.*)$/);
+        if (sepMatch) {
+          name = sepMatch[1].trim();
+          durationLabel = sepMatch[2].trim();
+        } else {
+          // Pattern 3: AppName 1h 20m (space before duration pattern)
+          const spaceMatch = cleanLine.match(/^(.+?)\s+(\d+\s*(?:h|hr|hours?|m|min|minutes?|s|sec|seconds?|:).*)$/i);
+          if (spaceMatch) {
+            name = spaceMatch[1].trim();
+            durationLabel = spaceMatch[2].trim();
+          }
+        }
+      }
+
+      if (!name || !durationLabel) return null;
+
+      // Strip leading bullet markers or numbers if present (e.g. "1. Safari" or "- Chrome")
+      name = name.replace(/^[-*•\d.]+\s*/, '').trim();
+      if (!name) return null;
+
       const durationSeconds = parseDurationToSeconds(durationLabel);
       if (durationSeconds <= 0) return null;
-      const isWebsite = /\./.test(name);
+      const isWebsite = /\./.test(name) && !name.endsWith('.app') && !name.endsWith('.exe');
       const entry: FlatUsageItem = {
         total_time_seconds: durationSeconds,
         duration: durationLabel,
@@ -660,7 +720,7 @@ Deno.serve(async (req: Request) => {
       const activityItems = parseActivitySummary(payload.activity_summary);
       parsedActivityItemsCount = activityItems.length;
       if (activityItems.length > 0) {
-        const activityDate = parseDateToDateString(payload.date || new Date().toISOString());
+        const activityDate = upload_date || parseDateToDateString(payload.date || new Date().toISOString());
         activitySummaryDateUsed = activityDate;
         normalizedSnapshots.push({
           date: activityDate,
@@ -1392,6 +1452,10 @@ Deno.serve(async (req: Request) => {
       }
     }
 
+    const appUnchanged = mergedAppRows.filter(r => r._unchanged).length;
+    const websiteUnchanged = mergedWebsiteRows.filter(r => r._unchanged).length;
+    const summaryUnchanged = mergedSummaryRows.filter(r => r._unchanged).length;
+
     if (appErrors.length > 0 || websiteErrors.length > 0 || summaryErrors.length > 0) {
       return new Response(
         JSON.stringify({
@@ -1401,6 +1465,16 @@ Deno.serve(async (req: Request) => {
             apps: appInserted,
             websites: websiteInserted,
             summaries: summaryInserted,
+          },
+          unchanged: {
+            apps: appUnchanged,
+            websites: websiteUnchanged,
+            summaries: summaryUnchanged,
+          },
+          processed: {
+            apps: mergedAppRows.length,
+            websites: mergedWebsiteRows.length,
+            summaries: mergedSummaryRows.length,
           },
           total: {
             apps: mergedAppRows.length,
@@ -1429,6 +1503,16 @@ Deno.serve(async (req: Request) => {
           apps: appInserted,
           websites: websiteInserted,
           summaries: summaryInserted,
+        },
+        unchanged: {
+          apps: appUnchanged,
+          websites: websiteUnchanged,
+          summaries: summaryUnchanged,
+        },
+        processed: {
+          apps: mergedAppRows.length,
+          websites: mergedWebsiteRows.length,
+          summaries: mergedSummaryRows.length,
         },
         total: {
           apps: mergedAppRows.length,
