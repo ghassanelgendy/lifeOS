@@ -1,34 +1,9 @@
 import { useState, useEffect } from 'react';
-import {
-  Sparkles,
-  Zap,
-  Activity,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  RotateCcw,
-  Play,
-  ShieldCheck,
-  ChevronDown,
-  ChevronUp,
-  Server,
-  KeyRound,
-  Check,
-  Info,
-} from 'lucide-react';
+import { Sparkles, Activity, CheckCircle2, AlertCircle, Clock, RotateCcw, Play, ShieldCheck, ChevronDown, ChevronUp, Server, KeyRound, Check, Info } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { Input, Button } from './ui';
-import {
-  AI_PROVIDERS,
-  ALL_MODELS,
-  loadModelHealthState,
-  resetModelHealth,
-  isModelInCooldown,
-  getModelStat,
-  getStoredBestModel,
-  type AIProviderId,
-} from '../lib/aiFallback';
-import { testAllCatalogModels, testSingleModel } from '../lib/ai';
+import { AI_PROVIDERS, ALL_MODELS, loadModelHealthState, resetModelHealth, isModelInCooldown, getModelStat, getStoredBestModel } from '../lib/aiFallback';
+import { testAllCatalogModels } from '../lib/ai';
 
 interface AISettingsSectionProps {
   isIOS?: boolean;
@@ -58,8 +33,9 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
   const [showHealthDetails, setShowHealthDetails] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [testProgress, setTestProgress] = useState<{ current: number; total: number; modelName: string } | null>(null);
-  const [healthVersion, setHealthVersion] = useState(0);
+  const [, setHealthVersion] = useState(0);
   const [testMessage, setTestMessage] = useState<string | null>(null);
+  const [now, setNow] = useState(() => Date.now());
 
   const bestModel = aiActiveModel || getStoredBestModel();
 
@@ -68,6 +44,12 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
     loadModelHealthState();
     setHealthVersion((v) => v + 1);
   }, []);
+
+  useEffect(() => {
+    if (!showHealthDetails) return;
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [showHealthDetails]);
 
   const triggerSaveIndicator = () => {
     setAiSaved(true);
@@ -394,7 +376,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
                             </span>
                             {inCooldown && (
                               <span className="text-[10px] text-amber-500 font-sans">
-                                Cooldown ({Math.max(0, Math.round(((stat.cooldownUntil || 0) - Date.now()) / 1000))}s)
+                                Cooldown ({Math.max(0, Math.round(((stat.cooldownUntil || 0) - now) / 1000))}s)
                               </span>
                             )}
                           </div>

@@ -1,16 +1,7 @@
 import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { useUIStore } from '../stores/useUIStore';
 import { addSystemLog } from './logger';
-import {
-  getFallbackCandidates,
-  recordModelSuccess,
-  recordModelFailure,
-  getModelStat,
-  type FallbackCandidate,
-  type AIProviderId,
-  AI_PROVIDERS,
-  ALL_MODELS,
-} from './aiFallback';
+import { getFallbackCandidates, recordModelSuccess, recordModelFailure, type FallbackCandidate, type AIProviderId, AI_PROVIDERS, ALL_MODELS } from './aiFallback';
 
 /**
  * Standard helper to clean AI responses (strips <think> reasoning tags).
@@ -146,7 +137,7 @@ async function executeCandidateCompletion(
     
     // If proxy failed and the domain is known to block CORS in browsers, fail fast to candidate router
     if (cleanBaseUrl.includes('bynara.id')) {
-      throw new Error(`Proxy unreachable for ${cleanBaseUrl}: ${netErr.message || netErr}`);
+      throw new Error(`Proxy unreachable for ${cleanBaseUrl}: ${netErr.message || netErr}`, { cause: netErr });
     }
 
     // Otherwise attempt direct fetch
@@ -315,7 +306,7 @@ export async function askAI(
 
       // If user disabled fallback, do not cascade
       if (!aiFallbackEnabled) {
-        throw new Error(`AI request failed on ${candidate.model}: ${errorMessage}`);
+        throw new Error(`AI request failed on ${candidate.model}: ${errorMessage}`, { cause: err });
       }
     }
   }
@@ -358,7 +349,7 @@ export async function testSingleModel(
   };
 
   try {
-    const res = await executeCandidateCompletion(candidate, payload, isNative);
+    await executeCandidateCompletion(candidate, payload, isNative);
     const latencyMs = Math.round(performance.now() - startTime);
     recordModelSuccess(modelId, providerId, latencyMs);
     return { ok: true, status: 200, latencyMs };
