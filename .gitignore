@@ -40,6 +40,7 @@ dist-ssr
 public/ios6-lite/legacy-autologin.local.js
 public/ios6-check.html
 dist.zip
+lifeOS-extension.zip
 # Replit
 .cache/
 .local/
