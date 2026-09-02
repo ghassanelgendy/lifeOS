@@ -1341,11 +1341,20 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="pt-2 flex flex-wrap items-center gap-3">
+            <a
+              href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS-extension.zip"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3.5 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <Download size={14} />
+              Download Extension (.zip)
+            </a>
             <div className="text-xs text-muted-foreground bg-muted/60 px-3 py-2 rounded-md font-mono select-all">
               Load Unpacked Path: <strong>extension/</strong>
             </div>
             <span className="text-xs text-muted-foreground">
-              (Go to <code>chrome://extensions</code> → Enable <em>Developer mode</em> → Click <em>Load unpacked</em>)
+              (Download the zip, unzip it, then go to <code>chrome://extensions</code> → Enable <em>Developer mode</em> → Click <em>Load unpacked</em> and select the unzipped folder)
             </span>
           </div>
         </div>

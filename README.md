@@ -20,6 +20,13 @@
     </a>
   </p>
 
+  <p>
+    <b>🌐 Download Browser Extension:</b><br />
+    <a href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS-extension.zip">
+      <img src="https://img.shields.io/badge/Browser-Extension-4285f4?style=for-the-badge&logo=googlechrome&logoColor=white" alt="Download lifeOS Browser Extension" />
+    </a>
+  </p>
+
   ![Hero Mockup](./public/1.jpeg)
   
   <div>

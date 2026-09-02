@@ -5,7 +5,7 @@ import { cn } from '../lib/utils';
 import {
   CheckSquare, BookOpen, Calendar, Monitor,
   Moon, BarChart3, Wallet, FileText, Flame, Layout, Dumbbell,
-  ArrowRight, Coins, Focus as FocusIcon
+  ArrowRight, Coins, Focus as FocusIcon, Download, Puzzle
 } from 'lucide-react';
 import WikiGraphView from '../components/wiki/WikiGraphView';
 
@@ -278,7 +278,29 @@ export default function Landing() {
             </Link>
           </motion.div>
 
-          <motion.p variants={fadeUp} custom={4} initial="hidden" animate="show" className="text-xs text-white/25 mt-5">
+          <motion.div variants={fadeUp} custom={4} initial="hidden" animate="show" className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS-extension.zip"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs text-white/70 hover:bg-white/[0.10] hover:text-white active:scale-95 transition-all"
+            >
+              <Puzzle size={15} className="text-primary" />
+              Download Browser Extension
+              <Download size={14} className="opacity-70" />
+            </a>
+            <a
+              href="https://github.com/ghassanelgendy/lifeOS/releases/latest"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs text-white/70 hover:bg-white/[0.10] hover:text-white active:scale-95 transition-all"
+            >
+              <Download size={15} className="opacity-70" />
+              Get the Desktop App
+            </a>
+          </motion.div>
+
+          <motion.p variants={fadeUp} custom={5} initial="hidden" animate="show" className="text-xs text-white/25 mt-5">
             Already have an account?{' '}
             <Link to="/login" className="text-white/45 underline underline-offset-2 hover:text-white/70 transition-colors">Sign in</Link>
           </motion.p>
