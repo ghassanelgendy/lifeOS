@@ -810,7 +810,7 @@ ${knowledgeContext}`;
     >
       
       {/* MINIMALIST HEADER BAR */}
-      <header className="h-14 border-b border-border/40 px-4 flex items-center justify-between shrink-0 bg-background/80 backdrop-blur-md z-20">
+      <header className="chat-blend-surface h-14 border-b border-border/40 px-4 flex items-center justify-between shrink-0 bg-background/80 backdrop-blur-md z-20">
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -1038,7 +1038,7 @@ ${knowledgeContext}`;
             : 'calc(16px + env(safe-area-inset-bottom))',
         }}
         className={cn(
-          "fixed z-30 left-1/2 -translate-x-1/2 w-[92%] max-w-[480px] md:max-w-3xl rounded-[34px] px-2 sm:px-3 py-1.5 bg-card/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-border/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex items-center gap-1.5 sm:gap-2 transition-all duration-200"
+          "chat-blend-surface fixed z-30 left-1/2 -translate-x-1/2 w-[92%] max-w-[480px] md:max-w-3xl rounded-[34px] px-2 sm:px-3 py-1.5 bg-card/90 dark:bg-[#1c1c1e]/90 backdrop-blur-2xl border border-border/80 dark:border-white/10 shadow-[0_12px_40px_rgba(0,0,0,0.25)] flex items-center gap-1.5 sm:gap-2 transition-all duration-200"
         )}
       >
         {/* Knowledge Context & Threads Trigger Button */}

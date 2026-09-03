@@ -13,10 +13,35 @@ html,
 body {
   overflow: hidden;
   height: 100%;
+  /* Let native form controls (select popups, scrollbars) render in the
+     right palette instead of defaulting to a light theme regardless of
+     the app's dark class — this is what makes WebKitGTK <select> popups
+     show white-on-white in the desktop build. */
+  color-scheme: light;
+}
+html.dark,
+body.dark {
+  color-scheme: dark;
 }
 #root {
   height: 100%;
   overflow: hidden;
+}
+
+/* Arabic type utilities used by the Quran reader/memorizer. These live here
+   (rather than only in lib/quran-memorizer/src/standalone.css, which is not
+   bundled into the main app) so the classes actually resolve when the
+   Quran views are embedded in the desktop/mobile app instead of silently
+   falling back to the global Cairo font. */
+.font-arabic-title,
+.font-arabic-body {
+  font-family: 'Cairo', sans-serif;
+}
+.font-cairo {
+  font-family: 'Cairo', sans-serif !important;
+}
+.font-arabic-quran {
+  font-family: 'Scheherazade New', 'Amiri', serif;
 }
 
 /* Dark theme (default) */
@@ -549,6 +574,12 @@ html.light[data-accent="amber"] {
   text-rendering: optimizeLegibility;
 }
 
+/* A custom in-page title bar was tried here and reverted — GNOME's native
+   window decorations already give a working, correctly-positioned
+   min/maximize/close, and hiding them (`--hide-window-decorations`) produced
+   a second redundant bar stacked on top instead of replacing the native one.
+   Stick to native decorations only on Linux. */
+
 .linux-platform aside {
   background-color: var(--color-card) !important;
   border-right: 1px solid var(--color-border) !important;
@@ -569,11 +600,35 @@ html.light[data-accent="amber"] {
 }
 
 .linux-platform .fui-Button,
-.linux-platform button {
+.linux-platform button:not(.rounded-full) {
   border-radius: 8px;
 }
 
-/* Disable expensive backdrop-filter blur on Linux WebKitGTK to ensure 60fps smooth rendering */
+/* WebKitGTK renders <select> as a fully native GTK widget — background,
+   text color and all — regardless of the page's CSS or `color-scheme`,
+   which is why every dropdown showed native light-GTK white-on-white no
+   matter what the app's own styles said. `appearance: none` opts back into
+   CSS-drawn rendering (still using the browser's native popup listbox for
+   the options, which respects `color-scheme` fine on its own); the custom
+   chevron replaces the native one that disappears once appearance is reset. */
+.linux-platform select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  background-size: 12px;
+  padding-right: 2rem !important;
+}
+
+/* Disable expensive backdrop-filter blur on Linux WebKitGTK to ensure 60fps smooth
+   rendering. The "liquid glass" design system pairs blur with a translucent light
+   tint (e.g. bg-white/10, bg-[#F9F9F9]/45) that only reads correctly when the blur
+   behind it is actually darkening the page — stripping just the blur leaves that
+   translucent tint sitting on the plain page background, which is how buttons/cards
+   end up white text on a near-white surface. So every blur removal here is paired
+   with a solid, theme-correct background + border instead of leaving the original
+   (blur-dependent) background color in place. */
 .linux-platform [class*="backdrop-blur-"],
 .linux-platform .backdrop-blur-xl,
 .linux-platform .backdrop-blur-2xl,
@@ -582,13 +637,18 @@ html.light[data-accent="amber"] {
 .linux-platform .liquid-glass-card {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
 }
 
-.linux-platform [data-fab-container] .backdrop-blur-xl,
-.linux-platform [data-fab-container] .backdrop-blur-2xl,
-.linux-platform [data-fab-container] button {
-  background-color: var(--color-card) !important;
-  border: 1px solid var(--color-border) !important;
+/* The Chat page's floating header/input capsule were designed to sit as a
+   translucent tint OVER the blurred page behind them, blending in — with the
+   blur gone they're just a flat --color-card rectangle sitting on the
+   slightly darker --color-background page, which reads as a mismatched
+   floating box rather than part of the page. Matching the page background
+   directly here (instead of the card tone) removes that seam. */
+.linux-platform .chat-blend-surface {
+  background-color: var(--color-background) !important;
 }
 
 /* Linux GNOME clean overlay scrollbars */
