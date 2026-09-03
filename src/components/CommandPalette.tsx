@@ -95,6 +95,18 @@ export function CommandPalette() {
             </Command.Item>
             <Command.Item
               onSelect={() => runCommand(() => {
+                navigate('/tasks');
+                // Tasks.tsx listens for this once it mounts; the route swap
+                // above hasn't committed yet on this same tick.
+                setTimeout(() => window.dispatchEvent(new CustomEvent('lifeos:openNewTask')), 50);
+              })}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              <span>Add Task</span>
+            </Command.Item>
+            <Command.Item
+              onSelect={() => runCommand(() => {
                 navigate('/health');
                 // Would trigger modal via global state in a full implementation
               })}
