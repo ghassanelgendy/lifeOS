@@ -4,6 +4,18 @@ import { addSystemLog } from './logger';
 import { getFallbackCandidates, recordModelSuccess, recordModelFailure, type FallbackCandidate, type AIProviderId, AI_PROVIDERS, ALL_MODELS } from './aiFallback';
 
 /**
+ * True for iOS/Android (Capacitor.isNativePlatform()) AND for the Pake/Tauri
+ * desktop build. Both need to call AI providers directly (or via the native
+ * HTTP bridge) instead of the `/api/ai` proxy path below — that path only
+ * exists as a Vercel serverless function on the hosted web app's own origin,
+ * so it 404s from any desktop build (no server behind `tauri://localhost`),
+ * which is why the AI Assistant silently never got a response on desktop.
+ */
+function isNativeOrDesktop(): boolean {
+  return Capacitor.isNativePlatform() || (typeof window !== 'undefined' && !!(window as any).__TAURI__);
+}
+
+/**
  * Standard helper to clean AI responses (strips <think> reasoning tags).
  */
 export function cleanAiResponse(text: string): string {
@@ -239,7 +251,7 @@ export async function askAI(
     throw new Error('No AI model candidates available. Please configure your API keys in Settings.');
   }
 
-  const isNative = Capacitor.isNativePlatform();
+  const isNative = isNativeOrDesktop();
   addSystemLog(`askAI starting: ${candidates.length} candidate models in queue (FallbackEnabled=${aiFallbackEnabled}, Native=${isNative})`, 'info');
 
   const failureLog: Array<{ model: string; provider: string; status: number | null; error: string }> = [];
@@ -327,7 +339,7 @@ export async function testSingleModel(
   apiKey: string,
   baseUrl: string
 ): Promise<{ ok: boolean; status: number; latencyMs: number; error?: string }> {
-  const isNative = Capacitor.isNativePlatform();
+  const isNative = isNativeOrDesktop();
   const startTime = performance.now();
 
   const candidate: FallbackCandidate = {
