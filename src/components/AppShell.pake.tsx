@@ -12,6 +12,9 @@ import { FocusPiPWindow } from './FocusPiPWindow';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
+import { LinuxTitleBar } from './LinuxTitleBar';
+import { BrainDumpModal } from './BrainDumpModal';
+import { AIChatModal } from './AIChatModal';
 
 // Fluent UI React Components
 import { FluentProvider, webDarkTheme, webLightTheme, type Theme } from '@fluentui/react-components';
@@ -41,6 +44,38 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
+  const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
+  const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [chatModalPrompt, setChatModalPrompt] = useState('');
+
+  // The Ctrl/Alt+B and Ctrl/Alt+A global shortcuts (handled in App.web.tsx,
+  // which dispatches these events regardless of platform) had nothing
+  // listening for them here — AppShell.web.tsx/.ios.tsx did, but this desktop
+  // variant never did, so the shortcuts silently did nothing on Windows/Linux.
+  useEffect(() => {
+    const handleOpenBrainDump = (e: Event) => {
+      const customEvent = e as CustomEvent<{ text?: string; autoAnalyze?: boolean }>;
+      if (customEvent.detail?.text) {
+        setBrainDumpInitialText(customEvent.detail.text);
+      }
+      setIsBrainDumpOpen(true);
+    };
+
+    const handleOpenAIChat = (e: Event) => {
+      const customEvent = e as CustomEvent<{ prompt?: string }>;
+      setChatModalPrompt(customEvent.detail?.prompt || '');
+      setIsChatModalOpen(true);
+    };
+
+    window.addEventListener('lifeos:openBrainDump', handleOpenBrainDump as EventListener);
+    window.addEventListener('lifeos:openAIChat', handleOpenAIChat as EventListener);
+
+    return () => {
+      window.removeEventListener('lifeos:openBrainDump', handleOpenBrainDump as EventListener);
+      window.removeEventListener('lifeos:openAIChat', handleOpenAIChat as EventListener);
+    };
+  }, []);
 
   const { isWeeklyWrapDay, isMonthlyWrapDay, weeklyWrapKey, monthlyWrapKey } = checkWrapStatus();
 
@@ -217,6 +252,7 @@ export function AppShell() {
 
   return (
     <FluentProvider theme={theme} className="w-full h-screen">
+      <LinuxTitleBar />
       <div
         className="flex h-screen w-full overflow-hidden text-foreground font-sans"
         style={{
@@ -416,6 +452,8 @@ export function AppShell() {
           </div>
         </main>
       </div>
+      <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
+      <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
     </FluentProvider>
   );
 }

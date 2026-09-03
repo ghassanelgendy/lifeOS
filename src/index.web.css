@@ -578,11 +578,65 @@ html.light[data-accent="amber"] {
   text-rendering: optimizeLegibility;
 }
 
-/* A custom in-page title bar was tried here and reverted — GNOME's native
-   window decorations already give a working, correctly-positioned
-   min/maximize/close, and hiding them (`--hide-window-decorations`) produced
-   a second redundant bar stacked on top instead of replacing the native one.
-   Stick to native decorations only on Linux. */
+/* Custom title bar (see LinuxTitleBar.tsx). Native decorations are hidden on
+   the Linux build (--hide-window-decorations) so this is the only
+   min/maximize/close affordance — hidden everywhere else since Windows keeps
+   its native decorations.
+   The double-bar seen when this was first tried was caused by
+   tauri-plugin-window-state restoring a *previous* build's cached
+   `decorated: true` on top of this build's --hide-window-decorations
+   (fixed upstream in the vendored pake-cli by excluding StateFlags::DECORATIONS
+   from the restored state), not by this component. */
+.linux-titlebar {
+  display: none;
+}
+.linux-platform .linux-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  z-index: 100000;
+  background-color: var(--color-card);
+  border-bottom: 1px solid var(--color-border);
+}
+.linux-platform .linux-titlebar-spacer {
+  flex: 1;
+  height: 100%;
+}
+.linux-platform .linux-titlebar-side {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 4px;
+}
+.linux-platform .linux-titlebar-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border-radius: 6px;
+  color: var(--color-muted-foreground);
+  background: transparent;
+  border: none;
+  -webkit-app-region: no-drag;
+}
+.linux-platform .linux-titlebar-btn:hover {
+  background-color: var(--color-secondary);
+  color: var(--color-foreground);
+}
+.linux-platform .linux-titlebar-btn-close:hover {
+  background-color: #e01b24;
+  color: white;
+}
+/* Push app content below the fixed title bar since native decorations are gone. */
+.linux-platform #root {
+  padding-top: 32px;
+}
 
 .linux-platform aside {
   background-color: var(--color-card) !important;

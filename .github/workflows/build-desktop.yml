@@ -80,8 +80,8 @@ jobs:
           APP_VERSION: ${{ env.VERSION }}
         run: node scripts/patch-pake-config.js
 
-      - name: Patch Pake tray support (runtime show/hide AppIndicator)
-        run: node scripts/patch-pake-tray.js
+      - name: Patch Pake for desktop fixes (tray toggle, window decorations, title bar)
+        run: node scripts/patch-pake-desktop.js
 
       - name: Build Application with Pake
         shell: bash
@@ -198,8 +198,8 @@ jobs:
           APP_VERSION: ${{ env.VERSION }}
         run: node scripts/patch-pake-config.js
 
-      - name: Patch Pake tray support (runtime show/hide AppIndicator)
-        run: node scripts/patch-pake-tray.js
+      - name: Patch Pake for desktop fixes (tray toggle, window decorations, title bar)
+        run: node scripts/patch-pake-desktop.js
 
       - name: Build Linux Native Packages with Pake
         shell: bash
@@ -209,6 +209,7 @@ jobs:
             --icon public/icon-main.png \
             --show-system-tray \
             --hide-on-close \
+            --hide-window-decorations \
             --inject scripts/pake-inject.js \
             --iterative-build \
             --use-local-file \
