@@ -439,6 +439,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const { data: completedTasks = [] } = useCompletedTasks();
   const { todayLogs, habits } = useWeeklyAdherence();
 
+  const isHabitDoneToday = useCallback(
+    (habitId: string) => todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed),
+    [todayLogs, todayStr]
+  );
+
   const todayScreentime = useTodayScreentime();
   const lastNightSleep = useLastNightSleepMinutes();
   const todaySleepMinutes = useSleepMinutesForDay(today);
@@ -1075,11 +1080,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const habitsDueToday = useMemo(
     () => quickViewHabits.filter((h) => habitMatchesDay(h, today)),
     [quickViewHabits, today],
-  );
-
-  const isHabitDoneToday = useCallback(
-    (habitId: string) => todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed),
-    [todayLogs, todayStr]
   );
 
   const completedTodayPrayers = useMemo(
