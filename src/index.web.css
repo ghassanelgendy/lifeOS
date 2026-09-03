@@ -79,7 +79,11 @@ body.dark {
   --color-gray-900: #18181b;
   --color-gray-950: #09090b;
   --radius-xl: 0.75rem;
-  --color-brand-primary: #0078d4; /* Fluent UI brand blue */
+  /* Follows the user's chosen accent color (see the data-accent overrides
+     below) instead of Fluent UI's hardcoded Microsoft blue, which is what
+     made the desktop nav's active-item indicator clash with every other
+     accent color. */
+  --color-brand-primary: var(--color-primary);
 }
 
 /* Light theme overrides (applied when html has class "light") */
