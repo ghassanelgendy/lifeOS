@@ -322,7 +322,7 @@ export default function Habits() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 pake-fluent-layout">
+    <div className="p-6 space-y-6 pake-fluent-layout">
       {/* Windows 11 Fluent App Header */}
       <div className="flex justify-between items-center bg-card/60 backdrop-blur-xl border border-border/40 p-4 rounded-xl shadow-sm">
         <div>
