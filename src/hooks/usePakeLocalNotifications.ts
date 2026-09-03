@@ -60,6 +60,39 @@ function generateEventInstances(event: any, daysAhead = 1): Date[] {
   return instances;
 }
 
+/**
+ * WebKitGTK (the Linux desktop webview) does not implement a permission
+ * prompt for the standard web Notification API, so `Notification.permission`
+ * gets stuck on 'default' forever and `new Notification(...)` silently never
+ * fires there — this is why desktop notifications only ever worked on
+ * Windows. Pake ships a native `send_notification` Tauri command (backed by
+ * tauri-plugin-notification / libnotify on Linux) that bypasses the webview
+ * notification stack entirely, so route through that when it's available
+ * and only fall back to the web API otherwise. Native notifications are
+ * fire-and-forget (no click callback), so any "open Quran page" follow-up
+ * only applies to the web-API fallback path.
+ */
+function sendNativeNotification(title: string, body: string, onClick?: () => void): void {
+  const invoke = (window as any).__TAURI__?.core?.invoke;
+  if (typeof invoke === 'function') {
+    invoke('send_notification', { params: { title, body, icon: '' } }).catch((err: unknown) => {
+      console.error('[PakeNotifications] Native send_notification failed', err);
+    });
+    return;
+  }
+
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const n = new Notification(title, { body });
+  if (onClick) {
+    n.onclick = () => {
+      window.focus();
+      onClick();
+    };
+  } else {
+    n.onclick = () => window.focus();
+  }
+}
+
 function isHabitScheduledForDate(habit: any, date: Date): boolean {
   if (habit.frequency === 'Daily') return true;
   const weekDays = habit.week_days ?? [];
@@ -122,7 +155,12 @@ export function usePakeLocalNotifications() {
     if (!isPake || !user || !tasks || !habits || !events) return;
 
     const checkInterval = setInterval(() => {
-      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+      // The native Tauri bridge doesn't need (or get) web Notification permission,
+      // so only gate on that permission when the bridge is unavailable — otherwise
+      // this would skip every check forever on Linux, where permission never
+      // leaves 'default'.
+      const hasNativeBridge = typeof (window as any).__TAURI__?.core?.invoke === 'function';
+      if (!hasNativeBridge && (typeof Notification === 'undefined' || Notification.permission !== 'granted')) return;
 
       const now = new Date();
       const nowMs = now.getTime();
@@ -147,13 +185,10 @@ export function usePakeLocalNotifications() {
             localStorage.setItem('pake_shown_notifications', JSON.stringify(Array.from(shownNotifsRef.current)));
 
             const isAr = /[\u0600-\u06FF]/.test(task.title);
-            const n = new Notification('Task Reminder', {
-              body: isAr ? `يلا عشان وراك مهمة ${task.title}` : `Ready to tackle ${task.title}`,
-              tag: key,
-            });
-            n.onclick = () => {
-              window.focus();
-            };
+            sendNativeNotification(
+              'Task Reminder',
+              isAr ? `يلا عشان وراك مهمة ${task.title}` : `Ready to tackle ${task.title}`
+            );
           }
         }
       });
@@ -225,12 +260,7 @@ export function usePakeLocalNotifications() {
               }
             }
 
-            const n = new Notification(notifTitle, {
-              body: notifBody,
-              tag: key,
-            });
-            n.onclick = () => {
-              window.focus();
+            sendNativeNotification(notifTitle, notifBody, () => {
               if (targetPage) {
                 localStorage.setItem('quran_active_page_v1', targetPage.toString());
                 localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: targetSurah }));
@@ -239,7 +269,7 @@ export function usePakeLocalNotifications() {
                   window.location.href = '/quran';
                 }
               }
-            };
+            });
           }
         }
       });
@@ -273,12 +303,7 @@ export function usePakeLocalNotifications() {
                   : `${event.title} is starting — Memorization: Page ${wird.memorization.page} (${wird.memorization.surahName})`;
               }
 
-              const n = new Notification(notifTitle, {
-                body: notifBody,
-                tag: key,
-              });
-              n.onclick = () => {
-                window.focus();
+              sendNativeNotification(notifTitle, notifBody, () => {
                 if (targetPage) {
                   localStorage.setItem('quran_active_page_v1', targetPage.toString());
                   localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: targetSurah }));
@@ -287,7 +312,7 @@ export function usePakeLocalNotifications() {
                     window.location.href = '/quran';
                   }
                 }
-              };
+              });
             }
           }
         });

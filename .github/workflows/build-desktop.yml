@@ -80,6 +80,9 @@ jobs:
           APP_VERSION: ${{ env.VERSION }}
         run: node scripts/patch-pake-config.js
 
+      - name: Patch Pake tray support (runtime show/hide AppIndicator)
+        run: node scripts/patch-pake-tray.js
+
       - name: Build Application with Pake
         shell: bash
         run: |
@@ -194,6 +197,9 @@ jobs:
         env:
           APP_VERSION: ${{ env.VERSION }}
         run: node scripts/patch-pake-config.js
+
+      - name: Patch Pake tray support (runtime show/hide AppIndicator)
+        run: node scripts/patch-pake-tray.js
 
       - name: Build Linux Native Packages with Pake
         shell: bash
