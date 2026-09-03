@@ -341,15 +341,27 @@ jobs:
       - name: Create or update GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.changelog.outputs.tag }}
+          RELEASE_NAME: ${{ steps.changelog.outputs.name }}
+          RELEASE_BODY: ${{ steps.changelog.outputs.body }}
         shell: bash
         run: |
-          TAG="${{ steps.changelog.outputs.tag }}"
-
+          # RELEASE_BODY contains backticks (e.g. `v1.10.0..v1.10.1`) and other
+          # shell metacharacters — splicing it via ${{ }} directly into this
+          # script (as opposed to referencing the env var) would let bash try
+          # to command-substitute it, failing with "...: command not found".
           # Delete existing release for this tag if it exists (allows re-running)
           gh release delete "$TAG" --yes 2>/dev/null || true
 
+          # actions/upload-artifact preserves the source directory structure,
+          # so the merged release-artifacts/ tree can contain subdirectories
+          # (e.g. release-artifacts/linux-dist/) alongside the files — gh
+          # release create rejects a directory as an asset, so only pass it
+          # actual files instead of a glob that can match one.
+          mapfile -t ASSETS < <(find release-artifacts -type f)
+
           gh release create "$TAG" \
-            --title "${{ steps.changelog.outputs.name }}" \
-            --notes "${{ steps.changelog.outputs.body }}" \
+            --title "$RELEASE_NAME" \
+            --notes "$RELEASE_BODY" \
             --latest \
-            release-artifacts/*
+            "${ASSETS[@]}"
