@@ -1,5 +1,6 @@
-// Patches the installed pake-cli's Rust source for a handful of desktop
-// (mainly Linux) fixes that need to live upstream of the JS/CSS layer:
+// Patches the installed pake-cli's Rust source (and, for #7, its compiled
+// JS) for a handful of desktop (mainly Linux) fixes that need to live
+// upstream of the JS/CSS layer:
 //
 // 1. A working runtime tray/AppIndicator toggle — pake-cli only builds the
 //    system tray once at startup from the build-time --show-system-tray
@@ -18,6 +19,14 @@
 //    thread, so the Linux-only custom title bar (native decorations are
 //    hidden there) can mirror the user's button-layout gsetting instead of
 //    hard-coding a right-aligned Windows/macOS-style row.
+// 7. A `StartupWMClass` line in the generated .desktop entry. pake-cli's
+//    template omits it, so window managers that match Alt-Tab/taskbar/dock
+//    entries to launchers by WM_CLASS (most non-GNOME-Wayland setups — the
+//    same class of bug tracked upstream for JetBrains IDEs as JBR-9114)
+//    can't resolve this app's icon and fall back to a generic one. This
+//    patches the compiled CLI (dist/cli.js), not the Rust source, since the
+//    .desktop content is built in JS before the Rust side ever runs, and it
+//    is shared by both the .deb and the AppImage.
 //
 // Runs after `pake-cli` is installed (see package.json / build-desktop.yml)
 // and before `pake` builds the app, mirroring patch-pake-config.js's
@@ -52,6 +61,10 @@ function findPakeCliSrcTauri() {
   } catch {}
 
   return candidates.find((p) => fs.existsSync(path.join(p, 'src', 'lib.rs')));
+}
+
+function findPakeCliDistCliJs(srcTauri) {
+  return path.join(path.dirname(srcTauri), 'dist', 'cli.js');
 }
 
 function replaceOnce(filePath, from, to, label) {
@@ -257,6 +270,23 @@ pub fn get_gnome_button_layout() -> Result<String, String> {
             // --- Menu Construction Start ---`,
     'lib.rs: added gsettings-monitor thread for the title bar'
   );
+
+  // 7. Add StartupWMClass to the generated .desktop entry (compiled JS, not
+  //    Rust — see header comment). Keyed on the desktop file's own id
+  //    (`com.pake.${linuxName}`) rather than the binary name, since that's
+  //    also the app's Tauri `identifier`/GTK application id, which is what
+  //    the packaged window's actual WM_CLASS is expected to match.
+  const distCliJs = findPakeCliDistCliJs(srcTauri);
+  if (fs.existsSync(distCliJs)) {
+    replaceOnce(
+      distCliJs,
+      "const desktopContent = buildLinuxDesktopContent(name, options.title, linuxBinaryName);",
+      "const desktopContent = buildLinuxDesktopContent(name, options.title, linuxBinaryName).replace('StartupNotify=true', `StartupWMClass=com.pake.${linuxName}\\nStartupNotify=true`);",
+      'cli.js: added StartupWMClass to the generated .desktop entry'
+    );
+  } else {
+    console.warn(`⚠️ Could not locate pake-cli's dist/cli.js at ${distCliJs}; skipping StartupWMClass patch.`);
+  }
 
   console.log('✅ pake-cli desktop patch applied.');
 } catch (err) {

@@ -586,7 +586,21 @@ html.light[data-accent="amber"] {
    tauri-plugin-window-state restoring a *previous* build's cached
    `decorated: true` on top of this build's --hide-window-decorations
    (fixed upstream in the vendored pake-cli by excluding StateFlags::DECORATIONS
-   from the restored state), not by this component. */
+   from the restored state), not by this component.
+   This used to be `position: fixed` with a very high z-index, pinned above
+   the whole app so it would never end up hidden behind app content. That
+   backfired two ways: (1) every 100vh-based layout (h-screen, etc.) in the
+   app was still exactly viewport-height, so the `padding-top: 32px` added to
+   #root to make room for the fixed bar pushed those layouts 32px past the
+   bottom of the window instead of shrinking them, clipping the last 32px of
+   every page; and (2) portaled overlays (modals, the command palette) sit at
+   a higher DOM z-order than the title bar, so the fixed bar visually painted
+   over their top edge instead of staying behind them. Laying it out as a
+   normal flex child that takes real space at the top of the window fixes
+   both: the app content below it gets an accurate, shrunk height for free
+   via flexbox, and full-screen overlays naturally render on top of it (a
+   modal covering the whole window is expected; losing 32px of every page to
+   an invisible clipped region is not). */
 .linux-titlebar {
   display: none;
 }
@@ -594,12 +608,9 @@ html.light[data-accent="amber"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
+  width: 100%;
   height: 32px;
-  z-index: 100000;
   background-color: var(--color-card);
   border-bottom: 1px solid var(--color-border);
 }
@@ -632,10 +643,6 @@ html.light[data-accent="amber"] {
 .linux-platform .linux-titlebar-btn-close:hover {
   background-color: #e01b24;
   color: white;
-}
-/* Push app content below the fixed title bar since native decorations are gone. */
-.linux-platform #root {
-  padding-top: 32px;
 }
 
 .linux-platform aside {

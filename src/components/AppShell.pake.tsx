@@ -251,10 +251,10 @@ export function AppShell() {
   }, [isOnTasks, isOnQuran, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
 
   return (
-    <FluentProvider theme={theme} className="w-full h-screen">
+    <FluentProvider theme={theme} className="w-full h-screen flex flex-col overflow-hidden">
       <LinuxTitleBar />
       <div
-        className="flex h-screen w-full overflow-hidden text-foreground font-sans"
+        className="flex flex-1 min-h-0 w-full overflow-hidden text-foreground font-sans"
         style={{
           backgroundColor: 'var(--colorNeutralBackground1)',
         }}
