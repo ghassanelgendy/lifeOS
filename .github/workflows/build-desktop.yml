@@ -347,9 +347,10 @@ jobs:
         shell: bash
         run: |
           # RELEASE_BODY contains backticks (e.g. `v1.10.0..v1.10.1`) and other
-          # shell metacharacters — splicing it via ${{ }} directly into this
-          # script (as opposed to referencing the env var) would let bash try
-          # to command-substitute it, failing with "...: command not found".
+          # shell metacharacters — splicing it directly into this script via a
+          # GitHub Actions expression (as opposed to referencing the env var)
+          # would let bash try to command-substitute it, failing with
+          # "...: command not found".
           # Delete existing release for this tag if it exists (allows re-running)
           gh release delete "$TAG" --yes 2>/dev/null || true
 
