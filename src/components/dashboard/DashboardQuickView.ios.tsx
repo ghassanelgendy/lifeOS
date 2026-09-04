@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic, BookOpen } from 'lucide-react';
+import { getSpecificSurahHabitTarget } from '../../../lib/quran-memorizer';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
@@ -194,6 +195,7 @@ function DueTodayRow({
   const completedCount = subtasks ? subtasks.filter((s) => s.is_completed).length : 0;
   const totalCount = subtasks ? subtasks.length : 0;
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const quranTarget = kind === 'habit' ? getSpecificSurahHabitTarget(title, subtitle) : null;
 
   return (
     <div
@@ -323,6 +325,31 @@ function DueTodayRow({
               <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
                 {kindLabel}
               </span>
+              {quranTarget && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    localStorage.setItem('quran_active_page_v1', quranTarget.page.toString());
+                    localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: quranTarget.surahId }));
+                    window.dispatchEvent(new CustomEvent('lifeos:openQuran', {
+                      detail: {
+                        page: quranTarget.page,
+                        surah: quranTarget.surahId,
+                        ayah: quranTarget.ayahNumber || 1,
+                        mode: 'reading',
+                        tab: 'reader',
+                      }
+                    }));
+                    window.location.href = `/quran?page=${quranTarget.page}&surah=${quranTarget.surahId}&ayah=${quranTarget.ayahNumber || 1}&mode=reading&tab=reader`;
+                  }}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                  title={`فتح ${quranTarget.surahName} في المصحف`}
+                >
+                  <BookOpen size={10} />
+                  <span>{quranTarget.label}</span>
+                </button>
+              )}
               {hasSubtasks && (
                 <button
                   type="button"

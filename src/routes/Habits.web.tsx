@@ -16,7 +16,9 @@ import {
   BellOff,
   ChevronDown,
   ChevronRight,
+  BookOpen,
 } from 'lucide-react';
+import { getSpecificSurahHabitTarget } from '../../lib/quran-memorizer';
 import {
   format,
   startOfWeek,
@@ -269,6 +271,21 @@ export default function Habits() {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleOpenQuranTarget = (target: { page: number; surahId: number; ayahNumber?: number }) => {
+    localStorage.setItem('quran_active_page_v1', target.page.toString());
+    localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: target.surahId }));
+    window.dispatchEvent(new CustomEvent('lifeos:openQuran', {
+      detail: {
+        page: target.page,
+        surah: target.surahId,
+        ayah: target.ayahNumber || 1,
+        mode: 'reading',
+        tab: 'reader'
+      }
+    }));
+    navigate(`/quran?page=${target.page}&surah=${target.surahId}&ayah=${target.ayahNumber || 1}&mode=reading&tab=reader`);
+  };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
@@ -684,8 +701,26 @@ export default function Habits() {
                         className="rounded-lg border border-border p-3 shadow-sm bg-card"
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0 flex-wrap">
                             <span className="font-medium truncate">{habit.title}</span>
+                            {(() => {
+                              const quranTarget = getSpecificSurahHabitTarget(habit.title, habit.description);
+                              if (!quranTarget) return null;
+                              return (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenQuranTarget(quranTarget);
+                                  }}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                                  title={`فتح ${quranTarget.surahName} في المصحف`}
+                                >
+                                  <BookOpen size={10} />
+                                  <span>{quranTarget.label}</span>
+                                </button>
+                              );
+                            })()}
                           </div>
                           <div className="flex items-center gap-1 flex-shrink-0">
                             <button
@@ -1063,8 +1098,26 @@ export default function Habits() {
                                 <div className="w-6 h-6 rounded-full border-2 border-muted-foreground" />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <h3 className="font-medium">{habit.title}</h3>
+                                  {(() => {
+                                    const quranTarget = getSpecificSurahHabitTarget(habit.title, habit.description);
+                                    if (!quranTarget) return null;
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenQuranTarget(quranTarget);
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                        title={`فتح ${quranTarget.surahName} في المصحف`}
+                                      >
+                                        <BookOpen size={11} />
+                                        <span>{quranTarget.label}</span>
+                                      </button>
+                                    );
+                                  })()}
                                   <button
                                     type="button"
                                     onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -1163,13 +1216,31 @@ export default function Habits() {
                                 {isDetox ? <span className="text-xs font-bold">R</span> : <Check size={24} />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
                                   <h3 className={cn(
                                     "font-medium",
                                     !isDetox && "line-through text-muted-foreground"
                                   )}>
                                     {habit.title}
                                   </h3>
+                                  {(() => {
+                                    const quranTarget = getSpecificSurahHabitTarget(habit.title, habit.description);
+                                    if (!quranTarget) return null;
+                                    return (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenQuranTarget(quranTarget);
+                                        }}
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                        title={`فتح ${quranTarget.surahName} في المصحف`}
+                                      >
+                                        <BookOpen size={11} />
+                                        <span>{quranTarget.label}</span>
+                                      </button>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                               <div className="w-1.5 self-stretch rounded-full" style={{ backgroundColor: habit.color }} />

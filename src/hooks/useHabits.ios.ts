@@ -430,7 +430,20 @@ export function useLogHabit() {
             .select('title')
             .eq('id', habitId)
             .maybeSingle();
-          if (h?.title) advanceWirdOnHabitComplete(h.title);
+          if (h?.title) {
+            const adv = advanceWirdOnHabitComplete(h.title);
+            if (adv) {
+              const label =
+                adv.kind === 'memorization'
+                  ? `الورد القادم للحفظ: سورة ${adv.surahName} (الآية ${adv.ayahNumber}) • صفحة ${adv.page}`
+                  : `الورد القادم للتلاوة: سورة ${adv.surahName} (الآية ${adv.ayahNumber}) • صفحة ${adv.page}`;
+              await supabase
+                .from('habits')
+                .update({ description: label })
+                .eq('id', habitId);
+              queryClient.invalidateQueries({ queryKey: HABITS_KEY });
+            }
+          }
         } catch {}
       }
 
