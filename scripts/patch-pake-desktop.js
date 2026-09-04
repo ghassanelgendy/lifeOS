@@ -144,10 +144,11 @@ pub fn set_dock_badge(app: AppHandle, count: Option<i64>) -> Result<(), String> 
         set_dock_badge_label, set_zoom, update_theme_mode, webview_navigate,
     },`,
     `    invoke::{
-        clear_dock_badge, download_file, increment_dock_badge, send_notification, set_dock_badge,
-        set_dock_badge_label, set_tray_visible, set_zoom, update_theme_mode, webview_navigate,
+        clear_dock_badge, download_file, get_gnome_button_layout, increment_dock_badge,
+        send_notification, set_dock_badge, set_dock_badge_label, set_tray_visible, set_zoom,
+        update_theme_mode, webview_navigate,
     },`,
-    'lib.rs: imported set_tray_visible'
+    'lib.rs: imported set_tray_visible + get_gnome_button_layout'
   );
   replaceOnce(
     libRs,
