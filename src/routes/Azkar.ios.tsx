@@ -133,8 +133,8 @@ export default function AzkarRoute() {
   ]);
 
   // Swipe handling:
-  // In RTL Arabic reading order, swipe left (drag to left, dx < 0) advances to the next item,
-  // swipe right (drag to right, dx > 0) goes to previous item.
+  // In RTL Arabic reading order, swipe right (drag to the right, dx > 0) advances to the next item,
+  // swipe left (drag to the left, dx < 0) goes to the previous item.
   // We check both offset distance (> 45px) and velocity (> 100px/s) for responsive swiping.
   const handleDragEnd = useCallback(
     (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -144,9 +144,9 @@ export default function AzkarRoute() {
       const isSwipeLeft = dx < -45 || vx < -100;
       const isSwipeRight = dx > 45 || vx > 100;
 
-      if (isSwipeLeft) {
+      if (isSwipeRight) {
         next();
-      } else if (isSwipeRight) {
+      } else if (isSwipeLeft) {
         prev();
       }
 
@@ -283,7 +283,7 @@ export default function AzkarRoute() {
               </div>
 
               {/* Zekr text container - vertically centered */}
-              <div className="flex flex-1 flex-col items-center justify-center px-6 py-4 overflow-y-auto">
+              <div className="flex flex-1 flex-col items-center justify-center overflow-hidden px-6 py-4">
                 <p
                   className={cn(
                     'font-arabic-quran text-center font-bold tracking-normal transition-colors duration-200',
@@ -348,7 +348,7 @@ export default function AzkarRoute() {
 
                 {/* Gesture hint */}
                 <div className="mt-4 text-center text-[11px] text-muted-foreground select-none">
-                  اضغط للعد • اسحب لليسار للتالي • اسحب لليمين للسابق
+                  اضغط للعد • اسحب لليمين للتالي • اسحب لليسار للسابق
                 </div>
               </div>
             </motion.div>
