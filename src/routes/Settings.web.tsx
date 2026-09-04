@@ -39,7 +39,7 @@ import {
   type AccentTheme,
   type DashboardMode,
 } from '../stores/useUIStore';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
@@ -52,6 +52,7 @@ import { Link } from 'react-router-dom';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 import { AISettingsSection } from '../components/AISettingsSection';
+import { BankAccountsSettingsSection } from '../components/BankAccountsSettingsSection';
 import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
@@ -85,11 +86,13 @@ const SETTINGS_NAV = [
   { id: 'account', label: 'Account' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'defaults', label: 'App defaults' },
+  { id: 'accounts', label: 'Bank accounts' },
   { id: 'layout', label: 'Layout & widgets' },
   { id: 'ai', label: 'AI Integration' },
   { id: 'notifications', label: 'Notifications' },
   { id: 'prayer', label: 'Prayer times' },
   { id: 'habits', label: 'Habits' },
+  { id: 'goals', label: 'Goals & targets' },
   { id: 'privacy', label: 'Privacy & analytics' },
   { id: 'data', label: 'Data & backup' },
   { id: 'extension', label: 'Browser Extension' },
@@ -98,6 +101,68 @@ const SETTINGS_NAV = [
 ] as const;
 
 type LayoutWidgetPage = 'habits' | 'sleep';
+
+/** Single shared toggle-switch look used across every settings section, so on/off controls
+ *  render identically instead of each section rolling its own button + color. */
+function ToggleSwitch({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      className={cn(
+        "relative w-11 h-6 rounded-full shrink-0 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        checked ? "bg-primary" : "bg-secondary"
+      )}
+    >
+      <span
+        className={cn(
+          "absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow transition-transform",
+          checked ? "translate-x-5" : "translate-x-0"
+        )}
+      />
+    </button>
+  );
+}
+
+/** A settings row: icon + title + description on the left, a single control on the right.
+ *  Used to keep every "toggle-style" row in this page visually identical. */
+function SettingsRow({
+  icon,
+  title,
+  description,
+  control,
+  divider = true,
+}: {
+  icon?: React.ReactNode;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  control: React.ReactNode;
+  divider?: boolean;
+}) {
+  return (
+    <div className={cn("flex items-center justify-between gap-4", divider && "pt-4 border-t border-border first:pt-0 first:border-t-0")}>
+      <div className="flex items-center gap-3 min-w-0">
+        {icon}
+        <div className="min-w-0">
+          <p className="font-medium">{title}</p>
+          {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+        </div>
+      </div>
+      {control}
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const { user, signOut } = useAuth();
@@ -116,6 +181,8 @@ export default function SettingsPage() {
     setPlatformUIOverride,
     showSystemTray,
     setShowSystemTray,
+    showAppFooter,
+    setShowAppFooter,
     mobileNavItems,
     setMobileNavItems,
     desktopNavOrder,
@@ -172,6 +239,67 @@ export default function SettingsPage() {
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
+
+  // Report targets are typed numbers, so they're batched into a draft and only written to the
+  // store (and the "current" trackers used elsewhere in the app) when Save is pressed — that
+  // avoids persisting a half-typed number on every keystroke.
+  const [targetDraft, setTargetDraft] = useState({
+    sleep: reportSleepTarget,
+    screen: reportScreenTarget,
+    habits: reportHabitsTarget,
+    tasks: reportTasksTarget,
+  });
+  const [targetsSaved, setTargetsSaved] = useState(false);
+  const targetsDirty =
+    targetDraft.sleep !== reportSleepTarget ||
+    targetDraft.screen !== reportScreenTarget ||
+    targetDraft.habits !== reportHabitsTarget ||
+    targetDraft.tasks !== reportTasksTarget;
+
+  useEffect(() => {
+    if (targetsDirty) return; // don't clobber an in-progress edit if the store changes elsewhere (e.g. autopilot)
+    setTargetDraft({
+      sleep: reportSleepTarget,
+      screen: reportScreenTarget,
+      habits: reportHabitsTarget,
+      tasks: reportTasksTarget,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportSleepTarget, reportScreenTarget, reportHabitsTarget, reportTasksTarget]);
+
+  const handleSaveTargets = () => {
+    setReportSleepTarget(targetDraft.sleep);
+    setReportScreenTarget(targetDraft.screen);
+    setReportHabitsTarget(targetDraft.habits);
+    setReportTasksTarget(targetDraft.tasks);
+    if (!reportAutopilotEnabled) {
+      setReportSleepTargetCurrent(targetDraft.sleep);
+      setReportScreenTargetCurrent(targetDraft.screen);
+      setReportHabitsTargetCurrent(targetDraft.habits);
+    }
+    setTargetsSaved(true);
+    setTimeout(() => setTargetsSaved(false), 2000);
+  };
+
+  const handleDiscardTargets = () => {
+    setTargetDraft({
+      sleep: reportSleepTarget,
+      screen: reportScreenTarget,
+      habits: reportHabitsTarget,
+      tasks: reportTasksTarget,
+    });
+  };
+
+  const handleToggleAutopilot = () => {
+    const nextState = !reportAutopilotEnabled;
+    setReportAutopilotEnabled(nextState);
+    if (nextState) {
+      // Initialize current targets to the (saved) ultimate targets
+      setReportSleepTargetCurrent(reportSleepTarget);
+      setReportScreenTargetCurrent(reportScreenTarget);
+      setReportHabitsTargetCurrent(reportHabitsTarget);
+    }
+  };
 
   useEffect(() => {
     if (prayerLocationMode !== 'city') {
@@ -441,29 +569,18 @@ export default function SettingsPage() {
           </div>
 
           {/* Desktop Tray & App Indicator Toggle */}
-          <div className="pt-4 border-t border-border flex items-center justify-between">
-            <div>
-              <p className="font-medium mb-0.5">Desktop System Tray & App Indicator</p>
-              <p className="text-sm text-muted-foreground">
-                Show or hide the background status icon / AppIndicator in the Linux and Windows system tray.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowSystemTray(!showSystemTray)}
-              className={cn(
-                "relative w-12 h-6 rounded-full transition-colors shrink-0",
-                showSystemTray ? "bg-primary" : "bg-secondary"
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
-                  showSystemTray ? "translate-x-7" : "translate-x-1"
-                )}
-              />
-            </button>
-          </div>
+          <SettingsRow
+            title="Desktop System Tray & App Indicator"
+            description="Show or hide the background status icon / AppIndicator in the Linux and Windows system tray."
+            control={<ToggleSwitch checked={showSystemTray} onChange={() => setShowSystemTray(!showSystemTray)} label="Desktop system tray" />}
+          />
+
+          {/* App Footer Toggle */}
+          <SettingsRow
+            title="Footer"
+            description={'Show or hide the bottom bar ("Made with ❤️ by Ghassan", GitHub link, and sync status).'}
+            control={<ToggleSwitch checked={showAppFooter} onChange={() => setShowAppFooter(!showAppFooter)} label="App footer" />}
+          />
         </div>
       </section>
 
@@ -550,6 +667,8 @@ export default function SettingsPage() {
         </div>
       </section>
     </div>
+
+    <BankAccountsSettingsSection />
 
     <div id="settings-layout" className="space-y-10 scroll-mt-20">
       {/* Page Widgets */}
@@ -812,53 +931,10 @@ export default function SettingsPage() {
               {pushStatus}
             </p>
           )}
-
-          {/* Prayer reminders */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="flex items-center gap-3">
-              <Bell size={20} />
-              <div>
-                <p className="font-medium">Prayer reminders</p>
-                <p className="text-sm text-muted-foreground">
-                  Get notified at each prayer time (Fajr, Dhuhr, Asr, Maghrib, Isha). Enable push above first, then turn on here. You can choose which prayers and quiet hours in <Link to="/habits" className="text-primary underline">Habits</Link>.
-                </p>
-              </div>
-            </div>
-            {push.supported && push.vapidConfigured && push.isEnabled ? (
-              prayerNotif.isLoading ? (
-                <span className="text-sm text-muted-foreground">Loading...</span>
-              ) : prayerNotif.prayerHabitsCount === 0 ? (
-                <Link to="/habits">
-                  <Button variant="outline">Set up in Habits</Button>
-                </Link>
-              ) : (
-                <div className="flex items-center gap-2">
-                  {prayerNotif.allEnabled ? (
-                    <Button
-                      variant="outline"
-                      onClick={() => prayerNotif.setAllEnabled(false)}
-                      disabled={prayerNotif.isUpdating}
-                    >
-                      {prayerNotif.isUpdating ? '...' : 'Turn off'}
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() => prayerNotif.setAllEnabled(true)}
-                      disabled={prayerNotif.isUpdating}
-                    >
-                      {prayerNotif.isUpdating ? '...' : 'Turn on'}
-                    </Button>
-                  )}
-                </div>
-              )
-            ) : (
-              <p className="text-sm text-muted-foreground">Enable push above first.</p>
-            )}
-          </div>
         </div>
       </section>
 
-      {/* Prayer times location */}
+      {/* Prayer times location + prayer reminders (kept together — both configure the same feature) */}
       <section id="settings-prayer" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Prayer times</h2>
@@ -961,6 +1037,46 @@ export default function SettingsPage() {
               )}
             </div>
           )}
+
+          {/* Prayer reminders */}
+          <SettingsRow
+            icon={<Bell size={20} className="text-muted-foreground" />}
+            title="Prayer reminders"
+            description={
+              <>
+                Get notified at each prayer time (Fajr, Dhuhr, Asr, Maghrib, Isha). Enable push in Notifications first,
+                then turn on here. Choose which prayers and quiet hours in <Link to="/habits" className="text-primary underline">Habits</Link>.
+              </>
+            }
+            control={
+              push.supported && push.vapidConfigured && push.isEnabled ? (
+                prayerNotif.isLoading ? (
+                  <span className="text-sm text-muted-foreground">Loading...</span>
+                ) : prayerNotif.prayerHabitsCount === 0 ? (
+                  <Link to="/habits">
+                    <Button variant="outline">Set up in Habits</Button>
+                  </Link>
+                ) : prayerNotif.allEnabled ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => prayerNotif.setAllEnabled(false)}
+                    disabled={prayerNotif.isUpdating}
+                  >
+                    {prayerNotif.isUpdating ? '...' : 'Turn off'}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => prayerNotif.setAllEnabled(true)}
+                    disabled={prayerNotif.isUpdating}
+                  >
+                    {prayerNotif.isUpdating ? '...' : 'Turn on'}
+                  </Button>
+                )
+              ) : (
+                <p className="text-sm text-muted-foreground text-right max-w-[12rem]">Enable push in Notifications first.</p>
+              )
+            }
+          />
         </div>
       </section>
 
@@ -994,216 +1110,143 @@ export default function SettingsPage() {
         </div>
       </section>
 
+      {/* Goals & Report Targets — batched: typed numbers only commit when you press Save */}
+      <section id="settings-goals" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border">
+          <h2 className="font-semibold">Goals & Report Targets</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Targets used to calculate your composite weekly and monthly report scores. Edit the numbers below, then Save.
+          </p>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                Sleep Target (hours)
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={24}
+                value={targetDraft.sleep}
+                onChange={(e) => setTargetDraft((d) => ({ ...d, sleep: Number(e.target.value) || 0 }))}
+              />
+              {reportAutopilotEnabled && (
+                <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                  Current active: {reportSleepTargetCurrent}h
+                </span>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                Screen Time Limit (hours)
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={24}
+                value={targetDraft.screen}
+                onChange={(e) => setTargetDraft((d) => ({ ...d, screen: Number(e.target.value) || 0 }))}
+              />
+              {reportAutopilotEnabled && (
+                <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                  Current active: {reportScreenTargetCurrent}h
+                </span>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                Habits Target (%)
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={targetDraft.habits}
+                onChange={(e) => setTargetDraft((d) => ({ ...d, habits: Number(e.target.value) || 0 }))}
+              />
+              {reportAutopilotEnabled && (
+                <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                  Current active: {reportHabitsTargetCurrent}%
+                </span>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                Daily Tasks Target
+              </label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={targetDraft.tasks}
+                onChange={(e) => setTargetDraft((d) => ({ ...d, tasks: Number(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+
+          {/* Save / discard bar for the drafted numbers above — only shown once something changed */}
+          {targetsDirty ? (
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-border animate-in fade-in slide-in-from-bottom-1 duration-200">
+              <span className="text-xs text-muted-foreground mr-auto">Unsaved changes</span>
+              <Button variant="outline" size="sm" onClick={handleDiscardTargets}>
+                Discard
+              </Button>
+              <Button size="sm" onClick={handleSaveTargets}>
+                Save changes
+              </Button>
+            </div>
+          ) : targetsSaved ? (
+            <div className="flex items-center justify-end gap-1.5 pt-3 border-t border-border text-xs text-primary font-medium animate-in fade-in duration-200">
+              <Check size={14} /> Saved
+            </div>
+          ) : null}
+
+          {/* Autopilot Targets Option — instant toggle, it doesn't need a draft/save step */}
+          <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Target Autopilot</span>
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase">Smart Adjust</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xl">
+                When enabled, sleep, screen time, and habit targets will automatically adapt every Saturday to match your actual routine (adjusting halfway between your current target and actual performance) to keep goals realistic and progressive.
+              </p>
+            </div>
+            <ToggleSwitch checked={reportAutopilotEnabled} onChange={handleToggleAutopilot} label="Target autopilot" />
+          </div>
+        </div>
+      </section>
+
       {/* Privacy */}
       <section id="settings-privacy" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Privacy & analytics</h2>
         </div>
         <div className="p-4 space-y-4">
-          {/* Privacy Mode */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield size={20} />
-              <div>
-                <p className="font-medium">Privacy Mode</p>
-                <p className="text-sm text-muted-foreground">Blur sensitive data like numbers and amounts</p>
-              </div>
-            </div>
-            <button
-              onClick={togglePrivacyMode}
-              className={cn(
-                "relative w-12 h-6 rounded-full transition-colors",
-                privacyMode ? "bg-green-500" : "bg-secondary"
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
-                  privacyMode ? "translate-x-7" : "translate-x-1"
-                )}
-              />
-            </button>
-          </div>
-
-          {/* Analytics Tips */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="flex items-center gap-3">
-              <Info size={20} />
-              <div>
-                <p className="font-medium">Analytics tips</p>
-                <p className="text-sm text-muted-foreground">Show explanations for each Analytics section</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setAnalyticsShowTips(!analyticsShowTips)}
-              className={cn(
-                "relative w-12 h-6 rounded-full transition-colors",
-                analyticsShowTips ? "bg-green-500" : "bg-secondary"
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
-                  analyticsShowTips ? "translate-x-7" : "translate-x-1"
-                )}
-              />
-            </button>
-          </div>
-
-          {/* Show Wrapped Report */}
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="flex items-center gap-3">
-              <Info size={20} />
-              <div>
-                <p className="font-medium">
-                  {showWrappedReport ? "Wrap Report: Always Show" : "Wrap Report: Scheduled"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {showWrappedReport
-                    ? "Show wrap report even if it's not Saturday or the last day of the month"
-                    : "Show only on the last 2 days of the week (Sat-Sun) or the last 3 days of the month"}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={() => setShowWrappedReport(!showWrappedReport)}
-              className={cn(
-                "relative w-12 h-6 rounded-full transition-colors",
-                showWrappedReport ? "bg-green-500" : "bg-secondary"
-              )}
-            >
-              <div
-                className={cn(
-                  "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
-                  showWrappedReport ? "translate-x-7" : "translate-x-1"
-                )}
-              />
-            </button>
-          </div>
-
-          {/* Report Targets */}
-          <div className="pt-4 border-t border-border space-y-4">
-            <div>
-              <p className="font-medium">Report Targets</p>
-              <p className="text-sm text-muted-foreground">
-                Customize targets used to calculate your composite weekly and monthly report scores.
-              </p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  Sleep Target (hours)
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={24}
-                  value={reportSleepTarget}
-                  onChange={(e) => {
-                    const val = Number(e.target.value) || 8;
-                    setReportSleepTarget(val);
-                    if (!reportAutopilotEnabled) setReportSleepTargetCurrent(val);
-                  }}
-                />
-                {reportAutopilotEnabled && (
-                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
-                    Current active: {reportSleepTargetCurrent}h
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  Screen Time Limit (hours)
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={24}
-                  value={reportScreenTarget}
-                  onChange={(e) => {
-                    const val = Number(e.target.value) || 8;
-                    setReportScreenTarget(val);
-                    if (!reportAutopilotEnabled) setReportScreenTargetCurrent(val);
-                  }}
-                />
-                {reportAutopilotEnabled && (
-                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
-                    Current active: {reportScreenTargetCurrent}h
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  Habits Target (%)
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={reportHabitsTarget}
-                  onChange={(e) => {
-                    const val = Number(e.target.value) || 100;
-                    setReportHabitsTarget(val);
-                    if (!reportAutopilotEnabled) setReportHabitsTargetCurrent(val);
-                  }}
-                />
-                {reportAutopilotEnabled && (
-                  <span className="text-[10px] text-yellow-500 font-medium block mt-1">
-                    Current active: {reportHabitsTargetCurrent}%
-                  </span>
-                )}
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                  Daily Tasks Target
-                </label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={reportTasksTarget}
-                  onChange={(e) => setReportTasksTarget(Number(e.target.value) || 5)}
-                />
-              </div>
-            </div>
-
-            {/* Autopilot Targets Option */}
-            <div className="mt-6 pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-semibold text-primary uppercase tracking-wider">Target Autopilot</span>
-                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase">Smart Adjust</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-                  When enabled, sleep, screen time, and habit targets will automatically adapt every Saturday to match your actual routine (adjusting halfway between your current target and actual performance) to keep goals realistic and progressive.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  const nextState = !reportAutopilotEnabled;
-                  setReportAutopilotEnabled(nextState);
-                  if (nextState) {
-                    // Initialize current targets to ultimate targets
-                    setReportSleepTargetCurrent(reportSleepTarget);
-                    setReportScreenTargetCurrent(reportScreenTarget);
-                    setReportHabitsTargetCurrent(reportHabitsTarget);
-                  }
-                }}
-                className={cn(
-                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background",
-                  reportAutopilotEnabled ? "bg-primary" : "bg-secondary"
-                )}
-              >
-                <span
-                  className={cn(
-                    "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-background shadow-lg ring-0 transition duration-200 ease-in-out",
-                    reportAutopilotEnabled ? "translate-x-5" : "translate-x-0"
-                  )}
-                />
-              </button>
-            </div>
-          </div>
+          <SettingsRow
+            icon={<Shield size={20} className="text-muted-foreground" />}
+            title="Privacy Mode"
+            description="Blur sensitive data like numbers and amounts"
+            control={<ToggleSwitch checked={privacyMode} onChange={togglePrivacyMode} label="Privacy mode" />}
+            divider={false}
+          />
+          <SettingsRow
+            icon={<Info size={20} className="text-muted-foreground" />}
+            title="Analytics tips"
+            description="Show explanations for each Analytics section"
+            control={<ToggleSwitch checked={analyticsShowTips} onChange={() => setAnalyticsShowTips(!analyticsShowTips)} label="Analytics tips" />}
+          />
+          <SettingsRow
+            icon={<Info size={20} className="text-muted-foreground" />}
+            title={showWrappedReport ? "Wrap Report: Always Show" : "Wrap Report: Scheduled"}
+            description={
+              showWrappedReport
+                ? "Show wrap report even if it's not Saturday or the last day of the month"
+                : "Show only on the last 2 days of the week (Sat-Sun) or the last 3 days of the month"
+            }
+            control={<ToggleSwitch checked={showWrappedReport} onChange={() => setShowWrappedReport(!showWrappedReport)} label="Wrapped report" />}
+          />
         </div>
       </section>
 
