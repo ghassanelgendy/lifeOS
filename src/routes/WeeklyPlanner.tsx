@@ -684,10 +684,29 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
           // Dynamic daily habits matching date (excluding detox habits)
           const dayHabitsList = habits.filter((h) => h.habit_type !== 'detox' && isHabitScheduledForDate(h, day.date));
 
+          const isDropTarget = activeDropDay === day.dateStr;
+
           return (
             <div
               key={day.dateStr}
-              className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px]"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                if (activeDropDay !== day.dateStr) setActiveDropDay(day.dateStr);
+              }}
+              onDragLeave={(e) => {
+                // Avoid flicker when hovering over child elements
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  setActiveDropDay(null);
+                }
+              }}
+              onDrop={(e) => handleDropOnDay(day.dateStr, e)}
+              className={cn(
+                "bg-zinc-900/60 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px] transition-all duration-200",
+                isDropTarget
+                  ? "border-blue-500 ring-2 ring-blue-500/50 bg-blue-950/20 scale-[1.01]"
+                  : "border-zinc-800/80"
+              )}
             >
               {/* Header colored dynamically based on relative crowdness */}
               <div
