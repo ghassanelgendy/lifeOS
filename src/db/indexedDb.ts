@@ -3,7 +3,7 @@
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 const STORES = {
   tasks: 'tasks',
@@ -24,6 +24,8 @@ const STORES = {
   screentimeWebsiteStats: 'screentime_website_stats',
   screentimeDailySummaries: 'screentime_daily_summaries',
   quranPages: 'quran_pages',
+  azkarFavorites: 'azkar_favorites',
+  azkarDailyLogs: 'azkar_daily_logs',
 } as const;
 
 type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -100,6 +102,12 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.quranPages)) {
         db.createObjectStore(STORES.quranPages, { keyPath: 'page' });
+      }
+      if (!db.objectStoreNames.contains(STORES.azkarFavorites)) {
+        db.createObjectStore(STORES.azkarFavorites, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.azkarDailyLogs)) {
+        db.createObjectStore(STORES.azkarDailyLogs, { keyPath: 'date' });
       }
     };
 
@@ -465,5 +473,100 @@ export async function idbSetQuranPagesBatch(pages: { page: number; ayahs: any[] 
     // best-effort
   }
 }
+
+// ---------- Azkar helpers ----------
+
+export async function idbGetAzkarFavorites(): Promise<string[]> {
+  try {
+    const items = await idbGetAll<{ id: string }>(STORES.azkarFavorites);
+    return items.map((i) => i.id);
+  } catch {
+    return [];
+  }
+}
+
+export async function idbToggleAzkarFavorite(id: string): Promise<boolean> {
+  try {
+    const favs = await idbGetAzkarFavorites();
+    const exists = favs.includes(id);
+    if (exists) {
+      await idbDelete(STORES.azkarFavorites, id);
+      return false;
+    } else {
+      await idbPut(STORES.azkarFavorites, { id });
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
+
+export interface IdbAzkarDailyRecord {
+  date: string; // yyyy-MM-dd
+  counts: Record<string, number>; // zekrId -> count
+  completedCategories: Record<string, boolean>;
+  updatedAt: number;
+}
+
+export async function idbGetAzkarDailyLog(date: string): Promise<IdbAzkarDailyRecord> {
+  try {
+    return await withStore(STORES.azkarDailyLogs, 'readonly', (store) => {
+      return new Promise<IdbAzkarDailyRecord>((resolve) => {
+        const req = store.get(date);
+        req.onsuccess = () => {
+          if (req.result) {
+            resolve(req.result as IdbAzkarDailyRecord);
+          } else {
+            resolve({ date, counts: {}, completedCategories: {}, updatedAt: Date.now() });
+          }
+        };
+        req.onerror = () => resolve({ date, counts: {}, completedCategories: {}, updatedAt: Date.now() });
+      });
+    });
+  } catch {
+    return { date, counts: {}, completedCategories: {}, updatedAt: Date.now() };
+  }
+}
+
+export async function idbSetAzkarCount(
+  date: string,
+  zekrId: string,
+  count: number,
+  categoryName?: string,
+  categoryCompleted?: boolean
+): Promise<void> {
+  try {
+    const record = await idbGetAzkarDailyLog(date);
+    record.counts[zekrId] = count;
+    if (categoryName && categoryCompleted !== undefined) {
+      record.completedCategories[categoryName] = categoryCompleted;
+    }
+    record.updatedAt = Date.now();
+    await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
+      store.put(record);
+    });
+  } catch {
+    // best-effort
+  }
+}
+
+export async function idbResetAzkarDailyLog(date: string, zekrIds?: string[]): Promise<void> {
+  try {
+    const record = await idbGetAzkarDailyLog(date);
+    if (zekrIds && zekrIds.length > 0) {
+      zekrIds.forEach((id) => delete record.counts[id]);
+    } else {
+      record.counts = {};
+      record.completedCategories = {};
+    }
+    record.updatedAt = Date.now();
+    await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
+      store.put(record);
+    });
+  } catch {
+    // best-effort
+  }
+}
+
 
 
