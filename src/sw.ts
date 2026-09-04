@@ -67,6 +67,8 @@ self.addEventListener('push', (event: PushEvent) => {
     calendarEventId?: string;
     isCustom?: boolean;
     reportType?: 'weekly' | 'monthly';
+    route?: string;
+    url?: string;
   } = {};
   try {
     payload = event.data.json();
@@ -77,6 +79,7 @@ self.addEventListener('push', (event: PushEvent) => {
   const taskId = payload.taskId ?? '';
   const habitId = payload.habitId ?? '';
   const reportType = payload.reportType ?? '';
+  const route = payload.route ?? payload.url ?? '';
   const isHabit = payload.kind === 'habit' || !!habitId;
   const isPrayer = !!payload.prayerName;
   const isCalendar = !!payload.calendarEventId;
@@ -123,7 +126,8 @@ self.addEventListener('push', (event: PushEvent) => {
         prayerName: payload.prayerName,
         calendarEventId: payload.calendarEventId,
         reportType,
-        title: payload.title
+        title: payload.title,
+        route,
       },
       actions: (isPrayer || isCalendar || isHabit || isReport) ? [] : [...NOTIFICATION_ACTIONS],
       icon: '/web-app-manifest-192x192.png',
@@ -134,21 +138,24 @@ self.addEventListener('push', (event: PushEvent) => {
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
-  const { taskId, habitId, calendarEventId, prayerName, reportType } = event.notification.data ?? {};
+  const { taskId, habitId, calendarEventId, prayerName, reportType, route } = event.notification.data ?? {};
   const action = event.action === 'done' ? 'done' : event.action === 'postpone' ? 'postpone' : '';
 
-  const url = new URL(reportType ? '/analytics' : '/dashboard', self.location.origin);
-  if (taskId) {
+  const url = route
+    ? new URL(route, self.location.origin)
+    : new URL(reportType ? '/analytics' : '/dashboard', self.location.origin);
+
+  if (taskId && !route) {
     url.searchParams.set('taskId', taskId);
     if (action) url.searchParams.set('notification', action);
   }
-  if (habitId) {
+  if (habitId && !route) {
     url.searchParams.set('habitId', habitId);
   }
-  if (calendarEventId) {
+  if (calendarEventId && !route) {
     url.searchParams.set('calendarEventId', calendarEventId);
   }
-  if (prayerName) {
+  if (prayerName && !route) {
     url.searchParams.set('prayerName', prayerName);
   }
 

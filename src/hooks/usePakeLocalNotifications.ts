@@ -225,38 +225,61 @@ export function usePakeLocalNotifications() {
             localStorage.setItem('pake_shown_notifications', JSON.stringify(Array.from(shownNotifsRef.current)));
 
             const isAr = /[\u0600-\u06FF]/.test(habit.title);
-            const titleIsMem = /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title);
-            const titleIsRead = /read|تلاوة|قراءة|ورد/i.test(habit.title);
+            const isMulk = /المُ?لك|mulk/i.test(habit.title) || /المُ?لك|mulk/i.test(habit.description ?? '');
+            const isKahf = /الكهف|kahf/i.test(habit.title) || /الكهف|kahf/i.test(habit.description ?? '');
+            const titleIsMem = !isMulk && !isKahf && /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title);
+            const titleIsRead = !isMulk && !isKahf && /read|تلاوة|قراءة|ورد/i.test(habit.title);
             // Title-based reading/memorization takes precedence over habit_type so a
             // reading-wird habit (e.g. الورد اليومي) is never treated as memorization.
             const isMemHabit = titleIsMem || (!titleIsRead && !titleIsMem && habit.habit_type === 'quran_memorization');
             const isReadHabit = titleIsRead || (!titleIsMem && !titleIsRead && habit.habit_type === 'quran_reading');
-            const isQuranHabit = isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
+            const isQuranHabit = isMulk || isKahf || isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
 
             let notifTitle = isAr ? `تذكير بالعادات: ${habit.title}` : 'Habit Reminder';
             let notifBody = isAr ? `يلا عشان دة وقت: ${habit.title}` : `Time to focus on: ${habit.title}`;
             let targetPage: number | null = null;
             let targetSurah: number | null = null;
-            let targetMode: 'memorization' | 'reading' = 'memorization';
+            let targetAyah: number | null = null;
+            let targetMode: 'memorization' | 'reading' = 'reading';
 
-            if (isQuranHabit) {
+            if (isMulk) {
+              targetPage = 562;
+              targetSurah = 67;
+              targetAyah = 1;
+              targetMode = 'reading';
+              notifTitle = isAr ? 'سورة الملك' : 'Surah Al-Mulk';
+              notifBody = isAr
+                ? 'حان وقت قراءة سورة الملك (المنجية من عذاب القبر) • صفحة 562'
+                : 'Time to read Surah Al-Mulk • Page 562';
+            } else if (isKahf) {
+              targetPage = 293;
+              targetSurah = 18;
+              targetAyah = 1;
+              targetMode = 'reading';
+              notifTitle = isAr ? 'سورة الكهف' : 'Surah Al-Kahf';
+              notifBody = isAr
+                ? 'نور ما بين الجمعتين — حان وقت قراءة سورة الكهف • صفحة 293'
+                : 'Time to read Surah Al-Kahf • Page 293';
+            } else if (isQuranHabit) {
               const wird = getCurrentWirdInfo();
               if (isReadHabit && !isMemHabit) {
                 targetPage = wird.reading.page;
                 targetSurah = wird.reading.surahId;
+                targetAyah = wird.reading.ayahNumber;
                 targetMode = 'reading';
                 notifTitle = isAr ? 'ورد تلاوة القرآن الكريم' : 'Quran Reading';
                 notifBody = isAr
-                  ? `حان وقت ورد التلاوة — صفحة ${wird.reading.page} (سورة ${wird.reading.surahName})`
-                  : `Time for Quran Reading — Page ${wird.reading.page} (Surah ${wird.reading.surahName})`;
+                  ? `حان وقت ورد التلاوة — سورة ${wird.reading.surahName} (الآية ${wird.reading.ayahNumber}) • صفحة ${wird.reading.page}`
+                  : `Time for Quran Reading — Surah ${wird.reading.surahName} (Ayah ${wird.reading.ayahNumber}) • Page ${wird.reading.page}`;
               } else {
                 targetPage = wird.memorization.page;
                 targetSurah = wird.memorization.surahId;
+                targetAyah = wird.memorization.ayahNumber;
                 targetMode = 'memorization';
                 notifTitle = isAr ? 'ورد حفظ القرآن الكريم' : 'Quran Memorization';
                 notifBody = isAr
-                  ? `حان وقت ورد الحفظ — صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
-                  : `Time for Quran Memorization — Page ${wird.memorization.page} (Surah ${wird.memorization.surahName})`;
+                  ? `حان وقت ورد الحفظ — سورة ${wird.memorization.surahName} (الآية ${wird.memorization.ayahNumber}) • صفحة ${wird.memorization.page}`
+                  : `Time for Quran Memorization — Surah ${wird.memorization.surahName} (Ayah ${wird.memorization.ayahNumber}) • Page ${wird.memorization.page}`;
               }
             }
 
@@ -264,9 +287,10 @@ export function usePakeLocalNotifications() {
               if (targetPage) {
                 localStorage.setItem('quran_active_page_v1', targetPage.toString());
                 localStorage.setItem('quran_last_position_v1', JSON.stringify({ activeTab: 'reader', selectedSurah: targetSurah }));
-                window.dispatchEvent(new CustomEvent('lifeos:openQuran', { detail: { page: targetPage, surah: targetSurah, mode: targetMode, tab: 'reader' } }));
+                window.dispatchEvent(new CustomEvent('lifeos:openQuran', { detail: { page: targetPage, surah: targetSurah, ayah: targetAyah, mode: targetMode, tab: 'reader' } }));
+                const targetUrl = `/quran?page=${targetPage}&surah=${targetSurah || 1}&ayah=${targetAyah || 1}&mode=${targetMode}&tab=reader`;
                 if (window.location.pathname !== '/quran') {
-                  window.location.href = '/quran';
+                  window.location.href = targetUrl;
                 }
               }
             });

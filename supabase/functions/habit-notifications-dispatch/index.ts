@@ -23,6 +23,25 @@ const LOOKBACK_DAYS = 30;
 // Prayer names to exclude by title prefix (belt-and-suspenders guard alongside prayer_habits linkage)
 const PRAYER_PREFIXES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
+const MEMORIZATION_REGEX = /حفظ|تحفيظ|تسميع|تثبيت|مراجعة القرآن|memoriz|hefz/i;
+const READING_REGEX = /ورد|تلاوة|قراءة|ختمة|مصحف|قرآن|tilawah|quran|read/i;
+
+const SURAH_NAMES: string[] = [
+  '',
+  'الفاتحة', 'البقرة', 'آل عمران', 'النساء', 'المائدة', 'الأنعام', 'الأعراف', 'الأنفال', 'التوبة', 'يونس',
+  'هود', 'يوسف', 'الرعد', 'إبراهيم', 'الحجر', 'النحل', 'الإسراء', 'الكهف', 'مريم', 'طه',
+  'الأنبياء', 'الحج', 'المؤمنون', 'النور', 'الفرقان', 'الشعراء', 'النمل', 'القصص', 'العنكبوت', 'الروم',
+  'لقمان', 'السجدة', 'الأحزاب', 'سبأ', 'فاطر', 'يس', 'الصافات', 'ص', 'الزمر', 'غافر',
+  'فصلت', 'الشورى', 'الزخرف', 'الدخان', 'الجاثية', 'الأحقاف', 'محمد', 'الفتح', 'الحجرات', 'ق',
+  'الذاريات', 'الطور', 'النجم', 'القمر', 'الرحمن', 'الواقعة', 'الحديد', 'المجادلة', 'الحشر', 'الممتحنة',
+  'الصف', 'الجمعة', 'المنافقون', 'التغابن', 'الطلاق', 'التحريم', 'الملك', 'القلم', 'الحاقة', 'المعارج',
+  'نوح', 'الجن', 'المزمل', 'المدثر', 'القيامة', 'الإنسان', 'المرسلات', 'النبأ', 'النازعات', 'عبس',
+  'التكوير', 'الانفطار', 'المطففين', 'الانشقاق', 'البروج', 'الطارق', 'الأعلى', 'الغاشية', 'الفجر', 'البلد',
+  'الشمس', 'الليل', 'الضحى', 'الشرح', 'التين', 'العلق', 'القدر', 'البينة', 'الزلزلة', 'العاديات',
+  'القارعة', 'التكاثر', 'العصر', 'الهمزة', 'الفيل', 'قريش', 'الماعون', 'الكوثر', 'الكافرون', 'النصر',
+  'المسد', 'الإخلاص', 'الفلق', 'الناس',
+];
+
 type PushSubscriptionRow = {
   endpoint: string;
   p256dh: string;
@@ -35,6 +54,7 @@ type HabitRow = {
   id: string;
   user_id: string;
   title: string;
+  description?: string | null;
   time?: string | null;
   notify_time?: string | null; // manual override
   notify_enabled?: boolean | null;
@@ -264,7 +284,7 @@ Deno.serve(async (req: Request) => {
         const [{ data: habitsRows, error: habitsError }, { data: prayerHabitRows, error: prayerHabitError }] = await Promise.all([
           (supabase
             .from('habits')
-            .select('id, user_id, title, time, notify_time, notify_enabled, habit_type, frequency, week_days, is_archived') as any)
+            .select('id, user_id, title, description, time, notify_time, notify_enabled, habit_type, frequency, week_days, is_archived') as any)
             .in('user_id', userIds)
             .eq('is_archived', false)
             .eq('notify_enabled', true),   // ← Only opted-in habits
@@ -374,24 +394,93 @@ Deno.serve(async (req: Request) => {
           subscriptionsByUser.get(uid)!.push(sub);
         }
 
+        // Pre-fetch Quran Khatmah Plans for any candidates with Quran habits
+        const quranUserIds = [
+          ...new Set(
+            unnotifiedCandidates
+              .filter((c) => MEMORIZATION_REGEX.test(c.habit.title) || READING_REGEX.test(c.habit.title))
+              .map((c) => c.habit.user_id),
+          ),
+        ];
+
+        const quranPlansByUser = new Map<string, any>();
+        if (quranUserIds.length > 0) {
+          const { data: plansData, error: plansError } = await (supabase
+            .from('quran_khatmah_plans')
+            .select('user_id, current_page, current_surah, current_ayah, reading_current_page, reading_current_surah, reading_current_ayah') as any)
+            .in('user_id', quranUserIds);
+
+          if (!plansError && plansData) {
+            for (const plan of plansData) {
+              quranPlansByUser.set(plan.user_id, plan);
+            }
+          }
+        }
+
         let sent = 0;
         for (const candidate of unnotifiedCandidates) {
           const userSubscriptions = subscriptionsByUser.get(candidate.habit.user_id) ?? [];
           if (!userSubscriptions.length) continue;
 
           const isAr = /[\u0600-\u06FF]/.test(candidate.habit.title);
-          const titleText = isAr 
+          let titleText = isAr 
             ? `يلا عشان دة وقت: ${candidate.habit.title}` 
             : `Time to focus on: ${candidate.habit.title}`;
+          let bodyText = isAr 
+            ? `حان وقت القيام بعادة "${candidate.habit.title}"` 
+            : `Time for your habit "${candidate.habit.title}"`;
+          let route = '/habits';
+
+          const isMulk = /المُ?لك|mulk/i.test(candidate.habit.title) || /المُ?لك|mulk/i.test(candidate.habit.description ?? '');
+          const isKahf = /الكهف|kahf/i.test(candidate.habit.title) || /الكهف|kahf/i.test(candidate.habit.description ?? '');
+          const isMemHabit = !isMulk && !isKahf && MEMORIZATION_REGEX.test(candidate.habit.title);
+          const isReadHabit = !isMulk && !isKahf && !isMemHabit && READING_REGEX.test(candidate.habit.title);
+
+          if (isMulk) {
+            titleText = isAr ? 'سورة الملك' : 'Surah Al-Mulk';
+            bodyText = isAr 
+              ? 'حان وقت قراءة سورة الملك (المنجية من عذاب القبر) • صفحة 562' 
+              : 'Time to read Surah Al-Mulk • Page 562';
+            route = '/quran?surah=67&page=562&ayah=1&mode=reading&tab=reader';
+          } else if (isKahf) {
+            titleText = isAr ? 'سورة الكهف' : 'Surah Al-Kahf';
+            bodyText = isAr 
+              ? 'نور ما بين الجمعتين — حان وقت قراءة سورة الكهف • صفحة 293' 
+              : 'Time to read Surah Al-Kahf • Page 293';
+            route = '/quran?surah=18&page=293&ayah=1&mode=reading&tab=reader';
+          } else if (isMemHabit || isReadHabit) {
+            const plan = quranPlansByUser.get(candidate.habit.user_id);
+            if (isMemHabit) {
+              const surahId = plan?.current_surah || 74;
+              const ayah = plan?.current_ayah || 1;
+              const page = plan?.current_page || 575;
+              const surahName = SURAH_NAMES[surahId] || `سورة ${surahId}`;
+
+              titleText = isAr ? 'ورد حفظ القرآن الكريم' : 'Quran Memorization Wird';
+              bodyText = isAr
+                ? `حان وقت ورد الحفظ — سورة ${surahName} (الآية ${ayah}) • صفحة ${page}`
+                : `Time for Quran memorization — Surah ${surahName} (Ayah ${ayah}) • Page ${page}`;
+              route = `/quran?page=${page}&surah=${surahId}&ayah=${ayah}&mode=memorization&tab=reader`;
+            } else {
+              const surahId = plan?.reading_current_surah || 1;
+              const ayah = plan?.reading_current_ayah || 1;
+              const page = plan?.reading_current_page || 1;
+              const surahName = SURAH_NAMES[surahId] || `سورة ${surahId}`;
+
+              titleText = isAr ? 'ورد تلاوة القرآن الكريم' : 'Quran Reading Wird';
+              bodyText = isAr
+                ? `حان وقت ورد التلاوة — سورة ${surahName} (الآية ${ayah}) • صفحة ${page}`
+                : `Time for Quran reading — Surah ${surahName} (Ayah ${ayah}) • Page ${page}`;
+              route = `/quran?page=${page}&surah=${surahId}&ayah=${ayah}&mode=reading&tab=reader`;
+            }
+          }
 
           const payload = JSON.stringify({
             kind: 'habit',
             habitId: candidate.habit.id,
             title: titleText,
-            body: isAr 
-              ? `حان وقت القيام بعادة "${candidate.habit.title}"` 
-              : `Time for your habit "${candidate.habit.title}"`,
-            route: '/habits',
+            body: bodyText,
+            route,
           });
 
           let anySuccess = false;

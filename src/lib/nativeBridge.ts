@@ -313,41 +313,71 @@ export async function syncAllLocalNotifications(
 
         if (triggerAt.getTime() > nowMs && triggerAt.getTime() <= endLimit.getTime()) {
           const isAr = isArabic(habit.title);
-          const titleIsMem = /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title);
-          const titleIsRead = /read|تلاوة|قراءة|ورد/i.test(habit.title);
+          const isMulk = /المُ?لك|mulk/i.test(habit.title) || /المُ?لك|mulk/i.test(habit.description ?? '');
+          const isKahf = /الكهف|kahf/i.test(habit.title) || /الكهف|kahf/i.test(habit.description ?? '');
+          const titleIsMem = !isMulk && !isKahf && /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(habit.title);
+          const titleIsRead = !isMulk && !isKahf && /read|تلاوة|قراءة|ورد/i.test(habit.title);
           // Title-based reading/memorization takes precedence over habit_type so a
           // reading-wird habit (e.g. الورد اليومي) is never treated as memorization.
           const isMemHabit = titleIsMem || (!titleIsRead && !titleIsMem && habit.habit_type === 'quran_memorization');
           const isReadHabit = titleIsRead || (!titleIsMem && !titleIsRead && habit.habit_type === 'quran_reading');
-          const isQuranHabit = isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
+          const isQuranHabit = isMulk || isKahf || isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
 
           let notifTitle = isAr ? `تذكير بالعادات: ${habit.title}` : 'Habit Reminder';
           let notifBody = isAr ? `يلا عشان دة وقت: ${habit.title}` : `Time to focus on: ${habit.title}`;
           let notifExtra: Record<string, any> = { habitId: habit.id, date: dateString };
 
-          if (isQuranHabit) {
+          if (isMulk) {
+            notifTitle = isAr ? 'سورة الملك' : 'Surah Al-Mulk';
+            notifBody = isAr
+              ? 'حان وقت قراءة سورة الملك (المنجية من عذاب القبر) • صفحة 562'
+              : 'Time to read Surah Al-Mulk • Page 562';
+            notifExtra = {
+              ...notifExtra,
+              quranPage: 562,
+              quranSurah: 67,
+              quranAyah: 1,
+              quranMode: 'reading',
+              targetRoute: 'quran',
+            };
+          } else if (isKahf) {
+            notifTitle = isAr ? 'سورة الكهف' : 'Surah Al-Kahf';
+            notifBody = isAr
+              ? 'نور ما بين الجمعتين — حان وقت قراءة سورة الكهف • صفحة 293'
+              : 'Time to read Surah Al-Kahf • Page 293';
+            notifExtra = {
+              ...notifExtra,
+              quranPage: 293,
+              quranSurah: 18,
+              quranAyah: 1,
+              quranMode: 'reading',
+              targetRoute: 'quran',
+            };
+          } else if (isQuranHabit) {
             const wird = getCurrentWirdInfo();
             if (isReadHabit && !isMemHabit) {
               notifTitle = isAr ? 'ورد تلاوة القرآن الكريم' : 'Quran Reading';
               notifBody = isAr
-                ? `حان وقت ورد التلاوة — صفحة ${wird.reading.page} (سورة ${wird.reading.surahName})`
-                : `Time for Quran Reading — Page ${wird.reading.page} (Surah ${wird.reading.surahName})`;
+                ? `حان وقت ورد التلاوة — سورة ${wird.reading.surahName} (الآية ${wird.reading.ayahNumber}) • صفحة ${wird.reading.page}`
+                : `Time for Quran Reading — Surah ${wird.reading.surahName} (Ayah ${wird.reading.ayahNumber}) • Page ${wird.reading.page}`;
               notifExtra = {
                 ...notifExtra,
                 quranPage: wird.reading.page,
                 quranSurah: wird.reading.surahId,
+                quranAyah: wird.reading.ayahNumber,
                 quranMode: 'reading',
                 targetRoute: 'quran',
               };
             } else {
               notifTitle = isAr ? 'ورد حفظ القرآن الكريم' : 'Quran Memorization';
               notifBody = isAr
-                ? `حان وقت ورد الحفظ — صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
-                : `Time for Quran Memorization — Page ${wird.memorization.page} (Surah ${wird.memorization.surahName})`;
+                ? `حان وقت ورد الحفظ — سورة ${wird.memorization.surahName} (الآية ${wird.memorization.ayahNumber}) • صفحة ${wird.memorization.page}`
+                : `Time for Quran Memorization — Surah ${wird.memorization.surahName} (Ayah ${wird.memorization.ayahNumber}) • Page ${wird.memorization.page}`;
               notifExtra = {
                 ...notifExtra,
                 quranPage: wird.memorization.page,
                 quranSurah: wird.memorization.surahId,
+                quranAyah: wird.memorization.ayahNumber,
                 quranMode: 'memorization',
                 targetRoute: 'quran',
               };
