@@ -35,7 +35,7 @@ import {
   getWeek,
 } from 'date-fns';
 import { cn } from '../lib/utils';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import {
   useTasks,
@@ -118,6 +118,19 @@ const serializeWeeklyNote = (exercise: string[], selfCare: string[], gratitude: 
 - ${gratitude[0] || ''}
 - ${gratitude[1] || ''}`;
 };
+
+/** Display-only conversion of a scheduler-produced "HH:mm" string to 12-hour "h:mm AM/PM".
+ * The underlying "HH:mm" value itself is left untouched everywhere else (it's written as-is
+ * into the task's `due_time` column, a Postgres `time`, which expects 24-hour format). */
+function formatTimeAmPm(hhmm: string): string {
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return hhmm;
+  const hours24 = parseInt(m[1], 10);
+  const minutes = m[2];
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  const hours12 = hours24 % 12 === 0 ? 12 : hours24 % 12;
+  return `${hours12}:${minutes} ${period}`;
+}
 
 export default function WeeklyPlanner() {
   const { user } = useAuth();
@@ -901,7 +914,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                           <span className="text-[11px]">{candidate.durationMinutes}m</span>
                           {candidate.targetTime && (
                             <span className="text-[11px] text-emerald-400 font-semibold ml-1">
-                              @{candidate.targetTime}
+                              @{formatTimeAmPm(candidate.targetTime)}
                             </span>
                           )}
                         </div>
@@ -935,7 +948,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
             {/* Modal Footer */}
             <div className="px-5 py-3 border-t border-zinc-800 bg-zinc-950/50 flex items-center justify-between">
               <span className="text-xs text-zinc-500">
-                Awake window: {sleepMetrics.avgBedtimeMinutes ? 'Derived from sleep' : '08:00 - 23:00 (default)'}
+                Awake window: {sleepMetrics.avgBedtimeMinutes ? 'Derived from sleep' : '8:00 AM - 11:00 PM (default)'}
               </span>
               <div className="flex items-center gap-2">
                 <Button
