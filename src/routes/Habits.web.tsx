@@ -288,7 +288,7 @@ export default function Habits() {
     navigate(`/quran?page=${target.page}&surah=${target.surahId}&ayah=${target.ayahNumber || 1}&mode=reading&tab=reader`);
   };
 
-  const handleOpenAzkarTarget = (category: string) => {
+  const handleOpenAzkarTarget = (_category: string) => {
     navigate('/azkar');
   };
   const [isModalOpen, setIsModalOpen] = useState(false);

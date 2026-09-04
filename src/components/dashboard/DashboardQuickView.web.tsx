@@ -168,7 +168,6 @@ const ACCENT_DOT: Record<DueKind, string> = {
   const totalCount = subtasks ? subtasks.length : 0;
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-  const isExpandedState = isExpanded;
   const azkarCategory = kind === 'habit' ? getAzkarHabitCategory(title, subtitle) : null;
   const quranTarget = kind === 'habit' && !azkarCategory ? getSpecificSurahHabitTarget(title, subtitle) : null;
 

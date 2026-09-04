@@ -14,7 +14,6 @@ import {
   Sparkles,
   Loader2,
   GripVertical,
-  ArrowRight,
   Clock,
   CalendarCheck,
   Brain,

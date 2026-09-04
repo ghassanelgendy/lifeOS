@@ -1153,11 +1153,11 @@ export default function Tasks() {
     };
   }, [activeView, defaultListId, activeListId]);
 
-  const handleOpenNewTaskSheet = () => {
+  const handleOpenNewTaskSheet = useCallback(() => {
     setSelectedTask(null);
     setEditForm(getDefaultEditFormForNewTask());
     setIsEditModalOpen(true);
-  };
+  }, [getDefaultEditFormForNewTask]);
 
   // Lets the command palette (and anything else) trigger "new task" from
   // outside the Tasks page, since it previously only ever opened via the
@@ -1165,7 +1165,7 @@ export default function Tasks() {
   useEffect(() => {
     window.addEventListener('lifeos:openNewTask', handleOpenNewTaskSheet);
     return () => window.removeEventListener('lifeos:openNewTask', handleOpenNewTaskSheet);
-  }, []);
+  }, [handleOpenNewTaskSheet]);
 
   // Open Details sheet (full-height bottom sheet)
   const handleEditTask = (task: Task) => {

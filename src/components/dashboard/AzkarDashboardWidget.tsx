@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, ChevronLeft, CheckCircle2, RotateCcw, Clock } from 'lucide-react';
+import { Sparkles, ChevronLeft, CheckCircle2, Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
   useAllAzkar,
