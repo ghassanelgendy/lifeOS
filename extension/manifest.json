@@ -54,5 +54,11 @@
       },
       "description": "Quick Clip current tab to lifeOS Default Note"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["fonts/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
 }
