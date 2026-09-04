@@ -200,10 +200,12 @@ export function getCurrentWirdInfo() {
   let memPage = 604;
   let memSurahId = 114;
   let memSurahName = 'الناس';
+  let memAyahNumber = 1;
 
   let readPage = 1;
   let readSurahId = 1;
   let readSurahName = 'الفاتحة';
+  let readAyahNumber = 1;
 
   try {
     const memMarkerStr = localStorage.getItem('quran_memorization_marker_v1');
@@ -214,9 +216,11 @@ export function getCurrentWirdInfo() {
     if (memMarker?.page) {
       memPage = memMarker.page;
       memSurahId = memMarker.surahNumber || getSurahForPage(memPage).id;
+      if (memMarker.ayahNumber) memAyahNumber = memMarker.ayahNumber;
     } else if (memPlan?.currentPage) {
       memPage = memPlan.currentPage;
-      memSurahId = getSurahForPage(memPage).id;
+      memSurahId = memPlan.currentSurah || getSurahForPage(memPage).id;
+      if (memPlan.currentAyah) memAyahNumber = memPlan.currentAyah;
     }
     const foundMemSurah = SURAHS.find((s) => s.id === memSurahId);
     memSurahName = foundMemSurah ? foundMemSurah.name : getSurahForPage(memPage).name;
@@ -229,9 +233,11 @@ export function getCurrentWirdInfo() {
     if (readMarker?.page) {
       readPage = readMarker.page;
       readSurahId = readMarker.surahNumber || getSurahForPage(readPage).id;
+      if (readMarker.ayahNumber) readAyahNumber = readMarker.ayahNumber;
     } else if (readPlan?.currentPage) {
       readPage = readPlan.currentPage;
-      readSurahId = getSurahForPage(readPage).id;
+      readSurahId = readPlan.readingCurrentSurah || getSurahForPage(readPage).id;
+      if (readPlan.readingCurrentAyah) readAyahNumber = readPlan.readingCurrentAyah;
     }
     const foundReadSurah = SURAHS.find((s) => s.id === readSurahId);
     readSurahName = foundReadSurah ? foundReadSurah.name : getSurahForPage(readPage).name;
@@ -242,11 +248,13 @@ export function getCurrentWirdInfo() {
       page: memPage,
       surahId: memSurahId,
       surahName: memSurahName,
+      ayahNumber: memAyahNumber,
     },
     reading: {
       page: readPage,
       surahId: readSurahId,
       surahName: readSurahName,
+      ayahNumber: readAyahNumber,
     },
   };
 }
@@ -267,14 +275,22 @@ export function classifyQuranHabitTitle(title: string): 'reading' | 'memorizatio
   return null;
 }
 
+export type AdvancedWirdResult = {
+  kind: 'reading' | 'memorization';
+  page: number;
+  surahId: number;
+  surahName: string;
+  ayahNumber: number;
+} | null;
+
 /**
  * Advances the Quran wird (reading OR memorization) in localStorage when the
  * matching lifeOS habit is completed. Reading (الورد اليومي) pushes
  * `quran_reading_wird_v1` forward; memorization (حفظ صفحه) pushes
  * `quran_khatmah_plan_v1` forward. Dispatches `quran_plan_updated` so open
- * planners re-read the new positions. Returns the kind advanced, or null.
+ * planners re-read the new positions. Returns the advanced wird details, or null.
  */
-export function advanceWirdOnHabitComplete(habitTitle: string): 'reading' | 'memorization' | null {
+export function advanceWirdOnHabitComplete(habitTitle: string): AdvancedWirdResult {
   const kind = classifyQuranHabitTitle(habitTitle);
   if (!kind) return null;
 
@@ -298,8 +314,23 @@ export function advanceWirdOnHabitComplete(habitTitle: string): 'reading' | 'mem
       lastReadDate: todayStr,
     };
     localStorage.setItem(READING_WIRD_KEY, JSON.stringify(updated));
+
+    const startingSurah = SURAHS.find((s) => s.pageStart === updated.currentPage);
+    const nextSurah = startingSurah || getSurahForPage(updated.currentPage);
+    const firstAyah = 1;
+    localStorage.setItem(
+      'quran_reading_marker_v1',
+      JSON.stringify({ surahNumber: nextSurah.id, ayahNumber: firstAyah, page: updated.currentPage })
+    );
+
     window.dispatchEvent(new Event('quran_plan_updated'));
-    return 'reading';
+    return {
+      kind: 'reading',
+      page: updated.currentPage,
+      surahId: nextSurah.id,
+      surahName: nextSurah.name,
+      ayahNumber: firstAyah,
+    };
   }
 
   // Memorization — advance the khatmah plan (respecting its direction)
@@ -336,9 +367,32 @@ export function advanceWirdOnHabitComplete(habitTitle: string): 'reading' | 'mem
       lastCompletedDate: todayStr,
     };
     localStorage.setItem(KHATMAH_KEY, JSON.stringify(plan));
+
+    const startingSurah = SURAHS.find((s) => s.pageStart === nextCurrentPage);
+    const nextSurah = startingSurah || getSurahForPage(nextCurrentPage);
+    const firstAyah = 1;
+    localStorage.setItem(
+      'quran_memorization_marker_v1',
+      JSON.stringify({ surahNumber: nextSurah.id, ayahNumber: firstAyah, page: nextCurrentPage })
+    );
+
     window.dispatchEvent(new Event('quran_plan_updated'));
+    return {
+      kind: 'memorization',
+      page: nextCurrentPage,
+      surahId: nextSurah.id,
+      surahName: nextSurah.name,
+      ayahNumber: firstAyah,
+    };
   }
-  return 'memorization';
+
+  return {
+    kind: 'memorization',
+    page: 604,
+    surahId: 114,
+    surahName: 'الناس',
+    ayahNumber: 1,
+  };
 }
 
 export interface QuranWirdSummary {
@@ -348,6 +402,7 @@ export interface QuranWirdSummary {
   page: number;
   surahId: number;
   surahName: string;
+  ayahNumber?: number;
   wirdLabel: string;
   reviewLabel?: string;
   combinedLabel: string;
@@ -432,6 +487,7 @@ export function getQuranWirdAndReviewSummary(
       page: projectedReadPage,
       surahId: span.surah.id,
       surahName: span.surah.name,
+      ayahNumber: diffDays === 0 ? wird.reading.ayahNumber : 1,
       wirdLabel: label,
       combinedLabel: label,
     };
@@ -531,9 +587,65 @@ export function getQuranWirdAndReviewSummary(
     page: projectedMemPage,
     surahId: span.surah.id,
     surahName: span.surah.name,
+    ayahNumber: diffDays === 0 ? wird.memorization.ayahNumber : 1,
     wirdLabel: baseWirdLabel,
     reviewLabel: reviewText,
     combinedLabel: combined,
   };
+}
+
+export interface QuranHabitTarget {
+  surahId: number;
+  surahName: string;
+  page: number;
+  ayahNumber?: number;
+  label: string;
+}
+
+export function getSpecificSurahHabitTarget(title?: string, description?: string): QuranHabitTarget | null {
+  const t = (title || '').trim();
+  const d = (description || '').trim();
+
+  // 1. Surat Al-Mulk: Surah 67, Page 562
+  if (/المُ?لك|mulk/i.test(t) || /المُ?لك|mulk/i.test(d)) {
+    return {
+      surahId: 67,
+      surahName: 'سورة الملك',
+      page: 562,
+      ayahNumber: 1,
+      label: 'سورة الملك (ص 562)',
+    };
+  }
+
+  // 2. Surat Al-Kahf: Surah 18, Page 293
+  if (/الكهف|kahf/i.test(t) || /الكهف|kahf/i.test(d)) {
+    return {
+      surahId: 18,
+      surahName: 'سورة الكهف',
+      page: 293,
+      ayahNumber: 1,
+      label: 'سورة الكهف (ص 293)',
+    };
+  }
+
+  // 3. Any habit description with "سورة X ... صفحة Y"
+  const descMatch = d.match(/سورة\s+([^\s(•]+)(?:\s*\(الآية\s*(\d+)\))?.*?(?:صفحة|ص)\s*(\d+)/);
+  if (descMatch) {
+    const rawName = descMatch[1].trim();
+    const ayahNum = descMatch[2] ? Number(descMatch[2]) : 1;
+    const pageNum = Number(descMatch[3]);
+    const surahMeta = SURAHS.find((s) => s.name === rawName || rawName.includes(s.name) || s.name.includes(rawName));
+    if (pageNum >= 1 && pageNum <= 604) {
+      return {
+        surahId: surahMeta?.id || 1,
+        surahName: surahMeta?.name ? `سورة ${surahMeta.name}` : `سورة ${rawName}`,
+        page: pageNum,
+        ayahNumber: ayahNum,
+        label: `${surahMeta?.name ? `سورة ${surahMeta.name}` : `سورة ${rawName}`} (ص ${pageNum})`,
+      };
+    }
+  }
+
+  return null;
 }
 

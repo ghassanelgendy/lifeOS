@@ -372,8 +372,31 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     try {
       localStorage.setItem('quran_memorization_marker_v1', JSON.stringify(marker));
       localStorage.setItem('quran_active_page_v1', page.toString());
+      if (memorizationPlan) {
+        const updated = { ...memorizationPlan, currentPage: page };
+        setMemorizationPlan(updated);
+        localStorage.setItem('quran_khatmah_plan_v1', JSON.stringify(updated));
+      }
       window.dispatchEvent(new Event('quran_active_page_updated'));
+      window.dispatchEvent(new Event('quran_plan_updated'));
     } catch {}
+
+    const surahName = SURAHS.find((s) => s.id === surahNumber)?.name || `سورة ${surahNumber}`;
+    const memHabit = linkedHabits.find(
+      (h) => /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(h.title) && !/ورد|تلاوة|قراءة|reading|tilawah/i.test(h.title)
+    ) || linkedHabits.find((h) => /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(h.title));
+
+    if (memHabit) {
+      if (onUpdateHabitDescription) {
+        onUpdateHabitDescription(
+          memHabit.id,
+          `آخر موضع حفظ: سورة ${surahName} (الآية ${ayahNumber}) • صفحة ${page}`
+        );
+      }
+      if (!memHabit.is_completed_today && onToggleHabit) {
+        onToggleHabit(memHabit.id, true);
+      }
+    }
   };
 
   const handleSetReadingMarker = (surahNumber: number, ayahNumber: number, page: number) => {
@@ -382,16 +405,29 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     try {
       localStorage.setItem('quran_reading_marker_v1', JSON.stringify(marker));
       localStorage.setItem('quran_active_page_v1', page.toString());
+      if (readingWird) {
+        const updated = { ...readingWird, currentPage: page };
+        setReadingWird(updated);
+        localStorage.setItem('quran_reading_wird_v1', JSON.stringify(updated));
+      }
       window.dispatchEvent(new Event('quran_active_page_updated'));
+      window.dispatchEvent(new Event('quran_plan_updated'));
     } catch {}
 
-    // Vice-versa sync: marking/advancing the reading wird completes the linked
-    // reading habit (الورد اليومي) so its progress & streak update in lifeOS.
+    const surahName = SURAHS.find((s) => s.id === surahNumber)?.name || `سورة ${surahNumber}`;
     const readingHabit = linkedHabits.find(
       (h) => /ورد|تلاوة|قراءة|reading|tilawah/i.test(h.title) && !/حفظ|memoriz|تحفيظ|تسميع/i.test(h.title)
     );
-    if (readingHabit && !readingHabit.is_completed_today && onToggleHabit) {
-      onToggleHabit(readingHabit.id, true);
+    if (readingHabit) {
+      if (onUpdateHabitDescription) {
+        onUpdateHabitDescription(
+          readingHabit.id,
+          `آخر موضع تلاوة: سورة ${surahName} (الآية ${ayahNumber}) • صفحة ${page}`
+        );
+      }
+      if (!readingHabit.is_completed_today && onToggleHabit) {
+        onToggleHabit(readingHabit.id, true);
+      }
     }
   };
 
@@ -434,6 +470,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     const handleOpenQuran = (e?: any) => {
       let targetPage = e?.detail?.page;
       let targetSurah = e?.detail?.surah;
+      let targetAyah = e?.detail?.ayah;
       let targetMode = e?.detail?.mode;
       let targetTab = e?.detail?.tab;
 
@@ -442,15 +479,17 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         const params = new URLSearchParams(window.location.search);
         const p = params.get('page');
         const s = params.get('surah');
+        const a = params.get('ayah');
         const m = params.get('mode');
         const t = params.get('tab');
         if (p) targetPage = Number(p);
         if (s) targetSurah = Number(s);
+        if (a) targetAyah = Number(a);
         if (m) targetMode = m;
         if (t) targetTab = t;
 
         // Clean up URL search params so tab toggling isn't re-routed on re-renders
-        if (p || s || m || t) {
+        if (p || s || a || m || t) {
           try {
             window.history.replaceState({}, '', window.location.pathname);
           } catch {}
@@ -466,11 +505,13 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         const marker = mSaved ? JSON.parse(mSaved) : null;
         targetPage = targetPage || marker?.page || (memorizationPlan ? memorizationPlan.currentPage : 575);
         targetSurah = targetSurah || marker?.surahNumber;
+        targetAyah = targetAyah || marker?.ayahNumber || 1;
       } else if (targetMode === 'reading') {
         const rSaved = localStorage.getItem('quran_reading_marker_v1');
         const marker = rSaved ? JSON.parse(rSaved) : null;
         targetPage = targetPage || marker?.page || (readingWird ? readingWird.currentPage : 1);
         targetSurah = targetSurah || marker?.surahNumber;
+        targetAyah = targetAyah || marker?.ayahNumber || 1;
       }
 
       if (targetPage) {
@@ -489,7 +530,13 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         setSelectedSurah(targetSurah);
       }
 
-      if (targetPage || targetSurah) {
+      if (targetAyah) {
+        audio.setCurrentAyahIndex(targetAyah);
+        setStartAyah(targetAyah);
+        setEndAyah(Math.min(targetAyah + 4, SURAHS.find((s) => s.id === (targetSurah || selectedSurah))?.versesCount || 7));
+      }
+
+      if (targetPage || targetSurah || targetAyah) {
         window.dispatchEvent(new Event('quran_active_page_updated'));
       }
     };

@@ -604,6 +604,52 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     return memorizationPage || readingPage || currentSurah?.pageStart || 1;
   });
 
+  // Dynamic Effective Surah resolving the actual Surah active on activePage
+  const effectiveSurah = useMemo(() => {
+    if (pageVerses && pageVerses.length > 0) {
+      if (currentAyahIndex) {
+        const activeAyah = pageVerses.find((a) => a.numberInSurah === currentAyahIndex);
+        if (activeAyah) {
+          const found = SURAHS.find((s) => s.id === activeAyah.surahNumber);
+          if (found) return found;
+        }
+      }
+      const newSurahAyah = pageVerses.find((a) => a.numberInSurah === 1);
+      if (newSurahAyah) {
+        const found = SURAHS.find((s) => s.id === newSurahAyah.surahNumber);
+        if (found) return found;
+      }
+      const firstAyahSurah = SURAHS.find((s) => s.id === pageVerses[0].surahNumber);
+      if (firstAyahSurah) return firstAyahSurah;
+    }
+
+    const startingSurah = SURAHS.find((s) => s.pageStart === activePage);
+    if (startingSurah) return startingSurah;
+
+    return getSurahForPage(activePage);
+  }, [activePage, pageVerses, currentAyahIndex]);
+
+  // Keep parent surahNumber synchronized with effectiveSurah whenever page/surah changes
+  useEffect(() => {
+    if (effectiveSurah.id !== surahNumber) {
+      onSelectSurah(effectiveSurah.id);
+    }
+  }, [effectiveSurah.id, surahNumber, onSelectSurah]);
+
+  // Auto-scroll active ayah into center view
+  useEffect(() => {
+    if (!currentAyahIndex || pageLoading) return;
+    const timer = setTimeout(() => {
+      const el = document.getElementById(`ayah-${effectiveSurah.id}-${currentAyahIndex}`) ||
+                 document.getElementById(`ayah-${surahNumber}-${currentAyahIndex}`) ||
+                 document.querySelector(`[data-ayah="${currentAyahIndex}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [currentAyahIndex, activePage, pageLoading, effectiveSurah.id, surahNumber]);
+
   // Page View Mode: 'single' (Classic Single Page Mushaf) vs 'all' (All Pages of Surah)
   const [pageLayout, setPageLayout] = useState<'single' | 'all'>(() => {
     try {
@@ -644,10 +690,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const handlePageChange = (newPage: number) => {
     const clampedPage = Math.min(604, Math.max(1, newPage));
     setActivePage(clampedPage);
-    const targetSurah = getSurahForPage(clampedPage);
-    if (targetSurah.id !== surahNumber && viewMode === 'ayah') {
+    const startingSurah = SURAHS.find((s) => s.pageStart === clampedPage);
+    const targetSurah = startingSurah || getSurahForPage(clampedPage);
+    if (targetSurah.id !== surahNumber) {
       onSelectSurah(targetSurah.id);
     }
+    try {
+      localStorage.setItem('quran_active_page_v1', clampedPage.toString());
+      window.dispatchEvent(new Event('quran_active_page_updated'));
+    } catch {}
     // Scroll window/container to top of the new page
     try {
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -769,10 +820,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
           type="button"
           onClick={() => setShowSurahPicker(true)}
           className="flex items-center justify-center gap-1 px-1.5 sm:px-3 py-1.5 rounded-xl bg-secondary/60 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 leading-none shrink-0"
-          title={`فهرس القرآن - سورة ${currentSurah.name} (ص ${activePage})`}
+          title={`فهرس القرآن - سورة ${effectiveSurah.name} (ص ${activePage})`}
         >
           <Book className="size-3.5 text-emerald-400 shrink-0" strokeWidth={2.2} />
-          <span className="hidden sm:inline truncate">سورة {currentSurah.name}</span>
+          <span className="hidden sm:inline truncate">سورة {effectiveSurah.name}</span>
           <span className="text-[10px] sm:text-[11px] text-emerald-400 font-mono shrink-0 font-bold">ص {activePage}</span>
           <ChevronDown className="size-2.5 sm:size-3 text-muted-foreground shrink-0" />
         </button>
@@ -1027,7 +1078,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                           setShowSurahPicker(false);
                         }}
                         className={`w-full p-2.5 rounded-xl border flex items-center justify-between gap-2 transition-all cursor-pointer text-xs ${
-                          s.id === surahNumber
+                          s.id === effectiveSurah.id
                             ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-bold'
                             : 'bg-secondary/20 border-border hover:bg-secondary/50 text-foreground'
                         }`}
@@ -1081,6 +1132,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
               {/* Tab 3: Direct Page Jump */}
               {pickerTab === 'page' && (
                 <div className="space-y-4 py-4">
+                  <div className="p-3 rounded-2xl bg-secondary/50 border border-border/70 flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">الصفحة الحالية المعروضة:</span>
+                    <span className="font-extrabold text-emerald-400 font-mono">صفحة {activePage} (سورة {effectiveSurah.name})</span>
+                  </div>
+
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground block">
                       أدخل رقم الصفحة (من 1 إلى 604):
@@ -1091,7 +1147,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       max={604}
                       value={pageInputVal}
                       onChange={(e) => setPageInputVal(e.target.value)}
-                      placeholder="مثال: 582"
+                      placeholder={`الحالية: ${activePage}`}
                       className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-center font-mono text-lg font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
                       autoFocus
                     />
@@ -1306,13 +1362,13 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             if (pagesToRender.length === 0) {
               return (
                 <div className="p-8 text-center text-xs font-bold text-muted-foreground border border-dashed border-border rounded-3xl space-y-3 bg-card/60">
-                  <p className="text-sm">جاري تحميل آيات سورة {currentSurah.name}...</p>
+                  <p className="text-sm">جاري تحميل آيات سورة {effectiveSurah.name}...</p>
                   <button
                     type="button"
-                    onClick={() => handlePageChange(currentSurah.pageStart)}
+                    onClick={() => handlePageChange(effectiveSurah.pageStart)}
                     className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs cursor-pointer shadow-md transition-all"
                   >
-                    الانتقال لبداية سورة {currentSurah.name} (ص {currentSurah.pageStart})
+                    الانتقال لبداية سورة {effectiveSurah.name} (ص {effectiveSurah.pageStart})
                   </button>
                 </div>
               );
@@ -1361,7 +1417,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             const prevAyah = pageAyahs[idx - 1];
                             const isNewSurahStart = ayah.numberInSurah === 1 || (prevAyah && prevAyah.surahNumber !== ayah.surahNumber && ayah.numberInSurah === 1);
 
-                            const isActive = currentAyahIndex === ayah.numberInSurah && surahNumber === ayah.surahNumber;
+                            const isActive = currentAyahIndex === ayah.numberInSurah && (surahNumber === ayah.surahNumber || effectiveSurah.id === ayah.surahNumber);
                             const inStudyRange = startAyah <= ayah.numberInSurah && ayah.numberInSurah <= endAyah && surahNumber === ayah.surahNumber;
                             const mastery = getVerseMastery ? getVerseMastery(ayahSurah.id, ayah.numberInSurah) : null;
                             const isMemorized = mastery?.status === 'memorized';
@@ -1411,6 +1467,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                 ) : (
                                   <>
                                     <span
+                                      id={`ayah-${ayah.surahNumber}-${ayah.numberInSurah}`}
+                                      data-ayah={ayah.numberInSurah}
                                       onClick={() => {
                                         if (wasLongPress(ayah.numberInSurah)) return;
                                         if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);
@@ -1611,10 +1669,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             type="button"
                             onClick={() => setShowSurahPicker(true)}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-secondary/80 hover:bg-secondary border border-border text-xs font-bold text-foreground transition-all cursor-pointer active:scale-95 shadow-sm"
-                            title={`سورة ${currentSurah.name} (ص ${activePage})`}
+                            title={`سورة ${effectiveSurah.name} (ص ${activePage})`}
                           >
                             <Book className="size-4 text-emerald-400" />
-                            <span className="font-bold">سورة {currentSurah.name}</span>
+                            <span className="font-bold">سورة {effectiveSurah.name}</span>
                             <span className="text-[10px] text-emerald-400 font-mono">ص {activePage}</span>
                             <ChevronDown className="size-3 text-muted-foreground" />
                           </button>
@@ -1752,7 +1810,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                     const prevAyah = pageAyahs[idx - 1];
                                     const isNewSurahStart = ayah.numberInSurah === 1 || (prevAyah && prevAyah.surahNumber !== ayah.surahNumber && ayah.numberInSurah === 1);
 
-                                    const isActive = currentAyahIndex === ayah.numberInSurah && surahNumber === ayah.surahNumber;
+                                    const isActive = currentAyahIndex === ayah.numberInSurah && (surahNumber === ayah.surahNumber || effectiveSurah.id === ayah.surahNumber);
                                     const inStudyRange = startAyah <= ayah.numberInSurah && ayah.numberInSurah <= endAyah && surahNumber === ayah.surahNumber;
                                     const mastery = getVerseMastery ? getVerseMastery(ayahSurah.id, ayah.numberInSurah) : null;
                                     const isMemorized = mastery?.status === 'memorized';
@@ -1802,6 +1860,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                         ) : (
                                           <>
                                             <span
+                                              id={`fs-ayah-${ayah.surahNumber}-${ayah.numberInSurah}`}
+                                              data-ayah={ayah.numberInSurah}
                                               onClick={() => {
                                                 if (wasLongPress(ayah.numberInSurah)) return;
                                                 if (ayah.surahNumber !== surahNumber) onSelectSurah(ayah.surahNumber);

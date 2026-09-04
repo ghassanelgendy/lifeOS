@@ -372,15 +372,22 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
 
     const surah = getSurahForPage(nextCurrentPage);
 
-    if (onUpdateHabitDescription && linkedHabits.length > 0) {
+    if (linkedHabits.length > 0) {
       const targetHabit = linkedHabits.find((h) =>
+        /memoriz|حفظ|تحفيظ|تسميع|تثبيت/i.test(h.title) && !/ورد|تلاوة|قراءة|reading|tilawah/i.test(h.title)
+      ) || linkedHabits.find((h) =>
         /quran|memoriz|حفظ|مراجعة|تلاوة|قران|قرآن|قراٰن|ورد|تحفيظ|صفحة|صفحه|صفحات/i.test(h.title)
       );
       if (targetHabit) {
-        onUpdateHabitDescription(
-          targetHabit.id,
-          `الورد القادم للحفظ: الصفحة ${nextCurrentPage} (سورة ${surah.name})`
-        );
+        if (onUpdateHabitDescription) {
+          onUpdateHabitDescription(
+            targetHabit.id,
+            `الورد القادم للحفظ: سورة ${surah.name} (الآية 1) • صفحة ${nextCurrentPage}`
+          );
+        }
+        if (!targetHabit.is_completed_today && onToggleHabit) {
+          onToggleHabit(targetHabit.id, true);
+        }
       }
     }
   };
@@ -509,7 +516,21 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
               <div className="p-2.5 rounded-2xl bg-background/50 border border-border/50 space-y-2">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground font-bold">موضعك الحالي في الحفظ:</span>
-                  <span className="font-extrabold text-emerald-400">صفحة {plan.currentPage} (سورة {currentSurah.name})</span>
+                  <span className="font-extrabold text-emerald-400">
+                    صفحة {plan.currentPage} (سورة {currentSurah.name}
+                    {(() => {
+                      try {
+                        const m = localStorage.getItem('quran_memorization_marker_v1');
+                        if (m) {
+                          const parsed = JSON.parse(m);
+                          if (parsed.ayahNumber && parsed.page === plan.currentPage) {
+                            return ` - الآية ${parsed.ayahNumber}`;
+                          }
+                        }
+                      } catch {}
+                      return '';
+                    })()})
+                  </span>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
@@ -619,7 +640,21 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
             <div className="p-2.5 rounded-2xl bg-background/50 border border-border/50 space-y-2">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground font-bold">موضعك الحالي في التلاوة:</span>
-                <span className="font-extrabold text-indigo-400">صفحة {readingWird.currentPage} (سورة {currentReadingSurah.name})</span>
+                <span className="font-extrabold text-indigo-400">
+                  صفحة {readingWird.currentPage} (سورة {currentReadingSurah.name}
+                  {(() => {
+                    try {
+                      const m = localStorage.getItem('quran_reading_marker_v1');
+                      if (m) {
+                        const parsed = JSON.parse(m);
+                        if (parsed.ayahNumber && parsed.page === readingWird.currentPage) {
+                          return ` - الآية ${parsed.ayahNumber}`;
+                        }
+                      }
+                    } catch {}
+                    return '';
+                  })()})
+                </span>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
