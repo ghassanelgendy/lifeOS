@@ -43,6 +43,7 @@ import Login from './routes/Login';
 import Signup from './routes/Signup';
 import Chat from './routes/Chat';
 import QuranRoute from './routes/Quran';
+import Azkar from './routes/Azkar';
 import { useDailyPointsSync } from './hooks/usePoints';
 import './App.css';
 
@@ -504,6 +505,7 @@ function AppInner() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="tasks" element={<Tasks />} />
               <Route path="quran" element={<QuranRoute />} />
+              <Route path="azkar" element={<Azkar />} />
               <Route path="weekly-planner" element={<WeeklyPlanner />} />
               <Route path="focus" element={<Focus />} />
               <Route path="health" element={<Health />} />

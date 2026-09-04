@@ -6,6 +6,8 @@ export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', 
 export const DEFAULT_DESKTOP_NAV = [
   '/dashboard',
   '/tasks',
+  '/quran',
+  '/azkar',
   '/weekly-planner',
   '/focus',
   '/habits',

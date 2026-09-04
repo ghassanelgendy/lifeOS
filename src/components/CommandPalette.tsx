@@ -130,6 +130,13 @@ export function CommandPalette() {
               <span>Add Transaction</span>
             </Command.Item>
             <Command.Item
+              onSelect={() => runCommand(() => navigate('/azkar'))}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground font-semibold text-emerald-600 dark:text-emerald-400"
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-emerald-500" />
+              <span>الأذكار والأدعية (Azkar & Supplications)</span>
+            </Command.Item>
+            <Command.Item
               onSelect={() => runCommand(() => navigate('/calendar'))}
               className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
             >
@@ -147,6 +154,13 @@ export function CommandPalette() {
             >
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
+            </Command.Item>
+            <Command.Item
+              onSelect={() => runCommand(() => navigate('/azkar'))}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
+            >
+              <Sparkles className="mr-2 h-4 w-4" />
+              <span>Azkar (الأذكار)</span>
             </Command.Item>
             <Command.Item
               onSelect={() => runCommand(() => navigate('/health'))}
