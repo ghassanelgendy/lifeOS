@@ -58,7 +58,7 @@ import {
   useDeleteInvestmentTransaction,
   getInvestmentBreakdown,
 } from '../hooks/useInvestments';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../stores/useUIStore';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
@@ -190,12 +190,16 @@ export default function Finance() {
   const isCurrentMonth =
     format(selectedMonth, 'yyyy-MM') === format(new Date(), 'yyyy-MM');
 
-  const { selectedMonthIncome, selectedMonthExpenses, selectedMonthBalance } = useMemo(() => {
+  const { selectedMonthIncome, selectedMonthExpenses, selectedMonthBalance, selectedMonthOpeningBalance } = useMemo(() => {
     const monthStr = format(selectedMonth, 'yyyy-MM');
     let income = 0;
     let expenses = 0;
+    // Opening balance = running total of every transaction dated before this month, so
+    // the balance shown here continues from the previous month's closing balance
+    // instead of resetting to 0 on the 1st of every month.
+    let openingBalance = 0;
     filteredTransactions.forEach((t) => {
-      if (!(t.date || '').startsWith(monthStr)) return;
+      const dateStr = t.date || '';
       const amt = Number(t.amount) || 0;
       const dir =
         t.direction === 'In' || t.direction === 'Out'
@@ -203,13 +207,19 @@ export default function Finance() {
           : t.type === 'income'
             ? 'In'
             : 'Out';
-      if (dir === 'In') income += amt;
-      else expenses += amt;
+      const signedAmt = dir === 'In' ? amt : -amt;
+      if (dateStr < monthStr) {
+        openingBalance += signedAmt;
+      } else if (dateStr.startsWith(monthStr)) {
+        if (dir === 'In') income += amt;
+        else expenses += amt;
+      }
     });
     return {
       selectedMonthIncome: income,
       selectedMonthExpenses: expenses,
-      selectedMonthBalance: income - expenses,
+      selectedMonthOpeningBalance: openingBalance,
+      selectedMonthBalance: openingBalance + income - expenses,
     };
   }, [filteredTransactions, selectedMonth]);
 
@@ -895,6 +905,7 @@ Return ONLY raw JSON object.`;
         income={selectedMonthIncome}
         expenses={selectedMonthExpenses}
         balance={selectedMonthBalance}
+        openingBalance={selectedMonthOpeningBalance}
         privacyMode={privacyMode}
       />
 

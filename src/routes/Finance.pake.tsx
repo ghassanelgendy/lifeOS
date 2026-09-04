@@ -8,7 +8,7 @@ import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteT
 import { FinanceHeroCard } from '../components/FinanceHeroCard';
 import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
 import { useInvestmentAccounts, useInvestmentTransactions, useEnsureDefaultInvestmentAccounts, useCreateInvestmentTransaction, useUpdateInvestmentTransaction, useDeleteInvestmentTransaction, getInvestmentBreakdown } from '../hooks/useInvestments';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../stores/useUIStore';
 import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
 import { TabList, Tab, Button as FluentButton } from '@fluentui/react-components';

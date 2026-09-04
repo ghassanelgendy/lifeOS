@@ -5,10 +5,11 @@ interface FinanceHeroCardProps {
   income: number;
   expenses: number;
   balance: number;
+  openingBalance?: number;
   privacyMode: boolean;
 }
 
-export function FinanceHeroCard({ income, expenses, balance, privacyMode }: FinanceHeroCardProps) {
+export function FinanceHeroCard({ income, expenses, balance, openingBalance, privacyMode }: FinanceHeroCardProps) {
   const isOverspending = balance < 0;
   const total = income + expenses;
   const incomeRatio = total > 0 ? (income / total) * 100 : 50;
@@ -59,6 +60,12 @@ export function FinanceHeroCard({ income, expenses, balance, privacyMode }: Fina
       >
         {isOverspending ? '−' : ''}{formatCurrency(Math.abs(balance))}
       </p>
+
+      {!!openingBalance && (
+        <p className={cn('text-[11px] text-muted-foreground/70 -mt-0.5 mb-4', privacyMode && 'blur-sm')}>
+          Carried over from last month: {formatCurrency(openingBalance)}
+        </p>
+      )}
 
       {/* Trend */}
       <div
