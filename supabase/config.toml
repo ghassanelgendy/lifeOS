@@ -25,3 +25,6 @@ verify_jwt = false
 [functions.create-task]
 verify_jwt = false
 
+[functions.quick-expense]
+verify_jwt = false
+

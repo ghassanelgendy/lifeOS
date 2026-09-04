@@ -108,9 +108,15 @@ interface ScreentimePayload {
   /**
    * iOS Shortcut: add upload timestamp fields at root level (NOT per app item).
    * - upload_date: YYYY-MM-DD (recommended)
-   * - upload_time: optional HH, HH:mm, or HH:mm:ss
+   * - upload_time: STRONGLY recommended — current local HH, HH:mm, or HH:mm:ss.
    *
-   * These are only used for debugging/hourly tracking; they do not affect how screentime rows are aggregated.
+   * These do not change how usage totals are aggregated, but activity_summary uploads (the
+   * iOS text-paste path) carry no per-app timestamps at all, so this becomes the
+   * last_active_at/first_seen_at backfilled onto every app in the upload — which is what the
+   * Dashboard's Day-progress timeline packs backward from. Omitting upload_time makes every
+   * app in the upload collapse to the same instant (server receipt time, or midnight if only
+   * upload_date is sent), bunching that day's usage into one block instead of spreading it
+   * across the day.
    */
   upload_date?: string;
   upload_time?: string;
@@ -297,13 +303,25 @@ function parseTimestamp(tsStr: string): string | null {
   }
 }
 
-function buildUploadedAt(uploadDateRaw: string, uploadTimeRaw?: string | null): string | null {
+function buildUploadedAt(uploadDateRaw: string, uploadTimeRaw?: string | null, fallbackNow?: string): string | null {
   const datePart = parseDateToDateString(uploadDateRaw);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return null;
 
   const timeTrimmed = (uploadTimeRaw || '').trim();
   if (!timeTrimmed) {
-    return `${datePart}T00:00:00.000Z`;
+    // No time-of-day was sent (the iOS Shortcut only sends upload_date by default). Falling
+    // back to midnight here used to collapse every app in the upload onto the same instant,
+    // which then "packs" the whole day's usage into a single bunched block at the very start
+    // of the Dashboard's Day-progress timeline instead of spreading it across the day. Use
+    // the server's current time-of-day instead — it's a real timestamp (when the Shortcut
+    // actually ran), so the pack-backward reconstruction lands somewhere sensible (typically
+    // evening, when people tend to run the Shortcut) rather than always at 00:00.
+    const now = fallbackNow ? new Date(fallbackNow) : new Date();
+    if (isNaN(now.getTime())) return `${datePart}T00:00:00.000Z`;
+    const hhStr = String(now.getUTCHours()).padStart(2, '0');
+    const mmStr = String(now.getUTCMinutes()).padStart(2, '0');
+    const ssStr = String(now.getUTCSeconds()).padStart(2, '0');
+    return `${datePart}T${hhStr}:${mmStr}:${ssStr}.000Z`;
   }
 
   // Accept HH, HH:mm, or HH:mm:ss.
@@ -696,7 +714,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Root-level upload timestamp for iOS Shortcut (do not affect aggregation)
+    // Root-level upload timestamp for iOS Shortcut. This does NOT affect how usage totals
+    // are aggregated (total_time_seconds per app is unaffected either way), but it DOES
+    // become the backfilled last_active_at/first_seen_at for every app in this upload when
+    // per-item timestamps aren't provided (always true for activity_summary uploads) — see
+    // pushAppRow below. That backfilled value is what the Dashboard's Day-progress timeline
+    // packs backward from, so sending an accurate upload_time (current local HH:mm) alongside
+    // upload_date meaningfully improves how well that timeline reflects real usage.
     const payloadRecord = toRecord(payload);
     const uploadDateRaw = firstString(payloadRecord, ['uploaded_date', 'upload_date', 'uploadDate', 'date']);
     const uploadTimeRaw = firstString(payloadRecord, ['upload_time', 'uploadTime', 'time']);
@@ -706,7 +730,7 @@ Deno.serve(async (req: Request) => {
     // or when the buildUploadedAt format returns null (e.g. 12-hour format "4:30 PM").
     let uploaded_at = received_at;
     if (uploadDateRaw) {
-      const parsed = buildUploadedAt(uploadDateRaw, uploadTimeRaw);
+      const parsed = buildUploadedAt(uploadDateRaw, uploadTimeRaw, received_at);
       if (parsed) {
         uploaded_at = parsed;
       }
