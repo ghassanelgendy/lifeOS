@@ -329,7 +329,7 @@ export default function NotesWeb() {
       if (!text) return;
 
       const isChecked = (target as HTMLInputElement).checked;
-      
+
       // Update note body
       const taskTitleEscaped = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       let newBody = draftBody;
@@ -342,23 +342,29 @@ export default function NotesWeb() {
       }
       setDraftBody(newBody);
 
-      // If note exists in DB, save update
-      if (activeNote) {
-        void updateNote.mutateAsync({
-          id: activeNote.id,
-          data: { body: newBody },
-        });
-      }
+      // Prefer a task scoped to *this* note first — two different notes can easily produce a
+      // task with the same title text (e.g. "Follow up"), and matching on title alone would
+      // silently flip the wrong note's task. Only fall back to an unscoped title match for
+      // legacy tasks created before source_note_id existed.
+      const matchingTask =
+        tasks.find(
+          (t) => t.source_note_id === activeNote?.id && t.title.trim().toLowerCase() === text.toLowerCase()
+        ) ?? tasks.find((t) => !t.source_note_id && t.title.trim().toLowerCase() === text.toLowerCase());
 
-      // Check if there is a matching task in lifeOS and toggle it as well
-      const matchingTask = tasks.find(
-        (t) => t.title.trim().toLowerCase() === text.toLowerCase() ||
-               (t.source_note_id === activeNote?.id && t.title.trim().toLowerCase() === text.toLowerCase())
-      );
       if (matchingTask && matchingTask.is_completed !== isChecked) {
+        // A linked task exists — let toggling it be the single writer of notes.body for this
+        // change (syncTaskCompletionToLinkedNote reads the note fresh from the DB when it
+        // runs). Also writing newBody from this component's local draftBody here would race
+        // that server-side write with a possibly-stale copy of the body.
         void toggleTask.mutateAsync({
           id: matchingTask.id,
           data: { is_completed: isChecked },
+        });
+      } else if (activeNote) {
+        // No linked task for this checklist item — this note is the only source of truth.
+        void updateNote.mutateAsync({
+          id: activeNote.id,
+          data: { body: newBody },
         });
       }
     }
