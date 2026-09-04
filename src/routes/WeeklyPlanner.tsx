@@ -13,9 +13,16 @@ import {
   Grid,
   Sparkles,
   Loader2,
+  GripVertical,
+  ArrowRight,
+  Clock,
+  CalendarCheck,
+  Brain,
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
-import { useSleepStages, groupSegmentsByNight } from '../hooks/useSleep';
+import { useSleepStages, groupSegmentsByNight, useSleepMetrics } from '../hooks/useSleep';
 import { useScreentimeAppStats } from '../hooks/useScreentime';
 import { askAI } from '../lib/ai';
 import { marked } from 'marked';
@@ -35,10 +42,13 @@ import {
   useTasks,
   useToggleTask,
   useDeleteTask,
+  useCreateTask,
+  useUpdateTask,
 } from '../hooks/useTasks';
 import {
   useExpandedCalendarEvents,
   useDeleteCalendarEvent,
+  useUpdateCalendarEvent,
 } from '../hooks/useCalendar';
 import {
   useNotes,
@@ -49,6 +59,11 @@ import {
 } from '../hooks/useNotes';
 import { useHabits, isHabitScheduledForDate } from '../hooks/useHabits';
 import { getQuranWirdAndReviewSummary, advanceWirdOnHabitComplete } from '../../lib/quran-memorizer/src/services/quranData';
+import {
+  harvestUnfinishedWeeklyTasks,
+  scheduleCandidatesIntoNextWeek,
+  type CandidateWeeklyTask,
+} from '../lib/weeklyCoachScheduler';
 import { Button } from '../components/ui';
 import type { Task, Note, Habit, HabitLog } from '../types/schema';
 
@@ -148,6 +163,8 @@ export default function WeeklyPlanner() {
   const { data: tasks = [] } = useTasks();
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
+  const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
 
   const calendarStart = useMemo(() => {
     const d = new Date(weekStart);
@@ -163,6 +180,7 @@ export default function WeeklyPlanner() {
 
   const events = useExpandedCalendarEvents(calendarStart, calendarEnd);
   const deleteEvent = useDeleteCalendarEvent();
+  const updateCalendarEvent = useUpdateCalendarEvent();
 
   // 3. Notes Hooks & Queries
   const { data: folders = [], isSuccess: isFoldersSuccess } = useNoteFolders();
@@ -251,10 +269,126 @@ export default function WeeklyPlanner() {
   // AI Wellbeing Coach queries and states
   const aiEnabled = useUIStore((s) => s.aiEnabled);
   const { data: sleepSegments = [] } = useSleepStages(sundayDateStr + 'T00:00:00.000Z', saturdayDateStr + 'T23:59:59.999Z');
+  const sleepMetrics = useSleepMetrics(7);
   const { data: appStats = [] } = useScreentimeAppStats(sundayDateStr, saturdayDateStr);
 
   const [isGeneratingCoach, setIsGeneratingCoach] = useState(false);
   const [coachFeedback, setCoachFeedback] = useState('');
+
+  // Drag-and-drop active drop day state
+  const [activeDropDay, setActiveDropDay] = useState<string | null>(null);
+
+  // Next week smart scheduling state
+  const [showSmartScheduleModal, setShowSmartScheduleModal] = useState(false);
+  const [smartCandidates, setSmartCandidates] = useState<CandidateWeeklyTask[]>([]);
+  const [isApplyingSchedule, setIsApplyingSchedule] = useState(false);
+
+  // Next week days helper (Sunday to Saturday of next week)
+  const nextWeekDays = useMemo(() => {
+    const nextSunday = addWeeks(weekStart, 1);
+    return Array.from({ length: 7 }).map((_, i) => {
+      const dayDate = addDays(nextSunday, i);
+      return {
+        date: dayDate,
+        dateStr: toDateOnly(dayDate),
+        dayName: format(dayDate, 'EEEE'),
+        formatted: format(dayDate, 'MMM d'),
+      };
+    });
+  }, [weekStart]);
+
+  const handleOpenSmartScheduler = () => {
+    const harvested = harvestUnfinishedWeeklyTasks(sundayDateStr, saturdayDateStr, tasks, notes);
+    const scheduled = scheduleCandidatesIntoNextWeek(harvested, nextWeekDays, events, tasks, sleepMetrics);
+    setSmartCandidates(scheduled);
+    setShowSmartScheduleModal(true);
+  };
+
+  const handleApplySmartSchedule = async () => {
+    try {
+      setIsApplyingSchedule(true);
+      for (const item of smartCandidates) {
+        if (!item.targetDate) continue;
+
+        if (item.sourceType === 'existing_task' && item.id) {
+          // Reschedule existing unfinished task to the target day and time
+          await updateTask.mutateAsync({
+            id: item.id,
+            data: {
+              due_date: item.targetDate,
+              due_time: item.targetTime || null,
+            },
+          });
+        } else if (item.sourceType === 'braindump') {
+          // Create new task from brain dump action point
+          await createTask.mutateAsync({
+            title: item.title,
+            priority: item.priority as any,
+            duration_minutes: item.durationMinutes,
+            due_date: item.targetDate,
+            due_time: item.targetTime || null,
+            source_note_id: item.sourceNoteId || null,
+          });
+        }
+      }
+      setShowSmartScheduleModal(false);
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    } catch (err) {
+      console.error('Failed to apply smart schedule to next week:', err);
+    } finally {
+      setIsApplyingSchedule(false);
+    }
+  };
+
+  const handleRemoveCandidate = (index: number) => {
+    setSmartCandidates((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleChangeCandidateDay = (index: number, newDate: string) => {
+    setSmartCandidates((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, targetDate: newDate } : c))
+    );
+  };
+
+  // Drag and Drop: handling dropping tasks/events onto Day Cards
+  const handleDropOnDay = (targetDateStr: string, e: React.DragEvent) => {
+    e.preventDefault();
+    setActiveDropDay(null);
+    try {
+      const rawData = e.dataTransfer.getData('application/lifeos-item');
+      if (!rawData) return;
+      const data = JSON.parse(rawData);
+
+      if (data.type === 'task' && data.id) {
+        if (data.originalDate !== targetDateStr) {
+          updateTask.mutate({
+            id: data.id,
+            data: { due_date: targetDateStr },
+          });
+        }
+      } else if (data.type === 'event' && data.id) {
+        if (data.originalDate !== targetDateStr) {
+          // Preserve event start/end hour and minute, changing only YYYY-MM-DD
+          const s = new Date(data.startTime);
+          const eDate = new Date(data.endTime || data.startTime);
+          const durMs = Math.max(15 * 60 * 1000, eDate.getTime() - s.getTime());
+
+          const newStart = new Date(`${targetDateStr}T${format(s, 'HH:mm:ss')}`);
+          const newEnd = new Date(newStart.getTime() + durMs);
+
+          updateCalendarEvent.mutate({
+            id: data.id,
+            data: {
+              start_time: newStart.toISOString(),
+              end_time: newEnd.toISOString(),
+            },
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Drop error:', err);
+    }
+  };
 
   const generateWellbeingInsights = async () => {
     try {
