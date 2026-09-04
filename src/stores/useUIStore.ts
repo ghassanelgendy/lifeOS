@@ -3,6 +3,8 @@ import { persist } from 'zustand/middleware';
 
 // Default mobile nav items (5 max)
 export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/calendar'];
+// Default pinned items for the iOS drawer's horizontal icon-only row (4 max)
+export const DEFAULT_PINNED_NAV = ['/dashboard', '/tasks', '/habits'];
 export const DEFAULT_DESKTOP_NAV = [
   '/dashboard',
   '/tasks',
@@ -112,10 +114,16 @@ interface UIState {
   setPlatformUIOverride: (override: 'auto' | 'web' | 'pake' | 'linux') => void;
   showSystemTray: boolean;
   setShowSystemTray: (show: boolean) => void;
+  /** Web/desktop only: the bottom bar reading "Made with ❤️ by Ghassan" + GitHub link + sync status. */
+  showAppFooter: boolean;
+  setShowAppFooter: (show: boolean) => void;
 
   // Mobile Navigation Customization
   mobileNavItems: string[];
   setMobileNavItems: (items: string[]) => void;
+  /** Items pinned to the horizontal icon-only row at the top of the iOS drawer (4 max). */
+  pinnedNavItems: string[];
+  setPinnedNavItems: (items: string[]) => void;
   desktopNavOrder: string[];
   desktopNavVisible: Record<string, boolean>;
   setDesktopNavOrder: (order: string[]) => void;
@@ -235,7 +243,9 @@ export type PersistedUiSlice = {
   accentTheme: AccentTheme;
   platformUIOverride: 'auto' | 'web' | 'pake' | 'linux';
   showSystemTray: boolean;
+  showAppFooter: boolean;
   mobileNavItems: string[];
+  pinnedNavItems: string[];
   desktopNavOrder: string[];
   desktopNavVisible: Record<string, boolean>;
   dashboardWidgetOrder: string[];
@@ -361,10 +371,14 @@ export const useUIStore = create<UIState>()(
       setPlatformUIOverride: (platformUIOverride) => set({ platformUIOverride }),
       showSystemTray: true,
       setShowSystemTray: (showSystemTray) => set({ showSystemTray }),
+      showAppFooter: true,
+      setShowAppFooter: (showAppFooter) => set({ showAppFooter }),
 
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,
       setMobileNavItems: (items) => set({ mobileNavItems: items }),
+      pinnedNavItems: [...DEFAULT_PINNED_NAV],
+      setPinnedNavItems: (items) => set({ pinnedNavItems: items }),
       desktopNavOrder: [...DEFAULT_DESKTOP_NAV],
       desktopNavVisible: DEFAULT_DESKTOP_NAV.reduce((acc, href) => ({ ...acc, [href]: true }), {} as Record<string, boolean>),
       setDesktopNavOrder: (desktopNavOrder) => set({ desktopNavOrder }),
@@ -546,12 +560,16 @@ export const useUIStore = create<UIState>()(
         const mobileNavItems = Array.isArray(state.mobileNavItems)
           ? state.mobileNavItems.map((item) => (item === '/' ? '/dashboard' : item))
           : state.mobileNavItems;
+        const pinnedNavItems = Array.isArray(state.pinnedNavItems)
+          ? state.pinnedNavItems.map((item) => (item === '/' ? '/dashboard' : item))
+          : state.pinnedNavItems;
         const desktopNavOrder = Array.isArray(state.desktopNavOrder)
           ? state.desktopNavOrder.map((item) => (item === '/' ? '/dashboard' : item))
           : state.desktopNavOrder;
         return {
           ...state,
           mobileNavItems,
+          pinnedNavItems,
           desktopNavOrder,
         };
       },
@@ -576,7 +594,9 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     accentTheme: state.accentTheme,
     platformUIOverride: state.platformUIOverride,
     showSystemTray: state.showSystemTray,
+    showAppFooter: state.showAppFooter,
     mobileNavItems: state.mobileNavItems,
+    pinnedNavItems: state.pinnedNavItems,
     desktopNavOrder: state.desktopNavOrder,
     desktopNavVisible: state.desktopNavVisible,
     dashboardWidgetOrder: state.dashboardWidgetOrder,

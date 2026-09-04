@@ -39,6 +39,7 @@ export function AppShell() {
     lastNotifiedMonthlyWrap,
     setLastNotifiedWeeklyWrap,
     setLastNotifiedMonthlyWrap,
+    showAppFooter,
     aiEnabled,
   } = useUIStore();
   const location = useLocation();
@@ -435,7 +436,11 @@ export function AppShell() {
                 className={cn(
                   "flex flex-col p-4 md:p-6 section-slide-in bg-transparent",
                   "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
-                  (isOnTasks || isOnNotes) ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden"
+                  // overflow-x-hidden alone forces overflow-y to compute as `auto`, which makes
+                  // this div its own scroll container and breaks `position: sticky` descendants
+                  // against the real scroll root (PullToRefresh's data-lifeos-scroll-root) — see
+                  // matching comment in AppShell.web.tsx.
+                  (isOnTasks || isOnNotes) ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden overflow-y-visible"
                 )}
                 style={
                   {
@@ -446,7 +451,7 @@ export function AppShell() {
                 <Outlet />
               </div>
             </PullToRefresh>
-            <AppFooter />
+            {showAppFooter && <AppFooter />}
             <FocusSessionManager />
             <FocusPiPWindow />
           </div>

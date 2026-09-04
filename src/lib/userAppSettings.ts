@@ -4,6 +4,7 @@ import {
   DEFAULT_DASHBOARD_MODE,
   DEFAULT_DESKTOP_NAV,
   DEFAULT_MOBILE_NAV,
+  DEFAULT_PINNED_NAV,
   HABITS_WIDGET_IDS,
   SLEEP_WIDGET_IDS,
   isDashboardMode,
@@ -125,10 +126,15 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
 
   const po = remote.platformUIOverride;
   patch.platformUIOverride = po === 'auto' || po === 'web' || po === 'pake' || po === 'linux' ? po : 'auto';
+  patch.showAppFooter = asBool(remote.showAppFooter, true);
 
   {
     const nav = asStrArray(remote.mobileNavItems, DEFAULT_MOBILE_NAV);
     patch.mobileNavItems = nav.length > 0 ? normalizeMobileNavItems(nav) : [...DEFAULT_MOBILE_NAV];
+  }
+  {
+    const nav = asStrArray(remote.pinnedNavItems, DEFAULT_PINNED_NAV);
+    patch.pinnedNavItems = nav.length > 0 ? normalizeMobileNavItems(nav) : [...DEFAULT_PINNED_NAV];
   }
   {
     const nav = asStrArray(remote.desktopNavOrder, [...DEFAULT_DESKTOP_NAV]);

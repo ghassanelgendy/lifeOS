@@ -91,6 +91,7 @@ export function AppShell() {
     lastNotifiedMonthlyWrap,
     setLastNotifiedWeeklyWrap,
     setLastNotifiedMonthlyWrap,
+    showAppFooter,
     aiEnabled,
   } = useUIStore();
   const location = useLocation();
@@ -650,7 +651,14 @@ export function AppShell() {
                 ? "h-full min-h-0 overflow-hidden p-0"
                 : (isOnTasks || isOnNotes
                     ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
-                    : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6")
+                    // overflow-x-hidden alone forces the UA to compute overflow-y as `auto`
+                    // (per spec, an axis can't stay `visible` while the other isn't), which
+                    // silently makes THIS div a scroll container/containing block for any
+                    // `position: sticky` descendant (like the Settings page's jump-nav) even
+                    // though it never actually scrolls — breaking sticky against the real
+                    // scroll root two levels up (PullToRefresh's `data-lifeos-scroll-root`).
+                    // overflow-y-visible keeps only the X axis clipped.
+                    : "min-h-full overflow-x-hidden overflow-y-visible p-4 md:p-6 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6")
             )}
             style={
               {
@@ -661,7 +669,7 @@ export function AppShell() {
             <Outlet />
           </div>
         </PullToRefresh>
-        <AppFooter />
+        {showAppFooter && <AppFooter />}
         <FocusSessionManager />
         <FocusPiPWindow />
         <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />

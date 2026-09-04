@@ -21,6 +21,7 @@ export function AppShell() {
     isSidebarCollapsed,
     toggleSidebar,
     mobileNavItems,
+    pinnedNavItems,
     desktopNavOrder,
     desktopNavVisible,
     isMobileSidebarOpen,
@@ -37,6 +38,7 @@ export function AppShell() {
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [showTabBar, setShowTabBar] = useState(true);
+  const lastScrollTop = useRef(0);
   const [isBrainDumpOpen, setIsBrainDumpOpen] = useState(false);
   const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -121,6 +123,19 @@ export function AppShell() {
     const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
     return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
   }, [desktopNavOrder, desktopNavVisible, aiEnabled]);
+
+  // iOS drawer: items pinned to the horizontal icon-only row up top (in the user's chosen
+  // order), with the rest of desktopNavigation below as the regular vertical list.
+  const pinnedDrawerItems = useMemo(
+    () => pinnedNavItems
+      .map((href) => desktopNavigation.find((item) => item.href === href))
+      .filter((item): item is NavItem => !!item),
+    [pinnedNavItems, desktopNavigation]
+  );
+  const unpinnedDrawerItems = useMemo(
+    () => desktopNavigation.filter((item) => !pinnedNavItems.includes(item.href)),
+    [desktopNavigation, pinnedNavItems]
+  );
 
   const currentIndex = mobileNavigationMapped.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
@@ -308,10 +323,13 @@ export function AppShell() {
 
   const gestureContainerRef = useRef<HTMLDivElement>(null);
   const isOnQuran = location.pathname.startsWith('/quran');
+  // Azkar has its own left/right swipe gesture (the full-screen swipeable reader), which
+  // otherwise fights with this drawer-opening swipe — same reason Quran is excluded above.
+  const isOnAzkar = location.pathname.startsWith('/azkar');
 
   useEffect(() => {
     const container = gestureContainerRef.current;
-    if (!container || isOnQuran) return;
+    if (!container || isOnQuran || isOnAzkar) return;
 
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
@@ -356,7 +374,7 @@ export function AppShell() {
       container.removeEventListener('touchmove', onTouchMove);
       container.removeEventListener('touchend', onTouchEnd);
     };
-  }, [isOnTasks, isOnQuran, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
+  }, [isOnTasks, isOnQuran, isOnAzkar, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">
@@ -383,17 +401,38 @@ export function AppShell() {
             height: 'calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))'
           }}
         >
-          <div className="flex h-14 items-center justify-between px-5 border-b border-border/40 shrink-0">
-            <span className="text-lg font-bold tracking-tight">LifeOS</span>
-            <button 
-              onClick={() => setMobileSidebarOpen(false)} 
+          <div className="flex h-11 items-center justify-between px-4 border-b border-border/40 shrink-0">
+            <span className="text-base font-bold tracking-tight">LifeOS</span>
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
               className="p-1.5 hover:bg-secondary/60 rounded-full active:scale-95 transition-transform touch-manipulation text-muted-foreground"
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-3 flex flex-col gap-0.5 px-3">
-            {desktopNavigation.map((item) => {
+          {pinnedDrawerItems.length > 0 && (
+            <div className="flex items-center justify-around gap-1 px-2.5 py-2 border-b border-border/40 shrink-0">
+              {pinnedDrawerItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  end={item.href === '/'}
+                  aria-label={item.label}
+                  className={({ isActive }) => cn(
+                    "flex flex-col items-center justify-center gap-1 rounded-xl p-2 min-w-[3.25rem] transition-colors hover:bg-secondary/50",
+                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  )}
+                  onClick={() => setMobileSidebarOpen(false)}
+                >
+                  <item.icon size={22} className="shrink-0" />
+                </NavLink>
+              ))}
+            </div>
+          )}
+          {/* Rows are deliberately compact (44px, the accessibility touch-target floor) so all
+              nav entries fit on a phone screen with little or no scrolling. */}
+          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col px-2.5">
+            {unpinnedDrawerItems.map((item) => {
               const isAnalytics = item.href === '/analytics';
               const showDot = isAnalytics && showWrappedTakeover;
               return (
@@ -402,13 +441,13 @@ export function AppShell() {
                   to={item.href}
                   end={item.href === '/'}
                   className={({ isActive }) => cn(
-                    "flex items-center gap-3.5 rounded-xl px-4 py-2.5 text-base font-medium transition-colors hover:bg-secondary/50 min-h-[3rem] relative",
+                    "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-secondary/50 min-h-[2.75rem] relative",
                     isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
                   )}
                   onClick={() => setMobileSidebarOpen(false)}
                 >
                   <div className="relative">
-                    <item.icon size={22} className="shrink-0" />
+                    <item.icon size={19} className="shrink-0" />
                     {showDot && (
                       <span className="absolute -top-1 -right-1 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -421,17 +460,17 @@ export function AppShell() {
               );
             })}
           </nav>
-          <div className="p-3 border-t border-border/40">
+          <div className="p-2.5 border-t border-border/40">
             {showWrappedTakeover ? (
               <NavLink
                 to="/analytics"
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3.5 w-full rounded-xl px-4 py-2.5 text-base font-medium hover:bg-secondary/50 min-h-[3rem] relative border border-primary/20 bg-primary/5 text-primary",
+                  "flex items-center gap-3 w-full rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-secondary/50 min-h-[2.75rem] relative border border-primary/20 bg-primary/5 text-primary",
                   isActive ? "bg-primary text-primary-foreground" : ""
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Sparkles size={22} className="shrink-0 text-primary animate-pulse" />
+                <Sparkles size={19} className="shrink-0 text-primary animate-pulse" />
                 <span className="min-w-0 break-words font-semibold">
                   {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
                 </span>
@@ -444,12 +483,12 @@ export function AppShell() {
               <NavLink
                 to="/settings"
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3.5 w-full rounded-xl px-4 py-2.5 text-base font-medium hover:bg-secondary/50 min-h-[3rem]",
+                  "flex items-center gap-3 w-full rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-secondary/50 min-h-[2.75rem]",
                   isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Settings size={22} className="shrink-0" />
+                <Settings size={19} className="shrink-0" />
                 <span className="min-w-0 break-words">Settings</span>
               </NavLink>
             )}
@@ -533,7 +572,7 @@ export function AppShell() {
                 isSidebarCollapsed && "justify-center px-2"
               )}
             >
-              <Settings size={28} />
+              <Settings size={20} />
               {!isSidebarCollapsed && <span>Settings</span>}
             </NavLink>
           )}
