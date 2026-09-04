@@ -18,7 +18,9 @@ import { useTasks } from './hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useHabitAverages } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
 import { useTransactionsRealtime } from './hooks/useFinance';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { useAzkarRealtime } from './hooks/useAzkar';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { usePushNotifications } from './hooks/usePushNotifications';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
@@ -101,6 +103,7 @@ function AppInner() {
   const { data: habits } = useHabits();
   const { data: events } = useCalendarEvents();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+  useAzkarRealtime(); // refetch azkar favorites/progress when changed from another device
   useDailyPointsSync(); // Run daily points sync worker in the background
   const { isEnabled: isPushEnabled } = usePushNotifications();
 

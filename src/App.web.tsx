@@ -9,9 +9,11 @@ import { queryClient } from './lib/queryClient';
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
 import { useTransactionsRealtime } from './hooks/useFinance';
+import { useAzkarRealtime } from './hooks/useAzkar';
 import { usePakeLocalNotifications } from './hooks/usePakeLocalNotifications';
 import { useNativeTraySync } from './hooks/useNativeTraySync';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -119,6 +121,7 @@ function ThemeSync() {
 
 function AppInner() {
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
+  useAzkarRealtime(); // refetch azkar favorites/progress when changed from another device
   usePakeLocalNotifications(); // Run Pake local notifications engine in the background
   useNativeTraySync(); // Keep the native tray/AppIndicator in sync with the Settings toggle
   useDailyPointsSync(); // Run daily points sync worker in the background
@@ -343,44 +346,14 @@ function AppInner() {
       }
     };
 
-    // Global shortcuts:
-    // Ctrl + B or Cmd + B -> Open Brain Dump Modal
-    // Ctrl + A or Cmd + A (when not editing text) -> Open AI Assistant Chat Modal
-    const handleGlobalShortcuts = (e: KeyboardEvent) => {
-      const key = (e.key || '').toLowerCase();
-      const code = (e.code || '').toLowerCase();
-      const active = document.activeElement;
-      const isTyping = active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.getAttribute('contenteditable') === 'true');
-
-      // Check Ctrl+B / Cmd+B / Alt+B -> Brain Dump Modal
-      const isB = ((e.ctrlKey || e.metaKey || e.altKey) && (key === 'b' || code === 'keyb' || key === 'لا'));
-      if (isB) {
-        if (!isTyping || e.altKey) {
-          e.preventDefault();
-          e.stopPropagation();
-          window.dispatchEvent(new CustomEvent('lifeos:openBrainDump'));
-          return;
-        }
-      }
-
-      // Check Ctrl+A / Cmd+A (when not typing) or Alt+A / Ctrl+Shift+A -> AI Chat Modal
-      const isA = ((e.ctrlKey || e.metaKey) && (key === 'a' || code === 'keya' || key === 'ش') && !isTyping) ||
-                  (e.altKey && (key === 'a' || code === 'keya' || key === 'ش')) ||
-                  ((e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'a' || code === 'keya'));
-
-      if (isA) {
-        e.preventDefault();
-        e.stopPropagation();
-        const selectedText = window.getSelection()?.toString().trim() || '';
-        window.dispatchEvent(new CustomEvent('lifeos:openAIChat', { detail: { prompt: selectedText } }));
-      }
-    };
-
-    window.addEventListener('keydown', handleGlobalShortcuts, { capture: true });
+    // NOTE: Ctrl/Cmd+B (Brain Dump) and Ctrl/Cmd+A (AI Chat) are handled exclusively in
+    // AppShell.web.tsx. They used to be duplicated here, which caused both listeners to
+    // fire on every keypress (double-toggle), so closing a modal with the shortcut
+    // immediately reopened it. Do not re-add a second global keydown handler for these.
+    window.addEventListener('keydown', handleGlobalKeyDown, { capture: true });
 
     return () => {
       window.removeEventListener('keydown', handleGlobalKeyDown, { capture: true });
-      window.removeEventListener('keydown', handleGlobalShortcuts, { capture: true });
     };
   }, []);
 

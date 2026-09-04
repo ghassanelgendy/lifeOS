@@ -48,11 +48,11 @@ export function AzkarDashboardWidget() {
           <div>
             <div className="flex items-center gap-1.5">
               <h3 className="font-semibold text-sm leading-tight text-foreground">الأذكار والورد اليومي</h3>
-              <span className="text-[10px] px-2 py-0.2 rounded-full bg-primary/10 text-primary font-medium">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                 {contextual.badge}
               </span>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{contextual.category}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5" lang="ar" dir="rtl">{contextual.category}</p>
           </div>
         </div>
 

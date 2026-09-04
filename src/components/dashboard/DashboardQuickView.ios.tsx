@@ -20,11 +20,10 @@ import { useUIStore } from '../../stores/useUIStore';
 import { usePrayerTracker } from '../../hooks/usePrayerHabits';
 import { usePrayerTimes } from '../../hooks/usePrayerTimes';
 import { isPrayerStatusComplete } from '../../lib/prayerStatus';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useToggleCalendarEvent } from '../../hooks/useCalendar';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
-import { AzkarDashboardWidget } from './AzkarDashboardWidget';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
@@ -1882,11 +1881,6 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               </span>
             </span>
           </Link>
-        </div>
-
-        {/* Daily Azkar Widget */}
-        <div className="mb-3 sm:mb-4">
-          <AzkarDashboardWidget />
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:gap-4">

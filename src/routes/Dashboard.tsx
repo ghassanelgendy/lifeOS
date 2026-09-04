@@ -12,7 +12,7 @@ import { useTaskLists, useTags, useTasks, useUpdateTask, useToggleTask } from '.
 import { useCalendarEvents, useUpdateCalendarEvent } from '../hooks/useCalendar';
 import { cn } from '../lib/utils';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Edit2, Check, Plus, Calendar, ListTodo, Flame, Wallet, Mic } from 'lucide-react';
+import { Edit2, Check, Plus, Calendar, ListTodo, Flame, Wallet, Mic, Sun } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { triggerHaptics } from '../lib/nativeBridge';
 import type { PrayerName } from '../types/schema';
@@ -721,11 +721,12 @@ export default function Dashboard() {
   }, []);
 
   const FAB_ITEMS = useMemo(() => {
-    const base: { type: 'event' | 'task' | 'habit' | 'transaction' | 'mic'; label: string; icon: any; color: string }[] = [
+    const base: { type: 'event' | 'task' | 'habit' | 'transaction' | 'azkar' | 'mic'; label: string; icon: any; color: string }[] = [
       { type: 'event', label: 'Event', icon: Calendar, color: 'text-blue-500 bg-blue-500/10' },
       { type: 'task', label: 'Task', icon: ListTodo, color: 'text-emerald-500 bg-emerald-500/10' },
       { type: 'habit', label: 'Habit', icon: Flame, color: 'text-amber-500 bg-amber-500/10' },
       { type: 'transaction', label: 'Transaction', icon: Wallet, color: 'text-rose-500 bg-rose-500/10' },
+      { type: 'azkar', label: 'Azkar', icon: Sun, color: 'text-orange-500 bg-orange-500/10' },
     ];
     if (aiEnabled) {
       base.push({ type: 'mic', label: 'Voice AI', icon: Mic, color: 'text-red-500 bg-red-500/10' });
@@ -871,7 +872,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleQuickAdd = (type: 'event' | 'task' | 'habit' | 'transaction' | 'mic') => {
+  const handleQuickAdd = (type: 'event' | 'task' | 'habit' | 'transaction' | 'azkar' | 'mic') => {
     void triggerHaptics('medium');
     switch (type) {
       case 'event':
@@ -885,6 +886,9 @@ export default function Dashboard() {
         break;
       case 'transaction':
         navigate('/finance', { state: { triggerAdd: true } });
+        break;
+      case 'azkar':
+        navigate('/azkar');
         break;
       case 'mic':
         handleMicClick();
