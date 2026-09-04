@@ -68,6 +68,20 @@ let currentTabInfo = {
 let allNotes = [];
 let activeViewingNote = null;
 
+// True once a load call has actually confirmed the session is dead (authExpired), as
+// opposed to just "not configured yet". Drives the "Disconnected" state in the status pill
+// instead of silently rendering 0 tasks / 0 habits / 0 screentime.
+let sessionDisconnected = false;
+
+/** One recovery attempt for an authExpired error: try re-syncing tokens from any open
+ * lifeOS tab (this is what actually recovers from the refresh-token-rotation race — the
+ * open tab's own supabase-js client may have already rotated to a newer valid token) and
+ * report whether it's worth retrying the failed call. */
+async function tryRecoverSession() {
+  const recovered = await syncFromOpenTabs(false);
+  return recovered;
+}
+
 // Toast Helper
 function showToast(message, type = 'info') {
   if (!elements.toast || !elements.toastText) return;
@@ -103,15 +117,28 @@ function initTabNavigation() {
 }
 
 // Screentime & Header
-async function loadScreentime() {
+async function loadScreentime(isRetry = false) {
   try {
     if (elements.screentimeVal) elements.screentimeVal.textContent = '...';
     const stats = await supabaseClient.fetchTodayScreentime();
     if (elements.screentimeVal) {
       elements.screentimeVal.textContent = stats.formatted || '0m';
     }
+    if (sessionDisconnected) {
+      sessionDisconnected = false;
+      updateConnectionStatus();
+    }
   } catch (err) {
-    if (elements.screentimeVal) elements.screentimeVal.textContent = '0m';
+    if (err && err.authExpired && !isRetry) {
+      const recovered = await tryRecoverSession();
+      if (recovered) return loadScreentime(true);
+    }
+    // Distinguish "we couldn't tell" (—) from "0m", which looks like a legitimate reading.
+    if (elements.screentimeVal) elements.screentimeVal.textContent = err && err.authExpired ? '—' : '0m';
+    if (err && err.authExpired) {
+      sessionDisconnected = true;
+      updateConnectionStatus();
+    }
   }
 }
 
@@ -308,11 +335,15 @@ async function loadTodayData() {
   await Promise.all([loadTodayTasks(), loadTodayHabits()]);
 }
 
-async function loadTodayTasks() {
+async function loadTodayTasks(isRetry = false) {
   try {
     const tasks = await supabaseClient.fetchTodayTasks();
     if (elements.tasksCount) elements.tasksCount.textContent = tasks.length;
     if (elements.todayTasksBadge) elements.todayTasksBadge.textContent = tasks.length;
+    if (sessionDisconnected) {
+      sessionDisconnected = false;
+      updateConnectionStatus();
+    }
 
     if (!elements.todayTasksList) return;
 
@@ -361,16 +392,28 @@ async function loadTodayTasks() {
       elements.todayTasksList.appendChild(item);
     });
   } catch (err) {
+    if (err && err.authExpired && !isRetry) {
+      const recovered = await tryRecoverSession();
+      if (recovered) return loadTodayTasks(true);
+    }
+    if (err && err.authExpired) {
+      sessionDisconnected = true;
+      updateConnectionStatus();
+    }
     if (elements.todayTasksList) {
       elements.todayTasksList.innerHTML = `<div class="empty-state">${err.message}</div>`;
     }
   }
 }
 
-async function loadTodayHabits() {
+async function loadTodayHabits(isRetry = false) {
   try {
     const habits = await supabaseClient.fetchTodayHabits();
     if (elements.habitsCount) elements.habitsCount.textContent = habits.length;
+    if (sessionDisconnected) {
+      sessionDisconnected = false;
+      updateConnectionStatus();
+    }
     if (!elements.todayHabitsList) return;
 
     if (habits.length === 0) {
@@ -417,6 +460,14 @@ async function loadTodayHabits() {
       elements.todayHabitsList.appendChild(card);
     });
   } catch (err) {
+    if (err && err.authExpired && !isRetry) {
+      const recovered = await tryRecoverSession();
+      if (recovered) return loadTodayHabits(true);
+    }
+    if (err && err.authExpired) {
+      sessionDisconnected = true;
+      updateConnectionStatus();
+    }
     if (elements.todayHabitsList) {
       elements.todayHabitsList.innerHTML = `<div class="empty-state" style="grid-column: span 2;">${err.message}</div>`;
     }
@@ -516,6 +567,14 @@ async function loadSettingsUI() {
 }
 
 function updateConnectionStatus() {
+  // sessionDisconnected is set only once a real request has confirmed the session is dead
+  // (401 + failed refresh) — isConfigured() alone can't tell a dead token from a live one,
+  // since it only checks that *some* key/token is present in storage.
+  if (sessionDisconnected) {
+    if (elements.statusDot) elements.statusDot.className = 'status-indicator error';
+    if (elements.statusMessage) elements.statusMessage.textContent = 'Disconnected — click Refresh to reconnect';
+    return;
+  }
   if (supabaseClient.isConfigured()) {
     if (elements.statusDot) elements.statusDot.className = 'status-indicator connected';
     if (elements.statusMessage) {

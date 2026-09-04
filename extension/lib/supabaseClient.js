@@ -5,6 +5,14 @@
 
 import { ENV_CONFIG } from './envConfig.js';
 
+/** Swallow a failed sub-query into an empty list, EXCEPT for an expired-session error —
+ * that one must keep propagating so the caller can distinguish "disconnected" from
+ * "genuinely nothing here" instead of quietly rendering 0. */
+function toEmptyUnlessAuthExpired(err) {
+  if (err && err.authExpired) throw err;
+  return [];
+}
+
 export class SupabaseClient {
   constructor() {
     this.supabaseUrl = ENV_CONFIG.supabaseUrl || 'https://vlbgxbzwasgpbfzfabnl.supabase.co';
@@ -139,10 +147,21 @@ export class SupabaseClient {
         if (refreshed) {
           return this.request(path, options, true);
         }
-        // Fall back to anon key
+        // Refresh failed too — this session is genuinely dead (most likely: the refresh
+        // token was already rotated by the main lifeOS tab's own background refresh, since
+        // both copies are the same account's token and Supabase refresh tokens are
+        // single-use). Previously this silently switched to the anon key and retried, which
+        // returns HTTP 200 with an EMPTY array once RLS blocks the unauthenticated request —
+        // indistinguishable from "you genuinely have 0 tasks/habits/screentime today". Throw
+        // a typed error instead so callers can show a real "disconnected" state and attempt
+        // recovery (re-syncing from an open lifeOS tab), rather than rendering a misleading 0.
         this.accessToken = '';
-        await this.saveConfig({ accessToken: '' });
-        return this.request(path, options, true);
+        this.refreshToken = '';
+        await this.saveConfig({ accessToken: '', refreshToken: '' });
+        const authErr = new Error('Your lifeOS session has expired. Reopen lifeOS in a browser tab (or click Refresh) to reconnect.');
+        authErr.status = 401;
+        authErr.authExpired = true;
+        throw authErr;
       }
 
       const err = new Error(msg);
@@ -193,8 +212,8 @@ export class SupabaseClient {
     }
 
     const [appStats, webStats] = await Promise.all([
-      this.request(appQuery).catch(() => []),
-      this.request(webQuery).catch(() => []),
+      this.request(appQuery).catch(toEmptyUnlessAuthExpired),
+      this.request(webQuery).catch(toEmptyUnlessAuthExpired),
     ]);
 
     const appItems = Array.isArray(appStats) ? appStats : [];
@@ -330,10 +349,10 @@ export class SupabaseClient {
     if (this.userId) prayerLogsQuery += `&user_id=eq.${this.userId}`;
 
     const [habitsData, logsData, prayerHabitsData, prayerLogsData] = await Promise.all([
-      this.request(habitsQuery).catch(() => []),
-      this.request(logsQuery).catch(() => []),
-      this.request(prayerHabitsQuery).catch(() => []),
-      this.request(prayerLogsQuery).catch(() => []),
+      this.request(habitsQuery).catch(toEmptyUnlessAuthExpired),
+      this.request(logsQuery).catch(toEmptyUnlessAuthExpired),
+      this.request(prayerHabitsQuery).catch(toEmptyUnlessAuthExpired),
+      this.request(prayerLogsQuery).catch(toEmptyUnlessAuthExpired),
     ]);
 
     const habits = Array.isArray(habitsData) ? habitsData : [];
@@ -410,7 +429,7 @@ export class SupabaseClient {
     // 1. Check if habit is a prayer habit
     let phQuery = `/rest/v1/prayer_habits?habit_id=eq.${habitId}&select=id,prayer_name`;
     if (this.userId) phQuery += `&user_id=eq.${this.userId}`;
-    const phRes = await this.request(phQuery).catch(() => []);
+    const phRes = await this.request(phQuery).catch(toEmptyUnlessAuthExpired);
     const prayerHabit = Array.isArray(phRes) && phRes.length > 0 ? phRes[0] : null;
 
     // 2. Upsert habit_logs
@@ -453,7 +472,7 @@ export class SupabaseClient {
     if (prayerHabit && prayerHabit.id) {
       let plQuery = `/rest/v1/prayer_logs?prayer_habit_id=eq.${prayerHabit.id}&date=eq.${todayStr}&select=id`;
       if (this.userId) plQuery += `&user_id=eq.${this.userId}`;
-      const existingPl = await this.request(plQuery).catch(() => []);
+      const existingPl = await this.request(plQuery).catch(toEmptyUnlessAuthExpired);
 
       const prayerStatus = completed ? 'Prayed' : 'Not Prayed';
       const prayedAt = completed ? nowIso : null;
