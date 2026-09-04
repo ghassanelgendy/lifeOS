@@ -16,6 +16,7 @@ import {
   Coins,
   Sparkles,
   BookOpen,
+  Sun,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -28,7 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { label: 'Tasks', icon: CheckSquare, href: '/tasks' },
   { label: 'Quran', icon: BookOpen, href: '/quran' },
-  { label: 'Azkar', icon: Sparkles, href: '/azkar' },
+  { label: 'Azkar', icon: Sun, href: '/azkar' },
   { label: 'Weekly Planner', icon: CalendarDays, href: '/weekly-planner' },
   { label: 'Focus', icon: FocusIcon, href: '/focus' },
   { label: 'Habits', icon: Target, href: '/habits' },
