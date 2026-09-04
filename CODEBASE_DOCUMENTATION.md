@@ -35,6 +35,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### .agents/rules
 - [.agents/rules/db-optimizer.md](#-agents-rules-db-optimizer-md)
 
+### .claude
+- [.claude/settings.local.json](#-claude-settings-local-json)
+
 ### .github
 - [.github/dependabot.yml](#-github-dependabot-yml)
 
@@ -190,10 +193,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [scratch/test-marked.js](#scratch-test-marked-js)
 
 ### scripts
+- [scripts/build-extension.js](#scripts-build-extension-js)
 - [scripts/generate-tauri-updater.js](#scripts-generate-tauri-updater-js)
 - [scripts/package.json](#scripts-package-json)
 - [scripts/pake-inject.js](#scripts-pake-inject-js)
 - [scripts/patch-pake-config.js](#scripts-patch-pake-config-js)
+- [scripts/patch-pake-desktop.js](#scripts-patch-pake-desktop-js)
 - [scripts/tsconfig.json](#scripts-tsconfig-json)
 
 ### scripts/src
@@ -242,6 +247,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/FocusPiPWindow.tsx](#src-components-focuspipwindow-tsx)
 - [src/components/FocusSessionManager.tsx](#src-components-focussessionmanager-tsx)
 - [src/components/KeyboardShortcutsModal.tsx](#src-components-keyboardshortcutsmodal-tsx)
+- [src/components/LinuxTitleBar.tsx](#src-components-linuxtitlebar-tsx)
 - [src/components/LiquidTabBar.tsx](#src-components-liquidtabbar-tsx)
 - [src/components/LoadingScreen.tsx](#src-components-loadingscreen-tsx)
 - [src/components/OfflineBanner.tsx](#src-components-offlinebanner-tsx)
@@ -280,7 +286,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### src/components/dashboard
 - [src/components/dashboard/DashboardAnnualReview.tsx](#src-components-dashboard-dashboardannualreview-tsx)
 - [src/components/dashboard/DashboardQuickView.ios.tsx](#src-components-dashboard-dashboardquickview-ios-tsx)
-- [src/components/dashboard/DashboardQuickView.pake.tsx](#src-components-dashboard-dashboardquickview-pake-tsx)
 - [src/components/dashboard/DashboardQuickView.tsx](#src-components-dashboard-dashboardquickview-tsx)
 - [src/components/dashboard/DashboardQuickView.web.tsx](#src-components-dashboard-dashboardquickview-web-tsx)
 - [src/components/dashboard/DashboardStrategic.tsx](#src-components-dashboard-dashboardstrategic-tsx)
@@ -330,6 +335,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/hooks/useInvestments.ts](#src-hooks-useinvestments-ts)
 - [src/hooks/useNativeInteraction.ts](#src-hooks-usenativeinteraction-ts)
 - [src/hooks/useNativeLocalNotifications.ts](#src-hooks-usenativelocalnotifications-ts)
+- [src/hooks/useNativeTraySync.ts](#src-hooks-usenativetraysync-ts)
 - [src/hooks/useNotes.ts](#src-hooks-usenotes-ts)
 - [src/hooks/usePakeLocalNotifications.ts](#src-hooks-usepakelocalnotifications-ts)
 - [src/hooks/usePoints.ts](#src-hooks-usepoints-ts)
@@ -402,7 +408,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Finance.web.tsx](#src-routes-finance-web-tsx)
 - [src/routes/Focus.tsx](#src-routes-focus-tsx)
 - [src/routes/Habits.ios.tsx](#src-routes-habits-ios-tsx)
-- [src/routes/Habits.pake.tsx](#src-routes-habits-pake-tsx)
 - [src/routes/Habits.tsx](#src-routes-habits-tsx)
 - [src/routes/Habits.web.tsx](#src-routes-habits-web-tsx)
 - [src/routes/Health.tsx](#src-routes-health-tsx)
@@ -421,7 +426,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Settings.web.tsx](#src-routes-settings-web-tsx)
 - [src/routes/Signup.tsx](#src-routes-signup-tsx)
 - [src/routes/Sleep.ios.tsx](#src-routes-sleep-ios-tsx)
-- [src/routes/Sleep.pake.tsx](#src-routes-sleep-pake-tsx)
 - [src/routes/Sleep.tsx](#src-routes-sleep-tsx)
 - [src/routes/Sleep.web.tsx](#src-routes-sleep-web-tsx)
 - [src/routes/Tasks.ios.tsx](#src-routes-tasks-ios-tsx)
@@ -529,6 +533,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="-claude-settings-local-json"></a>
+### .claude/settings.local.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 15
+
+---
+
 <a name="-github-dependabot-yml"></a>
 ### .github/dependabot.yml
 
@@ -547,7 +562,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 91
+**Lines:** 96
 
 ---
 
@@ -558,11 +573,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Notes:**
-- Builds & releases Desktop (Pake) packages: Windows MSI and Linux `.deb`/`.AppImage`.
-- **Linux desktop entry cleanup:** A post-build step extracts the generated `.deb`, removes the duplicate `lifeos.desktop` entry (leaving only the single `com.pake.lifeos.desktop`), and edits its `Exec=` line with an `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix to enable GPU compositing for WebKitGTK, then repackages the `.deb`.
-
-**Lines:** 338
+**Lines:** 370
 
 ---
 
@@ -573,7 +584,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 114
+**Lines:** 121
 
 ---
 
@@ -595,7 +606,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 148
+**Lines:** 151
 
 ---
 
@@ -628,7 +639,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6659
+**Lines:** 6660
 
 ---
 
@@ -650,7 +661,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 902
+**Lines:** 903
 
 ---
 
@@ -661,7 +672,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 127
+**Lines:** 134
 
 ---
 
@@ -670,9 +681,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **File Purpose:** Vercel serverless API route. Handles server-side logic for API endpoints.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:**
+- `trimTrailingSlashes` (Function)
+- `normalizeAiBaseUrl` (Function)
+- `isAllowedAiHost` (Function)
 
-**Lines:** 82
+**Function Details:**
+- **`trimTrailingSlashes`** — Utility function for trim trailing slashes.
+- **`normalizeAiBaseUrl`** — Utility function for normalize ai base url.
+- **`isAllowedAiHost`** — Utility function for is allowed ai host.
+
+**Lines:** 120
 
 ---
 
@@ -786,9 +805,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **File Purpose:** Vercel serverless API route. Handles server-side logic for API endpoints.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:**
+- `isPrivateOrReservedAddress` (Function)
+- `isAllowedProxyHost` (Function)
 
-**Lines:** 64
+**Function Details:**
+- **`isPrivateOrReservedAddress`** — Utility function for is private or reserved address.
+- **`isAllowedProxyHost`** — Utility function for is allowed proxy host.
+
+**Lines:** 137
 
 ---
 
@@ -1159,6 +1184,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Workspace package: API client for React. Auto-generated or custom fetch wrappers for API consumption.
 
 **Functions & Classes:**
+- `trimTrailingSlashes` (Function)
 - `setBaseUrl` (Function)
 - `setAuthTokenGetter` (Function)
 - `isRequest` (Function)
@@ -1173,7 +1199,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `hasNoBody` (Function)
 - `stripBom` (Function)
 - `looksLikeJson` (Function)
-- `getStringField` (Function)
 - `ApiError` (Class)
 - `ResponseParseError` (Class)
 - `CustomFetchOptions` (Type)
@@ -1182,13 +1207,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `AuthTokenGetter` (Type)
 
 **Function Details:**
+- **`trimTrailingSlashes`** — Utility function for trim trailing slashes.
 - **`setBaseUrl`** — Utility function for set base url.
 - **`setAuthTokenGetter`** — Utility function for set auth token getter.
 - **`isRequest`** — Utility function for is request.
 - **`resolveMethod`** — Utility function for resolve method.
-- **`isUrl`** — Utility function for is url.
 
-**Lines:** 372
+**Lines:** 378
 
 ---
 
@@ -1437,7 +1462,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`getSheikhLastName`** — Utility function for get sheikh last name.
 
-**Lines:** 521
+**Lines:** 534
 
 ---
 
@@ -1459,7 +1484,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 1227
+**Lines:** 1262
 
 ---
 
@@ -1477,22 +1502,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranmemorizermain-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranMemorizerMain.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Main root container component for the Quran Memorizer module. Manages active view tabs (reader, khatmah, revision, mutashabihat), coordinates audio playback, handles bidirectional habit and checkpoint synchronization with Supabase and localStorage, processes deep linking query parameters (`page`, `surah`, `ayah`, `mode`, `tab`), and dispatches habit logging events upon setting checkpoints.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:** None (React component module)
 
-**Lines:** 729
+**Lines:** 776
 
 ---
 
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Core Quran reader component supporting Medina Mushaf page view and ayah list modes, fullscreen reader with pinch-to-zoom and floating HUD, 3D long-press verse action context menu (memorization and reading checkpoint tagging, tafseer drawer, audio looping), dynamic active Surah calculation and Fehres synchronization across page flips, and automated scrolling to center target verses.
 
-**Functions & Classes:** None (configuration or re-export module)
+**Functions & Classes:** None (React component module)
 
-**Lines:** 2365
+**Lines:** 2425
 
 ---
 
@@ -1590,7 +1615,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `advanceWirdOnHabitComplete` (Function)
 - `formatSurahAndAyahSpan` (Function)
 - `getQuranWirdAndReviewSummary` (Function)
+- `getSpecificSurahHabitTarget` (Function)
 - `QuranWirdSummary` (Interface)
+- `QuranHabitTarget` (Interface)
+- `AdvancedWirdResult` (Type)
 
 **Function Details:**
 - **`getSurahForPage`** — Utility function for get surah for page.
@@ -1598,8 +1626,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`classifyQuranHabitTitle`** — Utility function for classify quran habit title.
 - **`advanceWirdOnHabitComplete`** — Utility function for advance wird on habit complete.
 - **`formatSurahAndAyahSpan`** — Utility function for format surah and ayah span.
+- **`getSpecificSurahHabitTarget`** — Utility function detecting specific Surahs (such as Surat Al-Mulk, Surat Al-Kahf) and resolving their target Medina Mushaf page and Surah ID for interactive habit deep linking.
 
-**Lines:** 540
+**Lines:** 654
 
 ---
 
@@ -1671,7 +1700,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 126
+**Lines:** 135
 
 ---
 
@@ -1682,7 +1711,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 14203
+**Lines:** 13444
 
 ---
 
@@ -1793,6 +1822,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="scripts-build-extension-js"></a>
+### scripts/build-extension.js
+
+**File Purpose:** Build/utility script. Automates development tasks, icon generation, or deployment procedures.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 50
+
+---
+
 <a name="scripts-generate-tauri-updater-js"></a>
 ### scripts/generate-tauri-updater.js
 
@@ -1834,6 +1874,25 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 103
+
+---
+
+<a name="scripts-patch-pake-desktop-js"></a>
+### scripts/patch-pake-desktop.js
+
+**File Purpose:** Build/utility script. Automates development tasks, icon generation, or deployment procedures.
+
+**Functions & Classes:**
+- `findPakeCliSrcTauri` (Function)
+- `findPakeCliDistCliJs` (Function)
+- `replaceOnce` (Function)
+
+**Function Details:**
+- **`findPakeCliSrcTauri`** — Utility function for find pake cli src tauri.
+- **`findPakeCliDistCliJs`** — Utility function for find pake cli dist cli js.
+- **`replaceOnce`** — Utility function for replace once.
+
+**Lines:** 297
 
 ---
 
@@ -1905,7 +1964,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 543
+**Lines:** 542
 
 ---
 
@@ -1964,7 +2023,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`UserAppSettingsBridge`** — Utility function for user app settings bridge.
 - **`ThemeSync`** — Utility function for theme sync.
 
-**Lines:** 493
+**Lines:** 495
 
 ---
 
@@ -1997,7 +2056,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`todayInputDate`** — Utility function for today input date.
 - **`AINoteOrganizerSheet`** — Utility function for a i note organizer sheet.
 
-**Lines:** 596
+**Lines:** 576
 
 ---
 
@@ -2012,7 +2071,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`AISettingsSection`** — Utility function for a i settings section.
 
-**Lines:** 414
+**Lines:** 396
 
 ---
 
@@ -2078,16 +2137,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
-- `MobileNavLink` (React Component)
-- `MobileNavLink` (Function)
 - `AppShell` (Function)
 
 **Function Details:**
-- **`MobileNavLink`** — React component rendering UI for MobileNavLink.
-- **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 867
+**Lines:** 806
 
 ---
 
@@ -2097,16 +2152,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
-- `MobileNavLink` (React Component)
-- `MobileNavLink` (Function)
 - `AppShell` (Function)
 
 **Function Details:**
-- **`MobileNavLink`** — React component rendering UI for MobileNavLink.
-- **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 496
+**Lines:** 460
 
 ---
 
@@ -2151,7 +2202,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`BrainDumpGraphView`** — Utility function for brain dump graph view.
 
-**Lines:** 572
+**Lines:** 552
 
 ---
 
@@ -2166,7 +2217,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`BrainDumpModal`** — Utility function for brain dump modal.
 
-**Lines:** 1266
+**Lines:** 1232
 
 ---
 
@@ -2181,7 +2232,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`CommandPalette`** — Utility function for command palette.
 
-**Lines:** 244
+**Lines:** 256
 
 ---
 
@@ -2398,6 +2449,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`KeyboardShortcutsModal`** — Utility function for keyboard shortcuts modal.
 
 **Lines:** 167
+
+---
+
+<a name="src-components-linuxtitlebar-tsx"></a>
+### src/components/LinuxTitleBar.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `parseLayout` (Function)
+- `LinuxTitleBar` (Function)
+
+**Function Details:**
+- **`parseLayout`** — Utility function for parse layout.
+- **`LinuxTitleBar`** — Utility function for linux title bar.
+
+**Lines:** 135
 
 ---
 
@@ -2649,7 +2717,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1162
+**Lines:** 1141
 
 ---
 
@@ -2692,7 +2760,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1132
+**Lines:** 1111
 
 ---
 
@@ -2707,7 +2775,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`TaskSimilarityMergeModal`** — Utility function for task similarity merge modal.
 
-**Lines:** 275
+**Lines:** 261
 
 ---
 
@@ -2876,7 +2944,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`ShareModal`** — Utility function for share modal.
 
-**Lines:** 152
+**Lines:** 151
 
 ---
 
@@ -2904,7 +2972,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:**
 - `DueTodayRow` (React Component)
-- `formatSleepMinutes` (Function)
 - `formatDurationMinutes` (Function)
 - `timeStringToMinutes` (Function)
 - `isoToDayMinutes` (Function)
@@ -2917,43 +2984,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Function Details:**
 - **`DueTodayRow`** — React component rendering UI for DueTodayRow.
-- **`formatSleepMinutes`** — Utility function for format sleep minutes.
 - **`formatDurationMinutes`** — Utility function for format duration minutes.
 - **`timeStringToMinutes`** — Utility function for time string to minutes.
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
+- **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 2323
-
----
-
-<a name="src-components-dashboard-dashboardquickview-pake-tsx"></a>
-### src/components/dashboard/DashboardQuickView.pake.tsx
-
-**File Purpose:** Dashboard widget/component. Displays aggregated life metrics and quick-view data panels.
-
-**Functions & Classes:**
-- `DueTodayRow` (React Component)
-- `formatSleepMinutes` (Function)
-- `formatDurationMinutes` (Function)
-- `timeStringToMinutes` (Function)
-- `isoToDayMinutes` (Function)
-- `mergeSegments` (Function)
-- `intersectSegments` (Function)
-- `subtractSegments` (Function)
-- `parseDueForSort` (Function)
-- `DueTodayRow` (Function)
-- `DashboardQuickView` (Function)
-
-**Function Details:**
-- **`DueTodayRow`** — React component rendering UI for DueTodayRow.
-- **`formatSleepMinutes`** — Utility function for format sleep minutes.
-- **`formatDurationMinutes`** — Utility function for format duration minutes.
-- **`timeStringToMinutes`** — Utility function for time string to minutes.
-- **`isoToDayMinutes`** — Utility function for iso to day minutes.
-- **`mergeSegments`** — Utility function for merge segments.
-
-**Lines:** 1448
+**Lines:** 2296
 
 ---
 
@@ -2974,7 +3011,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Dashboard widget/component. Displays aggregated life metrics and quick-view data panels.
 
 **Functions & Classes:**
-- `formatSleepMinutes` (Function)
 - `formatDurationMinutes` (Function)
 - `timeStringToMinutes` (Function)
 - `isoToDayMinutes` (Function)
@@ -2985,13 +3021,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `DashboardQuickView` (Function)
 
 **Function Details:**
-- **`formatSleepMinutes`** — Utility function for format sleep minutes.
 - **`formatDurationMinutes`** — Utility function for format duration minutes.
 - **`timeStringToMinutes`** — Utility function for time string to minutes.
 - **`isoToDayMinutes`** — Utility function for iso to day minutes.
 - **`mergeSegments`** — Utility function for merge segments.
+- **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 1777
+**Lines:** 1754
 
 ---
 
@@ -3187,7 +3223,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`WikiGraphView`** — Utility function for wiki graph view.
 - **`step`** — Utility function for step.
 
-**Lines:** 359
+**Lines:** 358
 
 ---
 
@@ -3206,7 +3242,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`wikiLinkExtension`** — Utility function for wiki link extension.
 - **`WikiMarkdown`** — Utility function for wiki markdown.
 
-**Lines:** 84
+**Lines:** 88
 
 ---
 
@@ -3555,7 +3591,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 1039
+**Lines:** 1052
 
 ---
 
@@ -3622,7 +3658,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 1015
+**Lines:** 1028
 
 ---
 
@@ -3767,6 +3803,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-hooks-usenativetraysync-ts"></a>
+### src/hooks/useNativeTraySync.ts
+
+**File Purpose:** Custom React hook. Encapsulates NativeTraySync.ts logic for data fetching, state management, or side effects.
+
+**Functions & Classes:**
+- `useNativeTraySync` (React Hook)
+- `useNativeTraySync` (Function)
+
+**Function Details:**
+- **`useNativeTraySync`** — Custom React hook managing nativetraysync state and side effects.
+- **`useNativeTraySync`** — Utility function for use native tray sync.
+
+**Lines:** 38
+
+---
+
 <a name="src-hooks-usenotes-ts"></a>
 ### src/hooks/useNotes.ts
 
@@ -3818,6 +3871,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `usePakeLocalNotifications` (React Hook)
 - `generateEventInstances` (Function)
+- `sendNativeNotification` (Function)
 - `isHabitScheduledForDate` (Function)
 - `taskTriggerDate` (Function)
 - `usePakeLocalNotifications` (Function)
@@ -3825,11 +3879,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`usePakeLocalNotifications`** — Custom React hook managing pakelocalnotifications state and side effects.
 - **`generateEventInstances`** — Utility function for generate event instances.
+- **`sendNativeNotification`** — Utility function for send native notification.
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`taskTriggerDate`** — Utility function for task trigger date.
 - **`usePakeLocalNotifications`** — Utility function for use pake local notifications.
 
-**Lines:** 321
+**Lines:** 348
 
 ---
 
@@ -3879,7 +3934,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isTaskCompletedOnTime`** — Utility function for is task completed on time.
 - **`usePointsTransactions`** — Utility function for use points transactions.
 
-**Lines:** 458
+**Lines:** 450
 
 ---
 
@@ -3893,7 +3948,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useSetPrayerStatusAtDate` (React Hook)
 - `usePrayerNotificationSettings` (React Hook)
 - `getPrayerStatusPenalty` (Function)
-- `isPrayerOverdue` (Function)
 - `usePrayerTracker` (Function)
 - `useSetPrayerStatusAtDate` (Function)
 - `usePrayerNotificationSettings` (Function)
@@ -3904,12 +3958,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Custom React hook managing setprayerstatusatdate state and side effects.
 - **`usePrayerNotificationSettings`** — Custom React hook managing prayernotificationsettings state and side effects.
 - **`getPrayerStatusPenalty`** — Utility function for get prayer status penalty.
-- **`isPrayerOverdue`** — Utility function for is prayer overdue.
 - **`usePrayerTracker`** — Utility function for use prayer tracker.
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 960
+**Lines:** 940
 
 ---
 
@@ -3934,7 +3987,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useSetPrayerStatusAtDate` (React Hook)
 - `usePrayerNotificationSettings` (React Hook)
 - `getPrayerStatusPenalty` (Function)
-- `isPrayerOverdue` (Function)
 - `usePrayerTracker` (Function)
 - `useSetPrayerStatusAtDate` (Function)
 - `usePrayerNotificationSettings` (Function)
@@ -3945,12 +3997,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Custom React hook managing setprayerstatusatdate state and side effects.
 - **`usePrayerNotificationSettings`** — Custom React hook managing prayernotificationsettings state and side effects.
 - **`getPrayerStatusPenalty`** — Utility function for get prayer status penalty.
-- **`isPrayerOverdue`** — Utility function for is prayer overdue.
 - **`usePrayerTracker`** — Utility function for use prayer tracker.
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 866
+**Lines:** 846
 
 ---
 
@@ -4047,7 +4098,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useQuranCloudSync`** — Custom React hook managing qurancloudsync state and side effects.
 - **`useQuranCloudSync`** — Utility function for use quran cloud sync.
 
-**Lines:** 310
+**Lines:** 317
 
 ---
 
@@ -4132,7 +4183,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useScreentimeWebsiteStats`** — Utility function for use screentime website stats.
 - **`useScreentimeDailySummaries`** — Utility function for use screentime daily summaries.
 
-**Lines:** 480
+**Lines:** 477
 
 ---
 
@@ -4270,7 +4321,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTaskLists`** — Utility function for use task lists.
 - **`useTags`** — Utility function for use tags.
 
-**Lines:** 1227
+**Lines:** 1220
 
 ---
 
@@ -4343,7 +4394,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTaskLists`** — Utility function for use task lists.
 - **`useTags`** — Utility function for use tags.
 
-**Lines:** 1223
+**Lines:** 1216
 
 ---
 
@@ -4448,9 +4499,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, pake-platform, linux-platform (+3 more)
+**CSS Classes/Selectors:** dark, css, font-arabic-title, font-arabic-body, font-cairo, font-arabic-quran, light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface (+23 more)
 
-**Lines:** 594
+**Lines:** 750
 
 ---
 
@@ -4461,7 +4512,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 124
+**Lines:** 112
 
 ---
 
@@ -4471,14 +4522,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
+- `isNativeOrDesktop` (Function)
 - `cleanAiResponse` (Function)
 - `extractJSON` (Function)
 
 **Function Details:**
+- **`isNativeOrDesktop`** — Utility function for is native or desktop.
 - **`cleanAiResponse`** — Utility function for clean ai response.
 - **`extractJSON`** — Utility function for extract j s o n.
 
-**Lines:** 405
+**Lines:** 408
 
 ---
 
@@ -4712,7 +4765,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 889
+**Lines:** 888
 
 ---
 
@@ -5043,7 +5096,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getSubSection`** — Utility function for get sub section.
 - **`buildTitleSet`** — Utility function for build title set.
 
-**Lines:** 413
+**Lines:** 412
 
 ---
 
@@ -5139,7 +5192,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`CalendarPage`** — React component rendering UI for CalendarPage.
 - **`CalendarPage`** — Utility function for calendar page.
 
-**Lines:** 1729
+**Lines:** 1688
 
 ---
 
@@ -5156,7 +5209,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`CalendarPage`** — React component rendering UI for CalendarPage.
 - **`CalendarPage`** — Utility function for calendar page.
 
-**Lines:** 1733
+**Lines:** 1656
 
 ---
 
@@ -5203,7 +5256,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Chat`** — Utility function for chat.
 - **`normalizeIsoWithLocalTz`** — Utility function for normalize iso with local tz.
 
-**Lines:** 1265
+**Lines:** 1244
 
 ---
 
@@ -5233,7 +5286,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ModeBody`** — Utility function for mode body.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 
-**Lines:** 1171
+**Lines:** 1165
 
 ---
 
@@ -5250,7 +5303,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1955
+**Lines:** 1962
 
 ---
 
@@ -5267,7 +5320,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1772
+**Lines:** 1692
 
 ---
 
@@ -5295,7 +5348,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1869
+**Lines:** 1876
 
 ---
 
@@ -5339,33 +5392,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1410
-
----
-
-<a name="src-routes-habits-pake-tsx"></a>
-### src/routes/Habits.pake.tsx
-
-**File Purpose:** Page-level route component for the Habits module. Renders the main view when navigating to this section.
-
-**Functions & Classes:**
-- `Habits` (React Component)
-- `parseLegacyDetoxDescription` (Function)
-- `getDetoxConfig` (Function)
-- `getHabitType` (Function)
-- `weeksSince` (Function)
-- `computeDetoxTarget` (Function)
-- `Habits` (Function)
-
-**Function Details:**
-- **`Habits`** — React component rendering UI for Habits.
-- **`parseLegacyDetoxDescription`** — Utility function for parse legacy detox description.
-- **`getDetoxConfig`** — Utility function for get detox config.
-- **`getHabitType`** — Utility function for get habit type.
-- **`weeksSince`** — Utility function for weeks since.
-- **`computeDetoxTarget`** — Utility function for compute detox target.
-
-**Lines:** 706
+**Lines:** 1374
 
 ---
 
@@ -5457,7 +5484,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`FeatureCard`** — Utility function for feature card.
 - **`Landing`** — Utility function for landing.
 
-**Lines:** 511
+**Lines:** 533
 
 ---
 
@@ -5504,7 +5531,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
 
-**Lines:** 800
+**Lines:** 768
 
 ---
 
@@ -5541,7 +5568,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
 
-**Lines:** 894
+**Lines:** 864
 
 ---
 
@@ -5558,7 +5585,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Points`** — React component rendering UI for Points.
 - **`Points`** — Utility function for points.
 
-**Lines:** 370
+**Lines:** 332
 
 ---
 
@@ -5653,7 +5680,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1500
+**Lines:** 1451
 
 ---
 
@@ -5681,7 +5708,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1444
+**Lines:** 1439
 
 ---
 
@@ -5725,26 +5752,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`buildSessions`** — Utility function for build sessions.
 - **`Sleep`** — Utility function for sleep.
 
-**Lines:** 646
-
----
-
-<a name="src-routes-sleep-pake-tsx"></a>
-### src/routes/Sleep.pake.tsx
-
-**File Purpose:** Page-level route component for the Sleep module. Renders the main view when navigating to this section.
-
-**Functions & Classes:**
-- `Sleep` (React Component)
-- `buildSessions` (Function)
-- `Sleep` (Function)
-
-**Function Details:**
-- **`Sleep`** — React component rendering UI for Sleep.
-- **`buildSessions`** — Utility function for build sessions.
-- **`Sleep`** — Utility function for sleep.
-
-**Lines:** 650
+**Lines:** 639
 
 ---
 
@@ -5774,7 +5782,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`buildSessions`** — Utility function for build sessions.
 - **`Sleep`** — Utility function for sleep.
 
-**Lines:** 718
+**Lines:** 715
 
 ---
 
@@ -5788,7 +5796,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `TaskItem` (React Component)
 - `parseDueDateTime` (Function)
 - `Tasks` (Function)
-- `getDefaultEditFormForNewTask` (Function)
 - `TaskItem` (Function)
 
 **Function Details:**
@@ -5796,10 +5803,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`TaskItem`** — React component rendering UI for TaskItem.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 - **`Tasks`** — Utility function for tasks.
-- **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 3828
+**Lines:** 3780
 
 ---
 
@@ -5813,7 +5819,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `TaskItem` (React Component)
 - `parseDueDateTime` (Function)
 - `Tasks` (Function)
-- `getDefaultEditFormForNewTask` (Function)
 - `TaskItem` (Function)
 
 **Function Details:**
@@ -5821,10 +5826,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`TaskItem`** — React component rendering UI for TaskItem.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 - **`Tasks`** — Utility function for tasks.
-- **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2739
+**Lines:** 2704
 
 ---
 
@@ -5849,7 +5853,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `TaskItem` (React Component)
 - `parseDueDateTime` (Function)
 - `Tasks` (Function)
-- `getDefaultEditFormForNewTask` (Function)
 - `TaskItem` (Function)
 
 **Function Details:**
@@ -5857,10 +5860,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`TaskItem`** — React component rendering UI for TaskItem.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 - **`Tasks`** — Utility function for tasks.
-- **`getDefaultEditFormForNewTask`** — Utility function for get default edit form for new task.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 3137
+**Lines:** 3099
 
 ---
 
@@ -5912,7 +5914,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Wiki`** — React component rendering UI for Wiki.
 - **`Wiki`** — Utility function for wiki.
 
-**Lines:** 609
+**Lines:** 594
 
 ---
 
@@ -6005,7 +6007,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 168
+**Lines:** 175
 
 ---
 
@@ -6257,7 +6259,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`normalizeMinuteOfDay`** — Utility function for normalize minute of day.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 432
+**Lines:** 506
 
 ---
 
@@ -6281,7 +6283,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 - **`isInQuietHours`** — Utility function for is in quiet hours.
 
-**Lines:** 245
+**Lines:** 244
 
 ---
 
@@ -6305,7 +6307,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`parseFormUrlEncoded`** — Utility function for parse form url encoded.
 - **`toSchemaCategory`** — Utility function for to schema category.
 
-**Lines:** 439
+**Lines:** 438
 
 ---
 
@@ -6337,7 +6339,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`normalizeAmount`** — Utility function for normalize amount.
 - **`inferDirection`** — Utility function for infer direction.
 
-**Lines:** 272
+**Lines:** 271
 
 ---
 
@@ -6446,7 +6448,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`dedupeRemindersById`** — Utility function for dedupe reminders by id.
 - **`jsonResponse`** — Utility function for json response.
 
-**Lines:** 574
+**Lines:** 573
 
 ---
 
@@ -6546,7 +6548,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`fixUnquotedStrings`** — Utility function for fix unquoted strings.
 - **`parseFileContent`** — Utility function for parse file content.
 
-**Lines:** 267
+**Lines:** 264
 
 ---
 
