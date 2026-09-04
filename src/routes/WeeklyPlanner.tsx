@@ -787,24 +787,34 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                 <p className="text-xs text-zinc-400">Discover patterns between habits, tasks, screentime, and sleep</p>
               </div>
             </div>
-            <Button
-              type="button"
-              disabled={isGeneratingCoach}
-              onClick={generateWellbeingInsights}
-              className="text-xs h-9 bg-purple-600 hover:bg-purple-750 text-white rounded-xl px-4 flex items-center gap-1.5 active:scale-95 transition-transform"
-            >
-              {isGeneratingCoach ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  Analyzing patterns...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3.5 h-3.5" fill="currentColor" />
-                  Coach Me
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                onClick={handleOpenSmartScheduler}
+                className="text-xs h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 flex items-center gap-1.5 active:scale-95 transition-transform"
+              >
+                <CalendarCheck className="w-3.5 h-3.5" />
+                Smart Schedule Next Week
+              </Button>
+              <Button
+                type="button"
+                disabled={isGeneratingCoach}
+                onClick={generateWellbeingInsights}
+                className="text-xs h-9 bg-purple-600 hover:bg-purple-750 text-white rounded-xl px-4 flex items-center gap-1.5 active:scale-95 transition-transform"
+              >
+                {isGeneratingCoach ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Analyzing patterns...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" fill="currentColor" />
+                    Coach Me
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {coachFeedback ? (
@@ -814,9 +824,150 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
             />
           ) : (
             <p className="text-xs text-zinc-450 italic">
-              Tap "Coach Me" to compile this week's sleep segments, screentime logs, checklist success rates, and task metrics, generating direct lifestyle insights.
+              Tap "Coach Me" to compile this week's sleep segments, screentime logs, checklist success rates, and task metrics, or use "Smart Schedule Next Week" to harvest unfinished tasks and brain dump action items into free awake slots.
             </p>
           )}
+        </div>
+      )}
+
+      {/* Smart Next Week Scheduler Review Modal */}
+      {showSmartScheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/50">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                  <CalendarCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Smart Schedule for Next Week</h3>
+                  <p className="text-xs text-zinc-400">
+                    Harvested {smartCandidates.length} unfinished tasks & brain dump action points
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSmartScheduleModal(false)}
+                className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-5 overflow-y-auto space-y-3 flex-1">
+              {smartCandidates.length === 0 ? (
+                <div className="text-center py-8 space-y-2">
+                  <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto text-zinc-500">
+                    <Check className="w-6 h-6 text-emerald-400" />
+                  </div>
+                  <p className="text-sm font-medium text-zinc-300">All caught up!</p>
+                  <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                    No unfinished tasks or unfulfilled brain dump items found for the evaluated week.
+                  </p>
+                </div>
+              ) : (
+                smartCandidates.map((candidate, idx) => {
+                  return (
+                    <div
+                      key={`${candidate.title}-${idx}`}
+                      className="bg-zinc-950/40 border border-zinc-800/70 rounded-xl p-3 flex items-center justify-between gap-3 text-xs hover:border-zinc-700/80 transition-colors"
+                    >
+                      <div className="flex-1 min-w-0 space-y-1">
+                        <div className="flex items-center gap-2">
+                          {candidate.sourceType === 'braindump' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-purple-500/15 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0">
+                              <Brain className="w-3 h-3" /> Brain Dump
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-500/15 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/20 shrink-0">
+                              <AlertCircle className="w-3 h-3" /> Unfinished
+                            </span>
+                          )}
+                          <span className="font-medium text-zinc-200 truncate">{candidate.title}</span>
+                        </div>
+
+                        {candidate.sourceNoteTitle && (
+                          <p className="text-[10px] text-zinc-500 truncate">
+                            From note: {candidate.sourceNoteTitle}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Schedule slot details & dropdown */}
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="flex items-center gap-1 text-zinc-400 bg-zinc-800/40 px-2 py-1 rounded-lg border border-zinc-800">
+                          <Clock className="w-3 h-3 text-zinc-500" />
+                          <span className="text-[11px]">{candidate.durationMinutes}m</span>
+                          {candidate.targetTime && (
+                            <span className="text-[11px] text-emerald-400 font-semibold ml-1">
+                              @{candidate.targetTime}
+                            </span>
+                          )}
+                        </div>
+
+                        <select
+                          className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          value={candidate.targetDate}
+                          onChange={(e) => handleChangeCandidateDay(idx, e.target.value)}
+                        >
+                          {nextWeekDays.map((d) => (
+                            <option key={d.dateStr} value={d.dateStr}>
+                              {d.dayName.slice(0, 3)} ({d.formatted})
+                            </option>
+                          ))}
+                        </select>
+
+                        <button
+                          onClick={() => handleRemoveCandidate(idx)}
+                          className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
+                          title="Exclude this item"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-5 py-3 border-t border-zinc-800 bg-zinc-950/50 flex items-center justify-between">
+              <span className="text-xs text-zinc-500">
+                Awake window: {sleepMetrics.avgBedtimeMinutes ? 'Derived from sleep' : '08:00 - 23:00 (default)'}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowSmartScheduleModal(false)}
+                  className="text-xs text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  disabled={smartCandidates.length === 0 || isApplyingSchedule}
+                  onClick={handleApplySmartSchedule}
+                  className="text-xs h-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg px-3 flex items-center gap-1.5"
+                >
+                  {isApplyingSchedule ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Scheduling...
+                    </>
+                  ) : (
+                    <>
+                      <CalendarCheck className="w-3.5 h-3.5" />
+                      Apply to Next Week
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -897,7 +1048,26 @@ function MustDoList({
           sortedTasks.map((task) => {
             const style = getPriorityStyle(task.priority);
             return (
-              <div key={task.id} className="flex items-center justify-between group gap-2">
+              <div
+                key={task.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(
+                    'application/lifeos-item',
+                    JSON.stringify({
+                      type: 'task',
+                      id: task.id,
+                      originalDate: dateStr,
+                      title: task.title,
+                    })
+                  );
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                className="flex items-center justify-between group gap-1 cursor-grab active:cursor-grabbing hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
+              >
+                <div className="text-zinc-600 group-hover:text-zinc-400 cursor-grab shrink-0">
+                  <GripVertical className="w-2.5 h-2.5" />
+                </div>
                 <button
                   onClick={() => toggleTask.mutate({ id: task.id, is_completed: !task.is_completed })}
                   className="flex items-center gap-1.5 text-xs text-left flex-1 min-w-0"
@@ -1028,7 +1198,28 @@ function AppointmentsList({
           visibleEvents.map((event) => {
             const timeStr = format(new Date(event.start_time), 'h:mm a');
             return (
-              <div key={event.id} className="flex items-center justify-between group gap-2 text-xs text-zinc-350 animate-fade-in">
+              <div
+                key={event.id}
+                draggable
+                onDragStart={(e) => {
+                  e.dataTransfer.setData(
+                    'application/lifeos-item',
+                    JSON.stringify({
+                      type: 'event',
+                      id: event.originalId || event.id,
+                      originalDate: dateStr,
+                      title: event.title,
+                      startTime: event.start_time,
+                      endTime: event.end_time || event.start_time,
+                    })
+                  );
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                className="flex items-center justify-between group gap-1 text-xs text-zinc-350 animate-fade-in cursor-grab active:cursor-grabbing hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
+              >
+                <div className="text-zinc-600 group-hover:text-zinc-400 cursor-grab shrink-0">
+                  <GripVertical className="w-2.5 h-2.5" />
+                </div>
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span className="text-[9px] bg-blue-500/10 text-blue-400 px-1 py-0.5 rounded font-semibold shrink-0">
                     {timeStr}
