@@ -634,7 +634,36 @@ Long-pressing any verse in the reader shall trigger an iOS 3D lift visual effect
 #### FR-QURAN-014: Full Offline-First Quran Storage & In-Settings Full Downloader
 All 604 Medina Mushaf pages with Arabic text and Tafsir Al-Muyassar shall be cached locally in IndexedDB (`quran_pages` store). Settings shall provide a dedicated one-tap downloader with real-time progress and verification for text and tafsir. Offline queueing shall handle plan mutations and note bookmarks when disconnected, and auth session state shall be bootstrapped synchronously from localStorage to guarantee instant offline app launches without network stalls.
 
-### 3.12.2 Cognitive Brain Dump & Asynchronous Thought Vault
+---
+
+### 3.12.2 Azkar & Daily Supplications (الأذكار والأدعية النبوية)
+
+#### FR-AZKAR-001: Auto-Offline Database
+The system shall bundle 345 authenticated Azkar and supplications directly into the client assets and store favorite bookmarks (`azkar_favorites`) and daily progress logs (`azkar_daily_logs`) in IndexedDB (`lifeos-indexeddb`). All categories, searches, and recitation views shall function with 100% fidelity without internet connectivity.
+
+#### FR-AZKAR-002: Contextual Sleep-Linked Recommendation
+The system shall compute the recommended category based on current time and biometric sleep data:
+- Prioritize **أذكار النوم (Sleep Azkar)** 90 minutes prior to user's usual bedtime (`avgBedtimeMinutes` from Sleep Module).
+- Prioritize **أذكار الاستيقاظ (Waking Azkar)** during early morning hours (04:00 - 07:00).
+- Prioritize **أذكار الصباح (Morning Azkar)** from Fajr until Dhuhr (05:00 - 12:30).
+- Prioritize **أذكار المساء (Evening Azkar)** from Asr until sunset/sleep.
+- Prioritize **الأذكار بعد السلام من الصلاة (Prayer Azkar)** midday and between prayers.
+
+#### FR-AZKAR-003: Interactive Tactile Counting
+The recitation view shall provide an interactive countdown card with large tap targets, animated completion progress, haptic feedback on devices supporting vibration, completion chime sounds, and auto-advance capability.
+
+#### FR-AZKAR-004: Digital Subhah / Tasbih Mode
+The system shall provide an interactive digital Tasbih modal with a circular countdown ring, customizable repetition targets (33, 100, open/infinity), common preset supplications, and keyboard (Spacebar) support.
+
+#### FR-AZKAR-005: Diacritic-Insensitive Search
+The system shall provide instant client-side full-text search across all 345 Azkar normalizing Arabic diacritics (tashkeel), hamza variations, and taa-marbutah.
+
+#### FR-AZKAR-006: Dashboard Widget Integration
+The Dashboard shall display an Azkar widget showing the current recommended category, today's completion count, progress bar, and direct navigation to `/azkar`.
+
+---
+
+### 3.12.3 Cognitive Brain Dump & Asynchronous Thought Vault
 
 #### FR-DUMP-001: Instant Quick-Capture & Append
 The system shall support instant thought saving in less than 100ms via `Cmd+Enter` or voice dictation, allowing thoughts to be appended directly to today's journal or saved as discrete atomic notes without blocking on AI analysis.

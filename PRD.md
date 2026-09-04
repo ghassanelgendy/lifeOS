@@ -262,7 +262,23 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Dynamic Day-by-Day Weekly Planner Wird & Spaced Repetition Badges:** Renders day-specific projected Wird targets (`ورد أساسي: ص XX سورة YY`) and weekly rotated Spaced Repetition review portions (`مراجعة: XX`) for each individual day in the Weekly Planner, with 1-click deep routing to each day's target Medina Mushaf page.
 - **Recitation Session Logs:** Log Sheikh feedback, ratings (ممتاز, جيد جداً, جيد, يحتاج تثبيت), and detailed mistake/mutashabihat notes synced with lifeOS Notes engine.
 
-### 5.14 Cognitive Brain Dump & Asynchronous Thought Vault
+### 5.14 Azkar & Daily Supplications (الأذكار والأدعية النبوية)
+**Purpose:** Provide comprehensive, 100% offline-compatible daily supplications and prophetic remembrances based on authenticated sources (osamayy/azkar-db), integrated with user sleep rhythms, interactive tactile counting, and digital tasbih.
+
+- **Auto-Offline Compatible by Default:** Complete database of 345 authenticated Azkar across 35+ categories (Morning, Evening, Sleep, Waking, After Prayer, Ruqyah, Travel, Forgiveness, etc.) bundled directly in the client bundle and persisted into IndexedDB (`lifeos-indexeddb` stores: `azkar_favorites` & `azkar_daily_logs`). Zero network connection required for reading, searching, counting, or tracking.
+- **Sleep-Module-Linked Contextual Recommendation:** Intelligently recommends the relevant category based on time-of-day and personal biometric sleep patterns:
+  - **Sleep Azkar (أذكار النوم):** Dynamically triggered 90 minutes before the user's usual bedtime calculated directly from the Sleep Module (`avgBedtimeMinutes` from sleep stages).
+  - **Waking Azkar (أذكار الاستيقاظ):** Displayed during early morning hours (04:00 - 07:00).
+  - **Morning Azkar (أذكار الصباح):** Prioritized from Fajr until Dhuhr.
+  - **Evening Azkar (أذكار المساء):** Prioritized from Asr until sunset/sleep.
+  - **Prayer Azkar (الأذكار بعد الصلاة):** Available during midday and after prayer times.
+- **Tactile Interactive Counter Card (`ZekrCard`):** Full card tap target with progressive completion countdown, haptic feedback (`navigator.vibrate` / Capacitor), optional sound chime on finishing, auto-advance to next zekr upon target completion, and expandable virtue/reference details (`الفضل والمرجع`).
+- **Digital Tasbih (السبحة الإلكترونية):** Full-screen floating circular counter with animated radial progress ring, selectable targets (33, 100, open/infinity), quick preset supplications, spacebar key support on desktop, and vibration feedback.
+- **Offline Full-Text Search with Diacritic Normalization:** Fast local search filtering text regardless of Arabic Tashkeel or Alef/Yaa/Taa-Marbutah variations.
+- **Bookmarks & Favorites:** One-tap bookmarking to quickly access personal favorite supplications offline.
+- **Dashboard Spiritual Widget (`AzkarDashboardWidget`):** Live dashboard widget indicating today's recommended Azkar progress, completed count, and one-click deep link to recitation.
+
+### 5.15 Cognitive Brain Dump & Asynchronous Thought Vault
 **Purpose:** Frictionless, instant thought capture with deferred AI planning, smart conflict-free awake-time task distribution, and bi-directional checklist synchronization.
 
 - **Instant Quick-Save & Append (<100ms):** Quick thought capture with `Cmd+Enter` keyboard shortcut and voice dictation. Users can append thoughts to today's daily log or save discrete atomic cards without waiting for AI analysis.

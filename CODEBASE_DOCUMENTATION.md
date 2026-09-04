@@ -419,6 +419,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Notes.web.tsx](#src-routes-notes-web-tsx)
 - [src/routes/Points.tsx](#src-routes-points-tsx)
 - [src/routes/Quran.tsx](#src-routes-quran-tsx)
+- [src/routes/Azkar.tsx](#src-routes-azkar-tsx)
 - [src/routes/Screentime.ios.tsx](#src-routes-screentime-ios-tsx)
 - [src/routes/Screentime.tsx](#src-routes-screentime-tsx)
 - [src/routes/Screentime.web.tsx](#src-routes-screentime-web-tsx)
@@ -5627,6 +5628,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — Utility function for quran route.
 
 **Lines:** 225
+
+---
+
+<a name="src-routes-azkar-tsx"></a>
+### src/routes/Azkar.tsx
+
+**File Purpose:** Page-level route component for the 100% offline-compatible Azkar & Daily Supplications (الأذكار والأدعية) module based on `osamayy/azkar-db`. Supports category browsing, diacritic-insensitive search, tactile circular counting, favorites bookmarking, sleep-module-linked contextual recommendations, and digital tasbih modal.
+
+**Functions & Classes:**
+- `AzkarRoute` (React Component)
+
+**Lines:** 350
 
 ---
 
