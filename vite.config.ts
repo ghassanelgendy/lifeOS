@@ -325,7 +325,7 @@ export default defineConfig(({ mode }) => {
           injectManifest: {
             globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
             globIgnores: ['**/favicon.svg', '**/sw.ts'],
-            maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+            maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
           },
           devOptions: {
             enabled: false,
