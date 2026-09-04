@@ -11,7 +11,7 @@ import { useHabits, useHabitInsights, isHabitScheduledForDate } from '../hooks/u
 import { usePointsTransactions } from '../hooks/usePoints';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { isPrayerStatusComplete } from '../lib/prayerStatus';
 
 import {

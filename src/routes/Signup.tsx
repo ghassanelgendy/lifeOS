@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { Button, Input } from '../components/ui';
 import { Loader2, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/utils';

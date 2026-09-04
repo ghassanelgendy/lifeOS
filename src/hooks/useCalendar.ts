@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
 import { idbSaveCalendarEvents, idbGetCalendarEvents } from '../db/indexedDb';
 import type { CalendarEvent, CreateInput, UpdateInput } from '../types/schema';

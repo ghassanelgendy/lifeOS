@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useTasks } from './useTasks';
 import { useHabits, useTodayHabitLogs, useHabitAverages } from './useHabits';
 import { useCalendarEvents } from './useCalendar';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { getCurrentWirdInfo } from '../../lib/quran-memorizer/src/services/quranData';
 
 function generateEventInstances(event: any, daysAhead = 1): Date[] {

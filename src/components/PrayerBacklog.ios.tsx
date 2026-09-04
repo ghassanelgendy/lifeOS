@@ -5,7 +5,7 @@ import { cn } from '../lib/utils';
 import { useSetPrayerStatusAtDate } from '../hooks/usePrayerHabits';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import type { PrayerLog } from '../types/schema';
 
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];

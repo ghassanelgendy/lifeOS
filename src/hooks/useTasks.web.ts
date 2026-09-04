@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
 import { idbSaveTasks, idbSaveTaskLists, idbSaveTags, idbGetTasks, idbAddPointsTransaction } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints, isTaskCompletedOnTime } from './usePoints';

@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { getPrayerStatusChoices, isPrayerStatusComplete } from '../lib/prayerStatus';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { usePrayerTimes } from './usePrayerTimes';
 import type { PrayerHabit, PrayerLog, PrayerName, PrayerNotificationSetting, PrayerStatus } from '../types/schema';
 import { isOnline } from '../lib/offlineSync';

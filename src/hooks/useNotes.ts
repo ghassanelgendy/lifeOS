@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import type { CreateInput, Note, NoteFolder, UpdateInput } from '../types/schema';
 
 const NOTES_KEY = ['notes'];

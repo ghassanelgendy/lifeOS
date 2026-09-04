@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { Transaction, CreateInput, UpdateInput } from '../types/schema';
 import { round1 } from '../lib/utils';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { idbSaveTransactions, idbGetTransactions } from '../db/indexedDb';
 
 const TRANSACTIONS_KEY = ['transactions'];

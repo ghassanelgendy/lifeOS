@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import type { SleepStage } from '../types/schema';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { idbGetSleepStages, idbSaveSleepStages } from '../db/indexedDb';
 
 const QUERY_KEY = ['sleep'];

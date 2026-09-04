@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import type { ScreentimeAppStat, ScreentimeWebsiteStat, ScreentimeDailySummary } from '../types/schema';
 import { format, subDays } from 'date-fns';
 import { screentimeDateKey } from '../lib/screentimePlatform';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import {
   idbSaveScreentimeAppStats,
   idbGetScreentimeAppStats,

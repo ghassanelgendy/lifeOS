@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { idbGetInBodyScans, idbSaveInBodyScans } from '../db/indexedDb';
 import type { InBodyScan, CreateInput, UpdateInput } from '../types/schema';

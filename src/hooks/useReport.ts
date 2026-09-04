@@ -3,7 +3,7 @@ import { addDays, format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 import { useAnalyticsDailyRange } from './useAnalytics';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { idbGetPointsTransactions } from '../db/indexedDb';
 import { mean, stddev, sum, pctChange } from '../lib/analytics-utils';
 import { generateSuggestions, type Suggestion } from '../lib/reportSuggestions';

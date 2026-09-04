@@ -8,7 +8,7 @@ import WikiGraphView from '../components/wiki/WikiGraphView';
 import { ShareModal } from '../components/collaboration/ShareModal';
 import { useUIStore } from '../stores/useUIStore';
 import { useWikiStore } from '../stores/useWikiStore';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 
 export default function Wiki() {

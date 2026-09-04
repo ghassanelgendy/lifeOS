@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 
 const QUERY_KEY = 'ical-subscriptions';
 const DEFAULT_COLOR = '#3b82f6';

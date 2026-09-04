@@ -7,7 +7,7 @@ import type {
   CreateInput,
   UpdateInput,
 } from '../types/schema';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 
 const INVESTMENT_ACCOUNTS_KEY = ['investment_accounts'];
 const INVESTMENT_TRANSACTIONS_KEY = ['investment_transactions'];

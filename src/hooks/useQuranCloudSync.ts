@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { HifdhRecord } from '../../lib/quran-memorizer/src/types/quran';
 import { SURAHS } from '../../lib/quran-memorizer/src/services/quranData';

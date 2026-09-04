@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { isOnline, addToOfflineQueue } from '../lib/offlineSync';
 import { v4 as uuidv4 } from 'uuid';
 import { idbGetPointsTransactions, idbSavePointsTransactions, idbAddPointsTransaction, idbGetCustomRewards, idbSaveCustomRewards, idbAddCustomReward, idbDeleteCustomReward } from '../db/indexedDb';
