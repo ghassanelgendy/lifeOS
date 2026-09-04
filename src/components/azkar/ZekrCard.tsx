@@ -3,6 +3,7 @@ import { Bookmark, Check, RotateCcw, Share2, Info, ChevronDown, ChevronUp } from
 import { cn } from '../../lib/utils';
 import type { AzkarItem } from '../../types/azkar';
 import { useAzkarStore } from '../../stores/useAzkarStore';
+import { stripTashkeel } from '../../hooks/useAzkar';
 
 interface ZekrCardProps {
   item: AzkarItem;
@@ -36,7 +37,6 @@ export function ZekrCard({
   } = useAzkarStore();
 
   const [showDetails, setShowDetails] = useState(false);
-  const [justCompleted, setJustCompleted] = useState(false);
 
   const targetCount = item.count;
   const isFinished = completedCount >= targetCount;
@@ -81,7 +81,6 @@ export function ZekrCard({
     onIncrement(item.id, newCount);
 
     if (newCount >= targetCount) {
-      setJustCompleted(true);
       playChime();
       if (autoAdvance && onNext) {
         setTimeout(() => {
@@ -180,7 +179,7 @@ export function ZekrCard({
           )}
           dir="rtl"
         >
-          {item.zekr}
+          {showTashkeel ? item.zekr : stripTashkeel(item.zekr)}
         </p>
       </div>
 

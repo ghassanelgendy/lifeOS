@@ -39,7 +39,7 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
     } catch {}
   }, [hapticFeedback]);
 
-  const handleTap = () => {
+  const handleTap = useCallback(() => {
     triggerHaptic();
     incrementTasbih();
 
@@ -62,7 +62,7 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
       }
       setTimeout(() => setIsCompletedAnim(false), 800);
     }
-  };
+  }, [triggerHaptic, incrementTasbih, tasbihTarget, tasbihCount, soundEnabled]);
 
   useEffect(() => {
     if (!isOpen) return;

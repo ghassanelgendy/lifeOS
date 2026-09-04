@@ -12,7 +12,6 @@ import {
 } from '../db/indexedDb';
 import { format } from 'date-fns';
 import { useSleepMetrics } from './useSleep';
-import { usePointsBalance } from './usePoints';
 import { supabase } from '../lib/supabase';
 
 const ALL_AZKAR: AzkarItem[] = azkarDataRaw as AzkarItem[];
@@ -117,6 +116,11 @@ export function useTodayAzkarProgress() {
     queryFn: () => idbGetAzkarDailyLog(todayStr),
   });
 
+  const defaultProgress = useMemo<IdbAzkarDailyRecord>(
+    () => ({ date: todayStr, counts: {}, completedCategories: {}, updatedAt: 0 }),
+    [todayStr]
+  );
+
   const setProgressMutation = useMutation({
     mutationFn: async ({
       zekrId,
@@ -202,7 +206,7 @@ export function useTodayAzkarProgress() {
   });
 
   return {
-    progress: query.data || { date: todayStr, counts: {}, completedCategories: {}, updatedAt: Date.now() },
+    progress: query.data || defaultProgress,
     isLoading: query.isLoading,
     updateCount: setProgressMutation.mutate,
     resetCategory: resetCategoryMutation.mutate,
@@ -220,62 +224,67 @@ export function useContextualAzkarCategory() {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   return useMemo(() => {
-    // Bedtime window: starting 90 minutes before user's average bedtime until waking up
-    // Default fallback bedtime: 22:30 (1350 minutes) if no sleep history
-    const bedtimeTargetMin = avgBedtimeMinutes !== null ? avgBedtimeMinutes : 22 * 60 + 30;
-    
-    // Check if within Sleep window:
-    // Bedtime window is defined as [bedtimeTargetMin - 90min, bedtimeTargetMin + 180min] (wrapping around midnight)
-    const sleepWindowStart = (bedtimeTargetMin - 90 + 1440) % 1440;
-    const morningWindowStart = 4 * 60; // 04:00 AM
+    // 1. Bedtime check: If user usually sleeps (e.g. at 23:00 / 1380m), recommend sleep azkar 90 minutes before
+    if (avgBedtimeMinutes && avgBedtimeMinutes > 0) {
+      const sleepStartWindow = (avgBedtimeMinutes - 90 + 1440) % 1440;
+      const sleepEndWindow = (avgBedtimeMinutes + 120) % 1440;
+      
+      const isSleepTime =
+        sleepStartWindow < sleepEndWindow
+          ? currentMinutes >= sleepStartWindow && currentMinutes <= sleepEndWindow
+          : currentMinutes >= sleepStartWindow || currentMinutes <= sleepEndWindow;
 
-    const isNightSleepTime =
-      sleepWindowStart > 12 * 60 // e.g. 21:00 PM
-        ? currentMinutes >= sleepWindowStart || currentMinutes < morningWindowStart
-        : currentMinutes >= sleepWindowStart && currentMinutes < morningWindowStart;
+      if (isSleepTime) {
+        return {
+          category: 'أذكار النوم',
+          reason: 'حان وقت النوم المعتاد، نوماً هنيئاً وذكراً مباركاً',
+          timeWindow: 'sleep' as AzkarTimeWindow,
+          badge: 'وقت النوم',
+        };
+      }
+    }
 
-    if (isNightSleepTime) {
+    // 2. Night fallback if bedtime is unknown: 21:30 -> 03:00
+    if (currentMinutes >= 21 * 60 + 30 || currentMinutes < 3 * 60) {
       return {
         category: 'أذكار النوم',
-        reason: avgBedtimeMinutes !== null
-          ? 'اقترب موعد نومك المعتاد حسب بيانات النوم'
-          : 'أذكار قبل النوم والراحة الليلية',
+        reason: 'أذكار ما قبل النوم وحفظ النفس بالليل',
         timeWindow: 'sleep' as AzkarTimeWindow,
         badge: 'وقت النوم',
       };
     }
 
-    // Waking window: 04:00 AM to 07:00 AM
-    if (currentMinutes >= 4 * 60 && currentMinutes < 7 * 60) {
+    // 3. Waking up: 03:30 -> 06:30
+    if (currentMinutes >= 3 * 60 + 30 && currentMinutes < 6 * 60 + 30) {
       return {
         category: 'أذكار الاستيقاظ من النوم',
-        reason: 'أذكار وداع النوم وبداية النشاط والبركة',
+        reason: 'أذكار الصباح الباكر والاستيقاظ المبارك',
         timeWindow: 'waking' as AzkarTimeWindow,
-        badge: 'وقت الاستيقاظ',
-      };
-    }
-
-    // Morning window: 05:00 AM to 12:00 PM (noon)
-    if (currentMinutes >= 5 * 60 && currentMinutes < 12 * 60 + 30) {
-      return {
-        category: 'أذكار الصباح',
-        reason: 'وقت أذكار الصباح من الفجر حتى الزوال',
-        timeWindow: 'morning' as AzkarTimeWindow,
         badge: 'صباح الخير',
       };
     }
 
-    // Evening window: 15:30 PM (after Asr) to night
-    if (currentMinutes >= 15 * 60 + 30 && !isNightSleepTime) {
+    // 4. Morning Azkar: 06:30 -> 12:00
+    if (currentMinutes >= 6 * 60 + 30 && currentMinutes < 12 * 60) {
       return {
-        category: 'أذكار المساء',
-        reason: 'وقت أذكار المساء من العصر حتى غروب الشمس',
-        timeWindow: 'evening' as AzkarTimeWindow,
-        badge: 'مساء الخير',
+        category: 'أذكار الصباح',
+        reason: 'وقت أذكار الصباح المباركة حتى الظهر',
+        timeWindow: 'morning' as AzkarTimeWindow,
+        badge: 'أذكار الصباح',
       };
     }
 
-    // Midday / After Prayer / General
+    // 5. Evening Azkar: 15:30 -> 21:30
+    if (currentMinutes >= 15 * 60 + 30 && currentMinutes < 21 * 60 + 30) {
+      return {
+        category: 'أذكار المساء',
+        reason: 'وقت أذكار المساء وحفظ العبد حتى الصباح',
+        timeWindow: 'evening' as AzkarTimeWindow,
+        badge: 'أذكار المساء',
+      };
+    }
+
+    // Midday default / After Prayer: 12:00 -> 15:30
     return {
       category: 'الأذكار بعد السلام من الصلاة',
       reason: 'أذكار الصلوات والاستغفار المبارك',
@@ -293,7 +302,8 @@ export function getAzkarHabitCategory(title?: string, description?: string): 'أ
   // Morning: اذكار الصباح, أذكار الصباح, adhkar al-sabah, morning adhkar/azkar
   if (
     t.includes('اذكار الصباح') ||
-    t.includes('صباح') && (t.includes('اذكار') || t.includes('ذكر')) ||
+    d.includes('اذكار الصباح') ||
+    (t.includes('صباح') && (t.includes('اذكار') || t.includes('ذكر'))) ||
     /morning.*(azkar|adhkar|zekr|thekr)/i.test(title || '') ||
     /(azkar|adhkar|thekr).*morning/i.test(title || '') ||
     /(sabah|al-sabah).*(adhkar|azkar)/i.test(title || '')
@@ -304,7 +314,8 @@ export function getAzkarHabitCategory(title?: string, description?: string): 'أ
   // Evening: اذكار المساء, أذكار المساء, adhkar al-masa, evening adhkar/azkar
   if (
     t.includes('اذكار المساء') ||
-    t.includes('مساء') && (t.includes('اذكار') || t.includes('ذكر')) ||
+    d.includes('اذكار المساء') ||
+    (t.includes('مساء') && (t.includes('اذكار') || t.includes('ذكر'))) ||
     /evening.*(azkar|adhkar|zekr|thekr)/i.test(title || '') ||
     /(azkar|adhkar|thekr).*evening/i.test(title || '') ||
     /(masa|al-masa).*(adhkar|azkar)/i.test(title || '')
