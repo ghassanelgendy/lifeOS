@@ -276,6 +276,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Digital Tasbih (السبحة الإلكترونية):** Full-screen floating circular counter with animated radial progress ring, selectable targets (33, 100, open/infinity), quick preset supplications, spacebar key support on desktop, and vibration feedback.
 - **Offline Full-Text Search with Diacritic Normalization:** Fast local search filtering text regardless of Arabic Tashkeel or Alef/Yaa/Taa-Marbutah variations.
 - **Bookmarks & Favorites:** One-tap bookmarking to quickly access personal favorite supplications offline.
+- **Interactive Recitation & Counting:** Large touch targets, sound completion chimes, vibration haptics, and auto-advance capability. On iOS, native card sliding supports RTL Arabic navigation (swipe left advances to next, swipe right returns to previous) with velocity and offset thresholds, zero-padding edge-to-edge layout, and drag isolation preventing unwanted tap increments and vertical pull-to-refresh jitter.
 - **Dashboard Spiritual Widget (`AzkarDashboardWidget`):** Live dashboard widget indicating today's recommended Azkar progress, completed count, and one-click deep link to recitation.
 
 ### 5.15 Cognitive Brain Dump & Asynchronous Thought Vault

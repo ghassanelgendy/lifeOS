@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Check, Bookmark, Volume2, VolumeX } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
+import { Check, Bookmark, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '../lib/utils';
 import {
   useAllAzkar,
@@ -15,7 +15,7 @@ export default function AzkarRoute() {
   const allAzkar = useAllAzkar();
   const categories = useAzkarCategories();
   const { progress, updateCount } = useTodayAzkarProgress();
-  const { favoriteIds, isFavorite, toggleFavorite } = useAzkarFavorites();
+  const { isFavorite, toggleFavorite } = useAzkarFavorites();
   const contextual = useContextualAzkarCategory();
 
   const {
@@ -29,6 +29,7 @@ export default function AzkarRoute() {
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [direction, setDirection] = useState(1); // 1 = forward (next), -1 = back (prev)
+  const isDraggingRef = useRef(false);
 
   // Determine which category to show
   const activeCategory = selectedCategory || contextual.category;
@@ -69,8 +70,7 @@ export default function AzkarRoute() {
 
   const next = useCallback(() => {
     // Swiping/skipping past a zekr before finishing its tap count still counts it as
-    // done — otherwise skipping a few items (e.g. 3 of 33) permanently blocks the whole
-    // category from ever being marked complete, even though the user went through it.
+    // done — otherwise skipping a few items permanently blocks the category from completion.
     if (item && completedCount < targetCount) {
       handleIncrement(item.id, targetCount);
     }
@@ -84,6 +84,7 @@ export default function AzkarRoute() {
   }, []);
 
   const handleTap = useCallback(() => {
+    if (isDraggingRef.current) return;
     if (!item || isFinished) return;
 
     if (hapticFeedback && typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -131,91 +132,97 @@ export default function AzkarRoute() {
     next,
   ]);
 
-  // Swipe handling: right swipe skips (next), left swipe goes back (prev)
+  // Swipe handling:
+  // In RTL Arabic reading order, swipe left (drag to left, dx < 0) advances to the next item,
+  // swipe right (drag to right, dx > 0) goes to previous item.
+  // We check both offset distance (> 45px) and velocity (> 100px/s) for responsive swiping.
   const handleDragEnd = useCallback(
-    (_event: unknown, info: { offset: { x: number }; velocity: { x: number } }) => {
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      const dx = info.offset.x;
       const vx = info.velocity.x;
-      if (vx < -120) {
-        // finger moved left -> left swipe -> goes back (prev)
-        prev();
-      } else if (vx > 120) {
-        // finger moved right -> right swipe -> skips (next)
+
+      const isSwipeLeft = dx < -45 || vx < -100;
+      const isSwipeRight = dx > 45 || vx > 100;
+
+      if (isSwipeLeft) {
         next();
+      } else if (isSwipeRight) {
+        prev();
       }
+
+      // Allow a brief delay before enabling tap again so the drag release doesn't count
+      setTimeout(() => {
+        isDraggingRef.current = false;
+      }, 80);
     },
     [prev, next]
   );
+
+  const handleDragStart = useCallback(() => {
+    isDraggingRef.current = true;
+  }, []);
 
   const handleSwitchCategory = (cat: string) => {
     setSelectedCategory(cat);
     setActiveIndex(0);
   };
 
-  const progressPct = item ? Math.min(100, (completedCount / targetCount) * 100) : 0;
+  const progressPct = item && targetCount > 0 ? Math.min(100, (completedCount / targetCount) * 100) : 0;
 
   // Font sizing for iOS
   const fontSizeClass =
     fontSize === 'sm'
-      ? 'text-xl leading-relaxed'
+      ? 'text-lg sm:text-xl leading-relaxed'
       : fontSize === 'base'
-      ? 'text-2xl leading-relaxed'
+      ? 'text-xl sm:text-2xl leading-relaxed'
       : fontSize === 'lg'
-      ? 'text-2xl leading-loose'
-      : 'text-3xl leading-loose';
+      ? 'text-2xl sm:text-3xl leading-loose'
+      : 'text-3xl sm:text-4xl leading-loose';
 
   const variants = {
-    enter: (d: number) => ({ x: d > 0 ? 80 : -80, opacity: 0 }),
+    enter: (d: number) => ({ x: d > 0 ? 60 : -60, opacity: 0 }),
     center: { x: 0, opacity: 1 },
-    exit: (d: number) => ({ x: d > 0 ? -80 : 80, opacity: 0 }),
+    exit: (d: number) => ({ x: d > 0 ? -60 : 60, opacity: 0 }),
   };
 
   return (
-    <div className="-m-4 flex h-full flex-col" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className="flex items-center gap-2 text-sm font-bold text-primary"
-        >
-          <Sun size={18} />
-          <span>الأذكار</span>
-        </button>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={toggleSound}
-            aria-pressed={soundEnabled}
-            aria-label="الصوت"
-            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-secondary"
-            title="الصوت"
-          >
-            {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
-          </button>
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background">
+      {/* Category Pills & Top Quick Actions */}
+      <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2 shrink-0 bg-background/80 backdrop-blur-md">
+        <div className="no-scrollbar flex flex-1 items-center gap-1.5 overflow-x-auto">
+          {categories.map((cat) => {
+            const isSel = cat.name === activeCategory;
+            return (
+              <button
+                key={cat.name}
+                onClick={() => handleSwitchCategory(cat.name)}
+                className={cn(
+                  'shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-all active:scale-95',
+                  isSel
+                    ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-sm'
+                    : 'border-border/60 bg-card text-muted-foreground'
+                )}
+              >
+                {cat.name}
+              </button>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Category pills */}
-      <div className="no-scrollbar flex gap-2 overflow-x-auto border-b border-border/60 px-4 py-2">
-        {categories.map((cat) => {
-          const isSel = cat.name === activeCategory;
-          return (
-            <button
-              key={cat.name}
-              onClick={() => handleSwitchCategory(cat.name)}
-              className={cn(
-                'shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs transition-all',
-                isSel
-                  ? 'border-primary bg-primary font-semibold text-primary-foreground'
-                  : 'border-border bg-card text-muted-foreground'
-              )}
-            >
-              {cat.name}
-            </button>
-          );
-        })}
+        {/* Sound toggle button */}
+        <button
+          onClick={toggleSound}
+          aria-pressed={soundEnabled}
+          aria-label="الصوت"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/60 bg-card text-muted-foreground transition-all active:scale-95 active:bg-secondary"
+          title="الصوت"
+        >
+          {soundEnabled ? <Volume2 size={16} className="text-primary" /> : <VolumeX size={16} />}
+        </button>
       </div>
 
       {/* Reader area */}
-      <div className="relative flex-1 overflow-hidden">
+      <div className="relative flex-1 overflow-hidden" data-no-pull-refresh>
         {categoryItems.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
             لا توجد أذكار في هذا التصنيف
@@ -229,25 +236,29 @@ export default function AzkarRoute() {
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ type: 'tween', duration: 0.22 }}
+              transition={{ type: 'tween', duration: 0.2 }}
               drag="x"
+              dragDirectionLock
               dragConstraints={{ left: 0, right: 0 }}
               dragElastic={0.12}
+              onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
               onClick={handleTap}
-              className="flex h-full cursor-pointer touch-pan-y select-none flex-col"
+              className="flex h-full w-full cursor-pointer select-none flex-col justify-between touch-none"
             >
-              {/* Progress + index */}
-              <div className="flex items-center justify-between px-5 pt-4 text-xs text-muted-foreground">
-                <span className="font-medium">
+              {/* Progress + index + bookmark bar */}
+              <div className="flex items-center justify-between px-5 pt-3 text-xs text-muted-foreground shrink-0">
+                <span className="font-semibold text-foreground/80">
                   {activeIndex + 1} / {categoryItems.length}
                 </span>
-                <div className="h-1.5 w-28 overflow-hidden rounded-full bg-secondary">
+
+                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-secondary">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-200"
                     style={{ width: `${((activeIndex + 1) / categoryItems.length) * 100}%` }}
                   />
                 </div>
+
                 <div className="flex items-center gap-1">
                   {item && (
                     <button
@@ -258,24 +269,24 @@ export default function AzkarRoute() {
                       aria-pressed={isFavorite(item.id)}
                       aria-label="المفضلة"
                       className={cn(
-                        'flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
+                        'flex h-9 w-9 items-center justify-center rounded-full transition-colors active:scale-90',
                         isFavorite(item.id)
                           ? 'text-amber-500'
                           : 'text-muted-foreground active:text-foreground'
                       )}
                       title="المفضلة"
                     >
-                      <Bookmark size={16} fill={isFavorite(item.id) ? 'currentColor' : 'none'} />
+                      <Bookmark size={17} fill={isFavorite(item.id) ? 'currentColor' : 'none'} />
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Zekr text - centered full area */}
-              <div className="flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-2">
+              {/* Zekr text container - vertically centered */}
+              <div className="flex flex-1 flex-col items-center justify-center px-6 py-4 overflow-y-auto">
                 <p
                   className={cn(
-                    'font-arabic-quran text-center font-bold leading-relaxed',
+                    'font-arabic-quran text-center font-bold tracking-normal transition-colors duration-200',
                     fontSizeClass,
                     isFinished ? 'text-emerald-500' : 'text-foreground'
                   )}
@@ -285,39 +296,60 @@ export default function AzkarRoute() {
                   {item?.zekr}
                 </p>
 
-                {/* Counter / completion */}
-                <div className="mt-10 flex flex-col items-center">
-                  {isFinished ? (
-                    <div className="flex items-center gap-2 rounded-full bg-emerald-500/15 px-4 py-2 text-emerald-500">
-                      <Check size={20} strokeWidth={3} />
-                      <span className="text-sm font-bold">تم الإتمام</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-baseline text-center">
-                      <span className="text-4xl font-extrabold tracking-tight text-foreground">
-                        {completedCount}
-                      </span>
-                      <span className="mx-1 text-lg text-muted-foreground">/</span>
-                      <span className="text-lg text-muted-foreground">{targetCount}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Progress ring bar under counter */}
-                <div className="mt-5 h-1.5 w-40 overflow-hidden rounded-full bg-secondary">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all duration-200',
-                      isFinished ? 'bg-emerald-500' : 'bg-primary'
-                    )}
-                    style={{ width: `${progressPct}%` }}
-                  />
-                </div>
+                {item?.description && (
+                  <p className="mt-3 max-w-sm text-center text-xs text-muted-foreground leading-relaxed" dir="rtl">
+                    {item.description}
+                  </p>
+                )}
               </div>
 
-              {/* Bottom hint */}
-              <div className="px-6 pb-6 text-center text-[11px] text-muted-foreground">
-                اضغط للعد • اسحب لليمين للتالي • اسحب لليسار للسابق
+              {/* Bottom interactive counter & controls */}
+              <div className="flex flex-col items-center justify-center pb-6 pt-2 shrink-0">
+                {/* Visual tap button / counter indicator */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleTap();
+                  }}
+                  className={cn(
+                    'relative flex h-24 w-24 flex-col items-center justify-center rounded-full border-2 shadow-lg transition-all duration-150 active:scale-90 touch-manipulation',
+                    isFinished
+                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
+                      : 'border-primary/40 bg-card hover:border-primary text-foreground'
+                  )}
+                >
+                  {isFinished ? (
+                    <div className="flex flex-col items-center gap-1 text-emerald-500">
+                      <Check size={28} strokeWidth={3} />
+                      <span className="text-[11px] font-bold">تم الإتمام</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center">
+                      <span className="text-3xl font-black tracking-tight text-primary">
+                        {completedCount}
+                      </span>
+                      <span className="text-[11px] font-medium text-muted-foreground">
+                        من {targetCount}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Circular progress highlight indicator */}
+                  <div
+                    className="absolute inset-x-0 bottom-0 h-1 bg-primary rounded-full transition-all duration-200"
+                    style={{
+                      width: `${progressPct}%`,
+                      margin: '0 auto',
+                      backgroundColor: isFinished ? '#10b981' : undefined
+                    }}
+                  />
+                </button>
+
+                {/* Gesture hint */}
+                <div className="mt-4 text-center text-[11px] text-muted-foreground select-none">
+                  اضغط للعد • اسحب لليسار للتالي • اسحب لليمين للسابق
+                </div>
               </div>
             </motion.div>
           </AnimatePresence>

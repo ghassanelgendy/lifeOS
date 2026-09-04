@@ -13,7 +13,7 @@ interface PullToRefreshProps {
 export function PullToRefresh({ children }: PullToRefreshProps) {
     const location = useLocation();
     const queryClient = useQueryClient();
-    const isFixedLayout = location.pathname === '/tasks' || location.pathname === '/notes';
+    const isFixedLayout = location.pathname === '/tasks' || location.pathname === '/notes' || location.pathname === '/azkar';
     const [startY, setStartY] = useState<number | null>(null);
     const [pullDistance, setPullDistance] = useState(0);
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -50,8 +50,11 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
         if (!container) return;
 
         const handleTouchStart = (e: TouchEvent) => {
+            if (location.pathname === '/azkar') {
+                return;
+            }
             const target = e.target as Node;
-            if (target && document.body.contains(target) && (target as Element).closest?.('[data-lifeos-modal]')) {
+            if (target && document.body.contains(target) && (target as Element).closest?.('[data-lifeos-modal], [data-no-pull-refresh]')) {
                 return;
             }
 

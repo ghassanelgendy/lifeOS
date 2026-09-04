@@ -5634,12 +5634,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-azkar-tsx"></a>
 ### src/routes/Azkar.tsx
 
-**File Purpose:** Page-level route component for the 100% offline-compatible Azkar & Daily Supplications (الأذكار والأدعية) module based on `osamayy/azkar-db`. Supports category browsing, diacritic-insensitive search, tactile circular counting, favorites bookmarking, sleep-module-linked contextual recommendations, and digital tasbih modal.
+**File Purpose:** Page-level route component for the 100% offline-compatible Azkar & Daily Supplications (الأذكار والأدعية) module based on `osamayy/azkar-db`. Supports category browsing, diacritic-insensitive search, tactile circular counting, favorites bookmarking, sleep-module-linked contextual recommendations, and digital tasbih modal. The iOS platform variant (`Azkar.ios.tsx`) features full-height edge-to-edge layout, RTL gesture sliding with velocity & distance thresholds, drag isolation against pull-to-refresh jitter, and a dedicated tactile counter target.
 
 **Functions & Classes:**
 - `AzkarRoute` (React Component)
 
-**Lines:** 350
+**Lines:** 360
 
 ---
 

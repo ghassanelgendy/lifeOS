@@ -649,8 +649,8 @@ The system shall compute the recommended category based on current time and biom
 - Prioritize **أذكار المساء (Evening Azkar)** from Asr until sunset/sleep.
 - Prioritize **الأذكار بعد السلام من الصلاة (Prayer Azkar)** midday and between prayers.
 
-#### FR-AZKAR-003: Interactive Tactile Counting
-The recitation view shall provide an interactive countdown card with large tap targets, animated completion progress, haptic feedback on devices supporting vibration, completion chime sounds, and auto-advance capability.
+#### FR-AZKAR-003: Interactive Tactile Counting & Platform Gestures
+The recitation view shall provide an interactive countdown card with large tap targets, animated completion progress, haptic feedback on devices supporting vibration, completion chime sounds, and auto-advance capability. On iOS, swipe gestures shall support RTL Arabic reading order (swipe left advances to next, swipe right returns to previous) with dual distance-and-velocity thresholds, drag lock to prevent vertical pull-to-refresh jitter, and touch drag guards ensuring swipe gestures never inadvertently increment the recitation counter.
 
 #### FR-AZKAR-004: Digital Subhah / Tasbih Mode
 The system shall provide an interactive digital Tasbih modal with a circular countdown ring, customizable repetition targets (33, 100, open/infinity), common preset supplications, and keyboard (Spacebar) support.
