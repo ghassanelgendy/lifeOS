@@ -132,7 +132,7 @@ export interface LifeOSIntegrationProps {
   linkedHabits?: LinkedLifeOSHabit[];
   linkedEvents?: LinkedLifeOSEvent[];
   onToggleTask?: (taskId: string) => void;
-  onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
+  onToggleHabit?: (habitId: string, isCompleted: boolean, skipQuranAdvance?: boolean) => void;
   onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateQuranTask?: (title: string, dueDate: string) => void;
   onCreateHalqahNote?: (note: SheikhHalqahNote) => void;

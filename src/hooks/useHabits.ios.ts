@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from './useAuth';
 import { triggerHaptics } from '../lib/nativeBridge';
 import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import { isPrayerStatusComplete } from '../lib/prayerStatus';
@@ -415,7 +415,7 @@ export function useLogHabit() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ habitId, date, completed, note }: { habitId: string; date: string; completed: boolean; note?: string }) => {
+    mutationFn: async ({ habitId, date, completed, note, skipQuranAdvance }: { habitId: string; date: string; completed: boolean; note?: string; skipQuranAdvance?: boolean }) => {
       // Apply points adjust locally
       if (user?.id) {
         await adjustPointsForHabitLog(habitId, date, completed, user.id, queryClient, note);
@@ -423,7 +423,11 @@ export function useLogHabit() {
 
       // Advancing a linked Quran wird (reading/memorization) lives on habit
       // completion so e.g. completing "الورد اليومي" pushes the reading wird.
-      if (completed) {
+      // skipQuranAdvance is set by callers that already moved the plan to an explicit
+      // page themselves (e.g. tapping "mark as" on a specific ayah) — without it, this
+      // block would independently re-advance the very same plan a second time right
+      // after the explicit write, silently landing on the wrong page.
+      if (completed && !skipQuranAdvance) {
         try {
           const { data: h } = await supabase
             .from('habits')

@@ -53,11 +53,12 @@ export function QuranRoute() {
     }
   };
 
-  const handleToggleHabit = (habitId: string, isCompleted: boolean) => {
+  const handleToggleHabit = (habitId: string, isCompleted: boolean, skipQuranAdvance?: boolean) => {
     logHabitMutation.mutate({
       habitId,
       date: todayStr,
       completed: isCompleted,
+      skipQuranAdvance,
     });
   };
 

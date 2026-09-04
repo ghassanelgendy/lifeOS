@@ -38,7 +38,7 @@ interface KhatmahPlannerViewProps {
   linkedHabits?: LinkedLifeOSHabit[];
   linkedEvents?: LinkedLifeOSEvent[];
   onToggleTask?: (taskId: string) => void;
-  onToggleHabit?: (habitId: string, isCompleted: boolean) => void;
+  onToggleHabit?: (habitId: string, isCompleted: boolean, skipQuranAdvance?: boolean) => void;
   onUpdateHabitDescription?: (habitId: string, description: string) => void;
   onCreateTask?: (title: string, dueDate: string) => void;
   onCreateHalqahNote?: (note: SheikhHalqahNote) => void;
@@ -386,7 +386,10 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
           );
         }
         if (!targetHabit.is_completed_today && onToggleHabit) {
-          onToggleHabit(targetHabit.id, true);
+          // skipQuranAdvance: nextCurrentPage was already computed and saved to the plan
+          // just above — without this, completing the habit would independently advance
+          // the plan a second time (double-advancing a full day's worth of pages).
+          onToggleHabit(targetHabit.id, true, true);
         }
       }
     }

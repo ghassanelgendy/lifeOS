@@ -394,7 +394,10 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         );
       }
       if (!memHabit.is_completed_today && onToggleHabit) {
-        onToggleHabit(memHabit.id, true);
+        // skipQuranAdvance: currentPage was just set explicitly above (to `page`) — without
+        // this, completing the habit would independently re-advance the same plan a second
+        // time, silently landing on the wrong page (the reported "sometimes off by one" bug).
+        onToggleHabit(memHabit.id, true, true);
       }
     }
   };
@@ -426,7 +429,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         );
       }
       if (!readingHabit.is_completed_today && onToggleHabit) {
-        onToggleHabit(readingHabit.id, true);
+        // skipQuranAdvance: currentPage was just set explicitly above — see matching
+        // comment in handleSetMemorizationMarker.
+        onToggleHabit(readingHabit.id, true, true);
       }
     }
   };
