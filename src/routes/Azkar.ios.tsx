@@ -68,9 +68,15 @@ export default function AzkarRoute() {
   );
 
   const next = useCallback(() => {
+    // Swiping/skipping past a zekr before finishing its tap count still counts it as
+    // done — otherwise skipping a few items (e.g. 3 of 33) permanently blocks the whole
+    // category from ever being marked complete, even though the user went through it.
+    if (item && completedCount < targetCount) {
+      handleIncrement(item.id, targetCount);
+    }
     setDirection(1);
     setActiveIndex((i) => Math.min(i + 1, categoryItems.length - 1));
-  }, [categoryItems.length]);
+  }, [item, completedCount, targetCount, handleIncrement, categoryItems.length]);
 
   const prev = useCallback(() => {
     setDirection(-1);
@@ -177,7 +183,9 @@ export default function AzkarRoute() {
         <div className="flex items-center gap-1">
           <button
             onClick={toggleSound}
-            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary"
+            aria-pressed={soundEnabled}
+            aria-label="الصوت"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-muted-foreground transition-colors active:bg-secondary"
             title="الصوت"
           >
             {soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}
@@ -247,11 +255,13 @@ export default function AzkarRoute() {
                         e.stopPropagation();
                         toggleFavorite(item.id);
                       }}
+                      aria-pressed={isFavorite(item.id)}
+                      aria-label="المفضلة"
                       className={cn(
-                        'rounded-lg p-1.5 transition-colors',
+                        'flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
                         isFavorite(item.id)
                           ? 'text-amber-500'
-                          : 'text-muted-foreground hover:text-foreground'
+                          : 'text-muted-foreground active:text-foreground'
                       )}
                       title="المفضلة"
                     >
@@ -270,6 +280,7 @@ export default function AzkarRoute() {
                     isFinished ? 'text-emerald-500' : 'text-foreground'
                   )}
                   dir="rtl"
+                  lang="ar"
                 >
                   {item?.zekr}
                 </p>

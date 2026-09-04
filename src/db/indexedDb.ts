@@ -550,6 +550,27 @@ export async function idbSetAzkarCount(
   }
 }
 
+/** Overwrite the local favorites cache with the authoritative list from Supabase. */
+export async function idbReplaceAzkarFavorites(ids: string[]): Promise<void> {
+  try {
+    await idbClear(STORES.azkarFavorites);
+    await idbPutMany(STORES.azkarFavorites, ids.map((id) => ({ id })));
+  } catch {
+    // best-effort
+  }
+}
+
+/** Overwrite the local daily log with the authoritative record from Supabase. */
+export async function idbPutAzkarDailyLog(record: IdbAzkarDailyRecord): Promise<void> {
+  try {
+    await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
+      store.put(record);
+    });
+  } catch {
+    // best-effort
+  }
+}
+
 export async function idbResetAzkarDailyLog(date: string, zekrIds?: string[]): Promise<void> {
   try {
     const record = await idbGetAzkarDailyLog(date);

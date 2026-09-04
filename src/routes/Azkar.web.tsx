@@ -11,6 +11,7 @@ import {
   VolumeX,
   Type,
   Sun,
+  X,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import {
@@ -44,6 +45,8 @@ export default function AzkarRoute() {
     toggleSound,
     autoAdvance,
     toggleAutoAdvance,
+    showTashkeel,
+    toggleTashkeel,
   } = useAzkarStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -146,7 +149,7 @@ export default function AzkarRoute() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsTasbihOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-105"
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm transition-all hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <RotateCcw size={14} />
               <span className="hidden sm:inline">سبحة إلكترونية</span>
@@ -155,8 +158,10 @@ export default function AzkarRoute() {
 
             <button
               onClick={() => setShowFavoritesOnly((v) => !v)}
+              aria-pressed={showFavoritesOnly}
+              aria-label="الأذكار المفضلة"
               className={cn(
-                'rounded-xl border p-2 transition-colors',
+                'flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 showFavoritesOnly
                   ? 'border-amber-500/40 bg-amber-500/20 text-amber-500'
                   : 'border-border text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -168,8 +173,10 @@ export default function AzkarRoute() {
 
             <button
               onClick={() => setShowPreferences((v) => !v)}
+              aria-pressed={showPreferences}
+              aria-label="إعدادات القراءة والخط"
               className={cn(
-                'rounded-xl border p-2 transition-colors',
+                'flex h-9 w-9 items-center justify-center rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                 showPreferences
                   ? 'border-primary/40 bg-primary/20 text-primary'
                   : 'border-border text-muted-foreground hover:bg-secondary hover:text-foreground'
@@ -194,8 +201,9 @@ export default function AzkarRoute() {
                   <button
                     key={sz}
                     onClick={() => setFontSize(sz)}
+                    aria-pressed={fontSize === sz}
                     className={cn(
-                      'rounded-lg border px-2.5 py-1 font-mono font-medium uppercase transition-colors',
+                      'rounded-lg border px-2.5 py-1 font-mono font-medium uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       fontSize === sz
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border text-muted-foreground hover:text-foreground'
@@ -211,7 +219,7 @@ export default function AzkarRoute() {
                 <button
                   onClick={toggleHaptic}
                   className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors',
+                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     hapticFeedback
                       ? 'border-primary/40 bg-primary/10 font-medium text-primary'
                       : 'border-border text-muted-foreground'
@@ -224,7 +232,7 @@ export default function AzkarRoute() {
                 <button
                   onClick={toggleSound}
                   className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors',
+                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     soundEnabled
                       ? 'border-primary/40 bg-primary/10 font-medium text-primary'
                       : 'border-border text-muted-foreground'
@@ -237,13 +245,25 @@ export default function AzkarRoute() {
                 <button
                   onClick={toggleAutoAdvance}
                   className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors',
+                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                     autoAdvance
                       ? 'border-primary/40 bg-primary/10 font-medium text-primary'
                       : 'border-border text-muted-foreground'
                   )}
                 >
                   <span>التمرير التلقائي عند الإتمام</span>
+                </button>
+
+                <button
+                  onClick={toggleTashkeel}
+                  className={cn(
+                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    showTashkeel
+                      ? 'border-primary/40 bg-primary/10 font-medium text-primary'
+                      : 'border-border text-muted-foreground'
+                  )}
+                >
+                  <span>إظهار التشكيل</span>
                 </button>
               </div>
             </div>
@@ -262,7 +282,7 @@ export default function AzkarRoute() {
                 </span>
                 <span className="text-xs text-muted-foreground">{contextual.reason}</span>
               </div>
-              <h2 className="font-arabic-quran text-xl font-bold text-foreground sm:text-2xl">
+              <h2 className="font-arabic-quran text-xl font-bold text-foreground sm:text-2xl" lang="ar" dir="rtl">
                 {contextual.category}
               </h2>
             </div>
@@ -271,7 +291,7 @@ export default function AzkarRoute() {
               <button
                 onClick={() => setSelectedCategory(contextual.category)}
                 className={cn(
-                  'rounded-xl px-4 py-2 text-xs font-semibold shadow-sm transition-all',
+                  'rounded-xl px-4 py-2 text-xs font-semibold shadow-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   selectedCategory === contextual.category || !selectedCategory
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-secondary text-foreground hover:bg-secondary/80'
@@ -294,9 +314,20 @@ export default function AzkarRoute() {
               if (showFavoritesOnly) setShowFavoritesOnly(false);
             }}
             placeholder="ابحث بالاسم أو النص (مثال: آية الكرسي، سيد الاستغفار، السفر)..."
-            className="w-full rounded-xl border border-border bg-card py-3 pr-11 pl-4 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
+            aria-label="البحث في الأذكار"
+            className="w-full rounded-xl border border-border bg-card py-3 pr-11 pl-10 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring transition-all"
             dir="rtl"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="مسح البحث"
+              className="absolute left-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              <X size={14} />
+            </button>
+          )}
         </div>
 
         {/* Categories Horizontal Carousel */}
@@ -315,18 +346,19 @@ export default function AzkarRoute() {
                   <button
                     key={cat.name}
                     onClick={() => setSelectedCategory(cat.name)}
+                    aria-pressed={isSelected}
                     className={cn(
-                      'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs transition-all',
+                      'flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border px-4 py-2.5 text-xs transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                       isSelected
                         ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-sm'
                         : 'border-border bg-card text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
                     )}
                   >
-                    {isContext && <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />}
-                    <span>{cat.name}</span>
+                    {isContext && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-400" />}
+                    <span lang="ar" dir="rtl">{cat.name}</span>
                     <span
                       className={cn(
-                        'rounded-full px-1.5 py-0.2 font-mono text-[10px]',
+                        'rounded-full px-1.5 py-0.5 font-mono text-[10px]',
                         isSelected
                           ? 'bg-primary-foreground/20 text-primary-foreground'
                           : 'bg-secondary text-muted-foreground'
@@ -345,7 +377,7 @@ export default function AzkarRoute() {
         <div className="flex flex-col justify-between gap-3 border-b border-border/60 pb-1 pt-2 sm:flex-row sm:items-center">
           <div>
             <h3 className="font-arabic-quran flex items-center gap-2 text-xl font-bold text-foreground">
-              <span>{activeCategoryTitle}</span>
+              <span lang="ar" dir="rtl">{activeCategoryTitle}</span>
               <span className="font-sans text-xs font-normal text-muted-foreground">
                 ({displayedAzkar.length} ذكر)
               </span>
@@ -359,7 +391,7 @@ export default function AzkarRoute() {
             {categoryStats.completed > 0 && (
               <button
                 onClick={handleResetCurrentCategory}
-                className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                className="flex items-center gap-1 rounded-lg text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 title="تصفير تكرار هذا القسم اليوم"
               >
                 <RotateCcw size={13} />
@@ -368,7 +400,14 @@ export default function AzkarRoute() {
             )}
 
             {/* Visual mini bar */}
-            <div className="h-2 w-28 shrink-0 overflow-hidden rounded-full bg-secondary sm:w-36">
+            <div
+              className="h-2 w-28 shrink-0 overflow-hidden rounded-full bg-secondary sm:w-36"
+              role="progressbar"
+              aria-valuenow={categoryStats.percent}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`نسبة الإتمام ${categoryStats.percent}%`}
+            >
               <div
                 className="h-full rounded-full bg-primary transition-all duration-300"
                 style={{ width: `${categoryStats.percent}%` }}
@@ -379,19 +418,19 @@ export default function AzkarRoute() {
 
         {/* Azkar List Cards */}
         {displayedAzkar.length === 0 ? (
-          <div className="space-y-3 rounded-2xl border border-dashed border-border bg-card/40 py-16 text-center">
+          <div className="space-y-3 rounded-2xl border border-dashed border-border bg-card/40 py-16 text-center" dir="rtl">
             <BookOpen size={36} className="mx-auto text-muted-foreground/60" />
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-sm font-medium text-muted-foreground" lang="ar">
               {showFavoritesOnly ? 'لم تقم بحفظ أي أذكار في المفضلة بعد.' : 'لا توجد أذكار تطابق هذا البحث.'}
             </p>
             {showFavoritesOnly && (
-              <p className="text-xs text-muted-foreground/80">
+              <p className="text-xs text-muted-foreground/80" lang="ar">
                 انقر على أيقونة الإشارة المرجعية بجانب أي ذكر لإضافته هنا.
               </p>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-5">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:gap-5 animate-in fade-in duration-300">
             {displayedAzkar.map((item, index) => (
               <ZekrCard
                 key={item.id}

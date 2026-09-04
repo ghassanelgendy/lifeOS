@@ -1,11 +1,13 @@
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import azkarDataRaw from '../data/azkar.json';
 import type { AzkarItem, AzkarCategoryMeta, AzkarTimeWindow } from '../types/azkar';
 import {
   idbGetAzkarFavorites,
   idbToggleAzkarFavorite,
+  idbReplaceAzkarFavorites,
   idbGetAzkarDailyLog,
+  idbPutAzkarDailyLog,
   idbSetAzkarCount,
   idbResetAzkarDailyLog,
   type IdbAzkarDailyRecord,
@@ -13,6 +15,9 @@ import {
 import { format } from 'date-fns';
 import { useSleepMetrics } from './useSleep';
 import { supabase } from '../lib/supabase';
+import { useAuth } from './useAuth';
+
+const AZKAR_PROGRESS_SYNC_DEBOUNCE_MS = 1500;
 
 const ALL_AZKAR: AzkarItem[] = azkarDataRaw as AzkarItem[];
 
@@ -87,15 +92,52 @@ export function useAzkarCategories() {
 
 export function useAzkarFavorites() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = ['azkar-favorites', user?.id];
+
   const query = useQuery({
-    queryKey: ['azkar-favorites'],
-    queryFn: () => idbGetAzkarFavorites(),
+    queryKey: key,
+    queryFn: async () => {
+      const local = await idbGetAzkarFavorites();
+      if (!user?.id) return local;
+      try {
+        const { data, error } = await supabase
+          .from('azkar_favorites')
+          .select('zekr_id')
+          .eq('user_id', user.id);
+        if (error) throw error;
+        const remoteIds = (data ?? []).map((r) => r.zekr_id as string);
+        void idbReplaceAzkarFavorites(remoteIds);
+        return remoteIds;
+      } catch {
+        // Offline or request failed — fall back to whatever this device has cached.
+        return local;
+      }
+    },
   });
 
   const toggleMutation = useMutation({
-    mutationFn: (id: string) => idbToggleAzkarFavorite(id),
+    mutationFn: async (id: string) => {
+      // Instant local toggle regardless of connectivity, then best-effort sync.
+      const nowFavorite = await idbToggleAzkarFavorite(id);
+      if (user?.id) {
+        try {
+          if (nowFavorite) {
+            await supabase.from('azkar_favorites').upsert(
+              { user_id: user.id, zekr_id: id },
+              { onConflict: 'user_id,zekr_id' }
+            );
+          } else {
+            await supabase.from('azkar_favorites').delete().eq('user_id', user.id).eq('zekr_id', id);
+          }
+        } catch (err) {
+          console.warn('Azkar favorite sync failed (will retry on next toggle/reload):', err);
+        }
+      }
+      return nowFavorite;
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['azkar-favorites'] });
+      queryClient.invalidateQueries({ queryKey: key });
     },
   });
 
@@ -110,11 +152,74 @@ export function useAzkarFavorites() {
 export function useTodayAzkarProgress() {
   const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const key = ['azkar-daily-log', todayStr, user?.id];
+  // Rapid taps (tasbih counting can run to 33-100+ in a few seconds) should not fire one
+  // Supabase write per tap — batch them into a single upsert shortly after the user pauses.
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const query = useQuery<IdbAzkarDailyRecord>({
-    queryKey: ['azkar-daily-log', todayStr],
-    queryFn: () => idbGetAzkarDailyLog(todayStr),
+    queryKey: key,
+    queryFn: async () => {
+      const local = await idbGetAzkarDailyLog(todayStr);
+      if (!user?.id) return local;
+      try {
+        const { data, error } = await supabase
+          .from('azkar_daily_progress')
+          .select('counts, completed_categories, updated_at')
+          .eq('user_id', user.id)
+          .eq('date', todayStr)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return local;
+        const remote: IdbAzkarDailyRecord = {
+          date: todayStr,
+          counts: (data.counts as Record<string, number>) || {},
+          completedCategories: (data.completed_categories as Record<string, boolean>) || {},
+          updatedAt: new Date(data.updated_at).getTime(),
+        };
+        // Whichever copy was touched most recently wins — this is what lets a tap made on
+        // another device just now show up here, while not clobbering taps made on this
+        // device moments ago that haven't finished syncing up yet.
+        if (remote.updatedAt >= local.updatedAt) {
+          await idbPutAzkarDailyLog(remote);
+          return remote;
+        }
+        return local;
+      } catch {
+        return local;
+      }
+    },
   });
+
+  const syncToSupabase = useCallback(
+    (record: IdbAzkarDailyRecord) => {
+      if (!user?.id) return;
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      syncTimerRef.current = setTimeout(() => {
+        void supabase
+          .from('azkar_daily_progress')
+          .upsert(
+            {
+              user_id: user.id,
+              date: todayStr,
+              counts: record.counts,
+              completed_categories: record.completedCategories,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'user_id,date' }
+          )
+          .then(({ error }) => {
+            if (error) console.warn('Azkar progress sync failed (will retry on next update):', error.message);
+          });
+      }, AZKAR_PROGRESS_SYNC_DEBOUNCE_MS);
+    },
+    [user?.id, todayStr]
+  );
+
+  useEffect(() => () => {
+    if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+  }, []);
 
   const defaultProgress = useMemo<IdbAzkarDailyRecord>(
     () => ({ date: todayStr, counts: {}, completedCategories: {}, updatedAt: 0 }),
@@ -134,6 +239,7 @@ export function useTodayAzkarProgress() {
       categoryCompleted?: boolean;
     }) => {
       await idbSetAzkarCount(todayStr, zekrId, count, categoryName, categoryCompleted);
+      syncToSupabase(await idbGetAzkarDailyLog(todayStr));
 
       // If this category is now fully completed and matches Morning or Evening Adhkar,
       // find the corresponding user habit and mark it as completed!
@@ -192,16 +298,17 @@ export function useTodayAzkarProgress() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['azkar-daily-log', todayStr] });
+      queryClient.invalidateQueries({ queryKey: key });
     },
   });
 
   const resetCategoryMutation = useMutation({
     mutationFn: async (zekrIds: string[]) => {
       await idbResetAzkarDailyLog(todayStr, zekrIds);
+      syncToSupabase(await idbGetAzkarDailyLog(todayStr));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['azkar-daily-log', todayStr] });
+      queryClient.invalidateQueries({ queryKey: key });
     },
   });
 
@@ -324,4 +431,30 @@ export function getAzkarHabitCategory(title?: string, description?: string): 'أ
   }
 
   return null;
+}
+
+/** Invalidate Azkar favorites/progress queries when another device changes them, so a tap
+ * or favorite made on the phone shows up here without needing a manual refresh. */
+export function useAzkarRealtime() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel('azkar-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'azkar_daily_progress', filter: `user_id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['azkar-daily-log'] })
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'azkar_favorites', filter: `user_id=eq.${user.id}` },
+        () => queryClient.invalidateQueries({ queryKey: ['azkar-favorites'] })
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 }

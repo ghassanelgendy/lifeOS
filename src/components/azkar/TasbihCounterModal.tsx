@@ -85,17 +85,26 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tasbih-modal-title"
+    >
       <div className="relative w-full max-w-md bg-card border border-border rounded-2xl p-6 shadow-2xl flex flex-col items-center select-none">
         {/* Header */}
         <div className="w-full flex items-center justify-between pb-3 border-b border-border">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <span>السبحة الإلكترونية</span>
+          <h2 id="tasbih-modal-title" className="text-lg font-semibold flex items-center gap-2">
+            <span lang="ar">السبحة الإلكترونية</span>
             <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">Digital Tasbih</span>
           </h2>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="إغلاق"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <X size={20} />
           </button>
@@ -112,14 +121,15 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
                   setTasbihZekrText(preset.text);
                   setTasbihTarget(preset.count);
                 }}
+                aria-pressed={isSelected}
                 className={cn(
-                  'px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-all border shrink-0',
+                  'px-3 py-1.5 text-xs rounded-lg whitespace-nowrap transition-all border shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isSelected
                     ? 'bg-primary text-primary-foreground border-primary font-medium shadow-sm'
                     : 'bg-secondary/60 hover:bg-secondary text-muted-foreground border-transparent'
                 )}
               >
-                {preset.text} ({preset.count})
+                <span lang="ar">{preset.text}</span> ({preset.count})
               </button>
             );
           })}
@@ -127,7 +137,7 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
         {/* Selected Zekr Title */}
         <div className="my-4 text-center px-4">
-          <p className="text-xl sm:text-2xl font-bold font-arabic-quran text-foreground leading-relaxed">
+          <p className="text-xl sm:text-2xl font-bold font-arabic-quran text-foreground leading-relaxed" dir="rtl" lang="ar">
             {tasbihZekrText}
           </p>
           <div className="flex items-center justify-center gap-2 mt-2">
@@ -136,8 +146,9 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
               <button
                 key={tgt}
                 onClick={() => setTasbihTarget(tgt)}
+                aria-pressed={tasbihTarget === tgt}
                 className={cn(
-                  'px-2 py-0.5 text-xs rounded-md transition-colors',
+                  'px-2 py-0.5 text-xs rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   tasbihTarget === tgt
                     ? 'bg-primary/20 text-primary font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
@@ -152,8 +163,17 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
         {/* Large Circular Tap Area */}
         <div
           onClick={handleTap}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleTap();
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`عدّاد التسبيح، ${tasbihCount}${tasbihTarget > 0 ? ` من أصل ${tasbihTarget}` : ''}`}
           className={cn(
-            'relative cursor-pointer w-56 h-56 rounded-full flex flex-col items-center justify-center transition-all duration-150 active:scale-95 my-2 shadow-inner group',
+            'relative cursor-pointer w-56 h-56 rounded-full flex flex-col items-center justify-center transition-all duration-150 active:scale-95 my-2 shadow-inner group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ring',
             isCompletedAnim ? 'ring-4 ring-emerald-500 bg-emerald-500/10' : 'hover:bg-primary/5'
           )}
         >
@@ -184,7 +204,7 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
             )}
           </svg>
 
-          <span className="text-5xl sm:text-6xl font-extrabold tracking-tight font-mono text-foreground select-none">
+          <span className="text-5xl sm:text-6xl font-extrabold tracking-tight font-mono text-foreground select-none" aria-live="polite">
             {tasbihCount}
           </span>
           {tasbihTarget > 0 && (
@@ -203,8 +223,10 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <button
               onClick={toggleHaptic}
               title="الاهتزاز / Haptic"
+              aria-pressed={hapticFeedback}
+              aria-label="الاهتزاز"
               className={cn(
-                'p-2 rounded-lg border transition-colors',
+                'flex h-10 w-10 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 hapticFeedback ? 'border-primary/40 text-primary bg-primary/10' : 'border-border text-muted-foreground'
               )}
             >
@@ -213,8 +235,10 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
             <button
               onClick={toggleSound}
               title="الصوت عند الإتمام"
+              aria-pressed={soundEnabled}
+              aria-label="الصوت عند الإتمام"
               className={cn(
-                'p-2 rounded-lg border transition-colors',
+                'flex h-10 w-10 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                 soundEnabled ? 'border-primary/40 text-primary bg-primary/10' : 'border-border text-muted-foreground'
               )}
             >
@@ -224,7 +248,7 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
 
           <button
             onClick={resetTasbih}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <RotateCcw size={14} />
             <span>إعادة التصفير</span>

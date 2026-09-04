@@ -148,13 +148,15 @@ export function ZekrCard({
               e.stopPropagation();
               onToggleFavorite(item.id);
             }}
+            aria-pressed={isFavorite}
+            aria-label="حفظ في المفضلة"
+            title="حفظ في المفضلة"
             className={cn(
-              'p-2 rounded-lg transition-colors',
+              'flex h-9 w-9 items-center justify-center rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
               isFavorite
                 ? 'text-amber-500 bg-amber-500/10'
                 : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
             )}
-            title="حفظ في المفضلة"
           >
             <Bookmark size={16} fill={isFavorite ? 'currentColor' : 'none'} />
           </button>
@@ -162,8 +164,9 @@ export function ZekrCard({
           <button
             type="button"
             onClick={handleShare}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            aria-label="مشاركة الذكر"
             title="مشاركة الذكر"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Share2 size={16} />
           </button>
@@ -178,6 +181,7 @@ export function ZekrCard({
             fontSizeClass
           )}
           dir="rtl"
+          lang="ar"
         >
           {showTashkeel ? item.zekr : stripTashkeel(item.zekr)}
         </p>
@@ -192,7 +196,8 @@ export function ZekrCard({
               e.stopPropagation();
               setShowDetails((v) => !v);
             }}
-            className="flex items-center justify-between w-full text-xs text-muted-foreground hover:text-primary transition-colors"
+            aria-expanded={showDetails}
+            className="flex items-center justify-between w-full rounded-lg text-xs text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="flex items-center gap-1.5 font-medium">
               <Info size={14} />
@@ -202,7 +207,7 @@ export function ZekrCard({
           </button>
 
           {showDetails && (
-            <div className="mt-2 text-xs text-muted-foreground space-y-1.5 bg-secondary/30 p-3 rounded-xl animate-in fade-in duration-150" dir="rtl">
+            <div className="mt-2 text-xs text-muted-foreground space-y-1.5 bg-secondary/30 p-3 rounded-xl animate-in fade-in duration-150" dir="rtl" lang="ar">
               {item.description && (
                 <p className="leading-relaxed">
                   <span className="font-semibold text-foreground">الفضيلة: </span>
@@ -230,13 +235,14 @@ export function ZekrCard({
                 e.stopPropagation();
                 onReset(item.id);
               }}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              aria-label="إعادة تصفير هذا الذكر"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               title="إعادة التصفير"
             >
               <RotateCcw size={14} />
             </button>
           )}
-          <span className="text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground" lang="ar">
             {isFinished ? 'اكتمل التكرار' : `المتبقي: ${remaining}`}
           </span>
         </div>
@@ -250,8 +256,9 @@ export function ZekrCard({
               handleTap(e);
             }}
             disabled={isFinished}
+            aria-label={isFinished ? `اكتمل، ${targetCount} من ${targetCount}` : `عدّ الذكر، ${completedCount} من ${targetCount}`}
             className={cn(
-              'relative min-w-[76px] h-11 px-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-150 select-none shadow-sm active:scale-95',
+              'relative min-w-[76px] h-11 px-4 rounded-xl flex items-center justify-center gap-2 font-bold transition-all duration-150 select-none shadow-sm active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:active:scale-100',
               isFinished
                 ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 cursor-default'
                 : 'bg-primary text-primary-foreground hover:brightness-105 cursor-pointer'
