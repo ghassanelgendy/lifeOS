@@ -318,14 +318,26 @@ export async function askAI(
 
       // If user disabled fallback, do not cascade
       if (!aiFallbackEnabled) {
-        throw new Error(`AI request failed on ${candidate.model}: ${errorMessage}`, { cause: err });
+        const kind = statusCode !== null ? 'API error' : 'app/network error';
+        throw new Error(`AI request failed on ${candidate.model} — ${kind} (${statusCode ?? 'no HTTP response'}): ${errorMessage}`, { cause: err });
       }
     }
   }
 
-  // All candidates in the queue failed
-  const summary = failureLog.map((f) => `${f.model} (${f.status || 'ERR'}): ${f.error}`).join(' | ');
-  const finalError = `All AI models in the fallback chain failed (${failureLog.length} attempted). Details: ${summary}`;
+  // All candidates in the queue failed. Classify each failure so the user (and the error
+  // shown in Chat) can tell an API-side problem (the provider responded with an HTTP error,
+  // e.g. 401/429/500) apart from an app-side one (timeout/network/parsing failure before any
+  // HTTP response came back — e.g. a client-side abort, or the Vercel function itself being
+  // killed before the model finished responding).
+  const apiErrors = failureLog.filter((f) => f.status !== null);
+  const appErrors = failureLog.filter((f) => f.status === null);
+  const kind = apiErrors.length > 0 && appErrors.length === 0
+    ? 'API error'
+    : appErrors.length > 0 && apiErrors.length === 0
+      ? 'app/network error'
+      : 'mixed API + app/network errors';
+  const summary = failureLog.map((f) => `${f.model} (${f.status ?? 'no HTTP response'}): ${f.error}`).join(' | ');
+  const finalError = `All AI models in the fallback chain failed — ${kind} (${failureLog.length} attempted). Details: ${summary}`;
   addSystemLog(`askAI exhausted: ${finalError}`, 'error');
   throw new Error(finalError);
 }
