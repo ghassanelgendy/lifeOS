@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy, BookOpen } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../../lib/quran-memorizer';
+import { getAzkarHabitCategory } from '../../hooks/useAzkar';
 import { cn } from '../../lib/utils';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useUpdateTask, useDeleteTask } from '../../hooks/useTasks.web';
@@ -22,6 +23,7 @@ import { useToggleCalendarEvent } from '../../hooks/useCalendar';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
+import { AzkarDashboardWidget } from './AzkarDashboardWidget';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
@@ -167,7 +169,8 @@ const ACCENT_DOT: Record<DueKind, string> = {
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   const isExpandedState = isExpanded;
-  const quranTarget = kind === 'habit' ? getSpecificSurahHabitTarget(title, subtitle) : null;
+  const azkarCategory = kind === 'habit' ? getAzkarHabitCategory(title, subtitle) : null;
+  const quranTarget = kind === 'habit' && !azkarCategory ? getSpecificSurahHabitTarget(title, subtitle) : null;
 
   return (
     <div
@@ -307,6 +310,20 @@ const ACCENT_DOT: Record<DueKind, string> = {
               >
                 {kindLabel}
               </span>
+              {azkarCategory && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = '/azkar';
+                  }}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                  title={`فتح ${azkarCategory} في قسم الأذكار`}
+                >
+                  <Sparkles size={10} />
+                  <span>{azkarCategory}</span>
+                </button>
+              )}
               {quranTarget && (
                 <button
                   type="button"
@@ -1365,8 +1382,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </Link>
       </div>
 
-      {/* Daily Hadith Banner */}
-      <HadithWidget />
+      {/* Daily Spiritual Banners: Hadith & Azkar */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
+        <HadithWidget />
+        <AzkarDashboardWidget />
+      </div>
 
 
       {/* Top Row Grid: Custom column ratios on PC/Desktop, 2 columns on tablet, stacked on mobile */}

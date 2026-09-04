@@ -19,6 +19,7 @@ import {
   BookOpen,
 } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../lib/quran-memorizer';
+import { getAzkarHabitCategory } from '../hooks/useAzkar';
 import {
   format,
   startOfWeek,
@@ -285,6 +286,10 @@ export default function Habits() {
       }
     }));
     navigate(`/quran?page=${target.page}&surah=${target.surahId}&ayah=${target.ayahNumber || 1}&mode=reading&tab=reader`);
+  };
+
+  const handleOpenAzkarTarget = (category: string) => {
+    navigate('/azkar');
   };
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
@@ -704,6 +709,23 @@ export default function Habits() {
                           <div className="flex items-center gap-2 min-w-0 flex-wrap">
                             <span className="font-medium truncate">{habit.title}</span>
                             {(() => {
+                              const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
+                              if (azkarCat) {
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenAzkarTarget(azkarCat);
+                                    }}
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                                    title={`فتح ${azkarCat} في قسم الأذكار`}
+                                  >
+                                    <Sparkles size={10} />
+                                    <span>{azkarCat}</span>
+                                  </button>
+                                );
+                              }
                               const quranTarget = getSpecificSurahHabitTarget(habit.title, habit.description);
                               if (!quranTarget) return null;
                               return (
@@ -1101,6 +1123,23 @@ export default function Habits() {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <h3 className="font-medium">{habit.title}</h3>
                                   {(() => {
+                                    const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
+                                    if (azkarCat) {
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenAzkarTarget(azkarCat);
+                                          }}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                          title={`فتح ${azkarCat} في قسم الأذكار`}
+                                        >
+                                          <Sparkles size={11} />
+                                          <span>{azkarCat}</span>
+                                        </button>
+                                      );
+                                    }
                                     const quranTarget = getSpecificSurahHabitTarget(habit.title, habit.description);
                                     if (!quranTarget) return null;
                                     return (
@@ -1224,6 +1263,23 @@ export default function Habits() {
                                     {habit.title}
                                   </h3>
                                   {(() => {
+                                    const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
+                                    if (azkarCat) {
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenAzkarTarget(azkarCat);
+                                          }}
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                          title={`فتح ${azkarCat} في قسم الأذكار`}
+                                        >
+                                          <Sparkles size={11} />
+                                          <span>{azkarCat}</span>
+                                        </button>
+                                      );
+                                    }
                                     const quranTarget = getSpecificSurahHabitTarget(habit.title, habit.description);
                                     if (!quranTarget) return null;
                                     return (

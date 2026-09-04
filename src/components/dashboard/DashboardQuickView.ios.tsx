@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
 import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic, BookOpen } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../../lib/quran-memorizer';
+import { getAzkarHabitCategory } from '../../hooks/useAzkar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../../hooks/useNativeInteraction';
 import { cn } from '../../lib/utils';
@@ -23,6 +24,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToggleCalendarEvent } from '../../hooks/useCalendar';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
+import { AzkarDashboardWidget } from './AzkarDashboardWidget';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
@@ -195,7 +197,8 @@ function DueTodayRow({
   const completedCount = subtasks ? subtasks.filter((s) => s.is_completed).length : 0;
   const totalCount = subtasks ? subtasks.length : 0;
   const percentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-  const quranTarget = kind === 'habit' ? getSpecificSurahHabitTarget(title, subtitle) : null;
+  const azkarCategory = kind === 'habit' ? getAzkarHabitCategory(title, subtitle) : null;
+  const quranTarget = kind === 'habit' && !azkarCategory ? getSpecificSurahHabitTarget(title, subtitle) : null;
 
   return (
     <div
@@ -325,6 +328,20 @@ function DueTodayRow({
               <span className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/50">
                 {kindLabel}
               </span>
+              {azkarCategory && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.location.href = '/azkar';
+                  }}
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                  title={`فتح ${azkarCategory} في قسم الأذكار`}
+                >
+                  <Sparkles size={10} />
+                  <span>{azkarCategory}</span>
+                </button>
+              )}
               {quranTarget && (
                 <button
                   type="button"
@@ -1866,6 +1883,12 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             </span>
           </Link>
         </div>
+
+        {/* Daily Azkar Widget */}
+        <div className="mb-3 sm:mb-4">
+          <AzkarDashboardWidget />
+        </div>
+
         <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
             <Link to="/" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
