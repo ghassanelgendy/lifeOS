@@ -387,6 +387,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/userAppSettings.ts](#src-lib-userappsettings-ts)
 - [src/lib/utils.test.ts](#src-lib-utils-test-ts)
 - [src/lib/utils.ts](#src-lib-utils-ts)
+- [src/lib/weeklyCoachScheduler.ts](#src-lib-weeklycoachscheduler-ts)
 - [src/lib/wikiData.ts](#src-lib-wikidata-ts)
 - [src/lib/wikiStorage.ts](#src-lib-wikistorage-ts)
 - [src/lib/wrapHelpers.ts](#src-lib-wraphelpers-ts)
@@ -639,7 +640,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6660
+**Lines:** 6662
 
 ---
 
@@ -661,7 +662,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 903
+**Lines:** 905
 
 ---
 
@@ -1010,7 +1011,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 59
+**Lines:** 65
 
 ---
 
@@ -1047,7 +1048,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **CSS Classes/Selectors:** dark-theme, app-header, brand-row, brand-title, brand-avatar, brand-name, screentime-pill, header-actions, icon-btn, nav-tabs, nav-tab, active, tab-count-badge, tab-panels, tab-panel, card, page-preview-card, page-preview-header, page-favicon, clean-input (+65 more)
 
-**Lines:** 720
+**Lines:** 748
 
 ---
 
@@ -1502,9 +1503,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranmemorizermain-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranMemorizerMain.tsx
 
-**File Purpose:** Main root container component for the Quran Memorizer module. Manages active view tabs (reader, khatmah, revision, mutashabihat), coordinates audio playback, handles bidirectional habit and checkpoint synchronization with Supabase and localStorage, processes deep linking query parameters (`page`, `surah`, `ayah`, `mode`, `tab`), and dispatches habit logging events upon setting checkpoints.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:** None (React component module)
+**Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 776
 
@@ -1513,9 +1514,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-quranreaderview-tsx"></a>
 ### lib/quran-memorizer/src/components/QuranReaderView.tsx
 
-**File Purpose:** Core Quran reader component supporting Medina Mushaf page view and ayah list modes, fullscreen reader with pinch-to-zoom and floating HUD, 3D long-press verse action context menu (memorization and reading checkpoint tagging, tafseer drawer, audio looping), dynamic active Surah calculation and Fehres synchronization across page flips, and automated scrolling to center target verses.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
-**Functions & Classes:** None (React component module)
+**Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 2425
 
@@ -1626,9 +1627,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`classifyQuranHabitTitle`** — Utility function for classify quran habit title.
 - **`advanceWirdOnHabitComplete`** — Utility function for advance wird on habit complete.
 - **`formatSurahAndAyahSpan`** — Utility function for format surah and ayah span.
-- **`getSpecificSurahHabitTarget`** — Utility function detecting specific Surahs (such as Surat Al-Mulk, Surat Al-Kahf) and resolving their target Medina Mushaf page and Surah ID for interactive habit deep linking.
 
-**Lines:** 654
+**Lines:** 652
 
 ---
 
@@ -2990,7 +2990,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`mergeSegments`** — Utility function for merge segments.
 - **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 2296
+**Lines:** 2323
 
 ---
 
@@ -3027,7 +3027,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`mergeSegments`** — Utility function for merge segments.
 - **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 1754
+**Lines:** 1783
 
 ---
 
@@ -3884,7 +3884,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`taskTriggerDate`** — Utility function for task trigger date.
 - **`usePakeLocalNotifications`** — Utility function for use pake local notifications.
 
-**Lines:** 348
+**Lines:** 368
 
 ---
 
@@ -4765,7 +4765,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 888
+**Lines:** 918
 
 ---
 
@@ -5068,6 +5068,30 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`formatDuration`** — Utility function for format duration.
 
 **Lines:** 55
+
+---
+
+<a name="src-lib-weeklycoachscheduler-ts"></a>
+### src/lib/weeklyCoachScheduler.ts
+
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+
+**Functions & Classes:**
+- `getAwakeWindow` (Function)
+- `harvestUnfinishedWeeklyTasks` (Function)
+- `getDayFreeSlots` (Function)
+- `scheduleCandidatesIntoNextWeek` (Function)
+- `CandidateWeeklyTask` (Interface)
+- `DayFreeSlot` (Interface)
+- `AwakeInterval` (Interface)
+
+**Function Details:**
+- **`getAwakeWindow`** — Utility function for get awake window.
+- **`harvestUnfinishedWeeklyTasks`** — Utility function for harvest unfinished weekly tasks.
+- **`getDayFreeSlots`** — Utility function for get day free slots.
+- **`scheduleCandidatesIntoNextWeek`** — Utility function for schedule candidates into next week.
+
+**Lines:** 334
 
 ---
 
@@ -5392,7 +5416,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1374
+**Lines:** 1444
 
 ---
 
@@ -5430,7 +5454,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1437
+**Lines:** 1508
 
 ---
 
@@ -5897,7 +5921,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`DailyHabitsList`** — Utility function for daily habits list.
 - **`DailyNoteArea`** — Utility function for daily note area.
 
-**Lines:** 1196
+**Lines:** 1540
 
 ---
 
@@ -6259,7 +6283,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`normalizeMinuteOfDay`** — Utility function for normalize minute of day.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 506
+**Lines:** 521
 
 ---
 

@@ -328,6 +328,20 @@ Creating a task or event from a day card in the Weekly Planner shall redirect th
 #### FR-CAL-014: Weekly Load Heuristics
 The planner shall display a comparison sparkline comparing the current week's item density (tasks + events + scheduled habits) against the past 3 weeks, dynamically calculating and displaying a load rating (e.g. Heavy Load, Optimal Load, Light Load) based on historical averages.
 
+#### FR-CAL-015: Day Card Drag and Drop Re-scheduling
+The system shall support HTML5 native drag-and-drop of tasks and calendar events across day cards in the Weekly Planner:
+- Tasks can be dragged from any day card onto another day card to instantly update their `due_date`.
+- Calendar events can be dragged across day cards, updating their `start_time` and `end_time` dates while preserving original hours, minutes, and durations.
+- Day cards highlight visually as active drop targets (`ring-2 ring-blue-500`) when an item is dragged over them.
+
+#### FR-CAL-016: Smart Weekly Coach & Next-Week Dynamic Scheduler
+The system shall provide a smart next-week scheduling engine integrated into the Weekly Planner:
+- Smartly harvests unfinished tasks that were not completed during the evaluated week (`is_completed = false`, `is_wont_do = false`).
+- Parses actionable task suggestions (`ai_analysis.tasks`) from that week's brain dump notes (`is_brain_dump = true`), deduplicating against tasks already completed or created.
+- Derives user awake windows from Apple Health sleep stage logs (or default 08:00–23:00) and calculates verified free awake slots by subtracting calendar events and time-bound tasks for next week.
+- Distributes harvested candidates into free awake time slots across next week's days, sorted by priority (urgent/high first).
+- Provides an interactive review modal allowing users to inspect suggested day and time slots, change days, exclude candidates, and batch-apply with a single click.
+
 ---
 
 ### 3.6 Finance Management
