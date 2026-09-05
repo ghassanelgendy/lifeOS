@@ -76,6 +76,10 @@ try {
         pubkey,
       };
     }
+    if (version) {
+      tauriConf.package = tauriConf.package || {};
+      tauriConf.package.version = version;
+    }
   }
 
   try {

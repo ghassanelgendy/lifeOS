@@ -93,7 +93,6 @@ jobs:
             --show-system-tray \
             --hide-on-close \
             --inject scripts/pake-inject.js \
-            --iterative-build \
             --use-local-file \
             --app-version "${{ env.VERSION }}"
           # Normalise output file names (Pake may produce various casings)
@@ -211,7 +210,6 @@ jobs:
             --hide-on-close \
             --hide-window-decorations \
             --inject scripts/pake-inject.js \
-            --iterative-build \
             --use-local-file \
             --app-version "${{ env.VERSION }}"
           # Find and normalise output files (.deb, .AppImage)
