@@ -8,7 +8,11 @@ import {
   useContextualAzkarCategory,
 } from '../../hooks/useAzkar';
 
-export function AzkarDashboardWidget() {
+interface AzkarDashboardWidgetProps {
+  className?: string;
+}
+
+export function AzkarDashboardWidget({ className }: AzkarDashboardWidgetProps = {}) {
   const navigate = useNavigate();
   const allAzkar = useAllAzkar();
   const { progress } = useTodayAzkarProgress();
@@ -38,7 +42,10 @@ export function AzkarDashboardWidget() {
   return (
     <div
       onClick={() => navigate('/azkar')}
-      className="p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 cursor-pointer shadow-sm group select-none relative overflow-hidden"
+      className={cn(
+        'p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 cursor-pointer shadow-sm group select-none relative overflow-hidden h-full flex flex-col justify-between',
+        className
+      )}
     >
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5">

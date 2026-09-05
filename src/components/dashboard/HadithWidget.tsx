@@ -49,7 +49,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
     : 'rounded-2xl border border-border/70 bg-card/95 backdrop-blur-md p-4.5 shadow-sm hover:border-border transition-all duration-200';
 
   return (
-    <div className={cn(cardStyle, 'relative overflow-hidden group', className)}>
+    <div className={cn(cardStyle, 'relative overflow-hidden group h-full flex flex-col justify-between', className)}>
       {/* Subtle background decorative ornament */}
       <div 
         className="pointer-events-none absolute -left-6 -top-6 size-28 rounded-full bg-emerald-500/5 blur-2xl dark:bg-emerald-400/10" 
@@ -60,62 +60,64 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
         aria-hidden="true" 
       />
 
-      {/* Header bar */}
-      <div className="flex items-center justify-between gap-2 mb-3 border-b border-border/30 pb-2.5">
-        <div className="flex items-center gap-2">
-          <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <Quote className="size-3.5 rotate-180" />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold tracking-wide text-foreground">
-              {isDaily ? 'حديث اليوم' : 'حديث شريف'}
-            </span>
-            {currentHadith.category && (
-              <span className="inline-flex items-center rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/40">
-                {currentHadith.category}
+      <div>
+        {/* Header bar */}
+        <div className="flex items-center justify-between gap-2 mb-3 border-b border-border/30 pb-2.5">
+          <div className="flex items-center gap-2">
+            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <Quote className="size-3.5 rotate-180" />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold tracking-wide text-foreground">
+                {isDaily ? 'حديث اليوم' : 'حديث شريف'}
               </span>
-            )}
+              {currentHadith.category && (
+                <span className="inline-flex items-center rounded-full bg-secondary/80 px-2 py-0.5 text-[10px] font-medium text-muted-foreground border border-border/40">
+                  {currentHadith.category}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-1">
-          {currentHadith.translation && (
+          {/* Action Controls */}
+          <div className="flex items-center gap-1">
+            {currentHadith.translation && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowTranslation((prev) => !prev);
+                  void triggerHaptics('selection');
+                }}
+                title={showTranslation ? 'عرض النص العربي' : 'Show English Translation'}
+                className={cn(
+                  'flex size-7 items-center justify-center rounded-lg border text-xs transition-all',
+                  showTranslation
+                    ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                    : 'border-border/50 bg-background/60 text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+              >
+                <Languages className="size-3.5" />
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => {
-                setShowTranslation((prev) => !prev);
-                void triggerHaptics('selection');
-              }}
-              title={showTranslation ? 'عرض النص العربي' : 'Show English Translation'}
-              className={cn(
-                'flex size-7 items-center justify-center rounded-lg border text-xs transition-all',
-                showTranslation
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-                  : 'border-border/50 bg-background/60 text-muted-foreground hover:bg-accent hover:text-foreground'
-              )}
+              onClick={handleCopy}
+              title="نسخ الحديث"
+              className="flex size-7 items-center justify-center rounded-lg border border-border/50 bg-background/60 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
             >
-              <Languages className="size-3.5" />
+              {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
             </button>
-          )}
 
-          <button
-            type="button"
-            onClick={handleCopy}
-            title="نسخ الحديث"
-            className="flex size-7 items-center justify-center rounded-lg border border-border/50 bg-background/60 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-          >
-            {copied ? <Check className="size-3.5 text-emerald-500" /> : <Copy className="size-3.5" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleNextHadith}
-            title="حديث آخر"
-            className="flex size-7 items-center justify-center rounded-lg border border-border/50 bg-background/60 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
-          >
-            <RefreshCw className={cn('size-3.5 transition-transform duration-300', isRotating && 'rotate-180')} />
-          </button>
+            <button
+              type="button"
+              onClick={handleNextHadith}
+              title="حديث آخر"
+              className="flex size-7 items-center justify-center rounded-lg border border-border/50 bg-background/60 text-muted-foreground hover:bg-accent hover:text-foreground transition-all"
+            >
+              <RefreshCw className={cn('size-3.5 transition-transform duration-300', isRotating && 'rotate-180')} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -127,12 +129,12 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.2 }}
-          className="space-y-2.5"
+          className="flex-1 flex flex-col justify-between space-y-2.5"
         >
           {/* Arabic Hadith Text */}
-          <div dir="rtl" className="text-right">
+          <div dir="rtl" className="text-right flex-1">
             <p className={cn(
-              'font-hadith text-emerald-900 dark:text-emerald-100 font-semibold tracking-wide text-right',
+              'font-cairo font-sans text-emerald-900 dark:text-emerald-100 font-semibold tracking-wide text-right',
               compact ? 'text-base leading-relaxed' : 'text-lg leading-loose sm:text-xl sm:leading-loose'
             )}>
               «{currentHadith.text}»

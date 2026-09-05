@@ -498,5 +498,5 @@ button, a {
 
 /* Font utility for Hadith typography */
 .font-hadith {
-  font-family: 'Zunburk', 'Zain', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif;
+  font-family: 'Cairo', sans-serif !important;
 }

@@ -316,9 +316,10 @@ export function AppShell() {
     };
   }, []);
 
-  // Automatically restore tab bar to full size on route changes
+  // Automatically restore tab bar to full size on route changes, except Azkar
+  // which starts minimized so it doesn't cover the reader/counter until tapped.
   useEffect(() => {
-    setShowTabBar(true);
+    setShowTabBar(location.pathname !== '/azkar');
   }, [location.pathname]);
 
   const gestureContainerRef = useRef<HTMLDivElement>(null);
@@ -813,6 +814,12 @@ export function AppShell() {
             tabs={mobileNavigationMapped}
             activeTabHref={location.pathname}
             onTabClick={(href) => {
+              // On Azkar, the bar starts minimized: the first tap just expands it
+              // back to full size instead of immediately navigating.
+              if (location.pathname === '/azkar' && !showTabBar) {
+                setShowTabBar(true);
+                return;
+              }
               setShowTabBar(true);
               if (location.pathname === href) {
                 const scrollRoot = document.querySelector('[data-lifeos-scroll-root]');

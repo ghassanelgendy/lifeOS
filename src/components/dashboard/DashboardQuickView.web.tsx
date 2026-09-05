@@ -1384,11 +1384,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       {/* Daily Spiritual Banners: Hadith & Azkar — shares the same grid template as the
           Day progress / metrics row below so both rows line up to the same total width. */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
-        <div className="lg:col-span-2">
-          <HadithWidget />
+        <div className="lg:col-span-2 flex flex-col">
+          <HadithWidget className="h-full" />
         </div>
-        <div className="lg:col-span-2">
-          <AzkarDashboardWidget />
+        <div className="lg:col-span-2 flex flex-col">
+          <AzkarDashboardWidget className="h-full" />
         </div>
       </div>
 

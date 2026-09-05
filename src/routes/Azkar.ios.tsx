@@ -252,7 +252,7 @@ export default function AzkarRoute() {
                   {activeIndex + 1} / {categoryItems.length}
                 </span>
 
-                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-secondary">
+                <div className="h-1.5 w-32 overflow-hidden rounded-full bg-secondary" dir="rtl">
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-200"
                     style={{ width: `${((activeIndex + 1) / categoryItems.length) * 100}%` }}
@@ -303,8 +303,8 @@ export default function AzkarRoute() {
                 )}
               </div>
 
-              {/* Bottom interactive counter & controls */}
-              <div className="flex flex-col items-center justify-center pb-6 pt-2 shrink-0">
+              {/* Bottom interactive counter & controls (padded to clear the floating tab bar) */}
+              <div className="flex flex-col items-center justify-center pb-[calc(96px+env(safe-area-inset-bottom))] pt-2 shrink-0">
                 {/* Visual tap button / counter indicator */}
                 <button
                   type="button"
@@ -335,12 +335,11 @@ export default function AzkarRoute() {
                     </div>
                   )}
 
-                  {/* Circular progress highlight indicator */}
+                  {/* Circular progress highlight indicator (fills right-to-left for RTL) */}
                   <div
-                    className="absolute inset-x-0 bottom-0 h-1 bg-primary rounded-full transition-all duration-200"
+                    className="absolute bottom-0 right-0 h-1 bg-primary rounded-full transition-all duration-200"
                     style={{
                       width: `${progressPct}%`,
-                      margin: '0 auto',
                       backgroundColor: isFinished ? '#10b981' : undefined
                     }}
                   />
