@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { triggerHaptics } from '../lib/nativeBridge';
 import type { TaskPriority } from '../types/schema';
 import { cn } from '../lib/utils';
+import { analyzeTaskSimilarityWithAI } from '../lib/taskSimilarityAnalyzer';
 
 function todayInputDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -28,6 +29,7 @@ export interface ExtractedActionTask {
   actionType: 'call' | 'event' | 'email' | 'code' | 'task' | 'reading';
   reason?: string;
   isSelected: boolean;
+  duplicateWarning?: string;
 }
 
 interface AINoteOrganizerSheetProps {
@@ -254,6 +256,34 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
       setExtractedTasks(processedTasks);
       setHasRun(true);
       void triggerHaptics('success');
+
+      // Reuse the same duplicate-detection engine the manual "add task" flow uses (see
+      // Tasks.web.tsx) so re-organizing a note (or extracting overlapping tasks across
+      // multiple brain dumps) doesn't quietly create duplicate task rows — flag likely
+      // repeats against existing tasks and default them unselected instead of auto-creating.
+      void Promise.all(
+        processedTasks.map(async (t) => {
+          try {
+            const result = await analyzeTaskSimilarityWithAI(t.title, undefined, tasks, taskLists, tags);
+            if (result.hasDuplicate && result.matches.length > 0) {
+              return { id: t.id, warning: `Possible duplicate of "${result.matches[0].existingTask.title}"` };
+            }
+          } catch {
+            // Non-fatal: leave the task unflagged if the similarity check itself fails.
+          }
+          return null;
+        })
+      ).then((flags) => {
+        const warningById = new Map(flags.filter((f): f is { id: string; warning: string } => !!f).map((f) => [f.id, f.warning]));
+        if (warningById.size === 0) return;
+        setExtractedTasks((prev) =>
+          prev.map((t) =>
+            warningById.has(t.id)
+              ? { ...t, isSelected: false, duplicateWarning: warningById.get(t.id) }
+              : t
+          )
+        );
+      });
     } catch (err: any) {
       console.error('AI Note Organizer error:', err);
       setErrorMsg(err?.message || 'Failed to process note with AI. Please check your AI configuration.');
@@ -560,6 +590,13 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
                           </span>
                         )}
                       </div>
+
+                      {task.duplicateWarning && (
+                        <div className="flex items-center gap-1.5 text-[11px] text-amber-500 bg-amber-500/10 border border-amber-500/30 rounded px-2 py-1">
+                          <AlertCircle size={12} className="shrink-0" />
+                          <span className="truncate">{task.duplicateWarning} — unchecked by default, review before creating.</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
