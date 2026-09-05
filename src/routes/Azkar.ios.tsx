@@ -69,8 +69,8 @@ export default function AzkarRoute() {
   );
 
   const next = useCallback(() => {
-    // Swiping/skipping past a zekr before finishing its tap count still counts it as
-    // done — otherwise skipping a few items permanently blocks the category from completion.
+    // Advancing past a zekr counts it as read, even without tapping its counter —
+    // moving on is itself the signal that the user read it.
     if (item && completedCount < targetCount) {
       handleIncrement(item.id, targetCount);
     }

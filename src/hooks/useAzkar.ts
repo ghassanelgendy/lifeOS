@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import azkarDataRaw from '../data/azkar.json';
 import type { AzkarItem, AzkarCategoryMeta, AzkarTimeWindow } from '../types/azkar';
@@ -149,8 +149,29 @@ export function useAzkarFavorites() {
   };
 }
 
+function getTodayStr(): string {
+  return format(new Date(), 'yyyy-MM-dd');
+}
+
 export function useTodayAzkarProgress() {
-  const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
+  // Recomputed on focus/visibility change, not just once at mount — a backgrounded
+  // tab/PWA left open across midnight never remounts, so a plain useMemo(() => ..., [])
+  // would stay frozen on yesterday's date and keep showing yesterday's completed progress
+  // instead of resetting when the user reopens the app the next day.
+  const [todayStr, setTodayStr] = useState(getTodayStr);
+  useEffect(() => {
+    const refresh = () => {
+      const now = getTodayStr();
+      setTodayStr((prev) => (prev === now ? prev : now));
+    };
+    document.addEventListener('visibilitychange', refresh);
+    window.addEventListener('focus', refresh);
+    return () => {
+      document.removeEventListener('visibilitychange', refresh);
+      window.removeEventListener('focus', refresh);
+    };
+  }, []);
+
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const key = ['azkar-daily-log', todayStr, user?.id];
