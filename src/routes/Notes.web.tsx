@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
-import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus } from 'lucide-react';
+import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus, ListTodo } from 'lucide-react';
 import { Button, ConfirmSheet } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
@@ -104,6 +104,7 @@ export default function NotesWeb() {
   const [saveMessage, setSaveMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
   const [isBrainDumpModalOpen, setIsBrainDumpModalOpen] = useState(false);
+  const [brainDumpModalTab, setBrainDumpModalTab] = useState<'capture' | 'inbox' | 'plan' | 'all'>('capture');
   const [isAiOrganizerOpen, setIsAiOrganizerOpen] = useState(false);
 
   // AI loading states
@@ -390,7 +391,23 @@ export default function NotesWeb() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setIsBrainDumpModalOpen(true)}
+            onClick={() => {
+              setBrainDumpModalTab('all');
+              setIsBrainDumpModalOpen(true);
+            }}
+            className="gap-2 text-xs h-9"
+            title="Every task proposed across all brain dumps, synced against your To-Do List"
+          >
+            <ListTodo size={16} />
+            All Brain Dump Tasks
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setBrainDumpModalTab('capture');
+              setIsBrainDumpModalOpen(true);
+            }}
             className="gap-2 text-xs h-9 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
           >
             <Brain size={16} />
@@ -848,6 +865,7 @@ export default function NotesWeb() {
       <BrainDumpModal
         isOpen={isBrainDumpModalOpen}
         onClose={() => setIsBrainDumpModalOpen(false)}
+        initialTab={brainDumpModalTab}
         onSavedNote={(noteId) => {
           setActiveId(noteId);
           setIsBrainDumpModalOpen(false);

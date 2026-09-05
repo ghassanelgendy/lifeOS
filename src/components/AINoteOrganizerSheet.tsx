@@ -71,6 +71,20 @@ export function AINoteOrganizerSheet({
   const [hasRun, setHasRun] = useState(false);
   const [createdCount, setCreatedCount] = useState<number | null>(null);
 
+  // Reset stale results whenever we switch to a different note — otherwise the
+  // previously reviewed note's extracted tasks stay in state (since this sheet
+  // is a single persistent instance toggled by `isOpen`) and bleed into the
+  // next note's "proposed tasks" view.
+  useEffect(() => {
+    setExtractedTasks([]);
+    setOrganizedMarkdown(null);
+    setSummary('');
+    setInsights([]);
+    setHasRun(false);
+    setCreatedCount(null);
+    setErrorMsg('');
+  }, [noteId]);
+
   // Initialize from existing analysis if available
   useEffect(() => {
     if (existingAnalysis && !hasRun) {
@@ -399,9 +413,10 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
               onClick={handleRunAnalysis}
               disabled={isProcessing || !noteBody.trim()}
               className="gap-2 text-xs h-9 bg-primary text-primary-foreground font-semibold"
+              title={hasRun ? 'Re-scan the current note content and refresh the extracted tasks below' : undefined}
             >
               {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-              <span>{isProcessing ? 'Analyzing Note...' : 'Run AI Organizer'}</span>
+              <span>{isProcessing ? 'Analyzing Note...' : hasRun ? 'Regenerate Tasks' : 'Run AI Organizer'}</span>
             </Button>
           </div>
         </div>
@@ -439,6 +454,9 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
                   </Button>
                 )}
               </div>
+              <p className="text-[11px] text-muted-foreground">
+                Added more to the note since this was generated? Click "Regenerate Tasks" above to re-scan it.
+              </p>
 
               {extractedTasks.length === 0 ? (
                 <p className="text-xs text-muted-foreground italic py-2">No discrete tasks detected in this note.</p>

@@ -10,7 +10,7 @@ import { useSleepMetrics } from '../hooks/useSleep';
 import { distributeTasksAcrossAwakeSlots } from '../lib/smartTaskScheduler';
 import { format } from 'date-fns';
 import { triggerHaptics } from '../lib/nativeBridge';
-import type { Note, BrainDumpAnalysis, BrainDumpSuggestionTask } from '../types/schema';
+import type { Note, BrainDumpAnalysis, BrainDumpSuggestionTask, Task } from '../types/schema';
 import { cn } from '../lib/utils';
 
 interface BrainDumpModalProps {
@@ -18,9 +18,10 @@ interface BrainDumpModalProps {
   onClose: () => void;
   initialText?: string;
   onSavedNote?: (noteId: string) => void;
+  initialTab?: 'capture' | 'inbox' | 'plan' | 'all';
 }
 
-export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote }: BrainDumpModalProps) {
+export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote, initialTab }: BrainDumpModalProps) {
   const { data: allNotes = [] } = useNotes();
   const { data: noteFolders = [] } = useNoteFolders();
   const { data: tasks = [] } = useTasks();
@@ -36,8 +37,14 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const createHabit = useCreateHabit();
   const createCalendarEvent = useCreateCalendarEvent();
 
-  // Active Tab: 'capture' (default quick-dump) | 'inbox' (review past thoughts) | 'plan' (AI batch extraction)
-  const [activeTab, setActiveTab] = useState<'capture' | 'inbox' | 'plan'>('capture');
+  // Active Tab: 'capture' (default quick-dump) | 'inbox' (review past thoughts) | 'plan' (AI batch extraction) | 'all' (all brain-dump tasks)
+  const [activeTab, setActiveTab] = useState<'capture' | 'inbox' | 'plan' | 'all'>(initialTab || 'capture');
+  const [isSyncingAllTasks, setIsSyncingAllTasks] = useState(false);
+
+  // Jump to the requested tab whenever the modal is (re)opened with one.
+  useEffect(() => {
+    if (isOpen && initialTab) setActiveTab(initialTab);
+  }, [isOpen, initialTab]);
 
   // Capture State
   const [rawText, setRawText] = useState(initialText);
@@ -70,6 +77,81 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote 
   const unprocessedNotes = useMemo(() => {
     return brainDumpNotes.filter((n) => !n.ai_analysis);
   }, [brainDumpNotes]);
+
+  // Every task proposed by AI across ALL brain dump notes, cross-referenced against the
+  // real to-do list so we know whether each one was already added (and, if so, whether
+  // it's been completed) instead of just dumping every suggestion regardless of state.
+  interface AggregatedBrainDumpTask {
+    note: Note;
+    task: BrainDumpSuggestionTask;
+    taskIndex: number;
+    linkedTask: Task | undefined;
+  }
+  const allBrainDumpTasks = useMemo<AggregatedBrainDumpTask[]>(() => {
+    const items: AggregatedBrainDumpTask[] = [];
+    for (const note of brainDumpNotes) {
+      const noteTasks = note.ai_analysis?.tasks;
+      if (!noteTasks?.length) continue;
+      noteTasks.forEach((task, taskIndex) => {
+        const linkedTask =
+          (task.task_id && tasks.find((t) => t.id === task.task_id)) ||
+          tasks.find(
+            (t) =>
+              t.source_note_id === note.id &&
+              t.title.trim().toLowerCase() === task.title.trim().toLowerCase()
+          );
+        items.push({ note, task, taskIndex, linkedTask });
+      });
+    }
+    return items;
+  }, [brainDumpNotes, tasks]);
+
+  const unaddedBrainDumpTasks = useMemo(
+    () => allBrainDumpTasks.filter((i) => !i.linkedTask),
+    [allBrainDumpTasks]
+  );
+
+  const handleCreateTaskForNote = async (note: Note, task: BrainDumpSuggestionTask) => {
+    try {
+      const targetList =
+        taskLists.find((l) => l.name.toLowerCase() === task.suggested_list?.toLowerCase())?.id ||
+        taskLists[0]?.id;
+      const targetTagIds = task.suggested_tag
+        ? ([tags.find((tg) => tg.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id].filter(
+            Boolean
+          ) as string[])
+        : [];
+
+      await createTask.mutateAsync({
+        title: task.title,
+        priority: (task.priority as any) || 'medium',
+        due_date: task.due || getLocalDateString(),
+        due_time: task.due_time || undefined,
+        duration_minutes: task.estimated_duration || 30,
+        list_id: targetList,
+        tag_ids: targetTagIds,
+        source_note_id: note.id,
+        is_completed: false,
+      });
+      void triggerHaptics('success');
+      setSaveSuccessMsg(`Added "${task.title}" to your To-Do List!`);
+      setTimeout(() => setSaveSuccessMsg(null), 3000);
+    } catch (err: any) {
+      setSaveSuccessMsg(`Error adding task: ${err?.message || err}`);
+    }
+  };
+
+  const handleSyncAllRemainingTasks = async () => {
+    if (unaddedBrainDumpTasks.length === 0) return;
+    setIsSyncingAllTasks(true);
+    try {
+      for (const { note, task } of unaddedBrainDumpTasks) {
+        await handleCreateTaskForNote(note, task);
+      }
+    } finally {
+      setIsSyncingAllTasks(false);
+    }
+  };
 
   const filteredInboxNotes = useMemo(() => {
     if (!inboxSearch.trim()) return brainDumpNotes;
@@ -684,6 +766,27 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
                 <span className="ml-1 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               )}
             </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('all')}
+              className={cn(
+                "px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer flex-1 sm:flex-initial",
+                activeTab === 'all'
+                  ? "bg-card text-primary shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              title="Every task proposed across all brain dumps, synced against your To-Do List"
+            >
+              <ListTodo size={13} />
+              <span className="sm:hidden">Tasks</span>
+              <span className="hidden sm:inline">All Tasks</span>
+              {unaddedBrainDumpTasks.length > 0 && (
+                <span className="ml-1 px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-500 text-[10px] font-bold">
+                  {unaddedBrainDumpTasks.length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -1221,6 +1324,94 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
               <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl space-y-2">
                 <Brain size={24} className="mx-auto text-purple-400" />
                 <p>No active analysis. Pick thoughts from your <strong>Thought Inbox</strong> or type text in <strong>Quick Dump</strong> to organize with AI.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 4: ALL TASKS ACROSS ALL BRAIN DUMPS */}
+        {activeTab === 'all' && (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-xl bg-secondary/30 border border-border">
+              <p className="text-xs text-muted-foreground">
+                {allBrainDumpTasks.length === 0
+                  ? 'No tasks have been extracted from any brain dump note yet.'
+                  : `${allBrainDumpTasks.length} task${allBrainDumpTasks.length === 1 ? '' : 's'} proposed across ${brainDumpNotes.filter((n) => n.ai_analysis?.tasks?.length).length} note(s) — ${unaddedBrainDumpTasks.length} not yet on your To-Do List.`}
+              </p>
+              <Button
+                size="sm"
+                onClick={() => void handleSyncAllRemainingTasks()}
+                disabled={isSyncingAllTasks || unaddedBrainDumpTasks.length === 0}
+                className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
+              >
+                {isSyncingAllTasks ? <Loader2 size={13} className="animate-spin" /> : <ListTodo size={13} />}
+                <span>Sync {unaddedBrainDumpTasks.length} Remaining Task{unaddedBrainDumpTasks.length === 1 ? '' : 's'}</span>
+              </Button>
+            </div>
+
+            {allBrainDumpTasks.length === 0 ? (
+              <div className="p-8 text-center text-xs text-muted-foreground border border-dashed border-border rounded-xl space-y-2">
+                <ListTodo size={24} className="mx-auto text-primary/60" />
+                <p>Organize a note in the <strong>AI Organizer</strong> tab first to extract tasks here.</p>
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-[440px] overflow-y-auto pr-1">
+                {allBrainDumpTasks.map(({ note, task, taskIndex, linkedTask }) => {
+                  const status = !linkedTask ? 'unadded' : linkedTask.is_completed ? 'done' : 'pending';
+                  return (
+                    <div
+                      key={`${note.id}_${taskIndex}`}
+                      className={cn(
+                        'p-3 rounded-xl border flex items-center justify-between gap-3 text-xs',
+                        status === 'done'
+                          ? 'border-emerald-500/30 bg-emerald-500/5 opacity-70'
+                          : status === 'pending'
+                          ? 'border-sky-500/30 bg-sky-500/5'
+                          : 'border-border bg-secondary/20'
+                      )}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className={cn('font-semibold text-foreground truncate', status === 'done' && 'line-through')}>
+                          {task.title}
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewNote(note);
+                            setActiveTab('inbox');
+                          }}
+                          className="text-[10px] text-muted-foreground hover:text-primary hover:underline truncate max-w-[220px] text-left"
+                          title="Open source note"
+                        >
+                          from "{note.title}"
+                        </button>
+                      </div>
+
+                      {status === 'unadded' ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleCreateTaskForNote(note, task)}
+                          className="h-7 text-[11px] px-2.5 shrink-0 gap-1 rounded-xl cursor-pointer"
+                        >
+                          <Plus size={12} />
+                          <span>Add</span>
+                        </Button>
+                      ) : (
+                        <span
+                          className={cn(
+                            'shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border',
+                            status === 'done'
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/25'
+                              : 'bg-sky-500/15 text-sky-400 border-sky-500/25'
+                          )}
+                        >
+                          {status === 'done' ? '✓ Done' : '● On To-Do List'}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

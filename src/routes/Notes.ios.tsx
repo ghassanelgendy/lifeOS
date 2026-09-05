@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
-import { ChevronLeft, FileText, Folder, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Pencil, FolderPlus, Calendar } from 'lucide-react';
+import { ChevronLeft, FileText, Folder, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Pencil, FolderPlus, Calendar, ListTodo } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, ConfirmSheet, Input } from '../components/ui';
 import { cn } from '../lib/utils';
@@ -100,6 +100,7 @@ export default function NotesIOS() {
   const [saveMessage, setSaveMessage] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Note | null>(null);
   const [isBrainDumpModalOpen, setIsBrainDumpModalOpen] = useState(false);
+  const [brainDumpModalTab, setBrainDumpModalTab] = useState<'capture' | 'inbox' | 'plan' | 'all'>('capture');
   const [isAiOrganizerOpen, setIsAiOrganizerOpen] = useState(false);
 
   // iOS 3D Touch long-press timer
@@ -320,15 +321,31 @@ export default function NotesIOS() {
                   </h1>
                   <p className="text-xs text-muted-foreground">Knowledge base & thoughts</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsBrainDumpModalOpen(true)}
-                  className="px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
-                  title="Cognitive Brain Dump"
-                >
-                  <Brain size={15} />
-                  <span>Brain Dump</span>
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBrainDumpModalTab('all');
+                      setIsBrainDumpModalOpen(true);
+                    }}
+                    className="p-2 rounded-full bg-secondary text-muted-foreground active:scale-95 transition-all shadow-sm"
+                    title="All Brain Dump Tasks"
+                  >
+                    <ListTodo size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBrainDumpModalTab('capture');
+                      setIsBrainDumpModalOpen(true);
+                    }}
+                    className="px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                    title="Cognitive Brain Dump"
+                  >
+                    <Brain size={15} />
+                    <span>Brain Dump</span>
+                  </button>
+                </div>
               </div>
 
               {/* LifeOS Theme Search Bar */}
@@ -756,6 +773,7 @@ export default function NotesIOS() {
       <BrainDumpModal
         isOpen={isBrainDumpModalOpen}
         onClose={() => setIsBrainDumpModalOpen(false)}
+        initialTab={brainDumpModalTab}
         onSavedNote={(noteId) => {
           setActiveId(noteId);
           setIsBrainDumpModalOpen(false);
