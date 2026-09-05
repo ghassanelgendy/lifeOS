@@ -17,6 +17,7 @@ import {
   ChevronDown,
   ChevronRight,
   BookOpen,
+  Sparkles,
 } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../lib/quran-memorizer';
 import { getAzkarHabitCategory } from '../hooks/useAzkar';
