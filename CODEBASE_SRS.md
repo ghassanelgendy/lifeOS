@@ -514,7 +514,7 @@ The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`,
 The system shall register a URL scheme listener (`lifeos://braindump?text=`) in `App.ios.tsx` to handle iPhone Back Tap gestures via Apple Shortcuts, pre-filling text and triggering auto-classification upon app launch.
 
 #### FR-NOTE-010: Server-Side AI Brain Dump Organizer
-The system shall provide a server-side cron service (`braindump-organizer` Supabase Edge Function & `public.process_midnight_braindumps()` pg_cron job) executing nightly to summarize unorganized past brain dumps with configured AI providers and write structured notes to the `Organized Brain Dumps` folder.
+The system shall provide a server-side cron service (`braindump-organizer` Supabase Edge Function & `public.process_midnight_braindumps()` pg_cron job) executing nightly to summarize unorganized past brain dumps with configured AI providers and write structured notes to the `Organized Brain Dumps` folder. This automation shall be **opt-in and default OFF** per user (`brainDumpAutoOrganizeEnabled` in Settings > AI Assistant > Automations); the Edge Function shall only process notes belonging to users who have explicitly enabled it, shall resolve each note's AI provider keys strictly from that note's own owner (never falling back to another user's settings or API keys), and shall scope all related reads/writes (task lists, tags, organized-notes folder, duplicate cleanup) to that same user.
 
 #### FR-NOTE-011: Browser Extension Companion & Chronos Screentime Tracker
 The system shall provide a Manifest V3 browser extension companion (`extension/`) supporting:
@@ -650,7 +650,7 @@ The system shall compute the recommended category based on current time and biom
 - Prioritize **الأذكار بعد السلام من الصلاة (Prayer Azkar)** midday and between prayers.
 
 #### FR-AZKAR-003: Interactive Tactile Counting & Platform Gestures
-The recitation view shall provide an interactive countdown card with large tap targets, animated completion progress, haptic feedback on devices supporting vibration, completion chime sounds, and auto-advance capability. On iOS, swipe gestures shall support RTL Arabic reading order (swipe left advances to next, swipe right returns to previous) with dual distance-and-velocity thresholds, drag lock to prevent vertical pull-to-refresh jitter, and touch drag guards ensuring swipe gestures never inadvertently increment the recitation counter.
+The recitation view shall provide an interactive countdown card with large tap targets, a circular progress ring drawn around the tap counter, animated completion progress, haptic feedback on devices supporting vibration, completion chime sounds, and auto-advance capability. Tapping shall be recognized via the platform's dedicated tap gesture rather than a native click handler, since a native click is unreliable on the same element as an active drag/swipe gesture. On iOS, swipe gestures shall support RTL Arabic reading order (swipe left advances to next, swipe right returns to previous) with dual distance-and-velocity thresholds, drag lock to prevent vertical pull-to-refresh jitter, and touch drag guards ensuring swipe gestures never inadvertently increment the recitation counter. Progress writes shall be persisted to IndexedDB in a single read-modify-write transaction per tap (rather than separate read and write transactions) and shall update the in-memory query cache directly rather than triggering a network refetch, so rapid repeated tapping (tasbih runs of 33-100+) neither drops counts nor gets throttled by the API egress limiter.
 
 #### FR-AZKAR-004: Digital Subhah / Tasbih Mode
 The system shall provide an interactive digital Tasbih modal with a circular countdown ring, customizable repetition targets (33, 100, open/infinity), common preset supplications, and keyboard (Spacebar) support.
@@ -1005,6 +1005,12 @@ The system shall maintain a persistent health ledger for all LLMs in localStorag
 #### FR-AI-014: Best Model Caching & Self-Healing
 The system shall automatically record the fastest, most reliable model upon successful completion, storing it as the primary active model for subsequent requests. When cooldown timers expire, neglected models shall automatically self-heal and re-enter the eligible pool.
 
+#### FR-AI-015: Chat & Thread Timestamps
+The system shall display a human-readable timestamp on every chat message (`h:mm a`) and on every saved thread in the Chat History sidebar (time-only for threads updated today, `MMM d, h:mm a` for older threads), so users can tell when a conversation or message occurred.
+
+#### FR-AI-016: Upstream Error Sanitization
+When an AI provider or gateway returns a non-JSON error body (e.g. an HTML error/timeout page from an intermediary proxy), the system shall detect and discard the raw HTML rather than surfacing it as the failure message, since chat content is rendered through a markdown-to-HTML pipeline and raw HTML would otherwise inject foreign markup into the page and corrupt its styling.
+
 #### FR-AI-015: Model Diagnostics & Health Inspector
 The system shall provide a model benchmarking interface in Settings to run ping tests across all catalog models, displaying latency, success counts, failure counts, and live cooldown timers.
 
@@ -1089,6 +1095,9 @@ Signup password shall require minimum 8 characters with at least one uppercase, 
 
 #### NFR-SEC-008: Privacy Mode
 Sensitive financial data shall support blur-on-render with hover-to-reveal for public screen protection.
+
+#### NFR-SEC-009: Session-Aware Request Deduplication
+The client-side API egress limiter (`src/lib/api-limiter.ts`) shall key its in-flight request deduplication cache by the request's `Authorization` header in addition to method, URL, and body, so that two different authenticated sessions hitting the same REST endpoint within the dedupe window can never be handed each other's cached response. The system shall also flush this cache on every sign-in, sign-out, and detected account switch (`clearAllUserDataCache`), preventing any residual cross-account data leakage on the same device.
 
 ### 4.4 Scalability
 
