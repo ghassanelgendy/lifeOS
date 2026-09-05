@@ -29,10 +29,13 @@ function corsHeadersFor(origin: string | null): Record<string, string> {
   };
 }
 
-if (!vapidPublic || !vapidPrivate) {
+if (vapidPublic && vapidPrivate) {
+  // Calling setVapidDetails with undefined keys throws and crashes the whole function at
+  // module load (every request would 500), so only call it once real keys are configured.
+  webpush.setVapidDetails('mailto:lifeos@example.com', vapidPublic, vapidPrivate);
+} else {
   console.error('Missing VAPID_PUBLIC_KEY or VAPID_PRIVATE_KEY');
 }
-webpush.setVapidDetails('mailto:lifeos@example.com', vapidPublic!, vapidPrivate!);
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 

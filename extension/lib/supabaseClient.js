@@ -595,7 +595,10 @@ export class SupabaseClient {
    * Log or increment active website screentime (Chronos tracker)
    */
   async logWebsiteScreentime({ domain, faviconUrl = null, seconds = 0 }) {
-    if (!domain || seconds <= 0 || !this.isConfigured()) return;
+    // A row without user_id fails the "auth.uid() = user_id" RLS check (42501) instead of
+    // silently attributing to nobody, so bail out rather than firing a doomed request when
+    // the userId hasn't loaded yet (e.g. right after the service worker restarts).
+    if (!domain || seconds <= 0 || !this.isConfigured() || !this.userId) return;
     const todayStr = new Date().toISOString().split('T')[0];
     const nowIso = new Date().toISOString();
 
@@ -633,8 +636,8 @@ export class SupabaseClient {
           last_active_at: nowIso,
           created_at: nowIso,
           updated_at: nowIso,
+          user_id: this.userId,
         };
-        if (this.userId) payload.user_id = this.userId;
 
         await this.request('/rest/v1/screentime_daily_website_stats', {
           method: 'POST',

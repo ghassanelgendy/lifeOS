@@ -1,58 +1,17 @@
 import { Ayah } from '../types/quran';
+import { idbGetQuranPage, idbSetQuranPage, idbSetQuranPagesBatch } from '../../../../src/db/indexedDb';
 
 // Cache in-memory for fast switching
 const verseCache = new Map<number, Ayah[]>();
 const pageCache = new Map<number, Ayah[]>();
 
 async function getPageFromIdb(p: number): Promise<Ayah[] | null> {
-  try {
-    if (typeof indexedDB === 'undefined') return null;
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open('lifeos-indexeddb', 6);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject();
-      req.onupgradeneeded = () => {
-        if (!req.result.objectStoreNames.contains('quran_pages')) {
-          req.result.createObjectStore('quran_pages', { keyPath: 'page' });
-        }
-      };
-    });
-    return new Promise((resolve) => {
-      try {
-        const tx = db.transaction('quran_pages', 'readonly');
-        const req = tx.objectStore('quran_pages').get(p);
-        req.onsuccess = () => resolve(req.result?.ayahs ?? null);
-        req.onerror = () => resolve(null);
-      } catch {
-        resolve(null);
-      }
-    });
-  } catch {
-    return null;
-  }
+  const cached = await idbGetQuranPage(p);
+  return cached?.ayahs ?? null;
 }
 
 async function setPageToIdb(p: number, ayahs: Ayah[]): Promise<void> {
-  try {
-    if (typeof indexedDB === 'undefined') return;
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open('lifeos-indexeddb', 6);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject();
-    });
-    await new Promise<void>((resolve) => {
-      try {
-        const tx = db.transaction('quran_pages', 'readwrite');
-        tx.objectStore('quran_pages').put({ page: p, ayahs, cachedAt: Date.now() });
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-      } catch {
-        resolve();
-      }
-    });
-  } catch {
-    // best-effort
-  }
+  await idbSetQuranPage(p, ayahs);
 }
 
 export async function fetchSurahVerses(surahNumber: number): Promise<Ayah[]> {
@@ -170,30 +129,7 @@ export async function fetchPageVerses(pageNumber: number): Promise<Ayah[]> {
 }
 
 async function setMultiplePagesToIdb(pages: { page: number; ayahs: Ayah[] }[]): Promise<void> {
-  try {
-    if (typeof indexedDB === 'undefined') return;
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      const req = indexedDB.open('lifeos-indexeddb', 6);
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject();
-    });
-    await new Promise<void>((resolve) => {
-      try {
-        const tx = db.transaction('quran_pages', 'readwrite');
-        const store = tx.objectStore('quran_pages');
-        const now = Date.now();
-        for (const item of pages) {
-          store.put({ page: item.page, ayahs: item.ayahs, cachedAt: now });
-        }
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => resolve();
-      } catch {
-        resolve();
-      }
-    });
-  } catch {
-    // best-effort
-  }
+  await idbSetQuranPagesBatch(pages);
 }
 
 /**
