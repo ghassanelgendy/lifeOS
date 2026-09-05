@@ -13,6 +13,7 @@ import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 import { LinuxTitleBar } from './LinuxTitleBar';
+import { LinuxWindowResizer } from './LinuxWindowResizer';
 import { BrainDumpModal } from './BrainDumpModal';
 import { AIChatModal } from './AIChatModal';
 
@@ -254,6 +255,7 @@ export function AppShell() {
   return (
     <FluentProvider theme={theme} className="w-full h-screen flex flex-col overflow-hidden">
       <LinuxTitleBar />
+      <LinuxWindowResizer />
       <div
         className="flex flex-1 min-h-0 w-full overflow-hidden text-foreground font-sans"
         style={{
@@ -434,13 +436,12 @@ export function AppShell() {
               <div
                 key={location.pathname}
                 className={cn(
-                  "flex flex-col p-4 md:p-6 section-slide-in bg-transparent",
-                  "pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6",
-                  // overflow-x-hidden alone forces overflow-y to compute as `auto`, which makes
-                  // this div its own scroll container and breaks `position: sticky` descendants
-                  // against the real scroll root (PullToRefresh's data-lifeos-scroll-root) — see
-                  // matching comment in AppShell.web.tsx.
-                  (isOnTasks || isOnNotes) ? "h-full min-h-0 overflow-hidden" : "min-h-full overflow-x-hidden overflow-y-visible"
+                  "flex flex-col section-slide-in bg-transparent",
+                  location.pathname === '/chat'
+                    ? "h-full min-h-0 overflow-hidden p-0"
+                    : (isOnTasks || isOnNotes
+                        ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
+                        : "min-h-full overflow-x-hidden overflow-y-visible p-4 md:p-6 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6")
                 )}
                 style={
                   {

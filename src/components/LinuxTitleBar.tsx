@@ -88,6 +88,7 @@ export function LinuxTitleBar() {
             type="button"
             aria-label="Minimize"
             className="linux-titlebar-btn"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => getWindow()?.minimize()}
           >
             <Minus size={14} />
@@ -100,6 +101,7 @@ export function LinuxTitleBar() {
             type="button"
             aria-label={isMaximized ? 'Restore' : 'Maximize'}
             className="linux-titlebar-btn"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => getWindow()?.toggleMaximize()}
           >
             {isMaximized ? <Copy size={12} /> : <Square size={12} />}
@@ -112,6 +114,7 @@ export function LinuxTitleBar() {
             type="button"
             aria-label="Close"
             className="linux-titlebar-btn linux-titlebar-btn-close"
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => getWindow()?.close()}
           >
             <X size={14} />
@@ -122,11 +125,11 @@ export function LinuxTitleBar() {
 
   return (
     <div className="linux-titlebar" data-tauri-drag-region>
-      <div className="linux-titlebar-side" data-tauri-drag-region>
+      <div className="linux-titlebar-side" onPointerDown={(e) => e.stopPropagation()}>
         {left.map((t, i) => renderButton(t, `l-${i}`))}
       </div>
       <div className="linux-titlebar-spacer" data-tauri-drag-region />
-      <div className="linux-titlebar-side" data-tauri-drag-region>
+      <div className="linux-titlebar-side" onPointerDown={(e) => e.stopPropagation()}>
         {right.map((t, i) => renderButton(t, `r-${i}`))}
       </div>
     </div>

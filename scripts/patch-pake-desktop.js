@@ -289,6 +289,24 @@ pub fn get_gnome_button_layout() -> Result<String, String> {
     console.warn(`⚠️ Could not locate pake-cli's dist/cli.js at ${distCliJs}; skipping StartupWMClass patch.`);
   }
 
+  // 8. Add core:window:allow-start-resize-dragging to capabilities/default.json
+  //    so borderless windows on Linux can be resized using Tauri's start_resize_dragging API.
+  const capabilityJsonPath = path.join(srcTauri, 'capabilities', 'default.json');
+  if (fs.existsSync(capabilityJsonPath)) {
+    try {
+      const capContent = JSON.parse(fs.readFileSync(capabilityJsonPath, 'utf8'));
+      if (Array.isArray(capContent.permissions) && !capContent.permissions.includes('core:window:allow-start-resize-dragging')) {
+        capContent.permissions.push('core:window:allow-start-resize-dragging');
+        fs.writeFileSync(capabilityJsonPath, JSON.stringify(capContent, null, 2), 'utf8');
+        console.log('✅ capabilities/default.json: added core:window:allow-start-resize-dragging');
+      } else {
+        console.log('ℹ️ capabilities/default.json: resize-drag permission already present');
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not patch capabilities/default.json:', e);
+    }
+  }
+
   console.log('✅ pake-cli desktop patch applied.');
 } catch (err) {
   console.error('❌ Failed to patch pake-cli for desktop support:', err);

@@ -622,18 +622,21 @@ html.light[data-accent="amber"] {
   display: flex;
   align-items: center;
   height: 100%;
-  padding: 0 4px;
+  padding: 0 6px;
+  gap: 2px;
+  cursor: default;
 }
 .linux-platform .linux-titlebar-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 24px;
+  width: 34px;
+  height: 26px;
   border-radius: 6px;
   color: var(--color-muted-foreground);
   background: transparent;
   border: none;
+  cursor: default;
   -webkit-app-region: no-drag;
 }
 .linux-platform .linux-titlebar-btn:hover {
@@ -706,14 +709,17 @@ html.light[data-accent="amber"] {
   border-color: var(--color-border) !important;
 }
 
-/* The Chat page's floating header/input capsule were designed to sit as a
-   translucent tint OVER the blurred page behind them, blending in — with the
-   blur gone they're just a flat --color-card rectangle sitting on the
-   slightly darker --color-background page, which reads as a mismatched
-   floating box rather than part of the page. Matching the page background
-   directly here (instead of the card tone) removes that seam. */
-.linux-platform .chat-blend-surface {
+/* The Chat page's floating header and input capsule:
+   Harmonize smoothly with the page surface without awkward hard rectangles.
+   The header blends seamlessly with the page background, while the floating capsule
+   uses the card background with clear border and elevation. */
+.linux-platform header.chat-blend-surface {
   background-color: var(--color-background) !important;
+  border-bottom-color: var(--color-border) !important;
+}
+.linux-platform footer.chat-blend-surface {
+  background-color: var(--color-card) !important;
+  border-color: var(--color-border) !important;
 }
 
 /* Linux GNOME clean overlay scrollbars */
@@ -746,5 +752,5 @@ html.light[data-accent="amber"] {
 
 /* Font utility for Hadith typography */
 .font-hadith {
-  font-family: 'Zunburk', 'Zain', 'Amiri', 'Traditional Arabic', 'Scheherazade New', serif;
+  font-family: 'Cairo', sans-serif !important;
 }
