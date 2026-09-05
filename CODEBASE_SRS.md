@@ -141,7 +141,7 @@ The system shall support three dashboard modes: **Quick View**, **Strategic**, a
 The Dashboard shall display customizable widgets including: Daily Hadith, Prayer, Stats, Overdue Tasks, Events, Quick Stats, and Habits.
 
 #### FR-DASH-010: Daily Hadith Widget
-The system shall display a Daily Hadith banner on the Dashboard featuring a curated collection of 365+ authentic concise Hadiths, ensuring a unique Hadith every single day of the year with zero repetitions across the cycle. The widget shall support Zunburk and Zain/Amiri calligraphic font styling, deterministic and persistent date-based assignment (`getDailyHadith`), random in-session rotation avoiding recently seen hadiths (`getRandomHadith`), one-click copy to clipboard, category badges, and optional English translation.
+The system shall display a Daily Hadith banner on the Dashboard featuring a curated collection of 365+ authentic concise Hadiths, ensuring a unique Hadith every single day of the year with zero repetitions across the cycle. The widget shall support Cairo typography styling, deterministic and persistent date-based assignment (`getDailyHadith`), random in-session rotation avoiding recently seen hadiths (`getRandomHadith`), one-click copy to clipboard, category badges, and optional English translation.
 
 #### FR-DASH-004: Widget Visibility Toggle
 Users shall be able to toggle the visibility of individual dashboard widgets.
@@ -1188,7 +1188,7 @@ All icon buttons and non-text controls shall have descriptive `aria-label` attri
 ### 5.1 User Interfaces
 - **Web:** Responsive SPA with PWA manifest, installable on mobile/desktop
 - **iOS:** Native wrapper via Capacitor with WebView rendering, native status bar, keyboard handling, and push notifications
-- **Desktop:** Pake-wrapped web app with HashRouter, system tray, and hide-on-close behavior. On Linux it uses native GNOME / Adwaita styling (via the `linux` platform UI override) with CSS blur disabled. The launcher enables GPU compositing for WebKitGTK (via an `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix in the desktop entry) to keep the dashboard smooth. A single deduplicated `.desktop` entry is installed to avoid duplicate application-menu icons.
+- **Desktop:** Pake-wrapped web app with HashRouter, system tray, and hide-on-close behavior. On Linux it uses native GNOME / Adwaita styling (via the `linux` platform UI override) with CSS blur disabled, an in-page GNOME-aligned titlebar with click-safe buttons, invisible boundary resize handles leveraging Tauri's `startResizeDragging` API, and harmonized background surface styling for the AI Assistant view. The launcher enables GPU compositing for WebKitGTK (via an `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix in the desktop entry) to keep the dashboard smooth. A single deduplicated `.desktop` entry is installed to avoid duplicate application-menu icons.
 
 ### 5.2 Hardware Interfaces
 - **iOS:** Camera/Photos (for profile), Haptics, Push Notifications, Local Notifications, Badge, Deep Links

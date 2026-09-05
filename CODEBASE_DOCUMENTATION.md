@@ -248,6 +248,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/FocusSessionManager.tsx](#src-components-focussessionmanager-tsx)
 - [src/components/KeyboardShortcutsModal.tsx](#src-components-keyboardshortcutsmodal-tsx)
 - [src/components/LinuxTitleBar.tsx](#src-components-linuxtitlebar-tsx)
+- [src/components/LinuxWindowResizer.tsx](#src-components-linuxwindowresizer-tsx)
 - [src/components/LiquidTabBar.tsx](#src-components-liquidtabbar-tsx)
 - [src/components/LoadingScreen.tsx](#src-components-loadingscreen-tsx)
 - [src/components/OfflineBanner.tsx](#src-components-offlinebanner-tsx)
@@ -2467,6 +2468,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`LinuxTitleBar`** — Utility function for linux title bar.
 
 **Lines:** 135
+
+---
+
+<a name="src-components-linuxwindowresizer-tsx"></a>
+### src/components/LinuxWindowResizer.tsx
+
+**File Purpose:** Borderless window resize handle overlay for Linux desktop (Pake / Tauri v2). Attaches 8 boundary grab regions (4 edges, 4 corners) that call `startResizeDragging` to allow resizing undecorated windows.
+
+**Functions & Classes:**
+- `LinuxWindowResizer` (Function)
+
+**Function Details:**
+- **`LinuxWindowResizer`** — React component rendering edge and corner resize grab areas mapped to window resize directions.
+
+**Lines:** 85
 
 ---
 

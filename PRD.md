@@ -111,7 +111,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Quick View Mode:** Today's timeline (tasks due, habits scheduled, events, prayer times) with countdowns and quick actions
 - **Strategic Mode:** Long-term view with configurable horizon (30/90/180 days), goal progress, and upcoming milestones
 - **Annual Review Mode:** Year-in-review with reflections, trends, and note-taking per year
-- **Widgets:** Daily Hadith (comprehensive collection of 365+ authentic hadiths guaranteeing a unique hadith every single day with zero repetition across the entire year, full diacritics, Zunburk calligraphic font, category badges, copy, shuffle avoiding recent items, and English translation), Prayer (next prayer countdown), Stats (daily summary), Overdue (urgent tasks), Events (upcoming calendar), Quick Stats (tasks/habits/screentime/finance mini-cards), Habits (today's habit checklist)
+- **Widgets:** Daily Hadith (comprehensive collection of 365+ authentic hadiths guaranteeing a unique hadith every single day with zero repetition across the entire year, full diacritics, Cairo typography, category badges, copy, shuffle avoiding recent items, and English translation), Prayer (next prayer countdown), Stats (daily summary), Overdue (urgent tasks), Events (upcoming calendar), Quick Stats (tasks/habits/screentime/finance mini-cards), Habits (today's habit checklist)
 - **Customization:** Reorder, toggle visibility of widgets. Per-page widget system extends to Sleep and Habits pages.
 
 ### 5.2 Tasks & Goals
@@ -464,6 +464,9 @@ On Reconnect:
 #### 8.3.1 Linux Desktop (GNOME / Adwaita) UI
 - **Native Styling:** On Linux the desktop UI applies native GNOME / Adwaita styling (via the `linux` platform UI override in `Settings.ios.tsx`).
 - **CSS Blur Disabled:** Backdrop-filter / CSS blur effects are disabled on Linux to keep WebKitGTK rendering fast and visually correct.
+- **Window Controls & In-Page Titlebar:** Uses an in-page titlebar matching GNOME's configured button layout (`close`, `minimize`, `maximize`). Button containers suppress drag interception to prevent accidental grab cursors and ensure immediate responsiveness.
+- **Window Resizing:** Provides edge and corner resize handlers attached to Tauri's `startResizeDragging` API for borderless window resizing.
+- **AI Assistant Surface Integration:** Harmonizes header and chat input surfaces with the page and card color tokens to prevent awkward seams or mismatched backgrounds in dark/accent modes.
 - **Performance:** The launcher enables GPU compositing for the WebKitGTK dashboard (see the `env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0` prefix in the desktop entry). Without this, Pake's default environment variables force software rasterisation, making the dashboard laggy and sluggish.
 - **Packaging:** A single, correctly-configured `.desktop` entry is installed (deduplicated during the CI post-build step), so only one icon appears in the application menu.
 
