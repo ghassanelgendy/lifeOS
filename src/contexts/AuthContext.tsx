@@ -3,13 +3,19 @@ import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
 import { idbClearAll } from '../db/indexedDb';
+import { clearInFlightRequests } from '../lib/api-limiter';
 
 const PERSISTED_CACHE_KEY = 'lifeos_query_cache';
 
 async function clearAllUserDataCache() {
   // Clear React Query cache
   queryClient.clear();
-  
+
+  // Drop any in-flight/deduped network responses tied to the outgoing session
+  // so a request that resolves just after switching accounts can never hand
+  // back data fetched under the previous user's token.
+  clearInFlightRequests();
+
   // Clear localStorage items
   if (typeof window !== 'undefined') {
     window.localStorage.removeItem(PERSISTED_CACHE_KEY);

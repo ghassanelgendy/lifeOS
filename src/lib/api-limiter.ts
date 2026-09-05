@@ -110,6 +110,32 @@ function sleep(ms: number) {
   return new Promise<void>((r) => setTimeout(r, ms));
 }
 
+/**
+ * Pull the bearer token (if any) out of a request's headers, in whatever shape
+ * fetch() was called with (Headers instance, array of tuples, or plain object).
+ * This MUST be folded into the dedupe key below — without it, two different
+ * users hitting the same Supabase REST URL (e.g. GET /rest/v1/tasks) within the
+ * dedupe window would be handed the exact same cached Response, silently
+ * leaking one account's data (bypassing RLS) into the other's session.
+ */
+function authKeyFromInit(init?: RequestInit): string {
+  const headers = init?.headers;
+  if (!headers) return '';
+  try {
+    if (headers instanceof Headers) {
+      return headers.get('authorization') || '';
+    }
+    if (Array.isArray(headers)) {
+      const found = headers.find(([k]) => k.toLowerCase() === 'authorization');
+      return found ? found[1] : '';
+    }
+    const rec = headers as Record<string, string>;
+    return rec['authorization'] || rec['Authorization'] || '';
+  } catch {
+    return '';
+  }
+}
+
 /* ------------------------------------------------------------------
    Public API
    ------------------------------------------------------------------ */
@@ -118,6 +144,16 @@ export function setBudgetMB(n: number) {
   BUDGET_MB = Math.max(0, n);
   lastBudgetRefresh = now();
   checkEmergency();
+}
+
+/**
+ * Drop every tracked in-flight/recently-completed request. Call this whenever
+ * the authenticated user changes (sign-in, sign-out, account switch) so no
+ * response cached under a previous session's token can ever be handed back
+ * under a new one, even outside the normal dedupe key match.
+ */
+export function clearInFlightRequests() {
+  inFlight.clear();
 }
 
 export function resetEgressCounter() {
@@ -208,7 +244,7 @@ export function installApiLimiter() {
     }
 
     /* ---- 3. Deduplication ---- */
-    const dedupeKey = `${method} ${url} ${JSON.stringify(init?.body ?? '')}`;
+    const dedupeKey = `${method} ${url} ${authKeyFromInit(init)} ${JSON.stringify(init?.body ?? '')}`;
     const existing = inFlight.get(dedupeKey);
     if (existing && now() - existing.ts < DEDUPE_MS) {
       console.warn(`[API-LIMITER] DEDUPE ${method} ${tableFromUrl(url) ?? ''}`);
