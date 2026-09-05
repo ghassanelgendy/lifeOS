@@ -123,9 +123,14 @@ export default function Health() {
           <h1 className="text-3xl font-bold tracking-tight">Health & Bio-Metrics</h1>
           <p className="text-muted-foreground">Track your body composition with InBody scans</p>
         </div>
-        <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add scan">
-          <Plus size={22} />
-        </Button>
+        <button
+          type="button"
+          onClick={() => handleOpenModal()}
+          className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all flex items-center justify-center shrink-0"
+          aria-label="Add scan"
+        >
+          <Plus size={18} className="text-primary" />
+        </button>
       </div>
 
       {/* Metrics Cards */}
@@ -135,8 +140,7 @@ export default function Health() {
           { label: 'Muscle Mass', value: `${metrics.smm.current}`, unit: 'kg', trend: metrics.smm.trend, positive: true, cardClassName: '' },
           { label: 'Body Fat', value: `${metrics.pbf.current}`, unit: '%', trend: metrics.pbf.trend, positive: false, cardClassName: '' },
           { label: 'Visceral Fat', value: `${metrics.visceral.current}`, unit: 'lvl', trend: metrics.visceral.trend, positive: false, cardClassName: '' },
-          // On wider screens, let BMR span more horizontal space (2 cols of 6).
-          { label: 'BMR', value: `${metrics.bmr.current}`, unit: 'kcal', trend: metrics.bmr.trend, positive: true, cardClassName: 'md:col-span-2' },
+          { label: 'BMR', value: `${metrics.bmr.current}`, unit: 'kcal', trend: metrics.bmr.trend, positive: true, cardClassName: 'col-span-2' },
         ].map((metric) => (
           <div key={metric.label} className={cn("rounded-xl border border-border bg-card p-4", metric.cardClassName)}>
             <p className="text-xs text-muted-foreground uppercase tracking-wider">{metric.label}</p>
