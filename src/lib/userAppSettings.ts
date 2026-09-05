@@ -192,6 +192,7 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.reportScreenTargetPrevious = asNum(remote.reportScreenTargetPrevious, asNum(remote.reportScreenTarget, 8));
   patch.reportHabitsTargetPrevious = asNum(remote.reportHabitsTargetPrevious, asNum(remote.reportHabitsTarget, 100));
   patch.lastAutopilotAdjustedWeek = asStrOrNull(remote.lastAutopilotAdjustedWeek);
+  patch.brainDumpAutoOrganizeEnabled = asBool(remote.brainDumpAutoOrganizeEnabled, false);
 
   return patch;
 }

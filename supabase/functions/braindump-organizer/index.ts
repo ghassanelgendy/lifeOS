@@ -140,7 +140,10 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[BrainDump Organizer] Starting run for date boundary: ${todayStr}, forceNoteId=${forcedNoteId || 'none'}`);
 
-    // 1. Fetch user app settings to obtain API keys and active models
+    // 1. Fetch user app settings to obtain API keys and active models. Only users who have
+    // explicitly opted in via `brainDumpAutoOrganizeEnabled` (default false) are eligible —
+    // this job must never run for a user's notes without their consent, and must never use
+    // one user's AI keys/settings to process another user's data.
     const { data: allUserSettings, error: settingsError } = await supabase
       .from('user_app_settings')
       .select('user_id, settings');
@@ -149,23 +152,29 @@ Deno.serve(async (req: Request) => {
       console.error('[BrainDump Organizer] Error loading user settings:', settingsError);
     }
 
-    const userSettingsMap = new Map<string, any>();
-    let primaryUserSetting: any = null;
-
+    const optedInUserSettings = new Map<string, any>();
     for (const row of allUserSettings || []) {
-      if (row.settings) {
-        userSettingsMap.set(row.user_id, row.settings);
-        if (row.settings.aiEnabled && !primaryUserSetting) {
-          primaryUserSetting = { user_id: row.user_id, settings: row.settings };
-        }
+      if (row.settings?.brainDumpAutoOrganizeEnabled === true && row.user_id) {
+        optedInUserSettings.set(row.user_id, row.settings);
       }
     }
 
-    // 2. Fetch unorganized brain dump notes
+    const optedInUserIds = Array.from(optedInUserSettings.keys());
+    console.log(`[BrainDump Organizer] ${optedInUserIds.length} user(s) opted in to auto-organize`);
+
+    if (optedInUserIds.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, processed_count: 0, results: [], skipped: 'no_opted_in_users' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Fetch unorganized brain dump notes, restricted to opted-in users only
     let notesQuery = supabase
       .from('notes')
       .select('*')
-      .eq('is_brain_dump', true);
+      .eq('is_brain_dump', true)
+      .in('user_id', optedInUserIds);
 
     if (forcedNoteId) {
       notesQuery = notesQuery.eq('id', forcedNoteId);
@@ -196,19 +205,23 @@ Deno.serve(async (req: Request) => {
         // Mark as empty / processed to avoid repeatedly scanning empty template notes
         await supabase
           .from('notes')
-          .update({
-            ai_analysis: { empty: true, processed_at: new Date().toISOString() },
-            ...(rawDump.user_id ? {} : { user_id: primaryUserSetting?.user_id || null })
-          })
+          .update({ ai_analysis: { empty: true, processed_at: new Date().toISOString() } })
           .eq('id', rawDump.id);
 
         processedResults.push({ id: rawDump.id, title: rawDump.title, status: 'skipped_empty' });
         continue;
       }
 
-      // Determine the user settings for AI calls
-      const noteUserId = rawDump.user_id || primaryUserSetting?.user_id;
-      const userSettings = (noteUserId ? userSettingsMap.get(noteUserId) : null) || primaryUserSetting?.settings || {};
+      // The notes query above is already restricted to opted-in users, so every row here has
+      // a user_id present in optedInUserSettings. Never fall back to another user's settings —
+      // if this note's owner has no settings row for some reason, skip rather than guess.
+      const noteUserId: string = rawDump.user_id;
+      const userSettings = optedInUserSettings.get(noteUserId);
+      if (!userSettings) {
+        console.warn(`[BrainDump Organizer] Skipping note ${rawDump.id}: owner ${noteUserId} has no opted-in settings`);
+        processedResults.push({ id: rawDump.id, title: rawDump.title, status: 'skipped_not_opted_in' });
+        continue;
+      }
 
       // Build AI candidates
       const candidates: CandidateConfig[] = [];
@@ -242,12 +255,11 @@ Deno.serve(async (req: Request) => {
       }
 
       // 3. Ensure 'Organized Brain Dumps' folder exists for this user
-      let orgFolderId: string | null = null;
-      let folderQuery = supabase.from('note_folders').select('*').ilike('name', 'organized brain dumps');
-      if (noteUserId) {
-        folderQuery = folderQuery.eq('user_id', noteUserId);
-      }
-      const { data: existingFolders } = await folderQuery;
+      const { data: existingFolders } = await supabase
+        .from('note_folders')
+        .select('*')
+        .ilike('name', 'organized brain dumps')
+        .eq('user_id', noteUserId);
       let orgFolder = existingFolders?.[0];
 
       if (!orgFolder) {
@@ -256,17 +268,17 @@ Deno.serve(async (req: Request) => {
           .insert({
             name: 'Organized Brain Dumps',
             sort_order: 1,
-            user_id: noteUserId || null,
+            user_id: noteUserId,
           })
           .select()
           .single();
         orgFolder = createdFolder;
       }
-      orgFolderId = orgFolder?.id || null;
+      const orgFolderId: string | null = orgFolder?.id || null;
 
-      // 4. Fetch user's task lists and tags for smart categorization
-      const { data: userLists } = await supabase.from('task_lists').select('id, name');
-      const { data: userTags } = await supabase.from('tags').select('id, name');
+      // 4. Fetch this user's own task lists and tags only — never another user's
+      const { data: userLists } = await supabase.from('task_lists').select('id, name').eq('user_id', noteUserId);
+      const { data: userTags } = await supabase.from('tags').select('id, name').eq('user_id', noteUserId);
 
       const listNames = (userLists || []).map((l: any) => l.name).join(', ') || 'Work, Learn, Personal, Ideas, Reminders, Shopping, Someday';
       const tagNames = (userTags || []).map((t: any) => t.name).join(', ') || 'servixa, ischool, assignment, research, quiz, mov, lifeos, urgent, important, quick win, waiting';
@@ -319,7 +331,7 @@ Return ONLY valid JSON in this format:
             body: unifiedBody,
             ai_analysis: parsed,
             folder_id: orgFolderId,
-            user_id: noteUserId || null,
+            user_id: noteUserId,
             is_brain_dump: true,
             updated_at: new Date().toISOString(),
           })
@@ -329,11 +341,12 @@ Return ONLY valid JSON in this format:
           throw updateError;
         }
 
-        // 7. Delete any previous orphaned duplicate organized note for this date if it exists
+        // 7. Delete any previous orphaned duplicate organized note for this date/user if it exists
         if (rawDump.note_date) {
           await supabase
             .from('notes')
             .delete()
+            .eq('user_id', noteUserId)
             .eq('note_date', rawDump.note_date)
             .ilike('title', '% organized%')
             .neq('id', rawDump.id);

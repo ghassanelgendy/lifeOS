@@ -218,6 +218,8 @@ interface UIState {
   aiDahlApiKey: string;
   aiFallbackEnabled: boolean;
   aiActiveModel: string;
+  /** Opt-in (default off) for the server-side cron job that auto-organizes Brain Dump notes with AI. */
+  brainDumpAutoOrganizeEnabled: boolean;
   setAiEnabled: (enabled: boolean) => void;
   setAiApiKey: (key: string) => void;
   setAiBaseUrl: (url: string) => void;
@@ -226,6 +228,7 @@ interface UIState {
   setAiDahlApiKey: (key: string) => void;
   setAiFallbackEnabled: (enabled: boolean) => void;
   setAiActiveModel: (model: string) => void;
+  setBrainDumpAutoOrganizeEnabled: (enabled: boolean) => void;
 }
 
 /** Serializable UI preferences (localStorage + Supabase). */
@@ -287,6 +290,7 @@ export type PersistedUiSlice = {
   aiDahlApiKey: string;
   aiFallbackEnabled: boolean;
   aiActiveModel: string;
+  brainDumpAutoOrganizeEnabled: boolean;
 };
 
 export const useUIStore = create<UIState>()(
@@ -485,6 +489,9 @@ export const useUIStore = create<UIState>()(
       aiDahlApiKey: import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_DAHL_KEY || '',
       aiFallbackEnabled: true,
       aiActiveModel: 'deepseek-v4-flash',
+      // Off by default — this drives a server-side cron job that sends the user's own
+      // Brain Dump notes to an AI provider, so it must be an explicit opt-in per user.
+      brainDumpAutoOrganizeEnabled: false,
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       setAiApiKey: (aiApiKey) => set({ aiApiKey, ...(aiApiKey.trim() ? { aiEnabled: true } : {}) }),
       setAiBaseUrl: (aiBaseUrl) => set({ aiBaseUrl }),
@@ -493,6 +500,7 @@ export const useUIStore = create<UIState>()(
       setAiDahlApiKey: (aiDahlApiKey) => set({ aiDahlApiKey }),
       setAiFallbackEnabled: (aiFallbackEnabled) => set({ aiFallbackEnabled }),
       setAiActiveModel: (aiActiveModel) => set({ aiActiveModel }),
+      setBrainDumpAutoOrganizeEnabled: (brainDumpAutoOrganizeEnabled) => set({ brainDumpAutoOrganizeEnabled }),
 
       pageWidgetOrder: {
         dashboard: [...DASHBOARD_WIDGET_IDS],
@@ -637,5 +645,6 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     aiDahlApiKey: state.aiDahlApiKey,
     aiFallbackEnabled: state.aiFallbackEnabled,
     aiActiveModel: state.aiActiveModel,
+    brainDumpAutoOrganizeEnabled: state.brainDumpAutoOrganizeEnabled,
   };
 }

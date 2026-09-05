@@ -19,6 +19,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
     aiDahlApiKey,
     aiFallbackEnabled,
     aiActiveModel,
+    brainDumpAutoOrganizeEnabled,
     setAiEnabled,
     setAiApiKey,
     setAiBaseUrl,
@@ -27,6 +28,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
     setAiDahlApiKey,
     setAiFallbackEnabled,
     setAiActiveModel,
+    setBrainDumpAutoOrganizeEnabled,
   } = useUIStore();
 
   const [aiSaved, setAiSaved] = useState(false);
@@ -65,6 +67,11 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
 
   const handleToggleFallback = () => {
     setAiFallbackEnabled(!aiFallbackEnabled);
+    triggerSaveIndicator();
+  };
+
+  const handleToggleBrainDumpAutoOrganize = () => {
+    setBrainDumpAutoOrganizeEnabled(!brainDumpAutoOrganizeEnabled);
     triggerSaveIndicator();
   };
 
@@ -280,6 +287,33 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
                     className={inputClass}
                   />
                 </div>
+              </div>
+            </div>
+
+            {/* Automations (opt-in, off by default) */}
+            <div className="space-y-3 pt-2 border-t border-border/50">
+              <div className="flex items-center gap-2">
+                <Sparkles size={14} className="text-muted-foreground" />
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Automations
+                </h3>
+              </div>
+
+              <div className="p-3 rounded-lg bg-secondary/20 border border-border flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <label className="text-xs font-medium block">Auto-organize Brain Dump notes</label>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
+                    Off by default. When enabled, a scheduled job sends your own Brain Dump notes to your
+                    configured AI provider to summarize them and suggest tasks. No one else's data is ever
+                    included, and this never runs unless you turn it on here.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={brainDumpAutoOrganizeEnabled}
+                  onChange={handleToggleBrainDumpAutoOrganize}
+                  className="rounded border-border text-primary focus:ring-primary w-4 h-4 cursor-pointer shrink-0"
+                />
               </div>
             </div>
 
