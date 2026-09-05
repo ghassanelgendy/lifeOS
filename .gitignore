@@ -36,6 +36,7 @@ dist-ssr
 *.txt
 
 *.sql
+!supabase/migrations/*.sql
 # iOS 6 lite: optional auto-login secrets (never commit)
 public/ios6-lite/legacy-autologin.local.js
 public/ios6-check.html
