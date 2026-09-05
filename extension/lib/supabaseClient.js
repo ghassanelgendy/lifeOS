@@ -155,9 +155,16 @@ export class SupabaseClient {
         // indistinguishable from "you genuinely have 0 tasks/habits/screentime today". Throw
         // a typed error instead so callers can show a real "disconnected" state and attempt
         // recovery (re-syncing from an open lifeOS tab), rather than rendering a misleading 0.
+        // Also drop the cached userId/userEmail: leaving them set let write paths (e.g.
+        // logWebsiteScreentime) keep stamping user_id onto payloads sent under the anon key
+        // (getHeaders() falls back to it once accessToken is empty), which passes their own
+        // "do we have a user" checks but fails RLS's auth.uid() = user_id check server-side
+        // (42501) on every request instead of surfacing the disconnected state below.
         this.accessToken = '';
         this.refreshToken = '';
-        await this.saveConfig({ accessToken: '', refreshToken: '' });
+        this.userId = '';
+        this.userEmail = '';
+        await this.saveConfig({ accessToken: '', refreshToken: '', userId: '', userEmail: '' });
         const authErr = new Error('Your lifeOS session has expired. Reopen lifeOS in a browser tab (or click Refresh) to reconnect.');
         authErr.status = 401;
         authErr.authExpired = true;
