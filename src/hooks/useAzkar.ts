@@ -238,8 +238,8 @@ export function useTodayAzkarProgress() {
       categoryName?: string;
       categoryCompleted?: boolean;
     }) => {
-      await idbSetAzkarCount(todayStr, zekrId, count, categoryName, categoryCompleted);
-      syncToSupabase(await idbGetAzkarDailyLog(todayStr));
+      const updated = await idbSetAzkarCount(todayStr, zekrId, count, categoryName, categoryCompleted);
+      syncToSupabase(updated);
 
       // If this category is now fully completed and matches Morning or Evening Adhkar,
       // find the corresponding user habit and mark it as completed!
@@ -296,19 +296,26 @@ export function useTodayAzkarProgress() {
           console.warn('Auto-sync Azkar habit error:', err);
         }
       }
+
+      return updated;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: key });
+    // Tapping to count can fire many times a second (tasbih runs to 33-100+), so we
+    // update the cache directly from the write we just made instead of invalidating —
+    // invalidating here would refetch from Supabase on every tap and get throttled by
+    // the API limiter under rapid tapping, leaving the counter looking stuck.
+    onSuccess: (updated) => {
+      queryClient.setQueryData(key, updated);
     },
   });
 
   const resetCategoryMutation = useMutation({
     mutationFn: async (zekrIds: string[]) => {
-      await idbResetAzkarDailyLog(todayStr, zekrIds);
-      syncToSupabase(await idbGetAzkarDailyLog(todayStr));
+      const updated = await idbResetAzkarDailyLog(todayStr, zekrIds);
+      syncToSupabase(updated);
+      return updated;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: key });
+    onSuccess: (updated) => {
+      queryClient.setQueryData(key, updated);
     },
   });
 

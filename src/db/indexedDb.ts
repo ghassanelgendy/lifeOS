@@ -528,25 +528,45 @@ export async function idbGetAzkarDailyLog(date: string): Promise<IdbAzkarDailyRe
   }
 }
 
+// Reads and writes in a single readwrite transaction (rather than a separate read
+// transaction followed by a write one) so rapid tasbih tapping — which can run to
+// 33-100+ taps in a few seconds — only pays for one IndexedDB round trip per tap.
 export async function idbSetAzkarCount(
   date: string,
   zekrId: string,
   count: number,
   categoryName?: string,
   categoryCompleted?: boolean
-): Promise<void> {
+): Promise<IdbAzkarDailyRecord> {
+  const fallback: IdbAzkarDailyRecord = {
+    date,
+    counts: { [zekrId]: count },
+    completedCategories: {},
+    updatedAt: Date.now(),
+  };
   try {
-    const record = await idbGetAzkarDailyLog(date);
-    record.counts[zekrId] = count;
-    if (categoryName && categoryCompleted !== undefined) {
-      record.completedCategories[categoryName] = categoryCompleted;
-    }
-    record.updatedAt = Date.now();
-    await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
-      store.put(record);
+    return await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
+      return new Promise<IdbAzkarDailyRecord>((resolve) => {
+        const req = store.get(date);
+        req.onsuccess = () => {
+          const record: IdbAzkarDailyRecord =
+            (req.result as IdbAzkarDailyRecord) || { date, counts: {}, completedCategories: {}, updatedAt: Date.now() };
+          record.counts[zekrId] = count;
+          if (categoryName && categoryCompleted !== undefined) {
+            record.completedCategories[categoryName] = categoryCompleted;
+          }
+          record.updatedAt = Date.now();
+          store.put(record);
+          resolve(record);
+        };
+        req.onerror = () => {
+          store.put(fallback);
+          resolve(fallback);
+        };
+      });
     });
   } catch {
-    // best-effort
+    return fallback;
   }
 }
 
@@ -571,21 +591,33 @@ export async function idbPutAzkarDailyLog(record: IdbAzkarDailyRecord): Promise<
   }
 }
 
-export async function idbResetAzkarDailyLog(date: string, zekrIds?: string[]): Promise<void> {
+export async function idbResetAzkarDailyLog(date: string, zekrIds?: string[]): Promise<IdbAzkarDailyRecord> {
+  const fallback: IdbAzkarDailyRecord = { date, counts: {}, completedCategories: {}, updatedAt: Date.now() };
   try {
-    const record = await idbGetAzkarDailyLog(date);
-    if (zekrIds && zekrIds.length > 0) {
-      zekrIds.forEach((id) => delete record.counts[id]);
-    } else {
-      record.counts = {};
-      record.completedCategories = {};
-    }
-    record.updatedAt = Date.now();
-    await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
-      store.put(record);
+    return await withStore(STORES.azkarDailyLogs, 'readwrite', (store) => {
+      return new Promise<IdbAzkarDailyRecord>((resolve) => {
+        const req = store.get(date);
+        req.onsuccess = () => {
+          const record: IdbAzkarDailyRecord =
+            (req.result as IdbAzkarDailyRecord) || { date, counts: {}, completedCategories: {}, updatedAt: Date.now() };
+          if (zekrIds && zekrIds.length > 0) {
+            zekrIds.forEach((id) => delete record.counts[id]);
+          } else {
+            record.counts = {};
+            record.completedCategories = {};
+          }
+          record.updatedAt = Date.now();
+          store.put(record);
+          resolve(record);
+        };
+        req.onerror = () => {
+          store.put(fallback);
+          resolve(fallback);
+        };
+      });
     });
   } catch {
-    // best-effort
+    return fallback;
   }
 }
 

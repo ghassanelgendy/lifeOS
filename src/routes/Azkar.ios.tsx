@@ -228,7 +228,7 @@ export default function AzkarRoute() {
             لا توجد أذكار في هذا التصنيف
           </div>
         ) : (
-          <AnimatePresence initial={false} custom={direction} mode="popLayout">
+          <AnimatePresence initial={false} custom={direction}>
             <motion.div
               key={item?.id}
               custom={direction}
@@ -243,7 +243,7 @@ export default function AzkarRoute() {
               dragElastic={0.12}
               onDragStart={handleDragStart}
               onDragEnd={handleDragEnd}
-              onClick={handleTap}
+              onTap={handleTap}
               className="flex h-full w-full cursor-pointer select-none flex-col justify-between touch-none"
             >
               {/* Progress + index + bookmark bar */}
@@ -283,24 +283,26 @@ export default function AzkarRoute() {
               </div>
 
               {/* Zekr text container - vertically centered */}
-              <div className="flex flex-1 flex-col items-center justify-center overflow-hidden px-6 py-4">
-                <p
-                  className={cn(
-                    'font-arabic-quran text-center font-bold tracking-normal transition-colors duration-200',
-                    fontSizeClass,
-                    isFinished ? 'text-emerald-500' : 'text-foreground'
-                  )}
-                  dir="rtl"
-                  lang="ar"
-                >
-                  {item?.zekr}
-                </p>
-
-                {item?.description && (
-                  <p className="mt-3 max-w-sm text-center text-xs text-muted-foreground leading-relaxed" dir="rtl">
-                    {item.description}
+              <div className="flex flex-1 flex-col items-center overflow-y-auto touch-pan-y px-6 py-4">
+                <div className="m-auto flex flex-col items-center">
+                  <p
+                    className={cn(
+                      'font-arabic-quran text-center font-bold tracking-normal transition-colors duration-200',
+                      fontSizeClass,
+                      isFinished ? 'text-emerald-500' : 'text-foreground'
+                    )}
+                    dir="rtl"
+                    lang="ar"
+                  >
+                    {item?.zekr}
                   </p>
-                )}
+
+                  {item?.description && (
+                    <p className="mt-3 max-w-sm text-center text-xs text-muted-foreground leading-relaxed" dir="rtl">
+                      {item.description}
+                    </p>
+                  )}
+                </div>
               </div>
 
               {/* Bottom interactive counter & controls (padded to clear the floating tab bar) */}
@@ -313,12 +315,40 @@ export default function AzkarRoute() {
                     handleTap();
                   }}
                   className={cn(
-                    'relative flex h-24 w-24 flex-col items-center justify-center rounded-full border-2 shadow-lg transition-all duration-150 active:scale-90 touch-manipulation',
-                    isFinished
-                      ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-500'
-                      : 'border-primary/40 bg-card hover:border-primary text-foreground'
+                    'relative flex h-24 w-24 flex-col items-center justify-center rounded-full shadow-lg transition-all duration-150 active:scale-90 touch-manipulation',
+                    isFinished ? 'bg-emerald-500/10 text-emerald-500' : 'bg-card text-foreground'
                   )}
                 >
+                  {/* Circular progress ring around the counter */}
+                  <svg
+                    className="absolute inset-0 h-full w-full -rotate-90"
+                    viewBox="0 0 96 96"
+                    aria-hidden="true"
+                  >
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="44"
+                      fill="none"
+                      strokeWidth="4"
+                      className={isFinished ? 'stroke-emerald-500/20' : 'stroke-primary/20'}
+                    />
+                    <circle
+                      cx="48"
+                      cy="48"
+                      r="44"
+                      fill="none"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray={2 * Math.PI * 44}
+                      strokeDashoffset={2 * Math.PI * 44 * (1 - progressPct / 100)}
+                      className={cn(
+                        'transition-all duration-200',
+                        isFinished ? 'stroke-emerald-500' : 'stroke-primary'
+                      )}
+                    />
+                  </svg>
+
                   {isFinished ? (
                     <div className="flex flex-col items-center gap-1 text-emerald-500">
                       <Check size={28} strokeWidth={3} />
@@ -334,15 +364,6 @@ export default function AzkarRoute() {
                       </span>
                     </div>
                   )}
-
-                  {/* Circular progress highlight indicator (fills right-to-left for RTL) */}
-                  <div
-                    className="absolute bottom-0 right-0 h-1 bg-primary rounded-full transition-all duration-200"
-                    style={{
-                      width: `${progressPct}%`,
-                      backgroundColor: isFinished ? '#10b981' : undefined
-                    }}
-                  />
                 </button>
 
                 {/* Gesture hint */}
