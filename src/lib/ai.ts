@@ -39,6 +39,23 @@ interface CompletionResult {
 }
 
 /**
+ * Upstream gateways (Cloudflare, load balancers, timeouts) sometimes respond with a full
+ * HTML error page instead of JSON on 5xx/504s. That text ends up as the Error message shown
+ * in the chat UI, which renders assistant content through markdown-to-HTML and injects it
+ * with dangerouslySetInnerHTML — so embedding raw HTML verbatim plants foreign
+ * <style>/<script>/<html> markup into the live page and corrupts its styling. Never let
+ * upstream error bodies that look like HTML reach the UI unfiltered.
+ */
+function sanitizeUpstreamErrorText(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  if (/^<!doctype html/i.test(trimmed) || /^<html[\s>]/i.test(trimmed) || /<\/?(script|style|body|head|html)[\s>]/i.test(trimmed)) {
+    return 'The AI provider returned an unexpected (non-JSON) error page.';
+  }
+  return trimmed.length > 500 ? `${trimmed.slice(0, 500)}…` : trimmed;
+}
+
+/**
  * Executes a single chat completion request against a specific candidate model and provider.
  */
 async function executeCandidateCompletion(
@@ -176,7 +193,8 @@ async function executeCandidateCompletion(
           const parsed = JSON.parse(errorBody);
           errMsg = parsed.error?.message || parsed.error || parsed.message || errMsg;
         } catch {
-          if (errorBody) errMsg = errorBody;
+          const sanitized = sanitizeUpstreamErrorText(errorBody);
+          if (sanitized) errMsg = sanitized;
         }
         const err: any = new Error(errMsg);
         err.status = directResponse.status;
@@ -200,7 +218,8 @@ async function executeCandidateCompletion(
       const parsed = JSON.parse(errorText);
       errMsg = parsed.error?.message || parsed.error || parsed.message || errMsg;
     } catch {
-      if (errorText) errMsg = errorText;
+      const sanitized = sanitizeUpstreamErrorText(errorText);
+      if (sanitized) errMsg = sanitized;
     }
     const err: any = new Error(errMsg);
     err.status = proxyResponse.status;

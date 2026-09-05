@@ -896,6 +896,8 @@ ${knowledgeContext}`;
             /* MESSAGE STREAM */
             activeMessages.map((msg) => {
               const isUser = msg.role === 'user';
+              const msgDate = new Date(msg.timestamp);
+              const msgTime = Number.isNaN(msgDate.getTime()) ? null : format(msgDate, 'h:mm a');
               return (
                 <div
                   key={msg.id}
@@ -923,6 +925,10 @@ ${knowledgeContext}`;
                       />
                     )}
                   </div>
+
+                  {msgTime && (
+                    <span className="text-[10px] text-muted-foreground px-1">{msgTime}</span>
+                  )}
 
                   {/* Inline Action Cards (Mixed Inputs embedded in stream) */}
                   {!isUser && msg.actions && msg.actions.length > 0 && (
@@ -1150,6 +1156,14 @@ ${knowledgeContext}`;
               <div className="space-y-1">
                 {threads.map((t) => {
                   const isActive = t.id === activeThreadId;
+                  const updated = new Date(t.updatedAt);
+                  const isValidDate = !Number.isNaN(updated.getTime());
+                  const isToday = isValidDate && updated.toDateString() === new Date().toDateString();
+                  const threadTimestamp = isValidDate
+                    ? isToday
+                      ? format(updated, 'h:mm a')
+                      : format(updated, 'MMM d, h:mm a')
+                    : null;
                   return (
                     <div
                       key={t.id}
@@ -1164,7 +1178,12 @@ ${knowledgeContext}`;
                     >
                       <div className="flex items-center gap-2 min-w-0">
                         <MessageSquare size={14} className="shrink-0" />
-                        <span className="truncate">{t.title}</span>
+                        <div className="min-w-0">
+                          <span className="truncate block">{t.title}</span>
+                          {threadTimestamp && (
+                            <span className="block text-[10px] font-normal opacity-70 truncate">{threadTimestamp}</span>
+                          )}
+                        </div>
                       </div>
                       {threads.length > 1 && (
                         <button
