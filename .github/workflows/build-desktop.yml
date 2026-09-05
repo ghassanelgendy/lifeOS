@@ -212,15 +212,14 @@ jobs:
             --inject scripts/pake-inject.js \
             --use-local-file \
             --app-version "${{ env.VERSION }}"
-          # Find and normalise output files (.deb, .AppImage)
-          mkdir -p linux-dist
-          find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.deb" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.deb \;
-          find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.AppImage" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.AppImage \;
 
       - name: Clean up Linux desktop entries
         shell: bash
         run: |
-          # Find the generated .deb file
+          # Find the .deb pake just built (before it's copied anywhere else, so this
+          # glob can only match the one real build output — matching after the copy
+          # step below let `find | head -n1` non-deterministically clean either copy
+          # and ship the untouched, duplicate-entry one).
           DEB=$(find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.deb" | head -n1)
           if [ -z "$DEB" ]; then
             echo "⚠️ No .deb found; skipping desktop entry cleanup."
@@ -238,9 +237,14 @@ jobs:
           sed -i 's|^Exec=pake-lifeos|Exec=env WEBKIT_DISABLE_COMPOSITING_MODE=0 WEBKIT_DISABLE_DMABUF_RENDERER=0 pake-lifeos|' \
             deb-unpacked/usr/share/applications/com.pake.lifeos.desktop
 
-          # Re-package the .deb
+          # Re-package the .deb in place
           dpkg-deb -b deb-unpacked cleaned.deb
           mv cleaned.deb "$DEB"
+
+          # Only now copy the (already-cleaned) outputs into linux-dist/
+          mkdir -p linux-dist
+          cp "$DEB" linux-dist/lifeOS_${{ env.VERSION }}_amd64.deb
+          find . -maxdepth 3 -name "*[lL]ife[oO][sS]*.AppImage" -exec cp {} linux-dist/lifeOS_${{ env.VERSION }}_amd64.AppImage \;
 
       - name: Build Browser Extension Zip
         shell: bash
