@@ -108,7 +108,7 @@ export default function Tasks() {
   const { data: completedTasks = [] } = useCompletedTasks();
   const { data: overdueTasks = [] } = useOverdueTasks();
   const { data: calendarEvents = [] } = useCalendarEvents();
-  const { avgBedtimeMinutes } = useSleepMetrics(7);
+  const { avgSleepMinutes, avgBedtimeMinutes } = useSleepMetrics(7);
 
   // Get habits that should be shown in tasks
   const { data: allHabits = [] } = useHabits();
@@ -191,6 +191,18 @@ export default function Tasks() {
   const [similarityMatches, setSimilarityMatches] = useState<TaskSimilarityMatch[]>([]);
   const [pendingDraftTaskPayload, setPendingDraftTaskPayload] = useState<CreateInput<Task> | null>(null);
   const [_isCheckingSimilarity, setIsCheckingSimilarity] = useState(false);
+
+  // Smart Unscheduled Tasks Scheduler State
+  const [isSmartScheduleModalOpen, setIsSmartScheduleModalOpen] = useState(false);
+  const [smartScheduleHorizon, setSmartScheduleHorizon] = useState<'week' | 'month'>('week');
+  const [isSmartScheduling, setIsSmartScheduling] = useState(false);
+  const [smartSchedulePlan, setSmartSchedulePlan] = useState<Array<{
+    task: Task;
+    dueDate: string;
+    dueTime: string;
+    label: string;
+    conflictFree: boolean;
+  }>>([]);
 
   const TAGS_VISIBLE_COLLAPSED = 4;
   const tagsToShow = tagsExpanded || tags.length <= TAGS_VISIBLE_COLLAPSED
@@ -1633,6 +1645,81 @@ export default function Tasks() {
     });
   };
 
+  // Smart Scheduler for unscheduled tasks (takes sleep metrics & awake windows into account)
+  const unscheduledTasks = useMemo(() => {
+    return allTasks.filter(
+      (t) => !t.is_completed && !t.is_wont_do && !t.due_date && !t.id.startsWith('habit-')
+    );
+  }, [allTasks]);
+
+  const generateSmartSchedulePlan = useCallback((horizon: 'week' | 'month' = smartScheduleHorizon) => {
+    if (unscheduledTasks.length === 0) return [];
+
+    // Calculate awake window from user's sleep metrics
+    let wakeHour = 8;
+    let bedHour = 23.5;
+    if (avgBedtimeMinutes !== null && avgBedtimeMinutes !== undefined) {
+      const bedtimeMinutes = avgBedtimeMinutes;
+      const sleepDuration = avgSleepMinutes || 450;
+      const wakeMinutes = (bedtimeMinutes + sleepDuration) % (24 * 60);
+      const calcWake = Math.floor(wakeMinutes / 60);
+      const calcBed = Math.floor(bedtimeMinutes / 60);
+      if (calcWake >= 5 && calcWake <= 12) wakeHour = calcWake;
+      if (calcBed >= 20 || calcBed <= 4) bedHour = calcBed <= 4 ? 24 + calcBed : calcBed;
+    }
+
+    // Distribute across open slots
+    const slots = distributeTasksAcrossAwakeSlots(
+      unscheduledTasks.length,
+      {
+        avgWakeHour: wakeHour,
+        avgBedHour: bedHour,
+        existingTasks: allTasks,
+        calendarEvents,
+      },
+      30
+    );
+
+    return unscheduledTasks.map((task, index) => {
+      const slot = slots[index] || slots[slots.length - 1];
+      return {
+        task,
+        dueDate: slot?.dueDate || format(new Date(), 'yyyy-MM-dd'),
+        dueTime: slot?.dueTime || '10:00',
+        label: slot?.label || 'Today at 10:00 AM',
+        conflictFree: slot?.conflictFree ?? true,
+      };
+    });
+  }, [unscheduledTasks, smartScheduleHorizon, avgBedtimeMinutes, avgSleepMinutes, allTasks, calendarEvents]);
+
+  const handleOpenSmartSchedule = () => {
+    const plan = generateSmartSchedulePlan('week');
+    setSmartSchedulePlan(plan);
+    setIsSmartScheduleModalOpen(true);
+  };
+
+  const handleApplySmartSchedule = async () => {
+    if (smartSchedulePlan.length === 0) return;
+    setIsSmartScheduling(true);
+    try {
+      for (const item of smartSchedulePlan) {
+        await updateTask.mutateAsync({
+          id: item.task.id,
+          data: {
+            due_date: item.dueDate,
+            due_time: item.dueTime,
+          },
+        });
+      }
+      setIsSmartScheduleModalOpen(false);
+      setSmartSchedulePlan([]);
+    } catch (err) {
+      console.error('Failed to apply smart schedule:', err);
+    } finally {
+      setIsSmartScheduling(false);
+    }
+  };
+
   // Format due date display
   const formatDueDate = (task: Task): { text: string; className: string } => {
     if (!task.due_date) return { text: '', className: '' };
@@ -1947,6 +2034,30 @@ export default function Tasks() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleOpenSmartSchedule}
+              className={cn(
+                "h-9 px-2.5 rounded-full border transition-all flex items-center gap-1.5 text-xs font-medium",
+                unscheduledTasks.length > 0
+                  ? "border-primary/40 bg-primary/10 text-primary hover:bg-primary/20 shadow-xs"
+                  : "border-border bg-card/70 hover:bg-secondary text-muted-foreground"
+              )}
+              title={
+                unscheduledTasks.length > 0
+                  ? `Smart schedule ${unscheduledTasks.length} unscheduled task${unscheduledTasks.length > 1 ? 's' : ''}`
+                  : "No unscheduled tasks to schedule"
+              }
+              aria-label="Smart schedule unscheduled tasks"
+            >
+              <Wand2 size={14} />
+              <span className="hidden sm:inline">Schedule</span>
+              {unscheduledTasks.length > 0 && (
+                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground font-bold">
+                  {unscheduledTasks.length}
+                </span>
+              )}
+            </button>
             <button
               type="button"
               onClick={cycleSortMode}
@@ -2916,6 +3027,113 @@ Return ONLY raw JSON.`;
           }
         }}
       />
+
+      {/* Smart Unscheduled Tasks Scheduler Modal */}
+      <Modal
+        isOpen={isSmartScheduleModalOpen}
+        onClose={() => {
+          setIsSmartScheduleModalOpen(false);
+          setSmartSchedulePlan([]);
+        }}
+        title="Smart Schedule Unscheduled Tasks"
+      >
+        <div className="space-y-4">
+          <div className="p-3 rounded-xl bg-secondary/30 border border-border/70 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Wand2 size={16} className="text-primary" />
+                <span className="text-xs font-semibold">
+                  {unscheduledTasks.length} Unscheduled Task{unscheduledTasks.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSmartScheduleHorizon('week');
+                    setSmartSchedulePlan(generateSmartSchedulePlan('week'));
+                  }}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md transition-colors",
+                    smartScheduleHorizon === 'week' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  This Week
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSmartScheduleHorizon('month');
+                    setSmartSchedulePlan(generateSmartSchedulePlan('month'));
+                  }}
+                  className={cn(
+                    "px-2 py-0.5 rounded-md transition-colors",
+                    smartScheduleHorizon === 'month' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Month
+                </button>
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Finds conflict-free awake time slots based on your sleep stats (sleep bedtime: {avgBedtimeMinutes !== null ? `${Math.floor(avgBedtimeMinutes / 60)}:${String(avgBedtimeMinutes % 60).padStart(2, '0')}` : 'default 11:30 PM'}), avoiding existing tasks and calendar events with automatic breathing room buffers.
+            </p>
+          </div>
+
+          {unscheduledTasks.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              <CheckCircle2 size={36} className="mx-auto mb-2 text-emerald-500/60" />
+              <p className="font-medium">All tasks are scheduled!</p>
+              <p className="text-xs mt-1">There are no unscheduled active tasks waiting in your queue.</p>
+            </div>
+          ) : (
+            <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+                Proposed Schedule Distribution ({smartSchedulePlan.length})
+              </span>
+              {smartSchedulePlan.map((planItem, idx) => (
+                <div
+                  key={planItem.task.id || idx}
+                  className="p-2.5 rounded-lg border border-border bg-card/60 flex items-center justify-between gap-3 text-xs"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-foreground truncate">{planItem.task.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 text-muted-foreground text-[11px]">
+                      <span className="inline-flex items-center gap-1 text-primary">
+                        <CalendarIcon size={12} /> {planItem.label}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-500 font-medium shrink-0">
+                    Conflict-free
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setIsSmartScheduleModalOpen(false);
+                setSmartSchedulePlan([]);
+              }}
+              disabled={isSmartScheduling}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApplySmartSchedule}
+              disabled={smartSchedulePlan.length === 0 || isSmartScheduling}
+              className="gap-1.5"
+            >
+              <Wand2 size={14} className={isSmartScheduling ? "animate-spin" : ""} />
+              {isSmartScheduling ? "Scheduling..." : `Apply Schedule (${smartSchedulePlan.length})`}
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -2937,7 +3155,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
   const [copied, setCopied] = useState(false);
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
-  const priorityConfig = PRIORITY_CONFIG[task.priority];
+  const priorityConfig = (task.priority && PRIORITY_CONFIG[task.priority]) || PRIORITY_CONFIG.none;
   const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
 
   const subtasks = task.subtasks || [];
@@ -3003,7 +3221,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             {task.id.startsWith('habit-') && (
               <Flame size={14} className="text-purple-500" />
             )}
-            {task.priority !== 'none' && (
+            {task.priority !== 'none' && priorityConfig?.icon && (
               <priorityConfig.icon size={14} className={priorityConfig.color} />
             )}
             {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (

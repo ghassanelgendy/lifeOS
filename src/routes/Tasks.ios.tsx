@@ -3579,7 +3579,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
   const dueInfo = formatDueDate(task);
-  const priorityConfig = PRIORITY_CONFIG[task.priority];
+  const priorityConfig = (task.priority && PRIORITY_CONFIG[task.priority]) || PRIORITY_CONFIG.none;
   const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
 
   const handleToggleClick = (e: React.MouseEvent) => {
@@ -3681,7 +3681,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
             {task.id.startsWith('habit-') && (
               <Flame size={14} className="text-purple-500" />
             )}
-            {task.priority !== 'none' && (
+            {task.priority !== 'none' && priorityConfig?.icon && (
               <priorityConfig.icon size={14} className={priorityConfig.color} />
             )}
             {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
