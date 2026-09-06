@@ -253,6 +253,12 @@ chrome.idle.onStateChanged.addListener((state) => {
 // Periodic flush alarm
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'flush-screentime') {
-    flushScreentimeBuffer();
+    // MV3 kills this service worker after ~30s of no events, and activeSession.domain
+    // resets to null on restart — it's only ever repopulated by a tab/focus/idle event.
+    // If the user stays on the same tab through a worker restart (no tab switch, no
+    // window focus change), domain would stay null forever and nothing gets recorded
+    // despite active use. Re-querying the actually active tab on every alarm tick makes
+    // this self-healing instead of depending on an event happening to fire.
+    updateActiveTab().then(() => flushScreentimeBuffer());
   }
 });
