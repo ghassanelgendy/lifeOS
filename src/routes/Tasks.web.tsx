@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -9,7 +9,9 @@ import { useUIStore } from '../stores/useUIStore';
 import { askAI, extractJSON } from '../lib/ai';
 import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWeekTasks, useCompletedTasks, useOverdueTasks, useCreateTask, useUpdateTask, useToggleTask, useDeleteTask, useCreateTaskList, useUpdateTaskList, useDeleteTaskList, useCreateTag, useUpdateTag, useDeleteTag, useConvertTaskToHabit, useTaskWithSubtasks, useCreateSubtask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
-import { useUpdateCalendarEvent } from '../hooks/useCalendar';
+import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar';
+import { useSleepMetrics } from '../hooks/useSleep';
+import { distributeTasksAcrossAwakeSlots } from '../lib/smartTaskScheduler';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { ShareModal } from '../components/collaboration/ShareModal';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
@@ -105,6 +107,8 @@ export default function Tasks() {
   const { data: weekTasks = [] } = useWeekTasks();
   const { data: completedTasks = [] } = useCompletedTasks();
   const { data: overdueTasks = [] } = useOverdueTasks();
+  const { data: calendarEvents = [] } = useCalendarEvents();
+  const { avgBedtimeMinutes } = useSleepMetrics(7);
 
   // Get habits that should be shown in tasks
   const { data: allHabits = [] } = useHabits();
@@ -145,6 +149,7 @@ export default function Tasks() {
   const [newTaskDate, setNewTaskDate] = useState('');
   const [newTaskTime, setNewTaskTime] = useState('');
   const [newTaskDurationMinutes, setNewTaskDurationMinutes] = useState(45);
+  const [suggestedTimeLabel, setSuggestedTimeLabel] = useState<string | null>(null);
   const [newTaskPriority, setNewTaskPriority] = useState<TaskPriority>('none');
   const [newTaskTagIds, setNewTaskTagIds] = useState<string[]>([]);
   const [newTaskListId, setNewTaskListId] = useState<string | null>(null); // from ~ list suggestion
@@ -954,6 +959,25 @@ export default function Tasks() {
     }
   };
 
+  // Suggests the nearest conflict-free awake time slot (same engine the AI brain-dump
+  // extractor uses) and prefills the date/time inputs — the user can still freely edit or
+  // clear them afterward, this only ever proposes a starting point.
+  const handleSuggestTime = () => {
+    const avgWakeHour = 8;
+    const avgBedHour = avgBedtimeMinutes ? avgBedtimeMinutes / 60 : 23.5;
+    const [slot] = distributeTasksAcrossAwakeSlots(
+      1,
+      { avgWakeHour, avgBedHour, existingTasks: allTasks, calendarEvents },
+      newTaskDurationMinutes > 0 ? newTaskDurationMinutes : 30
+    );
+    if (!slot) return;
+    setNewTaskDate(slot.dueDate);
+    setNewTaskTime(slot.dueTime);
+    setNewTaskRemindersEnabled(true);
+    if (newTaskEarlyReminderMinutes === null) setNewTaskEarlyReminderMinutes(0);
+    setSuggestedTimeLabel(slot.label);
+  };
+
   // Quick add task (strip date/time shortcut text from title right before adding)
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1058,6 +1082,7 @@ export default function Tasks() {
         setNewTaskDate('');
         setNewTaskTime('');
         setNewTaskDurationMinutes(45);
+        setSuggestedTimeLabel(null);
         setNewTaskPriority('none');
         setNewTaskTagIds([]);
         setNewTaskListId(null);
@@ -2260,12 +2285,28 @@ Return ONLY raw JSON.`;
                   >
                     <CalendarDays size={14} /> Next Week
                   </button>
+                  <button
+                    type="button"
+                    onClick={handleSuggestTime}
+                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-secondary rounded-lg hover:bg-secondary/80 transition-colors text-violet-500"
+                    title="Suggest the nearest free awake time slot"
+                  >
+                    <Wand2 size={14} /> Suggest time
+                  </button>
                 </div>
+                {suggestedTimeLabel && (
+                  <p className="text-[11px] text-muted-foreground -mt-1">
+                    Suggested: {suggestedTimeLabel} — change the date/time below if this doesn't work.
+                  </p>
+                )}
                 <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={newTaskDate}
-                    onChange={(e) => setNewTaskDate(e.target.value)}
+                    onChange={(e) => {
+                      setNewTaskDate(e.target.value);
+                      setSuggestedTimeLabel(null);
+                    }}
                     className="bg-secondary/50 text-sm px-3 py-1.5 rounded-lg border border-border outline-none focus:border-primary"
                   />
                    <input
@@ -2274,6 +2315,7 @@ Return ONLY raw JSON.`;
                     onChange={(e) => {
                       const val = e.target.value;
                       setNewTaskTime(val);
+                      setSuggestedTimeLabel(null);
                       if (val) {
                         setNewTaskRemindersEnabled(true);
                         if (newTaskEarlyReminderMinutes === null) {
