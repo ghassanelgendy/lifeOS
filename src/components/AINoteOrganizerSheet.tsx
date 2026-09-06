@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Sparkles, Check, Plus, Loader2, Calendar, Clock, ListTodo, Phone, Mail, Code2, Bookmark, CalendarDays, AlertCircle, FileText } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+import { Sparkles, Check, Plus, Loader2, Calendar, Clock, ListTodo, Phone, Mail, Code2, Bookmark, CalendarDays, AlertCircle, FileText, Copy } from 'lucide-react';
 import { Button, Input, Modal } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useTaskLists, useTags, useCreateTask, useTasks } from '../hooks/useTasks';
@@ -72,6 +73,8 @@ export function AINoteOrganizerSheet({
   const [, setSummary] = useState<string>('');
   const [hasRun, setHasRun] = useState(false);
   const [createdCount, setCreatedCount] = useState<number | null>(null);
+  const [copiedTaskId, setCopiedTaskId] = useState<string | null>(null);
+  const canCopyTaskTitles = !Capacitor.isNativePlatform();
 
   // Reset stale results whenever we switch to a different note — otherwise the
   // previously reviewed note's extracted tasks stay in state (since this sheet
@@ -519,6 +522,26 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
                             onChange={(e) => handleUpdateTaskField(task.id, { title: e.target.value })}
                             className="text-xs font-semibold text-foreground bg-transparent border-b border-transparent focus:border-primary focus:outline-none flex-1 min-w-0"
                           />
+                          {canCopyTaskTitles && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(task.title).then(() => {
+                                  setCopiedTaskId(task.id);
+                                  setTimeout(() => setCopiedTaskId((cur) => (cur === task.id ? null : cur)), 1500);
+                                });
+                              }}
+                              className={cn(
+                                'p-1 rounded shrink-0 transition-colors',
+                                copiedTaskId === task.id
+                                  ? 'text-emerald-500'
+                                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+                              )}
+                              title="Copy title"
+                            >
+                              {copiedTaskId === task.id ? <Check size={13} /> : <Copy size={13} />}
+                            </button>
+                          )}
                         </div>
                         <span className="text-[10px] text-muted-foreground shrink-0 uppercase font-mono px-1.5 py-0.5 rounded bg-background border border-border">
                           {task.actionType}
