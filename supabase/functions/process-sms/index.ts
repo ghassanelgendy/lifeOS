@@ -322,6 +322,15 @@ serve(async (req: Request) => {
 
           const aiResult = await auditSmsWithAi(initialData, message, userSettings);
 
+          if (!aiResult) {
+            await recordAiFailureNote(supabaseClient, userId, {
+              context: 'process-sms',
+              description: finalDescription,
+              amount: finalAmount,
+              category: insertedData.category,
+            });
+          }
+
           if (aiResult) {
             const updates: Record<string, any> = {};
 
@@ -476,7 +485,7 @@ function getDefaultCategory(transactionType: string, entity: string | null): str
     /gourmet|carrefour|metro|market|grocery|سوبرماركت|restaurant|cafe|مطعم|كافيه|valu|valu\s*shop|noon\s*e\s*commerce|noon|mcdonald|kfc|starbucks|dominos|pizza|food|dining/.test(ent)
   ) return 'food';
 
-  if (/uber|taxi|careem|petrol|بنزين|transport|fuel|gas/.test(ent)) return 'transport';
+  if (/uber|taxi|careem|didi|mobility|swvl|indrive|bolt|petrol|بنزين|مواصلات|mwaslat|transport|fuel|gas/.test(ent)) return 'transport';
   if (/cinema|netflix|entertainment|apple\.com|spotify|game/.test(ent)) return 'entertainment';
   if (/hospital|pharmacy|doctor|صيدلية|clinic|medical/.test(ent)) return 'health';
   if (/school|university|course|تعليم|education/.test(ent)) return 'education';
@@ -594,7 +603,17 @@ You receive a raw bank SMS and the initial regex extraction. Your task is to ver
    Example: "TBS Zamalek" instead of "ACCEPTED AT POS 23984 TBS ZAMALEK CAI".
    Example: "Carrefour Maadi" instead of "PURCHASE FROM CARREFOUR_MAADI_01".
 2. category: Must be one of: ${existingCategoriesList}.
-   - Egyptian context: microbus/uber/careem/metro/benzeen -> transport; koshary/coffee/supermarket/seoudi/talabat -> food; we/vodafone/orange/etisalat/bills -> utilities; pharmacy/doctor -> health; instapay -> ipn.
+   Reason about what the merchant/business actually IS or DOES — do not rely only on the examples below,
+   which are illustrative and not exhaustive. Use general world knowledge: e.g. any ride-hailing or
+   mobility app (Uber, Careem, DiDi, InDrive, Bolt, Yango, Swvl, taxi companies, microbuses, "mobility"
+   in the name) is transport; any food delivery or restaurant/cafe/grocery brand is food; any telecom or
+   utility biller is utilities; etc. Also apply this reasoning to Arabic/Franco-Arabic dialect words by
+   their MEANING, not just literal spelling matches — e.g. "mwaslat"/"مواصلات" generically means
+   "transportation" (so route it to transport even without a specific transport-mode word attached),
+   "benzeen"/"بنزين" means fuel, "otobis"/"أوتوبيس" means bus, etc.
+   - Illustrative (non-exhaustive) examples: microbus/uber/careem/didi/metro/benzeen -> transport;
+     koshary/coffee/supermarket/seoudi/talabat -> food; we/vodafone/orange/etisalat/bills -> utilities;
+     pharmacy/doctor -> health; instapay -> ipn.
 3. ideal_category: If this transaction belongs to a distinct domain NOT well-covered by the existing list (e.g. charity/zakat, taxes, crypto, pet_care, legal), propose the ideal category name.
 4. needs_new_category: true if ideal_category is provided, false otherwise.
 5. reason: Brief explanation if needs_new_category is true.
@@ -625,41 +644,45 @@ Initial extraction:
 ${JSON.stringify(initialData, null, 2)}`;
 
   for (const candidate of candidates) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
 
-      const endpoint = `${candidate.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${candidate.apiKey.trim()}`,
-        },
-        body: JSON.stringify({
-          model: candidate.model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.1,
-          max_tokens: 300,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
+        const endpoint = `${candidate.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${candidate.apiKey.trim()}`,
+          },
+          body: JSON.stringify({
+            model: candidate.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.1,
+            max_tokens: 300,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
 
-      if (!res.ok) continue;
+        if (!res.ok) break; // don't retry a non-transient HTTP error, move to next candidate
 
-      const data = await res.json();
-      const content = data?.choices?.[0]?.message?.content || '';
-      const audited = parseAiAudit(content);
-      if (audited) {
-        console.log(`[process-sms] AI audit succeeded via ${candidate.provider} (${candidate.model}):`, audited);
-        return audited;
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content || '';
+        const audited = parseAiAudit(content);
+        if (audited) {
+          console.log(`[process-sms] AI audit succeeded via ${candidate.provider} (${candidate.model}):`, audited);
+          return audited;
+        }
+        break; // parsed but empty result - not worth retrying this candidate
+      } catch (err) {
+        console.warn(`[process-sms] Model ${candidate.model} on ${candidate.provider} attempt ${attempt + 1} failed:`, err);
+        // retry once (likely a transient timeout/network blip) before moving to the next candidate
       }
-    } catch (err) {
-      console.warn(`[process-sms] Model ${candidate.model} on ${candidate.provider} failed:`, err);
     }
   }
 
@@ -731,6 +754,63 @@ ${entryText}`;
     }
   } catch (err) {
     console.error('[process-sms] Failed to record in LifeOS Self Awareness note:', err);
+  }
+}
+
+/** All AI candidates failed (timeouts/errors) for a categorization request — surface it in-app
+ *  instead of leaving it silent in edge function logs no one reads. */
+async function recordAiFailureNote(
+  supabase: any,
+  userId: string,
+  tx: { context: string; description: string; amount: number; category: string }
+): Promise<void> {
+  try {
+    const now = new Date();
+    const timeZone = 'Africa/Cairo';
+    let timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      timeStr = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', minute: '2-digit', hour12: true }).format(now);
+    } catch { /* fallback */ }
+
+    const entryText = `### ⚠️ AI Categorization Failed (${tx.context})
+- **Transaction:** ${tx.description} (${tx.amount} EGP)
+- **Left As:** \`${tx.category}\`
+- **Reason:** All AI model candidates timed out or errored — review and recategorize manually if wrong.
+- **Timestamp:** ${now.toISOString().split('T')[0]} at ${timeStr}
+
+---`;
+
+    const { data: existingNotes } = await supabase
+      .from('notes')
+      .select('id, body')
+      .eq('user_id', userId)
+      .ilike('title', 'LifeOS Self Awareness')
+      .limit(1);
+
+    const note = existingNotes?.[0];
+    if (note) {
+      const currentBody = (note.body || '').trim();
+      const updatedBody = currentBody ? `${currentBody}\n\n${entryText}` : entryText;
+      await supabase.from('notes').update({ body: updatedBody, updated_at: new Date().toISOString() }).eq('id', note.id);
+    } else {
+      const initialBody = `# LifeOS Self Awareness
+This is where LifeOS AI communicates observations, system self-awareness, and category proposals.
+
+---
+
+${entryText}`;
+      await supabase.from('notes').insert({
+        user_id: userId,
+        title: 'LifeOS Self Awareness',
+        body: initialBody,
+        tags: ['lifeos_ai', 'self_awareness', 'finance'],
+        is_pinned: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error('[process-sms] Failed to record AI failure note:', err);
   }
 }
 
