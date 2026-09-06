@@ -261,6 +261,17 @@ export default function NotesWeb() {
     window.setTimeout(() => setSaveMessage(''), 1800);
   };
 
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (isDirty) void handleSave();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  });
+
   const handleDeleteNote = async () => {
     if (!deleteTarget) return;
     await deleteNote.mutateAsync(deleteTarget.id);
