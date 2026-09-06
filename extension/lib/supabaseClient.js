@@ -13,6 +13,25 @@ function toEmptyUnlessAuthExpired(err) {
   return [];
 }
 
+/** A dead session (e.g. the refresh token being rotated out from under this extension by the
+ * main lifeOS tab's own refresh — see the comment above authExpired below) previously failed
+ * completely silently: background writes just console.warn'd. Surface it on the toolbar badge
+ * instead, since that's the only thing a user actually sees without opening devtools. */
+function setDisconnectedBadge(disconnected) {
+  try {
+    if (disconnected) {
+      chrome.action.setBadgeText({ text: '⚠' });
+      chrome.action.setBadgeBackgroundColor({ color: '#F59E0B' });
+      chrome.action.setTitle({ title: 'lifeOS Extension: disconnected — open the popup and reconnect' });
+    } else {
+      chrome.action.setBadgeText({ text: '' });
+      chrome.action.setTitle({ title: 'lifeOS Extension' });
+    }
+  } catch (e) {
+    // Not fatal — e.g. running outside a real extension context in tests.
+  }
+}
+
 export class SupabaseClient {
   constructor() {
     this.supabaseUrl = ENV_CONFIG.supabaseUrl || 'https://vlbgxbzwasgpbfzfabnl.supabase.co';
@@ -165,6 +184,7 @@ export class SupabaseClient {
         this.userId = '';
         this.userEmail = '';
         await this.saveConfig({ accessToken: '', refreshToken: '', userId: '', userEmail: '' });
+        setDisconnectedBadge(true);
         const authErr = new Error('Your lifeOS session has expired. Reopen lifeOS in a browser tab (or click Refresh) to reconnect.');
         authErr.status = 401;
         authErr.authExpired = true;
@@ -175,6 +195,11 @@ export class SupabaseClient {
       err.status = res.status;
       throw err;
     }
+
+    // Any successful response means the session is currently good — clear a stale
+    // disconnected badge left over from an earlier dead session (cheap/idempotent if it
+    // was already clear).
+    setDisconnectedBadge(false);
 
     if (res.status === 204) {
       return null;
