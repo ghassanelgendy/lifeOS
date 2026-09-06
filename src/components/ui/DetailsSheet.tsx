@@ -188,40 +188,56 @@ export function DetailsSheet({
       data-lifeos-details-sheet
       data-lifeos-modal
       className={cn(
-        'fixed inset-0 z-[110] transition-opacity duration-300 font-sans text-foreground',
+        'fixed inset-0 z-[110] font-sans text-foreground transition-opacity duration-200',
+        'flex flex-col justify-end sm:justify-center sm:items-center sm:p-4',
         isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
-      style={{ overscrollBehavior: 'contain' }}
+      style={{
+        height: '100dvh',
+        overscrollBehavior: 'contain',
+        paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
+      }}
       onClick={(e) => e.target === overlayRef.current && onClose()}
       role="dialog"
       aria-modal="true"
       aria-labelledby="details-sheet-title"
     >
-      {/* Sheet panel: top pinned below status bar, bottom pinned to screen bottom */}
+      {/* Sheet panel: bottom slide sheet on mobile, centered modal dialog on desktop (sm:) */}
       <div
         className={cn(
-          'absolute left-0 right-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 overflow-hidden isolate shadow-2xl transition-all',
+          'fixed inset-x-0 bottom-0 sm:relative sm:inset-auto sm:max-w-xl sm:max-h-[85vh] sm:rounded-2xl',
           isIOS
-            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10 overflow-hidden isolate'
-            : 'rounded-[24px] border border-border bg-card shadow-2xl overflow-hidden isolate'
+            ? 'liquid-glass-card rounded-t-[24px] sm:rounded-2xl border-white/20 dark:border-white/10'
+            : 'rounded-t-[24px] sm:rounded-2xl border border-border bg-card'
         )}
         style={{
-          position: 'absolute',
-          // Pin to bottom; top bound ensures we never overlap the status bar
-          bottom: 'var(--keyboard-height, 0px)',
-          top: 'calc(env(safe-area-inset-top) + 8px)',
+          // On mobile, pin to bottom and respect keyboard / safe-area; on desktop, relative modal
+          maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom)',
-          willChange: 'transform',
-          transform: dragY > 0
-            ? `translateY(${dragY}px)`
-            : sheetVisible
-              ? 'translateY(0)'
-              : 'translateY(100%)',
-          transition: dragY > 0 ? 'none' : 'transform 0.36s cubic-bezier(0.32, 0.72, 0, 1)',
+          willChange: 'transform, opacity',
+          transform: (typeof window !== 'undefined' && window.innerWidth >= 640)
+            ? (sheetVisible ? 'none' : 'scale(0.96)')
+            : (dragY > 0
+              ? `translateY(${dragY}px)`
+              : sheetVisible
+                ? 'translateY(0)'
+                : 'translateY(100%)'),
+          opacity: (typeof window !== 'undefined' && window.innerWidth >= 640)
+            ? (sheetVisible ? 1 : 0)
+            : 1,
+          transition: (dragY > 0)
+            ? 'none'
+            : (typeof window !== 'undefined' && window.innerWidth >= 640)
+              ? 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
+              : 'transform 0.32s cubic-bezier(0.32, 0.72, 0, 1)',
         }}
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle for mobile */}
+        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/30 sm:hidden shrink-0" />
+
         {/* Sticky header */}
         <header
           className={cn(
