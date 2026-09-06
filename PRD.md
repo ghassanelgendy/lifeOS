@@ -160,9 +160,9 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Category breakdown: Pie/bar chart of spending by category
 - Bank management: Multiple bank accounts, auto-seeded defaults
 - Investment tracking: Separate investment accounts and transactions from daily spending
-- **Bank SMS Automation (`process-sms`):** Forward bank SMS to a Supabase Edge Function with instant response (<100ms) → parsed using regex patterns → auto-inserted → background AI audit cascade (Bynara & Dahl) cleans merchant names, resolves bank/card identifiers, verifies direction/amount, and auto-proposes missing categories to a pinned `LifeOS Self Awareness` note.
-- **Quick Cash Expense Automation (`quick-expense`):** iOS Shortcut & Back Tap endpoint for immediate cash logging (<100ms) with background AI category classification (Bynara & Dahl fallback cascade) understanding Franco-Arabic and Egyptian transit/dining terms.
-- Transaction rules: Auto-categorize based on description patterns
+- **Bank SMS Automation (`process-sms`):** Forward bank SMS to a Supabase Edge Function with instant response (<100ms) → parsed using regex patterns (lazy wildcards, robust to POS terminal noise like `*` in merchant strings) → auto-inserted → background AI audit cascade (Bynara & Dahl, with retry) cleans merchant names, resolves bank/card identifiers, verifies direction/amount, reasons generally about merchant/business type and Franco-Arabic dialect meaning to pick a category (not a fixed keyword list), and auto-proposes missing categories to a pinned `LifeOS Self Awareness` note (which also records when AI categorization fails entirely, instead of failing silently).
+- **Quick Cash Expense Automation (`quick-expense`):** iOS Shortcut & Back Tap endpoint for immediate cash logging (<100ms). Checks learned `transaction_rules` for an instant deterministic category match first, then falls back to background AI category classification (Bynara & Dahl fallback cascade with retry) reasoning generally about Franco-Arabic and Egyptian transit/dining terms rather than exact keyword matches.
+- Transaction rules: Auto-categorize based on description patterns. Manually recategorizing a transaction in the Finance UI automatically learns a rule for that merchant, so future SMS/cash transactions from it are categorized correctly without needing AI.
 - Privacy mode: Blur financial data in public (hover-to-reveal)
 - Real-time updates: Supabase realtime subscription refetches data on table changes
 

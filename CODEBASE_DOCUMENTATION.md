@@ -3544,7 +3544,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTransactionsRealtime`** — Custom React hook managing transactionsrealtime state and side effects.
 - **`useTransactions`** — Custom React hook managing transactions state and side effects.
 - **`useCreateTransaction`** — Custom React hook managing createtransaction state and side effects.
-- **`useUpdateTransaction`** — Custom React hook managing updatetransaction state and side effects.
+- **`useUpdateTransaction`** — Custom React hook managing updatetransaction state and side effects. When a manual edit changes a transaction's category, it also fire-and-forget upserts a `transaction_rules` row (via `learnCategoryFromCorrection`) keyed on the merchant entity/description, so future SMS and quick-expense transactions from the same merchant are categorized correctly without needing an AI call.
 - **`useDeleteTransaction`** — Custom React hook managing deletetransaction state and side effects.
 - **`inferCashDirection`** — Utility function for infer cash direction.
 - **`isCashIn`** — Utility function for is cash in.
@@ -3552,7 +3552,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`transactionsKey`** — Utility function for transactions key.
 - **`useTransactionsRealtime`** — Utility function for use transactions realtime.
 
-**Lines:** 332
+**Lines:** 368
 
 ---
 
@@ -6359,10 +6359,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isPromotionQuickFilter`** — Utility function for is promotion quick filter.
 - **`parseFormUrlEncoded`** — Utility function for parse form url encoded.
 - **`toSchemaCategory`** — Utility function for to schema category.
-- **`auditSmsWithAi`** — Asynchronous multi-model full-field audit cascade across Bynara and Dahl for entity cleaning, bank/card resolution, direction checking, and category enhancement.
+- **`auditSmsWithAi`** — Asynchronous multi-model full-field audit cascade across Bynara and Dahl for entity cleaning, bank/card resolution, direction checking, and category enhancement. Categorization reasoning is now general (merchant/business type + Franco-Arabic dialect meaning) rather than a fixed keyword enumeration, with a retry per model candidate and a 10s timeout.
 - **`recordToSelfAwarenessNote`** — Appends or creates 'LifeOS Self Awareness' note to communicate category proposals and reflections.
+- **`recordAiFailureNote`** — Appends a note when every AI candidate fails to categorize a transaction, so silent categorization failures are surfaced in-app instead of only in edge function logs.
 
-**Lines:** 776
+**Lines:** 862
 
 ---
 
@@ -6375,24 +6376,30 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `TransactionParser` (Class)
 - `ParsedTransaction` (Interface)
 
-**Lines:** 472
+Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class allowlists) so merchant names containing POS terminal noise (e.g. `FAWRY*LATCHO CAFE CA`) still extract correctly instead of falling back to a null entity.
+
+**Lines:** 474
 
 ---
 
 <a name="supabase-functions-quick-expense-index-ts"></a>
 ### supabase/functions/quick-expense/index.ts
 
-**File Purpose:** Supabase Edge Function. Webhook endpoint designed for iOS Shortcuts (or Back Tap) to quickly log cash expenses. Features an automatic multi-model fallback cascade across Bynara (`agnes-2.5-flash`, `agnes-2.0-flash`, `deepseek-v4-flash`) and Dahl (`MiniMax-M2.7`, `DeepSeek-V4-Flash`) with strict category system prompts, duplicate request protection, and flexible account resolution.
+**File Purpose:** Supabase Edge Function. Webhook endpoint designed for iOS Shortcuts (or Back Tap) to quickly log cash expenses. Before falling back to AI, checks the user's learned `transaction_rules` (built from manual category corrections in the Finance UI) for an instant deterministic match against the description. Features an automatic multi-model fallback cascade across Bynara (`agnes-2.5-flash`, `agnes-2.0-flash`, `deepseek-v4-flash`) and Dahl (`MiniMax-M2.7`, `DeepSeek-V4-Flash`) with general-reasoning category system prompts (merchant/business type + Franco-Arabic dialect meaning, not a fixed keyword list), a retry per model candidate, duplicate request protection, and flexible account resolution.
 
 **Functions & Classes:**
 - `cleanAiResponse` (Function)
 - `extractCategoryFromAi` (Function)
 - `classifyCategoryWithAi` (Function)
+- `recordAiFailureNote` (Function)
 - `parseAmount` (Function)
 - `getLocalToday` (Function)
 - `parseIncoming` (Function)
 
-**Lines:** 318
+**Function Details:**
+- **`recordAiFailureNote`** — Appends a note when every AI candidate fails to categorize a quick-expense entry, so silent categorization failures are surfaced in-app instead of only in edge function logs.
+
+**Lines:** 528
 
 ---
 

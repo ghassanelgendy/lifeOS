@@ -377,10 +377,10 @@ Users shall be able to track investment accounts and investment transactions sep
 Users shall be able to create, update, and delete investment accounts and transactions.
 
 #### FR-FIN-011: Bank SMS Parsing & Full-Field AI Audit (Automated)
-The system shall accept forwarded bank SMS messages via the `process-sms` Supabase Edge Function, immediately inserting the transaction and returning an instant response (<100ms) to the client, while executing an asynchronous background AI audit cascade (Bynara and Dahl models) that cleans raw merchant/POS strings into human-readable entity names, resolves card/account identifiers, verifies direction and amounts, and proposes missing categories to a pinned `LifeOS Self Awareness` note.
+The system shall accept forwarded bank SMS messages via the `process-sms` Supabase Edge Function, immediately inserting the transaction and returning an instant response (<100ms) to the client, while executing an asynchronous background AI audit cascade (Bynara and Dahl models, each retried once on transient failure) that cleans raw merchant/POS strings into human-readable entity names, resolves card/account identifiers, verifies direction and amounts, and proposes missing categories to a pinned `LifeOS Self Awareness` note. If every AI candidate fails, that failure is also recorded to the note rather than left silent.
 
 #### FR-FIN-012: Smart Category Inference
-The system shall attempt to infer transaction categories from description/merchant using predefined rules and the background AI cascade.
+The system shall attempt to infer transaction categories from description/merchant using predefined rules, learned rules from past manual corrections, and the background AI cascade. AI categorization reasons generally about the merchant's business type and the meaning of Arabic/Franco-Arabic dialect terms (e.g. "mwaslat" meaning transportation) rather than matching only a fixed keyword list, so it generalizes to merchants and phrasings not explicitly enumerated.
 
 #### FR-FIN-013: Bank Statement Parsing & Smart Reconciliation
 The system shall support parsing encrypted monthly PDF bank statements (Debit & Credit), extracting structured transaction records (entry/value dates, bank references, clean merchant and Instapay recipient entities, amounts, post-transaction balances), and smartly reconciling them against existing database transactions using exact amount, cash flow direction, and a smart date window. Matched records are enriched in-place with verified bank references, clean entities, and statement-verified status without inserting redundant duplicates.
@@ -388,14 +388,14 @@ The system shall support parsing encrypted monthly PDF bank statements (Debit & 
 #### FR-FIN-014: Privacy Mode
 The system shall support a "privacy mode" that blurs financial data until hovered, for public screen viewing.
 
-#### FR-FIN-015: Transaction Rules
-Users shall be able to configure automatic categorization rules based on transaction descriptions.
+#### FR-FIN-015: Transaction Rules & Learning from Corrections
+Users shall be able to configure automatic categorization rules based on transaction descriptions. Manually recategorizing a transaction in the Finance UI shall automatically create or update a `transaction_rules` entry for that merchant/description (via `useUpdateTransaction` in `src/hooks/useFinance.ts`), so future SMS and quick-expense transactions from the same merchant are categorized deterministically without an AI call.
 
 #### FR-FIN-016: Deep Link Transaction Entry
 Users shall be able to add transactions via deep links (`lifeos://add-transaction?amount=...&category=...`).
 
 #### FR-FIN-017: Quick Cash Expense Logging & AI Categorization
-The system shall provide a `quick-expense` webhook edge function optimized for iOS Shortcuts and Back Tap interactions, returning an immediate response (<100ms) upon cash transaction insertion and asynchronously categorizing expenses via a multi-model fallback cascade across Bynara and Dahl with strict system prompt validation.
+The system shall provide a `quick-expense` webhook edge function optimized for iOS Shortcuts and Back Tap interactions, returning an immediate response (<100ms) upon cash transaction insertion. It first checks learned `transaction_rules` for an instant deterministic category match, then asynchronously categorizes expenses via a multi-model fallback cascade across Bynara and Dahl (each candidate retried once) with a general-reasoning system prompt, and records a note if every candidate fails.
 
 ---
 
