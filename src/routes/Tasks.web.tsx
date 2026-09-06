@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Loader2 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -11,7 +11,7 @@ import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWe
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
-import { distributeTasksAcrossAwakeSlots } from '../lib/smartTaskScheduler';
+import { distributeTasksAcrossAwakeSlots, estimateTaskDuration } from '../lib/smartTaskScheduler';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { ShareModal } from '../components/collaboration/ShareModal';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
@@ -200,6 +200,7 @@ export default function Tasks() {
     task: Task;
     dueDate: string;
     dueTime: string;
+    durationMinutes: number;
     label: string;
     conflictFree: boolean;
   }>>([]);
@@ -1668,7 +1669,11 @@ export default function Tasks() {
       if (calcBed >= 20 || calcBed <= 4) bedHour = calcBed <= 4 ? 24 + calcBed : calcBed;
     }
 
-    // Distribute across open slots
+    // Estimate durations per task based on semantic analysis (calls, quick replies vs deep work, study, etc.)
+    const estimatedDurations = unscheduledTasks.map((t) => estimateTaskDuration(t));
+    const horizonDays = horizon === 'month' ? 30 : 7;
+
+    // Distribute across open slots with smart pacing across the horizon
     const slots = distributeTasksAcrossAwakeSlots(
       unscheduledTasks.length,
       {
@@ -1677,15 +1682,20 @@ export default function Tasks() {
         existingTasks: allTasks,
         calendarEvents,
       },
-      30
+      {
+        horizonDays,
+        estimatedDurations,
+      }
     );
 
     return unscheduledTasks.map((task, index) => {
       const slot = slots[index] || slots[slots.length - 1];
+      const dur = estimatedDurations[index] || slot?.durationMinutes || 30;
       return {
         task,
         dueDate: slot?.dueDate || format(new Date(), 'yyyy-MM-dd'),
         dueTime: slot?.dueTime || '10:00',
+        durationMinutes: dur,
         label: slot?.label || 'Today at 10:00 AM',
         conflictFree: slot?.conflictFree ?? true,
       };
@@ -1708,6 +1718,7 @@ export default function Tasks() {
           data: {
             due_date: item.dueDate,
             due_time: item.dueTime,
+            duration_minutes: item.durationMinutes,
           },
         });
       }
@@ -3102,6 +3113,9 @@ Return ONLY raw JSON.`;
                       <span className="inline-flex items-center gap-1 text-primary">
                         <CalendarIcon size={12} /> {planItem.label}
                       </span>
+                      <span className="inline-flex items-center gap-1 text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded text-[10px]">
+                        <Clock size={10} /> {planItem.durationMinutes >= 60 ? `${planItem.durationMinutes / 60}h` : `${planItem.durationMinutes}m`}
+                      </span>
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-500 font-medium shrink-0">
@@ -3128,7 +3142,11 @@ Return ONLY raw JSON.`;
               disabled={smartSchedulePlan.length === 0 || isSmartScheduling}
               className="gap-1.5"
             >
-              <Wand2 size={14} className={isSmartScheduling ? "animate-spin" : ""} />
+              {isSmartScheduling ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Sparkles size={14} className="text-primary" />
+              )}
               {isSmartScheduling ? "Scheduling..." : `Apply Schedule (${smartSchedulePlan.length})`}
             </Button>
           </div>

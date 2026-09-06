@@ -43,16 +43,23 @@ export function ConfirmSheet({
       setSheetVisible(false);
       document.addEventListener('keydown', handleEscape);
 
+      // Only lock scroll on mobile (< 640px). On desktop, html/body already have
+      // `overflow: hidden` from index.css, so toggling it causes the OS scrollbar
+      // to disappear/reappear, creating a ~15px layout jiggle.
+      const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 640;
       const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
-      if (scrollRoot) {
-        scrollPositionRef.current = scrollRoot.scrollTop;
-        scrollRoot.style.overflow = 'hidden';
-      } else {
-        scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
-        const body = document.body;
-        const html = document.documentElement;
-        body.style.overflow = 'hidden';
-        html.style.overflow = 'hidden';
+
+      if (!isDesktop) {
+        if (scrollRoot) {
+          scrollPositionRef.current = scrollRoot.scrollTop;
+          scrollRoot.style.overflow = 'hidden';
+        } else {
+          scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+          const body = document.body;
+          const html = document.documentElement;
+          body.style.overflow = 'hidden';
+          html.style.overflow = 'hidden';
+        }
       }
 
       const t = requestAnimationFrame(() => {
@@ -62,15 +69,17 @@ export function ConfirmSheet({
       return () => {
         cancelAnimationFrame(t);
         document.removeEventListener('keydown', handleEscape);
-        if (scrollRoot) {
-          scrollRoot.style.overflow = '';
-          scrollRoot.scrollTop = scrollPositionRef.current;
-        } else {
-          const body = document.body;
-          const html = document.documentElement;
-          body.style.overflow = '';
-          html.style.overflow = '';
-          requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+        if (!isDesktop) {
+          if (scrollRoot) {
+            scrollRoot.style.overflow = '';
+            scrollRoot.scrollTop = scrollPositionRef.current;
+          } else {
+            const body = document.body;
+            const html = document.documentElement;
+            body.style.overflow = '';
+            html.style.overflow = '';
+            requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+          }
         }
       };
     }

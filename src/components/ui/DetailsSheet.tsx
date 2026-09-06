@@ -85,17 +85,23 @@ export function DetailsSheet({
       document.addEventListener('keydown', handleKeyDown);
 
       if (!isPake) {
-        // Lock the main content scroll so opening from deep in the list doesn't jump
-        const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
-        if (scrollRoot) {
-          scrollPositionRef.current = scrollRoot.scrollTop;
-          scrollRoot.style.overflow = 'hidden';
-        } else {
-          scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
-          const body = document.body;
-          const html = document.documentElement;
-          body.style.overflow = 'hidden';
-          html.style.overflow = 'hidden';
+        // Only lock scroll on mobile (< 640px). On desktop, html/body already have
+        // `overflow: hidden` from index.css, so toggling it causes the OS scrollbar
+        // to disappear/reappear, creating a ~15px layout jiggle.
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 640;
+        if (!isDesktop) {
+          // Lock the main content scroll so opening from deep in the list doesn't jump
+          const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
+          if (scrollRoot) {
+            scrollPositionRef.current = scrollRoot.scrollTop;
+            scrollRoot.style.overflow = 'hidden';
+          } else {
+            scrollPositionRef.current = window.scrollY || document.documentElement.scrollTop;
+            const body = document.body;
+            const html = document.documentElement;
+            body.style.overflow = 'hidden';
+            html.style.overflow = 'hidden';
+          }
         }
       }
 
@@ -107,16 +113,19 @@ export function DetailsSheet({
         cancelAnimationFrame(t);
         document.removeEventListener('keydown', handleKeyDown);
         if (!isPake) {
-          const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
-          if (scrollRoot) {
-            scrollRoot.style.overflow = '';
-            scrollRoot.scrollTop = scrollPositionRef.current;
-          } else {
-            const body = document.body;
-            const html = document.documentElement;
-            body.style.overflow = '';
-            html.style.overflow = '';
-            requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+          const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 640;
+          if (!isDesktop) {
+            const scrollRoot = document.querySelector('[data-lifeos-scroll-root]') as HTMLElement | null;
+            if (scrollRoot) {
+              scrollRoot.style.overflow = '';
+              scrollRoot.scrollTop = scrollPositionRef.current;
+            } else {
+              const body = document.body;
+              const html = document.documentElement;
+              body.style.overflow = '';
+              html.style.overflow = '';
+              requestAnimationFrame(() => window.scrollTo(0, scrollPositionRef.current));
+            }
           }
         }
       };
