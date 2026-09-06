@@ -175,7 +175,7 @@ serve(async (req: Request) => {
     let type: 'income' | 'expense' = parsed.direction === 'In' ? 'income' : 'expense';
     if (parsed.direction === 'None' || parsed.type === 'Declined') type = 'expense';
 
-    // Apply rules
+    let matchedRule = false;
     if (rules.length > 0) {
       for (const rule of rules) {
         let matches = false;
@@ -201,6 +201,7 @@ serve(async (req: Request) => {
         if (matches) {
           category = rule.category;
           type = rule.type;
+          matchedRule = true;
           console.log('Applied rule:', rule.id, category);
           break; // Use first matching rule (highest priority)
         }
@@ -292,6 +293,101 @@ serve(async (req: Request) => {
     const insertedData = insertedDataRaw as InsertedTransaction;
 
     console.log('Transaction inserted:', insertedData.id);
+
+    // ===== ASYNCHRONOUS FULL-FIELD AI AUDIT & SELF-AWARENESS NOTE =====
+    // In the background, send the raw SMS + initial extraction to the Bynara/Dahl AI cascade.
+    // The AI audits all fields and updates the inserted transaction with clean names & corrections.
+    if (userId) {
+      const backgroundAiTask = async () => {
+        try {
+          let userSettings: any = undefined;
+          const { data: settingsRow } = await supabaseClient
+            .from('user_app_settings')
+            .select('settings')
+            .eq('user_id', userId)
+            .maybeSingle();
+          if (settingsRow?.settings) {
+            userSettings = settingsRow.settings;
+          }
+
+          const initialData = {
+            entity: finalEntity,
+            amount: finalAmount,
+            bank: finalBank,
+            direction: parsed.direction || 'Out',
+            type: finalTransactionType || 'Unknown',
+            account: finalAccount,
+            category: insertedData.category,
+          };
+
+          const aiResult = await auditSmsWithAi(initialData, message, userSettings);
+
+          if (aiResult) {
+            const updates: Record<string, any> = {};
+
+            // 1. Clean human-readable merchant name
+            if (aiResult.cleanMerchantName && aiResult.cleanMerchantName !== finalEntity) {
+              updates.entity = aiResult.cleanMerchantName;
+              updates.description = aiResult.cleanMerchantName;
+            }
+
+            // 2. Category refinement (respects manual rule if one had matched)
+            if (!matchedRule && aiResult.category && VALID_CATEGORIES.has(aiResult.category) && aiResult.category !== insertedData.category) {
+              updates.category = aiResult.category;
+            }
+
+            // 3. Bank & account refinement
+            if (aiResult.bank && aiResult.bank !== finalBank) {
+              updates.bank = aiResult.bank;
+            }
+            if (aiResult.account && aiResult.account !== finalAccount) {
+              updates.account = aiResult.account;
+            }
+
+            // 4. Direction & cash flow
+            if (aiResult.direction && aiResult.direction !== parsed.direction) {
+              updates.direction = aiResult.direction;
+              updates.cash_flow = aiResult.direction === 'In' ? 'Cash In (+)' : 'Cash Out (-)';
+              updates.type = aiResult.direction === 'In' ? 'income' : 'expense';
+            }
+
+            // 5. Amount correction (safeguarded)
+            if (typeof aiResult.amount === 'number' && aiResult.amount > 0 && Math.abs(aiResult.amount - finalAmount) > 0.01) {
+              updates.amount = aiResult.amount;
+            }
+
+            // Apply DB updates if any field was enhanced
+            if (Object.keys(updates).length > 0) {
+              await supabaseClient
+                .from('transactions')
+                .update(updates)
+                .eq('id', insertedData.id);
+              console.log(`[process-sms] Applied AI enhancements to transaction ${insertedData.id}:`, updates);
+            }
+
+            // If a new category is needed, append to 'LifeOS Self Awareness' note
+            if (aiResult.needsNewCategory && aiResult.idealCategory) {
+              await recordToSelfAwarenessNote(supabaseClient, userId, {
+                id: insertedData.id,
+                amount: updates.amount ?? finalAmount,
+                description: updates.description ?? finalDescription,
+                currentCategory: updates.category ?? insertedData.category,
+                proposedCategory: aiResult.idealCategory,
+                reason: aiResult.reason,
+              });
+            }
+          }
+        } catch (bgErr) {
+          console.error(`[process-sms] Background AI audit error for ${insertedData.id}:`, bgErr);
+        }
+      };
+
+      if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+        EdgeRuntime.waitUntil(backgroundAiTask());
+      } else {
+        backgroundAiTask().catch((e) => console.error('[process-sms] async task error:', e));
+      }
+    }
 
     const budgetWarning = await checkBudget(
       supabaseClient,
@@ -387,6 +483,255 @@ function getDefaultCategory(transactionType: string, entity: string | null): str
   if (/mall|shop|store|متجر|shopping|acceptmerchant|merchant/.test(ent)) return 'shopping';
 
   return 'other_expense';
+}
+
+interface AiModelCandidate {
+  provider: 'bynara' | 'dahl';
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
+interface AiAuditResult {
+  cleanMerchantName?: string;
+  category?: string;
+  idealCategory?: string;
+  needsNewCategory?: boolean;
+  reason?: string;
+  bank?: string;
+  account?: string;
+  direction?: 'In' | 'Out';
+  type?: string;
+  amount?: number;
+}
+
+function cleanAiResponse(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
+function parseAiAudit(text: string): AiAuditResult | null {
+  const cleaned = cleanAiResponse(text);
+  const match = cleaned.match(/\{[\s\S]*?\}/);
+  if (match) {
+    try {
+      const obj = JSON.parse(match[0]);
+      const result: AiAuditResult = {};
+
+      if (typeof obj.clean_merchant_name === 'string' && obj.clean_merchant_name.trim()) {
+        result.cleanMerchantName = obj.clean_merchant_name.trim();
+      }
+      const sel = (obj.category ?? obj.selected_category ?? '').toLowerCase().trim();
+      if (VALID_CATEGORIES.has(sel)) {
+        result.category = sel;
+      }
+      if (typeof obj.ideal_category === 'string' && obj.ideal_category.trim()) {
+        result.idealCategory = obj.ideal_category.trim();
+      }
+      result.needsNewCategory = Boolean(obj.needs_new_category);
+      if (typeof obj.reason === 'string' && obj.reason.trim()) {
+        result.reason = obj.reason.trim();
+      }
+      if (typeof obj.bank === 'string' && obj.bank.trim() && obj.bank.toLowerCase() !== 'unknown') {
+        result.bank = obj.bank.trim();
+      }
+      if (typeof obj.account === 'string' && obj.account.trim()) {
+        result.account = obj.account.trim();
+      }
+      if (obj.direction === 'In' || obj.direction === 'Out') {
+        result.direction = obj.direction;
+      }
+      if (typeof obj.type === 'string' && obj.type.trim()) {
+        result.type = obj.type.trim();
+      }
+      if (typeof obj.amount === 'number' && Number.isFinite(obj.amount) && obj.amount > 0) {
+        result.amount = obj.amount;
+      }
+
+      return result;
+    } catch { /* fallback */ }
+  }
+  return null;
+}
+
+async function auditSmsWithAi(
+  initialData: { entity: string | null; amount: number; bank: string | null; direction: string; type: string; account: string | null; category: string },
+  fullMessage: string,
+  userSettings?: any
+): Promise<AiAuditResult | null> {
+  const dahlApiKey =
+    userSettings?.aiDahlApiKey ||
+    (userSettings?.aiBaseUrl?.includes('dahl.global') ? userSettings?.aiApiKey : '') ||
+    Deno.env.get('DAHL_API_KEY') ||
+    Deno.env.get('VITE_AI_DAHL_API_KEY') ||
+    Deno.env.get('AI_API_KEY') ||
+    'dahl_GtpvJsWDwLRpwBU4mcrutWRbgKVGMXBzu';
+
+  const bynaraApiKey =
+    userSettings?.aiBynaraApiKey ||
+    (userSettings?.aiBaseUrl?.includes('bynara.id') ? userSettings?.aiApiKey : '') ||
+    Deno.env.get('BYNARA_API_KEY') ||
+    Deno.env.get('VITE_AI_BYNARA_API_KEY') ||
+    'sk-nry-hBN1vBJ5OKTy1k_jEyYo6ARokES881vS8XT_2ADzQio';
+
+  const candidates: AiModelCandidate[] = [];
+  if (bynaraApiKey) {
+    candidates.push({ provider: 'bynara', baseUrl: 'https://router.bynara.id/v1', apiKey: bynaraApiKey, model: 'agnes-2.5-flash' });
+    candidates.push({ provider: 'bynara', baseUrl: 'https://router.bynara.id/v1', apiKey: bynaraApiKey, model: 'agnes-2.0-flash' });
+  }
+  if (dahlApiKey) {
+    candidates.push({ provider: 'dahl', baseUrl: 'https://inference.dahl.global/v1', apiKey: dahlApiKey, model: 'MiniMaxAI/MiniMax-M2.7' });
+    candidates.push({ provider: 'dahl', baseUrl: 'https://inference.dahl.global/v1', apiKey: dahlApiKey, model: 'deepseek-ai/DeepSeek-V4-Flash-0731' });
+  }
+  if (bynaraApiKey) {
+    candidates.push({ provider: 'bynara', baseUrl: 'https://router.bynara.id/v1', apiKey: bynaraApiKey, model: 'deepseek-v4-flash' });
+  }
+
+  const existingCategoriesList = Array.from(VALID_CATEGORIES).join(', ');
+  const systemPrompt = `You are an expert banking transaction auditor for LifeOS.
+You receive a raw bank SMS and the initial regex extraction. Your task is to verify and ENHANCE the fields:
+
+1. clean_merchant_name: Human readable entity name without POS codes, merchant IDs, terminal garbage, or bank codes.
+   Example: "TBS Zamalek" instead of "ACCEPTED AT POS 23984 TBS ZAMALEK CAI".
+   Example: "Carrefour Maadi" instead of "PURCHASE FROM CARREFOUR_MAADI_01".
+2. category: Must be one of: ${existingCategoriesList}.
+   - Egyptian context: microbus/uber/careem/metro/benzeen -> transport; koshary/coffee/supermarket/seoudi/talabat -> food; we/vodafone/orange/etisalat/bills -> utilities; pharmacy/doctor -> health; instapay -> ipn.
+3. ideal_category: If this transaction belongs to a distinct domain NOT well-covered by the existing list (e.g. charity/zakat, taxes, crypto, pet_care, legal), propose the ideal category name.
+4. needs_new_category: true if ideal_category is provided, false otherwise.
+5. reason: Brief explanation if needs_new_category is true.
+6. bank: Bank name (e.g. QNB, NBE, HSBC, Orange Cash).
+7. account: Card or account identifier (e.g. ****1473, ****5432).
+8. direction: "In" or "Out".
+9. amount: Numeric transaction amount.
+CRITICAL SAFETY RULE FOR AMOUNT:
+Never confuse the remaining/available balance with the transaction amount. If the initial extraction amount is already correct, keep it.
+
+Return ONLY a JSON object:
+{
+  "clean_merchant_name": "<clean human-readable name>",
+  "category": "<one of ${existingCategoriesList}>",
+  "ideal_category": "<proposed category or null>",
+  "needs_new_category": true/false,
+  "reason": "<reason or null>",
+  "bank": "<bank name>",
+  "account": "<e.g. ****1234 or null>",
+  "direction": "In" | "Out",
+  "amount": <number>
+}`;
+
+  const userPrompt = `Raw SMS:
+${fullMessage}
+
+Initial extraction:
+${JSON.stringify(initialData, null, 2)}`;
+
+  for (const candidate of candidates) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+
+      const endpoint = `${candidate.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${candidate.apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model: candidate.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 300,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) continue;
+
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content || '';
+      const audited = parseAiAudit(content);
+      if (audited) {
+        console.log(`[process-sms] AI audit succeeded via ${candidate.provider} (${candidate.model}):`, audited);
+        return audited;
+      }
+    } catch (err) {
+      console.warn(`[process-sms] Model ${candidate.model} on ${candidate.provider} failed:`, err);
+    }
+  }
+
+  return null;
+}
+
+async function recordToSelfAwarenessNote(
+  supabase: any,
+  userId: string,
+  tx: { id: string; amount: number; description: string; currentCategory: string; proposedCategory: string; reason?: string }
+): Promise<void> {
+  try {
+    const now = new Date();
+    const timeZone = 'Africa/Cairo';
+    let timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      timeStr = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', minute: '2-digit', hour12: true }).format(now);
+    } catch { /* fallback */ }
+
+    const entryText = `### 💡 Proposed Category: \`${tx.proposedCategory}\`
+- **Transaction:** ${tx.description} (${tx.amount} EGP)
+- **Assigned Category (Nearest):** \`${tx.currentCategory}\`
+- **AI Rationale:** ${tx.reason || 'Distinct domain not ideally covered by current categories.'}
+- **Timestamp:** ${now.toISOString().split('T')[0]} at ${timeStr}
+
+---`;
+
+    // 1. Look for existing 'LifeOS Self Awareness' note
+    const { data: existingNotes } = await supabase
+      .from('notes')
+      .select('id, body')
+      .eq('user_id', userId)
+      .ilike('title', 'LifeOS Self Awareness')
+      .limit(1);
+
+    const note = existingNotes?.[0];
+
+    if (note) {
+      const currentBody = (note.body || '').trim();
+      const updatedBody = currentBody ? `${currentBody}\n\n${entryText}` : entryText;
+      await supabase
+        .from('notes')
+        .update({
+          body: updatedBody,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', note.id);
+      console.log(`[process-sms] Appended category proposal to existing 'LifeOS Self Awareness' note (${note.id})`);
+    } else {
+      const initialBody = `# LifeOS Self Awareness
+This is where LifeOS AI communicates observations, system self-awareness, and category proposals.
+
+---
+
+${entryText}`;
+
+      await supabase
+        .from('notes')
+        .insert({
+          user_id: userId,
+          title: 'LifeOS Self Awareness',
+          body: initialBody,
+          tags: ['lifeos_ai', 'self_awareness', 'finance'],
+          is_pinned: true,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      console.log(`[process-sms] Created new 'LifeOS Self Awareness' note for user ${userId}`);
+    }
+  } catch (err) {
+    console.error('[process-sms] Failed to record in LifeOS Self Awareness note:', err);
+  }
 }
 
 async function checkBudget(
