@@ -843,6 +843,12 @@ export async function syncTaskCompletionToLinkedNote(
   }
 }
 
+// Toggling is optimistic (see onMutate below), so by the time mutationFn runs the
+// cache already holds the flipped value. This map lets mutationFn recover the
+// pre-optimistic completion state instead of re-deriving (and double-flipping) it
+// from the already-mutated cache.
+const pendingToggleOriginalCompleted = new Map<string, boolean>();
+
 export function useToggleTask() {
   const queryClient = useQueryClient();
 
@@ -852,7 +858,9 @@ export function useToggleTask() {
         const tasks = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined) ?? [];
         const task = tasks.find((t) => t.id === id);
         if (!task) throw new Error('Task not found');
-        const newCompleted = !task.is_completed;
+        const originalCompleted = pendingToggleOriginalCompleted.get(id) ?? task.is_completed;
+        pendingToggleOriginalCompleted.delete(id);
+        const newCompleted = !originalCompleted;
 
         // Apply points update (will throw error if points insufficient for reward task completion)
         await adjustPointsForTaskToggle(task, newCompleted);
@@ -889,7 +897,9 @@ export function useToggleTask() {
         if (error || !data) throw new Error('Task not found');
         task = data as Task;
       }
-      const newCompleted = !task.is_completed;
+      const originalCompleted = pendingToggleOriginalCompleted.get(id) ?? task.is_completed;
+      pendingToggleOriginalCompleted.delete(id);
+      const newCompleted = !originalCompleted;
 
       // Apply points update (will throw error if points insufficient for reward task completion)
       await adjustPointsForTaskToggle(task, newCompleted);
@@ -982,6 +992,8 @@ export function useToggleTask() {
 
       await queryClient.cancelQueries({ queryKey: TASKS_KEY });
       const previousTasks = queryClient.getQueriesData({ queryKey: TASKS_KEY });
+
+      if (task) pendingToggleOriginalCompleted.set(id, task.is_completed);
 
       queryClient.setQueriesData({ queryKey: TASKS_KEY }, (old: any) => {
         if (!Array.isArray(old)) return old;
