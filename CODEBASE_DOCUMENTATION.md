@@ -4943,23 +4943,31 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-smarttaskscheduler-ts"></a>
 ### src/lib/smartTaskScheduler.ts
 
-**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+**File Purpose:** Utility library module. Provides smart task scheduling algorithms that distribute unscheduled tasks into conflict-free awake time slots based on user sleep patterns, existing tasks, and calendar events.
 
 **Functions & Classes:**
 - `timeToMinutes` (Function)
 - `minutesToTime` (Function)
 - `formatSlotLabel` (Function)
+- `estimateTaskDuration` (Function) — **NEW**
 - `distributeTasksAcrossAwakeSlots` (Function)
 - `SmartTimeSlot` (Interface)
 - `UserScheduleContext` (Interface)
+- `SmartScheduleOptions` (Interface) — **NEW**
 
 **Function Details:**
-- **`timeToMinutes`** — Utility function for time to minutes.
-- **`minutesToTime`** — Utility function for minutes to time.
-- **`formatSlotLabel`** — Utility function for format slot label.
-- **`distributeTasksAcrossAwakeSlots`** — Utility function for distribute tasks across awake slots.
+- **`timeToMinutes`** — Parses `HH:mm` time string to minutes from midnight.
+- **`minutesToTime`** — Converts minutes from midnight back to `HH:mm` string.
+- **`formatSlotLabel`** — Formats a date+time into a friendly label like "Today at 2:30 PM" or "Wed, Sep 10 at 10:00 AM".
+- **`estimateTaskDuration(task)`** — Heuristically estimates realistic task duration in minutes. Checks for explicit duration patterns in title/description (`2h`, `45 mins`, `1.5h`), then applies semantic keyword matching: micro tasks (call/text/reply/email/pay → 15m), deep work (study/code/thesis/design doc → 60m), medium tasks (workout/meeting/doctor → 45m), routine tasks (read/journal/meditate → 25m), default fallback 30m.
+- **`distributeTasksAcrossAwakeSlots(taskCount, context, optionsOrDefaultDuration)`** — Distributes N tasks into conflict-free awake time slots. Avoids sleep hours, existing tasks/events, and enforces a daily task cap (`ceil(taskCount / min(horizonDays, 14))`) to prevent compressing all tasks into 3–4 days. Now accepts `SmartScheduleOptions` as overloaded third argument (also accepts legacy `number` for default duration).
 
-**Lines:** 200
+**SmartScheduleOptions Interface:**
+- `horizonDays?` — Schedule horizon (7 = week, 30 = month). Controls daily cap pacing.
+- `maxTasksPerDay?` — Hard override for daily task cap.
+- `estimatedDurations?` — Array of per-task durations (indexed same as tasks) to use instead of default.
+
+**Lines:** 289
 
 ---
 

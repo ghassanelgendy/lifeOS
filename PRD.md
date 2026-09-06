@@ -126,8 +126,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Weekly Planner: Drag tasks onto specific days of the week
 - Task-to-Habit Conversion: Promote a recurring task to a formal habit
 - Calendar Feed: Export tasks as iCal for external calendar subscription
-- **Smart Unscheduled Tasks Scheduler:** 1-click schedule button that analyzes unscheduled tasks and calculates conflict-free awake time slots across the upcoming week or month, strictly avoiding sleep hours (derived from user sleep metrics) and avoiding clashes with existing tasks and calendar events.
-- **Responsive Task Modal / DetailsSheet:** Seamless platform adaptation rendering as an interactive bottom slide sheet on iOS/mobile with touch dismiss gestures, and as a clean, centered desktop modal dialog (`sm:` breakpoint) on PC web.
+- **Smart Unscheduled Tasks Scheduler:** 1-click schedule button that analyzes unscheduled tasks and calculates conflict-free awake time slots across the upcoming week or month, strictly avoiding sleep hours (derived from user sleep metrics) and avoiding clashes with existing tasks and calendar events. Smart duration estimation parses task titles/descriptions for explicit duration patterns (`2h`, `45m`) and semantic keyword matching (calls/texts → 15m, study/code → 60m, workout/meeting → 45m, journaling → 25m). Tasks are evenly paced across the horizon to prevent 3–4 day compression (daily cap = `ceil(taskCount / horizonDays)`). On apply, `duration_minutes` is persisted per task. The modal shows estimated duration badges on each proposed item and uses a proper Loader2 spinner (instead of rotating Wand2) during apply.
+- **Responsive Task Modal / DetailsSheet:** Seamless platform adaptation rendering as an interactive bottom slide sheet on iOS/mobile with touch dismiss gestures, and as a clean, centered desktop modal dialog (`sm:` breakpoint) on PC web. Background layout jiggle on desktop is fixed by skipping `body/html overflow` toggling (which removes the OS scrollbar) on screens ≥ 640px.
 - iOS Features: Swipe to complete/delete, pull-to-refresh
 
 ### 5.3 Habits Engine
