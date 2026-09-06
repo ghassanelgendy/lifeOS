@@ -28,24 +28,168 @@ const VALID_CATEGORIES = new Set([
   'food', 'transport', 'utilities', 'entertainment', 'health', 'education', 'shopping', 'ipn', 'other_expense',
 ]);
 
+const CATEGORY_LIST = Array.from(VALID_CATEGORIES).join(', ');
+
 function isValidUuid(input: unknown): boolean {
   if (typeof input !== 'string') return false;
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(input);
 }
 
-function normalizeCategory(cat: unknown): string {
-  if (typeof cat !== 'string' || !cat.trim()) return 'other_expense';
-  const lower = cat.trim().toLowerCase();
-  if (VALID_CATEGORIES.has(lower)) return lower;
-  if (/food|grocery|dining|restaurant/.test(lower)) return 'food';
-  if (/transport|taxi|uber|petrol|gas/.test(lower)) return 'transport';
-  if (/utility|bill|fee/.test(lower)) return 'utilities';
-  if (/entertainment|cinema|game/.test(lower)) return 'entertainment';
-  if (/health|pharmacy|hospital|medic/.test(lower)) return 'health';
-  if (/education|school|course|book/.test(lower)) return 'education';
-  if (/shop|mall|store|cloth/.test(lower)) return 'shopping';
-  if (/ipn|transfer/.test(lower)) return 'ipn';
-  return 'other_expense';
+function cleanAiResponse(text: string): string {
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
+function extractCategoryFromAi(text: string): string | null {
+  const cleaned = cleanAiResponse(text);
+  // Try JSON first
+  const match = cleaned.match(/\{[\s\S]*?\}/);
+  if (match) {
+    try {
+      const obj = JSON.parse(match[0]);
+      if (typeof obj.category === 'string' && VALID_CATEGORIES.has(obj.category.toLowerCase().trim())) {
+        return obj.category.toLowerCase().trim();
+      }
+    } catch { /* ignore and try word fallback */ }
+  }
+
+  // Fallback to checking exact word match in text
+  for (const cat of VALID_CATEGORIES) {
+    const wordRegex = new RegExp(`\\b${cat}\\b`, 'i');
+    if (wordRegex.test(cleaned)) {
+      return cat;
+    }
+  }
+  return null;
+}
+
+interface AiModelCandidate {
+  provider: 'bynara' | 'dahl';
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+}
+
+async function classifyCategoryWithAi(
+  description: string,
+  userSettings?: { aiBynaraApiKey?: string; aiDahlApiKey?: string; aiApiKey?: string; aiBaseUrl?: string }
+): Promise<string | null> {
+  // Resolve Dahl & Bynara credentials from userSettings or environment
+  const dahlApiKey =
+    userSettings?.aiDahlApiKey ||
+    (userSettings?.aiBaseUrl?.includes('dahl.global') ? userSettings?.aiApiKey : '') ||
+    Deno.env.get('DAHL_API_KEY') ||
+    Deno.env.get('VITE_AI_DAHL_API_KEY') ||
+    Deno.env.get('AI_API_KEY') ||
+    'dahl_GtpvJsWDwLRpwBU4mcrutWRbgKVGMXBzu';
+
+  const bynaraApiKey =
+    userSettings?.aiBynaraApiKey ||
+    (userSettings?.aiBaseUrl?.includes('bynara.id') ? userSettings?.aiApiKey : '') ||
+    Deno.env.get('BYNARA_API_KEY') ||
+    Deno.env.get('VITE_AI_BYNARA_API_KEY') ||
+    'sk-nry-hBN1vBJ5OKTy1k_jEyYo6ARokES881vS8XT_2ADzQio';
+
+  // Fallback cascade candidates in order of speed and availability:
+  // 1. Bynara fast flash (agnes-2.5-flash)
+  // 2. Bynara Agnes 2.0 (agnes-2.0-flash)
+  // 3. Dahl MiniMax (MiniMaxAI/MiniMax-M2.7)
+  // 4. Dahl DeepSeek (deepseek-ai/DeepSeek-V4-Flash-0731)
+  // 5. Bynara DeepSeek Flash (deepseek-v4-flash)
+  const candidates: AiModelCandidate[] = [];
+
+  if (bynaraApiKey) {
+    candidates.push({
+      provider: 'bynara',
+      baseUrl: 'https://router.bynara.id/v1',
+      apiKey: bynaraApiKey,
+      model: 'agnes-2.5-flash',
+    });
+    candidates.push({
+      provider: 'bynara',
+      baseUrl: 'https://router.bynara.id/v1',
+      apiKey: bynaraApiKey,
+      model: 'agnes-2.0-flash',
+    });
+  }
+
+  if (dahlApiKey) {
+    candidates.push({
+      provider: 'dahl',
+      baseUrl: 'https://inference.dahl.global/v1',
+      apiKey: dahlApiKey,
+      model: 'MiniMaxAI/MiniMax-M2.7',
+    });
+    candidates.push({
+      provider: 'dahl',
+      baseUrl: 'https://inference.dahl.global/v1',
+      apiKey: dahlApiKey,
+      model: 'deepseek-ai/DeepSeek-V4-Flash-0731',
+    });
+  }
+
+  if (bynaraApiKey) {
+    candidates.push({
+      provider: 'bynara',
+      baseUrl: 'https://router.bynara.id/v1',
+      apiKey: bynaraApiKey,
+      model: 'deepseek-v4-flash',
+    });
+  }
+
+  const systemPrompt = `You are an expense category classifier. You must classify the expense into EXACTLY ONE of these categories: ${CATEGORY_LIST}.
+Context & Guidelines:
+- Egyptian & Arabic dialect / Franco terms: "microbus", "mocrobas", "mashrou3", "careem", "uber", "metro", "otobis", "benzeen" are transport. If an expense mentions taking transport to a destination (e.g. "mocrobas le ischool", "uber to doctor"), classify by the mode of transport if it is a ride/fare ("transport").
+- Food & drinks: "koshary", "shawarma", "coffee", "latte", "groceries", "supermarket", "seoudi", "gourmet", "talabat" (food delivery) are "food".
+- Utilities: "we", "vodafone", "orange", "etisalat", "electricity", "water", "gas bill" are "utilities".
+- Shopping: clothes, gadgets, electronics, Amazon, Noon are "shopping".
+- Health: pharmacy, doctor, clinic, medication, hospital are "health".
+- Return ONLY a JSON object: {"category": "<one of ${CATEGORY_LIST}>"}. Do not explain or add extra text.`;
+  const userPrompt = `Expense description: ${description}`;
+
+  // Execute automatic fallback cascade
+  for (const candidate of candidates) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+
+      const endpoint = `${candidate.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${candidate.apiKey.trim()}`,
+        },
+        body: JSON.stringify({
+          model: candidate.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt },
+          ],
+          temperature: 0.1,
+          max_tokens: 150,
+        }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        console.warn(`[quick-expense] Model ${candidate.model} on ${candidate.provider} returned HTTP ${res.status}, cascading to next model...`);
+        continue;
+      }
+
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content || '';
+      const identified = extractCategoryFromAi(content);
+      if (identified) {
+        console.log(`[quick-expense] Successfully categorized as "${identified}" via ${candidate.provider} (${candidate.model})`);
+        return identified;
+      }
+    } catch (err) {
+      console.warn(`[quick-expense] Model ${candidate.model} on ${candidate.provider} failed:`, err);
+    }
+  }
+
+  return null;
 }
 
 function parseAmount(val: unknown): number | null {
@@ -141,7 +285,10 @@ Deno.serve(async (req: Request) => {
 
     if (!userId && userEmail) {
       const { data: userData } = await supabase.auth.admin.listUsers();
-      const found = (userData?.users || []).find((u: any) => u.email?.toLowerCase() === userEmail.toLowerCase());
+      const found = (userData?.users || []).find((u: any) =>
+        u.email?.toLowerCase() === userEmail.toLowerCase() ||
+        (userEmail.length >= 3 && u.email?.toLowerCase().includes(userEmail.toLowerCase()))
+      );
       if (found) userId = found.id;
     }
 
@@ -176,10 +323,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // 3. Category (optional — defaults to "other_expense"; the Shortcut can add a
-    // "Choose from Menu" step later once the category list is finalized).
-    const category = normalizeCategory(body.category ?? body.Category);
-    const description = typeof body.description === 'string' && body.description.trim() ? body.description.trim() : 'Quick expense';
+    const rawDescription = body.description ?? body.note ?? body.what_for ?? body.whatFor;
+    const description = typeof rawDescription === 'string' && rawDescription.trim() ? rawDescription.trim() : 'Quick expense';
 
     const transactionDate = getLocalToday();
 
@@ -200,11 +345,21 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // 3. Category:
+    // If explicitly provided in the request, use it immediately.
+    let initialCategory = 'other_expense';
+    const explicitCategory = body.category ?? body.Category;
+    const hasExplicitCategory = typeof explicitCategory === 'string' && VALID_CATEGORIES.has(explicitCategory.trim().toLowerCase());
+    if (hasExplicitCategory) {
+      initialCategory = explicitCategory.trim().toLowerCase();
+    }
+
+    // 4. Save transaction immediately so the user gets an instant response in iOS Shortcuts (<100ms)
     const { data: inserted, error: insertError } = await supabase
       .from('transactions')
       .insert({
         type: 'expense',
-        category,
+        category: initialCategory,
         amount,
         description,
         date: transactionDate,
@@ -221,10 +376,53 @@ Deno.serve(async (req: Request) => {
 
     if (insertError) throw insertError;
 
+    // 5. If category wasn't explicit and there's a description, classify asynchronously in the background!
+    // EdgeRuntime.waitUntil allows the response to be sent back to iOS immediately while
+    // the AI model runs and updates the transaction category in the background.
+    if (!hasExplicitCategory && description && description !== 'Quick expense') {
+      const backgroundClassification = async () => {
+        try {
+          let userSettings: any = undefined;
+          const { data: settingsRow } = await supabase
+            .from('user_app_settings')
+            .select('settings')
+            .eq('user_id', userId)
+            .maybeSingle();
+          if (settingsRow?.settings) {
+            userSettings = settingsRow.settings;
+          }
+
+          const aiCategory = await classifyCategoryWithAi(description, userSettings);
+          if (aiCategory && VALID_CATEGORIES.has(aiCategory) && aiCategory !== initialCategory) {
+            await supabase
+              .from('transactions')
+              .update({ category: aiCategory })
+              .eq('id', inserted.id);
+            console.log(`[quick-expense] Transaction ${inserted.id} background-updated to "${aiCategory}"`);
+          }
+        } catch (bgErr) {
+          console.error(`[quick-expense] Background AI classification failed for ${inserted.id}:`, bgErr);
+        }
+      };
+
+      if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime.waitUntil) {
+        EdgeRuntime.waitUntil(backgroundClassification());
+      } else {
+        backgroundClassification().catch((e) => console.error('[quick-expense] async task error:', e));
+      }
+    }
+
+    // Immediate ultra-fast response for iOS Shortcut
     return new Response(
       JSON.stringify({
         success: true,
-        transaction: { id: inserted.id, amount: inserted.amount, category: inserted.category, bank: inserted.bank },
+        transaction: {
+          id: inserted.id,
+          amount: inserted.amount,
+          category: inserted.category,
+          bank: inserted.bank,
+          description: inserted.description,
+        },
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
