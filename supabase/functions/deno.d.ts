@@ -18,6 +18,12 @@ declare namespace Deno {
   function serve(handler: (req: Request) => Response | Promise<Response>): void;
 }
 
+/** Global provided by the Supabase/Deno Deploy edge runtime: keeps a promise running after
+ * the response has already been sent, for background work triggered by a request. */
+declare const EdgeRuntime: {
+  waitUntil(promise: Promise<unknown>): void;
+};
+
 interface SupabaseQueryBuilder<T = any> {
   select(columns?: string): this;
   eq(column: string, value: unknown): this;

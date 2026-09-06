@@ -56,6 +56,14 @@ const BYNARA_BASE_URL = 'https://router.bynara.id/v1';
 const DAHL_MODELS = ['MiniMaxAI/MiniMax-M2.7', 'moonshotai/Kimi-K2.6', 'deepseek-ai/DeepSeek-V4-Flash-0731'];
 const BYNARA_MODELS = ['agnes-2.5-flash', 'mistral-large', 'deepseek-v4-pro'];
 
+// cron-job.org (and most cron dispatchers) give up waiting on the HTTP response well before
+// a batch of AI calls can finish — each candidate attempt alone gets a 35s timeout, and a
+// note can fall through several candidates. So this only ever processes a bounded slice of
+// notes per invocation, synchronously enough to respond inside that window; anything left
+// over waits for the next scheduled run instead of piling more work onto a request that's
+// already about to time out.
+const MAX_NOTES_PER_RUN = 3;
+
 /** Expands one resolved (baseUrl, apiKey) pair into one candidate per model in that
  * provider's priority list, so a single dead/renamed model doesn't sink an otherwise-valid key. */
 function expandCandidates(baseUrl: string, apiKey: string, models: string[]): CandidateConfig[] {
@@ -209,9 +217,65 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[BrainDump Organizer] Found ${rawNotes?.length || 0} candidate notes to process`);
 
-    const processedResults: any[] = [];
+    const allCandidateNotes = rawNotes || [];
+    if (allCandidateNotes.length === 0) {
+      return new Response(
+        JSON.stringify({ success: true, processed_count: 0, results: [] }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-    for (const rawDump of rawNotes || []) {
+    // Only a bounded slice is actually attempted this invocation (see MAX_NOTES_PER_RUN)
+    // — the rest wait for the next scheduled run rather than risk this one running long.
+    const batch = forcedNoteId ? allCandidateNotes : allCandidateNotes.slice(0, MAX_NOTES_PER_RUN);
+    const deferredCount = allCandidateNotes.length - batch.length;
+
+    // Respond to the caller (cron-job.org et al) immediately, then keep working via
+    // EdgeRuntime.waitUntil() — AI calls can each take up to 35s and a note may fall through
+    // several candidates, which blows past any cron dispatcher's HTTP wait (cron-job.org
+    // caps at 30s). The caller only needed confirmation the run was picked up; the actual
+    // per-note results are only in the function logs from here on.
+    EdgeRuntime.waitUntil(
+      processNoteBatch(batch, optedInUserSettings, todayStr, force, forcedNoteId)
+        .then((results) => {
+          console.log(`[BrainDump Organizer] Background batch complete:`, JSON.stringify(results));
+        })
+        .catch((err) => {
+          console.error('[BrainDump Organizer] Background batch failed:', err);
+        })
+    );
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        accepted: true,
+        queued_count: batch.length,
+        deferred_count: deferredCount,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (globalErr: any) {
+    console.error('[BrainDump Organizer] Global error:', globalErr);
+    return new Response(
+      JSON.stringify({ error: 'Internal server error' }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
+  }
+});
+
+async function processNoteBatch(
+  notes: any[],
+  optedInUserSettings: Map<string, any>,
+  todayStr: string,
+  force: boolean,
+  forcedNoteId: string | undefined
+): Promise<any[]> {
+  const processedResults: any[] = [];
+
+  for (const rawDump of notes) {
       if (!force && !forcedNoteId) {
         const processedAt = rawDump.ai_analysis?.processed_at;
         if (processedAt && new Date(rawDump.updated_at) <= new Date(processedAt)) {
@@ -402,30 +466,11 @@ Return ONLY valid JSON in this format:
           status: 'success',
           summary: parsed.summary,
         });
-      } catch (err: any) {
-        console.error(`[BrainDump Organizer] Error analyzing note ${rawDump.id}:`, err);
-        processedResults.push({ id: rawDump.id, title: rawDump.title, status: 'error', error: String(err) });
-      }
+    } catch (err: any) {
+      console.error(`[BrainDump Organizer] Error analyzing note ${rawDump.id}:`, err);
+      processedResults.push({ id: rawDump.id, title: rawDump.title, status: 'error', error: String(err) });
     }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        processed_count: processedResults.length,
-        results: processedResults,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
-  } catch (globalErr: any) {
-    console.error('[BrainDump Organizer] Global error:', globalErr);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
   }
-});
+
+  return processedResults;
+}
