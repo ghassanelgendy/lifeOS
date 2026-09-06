@@ -137,9 +137,18 @@ async function classifyCategoryWithAi(
   }
 
   const systemPrompt = `You are an expense category classifier. You must classify the expense into EXACTLY ONE of these categories: ${CATEGORY_LIST}.
-Context & Guidelines:
-- Egyptian & Arabic dialect / Franco terms: "microbus", "mocrobas", "mashrou3", "careem", "uber", "metro", "otobis", "benzeen" are transport. If an expense mentions taking transport to a destination (e.g. "mocrobas le ischool", "uber to doctor"), classify by the mode of transport if it is a ride/fare ("transport").
-- Food & drinks: "koshary", "shawarma", "coffee", "latte", "groceries", "supermarket", "seoudi", "gourmet", "talabat" (food delivery) are "food".
+
+Reason about what the expense actually IS, using general world knowledge — the examples below are
+illustrative, not an exhaustive list to pattern-match against. Understand Egyptian Arabic and
+Franco-Arabic dialect by MEANING, not just literal spelling:
+- "mwaslat"/"مواصلات" is the generic Arabic word for "transportation" itself — classify as "transport"
+  even when no specific vehicle/app name is mentioned alongside it.
+- Any ride-hailing/mobility app or transport mode (uber, careem, didi, indrive, bolt, swvl, microbus,
+  mocrobas, mashrou3, metro, otobis, taxi, benzeen/fuel) is "transport". If the expense describes taking
+  transport to a destination (e.g. "mocrobas le ischool", "didi to doctor", "mwaslat le nadi"),
+  classify by the fact that it's a ride/fare, not by the destination.
+- Food & drinks: "koshary", "shawarma", "coffee", "latte", "groceries", "supermarket", "seoudi",
+  "gourmet", "talabat" (food delivery) are "food".
 - Utilities: "we", "vodafone", "orange", "etisalat", "electricity", "water", "gas bill" are "utilities".
 - Shopping: clothes, gadgets, electronics, Amazon, Noon are "shopping".
 - Health: pharmacy, doctor, clinic, medication, hospital are "health".
@@ -148,48 +157,107 @@ Context & Guidelines:
 
   // Execute automatic fallback cascade
   for (const candidate of candidates) {
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 6000);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
 
-      const endpoint = `${candidate.baseUrl.replace(/\/+$/, '')}/chat/completions`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${candidate.apiKey.trim()}`,
-        },
-        body: JSON.stringify({
-          model: candidate.model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt },
-          ],
-          temperature: 0.1,
-          max_tokens: 150,
-        }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeout);
+        const endpoint = `${candidate.baseUrl.replace(/\/+$/, '')}/chat/completions`;
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${candidate.apiKey.trim()}`,
+          },
+          body: JSON.stringify({
+            model: candidate.model,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: userPrompt },
+            ],
+            temperature: 0.1,
+            max_tokens: 150,
+          }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
 
-      if (!res.ok) {
-        console.warn(`[quick-expense] Model ${candidate.model} on ${candidate.provider} returned HTTP ${res.status}, cascading to next model...`);
-        continue;
+        if (!res.ok) {
+          console.warn(`[quick-expense] Model ${candidate.model} on ${candidate.provider} returned HTTP ${res.status}, cascading to next model...`);
+          break; // non-transient HTTP error, don't retry this candidate
+        }
+
+        const data = await res.json();
+        const content = data?.choices?.[0]?.message?.content || '';
+        const identified = extractCategoryFromAi(content);
+        if (identified) {
+          console.log(`[quick-expense] Successfully categorized as "${identified}" via ${candidate.provider} (${candidate.model})`);
+          return identified;
+        }
+        break; // parsed but no valid category - not worth retrying this candidate
+      } catch (err) {
+        console.warn(`[quick-expense] Model ${candidate.model} on ${candidate.provider} attempt ${attempt + 1} failed:`, err);
       }
-
-      const data = await res.json();
-      const content = data?.choices?.[0]?.message?.content || '';
-      const identified = extractCategoryFromAi(content);
-      if (identified) {
-        console.log(`[quick-expense] Successfully categorized as "${identified}" via ${candidate.provider} (${candidate.model})`);
-        return identified;
-      }
-    } catch (err) {
-      console.warn(`[quick-expense] Model ${candidate.model} on ${candidate.provider} failed:`, err);
     }
   }
 
   return null;
+}
+
+/** All AI candidates failed for a quick-expense categorization — surface it in-app instead of
+ *  leaving it silent in edge function logs no one reads. */
+async function recordAiFailureNote(
+  userId: string,
+  tx: { description: string; amount: number; category: string }
+): Promise<void> {
+  try {
+    const now = new Date();
+    const timeZone = 'Africa/Cairo';
+    let timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    try {
+      timeStr = new Intl.DateTimeFormat('en-US', { timeZone, hour: '2-digit', minute: '2-digit', hour12: true }).format(now);
+    } catch { /* fallback */ }
+
+    const entryText = `### ⚠️ AI Categorization Failed (quick-expense)
+- **Transaction:** ${tx.description} (${tx.amount} EGP)
+- **Left As:** \`${tx.category}\`
+- **Reason:** All AI model candidates timed out or errored — review and recategorize manually if wrong.
+- **Timestamp:** ${now.toISOString().split('T')[0]} at ${timeStr}
+
+---`;
+
+    const { data: existingNotes } = await supabase
+      .from('notes')
+      .select('id, body')
+      .eq('user_id', userId)
+      .ilike('title', 'LifeOS Self Awareness')
+      .limit(1);
+
+    const note = existingNotes?.[0];
+    if (note) {
+      const currentBody = (note.body || '').trim();
+      const updatedBody = currentBody ? `${currentBody}\n\n${entryText}` : entryText;
+      await supabase.from('notes').update({ body: updatedBody, updated_at: new Date().toISOString() }).eq('id', note.id);
+    } else {
+      const initialBody = `# LifeOS Self Awareness
+This is where LifeOS AI communicates observations, system self-awareness, and category proposals.
+
+---
+
+${entryText}`;
+      await supabase.from('notes').insert({
+        user_id: userId,
+        title: 'LifeOS Self Awareness',
+        body: initialBody,
+        tags: ['lifeos_ai', 'self_awareness', 'finance'],
+        is_pinned: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.error('[quick-expense] Failed to record AI failure note:', err);
+  }
 }
 
 function parseAmount(val: unknown): number | null {
@@ -354,6 +422,28 @@ Deno.serve(async (req: Request) => {
       initialCategory = explicitCategory.trim().toLowerCase();
     }
 
+    // 3b. Otherwise, check learned rules (created from past manual category corrections) before
+    // falling back to AI — an instant, deterministic match for merchants/phrases seen before.
+    let matchedLearnedRule = false;
+    if (!hasExplicitCategory && description && description !== 'Quick expense') {
+      const { data: rulesData } = await supabase
+        .from('transaction_rules')
+        .select('entity_pattern, category, priority')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('priority', { ascending: false });
+      for (const rule of (rulesData ?? []) as { entity_pattern?: string; category: string }[]) {
+        if (!rule.entity_pattern) continue;
+        try {
+          if (new RegExp(rule.entity_pattern, 'i').test(description) && VALID_CATEGORIES.has(rule.category)) {
+            initialCategory = rule.category;
+            matchedLearnedRule = true;
+            break;
+          }
+        } catch { /* malformed pattern, skip */ }
+      }
+    }
+
     // 4. Save transaction immediately so the user gets an instant response in iOS Shortcuts (<100ms)
     const { data: inserted, error: insertError } = await supabase
       .from('transactions')
@@ -379,7 +469,7 @@ Deno.serve(async (req: Request) => {
     // 5. If category wasn't explicit and there's a description, classify asynchronously in the background!
     // EdgeRuntime.waitUntil allows the response to be sent back to iOS immediately while
     // the AI model runs and updates the transaction category in the background.
-    if (!hasExplicitCategory && description && description !== 'Quick expense') {
+    if (!hasExplicitCategory && !matchedLearnedRule && description && description !== 'Quick expense') {
       const backgroundClassification = async () => {
         try {
           let userSettings: any = undefined;
@@ -399,6 +489,8 @@ Deno.serve(async (req: Request) => {
               .update({ category: aiCategory })
               .eq('id', inserted.id);
             console.log(`[quick-expense] Transaction ${inserted.id} background-updated to "${aiCategory}"`);
+          } else if (!aiCategory) {
+            await recordAiFailureNote(userId, { description, amount, category: initialCategory });
           }
         } catch (bgErr) {
           console.error(`[quick-expense] Background AI classification failed for ${inserted.id}:`, bgErr);
