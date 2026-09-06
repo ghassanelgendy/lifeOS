@@ -47,6 +47,21 @@ interface CandidateConfig {
   model: string;
 }
 
+const DAHL_BASE_URL = 'https://inference.dahl.global/v1';
+const BYNARA_BASE_URL = 'https://router.bynara.id/v1';
+
+// Mirrors the priority-ordered model lists in src/lib/aiFallback.ts's AI_PROVIDERS catalog
+// (top few per provider only, to keep worst-case latency bounded — this cron job processes
+// many notes per run and each attempt gets its own 35s timeout).
+const DAHL_MODELS = ['MiniMaxAI/MiniMax-M2.7', 'moonshotai/Kimi-K2.6', 'deepseek-ai/DeepSeek-V4-Flash-0731'];
+const BYNARA_MODELS = ['agnes-2.5-flash', 'mistral-large', 'deepseek-v4-pro'];
+
+/** Expands one resolved (baseUrl, apiKey) pair into one candidate per model in that
+ * provider's priority list, so a single dead/renamed model doesn't sink an otherwise-valid key. */
+function expandCandidates(baseUrl: string, apiKey: string, models: string[]): CandidateConfig[] {
+  return models.map((model) => ({ baseUrl, apiKey, model }));
+}
+
 async function callChatCompletion(candidates: CandidateConfig[], systemPrompt: string, userPrompt: string): Promise<any> {
   let lastError: any = null;
 
@@ -180,9 +195,10 @@ Deno.serve(async (req: Request) => {
       notesQuery = notesQuery.eq('id', forcedNoteId);
     } else {
       notesQuery = notesQuery.lt('note_date', todayStr);
-      if (!force) {
-        notesQuery = notesQuery.is('ai_analysis', null);
-      }
+      // Not filtering by `ai_analysis is null` here on purpose: a note previously stamped
+      // {empty:true} (or successfully organized) but edited afterward must still be picked
+      // up. The already-processed-and-unedited case is instead filtered in JS below by
+      // comparing updated_at against ai_analysis.processed_at.
     }
 
     const { data: rawNotes, error: notesError } = await notesQuery.order('created_at', { ascending: false });
@@ -196,16 +212,26 @@ Deno.serve(async (req: Request) => {
     const processedResults: any[] = [];
 
     for (const rawDump of rawNotes || []) {
+      if (!force && !forcedNoteId) {
+        const processedAt = rawDump.ai_analysis?.processed_at;
+        if (processedAt && new Date(rawDump.updated_at) <= new Date(processedAt)) {
+          // Already processed (organized or stamped empty) and not touched since — skip.
+          continue;
+        }
+      }
+
       const cleanBody = (rawDump.body || '')
         .replace(/\*\*🕒[^\n]+\*\*/g, '')
         .replace(/New Day Started\. Capture your thoughts\.\.\./g, '')
         .trim();
 
       if (!cleanBody || cleanBody.length < 5) {
-        // Mark as empty / processed to avoid repeatedly scanning empty template notes
+        // Mark as empty / processed to avoid repeatedly scanning empty template notes. Share
+        // one timestamp with updated_at (see the success path below for why).
+        const emptyProcessedAtIso = new Date().toISOString();
         await supabase
           .from('notes')
-          .update({ ai_analysis: { empty: true, processed_at: new Date().toISOString() } })
+          .update({ ai_analysis: { empty: true, processed_at: emptyProcessedAtIso }, updated_at: emptyProcessedAtIso })
           .eq('id', rawDump.id);
 
         processedResults.push({ id: rawDump.id, title: rawDump.title, status: 'skipped_empty' });
@@ -223,25 +249,38 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Build AI candidates
-      const candidates: CandidateConfig[] = [];
-      const primaryApiKey = userSettings.aiApiKey || userSettings.aiDahlApiKey;
-      const primaryBaseUrl = userSettings.aiBaseUrl || 'https://inference.dahl.global/v1';
-      const primaryModel = userSettings.aiActiveModel || userSettings.aiModel || 'MiniMaxAI/MiniMax-M2.7';
+      // Build AI candidates. If the user picked an explicit custom model/base URL, honor it
+      // first (respecting their choice), then cascade through every other configured key
+      // across each provider's own priority-ordered model list — mirroring the client's
+      // getFallbackCandidates() in src/lib/aiFallback.ts instead of trying one hardcoded
+      // model per key and giving up.
+      let candidates: CandidateConfig[] = [];
 
-      if (primaryApiKey) {
-        candidates.push({ baseUrl: primaryBaseUrl, apiKey: primaryApiKey, model: primaryModel });
+      if (userSettings.aiApiKey && userSettings.aiBaseUrl && userSettings.aiActiveModel) {
+        candidates.push({ baseUrl: userSettings.aiBaseUrl, apiKey: userSettings.aiApiKey, model: userSettings.aiActiveModel });
       }
-      if (userSettings.aiDahlApiKey && userSettings.aiDahlApiKey !== primaryApiKey) {
-        candidates.push({ baseUrl: 'https://inference.dahl.global/v1', apiKey: userSettings.aiDahlApiKey, model: 'MiniMaxAI/MiniMax-M2.7' });
+      if (userSettings.aiDahlApiKey) {
+        candidates = candidates.concat(expandCandidates(DAHL_BASE_URL, userSettings.aiDahlApiKey, DAHL_MODELS));
       }
       if (userSettings.aiBynaraApiKey) {
-        candidates.push({ baseUrl: 'https://inference.dahl.global/v1', apiKey: userSettings.aiBynaraApiKey, model: 'MiniMaxAI/MiniMax-M2.7' });
+        candidates = candidates.concat(expandCandidates(BYNARA_BASE_URL, userSettings.aiBynaraApiKey, BYNARA_MODELS));
       }
-      // Environment fallbacks
+      // A generic aiApiKey with no explicit provider info attached is treated as a Dahl key
+      // (matching resolvedDahlKey's fallback order in aiFallback.ts), tried after the
+      // user's explicitly-labeled provider keys above.
+      if (userSettings.aiApiKey && !(userSettings.aiBaseUrl && userSettings.aiActiveModel)) {
+        candidates = candidates.concat(expandCandidates(DAHL_BASE_URL, userSettings.aiApiKey, DAHL_MODELS));
+      }
+
+      // Environment fallbacks (Supabase Edge Function secrets — set via `supabase secrets
+      // set`, NOT the frontend's VITE_-prefixed .env vars, which never reach this runtime).
       const envDahl = Deno.env.get('DAHL_API_KEY');
       if (envDahl) {
-        candidates.push({ baseUrl: 'https://inference.dahl.global/v1', apiKey: envDahl, model: 'MiniMaxAI/MiniMax-M2.7' });
+        candidates = candidates.concat(expandCandidates(DAHL_BASE_URL, envDahl, DAHL_MODELS));
+      }
+      const envBynara = Deno.env.get('BYNARA_API_KEY');
+      if (envBynara) {
+        candidates = candidates.concat(expandCandidates(BYNARA_BASE_URL, envBynara, BYNARA_MODELS));
       }
       const envOpenAI = Deno.env.get('OPENAI_API_KEY');
       if (envOpenAI) {
@@ -324,16 +363,21 @@ Return ONLY valid JSON in this format:
             organizedTitle = `${parseInt(parts[2], 10)}/${parseInt(parts[1], 10)}`;
           }
         }
+        // Share one timestamp between updated_at and ai_analysis.processed_at — if updated_at
+        // ended up even 1ms later than processed_at, the next cron run's "edited since last
+        // processed" check (updated_at <= processed_at) would treat this note as freshly
+        // edited and reprocess it every single run.
+        const processedAtIso = new Date().toISOString();
         const { error: updateError } = await supabase
           .from('notes')
           .update({
             title: organizedTitle,
             body: unifiedBody,
-            ai_analysis: parsed,
+            ai_analysis: { ...parsed, processed_at: processedAtIso },
             folder_id: orgFolderId,
             user_id: noteUserId,
             is_brain_dump: true,
-            updated_at: new Date().toISOString(),
+            updated_at: processedAtIso,
           })
           .eq('id', rawDump.id);
 
