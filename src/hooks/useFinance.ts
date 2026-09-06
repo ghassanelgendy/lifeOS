@@ -165,6 +165,41 @@ export function useCreateTransaction() {
   });
 }
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** When a user manually recategorizes a transaction, remember it: upsert a transaction_rule
+ * keyed on the merchant/entity so future SMS/cash transactions from the same merchant are
+ * categorized correctly without waiting on (or ever needing) an AI call. Fire-and-forget —
+ * never blocks or fails the actual transaction update. */
+async function learnCategoryFromCorrection(
+  userId: string,
+  prev: Transaction | undefined,
+  data: UpdateInput<Transaction>
+): Promise<void> {
+  if (!prev || !data.category || data.category === prev.category) return;
+  const key = (prev.entity || prev.description || '').trim();
+  if (!key) return;
+  try {
+    await supabase.from('transaction_rules').upsert(
+      {
+        user_id: userId,
+        entity_pattern: `^${escapeRegExp(key)}$`,
+        category: data.category,
+        type: data.type ?? prev.type,
+        priority: 100,
+        is_active: true,
+        notes: 'Learned from a manual correction',
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id,entity_pattern' }
+    );
+  } catch (err) {
+    console.warn('[useUpdateTransaction] Failed to learn rule from correction:', err);
+  }
+}
+
 export function useUpdateTransaction() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -172,12 +207,14 @@ export function useUpdateTransaction() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Transaction> }) => {
+      const prev = (queryClient.getQueryData(key) as Transaction[] | undefined)?.find((t) => t.id === id);
+      if (user?.id) void learnCategoryFromCorrection(user.id, prev, data);
+
       if (!isOnline()) {
         addToOfflineQueue({ entity: 'transactions', op: 'update', id, payload: data as Record<string, unknown> });
         queryClient.setQueryData(key, (old: Transaction[] | undefined) =>
           (old ?? []).map((t) => (t.id === id ? { ...t, ...data } : t))
         );
-        const prev = (queryClient.getQueryData(key) as Transaction[] | undefined)?.find((t) => t.id === id);
         return { ...prev, ...data, id } as Transaction;
       }
       const upd = supabase.from('transactions').update(data).eq('id', id);
