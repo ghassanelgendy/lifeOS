@@ -248,6 +248,7 @@ export async function askAI(
     aiModel,
     aiBynaraApiKey,
     aiDahlApiKey,
+    aiGroqApiKey,
     aiFallbackEnabled = true,
   } = store;
 
@@ -263,6 +264,7 @@ export async function askAI(
     customApiKey: aiApiKey,
     dahlApiKey: aiDahlApiKey,
     bynaraApiKey: aiBynaraApiKey,
+    groqApiKey: aiGroqApiKey,
     fallbackEnabled: aiFallbackEnabled,
   });
 
@@ -412,19 +414,21 @@ export async function testAllCatalogModels(
   options: {
     dahlApiKey?: string;
     bynaraApiKey?: string;
+    groqApiKey?: string;
     onProgress?: (modelId: string, current: number, total: number, result: any) => void;
   } = {}
 ) {
   const dahlKey = (options.dahlApiKey || '').trim() || AI_PROVIDERS.dahl.defaultApiKey;
   const bynaraKey = (options.bynaraApiKey || '').trim() || AI_PROVIDERS.bynara.defaultApiKey;
+  const groqKey = (options.groqApiKey || '').trim() || AI_PROVIDERS.groq.defaultApiKey;
 
   const results: Record<string, { ok: boolean; status: number; latencyMs: number; error?: string }> = {};
   const total = ALL_MODELS.length;
 
   for (let i = 0; i < total; i++) {
     const m = ALL_MODELS[i];
-    const key = m.provider === 'dahl' ? dahlKey : bynaraKey;
-    const url = m.provider === 'dahl' ? AI_PROVIDERS.dahl.baseUrl : AI_PROVIDERS.bynara.baseUrl;
+    const key = m.provider === 'dahl' ? dahlKey : m.provider === 'groq' ? groqKey : bynaraKey;
+    const url = m.provider === 'dahl' ? AI_PROVIDERS.dahl.baseUrl : m.provider === 'groq' ? AI_PROVIDERS.groq.baseUrl : AI_PROVIDERS.bynara.baseUrl;
 
     const res = await testSingleModel(m.id, m.provider, key, url);
     results[m.id] = res;

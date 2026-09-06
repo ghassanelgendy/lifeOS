@@ -237,6 +237,12 @@ On mobile, task lists shall support pull-to-refresh gesture.
 #### FR-TASK-018: Weekly Planner
 The system shall provide a week planner view where users can assign tasks to specific days.
 
+#### FR-TASK-019: Smart Unscheduled Task Scheduler
+The system shall provide a 1-click smart scheduling mechanism that evaluates all unscheduled tasks and calculates conflict-free awake time slots across the upcoming week or month, avoiding sleep intervals (derived from sleep tracking metrics) and avoiding overlaps with existing scheduled tasks and calendar events with a 15-minute buffer.
+
+#### FR-TASK-020: Platform Responsive Task Modal (DetailsSheet)
+The system shall render task creation/editing detail sheets as a bottom slide sheet on mobile and iOS devices with gesture dismissal, and dynamically render as a centered, focused desktop dialog modal on PC web screens (`sm:` viewport breakpoint).
+
 ---
 
 ### 3.4 Habit Tracking

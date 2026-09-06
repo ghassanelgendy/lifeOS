@@ -23,7 +23,9 @@ function isAllowedAiHost(hostname: string): boolean {
   return hostname === 'inference.dahl.global' ||
     hostname === 'dahl.global' ||
     hostname === 'bynara.id' ||
-    hostname.endsWith('.bynara.id');
+    hostname.endsWith('.bynara.id') ||
+    hostname === 'api.groq.com' ||
+    hostname.endsWith('.groq.com');
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -32,7 +34,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const configuredBaseUrl = (process.env.AI_BASE_URL || DEFAULT_AI_BASE_URL).trim();
+  const requestedBaseUrl = typeof req.headers['x-ai-base-url'] === 'string' ? req.headers['x-ai-base-url'].trim() : '';
+  const configuredBaseUrl = requestedBaseUrl || (process.env.AI_BASE_URL || DEFAULT_AI_BASE_URL).trim();
   const normalizedBaseUrl = normalizeAiBaseUrl(configuredBaseUrl);
   if (!normalizedBaseUrl) {
     return res.status(500).json({ error: 'AI proxy is misconfigured' });
@@ -63,6 +66,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         process.env.VITE_DAHL_KEY ||
         process.env.DAHL_KEY ||
         process.env.DAHL_API_KEY ||
+        '';
+    } else if (normalizedHost === 'api.groq.com' || normalizedHost.endsWith('.groq.com')) {
+      apiKey =
+        process.env.AI_GROQ_API_KEY ||
+        process.env.VITE_AI_GROQ_API_KEY ||
+        process.env.VITE_GROQ_API_KEY ||
+        process.env.VITE_GROQ_KEY ||
+        process.env.GROQ_API_KEY ||
         '';
     } else {
       apiKey = process.env.AI_API_KEY || process.env.VITE_AI_API_KEY || '';

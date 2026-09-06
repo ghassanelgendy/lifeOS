@@ -216,6 +216,7 @@ interface UIState {
   aiModel: string;
   aiBynaraApiKey: string;
   aiDahlApiKey: string;
+  aiGroqApiKey: string;
   aiFallbackEnabled: boolean;
   aiActiveModel: string;
   /** Opt-in (default off) for the server-side cron job that auto-organizes Brain Dump notes with AI. */
@@ -226,6 +227,7 @@ interface UIState {
   setAiModel: (model: string) => void;
   setAiBynaraApiKey: (key: string) => void;
   setAiDahlApiKey: (key: string) => void;
+  setAiGroqApiKey: (key: string) => void;
   setAiFallbackEnabled: (enabled: boolean) => void;
   setAiActiveModel: (model: string) => void;
   setBrainDumpAutoOrganizeEnabled: (enabled: boolean) => void;
@@ -288,6 +290,7 @@ export type PersistedUiSlice = {
   aiModel: string;
   aiBynaraApiKey: string;
   aiDahlApiKey: string;
+  aiGroqApiKey: string;
   aiFallbackEnabled: boolean;
   aiActiveModel: string;
   brainDumpAutoOrganizeEnabled: boolean;
@@ -479,6 +482,9 @@ export const useUIStore = create<UIState>()(
         import.meta.env.VITE_AI_API_KEY ||
         import.meta.env.VITE_AI_DAHL_API_KEY ||
         import.meta.env.VITE_AI_BYNARA_API_KEY ||
+        import.meta.env.VITE_AI_GROQ_API_KEY ||
+        import.meta.env.VITE_GROQ_API_KEY ||
+        import.meta.env.VITE_GROQ_KEY ||
         import.meta.env.VITE_DAHL_KEY ||
         import.meta.env.VITE_BYNARA_KEY
       ),
@@ -487,6 +493,7 @@ export const useUIStore = create<UIState>()(
       aiModel: import.meta.env.VITE_AI_MODEL || 'auto',
       aiBynaraApiKey: import.meta.env.VITE_AI_BYNARA_API_KEY || import.meta.env.VITE_BYNARA_KEY || '',
       aiDahlApiKey: import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_DAHL_KEY || '',
+      aiGroqApiKey: import.meta.env.VITE_AI_GROQ_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GROQ_KEY || '',
       aiFallbackEnabled: true,
       aiActiveModel: 'deepseek-v4-flash',
       // Off by default — this drives a server-side cron job that sends the user's own
@@ -498,6 +505,7 @@ export const useUIStore = create<UIState>()(
       setAiModel: (aiModel) => set({ aiModel }),
       setAiBynaraApiKey: (aiBynaraApiKey) => set({ aiBynaraApiKey }),
       setAiDahlApiKey: (aiDahlApiKey) => set({ aiDahlApiKey }),
+      setAiGroqApiKey: (aiGroqApiKey) => set({ aiGroqApiKey }),
       setAiFallbackEnabled: (aiFallbackEnabled) => set({ aiFallbackEnabled }),
       setAiActiveModel: (aiActiveModel) => set({ aiActiveModel }),
       setBrainDumpAutoOrganizeEnabled: (brainDumpAutoOrganizeEnabled) => set({ brainDumpAutoOrganizeEnabled }),
@@ -643,6 +651,7 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     aiModel: state.aiModel,
     aiBynaraApiKey: state.aiBynaraApiKey,
     aiDahlApiKey: state.aiDahlApiKey,
+    aiGroqApiKey: state.aiGroqApiKey,
     aiFallbackEnabled: state.aiFallbackEnabled,
     aiActiveModel: state.aiActiveModel,
     brainDumpAutoOrganizeEnabled: state.brainDumpAutoOrganizeEnabled,

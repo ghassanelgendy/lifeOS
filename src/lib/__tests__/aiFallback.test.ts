@@ -8,14 +8,16 @@ describe('AI Fallback & Smart Health Routing Engine', () => {
     resetModelHealth();
   });
 
-  it('should initialize with full catalog across Dahl and Bynara providers', () => {
-    expect(ALL_MODELS.length).toBe(23);
+  it('should initialize with full catalog across Dahl, Groq, and Bynara providers', () => {
+    expect(ALL_MODELS.length).toBe(25);
     expect(AI_PROVIDERS.dahl.models.length).toBe(3);
-    expect(AI_PROVIDERS.bynara.models.length).toBe(20);
+    expect(AI_PROVIDERS.groq.models.length).toBe(3);
+    expect(AI_PROVIDERS.bynara.models.length).toBe(19);
 
     expect(getProviderForModel('MiniMaxAI/MiniMax-M2.7')).toBe('dahl');
     expect(getProviderForModel('moonshotai/Kimi-K2.6')).toBe('dahl');
-    expect(getProviderForModel('deepseek-ai/DeepSeek-V4-Flash-0731')).toBe('dahl');
+    expect(getProviderForModel('llama-3.3-70b-versatile')).toBe('groq');
+    expect(getProviderForModel('llama-3.1-8b-instant')).toBe('groq');
     expect(getProviderForModel('agnes-2.5-flash')).toBe('bynara');
     expect(getProviderForModel('mistral-large')).toBe('bynara');
     expect(getProviderForModel('gpt-5.4')).toBe('bynara');
@@ -25,11 +27,12 @@ describe('AI Fallback & Smart Health Routing Engine', () => {
     const candidates = getFallbackCandidates({
       selectedModel: 'auto',
       dahlApiKey: 'dahl_test_key',
+      groqApiKey: 'groq_test_key',
       bynaraApiKey: 'bynara_test_key',
       fallbackEnabled: true,
     });
 
-    expect(candidates.length).toBe(23);
+    expect(candidates.length).toBe(25);
     expect(candidates[0].model).toBeDefined();
     expect(candidates[0].apiKey).toBeDefined();
     expect(candidates[0].baseUrl).toBeDefined();

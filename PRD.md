@@ -126,6 +126,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Weekly Planner: Drag tasks onto specific days of the week
 - Task-to-Habit Conversion: Promote a recurring task to a formal habit
 - Calendar Feed: Export tasks as iCal for external calendar subscription
+- **Smart Unscheduled Tasks Scheduler:** 1-click schedule button that analyzes unscheduled tasks and calculates conflict-free awake time slots across the upcoming week or month, strictly avoiding sleep hours (derived from user sleep metrics) and avoiding clashes with existing tasks and calendar events.
+- **Responsive Task Modal / DetailsSheet:** Seamless platform adaptation rendering as an interactive bottom slide sheet on iOS/mobile with touch dismiss gestures, and as a clean, centered desktop modal dialog (`sm:` breakpoint) on PC web.
 - iOS Features: Swipe to complete/delete, pull-to-refresh
 
 ### 5.3 Habits Engine

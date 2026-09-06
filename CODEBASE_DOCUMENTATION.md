@@ -3151,15 +3151,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-ui-detailssheet-tsx"></a>
 ### src/components/ui/DetailsSheet.tsx
 
-**File Purpose:** UI primitive component. Reusable design-system element used across the application.
+**File Purpose:** UI primitive component providing platform-responsive detail sheets. Renders as a native-feel bottom slide sheet on mobile and iOS with touch-drag dismiss gestures, and as a centered, focused desktop dialog modal on PC web screens (`sm:` breakpoint).
 
 **Functions & Classes:**
 - `DetailsSheet` (Function)
 
 **Function Details:**
-- **`DetailsSheet`** — Utility function for details sheet.
+- **`DetailsSheet`** — Responsive modal/sheet container that adapts between mobile bottom sheet and desktop centered modal with keyboard navigation, auto-focus, safe area padding, and smooth transition animations.
 
-**Lines:** 304
+**Lines:** 316
 
 ---
 
@@ -4555,7 +4555,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-aifallback-ts"></a>
 ### src/lib/aiFallback.ts
 
-**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+**File Purpose:** Multi-provider AI fallback and smart health routing engine supporting Dahl Inference API, Groq Cloud API (LPU inference), Bynara Router, and Custom OpenAI-compatible endpoints. Manages automatic error cascade (429 rate limit, 5xx, timeouts, 4xx), health tracking with cooldown penalties, and best-model memory persistence.
 
 **Functions & Classes:**
 - `getModelDefinition` (Function)
@@ -4575,16 +4575,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `ModelHealthStat` (Interface)
 - `AIModelHealthState` (Interface)
 - `FallbackCandidate` (Interface)
-- `AIProviderId` (Type)
+- `AIProviderId` (Type: 'dahl' | 'bynara' | 'groq' | 'custom')
 
 **Function Details:**
-- **`getModelDefinition`** — Utility function for get model definition.
-- **`getProviderForModel`** — Utility function for get provider for model.
-- **`loadModelHealthState`** — Utility function for load model health state.
-- **`saveModelHealthState`** — Utility function for save model health state.
-- **`getModelStat`** — Utility function for get model stat.
+- **`getModelDefinition`** — Returns the model definition object from catalog.
+- **`getProviderForModel`** — Infers provider ('dahl', 'groq', 'bynara', 'custom') from model identifier.
+- **`loadModelHealthState`** — Retrieves persisted model latency and health statistics from localStorage.
+- **`saveModelHealthState`** — Persists health stats and best model memory to localStorage.
+- **`getModelStat`** — Retrieves health metrics, consecutive errors, and active cooldown for a model.
+- **`getFallbackCandidates`** — Builds prioritized cascade queue across Dahl, Groq, and Bynara resolving respective API keys.
 
-**Lines:** 644
+**Lines:** 680
 
 ---
 

@@ -6,7 +6,7 @@
  * and automatic persistence of the best working model for future requests.
  */
 
-export type AIProviderId = 'dahl' | 'bynara' | 'custom';
+export type AIProviderId = 'dahl' | 'bynara' | 'groq' | 'custom';
 
 export interface AIModelDefinition {
   id: string;
@@ -75,13 +75,45 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         provider: 'dahl',
         tier: 'fast',
         priority: 3,
-        description: 'Ultra-fast streaming and structured output',
+        description: 'Ultra-fast low-latency completion',
+      },
+    ],
+  },
+  groq: {
+    id: 'groq',
+    name: 'Groq Cloud API (LPU Inference)',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    defaultApiKey: (import.meta as any).env?.VITE_AI_GROQ_API_KEY || (import.meta as any).env?.GROQ_API_KEY || '',
+    models: [
+      {
+        id: 'llama-3.3-70b-versatile',
+        name: 'Llama 3.3 70B Versatile',
+        provider: 'groq',
+        tier: 'flagship',
+        priority: 4,
+        description: 'Extremely fast 70B flagship model on Groq LPUs',
+      },
+      {
+        id: 'llama-3.1-8b-instant',
+        name: 'Llama 3.1 8B Instant',
+        provider: 'groq',
+        tier: 'fast',
+        priority: 5,
+        description: 'Instant near-zero latency 8B model',
+      },
+      {
+        id: 'mixtral-8x7b-32768',
+        name: 'Mixtral 8x7B 32k',
+        provider: 'groq',
+        tier: 'balanced',
+        priority: 6,
+        description: 'Balanced MoE architecture with 32k context',
       },
     ],
   },
   bynara: {
     id: 'bynara',
-    name: 'Bynara API Router',
+    name: 'Bynara Router',
     baseUrl: 'https://router.bynara.id/v1',
     defaultApiKey: '',
     models: [
@@ -90,63 +122,55 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Agnes 2.5 Flash',
         provider: 'bynara',
         tier: 'fast',
-        priority: 4,
-        description: 'High-speed modern flash model',
-      },
-      {
-        id: 'agnes-2.0-flash',
-        name: 'Agnes 2.0 Flash',
-        provider: 'bynara',
-        tier: 'fast',
-        priority: 5,
-        description: 'Reliable fast flash completion',
-      },
-      {
-        id: 'mistral-large',
-        name: 'Mistral Large',
-        provider: 'bynara',
-        tier: 'flagship',
-        priority: 6,
-        description: 'Top-tier complex reasoning & multilingual',
-      },
-      {
-        id: 'laguna-s-2.1',
-        name: 'Laguna S-2.1',
-        provider: 'bynara',
-        tier: 'fast',
         priority: 7,
-        description: 'Low-latency agentic responses',
-      },
-      {
-        id: 'deepseek-v4-pro',
-        name: 'DeepSeek V4 Pro',
-        provider: 'bynara',
-        tier: 'flagship',
-        priority: 8,
-        description: 'DeepSeek Flagship Pro reasoning',
-      },
-      {
-        id: 'deepseek-v4-flash',
-        name: 'DeepSeek V4 Flash',
-        provider: 'bynara',
-        tier: 'fast',
-        priority: 9,
-        description: 'Fast versatile DeepSeek model',
+        description: 'Ultra-fast lightweight completion',
       },
       {
         id: 'minimax-m3',
         name: 'MiniMax M3',
         provider: 'bynara',
         tier: 'flagship',
+        priority: 8,
+        description: 'MiniMax flagship intelligence',
+      },
+      {
+        id: 'kimi-k2.5',
+        name: 'Kimi K2.5',
+        provider: 'bynara',
+        tier: 'flagship',
+        priority: 9,
+        description: 'Kimi long context and analytical reasoning',
+      },
+      {
+        id: 'deepseek-v4-flash',
+        name: 'DeepSeek V4 Flash',
+        provider: 'bynara',
+        tier: 'fast',
         priority: 10,
-        description: 'MiniMax M3 architecture',
+        description: 'High throughput fast model',
+      },
+      {
+        id: 'glm-5',
+        name: 'GLM-5',
+        provider: 'bynara',
+        tier: 'flagship',
+        priority: 11,
+        description: 'Advanced generalist GLM-5 model',
+      },
+      {
+        id: 'mistral-large',
+        name: 'Mistral Large',
+        provider: 'bynara',
+        tier: 'flagship',
+        priority: 12,
+        description: 'High-end multilingual model',
       },
       {
         id: 'gpt-5.4',
         name: 'GPT-5.4',
         provider: 'bynara',
         tier: 'flagship',
-        priority: 11,
+        priority: 13,
         description: 'Advanced frontier model',
       },
       {
@@ -154,7 +178,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'GPT-5.5',
         provider: 'bynara',
         tier: 'flagship',
-        priority: 12,
+        priority: 14,
         description: 'Next-gen frontier reasoning',
       },
       {
@@ -162,7 +186,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Mistral Medium 3.5',
         provider: 'bynara',
         tier: 'balanced',
-        priority: 13,
+        priority: 15,
         description: 'Balanced performance and speed',
       },
       {
@@ -170,7 +194,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Mimo v2.5 Pro Ultraspeed',
         provider: 'bynara',
         tier: 'fast',
-        priority: 14,
+        priority: 16,
         description: 'High throughput ultra-speed',
       },
       {
@@ -178,7 +202,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Mimo v2.5 Pro',
         provider: 'bynara',
         tier: 'balanced',
-        priority: 15,
+        priority: 17,
         description: 'Balanced pro reasoning',
       },
       {
@@ -186,7 +210,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Mimo v2.5',
         provider: 'bynara',
         tier: 'balanced',
-        priority: 16,
+        priority: 18,
         description: 'Standard efficient completion',
       },
       {
@@ -194,7 +218,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Stepfun 3.7 Flash',
         provider: 'bynara',
         tier: 'fast',
-        priority: 17,
+        priority: 19,
         description: 'Stepfun fast lightweight model',
       },
       {
@@ -202,7 +226,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Muse Spark 1.2',
         provider: 'bynara',
         tier: 'balanced',
-        priority: 18,
+        priority: 20,
         description: 'Creative and structured generation',
       },
       {
@@ -210,7 +234,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Muse Spark 1.2 Contributor',
         provider: 'bynara',
         tier: 'balanced',
-        priority: 19,
+        priority: 21,
         description: 'Community contributor tier',
       },
       {
@@ -218,7 +242,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Qwen 3.8 Max (Free)',
         provider: 'bynara',
         tier: 'free',
-        priority: 20,
+        priority: 22,
         description: 'Free tier Qwen model',
       },
       {
@@ -226,7 +250,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Tencent HY3 (Free)',
         provider: 'bynara',
         tier: 'free',
-        priority: 21,
+        priority: 23,
         description: 'Free tier Tencent Hunyuan',
       },
       {
@@ -234,7 +258,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'DeepSeek V4 Pro (Free)',
         provider: 'bynara',
         tier: 'free',
-        priority: 22,
+        priority: 24,
         description: 'Free tier DeepSeek Pro',
       },
       {
@@ -242,7 +266,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
         name: 'Ling 3.0 Flash (Free)',
         provider: 'bynara',
         tier: 'free',
-        priority: 23,
+        priority: 25,
         description: 'Free tier Ling Flash',
       },
     ],
@@ -258,6 +282,7 @@ export const AI_PROVIDERS: Record<AIProviderId, AIProviderConfig> = {
 
 export const ALL_MODELS: AIModelDefinition[] = [
   ...AI_PROVIDERS.dahl.models,
+  ...AI_PROVIDERS.groq.models,
   ...AI_PROVIDERS.bynara.models,
 ];
 
@@ -276,6 +301,9 @@ export function getProviderForModel(modelId: string): AIProviderId {
   if (model) return model.provider;
   if (modelId.startsWith('MiniMaxAI/') || modelId.startsWith('moonshotai/') || modelId.startsWith('deepseek-ai/')) {
     return 'dahl';
+  }
+  if (modelId.startsWith('llama-') || modelId.startsWith('mixtral-') || modelId.startsWith('gemma')) {
+    return 'groq';
   }
   return 'bynara';
 }
@@ -531,6 +559,7 @@ export function getFallbackCandidates(options: {
   customApiKey?: string;
   dahlApiKey?: string;
   bynaraApiKey?: string;
+  groqApiKey?: string;
   fallbackEnabled?: boolean;
 }): FallbackCandidate[] {
   const {
@@ -539,30 +568,39 @@ export function getFallbackCandidates(options: {
     customApiKey = '',
     dahlApiKey = '',
     bynaraApiKey = '',
+    groqApiKey = '',
     fallbackEnabled = true,
   } = options;
 
   const envDahlKey = (import.meta.env.VITE_AI_DAHL_API_KEY || import.meta.env.VITE_DAHL_KEY || '').trim();
   const envBynaraKey = (import.meta.env.VITE_AI_BYNARA_API_KEY || import.meta.env.VITE_BYNARA_KEY || '').trim();
+  const envGroqKey = (import.meta.env.VITE_AI_GROQ_API_KEY || import.meta.env.VITE_GROQ_API_KEY || import.meta.env.VITE_GROQ_KEY || '').trim();
   const envGenKey = (import.meta.env.VITE_AI_API_KEY || '').trim();
 
   const resolvedDahlKey = (dahlApiKey || '').trim() || envDahlKey || customApiKey.trim() || envGenKey || AI_PROVIDERS.dahl.defaultApiKey;
   const resolvedBynaraKey = (bynaraApiKey || '').trim() || envBynaraKey || customApiKey.trim() || envGenKey || AI_PROVIDERS.bynara.defaultApiKey;
+  const resolvedGroqKey = (groqApiKey || '').trim() || envGroqKey || customApiKey.trim() || envGenKey || AI_PROVIDERS.groq.defaultApiKey;
+
+  const resolveProviderUrl = (provider: AIProviderId) => {
+    if (provider === 'dahl') return AI_PROVIDERS.dahl.baseUrl;
+    if (provider === 'groq') return AI_PROVIDERS.groq.baseUrl;
+    if (provider === 'bynara') return AI_PROVIDERS.bynara.baseUrl;
+    return customBaseUrl;
+  };
+
+  const resolveProviderKey = (provider: AIProviderId) => {
+    if (provider === 'dahl') return resolvedDahlKey;
+    if (provider === 'groq') return resolvedGroqKey;
+    if (provider === 'bynara') return resolvedBynaraKey;
+    return customApiKey;
+  };
 
   // If user provided a custom model or custom URL and fallback is disabled
   if (selectedModel && selectedModel !== 'auto' && !fallbackEnabled) {
     const def = getModelDefinition(selectedModel);
     const provider = def ? def.provider : (customBaseUrl ? 'custom' : getProviderForModel(selectedModel));
-    const baseUrl = provider === 'custom'
-      ? customBaseUrl
-      : provider === 'dahl'
-      ? AI_PROVIDERS.dahl.baseUrl
-      : AI_PROVIDERS.bynara.baseUrl;
-    const apiKey = provider === 'custom'
-      ? customApiKey
-      : provider === 'dahl'
-      ? resolvedDahlKey
-      : resolvedBynaraKey;
+    const baseUrl = provider === 'custom' ? customBaseUrl : resolveProviderUrl(provider);
+    const apiKey = provider === 'custom' ? customApiKey : resolveProviderKey(provider);
 
     return [
       {
@@ -581,8 +619,8 @@ export function getFallbackCandidates(options: {
   // Build full candidate list
   const candidates: FallbackCandidate[] = ALL_MODELS.map((m) => {
     const provider = m.provider;
-    const baseUrl = provider === 'dahl' ? AI_PROVIDERS.dahl.baseUrl : AI_PROVIDERS.bynara.baseUrl;
-    const apiKey = provider === 'dahl' ? resolvedDahlKey : resolvedBynaraKey;
+    const baseUrl = resolveProviderUrl(provider);
+    const apiKey = resolveProviderKey(provider);
     const { score, inCooldown } = calculateModelScore(m.id, selectedModel);
 
     return {
@@ -603,8 +641,8 @@ export function getFallbackCandidates(options: {
   // If a custom model is configured and not in ALL_MODELS, prepend it if selected
   if (selectedModel && selectedModel !== 'auto' && !ALL_MODELS.some((m) => m.id === selectedModel)) {
     const provider = customBaseUrl ? 'custom' : getProviderForModel(selectedModel);
-    const baseUrl = customBaseUrl || (provider === 'dahl' ? AI_PROVIDERS.dahl.baseUrl : AI_PROVIDERS.bynara.baseUrl);
-    const apiKey = customApiKey || (provider === 'dahl' ? resolvedDahlKey : resolvedBynaraKey);
+    const baseUrl = customBaseUrl || resolveProviderUrl(provider);
+    const apiKey = customApiKey || resolveProviderKey(provider);
     const inCooldown = isModelInCooldown(selectedModel);
     candidates.unshift({
       model: selectedModel,

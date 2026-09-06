@@ -89,13 +89,37 @@ async function classifyCategoryWithAi(
     Deno.env.get('VITE_AI_BYNARA_API_KEY') ||
     'sk-nry-hBN1vBJ5OKTy1k_jEyYo6ARokES881vS8XT_2ADzQio';
 
+  const groqApiKey =
+    userSettings?.aiGroqApiKey ||
+    (userSettings?.aiBaseUrl?.includes('groq.com') ? userSettings?.aiApiKey : '') ||
+    Deno.env.get('GROQ_API_KEY') ||
+    Deno.env.get('VITE_AI_GROQ_API_KEY') ||
+    '';
+
   // Fallback cascade candidates in order of speed and availability:
-  // 1. Bynara fast flash (agnes-2.5-flash)
-  // 2. Bynara Agnes 2.0 (agnes-2.0-flash)
-  // 3. Dahl MiniMax (MiniMaxAI/MiniMax-M2.7)
-  // 4. Dahl DeepSeek (deepseek-ai/DeepSeek-V4-Flash-0731)
-  // 5. Bynara DeepSeek Flash (deepseek-v4-flash)
+  // 1. Groq Flagship Reasoning (llama-3.3-70b-versatile)
+  // 2. Groq Instant (llama-3.1-8b-instant)
+  // 3. Bynara fast flash (agnes-2.5-flash)
+  // 4. Bynara Agnes 2.0 (agnes-2.0-flash)
+  // 5. Dahl MiniMax (MiniMaxAI/MiniMax-M2.7)
+  // 6. Dahl DeepSeek (deepseek-ai/DeepSeek-V4-Flash-0731)
+  // 7. Bynara DeepSeek Flash (deepseek-v4-flash)
   const candidates: AiModelCandidate[] = [];
+
+  if (groqApiKey) {
+    candidates.push({
+      provider: 'groq',
+      baseUrl: 'https://api.groq.com/openai/v1',
+      apiKey: groqApiKey,
+      model: 'llama-3.3-70b-versatile',
+    });
+    candidates.push({
+      provider: 'groq',
+      baseUrl: 'https://api.groq.com/openai/v1',
+      apiKey: groqApiKey,
+      model: 'llama-3.1-8b-instant',
+    });
+  }
 
   if (bynaraApiKey) {
     candidates.push({

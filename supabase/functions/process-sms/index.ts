@@ -582,7 +582,18 @@ async function auditSmsWithAi(
     Deno.env.get('VITE_AI_BYNARA_API_KEY') ||
     'sk-nry-hBN1vBJ5OKTy1k_jEyYo6ARokES881vS8XT_2ADzQio';
 
+  const groqApiKey =
+    userSettings?.aiGroqApiKey ||
+    (userSettings?.aiBaseUrl?.includes('groq.com') ? userSettings?.aiApiKey : '') ||
+    Deno.env.get('GROQ_API_KEY') ||
+    Deno.env.get('VITE_AI_GROQ_API_KEY') ||
+    '';
+
   const candidates: AiModelCandidate[] = [];
+  if (groqApiKey) {
+    candidates.push({ provider: 'groq', baseUrl: 'https://api.groq.com/openai/v1', apiKey: groqApiKey, model: 'llama-3.3-70b-versatile' });
+    candidates.push({ provider: 'groq', baseUrl: 'https://api.groq.com/openai/v1', apiKey: groqApiKey, model: 'llama-3.1-8b-instant' });
+  }
   if (bynaraApiKey) {
     candidates.push({ provider: 'bynara', baseUrl: 'https://router.bynara.id/v1', apiKey: bynaraApiKey, model: 'agnes-2.5-flash' });
     candidates.push({ provider: 'bynara', baseUrl: 'https://router.bynara.id/v1', apiKey: bynaraApiKey, model: 'agnes-2.0-flash' });

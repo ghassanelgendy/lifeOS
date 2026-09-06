@@ -17,6 +17,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
     aiModel,
     aiBynaraApiKey,
     aiDahlApiKey,
+    aiGroqApiKey,
     aiFallbackEnabled,
     aiActiveModel,
     brainDumpAutoOrganizeEnabled,
@@ -26,6 +27,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
     setAiModel,
     setAiBynaraApiKey,
     setAiDahlApiKey,
+    setAiGroqApiKey,
     setAiFallbackEnabled,
     setAiActiveModel,
     setBrainDumpAutoOrganizeEnabled,
@@ -89,6 +91,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
       await testAllCatalogModels({
         dahlApiKey: aiDahlApiKey,
         bynaraApiKey: aiBynaraApiKey,
+        groqApiKey: aiGroqApiKey,
         onProgress: (modelId, current, total) => {
           setTestProgress({ current, total, modelName: modelId });
           setHealthVersion((v) => v + 1);
@@ -227,7 +230,15 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
                     ))}
                   </optgroup>
 
-                  <optgroup label="Bynara API Router (20 Models)">
+                  <optgroup label="Groq Cloud API (LPU Ultra-Fast Inference)">
+                    {AI_PROVIDERS.groq.models.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.tier.toUpperCase()}) - Groq
+                      </option>
+                    ))}
+                  </optgroup>
+
+                  <optgroup label="Bynara API Router (19 Models)">
                     {AI_PROVIDERS.bynara.models.map((m) => (
                       <option key={m.id} value={m.id}>
                         {m.name} ({m.tier.toUpperCase()}) - Bynara
@@ -259,7 +270,21 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                    <span>Groq Cloud API Key</span>
+                    <span className="text-[9px] text-primary lowercase">gsk_...</span>
+                  </label>
+                  <Input
+                    type="password"
+                    placeholder="gsk_..."
+                    value={aiGroqApiKey}
+                    onChange={handleFieldChange(setAiGroqApiKey)}
+                    className={inputClass}
+                  />
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center justify-between">
                     <span>Dahl Inference API Key</span>
