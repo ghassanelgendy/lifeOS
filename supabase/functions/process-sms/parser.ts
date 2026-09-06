@@ -232,12 +232,12 @@ export class TransactionParser {
     if (/ipn inward transfer|credited with ipn/i.test(lower)) {
       data.type = 'IPN In';
       data.direction = 'In';
-      const match = /from\s+([A-Za-z\s]+?)(?:\s+with reference|on \d)/i.exec(text);
+      const match = /from\s+(.+?)(?:\s+with reference|on \d)/i.exec(text);
       if (match) data.entity = match[1].trim();
     } else if (/ipn outward transfer|debited with ipn/i.test(lower)) {
       data.type = 'IPN Out';
       data.direction = 'Out';
-      const match = /to\s+([A-Za-z0-9\s]+?)(?:\s+with reference|on \d)/i.exec(text);
+      const match = /to\s+(.+?)(?:\s+with reference|on \d)/i.exec(text);
       if (match) data.entity = match[1].trim();
     } else if (/atm cash deposit/i.test(lower)) {
       data.type = 'ATM Deposit';
@@ -254,7 +254,7 @@ export class TransactionParser {
     } else if (/purchase from/i.test(lower)) {
       data.type = 'Purchase';
       data.direction = 'Out';
-      const match = /^From HSBC:\s*\d{2}[A-Z]{3}\d{2}\s+([\w\s\-\.]+?)\s+Purchase/i.exec(text);
+      const match = /^From HSBC:\s*\d{2}[A-Z]{3}\d{2}\s+(.+?)\s+Purchase/i.exec(text);
       if (match) data.entity = match[1].trim();
     }
 
@@ -317,14 +317,16 @@ export class TransactionParser {
     if (/reversed/i.test(lower)) {
       data.type = 'Reversal';
       data.direction = 'In';
-      m = /(?:@|at)\s+([\w\s\.\/]+?)(?:\s+with|\s+has been|$)/i.exec(text);
+      // Lazy `.+?` (not a curated char class) so POS noise like `*`, `#`, `-` in the
+      // merchant name never breaks the match — only the trailing anchor stops it.
+      m = /(?:@|at)\s+(.+?)(?:\s+with|\s+has been|$)/i.exec(text);
       if (m) data.entity = m[1].trim();
       return data;
     }
     if (/successful transaction of\s+EGP|had a Successful transaction/i.test(lower)) {
       data.type = 'Card Purchase';
       data.direction = 'Out';
-      m = /@\s*([\w\s\.\/\,]+?)(?:\s*,|\s+your|$)/i.exec(text);
+      m = /@\s*(.+?)(?:\s*,|\s+your|$)/i.exec(text);
       if (m) data.entity = m[1].trim();
       return data;
     }
@@ -359,7 +361,7 @@ export class TransactionParser {
     } else if (/you received money transfer|استقبلت تحويل|إستلام عملية تحويل|لقد استقبلت/i.test(text)) {
       data.type = 'Transfer In';
       data.direction = 'In';
-      let match = /from\s+([A-Za-z0-9\s\-\.]+?)(?:\s+Your|\s+Your new|\.\s*Transaction)/i.exec(text);
+      let match = /from\s+(.+?)(?:\s+Your|\s+Your new|\.\s*Transaction)/i.exec(text);
       if (match) data.entity = match[1].trim();
       if (!data.entity) {
         match = /من\s+([\d\s\-]+?)(?:\s*،|\.|رصيد)/.exec(text);
@@ -395,12 +397,12 @@ export class TransactionParser {
       data.direction = 'Out';
       data.type = 'Card Purchase';
       // Merchant only: stop at يوم, الساعه, المتاح, للمزيد, إتصل (no date/time/balance/contact)
-      m = /عند\s+([\w\s\-\.]+?)\s*(?:يوم|الساعه|المتاح|للمزيد|إتصل|\d)/.exec(text);
+      m = /عند\s+(.+?)\s*(?:يوم|الساعه|المتاح|للمزيد|إتصل|\d)/.exec(text);
       if (m) {
         data.entity = m[1].replace(/\s+OC\s*$/, '').trim();
       }
       if (!data.entity) {
-        m = /By\s+([\w\s\-\.]+?)(?:\s+عند|\s+يوم|$)/.exec(text);
+        m = /By\s+(.+?)(?:\s+عند|\s+يوم|$)/.exec(text);
         if (m) data.entity = m[1].trim();
       }
     } else if (/تم إضافة تحويل لحظي|تم إضافة/.test(text)) {
