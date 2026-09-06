@@ -29,6 +29,7 @@ export interface ExtractedActionTask {
   tagNames: string[];
   actionType: 'call' | 'event' | 'email' | 'code' | 'task' | 'reading';
   reason?: string;
+  sourceText?: string;
   isSelected: boolean;
   duplicateWarning?: string;
 }
@@ -173,6 +174,7 @@ Your goal is to parse the user's note/brain-dump, organize the text, and EXTRACT
    - "suggested_list": Exact name of best matching list from: ${availableListNames}.
    - "suggested_tag": Exact name of best matching tag from: ${availableTagNames}.
    - "reason": Why this list/tag was suggested.
+   - "source_text": The exact verbatim raw line/sentence from the note this task was extracted from (copy it character-for-character, do not paraphrase or clean it up).
 3. Structured Note Output:
    - "summary": 1-2 sentence core overview.
    - "insights": Array of realizations or key points.
@@ -191,7 +193,8 @@ Your goal is to parse the user's note/brain-dump, organize the text, and EXTRACT
       "due_time": null,
       "suggested_list": "Work",
       "suggested_tag": "urgent",
-      "reason": "Explicit call item"
+      "reason": "Explicit call item",
+      "source_text": "call waleed alpha about the invoice tmrw"
     }
   ],
   "organized_markdown": "### Organized Notes\\n\\n- Clean markdown content..."
@@ -252,6 +255,7 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
           tagNames: matchingTag ? [matchingTag.name] : t.suggested_tag ? [t.suggested_tag] : [],
           actionType: t.action_type || 'task',
           reason: t.reason || slot.reason,
+          sourceText: typeof t.source_text === 'string' ? t.source_text.trim() : undefined,
           isSelected: true,
         };
       });
@@ -337,6 +341,7 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
         } else {
           await createTask.mutateAsync({
             title: t.title,
+            description: t.sourceText || undefined,
             priority: t.priority,
             due_date: t.dueDate,
             due_time: t.dueTime ? `${t.dueTime}:00` : null,
@@ -619,6 +624,12 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
                           <AlertCircle size={12} className="shrink-0" />
                           <span className="truncate">{task.duplicateWarning} — unchecked by default, review before creating.</span>
                         </div>
+                      )}
+
+                      {task.sourceText && (
+                        <p className="text-[11px] text-muted-foreground/80 italic truncate" title={task.sourceText}>
+                          📝 "{task.sourceText}" — saved as this task's description
+                        </p>
                       )}
                     </div>
                   ))}
