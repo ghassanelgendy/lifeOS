@@ -376,11 +376,11 @@ Users shall be able to track investment accounts and investment transactions sep
 #### FR-FIN-010: Investment CRUD
 Users shall be able to create, update, and delete investment accounts and transactions.
 
-#### FR-FIN-011: Bank SMS Parsing (Automated)
-The system shall accept forwarded bank SMS messages via Supabase Edge Function, parse transaction details (amount, merchant, balance), and automatically insert categorized transactions.
+#### FR-FIN-011: Bank SMS Parsing & Full-Field AI Audit (Automated)
+The system shall accept forwarded bank SMS messages via the `process-sms` Supabase Edge Function, immediately inserting the transaction and returning an instant response (<100ms) to the client, while executing an asynchronous background AI audit cascade (Bynara and Dahl models) that cleans raw merchant/POS strings into human-readable entity names, resolves card/account identifiers, verifies direction and amounts, and proposes missing categories to a pinned `LifeOS Self Awareness` note.
 
 #### FR-FIN-012: Smart Category Inference
-The system shall attempt to infer transaction categories from description/merchant using predefined rules.
+The system shall attempt to infer transaction categories from description/merchant using predefined rules and the background AI cascade.
 
 #### FR-FIN-013: Bank Statement Parsing & Smart Reconciliation
 The system shall support parsing encrypted monthly PDF bank statements (Debit & Credit), extracting structured transaction records (entry/value dates, bank references, clean merchant and Instapay recipient entities, amounts, post-transaction balances), and smartly reconciling them against existing database transactions using exact amount, cash flow direction, and a smart date window. Matched records are enriched in-place with verified bank references, clean entities, and statement-verified status without inserting redundant duplicates.
@@ -393,6 +393,9 @@ Users shall be able to configure automatic categorization rules based on transac
 
 #### FR-FIN-016: Deep Link Transaction Entry
 Users shall be able to add transactions via deep links (`lifeos://add-transaction?amount=...&category=...`).
+
+#### FR-FIN-017: Quick Cash Expense Logging & AI Categorization
+The system shall provide a `quick-expense` webhook edge function optimized for iOS Shortcuts and Back Tap interactions, returning an immediate response (<100ms) upon cash transaction insertion and asynchronously categorizing expenses via a multi-model fallback cascade across Bynara and Dahl with strict system prompt validation.
 
 ---
 

@@ -160,7 +160,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Category breakdown: Pie/bar chart of spending by category
 - Bank management: Multiple bank accounts, auto-seeded defaults
 - Investment tracking: Separate investment accounts and transactions from daily spending
-- **Bank SMS Automation:** Forward bank SMS to a Supabase Edge Function → parsed using regex patterns → auto-inserted as categorized transactions
+- **Bank SMS Automation (`process-sms`):** Forward bank SMS to a Supabase Edge Function with instant response (<100ms) → parsed using regex patterns → auto-inserted → background AI audit cascade (Bynara & Dahl) cleans merchant names, resolves bank/card identifiers, verifies direction/amount, and auto-proposes missing categories to a pinned `LifeOS Self Awareness` note.
+- **Quick Cash Expense Automation (`quick-expense`):** iOS Shortcut & Back Tap endpoint for immediate cash logging (<100ms) with background AI category classification (Bynara & Dahl fallback cascade) understanding Franco-Arabic and Egyptian transit/dining terms.
 - Transaction rules: Auto-categorize based on description patterns
 - Privacy mode: Blur financial data in public (hover-to-reveal)
 - Real-time updates: Supabase realtime subscription refetches data on table changes

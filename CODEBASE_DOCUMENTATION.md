@@ -6359,8 +6359,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isPromotionQuickFilter`** — Utility function for is promotion quick filter.
 - **`parseFormUrlEncoded`** — Utility function for parse form url encoded.
 - **`toSchemaCategory`** — Utility function for to schema category.
+- **`auditSmsWithAi`** — Asynchronous multi-model full-field audit cascade across Bynara and Dahl for entity cleaning, bank/card resolution, direction checking, and category enhancement.
+- **`recordToSelfAwarenessNote`** — Appends or creates 'LifeOS Self Awareness' note to communicate category proposals and reflections.
 
-**Lines:** 438
+**Lines:** 776
 
 ---
 
@@ -6374,6 +6376,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `ParsedTransaction` (Interface)
 
 **Lines:** 472
+
+---
+
+<a name="supabase-functions-quick-expense-index-ts"></a>
+### supabase/functions/quick-expense/index.ts
+
+**File Purpose:** Supabase Edge Function. Webhook endpoint designed for iOS Shortcuts (or Back Tap) to quickly log cash expenses. Features an automatic multi-model fallback cascade across Bynara (`agnes-2.5-flash`, `agnes-2.0-flash`, `deepseek-v4-flash`) and Dahl (`MiniMax-M2.7`, `DeepSeek-V4-Flash`) with strict category system prompts, duplicate request protection, and flexible account resolution.
+
+**Functions & Classes:**
+- `cleanAiResponse` (Function)
+- `extractCategoryFromAi` (Function)
+- `classifyCategoryWithAi` (Function)
+- `parseAmount` (Function)
+- `getLocalToday` (Function)
+- `parseIncoming` (Function)
+
+**Lines:** 318
 
 ---
 
