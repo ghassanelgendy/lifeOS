@@ -165,7 +165,8 @@ export default function Finance() {
   }, [filteredTransactions, selectedMonth]);
 
   // --- Correction Transaction (reconciliation) ---
-  // "Detected balance" is computed from transactions for the selected bank/card identity.
+  // "Detected balance" is computed from ALL transactions for the selected bank/card identity,
+  // matching the carry-over logic used in the hero card (openingBalance + income - expenses).
   const computeDetectedBalanceForIdentity = (
     bankName: string,
     qnbCard: 'debit' | 'credit'
@@ -182,11 +183,22 @@ export default function Finance() {
       return QNB_CREDIT.test(acc);
     };
 
-    // IMPORTANT: Keep "detected" consistent with Dashboard calculations.
-    // Dashboard uses `useCategoryBreakdown()` which uses `getBreakdownFromTransactions()` for the CURRENT month window
-    // and rounds only at the end. So we reuse that exact function here.
-    const identityTx = transactions.filter(matchesIdentity);
-    return getBreakdownFromTransactions(identityTx).balance;
+    // Sum ALL transactions (not just current month) so that carry-over from previous
+    // months is included — matching the balance shown in the hero card.
+    const round2 = (n: number) => Math.round(n * 100) / 100;
+    let total = 0;
+    for (const t of transactions) {
+      if (!matchesIdentity(t)) continue;
+      const amt = Number(t.amount) || 0;
+      const dir =
+        t.direction === 'In' || t.direction === 'Out'
+          ? t.direction
+          : t.type === 'income'
+            ? 'In'
+            : 'Out';
+      total += dir === 'In' ? amt : -amt;
+    }
+    return round2(total);
   };
 
   const [isCorrectionSheetOpen, setIsCorrectionSheetOpen] = useState(false);

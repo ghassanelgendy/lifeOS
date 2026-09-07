@@ -5353,7 +5353,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1962
+**Key Behaviors:**
+- **Carry-over balance**: The hero card balance is computed as `openingBalance + income - expenses`, where `openingBalance` is the running total of all transactions dated before the selected month. This means the balance carries forward month-to-month without needing a manual entry each month.
+- **Correction / Reconciliation**: `computeDetectedBalanceForIdentity` computes the system-detected balance for a given bank/card by summing **all** transactions (not just the current month), matching the carry-over logic. The correction transaction records only the diff (`realAmount - detectedBalance`) needed to reconcile.
+
+**Lines:** 1973
 
 ---
 
