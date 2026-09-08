@@ -34,7 +34,7 @@ import {
 } from 'lucide-react';
 import { Ayah, RepeatSettings, RatingGrade, MemorizationStatus } from '../types/quran';
 import { fetchSurahVerses, fetchPageVerses } from '../services/quranApi';
-import { SURAHS } from '../services/quranData';
+import { SURAHS, addReadingSeconds } from '../services/quranData';
 import { BlindModeOverlay } from './BlindModeOverlay';
 
 const getSurahForPage = (page: number) => {
@@ -322,6 +322,39 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
   const [isFsBarShrunk, setIsFsBarShrunk] = useState(false);
   const lastFsScrollRef = useRef(0);
+  // The fullscreen Mushaf portal scrolls independently of window/document, and whether
+  // the just-completed scroll was a page turn (should land at the very top) vs. an
+  // in-page ayah jump (should center the ayah) determines how we position it below.
+  const fullscreenScrollRef = useRef<HTMLDivElement>(null);
+  const justTurnedPageRef = useRef(false);
+
+  // Tracks time spent in the mushaf reader for khatma/reading-time stats. Flushed
+  // periodically and on unmount/tab-hide so a long session isn't lost, and paused
+  // while the tab isn't visible so idle background time doesn't count.
+  useEffect(() => {
+    let sessionStart: number | null = document.visibilityState === 'visible' ? Date.now() : null;
+    const flush = () => {
+      if (sessionStart === null) return;
+      const elapsed = (Date.now() - sessionStart) / 1000;
+      sessionStart = Date.now();
+      if (elapsed > 0.5) addReadingSeconds(elapsed);
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        sessionStart = Date.now();
+      } else {
+        flush();
+        sessionStart = null;
+      }
+    };
+    const interval = setInterval(flush, 30000);
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      flush();
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isFullscreen) {
@@ -636,15 +669,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     }
   }, [effectiveSurah.id, surahNumber, onSelectSurah]);
 
-  // Auto-scroll active ayah into center view
+  // Auto-scroll active ayah into view. After a page turn this lands the new page's
+  // first ayah at the TOP of the viewport instead of centering it, so the reader
+  // actually starts at the top of the new page rather than mid-scroll.
   useEffect(() => {
     if (!currentAyahIndex || pageLoading) return;
+    const wasPageTurn = justTurnedPageRef.current;
+    justTurnedPageRef.current = false;
     const timer = setTimeout(() => {
       const el = document.getElementById(`ayah-${effectiveSurah.id}-${currentAyahIndex}`) ||
                  document.getElementById(`ayah-${surahNumber}-${currentAyahIndex}`) ||
                  document.querySelector(`[data-ayah="${currentAyahIndex}"]`);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.scrollIntoView({ behavior: 'smooth', block: wasPageTurn ? 'start' : 'center' });
       }
     }, 300);
     return () => clearTimeout(timer);
@@ -690,6 +727,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   const handlePageChange = (newPage: number) => {
     const clampedPage = Math.min(604, Math.max(1, newPage));
     setActivePage(clampedPage);
+    justTurnedPageRef.current = true;
     const startingSurah = SURAHS.find((s) => s.pageStart === clampedPage);
     const targetSurah = startingSurah || getSurahForPage(clampedPage);
     if (targetSurah.id !== surahNumber) {
@@ -699,11 +737,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
       localStorage.setItem('quran_active_page_v1', clampedPage.toString());
       window.dispatchEvent(new Event('quran_active_page_updated'));
     } catch {}
-    // Scroll window/container to top of the new page
+    // Scroll window/container to top of the new page. In fullscreen the Mushaf
+    // portal scrolls independently (its own overflow-y-auto div), so window-level
+    // resets alone leave it at its old offset — reset that container too.
     try {
       window.scrollTo({ top: 0, behavior: 'smooth' });
       document.documentElement.scrollTop = 0;
       document.body.scrollTop = 0;
+      if (fullscreenScrollRef.current) {
+        fullscreenScrollRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } catch {}
   };
 
@@ -1658,6 +1701,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 {isFullscreen &&
                   createPortal(
                     <div
+                      ref={fullscreenScrollRef}
                       dir="rtl"
                       className="fixed inset-0 z-[9999] bg-background/98 text-foreground flex flex-col overflow-y-auto selection:bg-emerald-500/30 font-arabic-title animate-in fade-in duration-200"
                     >

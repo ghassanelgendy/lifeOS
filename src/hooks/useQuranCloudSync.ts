@@ -12,6 +12,7 @@ const LOCAL_READING_STORE = 'quran_reading_wird_v1';
 const LOCAL_MEM_MARKER_STORE = 'quran_memorization_marker_v1';
 const LOCAL_READ_MARKER_STORE = 'quran_reading_marker_v1';
 const LOCAL_RECORDS_STORE = 'quran_memorizer_records_v1';
+const LOCAL_STATS_STORE = 'quran_khatma_stats_v1';
 
 export function useQuranCloudSync() {
   const { user } = useAuth();
@@ -143,6 +144,18 @@ export function useQuranCloudSync() {
       };
       localStorage.setItem(LOCAL_READ_MARKER_STORE, JSON.stringify(readMarker));
 
+      // Hydrate Khatma Stats (time-in-mushaf + completion counters) — take the max
+      // of local and remote per field so neither a fresh device nor a stale fetch
+      // can regress progress that was already recorded locally or on another device.
+      const localStatsStr = localStorage.getItem(LOCAL_STATS_STORE);
+      const localStats = localStatsStr ? JSON.parse(localStatsStr) : {};
+      const mergedStats = {
+        totalReadingSeconds: Math.max(localStats.totalReadingSeconds || 0, p.total_reading_seconds || 0),
+        readingKhatmasCompleted: Math.max(localStats.readingKhatmasCompleted || 0, p.reading_khatmas_completed || 0),
+        memorizationKhatmasCompleted: Math.max(localStats.memorizationKhatmasCompleted || 0, p.memorization_khatmas_completed || 0),
+      };
+      localStorage.setItem(LOCAL_STATS_STORE, JSON.stringify(mergedStats));
+
       window.dispatchEvent(new Event('quran_plan_updated'));
     } catch (e) {
       console.warn('Failed hydrating quran plan to localStorage:', e);
@@ -199,6 +212,9 @@ export function useQuranCloudSync() {
       readingStreakDays?: number;
       lastCompletedDate?: string;
       readingLastCompletedDate?: string;
+      totalReadingSeconds?: number;
+      readingKhatmasCompleted?: number;
+      memorizationKhatmasCompleted?: number;
     }) => {
       if (!user?.id) return;
 
@@ -221,6 +237,9 @@ export function useQuranCloudSync() {
         ...(payload.readingStreakDays !== undefined && { reading_streak_days: payload.readingStreakDays }),
         ...(payload.lastCompletedDate !== undefined && { last_completed_date: payload.lastCompletedDate }),
         ...(payload.readingLastCompletedDate !== undefined && { reading_last_completed_date: payload.readingLastCompletedDate }),
+        ...(payload.totalReadingSeconds !== undefined && { total_reading_seconds: payload.totalReadingSeconds }),
+        ...(payload.readingKhatmasCompleted !== undefined && { reading_khatmas_completed: payload.readingKhatmasCompleted }),
+        ...(payload.memorizationKhatmasCompleted !== undefined && { memorization_khatmas_completed: payload.memorizationKhatmasCompleted }),
         updated_at: new Date().toISOString(),
       };
 
@@ -268,11 +287,13 @@ export function useQuranCloudSync() {
           const readPlanStr = localStorage.getItem(LOCAL_READING_STORE);
           const memMarkerStr = localStorage.getItem(LOCAL_MEM_MARKER_STORE);
           const readMarkerStr = localStorage.getItem(LOCAL_READ_MARKER_STORE);
+          const statsStr = localStorage.getItem(LOCAL_STATS_STORE);
 
           const memPlan = memPlanStr ? JSON.parse(memPlanStr) : null;
           const readPlan = readPlanStr ? JSON.parse(readPlanStr) : null;
           const memMarker = memMarkerStr ? JSON.parse(memMarkerStr) : null;
           const readMarker = readMarkerStr ? JSON.parse(readMarkerStr) : null;
+          const stats = statsStr ? JSON.parse(statsStr) : null;
 
           syncPlanMutationRef.current.mutate({
             title: memPlan?.title,
@@ -292,6 +313,9 @@ export function useQuranCloudSync() {
             readingStreakDays: readPlan?.streakDays,
             lastCompletedDate: memPlan?.lastCompletedDate,
             readingLastCompletedDate: readPlan?.lastCompletedDate,
+            totalReadingSeconds: stats?.totalReadingSeconds,
+            readingKhatmasCompleted: stats?.readingKhatmasCompleted,
+            memorizationKhatmasCompleted: stats?.memorizationKhatmasCompleted,
           });
         } catch (e) {
           console.warn('Error during auto cloud sync:', e);

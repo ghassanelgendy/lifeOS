@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BookOpen, Calendar, Layers, Award, Sparkles, Target, X } from 'lucide-react';
+import { BookOpen, Calendar, Layers, Award, Sparkles, Target, X, Clock, Trophy } from 'lucide-react';
 import { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps, KhatmahPlan, ReadingWirdPlan } from '../types/quran';
-import { RECITERS, SURAHS } from '../services/quranData';
+import { RECITERS, SURAHS, getKhatmaStats, type QuranKhatmaStats } from '../services/quranData';
 import { useQuranAudio } from '../hooks/useQuranAudio';
 import { useQuranMemorizer } from '../hooks/useQuranMemorizer';
 import { AudioPlayerBar } from './AudioPlayerBar';
@@ -303,6 +303,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     }
   });
 
+  const [khatmaStats, setKhatmaStats] = useState<QuranKhatmaStats>(() => getKhatmaStats());
+
   useEffect(() => {
     const handleStorageUpdate = () => {
       try {
@@ -316,6 +318,8 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
         const rdSaved = localStorage.getItem('quran_reading_marker_v1');
         if (rdSaved) setReadingMarker(JSON.parse(rdSaved));
+
+        setKhatmaStats(getKhatmaStats());
       } catch {}
     };
 
@@ -676,17 +680,50 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         }`}
       >
         {activeTab === 'khatmah' && (
-          <KhatmahPlannerView
-            linkedTasks={linkedTasks}
-            linkedHabits={linkedHabits}
-            linkedEvents={linkedEvents}
-            onToggleTask={onToggleTask}
-            onToggleHabit={onToggleHabit}
-            onUpdateHabitDescription={onUpdateHabitDescription}
-            onCreateTask={onCreateQuranTask}
-            onCreateHalqahNote={onCreateHalqahNote}
-            onOpenReader={handleOpenReaderFromKhatmah}
-          />
+          <>
+            {/* Khatma Stats: time spent in the mushaf + full-Quran completion counts */}
+            <div className="p-6 rounded-3xl border border-border/60 bg-card/80 backdrop-blur-xl space-y-3 shadow-md">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2 font-arabic-title">
+                <Trophy className="size-4 text-amber-400 shrink-0" />
+                <span>إحصائيات الختمة</span>
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-border/60 bg-background/40 p-3 text-center space-y-1">
+                  <Clock className="size-4 mx-auto text-primary" />
+                  <p className="text-lg font-bold tabular-nums font-arabic-title">
+                    {(khatmaStats.totalReadingSeconds / 3600).toFixed(1)}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">ساعات في المصحف</p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-background/40 p-3 text-center space-y-1">
+                  <BookOpen className="size-4 mx-auto text-emerald-500" />
+                  <p className="text-lg font-bold tabular-nums font-arabic-title">
+                    {khatmaStats.readingKhatmasCompleted}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">ختمات قراءة</p>
+                </div>
+                <div className="rounded-2xl border border-border/60 bg-background/40 p-3 text-center space-y-1">
+                  <Award className="size-4 mx-auto text-purple-500" />
+                  <p className="text-lg font-bold tabular-nums font-arabic-title">
+                    {khatmaStats.memorizationKhatmasCompleted}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">ختمات حفظ</p>
+                </div>
+              </div>
+            </div>
+
+            <KhatmahPlannerView
+              linkedTasks={linkedTasks}
+              linkedHabits={linkedHabits}
+              linkedEvents={linkedEvents}
+              onToggleTask={onToggleTask}
+              onToggleHabit={onToggleHabit}
+              onUpdateHabitDescription={onUpdateHabitDescription}
+              onCreateTask={onCreateQuranTask}
+              onCreateHalqahNote={onCreateHalqahNote}
+              onOpenReader={handleOpenReaderFromKhatmah}
+            />
+          </>
         )}
 
         {activeTab === 'reader' && (
@@ -753,8 +790,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
         )}
 
         {/* Sticky Audio Player Bar — only on the reader tab so it never covers
-            the khatmah / revision / mutashabihat action buttons */}
-        {activeTab === 'reader' && (
+            the khatmah / revision / mutashabihat action buttons. Hidden while the
+            reader is fullscreen since that view renders its own bottom bar. */}
+        {activeTab === 'reader' && !readerFullscreen && (
           <AudioPlayerBar
             reciter={reciter}
             onSelectReciter={setReciter}

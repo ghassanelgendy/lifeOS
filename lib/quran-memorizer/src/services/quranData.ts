@@ -261,6 +261,51 @@ export function getCurrentWirdInfo() {
 
 const READING_WIRD_KEY = 'quran_reading_wird_v1';
 const KHATMAH_KEY = 'quran_khatmah_plan_v1';
+const STATS_KEY = 'quran_khatma_stats_v1';
+
+export interface QuranKhatmaStats {
+  totalReadingSeconds: number;
+  readingKhatmasCompleted: number;
+  memorizationKhatmasCompleted: number;
+}
+
+/** Reads the local khatma/mushaf-time stats, defaulting missing fields to 0. */
+export function getKhatmaStats(): QuranKhatmaStats {
+  try {
+    const saved = localStorage.getItem(STATS_KEY);
+    if (saved) {
+      return { totalReadingSeconds: 0, readingKhatmasCompleted: 0, memorizationKhatmasCompleted: 0, ...JSON.parse(saved) };
+    }
+  } catch {}
+  return { totalReadingSeconds: 0, readingKhatmasCompleted: 0, memorizationKhatmasCompleted: 0 };
+}
+
+function saveKhatmaStats(stats: QuranKhatmaStats) {
+  try {
+    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    // Reuses the same event the cloud-sync hook already listens on for plan/marker
+    // changes, so these stats get picked up and persisted to Supabase for free.
+    window.dispatchEvent(new Event('quran_plan_updated'));
+    window.dispatchEvent(new Event('quran_khatma_stats_updated'));
+  } catch {}
+}
+
+/** Adds elapsed mushaf time (seconds) to the running total time-in-reader stat. */
+export function addReadingSeconds(seconds: number) {
+  if (!seconds || seconds <= 0) return;
+  const stats = getKhatmaStats();
+  saveKhatmaStats({ ...stats, totalReadingSeconds: stats.totalReadingSeconds + Math.round(seconds) });
+}
+
+/** Records completion of a full Quran read-through (reading) or memorization pass. */
+export function recordKhatmaCompletion(kind: 'reading' | 'memorization') {
+  const stats = getKhatmaStats();
+  if (kind === 'reading') {
+    saveKhatmaStats({ ...stats, readingKhatmasCompleted: stats.readingKhatmasCompleted + 1 });
+  } else {
+    saveKhatmaStats({ ...stats, memorizationKhatmasCompleted: stats.memorizationKhatmasCompleted + 1 });
+  }
+}
 
 /**
  * Classify a habit/event title as a Quran READING (تلاوة/ورد/قراءة) or
@@ -307,6 +352,10 @@ export function advanceWirdOnHabitComplete(habitTitle: string): AdvancedWirdResu
       : true;
     const nextStreak = isConsecutive ? wird.streakDays + 1 : 1;
     const nextPage = Math.min(604, wird.currentPage + (wird.pagesPerDay || 4));
+    if (nextPage === 604) {
+      // Reaching the last page of the mushaf completes a full read-through.
+      recordKhatmaCompletion('reading');
+    }
     const updated: ReadingWirdPlan = {
       ...wird,
       currentPage: nextPage === 604 ? 1 : nextPage,
@@ -318,10 +367,27 @@ export function advanceWirdOnHabitComplete(habitTitle: string): AdvancedWirdResu
     const startingSurah = SURAHS.find((s) => s.pageStart === updated.currentPage);
     const nextSurah = startingSurah || getSurahForPage(updated.currentPage);
     const firstAyah = 1;
-    localStorage.setItem(
-      'quran_reading_marker_v1',
-      JSON.stringify({ surahNumber: nextSurah.id, ayahNumber: firstAyah, page: updated.currentPage })
-    );
+
+    // If the user already manually marked their real reading position (via "mark
+    // as read here" while actually reading) further along than this auto-advance
+    // would place them, keep that real marker instead of resetting it to
+    // page-start — otherwise completing the daily habit checkbox silently erases
+    // whatever ayah they'd actually gotten to, which is what the wird reminder
+    // notification reads to show "where you left off".
+    let existingMarkerPage = 0;
+    try {
+      const existingMarkerStr = localStorage.getItem('quran_reading_marker_v1');
+      const existingMarker = existingMarkerStr ? JSON.parse(existingMarkerStr) : null;
+      existingMarkerPage = existingMarker?.page || 0;
+    } catch {}
+
+    const justCompletedKhatma = nextPage === 604;
+    if (justCompletedKhatma || existingMarkerPage < updated.currentPage) {
+      localStorage.setItem(
+        'quran_reading_marker_v1',
+        JSON.stringify({ surahNumber: nextSurah.id, ayahNumber: firstAyah, page: updated.currentPage })
+      );
+    }
 
     window.dispatchEvent(new Event('quran_plan_updated'));
     return {
@@ -356,6 +422,14 @@ export function advanceWirdOnHabitComplete(habitTitle: string): AdvancedWirdResu
     const nextCurrentPage = isReverse
       ? Math.max(targetMin, plan.currentPage - (plan.pagesPerDay || 1))
       : Math.min(targetMax, plan.currentPage + (plan.pagesPerDay || 1));
+
+    // Fire only on the transition into the end boundary, not on every subsequent
+    // advance while parked there, so a khatma is recorded exactly once per pass.
+    const reachedEnd = isReverse ? nextCurrentPage <= targetMin : nextCurrentPage >= targetMax;
+    const wasAlreadyAtEnd = isReverse ? plan.currentPage <= targetMin : plan.currentPage >= targetMax;
+    if (reachedEnd && !wasAlreadyAtEnd) {
+      recordKhatmaCompletion('memorization');
+    }
 
     plan = {
       ...plan,
