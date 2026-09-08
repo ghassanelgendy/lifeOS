@@ -243,6 +243,12 @@ The system shall provide a 1-click smart scheduling mechanism that evaluates all
 #### FR-TASK-020: Platform Responsive Task Modal (DetailsSheet)
 The system shall render task creation/editing detail sheets as a bottom slide sheet on mobile and iOS devices with gesture dismissal, and dynamically render as a centered, focused desktop dialog modal on PC web screens (`sm:` viewport breakpoint).
 
+#### FR-TASK-021: Reorganize This Week Scheduling Mode
+The Smart Scheduler modal shall provide a second mode, alongside scheduling unscheduled tasks, that re-spreads tasks already scheduled within the current calendar week (Monday-Sunday) across a wider or narrower horizon (the current week vs. the current month), using the same conflict-free awake-slot engine and treating every task not in that set (plus calendar events) as a fixed obstacle. This mode shall not touch habit-derived task instances, completed tasks, or "won't do" tasks.
+
+#### FR-TASK-022: Dashboard-Matched Task Row Styling (PC Web)
+On PC web, individual task rows on the Tasks page shall visually match the task entry styling used on the Dashboard: a persistently bordered, shadowed card with a tinted/dimmed completed state, and an enlarged circular completion toggle with a focus-visible ring, instead of a flat hover-only border with a small checkbox.
+
 ---
 
 ### 3.4 Habit Tracking
@@ -403,6 +409,15 @@ Users shall be able to add transactions via deep links (`lifeos://add-transactio
 #### FR-FIN-017: Quick Cash Expense Logging & AI Categorization
 The system shall provide a `quick-expense` webhook edge function optimized for iOS Shortcuts and Back Tap interactions, returning an immediate response (<100ms) upon cash transaction insertion. It first checks learned `transaction_rules` for an instant deterministic category match, then asynchronously categorizes expenses via a multi-model fallback cascade across Bynara and Dahl (each candidate retried once) with a general-reasoning system prompt, and records a note if every candidate fails.
 
+#### FR-FIN-018: Desktop-Optimized Finance Page Layout
+On PC web, the Finance page body shall be width-capped and centered (`max-w-7xl`) rather than stretching edge-to-edge, and the Banks tab and Investments tab's transaction list shall render as responsive multi-column grids at `md`/`lg`/`xl` breakpoints rather than remaining a single stacked column regardless of viewport width.
+
+#### FR-FIN-019: Single Category Breakdown Display
+The spending-by-category breakdown shall be rendered exactly once, as the standalone "By Category" list card. It shall not also appear as a selectable tab inside the grouped chart card, which shall default to its "Over time" view.
+
+#### FR-FIN-020: Keyboard-Avoiding Transaction Sheets (iOS)
+`DetailsSheet` (used by the transaction add/edit sheet, its embedded SMS/receipt-text parser, and other bottom sheets) shall reposition itself upward using the on-screen keyboard height on iOS, so its content and action buttons remain visible above the keyboard rather than being obscured by it.
+
 ---
 
 ### 3.7 Sleep Tracking
@@ -502,6 +517,9 @@ Users shall be able to create, read, update, and delete notes.
 #### FR-NOTE-004: Folder CRUD
 Users shall be able to create and rename note folders.
 
+#### FR-NOTE-004a: Multi-Select & Bulk Delete (PC Web)
+The notes list on PC web shall support a "Select" mode with per-note checkboxes, a "Select all" action scoped to the currently active folder/filter view, and a confirmed bulk-delete action.
+
 #### FR-NOTE-005: Note Date Display
 Notes shall display creation and update dates.
 
@@ -515,6 +533,12 @@ The system shall provide a Cognitive Brain Dump processor (`BrainDumpModal.tsx`)
 - Stream-of-consciousness raw thought capture & speech-to-text dictation.
 - Automated AI classification detecting **Tasks**, **Habits**, and **Calendar Events** with 1-click creation buttons (+ Add Task, + Add Habit, + Add Event).
 - Mental clarity score (1-100), mood/sentiment tags, executive summary, and key insights.
+
+#### FR-NOTE-007a: Raw Thought Preserved as Task Detail
+Any task created from a Brain Dump — via the manual per-task "Add Task" action, the AI Organizer's "Add Task" button, the batch "Sync Tasks" export, or the "Organize & File" / nightly auto-organizer flow — shall have its `description` field populated with the raw brain dump text it was extracted from (the source note's raw entries since its last organize pass, or the exact text last sent to the AI organizer when no note is attached), so the original context remains attached to the task.
+
+#### FR-NOTE-007b: Auto-Organizer Creates Real Tasks, Not Just Checkboxes
+The "Organize & File" action and the nightly `braindump-organizer` cron shall create real `tasks` rows for each AI-extracted action item (deduplicated by title against tasks already linked to that note via `source_note_id`), in addition to listing them as `- [ ] title` checkboxes in the organized note body. Re-running organize on an already-organized note shall extract only the genuine raw entries appended since the last pass (the text after the note's `### 🕒 Raw Thoughts Log` marker), not the AI's own prior summary/checkboxes, so repeated re-organizes cannot compound the note body into something the AI reads as "nothing new to extract."
 
 #### FR-NOTE-008: Note Pinning & Metadata
 The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`, `ai_analysis` (jsonb), and `tags` (text[]) for organizing thoughts.
@@ -642,6 +666,15 @@ Long-pressing any verse in the reader shall trigger an iOS 3D lift visual effect
 
 #### FR-QURAN-014: Full Offline-First Quran Storage & In-Settings Full Downloader
 All 604 Medina Mushaf pages with Arabic text and Tafsir Al-Muyassar shall be cached locally in IndexedDB (`quran_pages` store). Settings shall provide a dedicated one-tap downloader with real-time progress and verification for text and tafsir. Offline queueing shall handle plan mutations and note bookmarks when disconnected, and auth session state shall be bootstrapped synchronously from localStorage to guarantee instant offline app launches without network stalls.
+
+#### FR-QURAN-015: Khatma Stats (Time-in-Mushaf & Completion Counters)
+The system shall track cumulative time spent with the mushaf reader open and visible, and shall increment a reading-khatma counter whenever the reading wird advances past page 604, and a memorization-khatma counter whenever the memorization plan reaches its configured end boundary. These stats (`total_reading_seconds`, `reading_khatmas_completed`, `memorization_khatmas_completed` on `quran_khatmah_plans`) shall be shown as a stats card in the Khatmah tab, stored local-first, and synced cross-device by taking the max of local and remote values per field.
+
+#### FR-QURAN-016: Reading Position Preservation on Habit Completion
+Completing the daily reading-wird habit shall not overwrite a manually-set reading checkpoint that is already further along than the page the auto-advance would compute, except when that advance completes a khatma (wraps past page 604), in which case the marker shall always reset to the new starting page.
+
+#### FR-QURAN-017: Fullscreen Mushaf Page-Turn Scroll Reset
+Turning pages while the fullscreen Mushaf reader is active shall reset that view's own independently-scrolling container to its top (not just the window), and shall land the newly-loaded page's first ayah at the top of the viewport rather than centering it, so page transitions land cleanly at the top of the new page.
 
 ---
 
