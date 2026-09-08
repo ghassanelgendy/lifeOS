@@ -66,6 +66,9 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
   const [, setCreatedHabitTitle] = useState<string | null>(null);
   const [, setCreatedEventTitle] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+  // Raw text most recently sent to the AI organizer, used to fill in task
+  // details when the source note isn't available (e.g. multi-note batches).
+  const [lastAnalyzedRawText, setLastAnalyzedRawText] = useState('');
 
   // Brain Dump notes list
   const brainDumpNotes = useMemo(() => {
@@ -124,6 +127,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
 
       await createTask.mutateAsync({
         title: task.title,
+        description: note.body || undefined,
         priority: (task.priority as any) || 'medium',
         due_date: task.due || getLocalDateString(),
         due_time: task.due_time || undefined,
@@ -168,6 +172,17 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
+  };
+
+  // A previously-organized note's body is `Summary + Action Items + ... + Raw Thoughts Log`.
+  // Re-organizing must feed the AI only the genuine raw entries, not the AI's own prior
+  // summary/checkboxes nested inside "Raw Thoughts Log" — otherwise each re-organize pass
+  // buries the real content one level deeper until the model sees nothing new to extract.
+  const extractRawMaterial = (body: string): string => {
+    const marker = '### 🕒 Raw Thoughts Log';
+    const idx = body.lastIndexOf(marker);
+    if (idx === -1) return body;
+    return body.slice(idx + marker.length).trim();
   };
 
   // Keep a stable ref to the latest analyzer so the listener below doesn't
@@ -311,6 +326,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
     if (!textToAnalyze.trim()) return;
     setErrorMsg('');
     setIsAnalyzing(true);
+    setLastAnalyzedRawText(textToAnalyze);
     if (noteContext) setTargetNoteToAnalyze(noteContext);
     void triggerHaptics('medium');
 
@@ -504,12 +520,14 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
       const availableListNames = taskLists.map((l) => l.name).join(', ') || 'Work, Learn, Personal, Ideas, Reminders, Shopping, Someday';
       const availableTagNames = tags.map((t) => t.name).join(', ') || 'servixa, ischool, assignment, research, quiz, mov, lifeos, urgent, important, quick win, waiting';
 
+      const rawMaterial = extractRawMaterial(note.body);
+
       const briefSystemPrompt = `You are lifeOS Executive Summarizer & Task Classifier. Analyze this brain dump. Produce a BRIEF, CONCISE summary of key insights, action points, and ideas.
 Available Task Lists: ${availableListNames}
 Available Tags: ${availableTagNames}
 
 Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks": [{"title": "...", "priority": "high", "suggested_list": "...", "suggested_tag": "...", "estimated_duration": 30}], "projects_or_notes": [{"title": "...", "content": "..."}]}`;
-      const resText = await askAI(briefSystemPrompt, note.body, true);
+      const resText = await askAI(briefSystemPrompt, rawMaterial, true);
       const parsed = extractJSON(resText) as BrainDumpAnalysis;
 
       if (parsed.tasks && parsed.tasks.length > 0) {
@@ -526,6 +544,38 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
           estimated_duration: task.estimated_duration || 30,
           scheduling_reason: slots[i]?.reason || 'Distributed during awake hours',
         }));
+
+        // Actually create real Task rows (not just "- [ ]" checkboxes baked into the
+        // note text), carrying the raw dump text into each task's description. Skip
+        // titles already linked to this note so re-organizing doesn't create dupes.
+        const alreadyLinkedTitles = new Set(
+          tasks
+            .filter((t) => t.source_note_id === note.id)
+            .map((t) => t.title.trim().toLowerCase())
+        );
+        for (const task of parsed.tasks) {
+          if (alreadyLinkedTitles.has(task.title.trim().toLowerCase())) continue;
+          const targetList =
+            taskLists.find((l) => l.name.toLowerCase() === task.suggested_list?.toLowerCase())?.id ||
+            taskLists[0]?.id;
+          const targetTagIds = task.suggested_tag
+            ? ([tags.find((tg) => tg.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id].filter(
+                Boolean
+              ) as string[])
+            : [];
+          await createTask.mutateAsync({
+            title: task.title,
+            description: rawMaterial || undefined,
+            priority: (task.priority as any) || 'medium',
+            due_date: task.due || todayStr,
+            due_time: task.due_time || undefined,
+            duration_minutes: task.estimated_duration || 30,
+            list_id: targetList,
+            tag_ids: targetTagIds,
+            source_note_id: note.id,
+            is_completed: false,
+          });
+        }
       }
 
       // Unify note in-place with structured AI summary + raw thoughts
@@ -534,7 +584,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
         parsed.insights?.length ? `\n### 💡 Key Takeaways\n${parsed.insights.map((i) => `- ${i}`).join('\n')}` : '',
         parsed.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t) => `- [ ] ${t.title}`).join('\n')}` : '',
         parsed.projects_or_notes?.length ? `\n### 📝 Core Ideas\n${parsed.projects_or_notes.map((p) => `**${p.title}:** ${p.content}`).join('\n')}` : '',
-        `\n---\n### 🕒 Raw Thoughts Log\n${note.body || ''}`,
+        `\n---\n### 🕒 Raw Thoughts Log\n${rawMaterial}`,
       ].filter(Boolean).join('\n');
 
       // Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
@@ -602,6 +652,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
 
       await createTask.mutateAsync({
         title: task.title,
+        description: targetNoteToAnalyze?.body || lastAnalyzedRawText || undefined,
         priority: (task.priority as any) || 'medium',
         due_date: task.due || todayStr,
         due_time: task.due_time || undefined,
@@ -644,6 +695,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
 
         await createTask.mutateAsync({
           title: t.title,
+          description: targetNoteToAnalyze?.body || lastAnalyzedRawText || undefined,
           priority: (t.priority as any) || 'medium',
           due_date: t.due || todayStr,
           due_time: t.due_time || undefined,

@@ -64,6 +64,17 @@ const BYNARA_MODELS = ['agnes-2.5-flash', 'mistral-large', 'deepseek-v4-pro'];
 // already about to time out.
 const MAX_NOTES_PER_RUN = 3;
 
+/** A previously-organized note's body is `Summary + Action Items + ... + Raw Thoughts Log`.
+ * Re-organizing must feed the AI only the genuine raw entries, not the AI's own prior
+ * summary/checkboxes nested inside "Raw Thoughts Log" — otherwise each re-organize pass
+ * buries the real content one level deeper until the model sees nothing new to extract. */
+function extractRawMaterial(body: string): string {
+  const marker = '### 🕒 Raw Thoughts Log';
+  const idx = body.lastIndexOf(marker);
+  if (idx === -1) return body;
+  return body.slice(idx + marker.length).trim();
+}
+
 /** Expands one resolved (baseUrl, apiKey) pair into one candidate per model in that
  * provider's priority list, so a single dead/renamed model doesn't sink an otherwise-valid key. */
 function expandCandidates(baseUrl: string, apiKey: string, models: string[]): CandidateConfig[] {
@@ -284,7 +295,7 @@ async function processNoteBatch(
         }
       }
 
-      const cleanBody = (rawDump.body || '')
+      const cleanBody = extractRawMaterial(rawDump.body || '')
         .replace(/\*\*🕒[^\n]+\*\*/g, '')
         .replace(/New Day Started\. Capture your thoughts\.\.\./g, '')
         .trim();
@@ -410,13 +421,51 @@ Return ONLY valid JSON in this format:
       try {
         const parsed = await callChatCompletion(candidates, systemPrompt, cleanBody);
 
+        // 4b. Actually create real Task rows for extracted action items (not just
+        // "- [ ]" checkboxes baked into the note text), carrying the raw dump text
+        // into each task's description. Skip titles already linked to this note so
+        // repeated runs (e.g. force re-organize) don't create duplicates.
+        if (parsed?.tasks?.length) {
+          const { data: existingLinkedTasks } = await supabase
+            .from('tasks')
+            .select('title')
+            .eq('source_note_id', rawDump.id);
+          const alreadyLinkedTitles = new Set(
+            (existingLinkedTasks || []).map((t: any) => (t.title || '').trim().toLowerCase())
+          );
+          const listByName = new Map((userLists || []).map((l: any) => [l.name.toLowerCase(), l.id]));
+          const tagByName = new Map((userTags || []).map((t: any) => [t.name.toLowerCase(), t.id]));
+
+          for (const t of parsed.tasks) {
+            const title = (t?.title || '').trim();
+            if (!title || alreadyLinkedTitles.has(title.toLowerCase())) continue;
+            const listId = listByName.get((t.suggested_list || '').toLowerCase()) || (userLists || [])[0]?.id || null;
+            const tagId = tagByName.get((t.suggested_tag || '').toLowerCase());
+            const { error: taskInsertError } = await supabase.from('tasks').insert({
+              title,
+              description: cleanBody,
+              priority: t.priority || 'medium',
+              due_date: todayStr,
+              duration_minutes: t.estimated_duration || 30,
+              list_id: listId,
+              tag_ids: tagId ? [tagId] : [],
+              source_note_id: rawDump.id,
+              user_id: noteUserId,
+              is_completed: false,
+            });
+            if (taskInsertError) {
+              console.error(`[BrainDump Organizer] Failed to create task "${title}" for note ${rawDump.id}:`, taskInsertError);
+            }
+          }
+        }
+
         // 5. Build unified note body with structured AI summary on top and raw thoughts below
         const unifiedBody = [
           `### 📌 Brief Summary\n${parsed?.summary || 'Concise daily dump organization.'}`,
           parsed?.insights?.length ? `\n### 💡 Key Takeaways\n${parsed.insights.map((i: string) => `- ${i}`).join('\n')}` : '',
           parsed?.tasks?.length ? `\n### ⚡ Action Items\n${parsed.tasks.map((t: any) => `- [ ] ${t.title}`).join('\n')}` : '',
           parsed?.projects_or_notes?.length ? `\n### 📝 Core Ideas\n${parsed.projects_or_notes.map((p: any) => `**${p.title}:** ${p.content}`).join('\n')}` : '',
-          `\n---\n### 🕒 Raw Thoughts Log\n${rawDump.body || ''}`,
+          `\n---\n### 🕒 Raw Thoughts Log\n${cleanBody}`,
         ].filter(Boolean).join('\n');
 
         // 6. Update existing note in-place (Single Unified Note per Day - No Duplicate Notes)
