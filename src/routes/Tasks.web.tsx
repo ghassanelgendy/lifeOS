@@ -2739,7 +2739,7 @@ Return ONLY raw JSON.`;
           )}
 
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
-          <div className="space-y-1">
+          <div className="space-y-2">
             {mainTasksToRender.map((task) => {
               const isHabitTask = task.id.startsWith('habit-');
               return (
@@ -2783,7 +2783,7 @@ Return ONLY raw JSON.`;
                 <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
-                <div className="mt-2 space-y-1 opacity-60">
+                <div className="mt-2 space-y-2">
                   {completedTasksToRender.slice(0, 10).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (
@@ -2829,7 +2829,7 @@ Return ONLY raw JSON.`;
                 <span>Won't do ({wontDoTasksToRender.length})</span>
               </button>
               {showWontDo && (
-                <div className="mt-2 space-y-1 opacity-70">
+                <div className="mt-2 space-y-2 opacity-70">
                   {wontDoTasksToRender.slice(0, 20).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (
@@ -3293,8 +3293,10 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
   return (
     <div
       className={cn(
-        "task-item group flex flex-col p-3 rounded-xl border border-transparent hover:border-border hover:bg-card transition-all duration-150 ease-out",
-        task.is_completed && "opacity-50"
+        "task-item group flex flex-col rounded-xl border p-3 sm:p-3.5 transition-all duration-200",
+        task.is_completed
+          ? "opacity-60 border-primary/15 bg-primary/[0.04]"
+          : "border-border/60 bg-card hover:border-border hover:bg-card/80 shadow-sm hover:shadow-md"
       )}
     >
       <div 
@@ -3311,10 +3313,11 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             onToggle();
           }}
           className={cn(
-            "w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors",
+            "relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full border-2 transition-all duration-200",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             task.is_completed
-              ? "bg-green-500 border-green-500"
-              : "border-muted-foreground hover:border-foreground"
+              ? "border-primary bg-primary shadow-inner shadow-primary/20"
+              : "border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95"
           )}
         >
           <svg
@@ -3453,7 +3456,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             className="overflow-hidden w-full"
           >
             <div 
-              className="mt-3 pl-8 pr-2 space-y-2 border-t border-border/30 pt-3"
+              className="mt-3 pl-14 pr-2 space-y-2 border-t border-border/30 pt-3"
               onClick={(e) => e.stopPropagation()}
             >
               {subtasks.map((subtask) => (
