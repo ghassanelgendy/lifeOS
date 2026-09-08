@@ -194,6 +194,7 @@ export default function Tasks() {
 
   // Smart Unscheduled Tasks Scheduler State
   const [isSmartScheduleModalOpen, setIsSmartScheduleModalOpen] = useState(false);
+  const [smartScheduleMode, setSmartScheduleMode] = useState<'unscheduled' | 'reorganize'>('unscheduled');
   const [smartScheduleHorizon, setSmartScheduleHorizon] = useState<'week' | 'month'>('week');
   const [isSmartScheduling, setIsSmartScheduling] = useState(false);
   const [smartSchedulePlan, setSmartSchedulePlan] = useState<Array<{
@@ -1653,10 +1654,8 @@ export default function Tasks() {
     );
   }, [allTasks]);
 
-  const generateSmartSchedulePlan = useCallback((horizon: 'week' | 'month' = smartScheduleHorizon) => {
-    if (unscheduledTasks.length === 0) return [];
-
-    // Calculate awake window from user's sleep metrics
+  // Calculate awake window from user's sleep metrics (shared by both schedule modes)
+  const computeAwakeWindow = useCallback(() => {
     let wakeHour = 8;
     let bedHour = 23.5;
     if (avgBedtimeMinutes !== null && avgBedtimeMinutes !== undefined) {
@@ -1668,6 +1667,13 @@ export default function Tasks() {
       if (calcWake >= 5 && calcWake <= 12) wakeHour = calcWake;
       if (calcBed >= 20 || calcBed <= 4) bedHour = calcBed <= 4 ? 24 + calcBed : calcBed;
     }
+    return { wakeHour, bedHour };
+  }, [avgBedtimeMinutes, avgSleepMinutes]);
+
+  const generateSmartSchedulePlan = useCallback((horizon: 'week' | 'month' = smartScheduleHorizon) => {
+    if (unscheduledTasks.length === 0) return [];
+
+    const { wakeHour, bedHour } = computeAwakeWindow();
 
     // Estimate durations per task based on semantic analysis (calls, quick replies vs deep work, study, etc.)
     const estimatedDurations = unscheduledTasks.map((t) => estimateTaskDuration(t));
@@ -1700,10 +1706,68 @@ export default function Tasks() {
         conflictFree: slot?.conflictFree ?? true,
       };
     });
-  }, [unscheduledTasks, smartScheduleHorizon, avgBedtimeMinutes, avgSleepMinutes, allTasks, calendarEvents]);
+  }, [unscheduledTasks, smartScheduleHorizon, computeAwakeWindow, allTasks, calendarEvents]);
 
-  const handleOpenSmartSchedule = () => {
-    const plan = generateSmartSchedulePlan('week');
+  // Already-scheduled tasks landing in the current calendar week (Mon-Sun) that are
+  // eligible to be re-spread by the "Reorganize This Week" mode.
+  const currentWeekScheduledTasks = useMemo(() => {
+    return weekTasks.filter(
+      (t) => !t.is_completed && !t.is_wont_do && !!t.due_date && !t.id.startsWith('habit-')
+    );
+  }, [weekTasks]);
+
+  // Re-spreads tasks already scheduled for the current week across a wider or narrower
+  // horizon (stretch across the week, or across the whole month) instead of leaving them
+  // bunched up on the days they were originally dropped on.
+  const generateReorganizePlan = useCallback((horizon: 'week' | 'month' = smartScheduleHorizon) => {
+    if (currentWeekScheduledTasks.length === 0) return [];
+
+    const { wakeHour, bedHour } = computeAwakeWindow();
+    const estimatedDurations = currentWeekScheduledTasks.map((t) => t.duration_minutes || estimateTaskDuration(t));
+    const horizonDays = horizon === 'month' ? 30 : 7;
+
+    // Treat every other active task/event as a fixed obstacle; only the tasks being
+    // reorganized are free to move.
+    const reorganizeIds = new Set(currentWeekScheduledTasks.map((t) => t.id));
+    const otherTasks = allTasks.filter((t) => !reorganizeIds.has(t.id));
+
+    const slots = distributeTasksAcrossAwakeSlots(
+      currentWeekScheduledTasks.length,
+      {
+        avgWakeHour: wakeHour,
+        avgBedHour: bedHour,
+        existingTasks: otherTasks,
+        calendarEvents,
+      },
+      {
+        horizonDays,
+        estimatedDurations,
+      }
+    );
+
+    return currentWeekScheduledTasks.map((task, index) => {
+      const slot = slots[index] || slots[slots.length - 1];
+      const dur = estimatedDurations[index] || slot?.durationMinutes || 30;
+      return {
+        task,
+        dueDate: slot?.dueDate || task.due_date || format(new Date(), 'yyyy-MM-dd'),
+        dueTime: slot?.dueTime || task.due_time || '10:00',
+        durationMinutes: dur,
+        label: slot?.label || 'Today at 10:00 AM',
+        conflictFree: slot?.conflictFree ?? true,
+      };
+    });
+  }, [currentWeekScheduledTasks, smartScheduleHorizon, computeAwakeWindow, allTasks, calendarEvents]);
+
+  const generatePlanForMode = useCallback(
+    (mode: 'unscheduled' | 'reorganize', horizon: 'week' | 'month') =>
+      mode === 'reorganize' ? generateReorganizePlan(horizon) : generateSmartSchedulePlan(horizon),
+    [generateReorganizePlan, generateSmartSchedulePlan]
+  );
+
+  const handleOpenSmartSchedule = (mode: 'unscheduled' | 'reorganize' = 'unscheduled') => {
+    setSmartScheduleMode(mode);
+    const plan = generatePlanForMode(mode, smartScheduleHorizon);
     setSmartSchedulePlan(plan);
     setIsSmartScheduleModalOpen(true);
   };
@@ -2047,7 +2111,7 @@ export default function Tasks() {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={handleOpenSmartSchedule}
+              onClick={() => handleOpenSmartSchedule('unscheduled')}
               className={cn(
                 "h-9 px-2.5 rounded-full border transition-all flex items-center gap-1.5 text-xs font-medium",
                 unscheduledTasks.length > 0
@@ -3046,15 +3110,46 @@ Return ONLY raw JSON.`;
           setIsSmartScheduleModalOpen(false);
           setSmartSchedulePlan([]);
         }}
-        title="Smart Schedule Unscheduled Tasks"
+        title={smartScheduleMode === 'reorganize' ? "Reorganize This Week's Tasks" : "Smart Schedule Unscheduled Tasks"}
       >
         <div className="space-y-4">
+          <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                setSmartScheduleMode('unscheduled');
+                setSmartSchedulePlan(generatePlanForMode('unscheduled', smartScheduleHorizon));
+              }}
+              className={cn(
+                "flex-1 px-2.5 py-1.5 rounded-md transition-colors",
+                smartScheduleMode === 'unscheduled' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Schedule Unscheduled
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSmartScheduleMode('reorganize');
+                setSmartSchedulePlan(generatePlanForMode('reorganize', smartScheduleHorizon));
+              }}
+              className={cn(
+                "flex-1 px-2.5 py-1.5 rounded-md transition-colors",
+                smartScheduleMode === 'reorganize' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Reorganize This Week
+            </button>
+          </div>
+
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/70 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Wand2 size={16} className="text-primary" />
                 <span className="text-xs font-semibold">
-                  {unscheduledTasks.length} Unscheduled Task{unscheduledTasks.length === 1 ? '' : 's'}
+                  {smartScheduleMode === 'reorganize'
+                    ? `${currentWeekScheduledTasks.length} Scheduled Task${currentWeekScheduledTasks.length === 1 ? '' : 's'} This Week`
+                    : `${unscheduledTasks.length} Unscheduled Task${unscheduledTasks.length === 1 ? '' : 's'}`}
                 </span>
               </div>
               <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-[11px]">
@@ -3062,40 +3157,51 @@ Return ONLY raw JSON.`;
                   type="button"
                   onClick={() => {
                     setSmartScheduleHorizon('week');
-                    setSmartSchedulePlan(generateSmartSchedulePlan('week'));
+                    setSmartSchedulePlan(generatePlanForMode(smartScheduleMode, 'week'));
                   }}
                   className={cn(
                     "px-2 py-0.5 rounded-md transition-colors",
                     smartScheduleHorizon === 'week' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  This Week
+                  {smartScheduleMode === 'reorganize' ? 'Stretch Over Week' : 'This Week'}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setSmartScheduleHorizon('month');
-                    setSmartSchedulePlan(generateSmartSchedulePlan('month'));
+                    setSmartSchedulePlan(generatePlanForMode(smartScheduleMode, 'month'));
                   }}
                   className={cn(
                     "px-2 py-0.5 rounded-md transition-colors",
                     smartScheduleHorizon === 'month' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  Month
+                  {smartScheduleMode === 'reorganize' ? 'Stretch Over Month' : 'Month'}
                 </button>
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Finds conflict-free awake time slots based on your sleep stats (sleep bedtime: {avgBedtimeMinutes !== null ? `${Math.floor(avgBedtimeMinutes / 60)}:${String(avgBedtimeMinutes % 60).padStart(2, '0')}` : 'default 11:30 PM'}), avoiding existing tasks and calendar events with automatic breathing room buffers.
+              {smartScheduleMode === 'reorganize'
+                ? "Re-spreads tasks already scheduled for this week evenly across the selected horizon, avoiding your other tasks and calendar events."
+                : `Finds conflict-free awake time slots based on your sleep stats (sleep bedtime: ${avgBedtimeMinutes !== null ? `${Math.floor(avgBedtimeMinutes / 60)}:${String(avgBedtimeMinutes % 60).padStart(2, '0')}` : 'default 11:30 PM'}), avoiding existing tasks and calendar events with automatic breathing room buffers.`}
             </p>
           </div>
 
-          {unscheduledTasks.length === 0 ? (
+          {(smartScheduleMode === 'reorganize' ? currentWeekScheduledTasks.length === 0 : unscheduledTasks.length === 0) ? (
             <div className="py-8 text-center text-muted-foreground text-sm">
               <CheckCircle2 size={36} className="mx-auto mb-2 text-emerald-500/60" />
-              <p className="font-medium">All tasks are scheduled!</p>
-              <p className="text-xs mt-1">There are no unscheduled active tasks waiting in your queue.</p>
+              {smartScheduleMode === 'reorganize' ? (
+                <>
+                  <p className="font-medium">No scheduled tasks this week.</p>
+                  <p className="text-xs mt-1">There's nothing currently scheduled for this week to reorganize.</p>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">All tasks are scheduled!</p>
+                  <p className="text-xs mt-1">There are no unscheduled active tasks waiting in your queue.</p>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
@@ -3147,7 +3253,9 @@ Return ONLY raw JSON.`;
               ) : (
                 <Sparkles size={14} className="text-primary" />
               )}
-              {isSmartScheduling ? "Scheduling..." : `Apply Schedule (${smartSchedulePlan.length})`}
+              {isSmartScheduling
+                ? (smartScheduleMode === 'reorganize' ? "Reorganizing..." : "Scheduling...")
+                : `${smartScheduleMode === 'reorganize' ? 'Reorganize' : 'Apply Schedule'} (${smartSchedulePlan.length})`}
             </Button>
           </div>
         </div>
