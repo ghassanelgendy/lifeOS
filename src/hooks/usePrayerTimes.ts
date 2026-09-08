@@ -15,6 +15,7 @@ export function usePrayerTimes() {
 
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimes | null>(null);
   const [nextPrayer, setNextPrayer] = useState<string | null>(null);
+  const [nextPrayerTime, setNextPrayerTime] = useState<Date | null>(null);
   const [timeToNext, setTimeToNext] = useState<string>('');
 
   useEffect(() => {
@@ -51,6 +52,8 @@ export function usePrayerTimes() {
         setNextPrayer(next);
       }
 
+      setNextPrayerTime(nextTime ?? null);
+
       if (nextTime) {
         const diff = nextTime.getTime() - now.getTime();
         if (diff > 0) {
@@ -86,6 +89,7 @@ export function usePrayerTimes() {
     locationLabel,
     error: null,
     nextPrayer,
+    nextPrayerTime,
     timeToNext,
   };
 }

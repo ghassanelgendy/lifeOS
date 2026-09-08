@@ -605,7 +605,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const logHabit = useLogHabit();
   const toggleCalendarEvent = useToggleCalendarEvent();
   const { tracker: prayerTracker, togglePrayerStatus, isLoading: prayerLoading } = usePrayerTracker(today);
-  const { times: prayerTimesList } = usePrayerTimes();
+  const { times: prayerTimesList, nextPrayer: nextPrayerKey, nextPrayerTime } = usePrayerTimes();
 
   // 3D Haptic Touch Context Menu State
   const [contextMenuEntry, setContextMenuEntry] = useState<any | null>(null);
@@ -1138,17 +1138,41 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const todayHabitTotal = 5 + habitsDueToday.length;
   const todayHabitCompleted = completedTodayPrayers + completedTodayStandard;
 
+  // Shows exactly one prayer: the most recently-passed one if it hasn't been
+  // logged yet (so the user can mark it), otherwise the next upcoming prayer —
+  // which also covers the case where nothing has passed yet today (before Fajr).
   const lastPrayerSlot = useMemo(() => {
     const now = today.getTime();
-    const past = prayerTimesList
-      .filter((t) => t.name !== 'Sunrise')
-      .filter((t) => t.time.getTime() <= now);
-    if (past.length === 0) return undefined;
-    return past.reduce<(typeof prayerTimesList)[number] | undefined>((latest, cur) => {
+    const eligible = prayerTimesList.filter((t) => t.name !== 'Sunrise');
+
+    const past = eligible.filter((t) => t.time.getTime() <= now);
+    const rawLastSlot = past.reduce<(typeof prayerTimesList)[number] | undefined>((latest, cur) => {
       if (!latest) return cur;
       return cur.time.getTime() >= latest.time.getTime() ? cur : latest;
     }, undefined);
-  }, [prayerTimesList, today]);
+
+    const rawLastDone = rawLastSlot
+      ? isPrayerStatusComplete(prayerTracker.find((p) => p.prayerName === rawLastSlot.name)?.status)
+      : false;
+
+    if (rawLastSlot && !rawLastDone) return rawLastSlot;
+
+    // Either nothing has passed yet today, or the last one is already logged —
+    // show the next upcoming prayer instead.
+    const future = eligible
+      .filter((t) => t.time.getTime() > now)
+      .sort((a, b) => a.time.getTime() - b.time.getTime());
+    if (future.length > 0) return future[0];
+
+    // All of today's prayers have passed (post-Isha) — fall back to the
+    // already-computed next prayer (tomorrow's Fajr).
+    if (nextPrayerKey && nextPrayerTime) {
+      const name = nextPrayerKey.charAt(0).toUpperCase() + nextPrayerKey.slice(1);
+      return { name, time: nextPrayerTime, isNext: true };
+    }
+
+    return rawLastSlot;
+  }, [prayerTimesList, today, prayerTracker, nextPrayerKey, nextPrayerTime]);
 
   const lastPrayerTrackerItem = useMemo(
     () => (lastPrayerSlot ? prayerTracker.find((p) => p.prayerName === lastPrayerSlot.name) : undefined),
