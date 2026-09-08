@@ -98,6 +98,7 @@ export function ConfirmSheet({
       data-lifeos-confirm-sheet
       className={cn(
         'fixed inset-0 z-[110] transition-opacity duration-300 font-sans text-foreground',
+        'flex flex-col justify-end sm:justify-center sm:items-center sm:p-4',
         isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
@@ -109,23 +110,31 @@ export function ConfirmSheet({
     >
       <div
         className={cn(
-          'absolute left-0 right-0 bottom-0 w-full max-w-lg mx-auto flex flex-col min-h-0',
-          isIOS 
-            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10 overflow-hidden isolate' 
-            : 'rounded-[24px] border border-border bg-card shadow-2xl overflow-hidden isolate'
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 sm:relative sm:max-w-md',
+          'rounded-t-[24px] sm:rounded-2xl',
+          isIOS
+            ? 'liquid-glass-card border-white/20 dark:border-white/10 overflow-hidden isolate'
+            : 'border border-border bg-card shadow-2xl overflow-hidden isolate'
         )}
         style={{
-          position: 'absolute',
+          position: 'relative',
           maxHeight: '92dvh',
           paddingBottom: 'env(safe-area-inset-bottom)',
-          transform: dragY > 0
-            ? `translateY(${dragY}px)`
-            : sheetVisible
-              ? 'translateY(0)'
-              : 'translateY(100%)',
-          transition: dragY > 0
+          transform: (typeof window !== 'undefined' && window.innerWidth >= 640)
+            ? (sheetVisible ? 'none' : 'scale(0.96)')
+            : (dragY > 0
+              ? `translateY(${dragY}px)`
+              : sheetVisible
+                ? 'translateY(0)'
+                : 'translateY(100%)'),
+          opacity: (typeof window !== 'undefined' && window.innerWidth >= 640)
+            ? (sheetVisible ? 1 : 0)
+            : 1,
+          transition: (dragY > 0)
             ? 'none'
-            : 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease-out',
+            : (typeof window !== 'undefined' && window.innerWidth >= 640)
+              ? 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
+              : 'transform 0.4s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease-out',
         }}
         onClick={(e) => e.stopPropagation()}
       >

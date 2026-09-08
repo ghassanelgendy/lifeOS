@@ -223,6 +223,7 @@ export function DetailsSheet({
         )}
         style={{
           // On mobile, pin to bottom and respect keyboard / safe-area; on desktop, relative modal
+          bottom: 'var(--keyboard-height, 0px)',
           maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom)',
           willChange: 'transform, opacity',
@@ -277,26 +278,35 @@ export function DetailsSheet({
           }}
           style={{ touchAction: 'none' }}
         >
+          {/* Mobile: bare close icon, left. Hidden on desktop in favor of the labeled Cancel button. */}
           <button
             type="button"
             onClick={onClose}
             className={cn(
-              "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors touch-manipulation -ml-1 active:scale-95",
+              "sm:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors touch-manipulation -ml-1 active:scale-95",
               isIOS ? "text-muted-foreground hover:text-foreground hover:bg-white/10" : "hover:bg-secondary text-foreground"
             )}
             aria-label="Close"
           >
             <X size={22} />
           </button>
-          <h1 id="details-sheet-title" className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12">
+
+          {/* Title: floats centered over the icon bar on mobile; sits left-aligned in normal
+              flex flow on desktop, matching standard dialog conventions. */}
+          <h1
+            id="details-sheet-title"
+            className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12 sm:static sm:left-auto sm:translate-x-0 sm:px-0 sm:min-w-0"
+          >
             {title}
           </h1>
+
+          {/* Mobile: bare save/checkmark icon, right. */}
           <button
             type="button"
             onClick={onConfirm}
             disabled={confirmDisabled}
             className={cn(
-              "min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg disabled:opacity-50 disabled:pointer-events-none transition-colors touch-manipulation active:scale-95",
+              "sm:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg disabled:opacity-50 disabled:pointer-events-none transition-colors touch-manipulation active:scale-95",
               isIOS
                 ? "bg-white/10 hover:bg-white/20 text-primary border border-white/10"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
@@ -305,6 +315,25 @@ export function DetailsSheet({
           >
             <Check size={22} />
           </button>
+
+          {/* Desktop: labeled Cancel/Save buttons instead of bare icons. */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium text-foreground hover:bg-secondary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={onConfirm}
+              disabled={confirmDisabled}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+            >
+              Save
+            </button>
+          </div>
         </header>
 
         {/* Scrollable content */}

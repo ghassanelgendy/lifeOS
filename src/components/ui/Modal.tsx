@@ -161,10 +161,11 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       <div
         ref={panelRef}
         className={cn(
-          'w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl modal-sheet-ios overflow-hidden isolate sm:relative sm:bottom-auto sm:max-h-[85vh]',
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl overflow-hidden isolate sm:relative sm:bottom-auto sm:max-h-[85vh]',
+          'rounded-t-[24px] sm:rounded-2xl',
           isIOS
-            ? 'liquid-glass-card rounded-[24px] border-white/20 dark:border-white/10'
-            : 'bg-card border border-border rounded-[24px]',
+            ? 'liquid-glass-card border-white/20 dark:border-white/10'
+            : 'bg-card border border-border',
           className
         )}
         style={{
@@ -172,12 +173,21 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
           bottom: 'var(--keyboard-height, 0px)',
           maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
           paddingBottom: 'env(safe-area-inset-bottom)',
-          transform: dragY > 0
-            ? `translateY(${dragY}px)`
-            : sheetVisible
-              ? 'none'
-              : 'translateY(100%)',
-          transition: (dragY > 0 || sheetVisible) ? 'none' : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
+          transform: (typeof window !== 'undefined' && window.innerWidth >= 640)
+            ? (sheetVisible ? 'none' : 'scale(0.96)')
+            : (dragY > 0
+              ? `translateY(${dragY}px)`
+              : sheetVisible
+                ? 'none'
+                : 'translateY(100%)'),
+          opacity: (typeof window !== 'undefined' && window.innerWidth >= 640)
+            ? (sheetVisible ? 1 : 0)
+            : 1,
+          transition: (dragY > 0)
+            ? 'none'
+            : (typeof window !== 'undefined' && window.innerWidth >= 640)
+              ? 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease-out'
+              : 'transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)',
           willChange: 'auto',
           ...panelStyle,
         }}
