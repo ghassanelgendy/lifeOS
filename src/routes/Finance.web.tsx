@@ -35,7 +35,6 @@ import {
   YAxis,
   ResponsiveContainer,
   Tooltip,
-  Cell,
   CartesianGrid
 } from 'recharts';
 import { format, subMonths, addMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
@@ -477,11 +476,13 @@ Return ONLY raw JSON object.`;
     account: '',
   });
 
-  // Graph type: category (bar), overtime (line/area), accounts (by bank – only when All view)
-  type GraphType = 'category' | 'overtime' | 'accounts';
-  const [graphType, setGraphType] = useState<GraphType>('category');
+  // Graph type: overtime (line/area), accounts (by bank – only when All view).
+  // Category breakdown lives only in the standalone "By Category" list card below,
+  // not as a tab here, to avoid showing the same breakdown twice on the page.
+  type GraphType = 'overtime' | 'accounts';
+  const [graphType, setGraphType] = useState<GraphType>('overtime');
   useEffect(() => {
-    if (selectedBank !== '' && graphType === 'accounts') setGraphType('category');
+    if (selectedBank !== '' && graphType === 'accounts') setGraphType('overtime');
   }, [selectedBank, graphType]);
 
   // Expense-by-category data (for bar chart and category list)
@@ -794,7 +795,7 @@ Return ONLY raw JSON object.`;
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -930,18 +931,6 @@ Return ONLY raw JSON object.`;
           <div className="flex p-1 bg-secondary/50 rounded-xl mb-4">
             <button
               type="button"
-              onClick={() => setGraphType('category')}
-              className={cn(
-                'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
-                graphType === 'category'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              By category
-            </button>
-            <button
-              type="button"
               onClick={() => setGraphType('overtime')}
               className={cn(
                 'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -974,51 +963,6 @@ Return ONLY raw JSON object.`;
             role="img"
             aria-label="Chart"
           >
-            {graphType === 'category' && (
-              chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={260} minWidth={0}>
-                  <BarChart
-                    data={chartData}
-                    layout="vertical"
-                    margin={{ top: 8, right: 12, left: 4, bottom: 8 }}
-                  >
-                    <XAxis type="number" hide />
-                    <YAxis
-                      type="category"
-                      dataKey="name"
-                      width={92}
-                      tick={{ fontSize: 13, fill: 'var(--color-muted-foreground)' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      formatter={(value: any) => [formatCurrency(value ?? 0), 'Spent']}
-                      contentStyle={{
-                        backgroundColor: 'var(--color-card)',
-                        border: '1px solid var(--color-border)',
-                        borderRadius: 12,
-                        fontSize: 14,
-                        padding: '10px 14px',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        color: '#ffffff',
-                      }}
-                      cursor={false}
-                      itemStyle={{ paddingTop: 4 }}
-                    />
-                    <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={24}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`bar-${index}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
-                  No expenses this month
-                </div>
-              )
-            )}
-
             {graphType === 'overtime' && (
               overtimeData.some((d) => d.income !== 0 || d.expense !== 0) ? (
                 <ResponsiveContainer width="100%" height={260} minWidth={0}>
@@ -1653,16 +1597,16 @@ Return ONLY raw JSON object.`;
         <div className="rounded-2xl border border-border bg-card p-4 md:p-6 overflow-hidden">
           <h2 className="text-lg font-semibold mb-4">Your Banks</h2>
           <p className="text-sm text-muted-foreground mb-4">Cash In, Cash Out, and Cashflow per bank (current month).</p>
-          <div className="space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {bankOptions.length === 0 && !banksLoading && (
               <p className="text-sm text-muted-foreground">No banks yet. Add a transaction and select a bank to create one.</p>
             )}
             {bankOptions.map((bankName) => {
               const stats = perBankStats[bankName] ?? { cashIn: 0, cashOut: 0, cashflow: 0 };
               return (
-                <div key={bankName} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3 px-4 rounded-lg bg-secondary/30">
-                  <span className="font-medium shrink-0 w-24">{bankName}</span>
-                  <div className="flex flex-wrap gap-4 sm:ml-auto">
+                <div key={bankName} className="flex flex-col gap-3 py-3 px-4 rounded-lg bg-secondary/30">
+                  <span className="font-medium shrink-0">{bankName}</span>
+                  <div className="flex flex-wrap gap-4">
                     <div>
                       <span className="text-xs text-muted-foreground">Cash In</span>
                       <p className={cn("font-semibold tabular-nums text-green-500", privacyMode && "blur-sm")}>
@@ -1744,9 +1688,12 @@ Return ONLY raw JSON object.`;
                   <h2 className="font-semibold">Investment Transactions</h2>
                   <p className="text-sm text-muted-foreground">Thndr and Fawry — separate from your main finances</p>
                 </div>
-                <div className="divide-y divide-border">
+                <div className={cn(
+                  "p-4",
+                  filteredInvestmentTransactions.length === 0 ? "" : "grid grid-cols-1 lg:grid-cols-2 gap-3"
+                )}>
                   {filteredInvestmentTransactions.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">No investment transactions yet.</div>
+                    <div className="p-4 text-center text-muted-foreground">No investment transactions yet.</div>
                   ) : (
                     filteredInvestmentTransactions.map((tx) => {
                       const account = investmentAccounts.find((a) => a.id === tx.account_id);
@@ -1754,7 +1701,7 @@ Return ONLY raw JSON object.`;
                         ? INCOME_CATEGORIES.find((c) => c.value === tx.category)?.label
                         : EXPENSE_CATEGORIES.find((c) => c.value === tx.category)?.label;
                       return (
-                        <div key={tx.id} className="p-4 flex items-center gap-3 hover:bg-secondary/20">
+                        <div key={tx.id} className="p-3 rounded-xl border border-border flex items-center gap-3 hover:bg-secondary/20">
                           <div className={cn(
                             "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
                             tx.type === 'income' ? "bg-green-500/10" : "bg-red-500/10"
