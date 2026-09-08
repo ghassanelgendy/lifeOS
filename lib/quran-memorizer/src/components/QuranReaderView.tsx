@@ -669,19 +669,26 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     }
   }, [effectiveSurah.id, surahNumber, onSelectSurah]);
 
-  // Auto-scroll active ayah into view. After a page turn this lands the new page's
-  // first ayah at the TOP of the viewport instead of centering it, so the reader
-  // actually starts at the top of the new page rather than mid-scroll.
+  // Auto-scroll the active ayah into view — but never on a page turn. Turning the
+  // page onto a new surah triggers onSelectSurah, which resets startAyah/currentAyahIndex
+  // to 1; that reset re-fires this effect a tick after the page-turn one, so a naive
+  // "was this a page turn" check (read once, cleared immediately) misses that second,
+  // delayed run and ends up scrolling to the new surah's first ayah instead of leaving
+  // the reader at the top of the page (where handlePageChange already scrolled it).
+  // Keeping the flag set until the debounced callback actually runs, and checking it
+  // there, makes every effect run within one page turn resolve to "skip".
   useEffect(() => {
     if (!currentAyahIndex || pageLoading) return;
-    const wasPageTurn = justTurnedPageRef.current;
-    justTurnedPageRef.current = false;
     const timer = setTimeout(() => {
+      if (justTurnedPageRef.current) {
+        justTurnedPageRef.current = false;
+        return;
+      }
       const el = document.getElementById(`ayah-${effectiveSurah.id}-${currentAyahIndex}`) ||
                  document.getElementById(`ayah-${surahNumber}-${currentAyahIndex}`) ||
                  document.querySelector(`[data-ayah="${currentAyahIndex}"]`);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: wasPageTurn ? 'start' : 'center' });
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }, 300);
     return () => clearTimeout(timer);
