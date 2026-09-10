@@ -70,12 +70,15 @@ export function harvestUnfinishedWeeklyTasks(
   const candidates: CandidateWeeklyTask[] = [];
   const seenTitles = new Set<string>();
 
-  // 1. Collect unfinished tasks due during the evaluated week
+  // 1. Collect unfinished tasks due during the evaluated week, plus anything
+  // still overdue from before it (any due date up to and including the end
+  // of the week), regardless of whether the task was created manually or by
+  // AI — an overdue task the user made by hand still needs to be rescheduled.
   const weekTasks = allTasks.filter((t) => {
     if (t.is_completed || t.is_wont_do) return false;
     if (!t.due_date) return false;
     const d = t.due_date.split('T')[0];
-    return d >= weekStartDateStr && d <= weekEndDateStr;
+    return d <= weekEndDateStr;
   });
 
   for (const t of weekTasks) {

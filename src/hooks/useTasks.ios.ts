@@ -364,7 +364,8 @@ export function useCreateTask() {
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (input: CreateInput<Task>) => {
+    mutationFn: async (input: CreateInput<Task> & { skipInvalidate?: boolean }) => {
+      const { skipInvalidate } = input;
       const nowIso = new Date().toISOString();
       const key = [...TASKS_KEY, user?.id];
 
@@ -429,7 +430,7 @@ export function useCreateTask() {
 
         addToOfflineQueue({ entity: 'tasks', op: 'create', payload: optimistic as unknown as Record<string, unknown> });
         // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
-        void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+        if (!skipInvalidate) void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
         return optimistic;
       }
 
@@ -467,7 +468,7 @@ export function useCreateTask() {
       const existing = await idbGetTasks();
       await idbSaveTasks([...existing, ...createdTasks]);
       // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
-      void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      if (!skipInvalidate) void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
 
       return created;
     },
@@ -505,7 +506,7 @@ export function useUpdateTask() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task>; skipInvalidate?: boolean }) => {
       const hasDescription = 'description' in data;
       const { subtasks: parsedSubtasks, cleanedDescription } = hasDescription 
         ? extractSubtasksFromDescription(data.description) 
@@ -699,8 +700,8 @@ export function useUpdateTask() {
 
       return updatedTask;
     },
-    onSuccess: () => {
-      if (isOnline()) {
+    onSuccess: (_data, variables) => {
+      if (isOnline() && !variables.skipInvalidate) {
         queryClient.invalidateQueries({ queryKey: TASKS_KEY });
       }
     },

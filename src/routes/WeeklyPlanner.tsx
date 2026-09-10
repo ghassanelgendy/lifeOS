@@ -323,13 +323,18 @@ export default function WeeklyPlanner() {
         if (!item.targetDate) continue;
 
         if (item.sourceType === 'existing_task' && item.id) {
-          // Reschedule existing unfinished task to the target day and time
+          // Reschedule existing unfinished task to the target day and time.
+          // Skip the per-mutation cache invalidation here — refetching after every
+          // single item mid-loop is what caused the day columns behind this modal
+          // to flicker (tasks visibly jumping one at a time); we invalidate once
+          // after the whole batch finishes instead.
           await updateTask.mutateAsync({
             id: item.id,
             data: {
               due_date: item.targetDate,
               due_time: item.targetTime || null,
             },
+            skipInvalidate: true,
           });
         } else if (item.sourceType === 'braindump') {
           // Create new task from brain dump action point
@@ -340,6 +345,7 @@ export default function WeeklyPlanner() {
             due_date: item.targetDate,
             due_time: item.targetTime || null,
             source_note_id: item.sourceNoteId || null,
+            skipInvalidate: true,
           });
         }
       }

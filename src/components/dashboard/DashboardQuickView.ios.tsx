@@ -154,10 +154,40 @@ function DueTodayRow({
   onToggleSubtask?: (id: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [titleCopied, setTitleCopied] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const touchToggledRef = useRef(false);
+  const titleTapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const kindLabel =
     kind === 'prayer' ? 'Prayer' : kind === 'task' ? 'Task' : kind === 'habit' ? 'Habit' : 'Event';
+
+  useEffect(() => {
+    return () => {
+      if (titleTapTimerRef.current) clearTimeout(titleTapTimerRef.current);
+    };
+  }, []);
+
+  const handleTitleTap = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (titleTapTimerRef.current) {
+      // second tap within the window: treat as a double-tap to copy
+      clearTimeout(titleTapTimerRef.current);
+      titleTapTimerRef.current = null;
+      void triggerSuccessTap();
+      void navigator.clipboard.writeText(title).then(() => {
+        setTitleCopied(true);
+        setTimeout(() => setTitleCopied(false), 1200);
+      }).catch(() => {});
+      return;
+    }
+    titleTapTimerRef.current = setTimeout(() => {
+      titleTapTimerRef.current = null;
+      if (onClick) {
+        void triggerLightTap();
+        onClick();
+      }
+    }, 280);
+  };
 
   const handleRowClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement | null;
@@ -380,14 +410,22 @@ function DueTodayRow({
                 </button>
               )}
             </div>
-            <div className="mt-0.5">
-              <MarqueeTitle
-                title={title}
-                className={cn(
-                  'text-[14px] font-semibold text-foreground leading-snug',
-                  done && 'line-through text-muted-foreground/60'
-                )}
-              />
+            <div className="mt-0.5 flex items-center gap-1.5" onClick={handleTitleTap} data-interactive="true">
+              <div className="min-w-0 flex-1">
+                <MarqueeTitle
+                  title={title}
+                  className={cn(
+                    'text-[14px] font-semibold text-foreground leading-snug',
+                    done && 'line-through text-muted-foreground/60'
+                  )}
+                />
+              </div>
+              {titleCopied && (
+                <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-500 animate-in fade-in zoom-in-95 duration-150">
+                  <Check size={10} />
+                  Copied
+                </span>
+              )}
             </div>
             {subtitle ? (
               <p className="text-[12px] text-muted-foreground mt-0.5 leading-none">
