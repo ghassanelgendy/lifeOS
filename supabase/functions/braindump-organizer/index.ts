@@ -138,7 +138,9 @@ Deno.serve(async (req: Request) => {
   const corsHeaders = corsHeadersFor(origin);
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
-  // Verify auth / cron secret
+  // Verify auth / cron secret. Accepts either an env-configured secret (Vercel cron proxy /
+  // cron-job.org) or the Vault-stored secret used by the Postgres pg_cron job
+  // (process_midnight_braindumps) that drives the actual midnight auto-organize run.
   const configuredSecrets = [
     Deno.env.get('CRON_SECRET')?.trim(),
     Deno.env.get('BRAINDUMP_CRON_SECRET')?.trim(),
@@ -149,14 +151,19 @@ Deno.serve(async (req: Request) => {
   const apiKeyHeader = req.headers.get('apikey')?.trim();
   const providedSecret = headerSecret ?? authHeader ?? apiKeyHeader;
 
-  if (configuredSecrets.length > 0) {
-    const isAuthorized = !!providedSecret && (configuredSecrets.includes(providedSecret) || providedSecret === serviceRoleKey);
-    if (!isAuthorized) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+  let isAuthorized =
+    !!providedSecret && (configuredSecrets.includes(providedSecret) || providedSecret === serviceRoleKey);
+
+  if (!isAuthorized && providedSecret) {
+    const { data: vaultOk } = await supabase.rpc('verify_braindump_cron_secret', { p_secret: providedSecret });
+    isAuthorized = vaultOk === true;
+  }
+
+  if (!isAuthorized) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   let requestBody: any = {};

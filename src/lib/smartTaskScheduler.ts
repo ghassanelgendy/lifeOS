@@ -19,7 +19,8 @@ export interface UserScheduleContext {
 
 export interface SmartScheduleOptions {
   horizonDays?: number; // 7 for week, 30 for month
-  maxTasksPerDay?: number; // soft cap per day before advancing to next day (prevents 4-day compression)
+  maxTasksPerDay?: number; // hard cap per day before advancing to next day (prevents overload like 7-8 tasks/day)
+  maxMinutesPerDay?: number; // hard cap on total scheduled task time per day (default 240 = 4h)
   estimatedDurations?: number[]; // custom durations per task
 }
 
@@ -150,14 +151,20 @@ export function distributeTasksAcrossAwakeSlots(
 
   // Determine horizon length and pacing
   const horizonDays = options?.horizonDays || 7;
-  // Calculate a reasonable daily task cap so we distribute smoothly over the horizon
-  // e.g. 15 tasks over 7 days -> target ~2-3 tasks/day; 15 tasks over 30 days -> target ~1-2 tasks/day
-  const calculatedDailyCap = Math.max(2, Math.ceil(taskCount / Math.max(1, Math.min(horizonDays, 14))));
-  const dailyTaskCap = options?.maxTasksPerDay || calculatedDailyCap;
+  // Hard cap on tasks/day so a large backlog spills into MORE days instead of overloading a single day
+  // (previously this scaled up with taskCount, which is how backlogs produced unrealistic 7-8 tasks/day)
+  const dailyTaskCap = options?.maxTasksPerDay || 3;
+  // Hard cap on total scheduled task minutes/day, independent of task count, so a handful of long
+  // tasks can't silently fill the whole day just because they stayed under the count cap.
+  const dailyMinutesCap = options?.maxMinutesPerDay || 240;
+  // How far ahead we're willing to search for open slots for a large backlog (spills beyond horizonDays
+  // rather than compressing onto too-few days).
+  const maxSearchDays = Math.max(horizonDays * 3, Math.ceil(taskCount / dailyTaskCap) + 7, 60);
 
   // Occupied intervals map: Map<DateStr, Array<{ start: number, end: number, title: string }>>
   const occupiedByDate = new Map<string, Array<{ start: number; end: number; title: string }>>();
   const scheduledCountByDate = new Map<string, number>();
+  const scheduledMinutesByDate = new Map<string, number>();
 
   const addOccupied = (date: string, startMin: number, endMin: number, title: string) => {
     if (!occupiedByDate.has(date)) occupiedByDate.set(date, []);
@@ -209,13 +216,15 @@ export function distributeTasksAcrossAwakeSlots(
     let slotFound = false;
     let attempts = 0;
 
-    while (!slotFound && attempts < Math.max(horizonDays, 30)) {
+    while (!slotFound && attempts < maxSearchDays) {
       const dateStr = format(currentDateObj, 'yyyy-MM-dd');
       const isToday = dateStr === todayStr;
 
-      // Check daily task cap to distribute evenly over days and avoid cramming into 3-4 days
+      // Check daily task count AND minute-budget caps so a day never gets overloaded, no matter
+      // how large the backlog is (always enforced, not just for the first `horizonDays` attempts).
       const currentDayCount = scheduledCountByDate.get(dateStr) || 0;
-      if (currentDayCount >= dailyTaskCap && attempts < horizonDays) {
+      const currentDayMinutes = scheduledMinutesByDate.get(dateStr) || 0;
+      if (currentDayCount >= dailyTaskCap || currentDayMinutes + taskDuration > dailyMinutesCap) {
         // Day already hit its balanced load: advance to next day
         currentDateObj = new Date(currentDateObj.getTime() + 24 * 60 * 60 * 1000);
         startCheckingMinutes = wakeMinutes;
@@ -249,12 +258,15 @@ export function distributeTasksAcrossAwakeSlots(
           };
 
           results.push(slot);
-          // Mark this interval occupied (plus 15 min buffer for next task)
-          addOccupied(dateStr, candidateMin, candidateEnd + 15, `Task ${i + 1}`);
+          // Mark this interval occupied, with a buffer scaled to task weight (deep-work blocks
+          // get more breathing room than a 15-min errand).
+          const buffer = taskDuration >= 60 ? 20 : taskDuration >= 45 ? 15 : 10;
+          addOccupied(dateStr, candidateMin, candidateEnd + buffer, `Task ${i + 1}`);
           scheduledCountByDate.set(dateStr, (scheduledCountByDate.get(dateStr) || 0) + 1);
+          scheduledMinutesByDate.set(dateStr, (scheduledMinutesByDate.get(dateStr) || 0) + taskDuration);
 
           // Advance pointer
-          startCheckingMinutes = candidateEnd + 15;
+          startCheckingMinutes = candidateEnd + buffer;
           slotFound = true;
           break;
         }
@@ -273,7 +285,7 @@ export function distributeTasksAcrossAwakeSlots(
 
     // Safe fallback if schedule is extraordinarily full
     if (!slotFound) {
-      const fallbackDaysAhead = Math.min(i + 1, horizonDays);
+      const fallbackDaysAhead = maxSearchDays + 1 + Math.floor(i / Math.max(1, dailyTaskCap));
       const fallbackDate = new Date(now.getTime() + fallbackDaysAhead * 24 * 60 * 60 * 1000);
       const fallbackDateStr = format(fallbackDate, 'yyyy-MM-dd');
       const fallbackHour = 10 + (i % 6);

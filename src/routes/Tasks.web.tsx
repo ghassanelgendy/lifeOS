@@ -2739,7 +2739,7 @@ Return ONLY raw JSON.`;
           )}
 
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start">
             {mainTasksToRender.map((task) => {
               const isHabitTask = task.id.startsWith('habit-');
               return (
@@ -2783,7 +2783,7 @@ Return ONLY raw JSON.`;
                 <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
-                <div className="mt-2 space-y-2">
+                <div className="mt-2 space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start">
                   {completedTasksToRender.slice(0, 10).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (
@@ -2829,7 +2829,7 @@ Return ONLY raw JSON.`;
                 <span>Won't do ({wontDoTasksToRender.length})</span>
               </button>
               {showWontDo && (
-                <div className="mt-2 space-y-2 opacity-70">
+                <div className="mt-2 space-y-2 opacity-70 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start">
                   {wontDoTasksToRender.slice(0, 20).map((task) => {
                     const isHabitTask = task.id.startsWith('habit-');
                     return (

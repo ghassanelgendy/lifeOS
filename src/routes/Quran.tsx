@@ -65,7 +65,7 @@ export function QuranRoute() {
   const handleUpdateHabitDescription = (habitId: string, description: string) => {
     updateHabitMutation.mutate({
       id: habitId,
-      updates: { description },
+      data: { description },
     });
   };
 

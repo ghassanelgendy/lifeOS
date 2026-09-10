@@ -272,51 +272,71 @@ export function useQuranCloudSync() {
     syncPlanMutationRef.current = syncPlanMutation;
   });
 
-  // Debounced live sync to prevent spamming DB on rapid interactions
+  // Live sync on marker/plan changes. While online, this is debounced to avoid spamming the DB
+  // on rapid interactions (e.g. quick page-turns). While offline, the debounce is skipped
+  // entirely and the write is queued immediately — a marker set followed by the tab closing (or
+  // connectivity dropping) within the debounce window must not lose the pending write, since
+  // that's exactly the "marker doesn't sync when offline" gap this exists to close.
   useEffect(() => {
+    const buildPayload = () => {
+      const memPlanStr = localStorage.getItem(LOCAL_PLAN_STORE);
+      const readPlanStr = localStorage.getItem(LOCAL_READING_STORE);
+      const memMarkerStr = localStorage.getItem(LOCAL_MEM_MARKER_STORE);
+      const readMarkerStr = localStorage.getItem(LOCAL_READ_MARKER_STORE);
+      const statsStr = localStorage.getItem(LOCAL_STATS_STORE);
+
+      const memPlan = memPlanStr ? JSON.parse(memPlanStr) : null;
+      const readPlan = readPlanStr ? JSON.parse(readPlanStr) : null;
+      const memMarker = memMarkerStr ? JSON.parse(memMarkerStr) : null;
+      const readMarker = readMarkerStr ? JSON.parse(readMarkerStr) : null;
+      const stats = statsStr ? JSON.parse(statsStr) : null;
+
+      return {
+        title: memPlan?.title,
+        goalType: memPlan?.goalType,
+        direction: memPlan?.direction,
+        startPage: memPlan?.startPage,
+        endPage: memPlan?.endPage,
+        currentPage: memPlan?.currentPage || memMarker?.page,
+        currentSurah: memMarker?.surahNumber,
+        currentAyah: memMarker?.ayahNumber,
+        readingCurrentPage: readPlan?.currentPage || readMarker?.page,
+        readingCurrentSurah: readMarker?.surahNumber,
+        readingCurrentAyah: readMarker?.ayahNumber,
+        pagesPerDay: memPlan?.pagesPerDay,
+        readingPagesPerDay: readPlan?.pagesPerDay,
+        streakDays: memPlan?.streakDays,
+        readingStreakDays: readPlan?.streakDays,
+        lastCompletedDate: memPlan?.lastCompletedDate,
+        readingLastCompletedDate: readPlan?.lastCompletedDate,
+        totalReadingSeconds: stats?.totalReadingSeconds,
+        readingKhatmasCompleted: stats?.readingKhatmasCompleted,
+        memorizationKhatmasCompleted: stats?.memorizationKhatmasCompleted,
+      };
+    };
+
     const handleLocalPlanUpdate = () => {
       if (isHydratingRef.current || !user?.id) return;
 
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+
+      if (!isOnline()) {
+        // Queue immediately — no debounce — so the write survives even if the app is
+        // closed or connectivity drops right after this marker change.
+        try {
+          syncPlanMutationRef.current.mutate(buildPayload());
+        } catch (e) {
+          console.warn('Error queuing offline quran sync:', e);
+        }
+        return;
       }
 
       debounceTimerRef.current = setTimeout(() => {
         try {
-          const memPlanStr = localStorage.getItem(LOCAL_PLAN_STORE);
-          const readPlanStr = localStorage.getItem(LOCAL_READING_STORE);
-          const memMarkerStr = localStorage.getItem(LOCAL_MEM_MARKER_STORE);
-          const readMarkerStr = localStorage.getItem(LOCAL_READ_MARKER_STORE);
-          const statsStr = localStorage.getItem(LOCAL_STATS_STORE);
-
-          const memPlan = memPlanStr ? JSON.parse(memPlanStr) : null;
-          const readPlan = readPlanStr ? JSON.parse(readPlanStr) : null;
-          const memMarker = memMarkerStr ? JSON.parse(memMarkerStr) : null;
-          const readMarker = readMarkerStr ? JSON.parse(readMarkerStr) : null;
-          const stats = statsStr ? JSON.parse(statsStr) : null;
-
-          syncPlanMutationRef.current.mutate({
-            title: memPlan?.title,
-            goalType: memPlan?.goalType,
-            direction: memPlan?.direction,
-            startPage: memPlan?.startPage,
-            endPage: memPlan?.endPage,
-            currentPage: memPlan?.currentPage || memMarker?.page,
-            currentSurah: memMarker?.surahNumber,
-            currentAyah: memMarker?.ayahNumber,
-            readingCurrentPage: readPlan?.currentPage || readMarker?.page,
-            readingCurrentSurah: readMarker?.surahNumber,
-            readingCurrentAyah: readMarker?.ayahNumber,
-            pagesPerDay: memPlan?.pagesPerDay,
-            readingPagesPerDay: readPlan?.pagesPerDay,
-            streakDays: memPlan?.streakDays,
-            readingStreakDays: readPlan?.streakDays,
-            lastCompletedDate: memPlan?.lastCompletedDate,
-            readingLastCompletedDate: readPlan?.lastCompletedDate,
-            totalReadingSeconds: stats?.totalReadingSeconds,
-            readingKhatmasCompleted: stats?.readingKhatmasCompleted,
-            memorizationKhatmasCompleted: stats?.memorizationKhatmasCompleted,
-          });
+          syncPlanMutationRef.current.mutate(buildPayload());
         } catch (e) {
           console.warn('Error during auto cloud sync:', e);
         }
