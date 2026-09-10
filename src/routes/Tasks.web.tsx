@@ -2782,7 +2782,7 @@ Return ONLY raw JSON.`;
 
           {displayMode === 'board' ? (
             <TaskKanbanBoard
-              tasks={allTasks}
+              tasks={displayTasks}
               taskLists={taskLists}
               tags={tags}
               formatDueDate={formatDueDate}
@@ -2795,7 +2795,7 @@ Return ONLY raw JSON.`;
               onSetPriority={(task, priority) => updateTask.mutate({ id: task.id, data: { priority } })}
             />
           ) : displayMode === 'gantt' ? (
-            <TaskGanttChart tasks={allTasks} taskLists={taskLists} onEdit={handleEditTask} />
+            <TaskGanttChart tasks={displayTasks} taskLists={taskLists} onEdit={handleEditTask} />
           ) : (
           <>
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
