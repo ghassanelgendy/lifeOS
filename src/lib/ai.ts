@@ -55,6 +55,18 @@ function sanitizeUpstreamErrorText(text: string): string {
   return trimmed.length > 500 ? `${trimmed.slice(0, 500)}…` : trimmed;
 }
 
+/** Exact/subdomain hostname match against a base URL -- unlike a raw `.includes(domain)`
+ * check, this can't be fooled by a lookalike host such as `evil.com/bynara.id`. */
+function hostnameMatchesDomain(baseUrl: string | null | undefined, domain: string): boolean {
+  if (!baseUrl) return false;
+  try {
+    const hostname = new URL(baseUrl).hostname.toLowerCase();
+    return hostname === domain || hostname.endsWith(`.${domain}`);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Executes a single chat completion request against a specific candidate model and provider.
  */
@@ -165,7 +177,7 @@ async function executeCandidateCompletion(
     clearTimeout(proxyTimer);
     
     // If proxy failed and the domain is known to block CORS in browsers, fail fast to candidate router
-    if (cleanBaseUrl.includes('bynara.id')) {
+    if (hostnameMatchesDomain(cleanBaseUrl, 'bynara.id')) {
       throw new Error(`Proxy unreachable for ${cleanBaseUrl}: ${netErr.message || netErr}`, { cause: netErr });
     }
 

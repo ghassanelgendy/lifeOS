@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { promises as dns } from 'node:dns';
+import net from 'node:net';
 
 const DEFAULT_AI_BASE_URL = 'https://inference.dahl.global/v1';
 
@@ -28,6 +30,60 @@ function isAllowedAiHost(hostname: string): boolean {
     hostname.endsWith('.groq.com');
 }
 
+const PRIVATE_HOSTNAMES = new Set(['localhost', 'localhost.localdomain', '0.0.0.0']);
+
+/** True if `ip` falls in a loopback/private/link-local/reserved range -- covers the classic SSRF
+ * targets (cloud metadata services at 169.254.169.254, RFC1918 internal networks, loopback). */
+function isPrivateOrReservedIp(ip: string): boolean {
+  const type = net.isIP(ip);
+  if (type === 4) {
+    const [a, b] = ip.split('.').map(Number);
+    if (a === 10) return true;
+    if (a === 127) return true;
+    if (a === 0) return true;
+    if (a === 169 && b === 254) return true; // link-local, incl. cloud metadata endpoints
+    if (a === 172 && b >= 16 && b <= 31) return true;
+    if (a === 192 && b === 168) return true;
+    if (a === 100 && b >= 64 && b <= 127) return true; // carrier-grade NAT
+    return false;
+  }
+  if (type === 6) {
+    const lower = ip.toLowerCase();
+    if (lower === '::1' || lower === '::') return true;
+    if (lower.startsWith('fe80:') || lower.startsWith('fc') || lower.startsWith('fd')) return true;
+    if (lower.startsWith('::ffff:')) {
+      const mapped = lower.slice('::ffff:'.length);
+      if (net.isIP(mapped) === 4) return isPrivateOrReservedIp(mapped);
+    }
+    return false;
+  }
+  return true; // not a recognizable IP literal -- treat as unsafe
+}
+
+/**
+ * For hosts outside the known-partner allowlist (user-supplied "Custom Base URL" in AI
+ * Settings), resolves the hostname and rejects it if it's a loopback/private/reserved
+ * hostname or resolves to one -- this is the actual SSRF barrier for that path, since a
+ * hostname allowlist alone doesn't stop DNS rebinding to internal infrastructure.
+ */
+async function isSafeCustomAiHost(hostname: string): Promise<boolean> {
+  const lower = hostname.toLowerCase();
+  if (PRIVATE_HOSTNAMES.has(lower)) return false;
+  if (lower.endsWith('.local') || lower.endsWith('.internal') || lower.endsWith('.localdomain')) return false;
+
+  if (net.isIP(hostname)) {
+    return !isPrivateOrReservedIp(hostname);
+  }
+
+  try {
+    const records = await dns.lookup(hostname, { all: true, verbatim: true });
+    if (records.length === 0) return false;
+    return records.every((r) => !isPrivateOrReservedIp(r.address));
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
@@ -43,8 +99,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const normalizedHost = normalizedBaseUrl.hostname.toLowerCase();
   if (!isAllowedAiHost(normalizedHost)) {
-    console.error('[ai-proxy] Unsupported AI_BASE_URL host:', normalizedHost);
-    return res.status(500).json({ error: 'AI proxy is misconfigured' });
+    // Not one of our known partner domains -- this is the user-supplied "Custom Base URL"
+    // path, so validate it can't be used to reach internal infrastructure (SSRF) instead of
+    // rejecting it outright, since arbitrary public AI-compatible endpoints are a supported
+    // BYOK feature.
+    const safe = await isSafeCustomAiHost(normalizedHost);
+    if (!safe) {
+      console.error('[ai-proxy] Rejected unsafe custom AI base URL host:', normalizedHost);
+      return res.status(400).json({ error: 'Unsupported or unsafe AI base URL' });
+    }
   }
 
   let apiKey = req.headers['x-ai-api-key'] || req.headers['authorization']?.toString().replace('Bearer ', '');
