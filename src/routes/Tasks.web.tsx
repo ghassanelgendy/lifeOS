@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Loader2, Columns3 } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -21,7 +21,7 @@ import { TaskDetailsContent, type TaskDetailsFormState } from '../components/Tas
 import { SwipeableRow } from '../components/SwipeableRow';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
-import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
+import type { Task, Tag, TaskList, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -135,6 +135,7 @@ export default function Tasks() {
   const defaultTaskListId = useUIStore((s) => s.defaultTaskListId);
   const aiEnabled = useUIStore((s) => s.aiEnabled);
   const [activeView, setActiveView] = useState<ViewType>('today');
+  const [displayMode, setDisplayMode] = useState<'list' | 'board' | 'gantt'>('list');
   const [isParsing, setIsParsing] = useState(false);
   const [taskSort, setTaskSort] = useState<TaskSortMode>('smart');
   const [sortFeedback, setSortFeedback] = useState<string | null>(null);
@@ -2109,6 +2110,47 @@ export default function Tasks() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            <div className="hidden sm:flex items-center rounded-full border border-border bg-card/70 p-0.5">
+              <button
+                type="button"
+                onClick={() => setDisplayMode('list')}
+                className={cn(
+                  "h-8 px-2.5 rounded-full flex items-center gap-1.5 text-xs font-medium transition-colors",
+                  displayMode === 'list' ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="List view"
+                aria-pressed={displayMode === 'list'}
+              >
+                <ListTodo size={14} />
+                <span>List</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayMode('board')}
+                className={cn(
+                  "h-8 px-2.5 rounded-full flex items-center gap-1.5 text-xs font-medium transition-colors",
+                  displayMode === 'board' ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Board view (Kanban)"
+                aria-pressed={displayMode === 'board'}
+              >
+                <Columns3 size={14} />
+                <span>Board</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setDisplayMode('gantt')}
+                className={cn(
+                  "h-8 px-2.5 rounded-full flex items-center gap-1.5 text-xs font-medium transition-colors",
+                  displayMode === 'gantt' ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+                title="Timeline view (Gantt)"
+                aria-pressed={displayMode === 'gantt'}
+              >
+                <CalendarDays size={14} />
+                <span>Timeline</span>
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => handleOpenSmartSchedule('unscheduled')}
@@ -2738,6 +2780,22 @@ Return ONLY raw JSON.`;
             </form>
           )}
 
+          {displayMode === 'board' ? (
+            <TaskKanbanBoard
+              tasks={allTasks}
+              taskLists={taskLists}
+              tags={tags}
+              formatDueDate={formatDueDate}
+              onToggle={handleTaskToggle}
+              onEdit={handleEditTask}
+              onDelete={(task) => deleteTask.mutate(task.id)}
+              onMarkWontDo={handleMarkWontDo}
+              onMoveToList={(task, listId) => updateTask.mutate({ id: task.id, data: { list_id: listId ?? undefined } })}
+            />
+          ) : displayMode === 'gantt' ? (
+            <TaskGanttChart tasks={allTasks} taskLists={taskLists} onEdit={handleEditTask} />
+          ) : (
+          <>
           {/* Tasks - swipe left for Done / +1h / Delete on mobile */}
           <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2.5 lg:items-start">
             {mainTasksToRender.map((task) => {
@@ -2871,6 +2929,8 @@ Return ONLY raw JSON.`;
               <p className="text-lg font-medium">{activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}</p>
               <p className="text-sm">No tasks to show</p>
             </div>
+          )}
+          </>
           )}
         </div>
       </main>
@@ -3294,12 +3354,17 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
     <div
       className={cn(
         "task-item group flex flex-col rounded-xl border p-3 sm:p-3.5 transition-all duration-200",
+        // Fixed card height keeps the lg:grid layout visually consistent regardless of how much
+        // content a given task has (title length, tag count, due date, subtasks). Content that
+        // doesn't fit is truncated/clipped rather than growing the card. Expanding subtasks is a
+        // deliberate user action, so the card is allowed to grow past the fixed height for that.
+        !(isExpanded && hasSubtasks) && "lg:h-[118px] lg:overflow-hidden",
         task.is_completed
           ? "opacity-60 border-primary/15 bg-primary/[0.04]"
           : "border-border/60 bg-card hover:border-border hover:bg-card/80 shadow-sm hover:shadow-md"
       )}
     >
-      <div 
+      <div
         className="flex items-start gap-3 cursor-pointer"
         onClick={() => {
           if (!task.id.startsWith('habit-')) {
@@ -3340,9 +3405,9 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
         </button>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:overflow-hidden">
             <span className={cn(
-              "font-medium",
+              "font-medium lg:truncate lg:min-w-0",
               task.is_completed && "line-through text-muted-foreground"
             )}>
               {task.title}
@@ -3383,23 +3448,28 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
             </div>
           )}
 
-          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap lg:flex-nowrap lg:overflow-hidden">
             {dueInfo.text && (
-              <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
+              <span className={cn("text-xs flex items-center gap-1 shrink-0", dueInfo.className)}>
                 <CalendarIcon size={12} />
                 {dueInfo.text}
                 {task.due_time && ` ${formatTime12h(task.due_time)}`}
               </span>
             )}
-            {taskTags.map((tag) => (
+            {taskTags.slice(0, 2).map((tag) => (
               <span
                 key={tag.id}
-                className="text-xs px-1.5 py-0.5 rounded"
+                className="text-xs px-1.5 py-0.5 rounded shrink-0"
                 style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
               >
                 {tag.name}
               </span>
             ))}
+            {taskTags.length > 2 && (
+              <span className="text-xs px-1.5 py-0.5 rounded bg-secondary/60 text-muted-foreground shrink-0">
+                +{taskTags.length - 2}
+              </span>
+            )}
           </div>
         </div>
 
@@ -3482,6 +3552,348 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+// Drag payload for the Kanban board. Kept distinct from WeeklyPlanner's 'application/lifeos-item'
+// mime type so a task card dragged here is never misread by an unrelated drop target elsewhere.
+const KANBAN_DRAG_MIME = 'application/lifeos-kanban-task';
+
+/** Columns a task can land in. 'unsorted' covers tasks with no list_id; 'done' and 'wontdo' are
+ * cross-list buckets driven by is_completed/is_wont_do rather than list membership, mirroring
+ * how the list view already separates those out. */
+type KanbanColumnId = 'unsorted' | `list-${string}` | 'done' | 'wontdo';
+
+interface TaskKanbanBoardProps {
+  tasks: Task[];
+  taskLists: TaskList[];
+  tags: Tag[];
+  formatDueDate: (task: Task) => { text: string; className: string };
+  onToggle: (task: Task) => void;
+  onEdit: (task: Task) => void;
+  onDelete: (task: Task) => void;
+  onMarkWontDo: (task: Task) => void;
+  onMoveToList: (task: Task, listId: string | null) => void;
+}
+
+function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEdit, onDelete, onMarkWontDo, onMoveToList }: TaskKanbanBoardProps) {
+  const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(null);
+  const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+
+  const sortedLists = [...taskLists].sort((a, b) => a.sort_order - b.sort_order);
+
+  const columns: Array<{ id: KanbanColumnId; title: string; color?: string; tasks: Task[] }> = [
+    {
+      id: 'unsorted',
+      title: 'No List',
+      tasks: tasks.filter((t) => !t.list_id && !t.is_completed && !t.is_wont_do),
+    },
+    ...sortedLists.map((list) => ({
+      id: `list-${list.id}` as KanbanColumnId,
+      title: list.name,
+      color: list.color,
+      tasks: tasks.filter((t) => t.list_id === list.id && !t.is_completed && !t.is_wont_do),
+    })),
+    {
+      id: 'wontdo',
+      title: "Won't Do",
+      tasks: tasks.filter((t) => t.is_wont_do),
+    },
+    {
+      id: 'done',
+      title: 'Done',
+      tasks: tasks.filter((t) => t.is_completed && !t.is_wont_do),
+    },
+  ];
+
+  const handleDropOnColumn = (columnId: KanbanColumnId, e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    const raw = e.dataTransfer.getData(KANBAN_DRAG_MIME);
+    if (!raw) return;
+    let taskId: string;
+    try {
+      taskId = (JSON.parse(raw) as { taskId: string }).taskId;
+    } catch {
+      return;
+    }
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    if (columnId === 'done') {
+      if (!task.is_completed) onToggle(task);
+      return;
+    }
+    if (columnId === 'wontdo') {
+      if (!task.is_wont_do) onMarkWontDo(task);
+      return;
+    }
+    // Moving into a list (or 'unsorted') column: reopen if it was done/won't-do, then set list_id.
+    if (task.is_completed || task.is_wont_do) {
+      onToggle(task);
+    }
+    onMoveToList(task, columnId === 'unsorted' ? null : columnId.replace(/^list-/, ''));
+  };
+
+  return (
+    <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1">
+      {columns.map((col) => (
+        <div
+          key={col.id}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            if (dragOverColumn !== col.id) setDragOverColumn(col.id);
+          }}
+          onDragLeave={() => setDragOverColumn((c) => (c === col.id ? null : c))}
+          onDrop={(e) => handleDropOnColumn(col.id, e)}
+          className={cn(
+            "flex flex-col w-[280px] shrink-0 rounded-xl border bg-card/40 transition-colors",
+            dragOverColumn === col.id ? "border-primary/50 bg-primary/[0.04]" : "border-border/60"
+          )}
+        >
+          <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/50">
+            {col.color && (
+              <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
+            )}
+            <span className="text-sm font-semibold truncate">{col.title}</span>
+            <span className="ml-auto text-xs text-muted-foreground bg-secondary/60 rounded-full px-1.5 py-0.5">
+              {col.tasks.length}
+            </span>
+          </div>
+          <div className="flex-1 min-h-[80px] p-2 space-y-2 overflow-y-auto max-h-[calc(100vh-260px)]">
+            {col.tasks.length === 0 && (
+              <div className="text-xs text-muted-foreground text-center py-6 opacity-60">Drop tasks here</div>
+            )}
+            {col.tasks.map((task) => {
+              const isHabitTask = task.id.startsWith('habit-');
+              const dueInfo = formatDueDate(task);
+              const priorityConfig = (task.priority && PRIORITY_CONFIG[task.priority]) || PRIORITY_CONFIG.none;
+              const taskTags = tags.filter((t) => task.tag_ids?.includes(t.id));
+              return (
+                <div
+                  key={task.id}
+                  draggable={!isHabitTask}
+                  onDragStart={(e) => {
+                    if (isHabitTask) {
+                      e.preventDefault();
+                      return;
+                    }
+                    setDraggingTaskId(task.id);
+                    e.dataTransfer.setData(KANBAN_DRAG_MIME, JSON.stringify({ taskId: task.id }));
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
+                  onDragEnd={() => setDraggingTaskId(null)}
+                  onClick={() => {
+                    if (!isHabitTask) onEdit(task);
+                  }}
+                  className={cn(
+                    "group rounded-lg border p-2.5 bg-card cursor-grab active:cursor-grabbing transition-opacity",
+                    draggingTaskId === task.id ? "opacity-40" : "opacity-100",
+                    task.is_completed ? "border-primary/15 bg-primary/[0.04]" : "border-border/60 hover:border-border shadow-sm"
+                  )}
+                >
+                  <div className="flex items-start gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggle(task);
+                      }}
+                      className={cn(
+                        "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
+                        task.is_completed
+                          ? "border-primary bg-primary"
+                          : "border-muted-foreground/25 hover:border-primary/50"
+                      )}
+                    >
+                      {task.is_completed && <Check size={11} strokeWidth={3} className="text-primary-foreground" />}
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("text-sm font-medium truncate", task.is_completed && "line-through text-muted-foreground")}>
+                          {task.title}
+                        </span>
+                        {task.priority !== 'none' && priorityConfig?.icon && (
+                          <priorityConfig.icon size={12} className={cn("shrink-0", priorityConfig.color)} />
+                        )}
+                      </div>
+                      {(dueInfo.text || taskTags.length > 0) && (
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          {dueInfo.text && (
+                            <span className={cn("text-[11px] flex items-center gap-1 shrink-0", dueInfo.className)}>
+                              <CalendarIcon size={10} />
+                              {dueInfo.text}
+                            </span>
+                          )}
+                          {taskTags.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag.id}
+                              className="text-[11px] px-1.5 py-0.5 rounded shrink-0"
+                              style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
+                            >
+                              {tag.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {!isHabitTask && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDelete(task);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-all shrink-0"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+interface TaskGanttChartProps {
+  tasks: Task[];
+  taskLists: TaskList[];
+  onEdit: (task: Task) => void;
+}
+
+/** Timeline/Gantt-style view. The Task schema only carries a single due_date (no start_date), so
+ * each task renders as a single-day bar on the date it's due rather than a true multi-day span —
+ * a "Gantt-lite" that's still genuinely useful for seeing load spread across a list/day grid. */
+function TaskGanttChart({ tasks, taskLists, onEdit }: TaskGanttChartProps) {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const horizonDays = 14;
+  const dayColWidth = 64;
+
+  const startDate = addDays(new Date(), weekOffset * 7);
+  const days = Array.from({ length: horizonDays }, (_, i) => addDays(startDate, i));
+  const dayStrs = days.map((d) => format(d, 'yyyy-MM-dd'));
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+
+  const datedTasks = tasks.filter((t) => t.due_date && !t.is_completed && !t.is_wont_do);
+  const undatedCount = tasks.filter((t) => !t.due_date && !t.is_completed && !t.is_wont_do).length;
+
+  const sortedLists = [...taskLists].sort((a, b) => a.sort_order - b.sort_order);
+  const rows = [
+    { id: 'unsorted', title: 'No List', color: undefined as string | undefined, tasks: datedTasks.filter((t) => !t.list_id) },
+    ...sortedLists.map((l) => ({ id: l.id, title: l.name, color: l.color, tasks: datedTasks.filter((t) => t.list_id === l.id) })),
+  ].filter((r) => r.tasks.length > 0);
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          type="button"
+          onClick={() => setWeekOffset((w) => w - 1)}
+          className="h-8 w-8 rounded-full border border-border bg-card/70 hover:bg-secondary transition-colors flex items-center justify-center"
+          aria-label="Previous 2 weeks"
+        >
+          <ChevronRight size={14} className="rotate-180" />
+        </button>
+        <span className="text-sm font-medium text-muted-foreground">
+          {format(startDate, 'MMM d')} – {format(addDays(startDate, horizonDays - 1), 'MMM d, yyyy')}
+        </span>
+        <button
+          type="button"
+          onClick={() => setWeekOffset((w) => w + 1)}
+          className="h-8 w-8 rounded-full border border-border bg-card/70 hover:bg-secondary transition-colors flex items-center justify-center"
+          aria-label="Next 2 weeks"
+        >
+          <ChevronRight size={14} />
+        </button>
+        {weekOffset !== 0 && (
+          <button
+            type="button"
+            onClick={() => setWeekOffset(0)}
+            className="text-xs text-primary hover:underline"
+          >
+            Today
+          </button>
+        )}
+        {undatedCount > 0 && (
+          <span className="text-xs text-muted-foreground ml-auto">
+            {undatedCount} task{undatedCount > 1 ? 's' : ''} without a due date not shown
+          </span>
+        )}
+      </div>
+
+      <div className="overflow-x-auto border border-border/60 rounded-xl">
+        <div style={{ minWidth: 160 + dayColWidth * horizonDays }}>
+          <div className="flex sticky top-0 bg-card z-10 border-b border-border/50">
+            <div style={{ width: 160 }} className="shrink-0 px-3 py-2 text-xs font-semibold text-muted-foreground">
+              List
+            </div>
+            {days.map((d, i) => (
+              <div
+                key={dayStrs[i]}
+                style={{ width: dayColWidth }}
+                className={cn(
+                  "shrink-0 px-1 py-2 text-center text-[11px] border-l border-border/30",
+                  dayStrs[i] === todayStr && "bg-primary/10 text-primary font-semibold"
+                )}
+              >
+                <div>{format(d, 'EEE')}</div>
+                <div>{format(d, 'd')}</div>
+              </div>
+            ))}
+          </div>
+
+          {rows.map((row) => (
+            <div key={row.id} className="flex border-b border-border/30 last:border-b-0">
+              <div style={{ width: 160 }} className="shrink-0 px-3 py-2 flex items-center gap-1.5">
+                {row.color && <span className="size-2 rounded-full shrink-0" style={{ backgroundColor: row.color }} />}
+                <span className="text-xs font-medium truncate">{row.title}</span>
+              </div>
+              <div className="flex-1 flex">
+                {days.map((d, i) => (
+                  <div
+                    key={dayStrs[i]}
+                    style={{ width: dayColWidth }}
+                    className={cn(
+                      "shrink-0 border-l border-border/20 py-1.5 px-0.5 min-h-[34px]",
+                      dayStrs[i] === todayStr && "bg-primary/[0.04]"
+                    )}
+                  >
+                    {row.tasks
+                      .filter((t) => (t.due_date || '').slice(0, 10) === dayStrs[i])
+                      .map((t) => {
+                        const priorityConfig = (t.priority && PRIORITY_CONFIG[t.priority]) || PRIORITY_CONFIG.none;
+                        return (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => onEdit(t)}
+                            title={t.title}
+                            className={cn(
+                              "block w-full mb-1 truncate text-left text-[10px] px-1.5 py-1 rounded transition-colors",
+                              "bg-primary/15 text-primary hover:bg-primary/25",
+                              t.priority !== 'none' && priorityConfig?.color
+                            )}
+                          >
+                            {t.title}
+                          </button>
+                        );
+                      })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {rows.length === 0 && (
+            <div className="p-6 text-center text-sm text-muted-foreground">No dated tasks in this range</div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
