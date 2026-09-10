@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic, BookOpen } from 'lucide-react';
+import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic, BookOpen, Copy } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../../lib/quran-memorizer';
 import { getAzkarHabitCategory } from '../../hooks/useAzkar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -888,6 +888,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           onSelectEntry(entry);
         }
         break;
+      case 'copy-title':
+        void triggerHaptics('success');
+        void navigator.clipboard.writeText(entry.title || '');
+        break;
       case 'delete':
         if (isTask) {
           const taskId = entry.entityId || entry.id;
@@ -1039,6 +1043,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     }
 
     if (pressEntryRef.current) {
+      // A plain tap that opens the entry details modal must not let the browser go on to
+      // synthesize its compatibility mousedown/mouseup/click sequence afterward: by the time
+      // that ghost click is dispatched, React has already mounted the details Modal, so the
+      // ghost click lands on the modal's backdrop (or bubbles to DueTodayRow's own onClick)
+      // and immediately closes/reopens it — the entry visibly opens, closes, then reopens.
+      e.preventDefault();
+      e.stopPropagation();
+
       const entry = pressEntryRef.current;
       const isTask = entry.kind === 'task' || (entry.id && !entry.id.startsWith('habit-') && !entry.id.startsWith('event-') && !entry.id.startsWith('prayer-'));
       if (isTask) {
@@ -2298,6 +2310,23 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         <Edit2 size={16} className="text-muted-foreground" />
                       </button>
                     )}
+
+                    {/* Copy Title Action */}
+                    <button
+                      type="button"
+                      data-menu-action="copy-title"
+                      onClick={() => {
+                        executeMenuAction('copy-title', contextMenuEntry);
+                        setContextMenuEntry(null);
+                      }}
+                      className={cn(
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
+                        hoveredMenuAction === 'copy-title' && "bg-black/10 dark:bg-white/15"
+                      )}
+                    >
+                      <span>Copy Title</span>
+                      <Copy size={16} className="text-muted-foreground" />
+                    </button>
 
                     {/* Won't Do Action */}
                     {contextMenuDetails.isTask && !contextMenuDetails.isCompleted && (
