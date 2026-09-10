@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
@@ -99,6 +100,7 @@ const TASK_SORT_OPTIONS: { value: TaskSortMode; label: string }[] = [
 ];
 
 export default function Tasks() {
+  const queryClient = useQueryClient();
   const { data: allTasks = [] } = useTasks();
   const { data: taskLists = [] } = useTaskLists();
   const { data: tags = [] } = useTags();
@@ -1979,13 +1981,18 @@ export default function Tasks() {
     });
   }, [unscheduledTasks, smartScheduleHorizon, computeAwakeWindow, allTasks, calendarEvents]);
 
-  // Already-scheduled tasks landing in the current calendar week (Mon-Sun) that are
-  // eligible to be re-spread by the "Reorganize This Week" mode.
+  // Already-scheduled tasks landing in the current calendar week (Mon-Sun), plus anything
+  // still overdue from before it, that are eligible to be re-spread by the "Reorganize
+  // This Week" mode.
   const currentWeekScheduledTasks = useMemo(() => {
-    return weekTasks.filter(
-      (t) => !t.is_completed && !t.is_wont_do && !!t.due_date && !t.id.startsWith('habit-')
-    );
-  }, [weekTasks]);
+    const combined = [...overdueTasks, ...weekTasks];
+    const seen = new Set<string>();
+    return combined.filter((t) => {
+      if (seen.has(t.id)) return false;
+      seen.add(t.id);
+      return !t.is_completed && !t.is_wont_do && !!t.due_date && !t.id.startsWith('habit-');
+    });
+  }, [weekTasks, overdueTasks]);
 
   // Re-spreads tasks already scheduled for the current week across a wider or narrower
   // horizon (stretch across the week, or across the whole month) instead of leaving them
@@ -2048,6 +2055,9 @@ export default function Tasks() {
     setIsSmartScheduling(true);
     try {
       for (const item of smartSchedulePlan) {
+        // Skip the per-mutation cache invalidation here — refetching after every single
+        // item mid-loop caused the task list behind this modal to flicker (tasks visibly
+        // jumping one at a time); invalidate once after the whole batch instead.
         await updateTask.mutateAsync({
           id: item.task.id,
           data: {
@@ -2055,8 +2065,10 @@ export default function Tasks() {
             due_time: item.dueTime,
             duration_minutes: item.durationMinutes,
           },
+          skipInvalidate: true,
         });
       }
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setIsSmartScheduleModalOpen(false);
       setSmartSchedulePlan([]);
     } catch (err) {
