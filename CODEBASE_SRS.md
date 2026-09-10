@@ -348,7 +348,7 @@ The system shall support HTML5 native drag-and-drop of tasks and calendar events
 
 #### FR-CAL-016: Smart Weekly Coach & Next-Week Dynamic Scheduler
 The system shall provide a smart next-week scheduling engine integrated into the Weekly Planner:
-- Smartly harvests unfinished tasks that were not completed during the evaluated week (`is_completed = false`, `is_wont_do = false`).
+- Smartly harvests unfinished tasks that were not completed during the evaluated week, as well as overdue tasks (`is_completed = false`, `is_wont_do = false`, `due_date <= weekEndDate`), regardless of whether the task was created manually or by AI/braindump/smart organizer.
 - Parses actionable task suggestions (`ai_analysis.tasks`) from that week's brain dump notes (`is_brain_dump = true`), deduplicating against tasks already completed or created.
 - Derives user awake windows from Apple Health sleep stage logs (or default 08:00–23:00) and calculates verified free awake slots by subtracting calendar events and time-bound tasks for next week.
 - Distributes harvested candidates into free awake time slots across next week's days, sorted by priority (urgent/high first).
@@ -702,6 +702,9 @@ The system shall provide instant client-side full-text search across all 345 Azk
 
 #### FR-AZKAR-006: Dashboard Widget Integration
 The Dashboard shall display an Azkar widget showing the current recommended category, today's completion count, progress bar, and direct navigation to `/azkar`.
+
+#### FR-AZKAR-007: Auto-Completed Habit Sync with Night Grace Window
+Completing a Morning, Evening, or Sleep Azkar category shall auto-mark the matching user Habit (matched by title/description via `getAzkarHabitCategory`) as done for the day via a `habit_logs` row with `source: 'azkar_auto'`. For Evening and Sleep Azkar specifically, a completion occurring between midnight and 06:00 shall be credited to the previous calendar day rather than the new one, so reading night azkar late does not leave the new day's habit falsely pre-completed before the user has done anything on it. This grace window applies only to the auto-completed habit log's date; the raw Azkar reading/counting screen and its per-day progress log are unaffected and always follow the literal calendar day, so users can read Azkar as many times as they like without restriction.
 
 ---
 

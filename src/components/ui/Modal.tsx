@@ -55,9 +55,14 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
   }, [isOpen, isPake, isIOS]);
 
 
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
 
     if (isOpen && !isPake) {
@@ -111,7 +116,12 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
     return () => {
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [isOpen, onClose, isPake]);
+    // `onClose` is intentionally excluded: most callers pass an inline arrow function
+    // that gets a new identity on every render, and this effect must only re-run when
+    // the modal actually opens/closes (or platform mode changes) — not on every
+    // unrelated re-render of the parent while the modal is open, which previously
+    // tore down and replayed the open animation (sheet flashing hidden/visible).
+  }, [isOpen, isPake]);
 
   if (!isOpen) return null;
 

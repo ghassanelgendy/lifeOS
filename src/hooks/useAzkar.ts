@@ -153,6 +153,23 @@ function getTodayStr(): string {
   return format(new Date(), 'yyyy-MM-dd');
 }
 
+// Night-time azkar (Evening / Sleep) read between midnight and this hour still belong to
+// the night before — reading Evening Azkar at 2am should credit that habit to the previous
+// day, not silently mark the new day as already done before the user has done anything on it.
+const NIGHT_AZKAR_GRACE_HOUR = 6;
+
+function getAzkarHabitDateStr(categoryName?: string): string {
+  const now = new Date();
+  const timeWindow = categoryName ? CATEGORY_METADATA[categoryName]?.timeWindow : undefined;
+  const isNightCategory = timeWindow === 'evening' || timeWindow === 'sleep';
+  if (isNightCategory && now.getHours() < NIGHT_AZKAR_GRACE_HOUR) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return format(yesterday, 'yyyy-MM-dd');
+  }
+  return format(now, 'yyyy-MM-dd');
+}
+
 export function useTodayAzkarProgress() {
   // Recomputed on focus/visibility change, not just once at mount — a backgrounded
   // tab/PWA left open across midnight never remounts, so a plain useMemo(() => ..., [])
@@ -281,19 +298,22 @@ export function useTodayAzkarProgress() {
               });
 
               if (matchedHabit) {
-                // Upsert habit log for today as completed
+                // Credit this to the calendar day the night actually belongs to — a
+                // post-midnight read of Evening/Sleep azkar (e.g. 2am) still counts for
+                // yesterday's habit instead of pre-completing today's before it's begun.
+                const habitDateStr = getAzkarHabitDateStr(categoryName);
                 const { data: existingLog } = await supabase
                   .from('habit_logs')
                   .select('id, completed')
                   .eq('habit_id', matchedHabit.id)
-                  .eq('date', todayStr)
+                  .eq('date', habitDateStr)
                   .maybeSingle();
 
                 if (!existingLog) {
                   await supabase.from('habit_logs').insert({
                     habit_id: matchedHabit.id,
                     user_id: user.id,
-                    date: todayStr,
+                    date: habitDateStr,
                     completed: true,
                     completed_at: new Date().toISOString(),
                     source: 'azkar_auto',

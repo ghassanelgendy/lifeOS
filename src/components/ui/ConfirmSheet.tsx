@@ -34,9 +34,12 @@ export function ConfirmSheet({
   const [dragY, setDragY] = useState(0);
   const [sheetVisible, setSheetVisible] = useState(false);
 
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') onCancelRef.current();
     };
 
     if (isOpen) {
@@ -85,7 +88,10 @@ export function ConfirmSheet({
     }
     setSheetVisible(false);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onCancel]);
+    // `onCancel` intentionally excluded — see Modal.tsx for why depending on an
+    // inline callback here causes the sheet to flash hidden/visible on unrelated
+    // parent re-renders.
+  }, [isOpen]);
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
 
