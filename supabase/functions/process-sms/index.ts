@@ -562,6 +562,18 @@ function parseAiAudit(text: string): AiAuditResult | null {
   return null;
 }
 
+/** Exact/subdomain hostname match against a base URL -- unlike a raw `.includes(domain)` check,
+ * this can't be fooled by a lookalike host such as `evil.com/dahl.global` or `notdahl.global`. */
+function baseUrlMatchesDomain(baseUrl: string | null | undefined, domain: string): boolean {
+  if (!baseUrl) return false;
+  try {
+    const hostname = new URL(baseUrl).hostname.toLowerCase();
+    return hostname === domain || hostname.endsWith(`.${domain}`);
+  } catch {
+    return false;
+  }
+}
+
 async function auditSmsWithAi(
   initialData: { entity: string | null; amount: number; bank: string | null; direction: string; type: string; account: string | null; category: string },
   fullMessage: string,
@@ -569,7 +581,7 @@ async function auditSmsWithAi(
 ): Promise<AiAuditResult | null> {
   const dahlApiKey =
     userSettings?.aiDahlApiKey ||
-    (userSettings?.aiBaseUrl?.includes('dahl.global') ? userSettings?.aiApiKey : '') ||
+    (baseUrlMatchesDomain(userSettings?.aiBaseUrl, 'dahl.global') ? userSettings?.aiApiKey : '') ||
     Deno.env.get('DAHL_API_KEY') ||
     Deno.env.get('VITE_AI_DAHL_API_KEY') ||
     Deno.env.get('AI_API_KEY') ||
@@ -577,14 +589,14 @@ async function auditSmsWithAi(
 
   const bynaraApiKey =
     userSettings?.aiBynaraApiKey ||
-    (userSettings?.aiBaseUrl?.includes('bynara.id') ? userSettings?.aiApiKey : '') ||
+    (baseUrlMatchesDomain(userSettings?.aiBaseUrl, 'bynara.id') ? userSettings?.aiApiKey : '') ||
     Deno.env.get('BYNARA_API_KEY') ||
     Deno.env.get('VITE_AI_BYNARA_API_KEY') ||
     'sk-nry-hBN1vBJ5OKTy1k_jEyYo6ARokES881vS8XT_2ADzQio';
 
   const groqApiKey =
     userSettings?.aiGroqApiKey ||
-    (userSettings?.aiBaseUrl?.includes('groq.com') ? userSettings?.aiApiKey : '') ||
+    (baseUrlMatchesDomain(userSettings?.aiBaseUrl, 'groq.com') ? userSettings?.aiApiKey : '') ||
     Deno.env.get('GROQ_API_KEY') ||
     Deno.env.get('VITE_AI_GROQ_API_KEY') ||
     '';
