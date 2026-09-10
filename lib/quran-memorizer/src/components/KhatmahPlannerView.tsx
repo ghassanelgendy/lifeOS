@@ -59,11 +59,14 @@ const getSurahForPage = (page: number) => {
 
 export const isReversePlan = (plan: KhatmahPlan | null): boolean => {
   if (!plan) return true;
+  // Cap the title length before regex matching -- bounds worst-case backtracking on the
+  // `.*` wildcard to a constant regardless of how long an attacker-supplied title is.
+  const title = (plan.title || '').slice(0, 200);
   return (
     plan.direction === 'reverse' ||
     (plan.startPage !== undefined && plan.endPage !== undefined && plan.startPage > plan.endPage) ||
     plan.startPage === 604 ||
-    /reverse|الناس إلى.*البقرة/i.test(plan.title || '')
+    /reverse|الناس إلى.*البقرة/i.test(title)
   );
 };
 

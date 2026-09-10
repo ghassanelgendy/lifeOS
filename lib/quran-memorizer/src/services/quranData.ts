@@ -410,11 +410,14 @@ export function advanceWirdOnHabitComplete(habitTitle: string): AdvancedWirdResu
       ? (new Date(todayStr).getTime() - new Date(plan.lastCompletedDate).getTime()) / (1000 * 3600 * 24) <= 1
       : true;
     const nextStreak = isConsecutive ? (plan.streakDays || 0) + 1 : 1;
+    // Cap the title length before regex matching -- bounds worst-case backtracking on the
+    // `.*` wildcard to a constant regardless of how long an attacker-supplied title is.
+    const planTitle = (plan.title || '').slice(0, 200);
     const isReverse =
       plan.direction === 'reverse' ||
       (plan.startPage !== undefined && plan.endPage !== undefined && plan.startPage > plan.endPage) ||
       plan.startPage === 604 ||
-      /reverse|الناس إلى.*البقرة/i.test(plan.title || '');
+      /reverse|الناس إلى.*البقرة/i.test(planTitle);
 
     const targetMin = Math.min(plan.startPage ?? 1, plan.endPage ?? 1);
     const targetMax = Math.max(plan.startPage ?? 604, plan.endPage ?? 604);
@@ -580,7 +583,9 @@ export function getQuranWirdAndReviewSummary(
         memPlan.direction === 'reverse' ||
         (memPlan.startPage !== undefined && memPlan.endPage !== undefined && memPlan.startPage > memPlan.endPage) ||
         memPlan.startPage === 604 ||
-        /reverse|الناس إلى.*البقرة/i.test(memPlan.title || '');
+        // Cap the title length before regex matching -- bounds worst-case backtracking on
+        // the `.*` wildcard to a constant regardless of how long the title string is.
+        /reverse|الناس إلى.*البقرة/i.test((memPlan.title || '').slice(0, 200));
     }
   } catch {}
 
@@ -677,8 +682,12 @@ export interface QuranHabitTarget {
 }
 
 export function getSpecificSurahHabitTarget(title?: string, description?: string): QuranHabitTarget | null {
-  const t = (title || '').trim();
-  const d = (description || '').trim();
+  // Cap both inputs before any regex matching below -- these descriptions are always short
+  // ("آخر موضع حفظ: سورة ... صفحة N") in practice, so this bound is generous while keeping
+  // worst-case backtracking (the descMatch regex below has a `.*?` wildcard) constant-time
+  // regardless of how long an attacker-supplied title/description actually is.
+  const t = (title || '').trim().slice(0, 300);
+  const d = (description || '').trim().slice(0, 300);
 
   // 1. Surat Al-Mulk: Surah 67, Page 562
   if (/المُ?لك|mulk/i.test(t) || /المُ?لك|mulk/i.test(d)) {
