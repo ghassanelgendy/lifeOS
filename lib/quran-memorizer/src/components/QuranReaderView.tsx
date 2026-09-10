@@ -144,16 +144,30 @@ const getPartColor = (part: string): string | null => {
   if (/نّ|مّ/.test(part)) return TAJWEED_COLORS.green;
   if (/[قطبجد]ْ/.test(part)) return TAJWEED_COLORS.cyan;
   if (/رَّ|رُّ|[ر]َ|[ر]ُ|[ر]ً|[ر]ٌ/.test(part)) return TAJWEED_COLORS.darkBlue;
-  if (/[اوي][~ٓ]|[~ٓ]/.test(part)) return TAJWEED_COLORS.red;
+  if (/ٓ/.test(part)) return TAJWEED_COLORS.red;
   if (/ٰ/.test(part)) return TAJWEED_COLORS.orange;
   if (/ٱ/.test(part)) return TAJWEED_COLORS.grey;
   return null;
 };
 
+// Arabic combining marks (harakat, shadda, sukun, dagger alif, madda and the
+// other Qur'anic recitation marks) must never be split from the base letter
+// they are stacked on. Doing so — as a naive string split on the mark alone
+// used to — breaks the font's mark-to-base (GPOS) attachment for that glyph,
+// so the mark falls back to a different position/metric than in the plain
+// (non-Tajweed) view and the line visibly jiggles when toggling Tajweed.
+// Splitting into whole grapheme clusters (one base letter + all of its
+// trailing marks) instead guarantees a colored <span> always carries its
+// mark(s) together with the base letter, so shaping is identical either way
+// and only the text color changes.
+const COMBINING_MARKS = '\\u064B-\\u065F\\u0670\\u06D6-\\u06DC\\u06DF-\\u06E8\\u06EA-\\u06EC\\u06ED';
+const GRAPHEME_CLUSTER_RE = new RegExp(`[^\\s${COMBINING_MARKS}][${COMBINING_MARKS}]*`, 'g');
+
 const renderTajweedWord = (word: string, wordIdx: number) => {
-  // Regex to split the word into segments, capturing the target letters for coloring
-  const parts = word.split(/(نّ|مّ|[قطبجد]ْ|[اوي][~ٓ]|[~ٓ]|ٰ|ٱ|رَّ|رُّ|[ر]َ|[ر]ُ|[ر]ً|[ر]ٌ)/g);
-  if (parts.length <= 1) {
+  const parts = word.match(GRAPHEME_CLUSTER_RE) || [word];
+  if (!parts.some((p) => getPartColor(p))) {
+    // No Tajweed rule applies to this word — render it exactly as the plain
+    // view would, byte-for-byte, so there is nothing to jiggle.
     return <React.Fragment key={wordIdx}>{word} </React.Fragment>;
   }
 
