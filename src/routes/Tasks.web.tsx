@@ -2791,6 +2791,8 @@ Return ONLY raw JSON.`;
               onDelete={(task) => deleteTask.mutate(task.id)}
               onMarkWontDo={handleMarkWontDo}
               onMoveToList={(task, listId) => updateTask.mutate({ id: task.id, data: { list_id: listId ?? undefined } })}
+              onSetDueDate={(task, dueDate) => updateTask.mutate({ id: task.id, data: { due_date: dueDate ?? undefined } })}
+              onSetPriority={(task, priority) => updateTask.mutate({ id: task.id, data: { priority } })}
             />
           ) : displayMode === 'gantt' ? (
             <TaskGanttChart tasks={allTasks} taskLists={taskLists} onEdit={handleEditTask} />
@@ -3358,7 +3360,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
         // content a given task has (title length, tag count, due date, subtasks). Content that
         // doesn't fit is truncated/clipped rather than growing the card. Expanding subtasks is a
         // deliberate user action, so the card is allowed to grow past the fixed height for that.
-        !(isExpanded && hasSubtasks) && "lg:h-[118px] lg:overflow-hidden",
+        !(isExpanded && hasSubtasks) && "lg:h-[84px] lg:overflow-hidden",
         task.is_completed
           ? "opacity-60 border-primary/15 bg-primary/[0.04]"
           : "border-border/60 bg-card hover:border-border hover:bg-card/80 shadow-sm hover:shadow-md"
@@ -3560,10 +3562,15 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
 // mime type so a task card dragged here is never misread by an unrelated drop target elsewhere.
 const KANBAN_DRAG_MIME = 'application/lifeos-kanban-task';
 
-/** Columns a task can land in. 'unsorted' covers tasks with no list_id; 'done' and 'wontdo' are
- * cross-list buckets driven by is_completed/is_wont_do rather than list membership, mirroring
- * how the list view already separates those out. */
-type KanbanColumnId = 'unsorted' | `list-${string}` | 'done' | 'wontdo';
+type KanbanGroupBy = 'list' | 'due' | 'priority';
+
+/** Columns a task can land in, across every grouping mode. 'wontdo'/'done' are cross-cutting
+ * status columns present in every mode; the rest are specific to whichever grouping is active. */
+type KanbanColumnId =
+  | 'unsorted' | `list-${string}`
+  | 'overdue' | 'due-today' | 'due-tomorrow' | 'due-week' | 'due-later' | 'due-none'
+  | 'priority-high' | 'priority-medium' | 'priority-low' | 'priority-none'
+  | 'done' | 'wontdo';
 
 interface TaskKanbanBoardProps {
   tasks: Task[];
@@ -3575,41 +3582,76 @@ interface TaskKanbanBoardProps {
   onDelete: (task: Task) => void;
   onMarkWontDo: (task: Task) => void;
   onMoveToList: (task: Task, listId: string | null) => void;
+  onSetDueDate: (task: Task, dueDate: string | null) => void;
+  onSetPriority: (task: Task, priority: TaskPriority) => void;
 }
 
-function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEdit, onDelete, onMarkWontDo, onMoveToList }: TaskKanbanBoardProps) {
+const KANBAN_GROUP_OPTIONS: { id: KanbanGroupBy; label: string }[] = [
+  { id: 'list', label: 'List' },
+  { id: 'due', label: 'Due date' },
+  { id: 'priority', label: 'Priority' },
+];
+
+function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEdit, onDelete, onMarkWontDo, onMoveToList, onSetDueDate, onSetPriority }: TaskKanbanBoardProps) {
   const [dragOverColumn, setDragOverColumn] = useState<KanbanColumnId | null>(null);
   const [draggingTaskId, setDraggingTaskId] = useState<string | null>(null);
+  const [groupBy, setGroupBy] = useState<KanbanGroupBy>('list');
 
   const sortedLists = [...taskLists].sort((a, b) => a.sort_order - b.sort_order);
+  const activeTasks = tasks.filter((t) => !t.is_completed && !t.is_wont_do);
+
+  const getDueBucket = (task: Task): 'overdue' | 'due-today' | 'due-tomorrow' | 'due-week' | 'due-later' | 'due-none' => {
+    if (!task.due_date) return 'due-none';
+    const d = new Date(task.due_date.split('T')[0]);
+    if (Number.isNaN(d.getTime())) return 'due-none';
+    if (isToday(d)) return 'due-today';
+    if (isPast(d)) return 'overdue';
+    if (isTomorrow(d)) return 'due-tomorrow';
+    const daysOut = Math.round((d.getTime() - new Date(new Date().toDateString()).getTime()) / 86400000);
+    return daysOut <= 7 ? 'due-week' : 'due-later';
+  };
+
+  const groupColumns: Array<{ id: KanbanColumnId; title: string; color?: string; tasks: Task[] }> =
+    groupBy === 'list'
+      ? [
+          { id: 'unsorted', title: 'No List', tasks: activeTasks.filter((t) => !t.list_id) },
+          ...sortedLists.map((list) => ({
+            id: `list-${list.id}` as KanbanColumnId,
+            title: list.name,
+            color: list.color,
+            tasks: activeTasks.filter((t) => t.list_id === list.id),
+          })),
+        ]
+      : groupBy === 'due'
+      ? [
+          { id: 'overdue', title: 'Overdue', color: '#ef4444', tasks: activeTasks.filter((t) => getDueBucket(t) === 'overdue') },
+          { id: 'due-today', title: 'Today', color: '#3b82f6', tasks: activeTasks.filter((t) => getDueBucket(t) === 'due-today') },
+          { id: 'due-tomorrow', title: 'Tomorrow', color: '#f59e0b', tasks: activeTasks.filter((t) => getDueBucket(t) === 'due-tomorrow') },
+          { id: 'due-week', title: 'This Week', tasks: activeTasks.filter((t) => getDueBucket(t) === 'due-week') },
+          { id: 'due-later', title: 'Later', tasks: activeTasks.filter((t) => getDueBucket(t) === 'due-later') },
+          { id: 'due-none', title: 'No Due Date', tasks: activeTasks.filter((t) => getDueBucket(t) === 'due-none') },
+        ]
+      : [
+          { id: 'priority-high', title: 'High', color: '#ef4444', tasks: activeTasks.filter((t) => t.priority === 'high') },
+          { id: 'priority-medium', title: 'Medium', color: '#f59e0b', tasks: activeTasks.filter((t) => t.priority === 'medium') },
+          { id: 'priority-low', title: 'Low', color: '#3b82f6', tasks: activeTasks.filter((t) => t.priority === 'low') },
+          { id: 'priority-none', title: 'No Priority', tasks: activeTasks.filter((t) => !t.priority || t.priority === 'none') },
+        ];
 
   const columns: Array<{ id: KanbanColumnId; title: string; color?: string; tasks: Task[] }> = [
-    {
-      id: 'unsorted',
-      title: 'No List',
-      tasks: tasks.filter((t) => !t.list_id && !t.is_completed && !t.is_wont_do),
-    },
-    ...sortedLists.map((list) => ({
-      id: `list-${list.id}` as KanbanColumnId,
-      title: list.name,
-      color: list.color,
-      tasks: tasks.filter((t) => t.list_id === list.id && !t.is_completed && !t.is_wont_do),
-    })),
-    {
-      id: 'wontdo',
-      title: "Won't Do",
-      tasks: tasks.filter((t) => t.is_wont_do),
-    },
-    {
-      id: 'done',
-      title: 'Done',
-      tasks: tasks.filter((t) => t.is_completed && !t.is_wont_do),
-    },
+    ...groupColumns,
+    { id: 'wontdo', title: "Won't Do", tasks: tasks.filter((t) => t.is_wont_do) },
+    { id: 'done', title: 'Done', tasks: tasks.filter((t) => t.is_completed && !t.is_wont_do) },
   ];
+
+  // "Overdue" is a computed fact about the current date, not something a card can be assigned
+  // into — dropping there wouldn't have a sensible meaning, so it's excluded as a drop target.
+  const isDroppableColumn = (columnId: KanbanColumnId) => columnId !== 'overdue';
 
   const handleDropOnColumn = (columnId: KanbanColumnId, e: React.DragEvent) => {
     e.preventDefault();
     setDragOverColumn(null);
+    if (!isDroppableColumn(columnId)) return;
     const raw = e.dataTransfer.getData(KANBAN_DRAG_MIME);
     if (!raw) return;
     let taskId: string;
@@ -3629,19 +3671,59 @@ function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEd
       if (!task.is_wont_do) onMarkWontDo(task);
       return;
     }
-    // Moving into a list (or 'unsorted') column: reopen if it was done/won't-do, then set list_id.
+    // Any other column is an active-status target: reopen the task first if it was done/won't-do.
     if (task.is_completed || task.is_wont_do) {
       onToggle(task);
     }
-    onMoveToList(task, columnId === 'unsorted' ? null : columnId.replace(/^list-/, ''));
+
+    if (columnId === 'unsorted' || columnId.startsWith('list-')) {
+      onMoveToList(task, columnId === 'unsorted' ? null : columnId.replace(/^list-/, ''));
+      return;
+    }
+    if (columnId.startsWith('due-')) {
+      const today = new Date();
+      const toDateStr = (d: Date) => format(d, 'yyyy-MM-dd');
+      const dueDate =
+        columnId === 'due-today' ? toDateStr(today)
+        : columnId === 'due-tomorrow' ? toDateStr(addDays(today, 1))
+        : columnId === 'due-week' ? toDateStr(addDays(today, 3))
+        : columnId === 'due-later' ? toDateStr(addDays(today, 14))
+        : null; // due-none
+      onSetDueDate(task, dueDate);
+      return;
+    }
+    if (columnId.startsWith('priority-')) {
+      onSetPriority(task, columnId.replace(/^priority-/, '') as TaskPriority);
+    }
   };
 
   return (
-    <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1">
+    <div>
+      <div className="flex items-center gap-1 mb-3">
+        <span className="text-xs text-muted-foreground mr-1">Group by:</span>
+        <div className="flex items-center rounded-full border border-border bg-card/70 p-0.5">
+          {KANBAN_GROUP_OPTIONS.map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setGroupBy(opt.id)}
+              className={cn(
+                "h-7 px-2.5 rounded-full text-xs font-medium transition-colors",
+                groupBy === opt.id ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-pressed={groupBy === opt.id}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-1 px-1">
       {columns.map((col) => (
         <div
           key={col.id}
           onDragOver={(e) => {
+            if (!isDroppableColumn(col.id)) return;
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
             if (dragOverColumn !== col.id) setDragOverColumn(col.id);
@@ -3756,6 +3838,7 @@ function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEd
           </div>
         </div>
       ))}
+      </div>
     </div>
   );
 }
