@@ -3750,7 +3750,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-hooks-useinvestments-ts"></a>
 ### src/hooks/useInvestments.ts
 
-**File Purpose:** Custom React hook. Encapsulates Investments.ts logic for data fetching, state management, or side effects.
+**File Purpose:** Custom React hook. Encapsulates Investments.ts logic for data fetching, state management, or side effects. Includes CRUD for user-managed investment platforms (add/rename/remove, no longer limited to the seeded Thndr/Fawry defaults) and per-account balance calculation used by the Investment Correction Transaction flow.
 
 **Functions & Classes:**
 - `useInvestmentAccounts` (React Hook)
@@ -4943,7 +4943,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-smarttaskscheduler-ts"></a>
 ### src/lib/smartTaskScheduler.ts
 
-**File Purpose:** Utility library module. Provides smart task scheduling algorithms that distribute unscheduled tasks into conflict-free awake time slots based on user sleep patterns, existing tasks, and calendar events.
+**File Purpose:** Utility library module. Provides smart task scheduling algorithms that distribute unscheduled tasks into conflict-free awake time slots based on user sleep patterns, existing tasks, and calendar events. `findConflictFreeSlotOnDate` finds a slot on one specific date, used to pin tasks whose title names an explicit date instead of letting them land on an arbitrary open day.
 
 **Functions & Classes:**
 - `timeToMinutes` (Function)
@@ -4985,7 +4985,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-taskinputsuggestions-ts"></a>
 ### src/lib/taskInputSuggestions.ts
 
-**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic. `parseTaskInput` also recognizes a bare numeric DAY/MONTH date (e.g. "10/9" = 10 September, not October 9th) in the title, in addition to weekday names, "today"/"tomorrow", and written month-day dates.
 
 **Functions & Classes:**
 - `nextDayOfWeek` (Function)
@@ -5343,7 +5343,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-finance-ios-tsx"></a>
 ### src/routes/Finance.ios.tsx
 
-**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section. The Investments tab includes a user-managed "Platforms" panel (add/rename/remove), a Deposit/Withdrawal/Profit/Loss transaction type selector, and a Correction Transaction flow mirroring the bank reconciliation pattern.
 
 **Functions & Classes:**
 - `Finance` (React Component)
@@ -5364,7 +5364,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-finance-pake-tsx"></a>
 ### src/routes/Finance.pake.tsx
 
-**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section. The Investments tab includes a user-managed "Platforms" panel (add/rename/remove), a Deposit/Withdrawal/Profit/Loss transaction type selector, and a Correction Transaction flow mirroring the bank reconciliation pattern.
 
 **Functions & Classes:**
 - `Finance` (React Component)
@@ -5392,7 +5392,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-finance-web-tsx"></a>
 ### src/routes/Finance.web.tsx
 
-**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section. The Investments tab includes a user-managed "Platforms" panel (add/rename/remove), a Deposit/Withdrawal/Profit/Loss transaction type selector, and a Correction Transaction flow mirroring the bank reconciliation pattern.
 
 **Functions & Classes:**
 - `Finance` (React Component)
@@ -5855,7 +5855,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-ios-tsx"></a>
 ### src/routes/Tasks.ios.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows pin tasks whose title names an explicit date instead of freely distributing them.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
@@ -5878,7 +5878,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-pake-tsx"></a>
 ### src/routes/Tasks.pake.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows pin tasks whose title names an explicit date instead of freely distributing them.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
@@ -5912,7 +5912,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-web-tsx"></a>
 ### src/routes/Tasks.web.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows pin tasks whose title names an explicit date instead of freely distributing them.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
@@ -6186,7 +6186,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="supabase-functions-braindump-organizer-index-ts"></a>
 ### supabase/functions/braindump-organizer/index.ts
 
-**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations.
+**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations. The extraction prompt now asks for a `due_date` per task computed from any day/date named in its text (numeric dates are DAY/MONTH), with a deterministic `extractExplicitDayMonth` regex fallback, instead of hardcoding every created task's due date to today.
 
 **Functions & Classes:**
 - `getAllowedOrigins` (Function)

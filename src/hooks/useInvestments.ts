@@ -14,6 +14,22 @@ const INVESTMENT_TRANSACTIONS_KEY = ['investment_transactions'];
 
 const DEFAULT_ACCOUNTS = ['Thndr', 'Fawry'];
 
+/**
+ * Investment-specific transaction types, stored in the already-existing `transaction_type`
+ * column (previously unused by investments). Each maps to a cash `type`/`direction` plus a
+ * default category: Deposit/Withdrawal move cash in or out of the platform; Profit/Loss mark
+ * gains or losses on the position itself; Correction reconciles the recorded balance to the
+ * platform's real balance (mirrors the bank "Correction Transaction" pattern in Finance).
+ */
+export const INVESTMENT_TRANSACTION_TYPES = [
+  { value: 'Deposit', label: 'Deposit', type: 'income', direction: 'In', category: 'investment' },
+  { value: 'Withdrawal', label: 'Withdrawal', type: 'expense', direction: 'Out', category: 'other_expense' },
+  { value: 'Profit', label: 'Profit', type: 'income', direction: 'In', category: 'investment' },
+  { value: 'Loss', label: 'Loss', type: 'expense', direction: 'Out', category: 'other_expense' },
+] as const;
+
+export type InvestmentTransactionTypeValue = (typeof INVESTMENT_TRANSACTION_TYPES)[number]['value'];
+
 function filterToCurrentUser<T extends { user_id?: string | null }>(
   data: T[],
   currentUserId: string,
@@ -44,6 +60,8 @@ export function useInvestmentAccounts() {
   });
 }
 
+/** Seeds Thndr/Fawry as starting suggestions only (run once when the list is empty) —
+ * users can rename or remove them and add their own platforms via useAddInvestmentAccount. */
 export function useEnsureDefaultInvestmentAccounts() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -58,6 +76,69 @@ export function useEnsureDefaultInvestmentAccounts() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: INVESTMENT_ACCOUNTS_KEY });
+    },
+  });
+}
+
+/** Add a new investment platform (e.g. a broker/app beyond the seeded Thndr/Fawry defaults). */
+export function useAddInvestmentAccount() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Platform name is required');
+      const { data, error } = await supabase
+        .from('investment_accounts')
+        .insert({ name: trimmed })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as InvestmentAccount;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...INVESTMENT_ACCOUNTS_KEY, user?.id] });
+    },
+  });
+}
+
+/** Rename an investment platform. Transactions reference it by account_id (a real foreign
+ * key, unlike the freeform `bank` text column on regular transactions), so renaming here
+ * needs no relinking — every transaction just picks up the new name automatically. */
+export function useRenameInvestmentAccount() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: string; name: string }) => {
+      const trimmed = name.trim();
+      if (!trimmed) throw new Error('Platform name is required');
+      const { error } = await supabase.from('investment_accounts').update({ name: trimmed }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...INVESTMENT_ACCOUNTS_KEY, user?.id] });
+    },
+  });
+}
+
+/** Remove an investment platform. Unlike removing a bank (which just stops offering the
+ * name for new transactions), this CASCADE-deletes every transaction recorded against it
+ * (`investment_transactions.account_id` has `on delete cascade`) — callers must confirm
+ * with the user first, since it's genuinely destructive. */
+export function useRemoveInvestmentAccount() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('investment_accounts').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...INVESTMENT_ACCOUNTS_KEY, user?.id] });
+      queryClient.invalidateQueries({ queryKey: [...INVESTMENT_TRANSACTIONS_KEY, user?.id] });
     },
   });
 }
@@ -191,4 +272,17 @@ export function getInvestmentBreakdown(transactions: InvestmentTransaction[]) {
     totalExpense,
     balance: totalIncome - totalExpense,
   };
+}
+
+/** Current recorded balance for one platform — used by the Correction flow to compute the
+ * adjustment needed to match the platform's real balance. */
+export function getInvestmentAccountBalance(transactions: InvestmentTransaction[], accountId: string): number {
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  let total = 0;
+  for (const t of transactions) {
+    if (t.account_id !== accountId) continue;
+    const amt = Number(t.amount) || 0;
+    total += t.type === 'income' ? amt : -amt;
+  }
+  return round2(total);
 }

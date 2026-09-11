@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2, Search, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { triggerHaptics } from '../lib/nativeBridge';
@@ -15,14 +15,15 @@ import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWe
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
-import { distributeTasksAcrossAwakeSlots, estimateTaskDuration } from '../lib/smartTaskScheduler';
+import { distributeTasksAcrossAwakeSlots, estimateTaskDuration, findConflictFreeSlotOnDate, type SmartTimeSlot } from '../lib/smartTaskScheduler';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
 import { analyzeTaskSimilarityWithAI, type TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
+import { MarqueeTitle } from '../components/ui/MarqueeTitle';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
-import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
+import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType, CalendarEvent } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -64,6 +65,65 @@ function parseDueDateTime(dateStr: string | undefined, timeStr: string | undefin
     : '00:00:00';
   const d = datePart ? new Date(`${datePart}T${timePart}`) : new Date();
   return Number.isNaN(d.getTime()) ? new Date() : d;
+}
+
+// Schedules a batch of tasks into open slots, but pins any task whose title names an
+// explicit date (e.g. "Meeting with Servixa — 10/9") to that date instead of letting the
+// free-slot distributor drop it wherever happens to be open next. Pinned reservations are
+// fed back in as obstacles for the remaining free tasks so nothing double-books.
+function scheduleRespectingTitleDates(
+  tasksToSchedule: Task[],
+  estimatedDurations: number[],
+  baseExistingTasks: Task[],
+  calendarEvents: CalendarEvent[],
+  wakeHour: number,
+  bedHour: number,
+  horizonDays: number,
+): SmartTimeSlot[] {
+  const explicitDates = tasksToSchedule.map((t) => parseTaskInput(t.title).date);
+  const pinnedIndices: number[] = [];
+  const freeIndices: number[] = [];
+  explicitDates.forEach((d, i) => (d ? pinnedIndices.push(i) : freeIndices.push(i)));
+
+  const slots: SmartTimeSlot[] = new Array(tasksToSchedule.length);
+  const reservations: Task[] = [];
+
+  for (const i of pinnedIndices) {
+    const dateStr = explicitDates[i]!;
+    const duration = estimatedDurations[i];
+    const slot = findConflictFreeSlotOnDate(dateStr, duration, {
+      avgWakeHour: wakeHour,
+      avgBedHour: bedHour,
+      existingTasks: [...baseExistingTasks, ...reservations],
+      calendarEvents,
+    });
+    slots[i] = slot;
+    reservations.push({
+      ...tasksToSchedule[i],
+      due_date: slot.dueDate,
+      due_time: slot.dueTime,
+      duration_minutes: duration,
+    });
+  }
+
+  if (freeIndices.length > 0) {
+    const freeDurations = freeIndices.map((i) => estimatedDurations[i]);
+    const freeSlots = distributeTasksAcrossAwakeSlots(
+      freeIndices.length,
+      {
+        avgWakeHour: wakeHour,
+        avgBedHour: bedHour,
+        existingTasks: [...baseExistingTasks, ...reservations],
+        calendarEvents,
+      },
+      { horizonDays, estimatedDurations: freeDurations }
+    );
+    freeIndices.forEach((taskIdx, j) => {
+      slots[taskIdx] = freeSlots[j];
+    });
+  }
+
+  return slots;
 }
 
 type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'wontdo' | 'list' | 'tag';
@@ -198,6 +258,9 @@ export default function Tasks() {
     };
   }, [activeView, defaultListId, activeListId]);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const { data: selectedTaskWithSubtasks } = useTaskWithSubtasks(selectedTask?.id || '');
   const subtasks = selectedTaskWithSubtasks?.subtasks || [];
@@ -1154,9 +1217,22 @@ export default function Tasks() {
   const isWontDoTask = (task: Task) => task.is_wont_do ?? hasWontDoMarker(task);
 
   const displayTasks = getDisplayTasks();
-  const incompleteTasks = displayTasks.filter(t => !t.is_completed);
-  const completedDisplayTasks = displayTasks.filter((t) => t.is_completed && !isWontDoTask(t));
-  const wontDoDisplayTasks = displayTasks.filter((t) => t.is_completed && isWontDoTask(t));
+
+  const searchQueryNormalized = searchQuery.trim().toLowerCase();
+  const searchedTasks = searchQueryNormalized
+    ? displayTasks.filter((task) => {
+        const tagNames = (task.tag_ids || [])
+          .map((id) => tags.find((t) => t.id === id)?.name || '')
+          .join(' ');
+        return `${task.title}\n${task.description || ''}\n${tagNames}`
+          .toLowerCase()
+          .includes(searchQueryNormalized);
+      })
+    : displayTasks;
+
+  const incompleteTasks = searchedTasks.filter(t => !t.is_completed);
+  const completedDisplayTasks = searchedTasks.filter((t) => t.is_completed && !isWontDoTask(t));
+  const wontDoDisplayTasks = searchedTasks.filter((t) => t.is_completed && isWontDoTask(t));
 
   const stripWontDoMarker = (text?: string) => {
     if (!text) return undefined;
@@ -1952,19 +2028,16 @@ export default function Tasks() {
     const estimatedDurations = unscheduledTasks.map((t) => estimateTaskDuration(t));
     const horizonDays = horizon === 'month' ? 30 : 7;
 
-    // Distribute across open slots with smart pacing across the horizon
-    const slots = distributeTasksAcrossAwakeSlots(
-      unscheduledTasks.length,
-      {
-        avgWakeHour: wakeHour,
-        avgBedHour: bedHour,
-        existingTasks: allTasks,
-        calendarEvents,
-      },
-      {
-        horizonDays,
-        estimatedDurations,
-      }
+    // Distribute across open slots with smart pacing across the horizon, but pin any task
+    // whose title names an explicit date (e.g. "Meeting — 10/9") to that date instead.
+    const slots = scheduleRespectingTitleDates(
+      unscheduledTasks,
+      estimatedDurations,
+      allTasks,
+      calendarEvents,
+      wakeHour,
+      bedHour,
+      horizonDays,
     );
 
     return unscheduledTasks.map((task, index) => {
@@ -2009,18 +2082,14 @@ export default function Tasks() {
     const reorganizeIds = new Set(currentWeekScheduledTasks.map((t) => t.id));
     const otherTasks = allTasks.filter((t) => !reorganizeIds.has(t.id));
 
-    const slots = distributeTasksAcrossAwakeSlots(
-      currentWeekScheduledTasks.length,
-      {
-        avgWakeHour: wakeHour,
-        avgBedHour: bedHour,
-        existingTasks: otherTasks,
-        calendarEvents,
-      },
-      {
-        horizonDays,
-        estimatedDurations,
-      }
+    const slots = scheduleRespectingTitleDates(
+      currentWeekScheduledTasks,
+      estimatedDurations,
+      otherTasks,
+      calendarEvents,
+      wakeHour,
+      bedHour,
+      horizonDays,
     );
 
     return currentWeekScheduledTasks.map((task, index) => {
@@ -2376,6 +2445,52 @@ export default function Tasks() {
 
           {/* Spacer on desktop */}
           <div className="md:flex hidden flex-1" />
+
+          {/* Search toggle */}
+          {isSearchOpen ? (
+            <div className="flex items-center gap-1.5 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm pl-3 pr-1.5 h-9 w-[120px] sm:w-[200px] shrink-0 transition-all">
+              <Search size={14} className="text-muted-foreground shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    setSearchQuery('');
+                    setIsSearchOpen(false);
+                  }
+                }}
+                placeholder="Search..."
+                className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setIsSearchOpen(false);
+                }}
+                className="p-1 rounded-full hover:bg-white/20 dark:hover:bg-white/10 text-muted-foreground shrink-0"
+                aria-label="Close search"
+                title="Close search"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSearchOpen(true);
+                requestAnimationFrame(() => searchInputRef.current?.focus());
+              }}
+              className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90 shrink-0"
+              title="Search tasks"
+              aria-label="Search tasks"
+            >
+              <Search size={16} className="text-muted-foreground" />
+            </button>
+          )}
 
           {/* Smart schedule / reorganize button */}
           <button
@@ -3230,8 +3345,12 @@ Return ONLY raw JSON.`;
           {mainTasksToRender.length === 0 && (activeView !== 'completed' || wontDoTasksToRender.length === 0) && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <CheckCircle2 size={48} className="opacity-20 mb-4" />
-              <p className="text-lg font-medium">{activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}</p>
-              <p className="text-sm">No tasks to show</p>
+              <p className="text-lg font-medium">
+                {searchQueryNormalized
+                  ? 'No matching tasks'
+                  : activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}
+              </p>
+              <p className="text-sm">{searchQueryNormalized ? `No tasks match "${searchQuery.trim()}"` : 'No tasks to show'}</p>
             </div>
           )}
         </div>
@@ -4034,12 +4153,15 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn(
-              "font-medium tracking-tight text-[15px]",
-              task.is_completed && "line-through text-muted-foreground font-normal"
-            )}>
-              {task.title}
-            </span>
+            <div className="min-w-0 flex-1">
+              <MarqueeTitle
+                title={task.title}
+                className={cn(
+                  "font-medium tracking-tight text-[15px]",
+                  task.is_completed && "line-through text-muted-foreground font-normal"
+                )}
+              />
+            </div>
             {task.id.startsWith('habit-') && (
               <Flame size={14} className="text-purple-500" />
             )}

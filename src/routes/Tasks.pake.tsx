@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Search, X } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -14,6 +14,7 @@ import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/tas
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
 import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
 import { Checkbox, Button as FluentButton } from '@fluentui/react-components';
+import { MarqueeTitle } from '../components/ui/MarqueeTitle';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -129,6 +130,9 @@ export default function Tasks() {
   const sortFeedbackTimeoutRef = useRef<number | null>(null);
   const [activeListId, setActiveListId] = useState<string | null>(null);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const { data: selectedTaskWithSubtasks } = useTaskWithSubtasks(selectedTask?.id || '');
   const subtasks = selectedTaskWithSubtasks?.subtasks || [];
@@ -720,9 +724,22 @@ export default function Tasks() {
   const isWontDoTask = (task: Task) => task.is_wont_do ?? hasWontDoMarker(task);
 
   const displayTasks = getDisplayTasks();
-  const incompleteTasks = displayTasks.filter(t => !t.is_completed);
-  const completedDisplayTasks = displayTasks.filter((t) => t.is_completed && !isWontDoTask(t));
-  const wontDoDisplayTasks = displayTasks.filter((t) => t.is_completed && isWontDoTask(t));
+
+  const searchQueryNormalized = searchQuery.trim().toLowerCase();
+  const searchedTasks = searchQueryNormalized
+    ? displayTasks.filter((task) => {
+        const tagNames = (task.tag_ids || [])
+          .map((id) => tags.find((t) => t.id === id)?.name || '')
+          .join(' ');
+        return `${task.title}\n${task.description || ''}\n${tagNames}`
+          .toLowerCase()
+          .includes(searchQueryNormalized);
+      })
+    : displayTasks;
+
+  const incompleteTasks = searchedTasks.filter(t => !t.is_completed);
+  const completedDisplayTasks = searchedTasks.filter((t) => t.is_completed && !isWontDoTask(t));
+  const wontDoDisplayTasks = searchedTasks.filter((t) => t.is_completed && isWontDoTask(t));
 
   const stripWontDoMarker = (text?: string) => {
     if (!text) return undefined;
@@ -1741,6 +1758,47 @@ export default function Tasks() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {isSearchOpen ? (
+              <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card pl-3 pr-1.5 h-8 w-[160px] sm:w-[220px] transition-all">
+                <Search size={14} className="text-muted-foreground shrink-0" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      setSearchQuery('');
+                      setIsSearchOpen(false);
+                    }
+                  }}
+                  placeholder="Search tasks..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setIsSearchOpen(false);
+                  }}
+                  className="p-1 rounded-full hover:bg-secondary text-muted-foreground shrink-0"
+                  aria-label="Close search"
+                  title="Close search"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <FluentButton
+                onClick={() => {
+                  setIsSearchOpen(true);
+                  requestAnimationFrame(() => searchInputRef.current?.focus());
+                }}
+                icon={<Search size={16} className="text-muted-foreground" />}
+                title="Search tasks"
+                aria-label="Search tasks"
+              />
+            )}
             <FluentButton
               onClick={cycleSortMode}
               icon={<ArrowUpDown size={16} className="text-muted-foreground" />}
@@ -2319,8 +2377,12 @@ export default function Tasks() {
           {mainTasksToRender.length === 0 && (activeView !== 'completed' || wontDoTasksToRender.length === 0) && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <CheckCircle2 size={48} className="opacity-20 mb-4" />
-              <p className="text-lg font-medium">{activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}</p>
-              <p className="text-sm">No tasks to show</p>
+              <p className="text-lg font-medium">
+                {searchQueryNormalized
+                  ? 'No matching tasks'
+                  : activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}
+              </p>
+              <p className="text-sm">{searchQueryNormalized ? `No tasks match "${searchQuery.trim()}"` : 'No tasks to show'}</p>
             </div>
           )}
         </div>
@@ -2572,12 +2634,15 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn(
-              "font-medium",
-              task.is_completed && "line-through text-muted-foreground"
-            )}>
-              {task.title}
-            </span>
+            <div className="min-w-0 flex-1">
+              <MarqueeTitle
+                title={task.title}
+                className={cn(
+                  "font-medium",
+                  task.is_completed && "line-through text-muted-foreground"
+                )}
+              />
+            </div>
             {task.id.startsWith('habit-') && (
               <Flame size={14} className="text-purple-500" />
             )}

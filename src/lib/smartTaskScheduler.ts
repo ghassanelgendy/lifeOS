@@ -303,3 +303,81 @@ export function distributeTasksAcrossAwakeSlots(
 
   return results;
 }
+
+/**
+ * Finds a conflict-free time slot on ONE specific date, instead of freely searching across
+ * open days. Used when a task's title names an explicit date (e.g. "Meeting — 10/9") so
+ * scheduling must respect that date rather than dropping it into whichever day is next open.
+ * If the day is fully booked, the date is still honored (conflictFree: false) rather than
+ * silently moving the task to a different day.
+ */
+export function findConflictFreeSlotOnDate(
+  dateStr: string,
+  durationMinutes: number,
+  context: UserScheduleContext,
+): SmartTimeSlot {
+  const now = new Date();
+  const todayStr = format(now, 'yyyy-MM-dd');
+  const tomorrowStr = format(new Date(now.getTime() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+
+  const wakeMinutes = Math.round((context.avgWakeHour !== undefined ? context.avgWakeHour : 8) * 60);
+  const bedMinutes = Math.round((context.avgBedHour !== undefined ? context.avgBedHour : 23.5) * 60);
+
+  const busyIntervals: Array<{ start: number; end: number }> = [];
+  for (const t of context.existingTasks || []) {
+    if (t.due_date && t.due_time && !t.is_completed && t.due_date.slice(0, 10) === dateStr) {
+      const startMin = timeToMinutes(t.due_time);
+      if (startMin !== null) {
+        const duration = t.duration_minutes && t.duration_minutes > 0 ? t.duration_minutes : 30;
+        busyIntervals.push({ start: startMin, end: startMin + duration });
+      }
+    }
+  }
+  for (const e of context.calendarEvents || []) {
+    if (e.start_time && !e.all_day) {
+      try {
+        const startDate = new Date(e.start_time);
+        if (format(startDate, 'yyyy-MM-dd') === dateStr) {
+          const endDate = e.end_time ? new Date(e.end_time) : new Date(startDate.getTime() + 60 * 60 * 1000);
+          const startMin = startDate.getHours() * 60 + startDate.getMinutes();
+          const endMin = endDate.getHours() * 60 + endDate.getMinutes();
+          busyIntervals.push({ start: startMin, end: Math.max(startMin + 15, endMin) });
+        }
+      } catch {}
+    }
+  }
+
+  const isToday = dateStr === todayStr;
+  const earliestToday = isToday ? Math.ceil((now.getHours() * 60 + now.getMinutes() + 15) / 15) * 15 : 0;
+  const startMinutes = Math.max(wakeMinutes, earliestToday);
+
+  let candidateMin = startMinutes;
+  while (candidateMin + durationMinutes <= bedMinutes) {
+    const candidateEnd = candidateMin + durationMinutes;
+    const hasConflict = busyIntervals.some((busy) => candidateMin < busy.end && candidateEnd > busy.start);
+    if (!hasConflict) {
+      const timeStr = minutesToTime(candidateMin);
+      return {
+        dueDate: dateStr,
+        dueTime: timeStr,
+        durationMinutes,
+        label: formatSlotLabel(dateStr, timeStr, todayStr, tomorrowStr),
+        conflictFree: true,
+        reason: `Pinned to the date mentioned in the task title (${formatSlotLabel(dateStr, timeStr, todayStr, tomorrowStr)})`,
+      };
+    }
+    candidateMin += 15;
+  }
+
+  // Day is fully booked (or already past bedtime) but the date was explicitly requested in
+  // the title — honor the date anyway rather than silently moving the task elsewhere.
+  const fallbackTime = minutesToTime(startMinutes);
+  return {
+    dueDate: dateStr,
+    dueTime: fallbackTime,
+    durationMinutes,
+    label: formatSlotLabel(dateStr, fallbackTime, todayStr, tomorrowStr),
+    conflictFree: false,
+    reason: 'Date mentioned in the task title is fully booked; kept on that date anyway',
+  };
+}

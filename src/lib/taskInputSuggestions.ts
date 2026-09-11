@@ -281,6 +281,35 @@ export function parseTaskInput(title: string): TaskInputParseResult {
     currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullEnd);
   }
 
+  // Numeric date: D/M or D-M, optionally with a year (e.g. "10/9", "10-9", "10/9/2026").
+  // Interpreted as DAY/MONTH (not month/day). Runs before the generic time regex below,
+  // which would otherwise swallow the leading number (e.g. "10" in "10/9") as a bare time.
+  const numericDateRegex = /\b(\d{1,2})[\/\-](\d{1,2})(?:[\/\-](\d{2,4}))?\b/;
+  const numericDateMatch = numericDateRegex.exec(currentTitle);
+  if (numericDateMatch && !date) {
+    const day = parseInt(numericDateMatch[1], 10);
+    const month = parseInt(numericDateMatch[2], 10) - 1; // 0-indexed for date-fns `set`
+    const yearRaw = numericDateMatch[3] ? parseInt(numericDateMatch[3], 10) : undefined;
+    if (day >= 1 && day <= 31 && month >= 0 && month <= 11) {
+      let d = set(startOfToday(), { month, date: day });
+      if (yearRaw !== undefined) {
+        d = set(d, { year: yearRaw < 100 ? 2000 + yearRaw : yearRaw });
+      } else if (isBefore(d, startOfToday())) {
+        // No year given and the date has already passed this year: assume next year.
+        d = set(d, { year: d.getFullYear() + 1 });
+      }
+      date = format(d, 'yyyy-MM-dd');
+      const matchedText = numericDateMatch[0];
+      const fullStart = numericDateMatch.index;
+      detectedTokens.push({
+        text: matchedText,
+        type: 'date',
+        start: fullStart,
+        end: fullStart + matchedText.length,
+      });
+      currentTitle = currentTitle.slice(0, fullStart) + ' '.repeat(matchedText.length) + currentTitle.slice(fullStart + matchedText.length);
+    }
+  }
 
   // Time: 12, 12:00, 9:30 am, 14:00 (first occurrence)
   // Match hour or hour:minute with optional am/pm

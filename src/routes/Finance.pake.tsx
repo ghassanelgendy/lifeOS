@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, ChevronLeft, ChevronRight, Utensils, Car, Zap, Gamepad2, Heart, GraduationCap, ShoppingBag, ArrowLeftRight, MoreHorizontal, Briefcase, Code2, TrendingUp as TrendingUpIcon, Wallet, PieChart, Landmark, type LucideIcon } from 'lucide-react';
+import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, ChevronLeft, ChevronRight, Utensils, Car, Zap, Gamepad2, Heart, GraduationCap, ShoppingBag, ArrowLeftRight, MoreHorizontal, Briefcase, Code2, TrendingUp as TrendingUpIcon, Wallet, PieChart, Landmark, Pencil, Check, X, Settings2, type LucideIcon } from 'lucide-react';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid } from 'recharts';
 import { format, subMonths, addMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
 import { cn, formatCurrency, formatTime12h } from '../lib/utils';
 import { useTransactions, useCreateTransaction, useUpdateTransaction, useDeleteTransaction, getBreakdownFromTransactions } from '../hooks/useFinance';
 import { FinanceHeroCard } from '../components/FinanceHeroCard';
 import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
-import { useInvestmentAccounts, useInvestmentTransactions, useEnsureDefaultInvestmentAccounts, useCreateInvestmentTransaction, useUpdateInvestmentTransaction, useDeleteInvestmentTransaction, getInvestmentBreakdown } from '../hooks/useInvestments';
+import { useInvestmentAccounts, useInvestmentTransactions, useEnsureDefaultInvestmentAccounts, useCreateInvestmentTransaction, useUpdateInvestmentTransaction, useDeleteInvestmentTransaction, useAddInvestmentAccount, useRenameInvestmentAccount, useRemoveInvestmentAccount, getInvestmentBreakdown, getInvestmentAccountBalance, INVESTMENT_TRANSACTION_TYPES } from '../hooks/useInvestments';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../stores/useUIStore';
 import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
@@ -87,6 +87,9 @@ export default function Finance() {
   const createInvestmentTransaction = useCreateInvestmentTransaction();
   const updateInvestmentTransaction = useUpdateInvestmentTransaction();
   const deleteInvestmentTransaction = useDeleteInvestmentTransaction();
+  const addInvestmentAccount = useAddInvestmentAccount();
+  const renameInvestmentAccount = useRenameInvestmentAccount();
+  const removeInvestmentAccount = useRemoveInvestmentAccount();
   const { privacyMode } = useUIStore();
 
   const { user } = useAuth();
@@ -357,7 +360,20 @@ export default function Finance() {
     account_id: '',
     entity: '',
     direction: 'In',
+    transaction_type: 'Deposit',
   });
+
+  // --- Investment platform management (add/rename/remove) ---
+  const [isPlatformManagerOpen, setIsPlatformManagerOpen] = useState(false);
+  const [newPlatformName, setNewPlatformName] = useState('');
+  const [editingPlatformId, setEditingPlatformId] = useState<string | null>(null);
+  const [editingPlatformName, setEditingPlatformName] = useState('');
+  const [deletePlatformId, setDeletePlatformId] = useState<string | null>(null);
+
+  // --- Investment Correction Transaction (reconciliation, mirrors the bank correction flow) ---
+  const [isInvestmentCorrectionSheetOpen, setIsInvestmentCorrectionSheetOpen] = useState(false);
+  const [correctionInvestmentAccountId, setCorrectionInvestmentAccountId] = useState<string>('');
+  const [correctionInvestmentRealAmount, setCorrectionInvestmentRealAmount] = useState<number>(0);
   const [formData, setFormData] = useState<Partial<CreateInput<Transaction>>>({
     type: 'expense',
     category: 'food',
@@ -607,6 +623,7 @@ export default function Finance() {
         account_id: tx.account_id,
         entity: tx.entity,
         direction: tx.direction ?? (tx.type === 'income' ? 'In' : 'Out'),
+        transaction_type: tx.transaction_type ?? '',
       });
     } else {
       setEditingInvestmentTransaction(null);
@@ -621,6 +638,7 @@ export default function Finance() {
         account_id: investmentAccounts[0]?.id ?? '',
         entity: '',
         direction: 'In',
+        transaction_type: 'Deposit',
       });
     }
     setIsInvestmentModalOpen(true);
@@ -660,6 +678,81 @@ export default function Finance() {
 
   const handleDeleteInvestment = (id: string) => {
     setDeleteInvestmentId(id);
+  };
+
+  // --- Investment platform management handlers ---
+  const handleAddPlatform = () => {
+    const trimmed = newPlatformName.trim();
+    if (!trimmed) return;
+    addInvestmentAccount.mutate(trimmed, { onSuccess: () => setNewPlatformName('') });
+  };
+
+  const startEditingPlatform = (id: string, currentName: string) => {
+    setEditingPlatformId(id);
+    setEditingPlatformName(currentName);
+  };
+
+  const commitEditingPlatform = () => {
+    if (!editingPlatformId) return;
+    const trimmed = editingPlatformName.trim();
+    if (!trimmed) {
+      setEditingPlatformId(null);
+      return;
+    }
+    renameInvestmentAccount.mutate(
+      { id: editingPlatformId, name: trimmed },
+      { onSuccess: () => setEditingPlatformId(null) }
+    );
+  };
+
+  const platformPendingDelete = investmentAccounts.find((a) => a.id === deletePlatformId);
+  const platformPendingDeleteTxCount = platformPendingDelete
+    ? investmentTransactions.filter((t) => t.account_id === platformPendingDelete.id).length
+    : 0;
+
+  // --- Investment Correction Transaction handlers ---
+  const correctionInvestmentDetectedBalance = useMemo(() => {
+    if (!correctionInvestmentAccountId) return 0;
+    return getInvestmentAccountBalance(investmentTransactions, correctionInvestmentAccountId);
+  }, [correctionInvestmentAccountId, investmentTransactions]);
+
+  const correctionInvestmentDiff = correctionInvestmentRealAmount - correctionInvestmentDetectedBalance;
+  const correctionInvestmentConfirmDisabled =
+    !correctionInvestmentAccountId ||
+    !Number.isFinite(correctionInvestmentRealAmount) ||
+    Math.abs(correctionInvestmentDiff) < 0.01;
+
+  const handleOpenInvestmentCorrectionSheet = () => {
+    const defaultAccountId = correctionInvestmentAccountId || investmentAccounts[0]?.id || '';
+    setCorrectionInvestmentAccountId(defaultAccountId);
+    setCorrectionInvestmentRealAmount(
+      defaultAccountId ? getInvestmentAccountBalance(investmentTransactions, defaultAccountId) : 0
+    );
+    setIsInvestmentCorrectionSheetOpen(true);
+  };
+
+  const handleConfirmInvestmentCorrection = () => {
+    if (correctionInvestmentConfirmDisabled) return;
+    const diff = correctionInvestmentDiff;
+    const isPositive = diff > 0;
+    const today = new Date().toISOString().split('T')[0];
+    const absAmount = Math.abs(diff);
+
+    const payload: CreateInput<InvestmentTransaction> = {
+      type: isPositive ? 'income' : 'expense',
+      category: isPositive ? 'investment' : 'other_expense',
+      amount: Math.round(absAmount * 100) / 100,
+      description: 'Correction Transaction',
+      date: today,
+      is_recurring: false,
+      account_id: correctionInvestmentAccountId,
+      direction: isPositive ? 'In' : 'Out',
+      transaction_type: 'Correction',
+    };
+
+    createInvestmentTransaction.mutate(payload, {
+      onSuccess: () => setIsInvestmentCorrectionSheetOpen(false),
+    });
   };
 
   const handleOpenInvestmentModalRef = useRef(handleOpenInvestmentModal);
@@ -703,9 +796,19 @@ export default function Finance() {
             </FluentButton>
           )}
           {activeTab === 'investments' && (
-            <FluentButton icon={<Plus size={18} />} onClick={() => handleOpenInvestmentModal()} size="medium" appearance="primary" aria-label="Add investment transaction">
-              Add Investment
-            </FluentButton>
+            <div className="flex items-center gap-2">
+              <FluentButton
+                onClick={handleOpenInvestmentCorrectionSheet}
+                size="medium"
+                disabled={investmentAccounts.length === 0}
+                aria-label="Correct investment platform balance"
+              >
+                Correction
+              </FluentButton>
+              <FluentButton icon={<Plus size={18} />} onClick={() => handleOpenInvestmentModal()} size="medium" appearance="primary" aria-label="Add investment transaction">
+                Add Investment
+              </FluentButton>
+            </div>
           )}
         </div>
 
@@ -1519,7 +1622,95 @@ export default function Finance() {
                   ]}
                   className="h-8 min-h-8 py-0 text-xs leading-tight px-2 w-auto min-w-[6rem] max-w-[min(11rem,calc(100vw-4rem))]"
                 />
+                <button
+                  type="button"
+                  onClick={() => setIsPlatformManagerOpen((v) => !v)}
+                  className={cn(
+                    "h-8 px-2 rounded-lg border border-border flex items-center gap-1 text-xs font-medium transition-colors shrink-0",
+                    isPlatformManagerOpen ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                  )}
+                  aria-pressed={isPlatformManagerOpen}
+                  title="Manage investment platforms"
+                >
+                  <Settings2 size={13} />
+                  <span>Platforms</span>
+                </button>
               </div>
+
+              {isPlatformManagerOpen && (
+                <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold">Investment platforms</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Add, rename, or remove the platforms you track (not limited to Thndr/Fawry).
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={newPlatformName}
+                      onChange={(e) => setNewPlatformName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleAddPlatform();
+                      }}
+                      placeholder="e.g. Thndr, Fawry, Beltone…"
+                      className="flex-1"
+                    />
+                    <FluentButton
+                      icon={<Plus size={16} />}
+                      onClick={handleAddPlatform}
+                      disabled={addInvestmentAccount.isPending || !newPlatformName.trim()}
+                      appearance="primary"
+                    >
+                      Add
+                    </FluentButton>
+                  </div>
+                  {investmentAccounts.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No platforms yet. Add one above.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {investmentAccounts.map((account) => (
+                        <div key={account.id} className="flex items-center justify-between rounded-lg border border-border p-2.5 gap-2">
+                          {editingPlatformId === account.id ? (
+                            <>
+                              <Input
+                                autoFocus
+                                value={editingPlatformName}
+                                onChange={(e) => setEditingPlatformName(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') commitEditingPlatform();
+                                  if (e.key === 'Escape') setEditingPlatformId(null);
+                                }}
+                                className="flex-1"
+                              />
+                              <button onClick={commitEditingPlatform} disabled={renameInvestmentAccount.isPending} className="p-1.5 rounded hover:bg-secondary" title="Save">
+                                <Check size={16} />
+                              </button>
+                              <button onClick={() => setEditingPlatformId(null)} className="p-1.5 rounded hover:bg-secondary" title="Cancel">
+                                <X size={16} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Wallet size={16} className="text-muted-foreground shrink-0" />
+                                <p className="font-medium truncate">{account.name}</p>
+                              </div>
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button onClick={() => startEditingPlatform(account.id, account.name)} className="p-1.5 rounded hover:bg-secondary" title="Rename">
+                                  <Pencil size={16} />
+                                </button>
+                                <button onClick={() => setDeletePlatformId(account.id)} className="p-1.5 rounded hover:bg-destructive/20 text-destructive" title="Remove">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="rounded-xl border border-border bg-card p-4">
                   <p className="text-sm text-muted-foreground">Income</p>
@@ -1547,7 +1738,7 @@ export default function Finance() {
               <div className="rounded-xl border border-border bg-card overflow-hidden">
                 <div className="p-4 border-b border-border">
                   <h2 className="font-semibold">Investment Transactions</h2>
-                  <p className="text-sm text-muted-foreground">Thndr and Fawry — separate from your main finances</p>
+                  <p className="text-sm text-muted-foreground">Your investment platforms — separate from your main finances</p>
                 </div>
                 <div className="divide-y divide-border">
                   {filteredInvestmentTransactions.length === 0 ? (
@@ -1567,7 +1758,20 @@ export default function Finance() {
                             {tx.type === 'income' ? <ArrowUpRight className="text-green-500" size={18} /> : <ArrowDownRight className="text-red-500" size={18} />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium truncate">{tx.description || catLabel}</div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-medium truncate">{tx.description || catLabel}</span>
+                              {tx.transaction_type && (
+                                <span className={cn(
+                                  "shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                                  tx.transaction_type === 'Profit' && "bg-green-500/15 text-green-500",
+                                  tx.transaction_type === 'Loss' && "bg-red-500/15 text-red-500",
+                                  tx.transaction_type === 'Correction' && "bg-amber-500/15 text-amber-500",
+                                  (tx.transaction_type === 'Deposit' || tx.transaction_type === 'Withdrawal') && "bg-secondary text-muted-foreground"
+                                )}>
+                                  {tx.transaction_type}
+                                </span>
+                              )}
+                            </div>
                             <div className="text-xs text-muted-foreground">
                               {format(new Date(tx.date), 'MMM d')} · {account?.name ?? '—'}
                             </div>
@@ -1601,27 +1805,28 @@ export default function Finance() {
                 confirmDisabled={createInvestmentTransaction.isPending || updateInvestmentTransaction.isPending}
               >
                 <form id="investment-form" ref={investmentFormRef} onSubmit={handleSubmitInvestment} className="space-y-4">
-                  <div className="flex gap-2 p-1 bg-secondary rounded-lg">
-                    <button
-                      type="button"
-                      onClick={() => setInvestmentFormData((prev) => ({ ...prev, type: 'expense', category: 'other_expense', direction: 'Out' }))}
-                      className={cn(
-                        "flex-1 py-2 rounded text-sm font-medium transition-colors",
-                        investmentFormData.type === 'expense' ? "bg-red-500 text-white" : "hover:bg-background/50"
-                      )}
-                    >
-                      Out
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setInvestmentFormData((prev) => ({ ...prev, type: 'income', category: 'investment', direction: 'In' }))}
-                      className={cn(
-                        "flex-1 py-2 rounded text-sm font-medium transition-colors",
-                        investmentFormData.type === 'income' ? "bg-green-500 text-white" : "hover:bg-background/50"
-                      )}
-                    >
-                      In
-                    </button>
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-secondary rounded-lg">
+                    {INVESTMENT_TRANSACTION_TYPES.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setInvestmentFormData((prev) => ({
+                          ...prev,
+                          type: opt.type,
+                          category: opt.category as TransactionCategory,
+                          direction: opt.direction,
+                          transaction_type: opt.value,
+                        }))}
+                        className={cn(
+                          "py-2 rounded text-sm font-medium transition-colors",
+                          investmentFormData.transaction_type === opt.value
+                            ? opt.type === 'income' ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                            : "hover:bg-background/50"
+                        )}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
                   </div>
                   <Select
                     label="Account"
@@ -1698,6 +1903,86 @@ export default function Finance() {
         }}
         isLoading={deleteInvestmentTransaction.isPending}
       />
+      {platformPendingDelete && (
+        <ConfirmSheet
+          isOpen
+          title={`Remove ${platformPendingDelete.name}?`}
+          message={
+            platformPendingDeleteTxCount > 0
+              ? `This will also permanently delete ${platformPendingDeleteTxCount} transaction${platformPendingDeleteTxCount === 1 ? '' : 's'} recorded against it.`
+              : 'This platform has no transactions and will be removed.'
+          }
+          confirmLabel="Remove"
+          confirmVariant="destructive"
+          onConfirm={() => {
+            removeInvestmentAccount.mutate(platformPendingDelete.id);
+            if (selectedInvestmentAccount === platformPendingDelete.id) setSelectedInvestmentAccount('');
+            setDeletePlatformId(null);
+          }}
+          onCancel={() => setDeletePlatformId(null)}
+        />
+      )}
+
+      {/* Investment correction sheet */}
+      <DetailsSheet
+        isOpen={isInvestmentCorrectionSheetOpen}
+        onClose={() => setIsInvestmentCorrectionSheetOpen(false)}
+        onConfirm={handleConfirmInvestmentCorrection}
+        title="Correction Transaction"
+        confirmDisabled={createInvestmentTransaction.isPending || correctionInvestmentConfirmDisabled}
+      >
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Set real current balance</p>
+            <p className="text-xs text-muted-foreground">
+              A Correction transaction will be added to match the platform's real balance.
+            </p>
+          </div>
+
+          <Select
+            label="Platform"
+            value={correctionInvestmentAccountId}
+            onChange={(e) => {
+              const nextId = e.target.value;
+              setCorrectionInvestmentAccountId(nextId);
+              setCorrectionInvestmentRealAmount(getInvestmentAccountBalance(investmentTransactions, nextId));
+            }}
+            options={investmentAccounts.map((a) => ({ value: a.id, label: a.name }))}
+          />
+
+          <Input
+            label="Real balance"
+            type="number"
+            step="0.01"
+            value={correctionInvestmentRealAmount === 0 ? '' : correctionInvestmentRealAmount}
+            onChange={(e) => {
+              const next = e.target.value === '' ? 0 : parseFloat(e.target.value) || 0;
+              setCorrectionInvestmentRealAmount(next);
+            }}
+          />
+
+          <div className="rounded-2xl bg-secondary/30 p-3 space-y-1 border border-border">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-muted-foreground">Detected balance</span>
+              <span className="text-xs font-semibold tabular-nums text-foreground">
+                {formatCurrency(correctionInvestmentDetectedBalance)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-xs text-muted-foreground">Adjustment</span>
+              <span
+                className={cn(
+                  'text-xs font-semibold tabular-nums',
+                  correctionInvestmentDiff >= 0 ? 'text-green-400' : 'text-red-400'
+                )}
+              >
+                {correctionInvestmentDiff >= 0 ? '+' : '−'}
+                {formatCurrency(Math.abs(correctionInvestmentDiff))}
+              </span>
+            </div>
+          </div>
+        </div>
+      </DetailsSheet>
       </div>
   );
 }

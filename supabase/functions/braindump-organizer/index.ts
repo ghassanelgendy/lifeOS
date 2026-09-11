@@ -41,6 +41,30 @@ function extractJSON(text: string): any {
   return JSON.parse(cleaned.trim());
 }
 
+/** Deterministic backstop for the AI's own due_date extraction (below): catches a bare
+ * numeric DAY/MONTH date (e.g. "10/9" or "10-9") in a task title even if the model missed
+ * it. Mirrors the same DAY/MONTH convention as the client's parseTaskInput numeric-date
+ * parsing in src/lib/taskInputSuggestions.ts. Only used when the AI didn't already return
+ * a due_date for that task. */
+function extractExplicitDayMonth(text: string, todayStr: string): string | null {
+  const match = text.match(/\b(\d{1,2})[\/\-](\d{1,2})\b/);
+  if (!match) return null;
+  const day = parseInt(match[1], 10);
+  const month = parseInt(match[2], 10);
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+
+  const todayY = parseInt(todayStr.split('-')[0], 10);
+  const today = new Date(`${todayStr}T00:00:00`);
+  let candidate = new Date(todayY, month - 1, day);
+  if (candidate.getTime() < today.getTime()) {
+    candidate = new Date(todayY + 1, month - 1, day);
+  }
+  const y = candidate.getFullYear();
+  const m = String(candidate.getMonth() + 1).padStart(2, '0');
+  const d = String(candidate.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 interface CandidateConfig {
   baseUrl: string;
   apiKey: string;
@@ -407,6 +431,14 @@ async function processNoteBatch(
       const systemPrompt = `You are lifeOS Executive Summarizer & Task Classifier. Analyze this brain dump. Produce a BRIEF, CONCISE, bulleted summary of key insights, action points, and ideas.
 Available Task Lists: ${listNames}
 Available Tags: ${tagNames}
+Today's date is ${todayStr}.
+
+For each task, check whether the text names a specific day (a weekday, a relative day like
+"tomorrow"/"next Monday", a written date like "15 June", or a numeric date like "10/9").
+Numeric dates are DAY/MONTH, not month/day — e.g. "10/9" means the 10th of September, not
+October 9th. If a day is named, compute due_date as YYYY-MM-DD relative to today (roll to
+next year if that day/month has already passed this year). If no day is mentioned, set
+due_date to null — do not guess or default it to today.
 
 Return ONLY valid JSON in this format:
 {
@@ -419,7 +451,8 @@ Return ONLY valid JSON in this format:
       "suggested_list": "Best matching list from available lists",
       "suggested_tag": "Best matching tag from available tags",
       "priority": "high" | "medium" | "low" | "urgent",
-      "estimated_duration": 30
+      "estimated_duration": 30,
+      "due_date": "YYYY-MM-DD, or null if no day is mentioned"
     }
   ],
   "projects_or_notes": [{"title": "Core concept or project title", "content": "Brief description"}]
@@ -448,11 +481,18 @@ Return ONLY valid JSON in this format:
             if (!title || alreadyLinkedTitles.has(title.toLowerCase())) continue;
             const listId = listByName.get((t.suggested_list || '').toLowerCase()) || (userLists || [])[0]?.id || null;
             const tagId = tagByName.get((t.suggested_tag || '').toLowerCase());
+            // Prefer a date the AI extracted from the task text; fall back to a deterministic
+            // numeric DAY/MONTH regex on the title in case the model missed it; only default
+            // to today's date if the task genuinely names no day at all.
+            const aiDueDate = typeof t.due_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(t.due_date)
+              ? t.due_date
+              : null;
+            const dueDate = aiDueDate || extractExplicitDayMonth(title, todayStr) || todayStr;
             const { error: taskInsertError } = await supabase.from('tasks').insert({
               title,
               description: cleanBody,
               priority: t.priority || 'medium',
-              due_date: todayStr,
+              due_date: dueDate,
               duration_minutes: t.estimated_duration || 30,
               list_id: listId,
               tag_ids: tagId ? [tagId] : [],

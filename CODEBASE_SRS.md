@@ -249,6 +249,15 @@ The Smart Scheduler modal shall provide a second mode, alongside scheduling unsc
 #### FR-TASK-022: Dashboard-Matched Task Row Styling (PC Web)
 On PC web, individual task rows on the Tasks page shall visually match the task entry styling used on the Dashboard: a persistently bordered, shadowed card with a tinted/dimmed completed state, and an enlarged circular completion toggle with a focus-visible ring, instead of a flat hover-only border with a small checkbox.
 
+#### FR-TASK-023: Task Search
+The Tasks page (PC web, iOS, and desktop/Pake) shall provide a search toggle in the header that expands into a text input filtering the currently active view (smart list, custom list, or tag) by task title, description, and tag name, case-insensitively. The filter shall apply within the active view rather than across all tasks globally, matching the scoping behavior of the existing Notes full-content search. Closing the search (X button or Escape key) shall clear the query and restore the unfiltered view.
+
+#### FR-TASK-024: Scrolling Task Titles
+Task row titles on the Tasks page (PC web, iOS, and desktop/Pake) shall use the same `MarqueeTitle` component as Dashboard entries: a title that overflows its row shall stay clipped to one line and scroll horizontally on hover (desktop) or touch-hold (mobile) to reveal the full text, rather than wrapping onto additional lines and growing the card.
+
+#### FR-TASK-025: Date-Aware Smart Scheduling
+The Smart Unscheduled Tasks Scheduler and Reorganize This Week mode shall detect an explicit date named in a task's title — a weekday, a relative day ("tomorrow"), a written date ("15 June"), or a numeric `D/M` date interpreted as DAY/MONTH (e.g. "10/9" = 10 September) — and pin that task to the named date (finding a conflict-free time within that date) instead of assigning it to whichever slot the free-slot distribution algorithm finds next. The same numeric-date parsing shall also run at Quick Add time so a typed date like "10/9" is captured into `due_date` immediately, rather than the task remaining unscheduled and being assigned an unrelated date later.
+
 ---
 
 ### 3.4 Habit Tracking
@@ -418,6 +427,15 @@ The spending-by-category breakdown shall be rendered exactly once, as the standa
 #### FR-FIN-020: Keyboard-Avoiding Transaction Sheets (iOS)
 `DetailsSheet` (used by the transaction add/edit sheet, its embedded SMS/receipt-text parser, and other bottom sheets) shall reposition itself upward using the on-screen keyboard height on iOS, so its content and action buttons remain visible above the keyboard rather than being obscured by it.
 
+#### FR-FIN-021: Dynamic Investment Platforms
+Investment platforms (accounts) shall be fully user-managed: users shall be able to add, rename, or remove platforms from a "Platforms" panel on the Investments tab (PC web, iOS, and desktop/Pake). Thndr and Fawry shall be seeded once as starting suggestions only, not a fixed set. Removing a platform shall also delete its transactions (`investment_transactions.account_id` cascades), with the transaction count shown in the confirmation before removal. Renaming a platform shall require no relinking, since transactions reference it by `account_id`.
+
+#### FR-FIN-022: Investment Transaction Types
+Each investment transaction shall be tagged with a type — Deposit, Withdrawal, Profit, or Loss — shown as a badge in the transaction list, replacing the previous plain Income/Expense toggle, so gains/losses on a position are distinguishable from cash moved into or out of the platform.
+
+#### FR-FIN-023: Investment Correction Transactions
+Users shall be able to reconcile a platform's recorded balance to its real balance via a "Correction" action on the Investments tab: entering the real balance computes the adjustment needed and inserts an investment transaction tagged `Correction`, mirroring the existing bank Correction Transaction flow (FR-FIN, Transactions tab).
+
 ---
 
 ### 3.7 Sleep Tracking
@@ -539,6 +557,9 @@ Any task created from a Brain Dump — via the manual per-task "Add Task" action
 
 #### FR-NOTE-007b: Auto-Organizer Creates Real Tasks, Not Just Checkboxes
 The "Organize & File" action and the nightly `braindump-organizer` cron shall create real `tasks` rows for each AI-extracted action item (deduplicated by title against tasks already linked to that note via `source_note_id`), in addition to listing them as `- [ ] title` checkboxes in the organized note body. Re-running organize on an already-organized note shall extract only the genuine raw entries appended since the last pass (the text after the note's `### 🕒 Raw Thoughts Log` marker), not the AI's own prior summary/checkboxes, so repeated re-organizes cannot compound the note body into something the AI reads as "nothing new to extract."
+
+#### FR-NOTE-007c: Auto-Organizer Extracts Dates From Task Text
+For each AI-extracted action item, the `braindump-organizer` extraction prompt shall also request a `due_date` computed from any day or date named in the item's text (a weekday, "tomorrow", a written date, or a numeric `D/M` date interpreted as DAY/MONTH — e.g. "10/9" means 10 September, not October 9th), relative to the run's date boundary. If the model omits `due_date`, a deterministic numeric-date regex on the task title shall be tried as a fallback. Only when neither yields a date shall the created task default to today's date — it shall not be hardcoded to today regardless of what the text says.
 
 #### FR-NOTE-008: Note Pinning & Metadata
 The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`, `ai_analysis` (jsonb), and `tags` (text[]) for organizing thoughts.
