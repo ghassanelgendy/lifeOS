@@ -590,6 +590,12 @@ All tasks extracted or synced from Brain Dumps shall be automatically associated
 #### FR-NOTE-007e: Brain Dump Modal Text Selection
 The Brain Dump modal interface shall allow standard mouse and touch text selection (`user-select: text`) on all prompt responses, captured notes, and thought logs, ensuring users can copy and highlight contents.
 
+#### FR-NOTE-007f: Batch Task Selection & Deletion with Offline-Cache Sync
+The Tasks management interface and `useBatchDeleteTasks` hook shall provide unified batch deletion:
+- When deleting multiple tasks, child subtasks (`parent_id`) shall be cascaded and deleted before parent rows to fulfill PostgreSQL foreign key constraints.
+- Deletions shall simultaneously purge from the React Query memory cache, Supabase remote storage, and local IndexedDB offline storage (`idbSaveTasks`) to prevent deleted tasks from resurrecting upon browser reload.
+- The "Select Brain Dump" batch selector shall detect when the user is inside the `#braindump` tag view and select all visible tasks (active, completed, won't do), and shall match tasks across the full list via `tag_ids`, `description`, or `source_note_id`.
+
 #### FR-NOTE-008: Note Pinning & Metadata
 The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`, `ai_analysis` (jsonb), and `tags` (text[]) for organizing thoughts.
 
