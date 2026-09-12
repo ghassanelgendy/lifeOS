@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
+import { useEffectiveTheme } from '../lib/theme';
 import { useSleepStages, groupSegmentsByNight, useSleepMetrics } from '../hooks/useSleep';
 import { useScreentimeAppStats } from '../hooks/useScreentime';
 import { askAI } from '../lib/ai';
@@ -136,6 +137,7 @@ export default function WeeklyPlanner() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const effectiveTheme = useEffectiveTheme();
 
   // 1. Calculate default week start (Sunday)
   const getDefaultWeekStart = () => {
@@ -487,6 +489,13 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
     // Interpolate HSL from 120 (Green) to 0 (Red)
     const hue = 120 - score * 120;
 
+    if (effectiveTheme === 'light') {
+      return {
+        backgroundColor: `hsla(${hue}, 80%, 93%, 0.85)`,
+        borderBottom: `1px solid hsla(${hue}, 55%, 82%, 0.75)`,
+      };
+    }
+
     return {
       backgroundColor: `hsla(${hue}, 60%, 25%, 0.25)`,
       borderBottom: `1px solid hsla(${hue}, 60%, 35%, 0.4)`,
@@ -720,10 +729,10 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
               }}
               onDrop={(e) => handleDropOnDay(day.dateStr, e)}
               className={cn(
-                "bg-zinc-900/60 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-xl flex flex-col justify-between h-[510px] transition-all duration-200",
+                "bg-card/90 dark:bg-zinc-900/60 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col justify-between h-[510px] transition-all duration-200",
                 isDropTarget
-                  ? "border-blue-500 ring-2 ring-blue-500/50 bg-blue-950/20 scale-[1.01]"
-                  : "border-zinc-800/80"
+                  ? "border-primary ring-2 ring-primary/40 bg-primary/5 scale-[1.01]"
+                  : "border-border/80 dark:border-zinc-800/80"
               )}
             >
               {/* Header colored dynamically based on relative crowdness */}
@@ -731,8 +740,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                 style={getHeaderStyle(idx)}
                 className="px-4 py-2.5 flex items-center justify-between transition-colors duration-300"
               >
-                <span className="font-semibold text-white text-sm">{day.dayName}</span>
-                <span className="text-xs text-zinc-400 font-bold">{day.formatted}</span>
+                <span className="font-semibold text-foreground dark:text-white text-sm">{day.dayName}</span>
+                <span className="text-xs text-muted-foreground dark:text-zinc-400 font-bold">{day.formatted}</span>
               </div>
 
               {/* Body - holds everything inside */}
@@ -765,8 +774,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
                 {/* 4. Notes Section */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 block">Notes:</label>
-                  <div className="border border-zinc-800/50 rounded-lg overflow-hidden bg-zinc-950/20">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-zinc-500 block">Notes:</label>
+                  <div className="border border-border/70 dark:border-zinc-800/50 rounded-lg overflow-hidden bg-muted/20 dark:bg-zinc-950/20">
                     <DailyNoteArea
                       dateStr={day.dateStr}
                       dayName={day.dayName}
@@ -794,15 +803,15 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
       {/* AI Wellbeing Correlation Coach Section */}
       {aiEnabled && (
-        <div className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl p-5 shadow-xl space-y-4">
+        <div className="bg-card/90 dark:bg-zinc-900/60 backdrop-blur-xl border border-border/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm dark:shadow-xl space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-xl text-purple-400 border border-purple-500/20">
                 <Sparkles className="w-5 h-5" fill="currentColor" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-white leading-tight">✨ AI Wellbeing Correlation Coach</h2>
-                <p className="text-xs text-zinc-400">Discover patterns between habits, tasks, screentime, and sleep</p>
+                <h2 className="text-base font-bold text-foreground dark:text-white leading-tight">✨ AI Wellbeing Correlation Coach</h2>
+                <p className="text-xs text-muted-foreground dark:text-zinc-400">Discover patterns between habits, tasks, screentime, and sleep</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -837,11 +846,11 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
           {coachFeedback ? (
             <div
-              className="text-sm text-foreground/90 leading-relaxed bg-zinc-950/40 p-4 rounded-xl border border-zinc-800/50 prose prose-sm dark:prose-invert max-w-none font-sans"
+              className="text-sm text-foreground/90 leading-relaxed bg-muted/30 dark:bg-zinc-950/40 p-4 rounded-xl border border-border/70 dark:border-zinc-800/50 prose prose-sm dark:prose-invert max-w-none font-sans"
               dangerouslySetInnerHTML={{ __html: marked.parse(coachFeedback) as string }}
             />
           ) : (
-            <p className="text-xs text-zinc-450 italic">
+            <p className="text-xs text-muted-foreground/80 dark:text-zinc-450 italic">
               Tap "Coach Me" to compile this week's sleep segments, screentime logs, checklist success rates, and task metrics, or use "Smart Schedule Next Week" to harvest unfinished tasks and brain dump action items into free awake slots.
             </p>
           )}
@@ -1025,26 +1034,26 @@ function MustDoList({
       case 'high':
         return {
           border: 'border-red-500/50 hover:border-red-500',
-          activeBorder: 'bg-red-500/20 border-red-500/80 text-red-400',
-          text: 'text-red-200 font-semibold',
+          activeBorder: 'bg-red-500/20 border-red-500/80 text-red-500',
+          text: 'text-red-700 dark:text-red-200 font-semibold',
         };
       case 'medium':
         return {
           border: 'border-amber-500/50 hover:border-amber-500',
-          activeBorder: 'bg-amber-500/20 border-amber-500/80 text-amber-400',
-          text: 'text-amber-200 font-semibold',
+          activeBorder: 'bg-amber-500/20 border-amber-500/80 text-amber-500',
+          text: 'text-amber-700 dark:text-amber-200 font-semibold',
         };
       case 'low':
         return {
           border: 'border-sky-500/50 hover:border-sky-500',
-          activeBorder: 'bg-sky-500/20 border-sky-500/80 text-sky-400',
-          text: 'text-sky-200 font-medium',
+          activeBorder: 'bg-sky-500/20 border-sky-500/80 text-sky-500',
+          text: 'text-sky-700 dark:text-sky-200 font-medium',
         };
       default:
         return {
-          border: 'border-zinc-700 hover:border-zinc-500',
-          activeBorder: 'bg-zinc-500/20 border-zinc-500/80 text-zinc-400',
-          text: 'text-zinc-350 font-medium',
+          border: 'border-border hover:border-muted-foreground/50 dark:border-zinc-700 dark:hover:border-zinc-500',
+          activeBorder: 'bg-muted border-border text-muted-foreground dark:bg-zinc-500/20 dark:border-zinc-500/80 dark:text-zinc-400',
+          text: 'text-foreground/90 dark:text-zinc-350 font-medium',
         };
     }
   };
@@ -1052,10 +1061,10 @@ function MustDoList({
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 block">Tasks:</label>
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-zinc-500 block">Tasks:</label>
         <button
           onClick={onRedirect}
-          className="text-zinc-555 hover:text-blue-400 p-0.5"
+          className="text-muted-foreground hover:text-primary p-0.5"
           title="Add Task"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -1081,9 +1090,9 @@ function MustDoList({
                   );
                   e.dataTransfer.effectAllowed = 'move';
                 }}
-                className="flex items-center justify-between group gap-1 cursor-grab active:cursor-grabbing hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
+                className="flex items-center justify-between group gap-1 cursor-grab active:cursor-grabbing hover:bg-accent/60 dark:hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
               >
-                <div className="text-zinc-600 group-hover:text-zinc-400 cursor-grab shrink-0">
+                <div className="text-muted-foreground/50 group-hover:text-muted-foreground cursor-grab shrink-0">
                   <GripVertical className="w-2.5 h-2.5" />
                 </div>
                 <button
@@ -1103,7 +1112,7 @@ function MustDoList({
                   <span
                     className={cn(
                       'truncate leading-tight',
-                      task.is_completed ? 'text-zinc-650 line-through font-normal' : style.text
+                      task.is_completed ? 'text-muted-foreground line-through font-normal' : style.text
                     )}
                   >
                     {task.title}
@@ -1111,7 +1120,7 @@ function MustDoList({
                 </button>
                 <button
                   onClick={() => deleteTask.mutate(task.id)}
-                  className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-opacity shrink-0"
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground/60 hover:text-destructive transition-opacity shrink-0"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1121,7 +1130,7 @@ function MustDoList({
         ) : (
           <button
             onClick={onRedirect}
-            className="text-[10px] text-zinc-600 italic hover:text-zinc-400 text-left py-0.5"
+            className="text-[10px] text-muted-foreground/60 italic hover:text-muted-foreground text-left py-0.5"
           >
             No tasks due today. Add one...
           </button>
@@ -1155,7 +1164,7 @@ function AppointmentsList({
   return (
     <div className="space-y-1 relative">
       <div className="flex items-center justify-between">
-        <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-555">
+        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-zinc-500">
           Meetings / Events:
         </label>
         <div className="flex items-center gap-1.5">
@@ -1163,17 +1172,17 @@ function AppointmentsList({
             <div className="relative">
               <button
                 onClick={() => setShowAllPopover(!showAllPopover)}
-                className="text-[9px] font-bold bg-blue-500/20 text-blue-300 hover:bg-blue-500/35 transition-colors px-1.5 py-0.5 rounded"
+                className="text-[9px] font-bold bg-blue-500/15 text-blue-600 dark:text-blue-300 hover:bg-blue-500/25 transition-colors px-1.5 py-0.5 rounded"
               >
                 +{overflowCount} more
               </button>
               {showAllPopover && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setShowAllPopover(false)} />
-                  <div className="absolute right-0 bottom-6 bg-zinc-950 border border-zinc-800 rounded-xl p-3 w-56 shadow-2xl z-50 space-y-2">
-                    <h4 className="text-[11px] font-semibold text-zinc-350 border-b border-zinc-850 pb-1 flex items-center justify-between">
+                  <div className="absolute right-0 bottom-6 bg-card border border-border rounded-xl p-3 w-56 shadow-2xl z-50 space-y-2">
+                    <h4 className="text-[11px] font-semibold text-foreground border-b border-border pb-1 flex items-center justify-between">
                       <span>Meetings List</span>
-                      <button className="text-zinc-550 hover:text-zinc-350" onClick={() => setShowAllPopover(false)}>
+                      <button className="text-muted-foreground hover:text-foreground" onClick={() => setShowAllPopover(false)}>
                         ✕
                       </button>
                     </h4>
@@ -1181,14 +1190,14 @@ function AppointmentsList({
                       {dayEvents.map((e) => {
                         const timeStr = format(new Date(e.start_time), 'h:mm a');
                         return (
-                          <div key={e.id} className="text-xs flex items-center justify-between text-zinc-300 group gap-2">
+                          <div key={e.id} className="text-xs flex items-center justify-between text-foreground dark:text-zinc-300 group gap-2">
                             <div className="flex items-center gap-1.5 overflow-hidden">
-                              <span className="text-[9px] text-blue-400 font-semibold shrink-0">{timeStr}</span>
+                              <span className="text-[9px] text-blue-600 dark:text-blue-400 font-semibold shrink-0">{timeStr}</span>
                               <span className="truncate leading-tight font-medium">{e.title}</span>
                             </div>
                             <button
                               onClick={() => deleteEvent.mutate(e.originalId || e.id)}
-                              className="text-zinc-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                              className="text-muted-foreground/60 hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                             >
                               ✕
                             </button>
@@ -1203,7 +1212,7 @@ function AppointmentsList({
           )}
           <button
             onClick={onRedirect}
-            className="text-zinc-550 hover:text-blue-400 p-0.5"
+            className="text-muted-foreground hover:text-primary p-0.5"
             title="Schedule Event"
           >
             <Plus className="w-3.5 h-3.5" />
@@ -1233,20 +1242,20 @@ function AppointmentsList({
                   );
                   e.dataTransfer.effectAllowed = 'move';
                 }}
-                className="flex items-center justify-between group gap-1 text-xs text-zinc-350 animate-fade-in cursor-grab active:cursor-grabbing hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
+                className="flex items-center justify-between group gap-1 text-xs text-muted-foreground dark:text-zinc-350 animate-fade-in cursor-grab active:cursor-grabbing hover:bg-accent/60 dark:hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
               >
-                <div className="text-zinc-600 group-hover:text-zinc-400 cursor-grab shrink-0">
+                <div className="text-muted-foreground/50 group-hover:text-muted-foreground cursor-grab shrink-0">
                   <GripVertical className="w-2.5 h-2.5" />
                 </div>
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                  <span className="text-[9px] bg-blue-500/10 text-blue-400 px-1 py-0.5 rounded font-semibold shrink-0">
+                  <span className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1 py-0.5 rounded font-semibold shrink-0">
                     {timeStr}
                   </span>
-                  <span className="truncate leading-tight text-zinc-200 font-medium">{event.title}</span>
+                  <span className="truncate leading-tight text-foreground/90 dark:text-zinc-200 font-medium">{event.title}</span>
                 </div>
                 <button
                   onClick={() => deleteEvent.mutate(event.originalId || event.id)}
-                  className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-400 transition-opacity shrink-0 p-0.5"
+                  className="opacity-0 group-hover:opacity-100 text-muted-foreground/60 hover:text-destructive transition-opacity shrink-0 p-0.5"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -1256,7 +1265,7 @@ function AppointmentsList({
         ) : (
           <button
             onClick={onRedirect}
-            className="text-[10px] text-zinc-600 italic hover:text-zinc-400 text-left py-0.5"
+            className="text-[10px] text-muted-foreground/60 italic hover:text-muted-foreground text-left py-0.5"
           >
             No events scheduled. Add one...
           </button>
@@ -1282,7 +1291,7 @@ function DailyHabitsList({
 
   return (
     <div className="space-y-1">
-      <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-550 block">
+      <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-zinc-500 block">
         Habits:
       </label>
       <div className="space-y-2 max-h-[140px] overflow-y-auto pr-0.5 custom-scrollbar">
@@ -1300,18 +1309,18 @@ function DailyHabitsList({
                   >
                     <div
                       className={cn(
-                        'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors border-zinc-700 hover:border-zinc-500',
+                        'w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 transition-colors',
                         isCompleted
-                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400'
-                          : 'border-zinc-750'
+                          ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-600 dark:text-emerald-400'
+                          : 'border-border hover:border-primary/50 dark:border-zinc-700 dark:hover:border-zinc-500'
                       )}
                     >
                       {isCompleted && <Check className="w-2 h-2" />}
                     </div>
                     <span
                       className={cn(
-                        'truncate leading-tight font-medium text-zinc-350',
-                        isCompleted ? 'text-zinc-650 line-through font-normal' : 'text-zinc-200 font-semibold'
+                        'truncate leading-tight font-medium',
+                        isCompleted ? 'text-muted-foreground line-through font-normal' : 'text-foreground/90 dark:text-zinc-200 font-semibold'
                       )}
                     >
                       {habit.title}
@@ -1334,11 +1343,11 @@ function DailyHabitsList({
                     dir="rtl"
                     title="انقر لفتح موضع الورد في المصحف"
                   >
-                    <span className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 rounded px-1.5 py-0.5 transition-colors font-medium">
+                    <span className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 rounded px-1.5 py-0.5 transition-colors font-medium">
                       📖 {quranSummary.wirdLabel}
                     </span>
                     {quranSummary.reviewLabel && (
-                      <span className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/25 rounded px-1.5 py-0.5 transition-colors font-medium">
+                      <span className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/25 rounded px-1.5 py-0.5 transition-colors font-medium">
                         🔄 {quranSummary.reviewLabel}
                       </span>
                     )}
@@ -1348,7 +1357,7 @@ function DailyHabitsList({
             );
           })
         ) : (
-          <div className="text-[10px] text-zinc-650 italic py-0.5">
+          <div className="text-[10px] text-muted-foreground/60 italic py-0.5">
             No habits scheduled for today
           </div>
         )}
@@ -1397,7 +1406,7 @@ function DailyNoteArea({
 
   return (
     <textarea
-      className="w-full h-16 p-2 bg-transparent text-base md:text-xs text-zinc-300 border-none resize-none focus:outline-none focus:ring-0 leading-[1.3rem]"
+      className="w-full h-16 p-2 bg-transparent text-base md:text-xs text-foreground dark:text-zinc-300 border-none resize-none focus:outline-none focus:ring-0 leading-[1.3rem]"
       style={{
         backgroundImage: 'linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px)',
         backgroundSize: '100% 1.3rem',
@@ -1477,24 +1486,24 @@ function SelfCareCard({
   };
 
   return (
-    <div className="bg-zinc-900/60 backdrop-blur-xl border border-zinc-800/80 rounded-2xl overflow-hidden shadow-xl flex flex-col h-[510px]">
-      <div className="bg-zinc-800/80 px-4 py-2.5 border-b border-zinc-850 flex items-center gap-2">
+    <div className="bg-card/90 dark:bg-zinc-900/60 backdrop-blur-xl border border-border/80 dark:border-zinc-800/80 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col h-[510px]">
+      <div className="bg-muted/40 dark:bg-zinc-800/80 px-4 py-2.5 border-b border-border/60 dark:border-zinc-850 flex items-center gap-2">
         <Heart className="w-4 h-4 text-rose-400" />
-        <h3 className="font-semibold text-white text-sm">Self Care</h3>
+        <h3 className="font-semibold text-foreground dark:text-white text-sm">Self Care</h3>
       </div>
       <div className="p-4 space-y-3 flex-1 flex flex-col justify-between overflow-y-auto">
         {/* Weekly Exercise Goals */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-rose-300 block">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-300 block">
             Weekly Exercise Goals
           </label>
           <div className="space-y-1">
             {exercise.map((item, i) => (
-              <div key={`ex-${i}`} className="flex items-center gap-1.5 border-b border-zinc-850 pb-0.5">
-                <span className="text-[10px] text-zinc-550 w-3 shrink-0">{i + 1}.</span>
+              <div key={`ex-${i}`} className="flex items-center gap-1.5 border-b border-border/50 dark:border-zinc-850 pb-0.5">
+                <span className="text-[10px] text-muted-foreground/70 dark:text-zinc-550 w-3 shrink-0">{i + 1}.</span>
                 <input
                   type="text"
-                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-zinc-200 placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
+                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground/90 dark:text-zinc-200 placeholder-muted-foreground/50 dark:placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
                   style={{ WebkitAppearance: 'none' }}
                   placeholder="Set exercise goal..."
                   value={item}
@@ -1508,16 +1517,16 @@ function SelfCareCard({
 
         {/* Weekly Self Care Goals */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-purple-300 block">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300 block">
             Weekly Self Care Goals
           </label>
           <div className="space-y-1">
             {selfCare.map((item, i) => (
-              <div key={`sc-${i}`} className="flex items-center gap-1.5 border-b border-zinc-850 pb-0.5">
-                <span className="text-[10px] text-zinc-550 w-3 shrink-0">{i + 1}.</span>
+              <div key={`sc-${i}`} className="flex items-center gap-1.5 border-b border-border/50 dark:border-zinc-850 pb-0.5">
+                <span className="text-[10px] text-muted-foreground/70 dark:text-zinc-550 w-3 shrink-0">{i + 1}.</span>
                 <input
                   type="text"
-                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-zinc-200 placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
+                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground/90 dark:text-zinc-200 placeholder-muted-foreground/50 dark:placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
                   style={{ WebkitAppearance: 'none' }}
                   placeholder="Set self care goal..."
                   value={item}
@@ -1531,16 +1540,16 @@ function SelfCareCard({
 
         {/* Gratitude */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-amber-300 block">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 block">
             Gratitude Prompt
           </label>
           <div className="space-y-1">
             {gratitude.map((item, i) => (
-              <div key={`gr-${i}`} className="flex items-center gap-1.5 border-b border-zinc-850 pb-0.5">
-                <Smile className="w-3 h-3 text-amber-400 shrink-0" />
+              <div key={`gr-${i}`} className="flex items-center gap-1.5 border-b border-border/50 dark:border-zinc-850 pb-0.5">
+                <Smile className="w-3 h-3 text-amber-500 shrink-0" />
                 <input
                   type="text"
-                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-zinc-200 placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
+                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground/90 dark:text-zinc-200 placeholder-muted-foreground/50 dark:placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
                   style={{ WebkitAppearance: 'none' }}
                   placeholder="I am grateful for..."
                   value={item}
