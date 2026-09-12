@@ -243,8 +243,11 @@ The system shall provide a 1-click smart scheduling mechanism that evaluates all
 #### FR-TASK-020: Platform Responsive Task Modal (DetailsSheet)
 The system shall render task creation/editing detail sheets as a bottom slide sheet on mobile and iOS devices with gesture dismissal, and dynamically render as a centered, focused desktop dialog modal on PC web screens (`sm:` viewport breakpoint).
 
-#### FR-TASK-021: Reorganize This Week Scheduling Mode
-The Smart Scheduler modal shall provide a second mode, alongside scheduling unscheduled tasks, that re-spreads tasks already scheduled within the current calendar week (Monday-Sunday) across a wider or narrower horizon (the current week vs. the current month), using the same conflict-free awake-slot engine and treating every task not in that set (plus calendar events) as a fixed obstacle. This mode shall not touch habit-derived task instances, completed tasks, or "won't do" tasks.
+#### FR-TASK-021: Task Reorganization Modes (This Week & Selected Tasks)
+The Smart Scheduler modal shall provide reorganization modes, alongside scheduling unscheduled tasks:
+1. **Reorganize This Week:** Re-spreads tasks already scheduled within the current calendar week (Monday-Sunday) across a wider or narrower horizon (the current week vs. the current month).
+2. **Reorganize Selected Tasks:** Re-spreads arbitrary user-selected tasks across the chosen horizon (week or month).
+Both modes use the same conflict-free awake-slot engine and treat every task not in the target reorganization set (plus calendar events) as fixed obstacles. These modes shall not touch habit-derived task instances or "won't do" tasks.
 
 #### FR-TASK-022: Dashboard-Matched Task Row Styling (PC Web)
 On PC web, individual task rows on the Tasks page shall visually match the task entry styling used on the Dashboard: a persistently bordered, shadowed card with a tinted/dimmed completed state, and an enlarged circular completion toggle with a focus-visible ring, instead of a flat hover-only border with a small checkbox.
@@ -256,13 +259,13 @@ The Tasks page (PC web, iOS, and desktop/Pake) shall provide a search toggle in 
 Task row titles on the Tasks page (PC web, iOS, and desktop/Pake) shall use the same `MarqueeTitle` component as Dashboard entries: a title that overflows its row shall stay clipped to one line and scroll horizontally on hover (desktop) or touch-hold (mobile) to reveal the full text, rather than wrapping onto additional lines and growing the card.
 
 #### FR-TASK-025: Date-Aware Smart Scheduling
-The Smart Unscheduled Tasks Scheduler and Reorganize This Week mode shall detect an explicit date named in a task's title — a weekday, a relative day ("tomorrow"), a written date ("15 June"), or a numeric `D/M` date interpreted as DAY/MONTH (e.g. "10/9" = 10 September) — and pin that task to the named date (finding a conflict-free time within that date) instead of assigning it to whichever slot the free-slot distribution algorithm finds next. The same numeric-date parsing shall also run at Quick Add time so a typed date like "10/9" is captured into `due_date` immediately, rather than the task remaining unscheduled and being assigned an unrelated date later.
+The Smart Unscheduled Tasks Scheduler and Reorganize modes shall detect an explicit date named in a task's title — a weekday, a relative day ("tomorrow"), a written date ("15 June"), or a numeric `D/M` date interpreted as DAY/MONTH (e.g. "10/9" = 10 September) — and pin that task to the named date (finding a conflict-free time within that date) instead of assigning it to whichever slot the free-slot distribution algorithm finds next. The same numeric-date parsing shall also run at Quick Add time so a typed date like "10/9" is captured into `due_date` immediately, rather than the task remaining unscheduled and being assigned an unrelated date later.
 
 #### FR-TASK-026: Multi-Select & Batch Processing (PC Web & iOS)
 The system shall provide a multi-select mode on the Tasks page accessible via a "Select" button in the header. When enabled:
 - Each task card displays a selection checkbox.
 - A batch toolbar appears with item count and quick selection actions ("Select All", "Select Brain Dump" to isolate auto-generated tasks, and "Deselect").
-- The system supports batch operations: Batch Mark Done, Batch Mark Won't Do, Batch Move to List (modal selection), Batch Add Tag (modal selection), and Batch Delete (with confirmed deletion dialog).
+- The system supports batch operations: Batch Mark Done, Batch Mark Won't Do, Batch Reorganize (1-tap smart reschedule of selected tasks across week or month), Batch Move to List (modal selection), Batch Add Tag (modal selection), and Batch Delete (with confirmed deletion dialog).
 - Selecting tasks in selection mode shall not trigger the task editing sheet or modal.
 
 #### FR-TASK-027: Task Creation Timestamp Display

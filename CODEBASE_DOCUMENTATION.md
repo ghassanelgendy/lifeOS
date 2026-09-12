@@ -5892,7 +5892,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-ios-tsx"></a>
 ### src/routes/Tasks.ios.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows pin tasks whose title names an explicit date instead of freely distributing them.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows support both weekly reorganization and arbitrary batch-selected task reorganization, pinning tasks whose title names an explicit date instead of freely distributing them. Includes batch selection mode with 1-tap Reorganize, Done, Won't Do, Move, Tag, and Delete actions.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
@@ -5949,7 +5949,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-web-tsx"></a>
 ### src/routes/Tasks.web.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows pin tasks whose title names an explicit date instead of freely distributing them.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows support both weekly reorganization and arbitrary batch-selected task reorganization, pinning tasks whose title names an explicit date instead of freely distributing them. Includes batch selection mode with 1-tap Reorganize, Done, Won't Do, Move, Tag, and Delete actions.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
