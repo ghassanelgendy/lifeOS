@@ -6000,7 +6000,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`DailyHabitsList`** — Utility function for daily habits list.
 - **`DailyNoteArea`** — Utility function for daily note area.
 
-**Lines:** 1540
+**Lines:** 1567
 
 ---
 
