@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2, Search, X } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2, Search, X, CheckSquare, FolderInput } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { triggerHaptics } from '../lib/nativeBridge';
@@ -296,9 +296,14 @@ export default function Tasks() {
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [listToDeleteId, setListToDeleteId] = useState<string | null>(null);
   const [tagToDeleteId, setTagToDeleteId] = useState<string | null>(null);
-  const [taskToDeleteId, setTaskToDeleteId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showWontDo, setShowWontDo] = useState(false);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+  const [isBatchProcessing, setIsBatchProcessing] = useState(false);
+  const [isBatchMoveOpen, setIsBatchMoveOpen] = useState(false);
+  const [isBatchTagOpen, setIsBatchTagOpen] = useState(false);
+  const [isBatchDeleteConfirmOpen, setIsBatchDeleteConfirmOpen] = useState(false);
   const listLongPressTimer = useRef<number | null>(null);
   const tagLongPressTimer = useRef<number | null>(null);
 
@@ -1586,6 +1591,7 @@ export default function Tasks() {
       early_reminder_minutes: task.early_reminder_minutes ?? null,
       ios_reminders_enabled: task.ios_reminders_enabled ?? false,
       focus_time_seconds: task.focus_time_seconds ?? 0,
+      created_at: task.created_at,
     });
     setIsEditModalOpen(true);
   };
@@ -1982,6 +1988,161 @@ export default function Tasks() {
     setIsTagModalOpen(true);
   };
 
+
+  // Batch Task Actions
+  const braindumpTag = tags.find((t) => t.name.toLowerCase() === 'braindump');
+
+  const handleSelectAllVisible = () => {
+    const ids = new Set<string>();
+    mainTasksToRender.forEach((t) => {
+      if (!t.id.startsWith('habit-')) ids.add(t.id);
+    });
+    if (showCompleted) {
+      completedTasksToRender.forEach((t) => {
+        if (!t.id.startsWith('habit-')) ids.add(t.id);
+      });
+    }
+    if (showWontDo) {
+      wontDoTasksToRender.forEach((t) => {
+        if (!t.id.startsWith('habit-')) ids.add(t.id);
+      });
+    }
+    setSelectedTaskIds(ids);
+  };
+
+  const handleSelectBraindumpTasks = () => {
+    const ids = new Set<string>();
+    allTasks.forEach((t) => {
+      if (t.id.startsWith('habit-')) return;
+      const hasBraindumpTag = braindumpTag && Array.isArray(t.tag_ids) && t.tag_ids.includes(braindumpTag.id);
+      const hasBraindumpDesc = (t.description || '').toLowerCase().includes('braindump');
+      if (hasBraindumpTag || hasBraindumpDesc) {
+        ids.add(t.id);
+      }
+    });
+    setSelectedTaskIds(ids);
+  };
+
+  const handleToggleTaskSelection = (taskId: string) => {
+    setSelectedTaskIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  };
+
+  const handleBatchComplete = async () => {
+    if (selectedTaskIds.size === 0) return;
+    setIsBatchProcessing(true);
+    try {
+      const ids = Array.from(selectedTaskIds);
+      await Promise.all(
+        ids.map((id) =>
+          updateTask.mutateAsync({
+            id,
+            data: { is_completed: true, is_wont_do: false },
+          })
+        )
+      );
+      setSelectedTaskIds(new Set());
+      setIsSelectionMode(false);
+    } catch (err: any) {
+      alert(`Batch complete failed: ${err.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
+  const handleBatchWontDo = async () => {
+    if (selectedTaskIds.size === 0) return;
+    setIsBatchProcessing(true);
+    try {
+      const ids = Array.from(selectedTaskIds);
+      await Promise.all(
+        ids.map((id) =>
+          updateTask.mutateAsync({
+            id,
+            data: { is_completed: true, is_wont_do: true },
+          })
+        )
+      );
+      setSelectedTaskIds(new Set());
+      setIsSelectionMode(false);
+    } catch (err: any) {
+      alert(`Batch mark won't-do failed: ${err.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedTaskIds.size === 0) return;
+    setIsBatchProcessing(true);
+    try {
+      const ids = Array.from(selectedTaskIds);
+      await Promise.all(ids.map((id) => deleteTask.mutateAsync(id)));
+      setSelectedTaskIds(new Set());
+      setIsSelectionMode(false);
+      setIsBatchDeleteConfirmOpen(false);
+    } catch (err: any) {
+      alert(`Batch delete failed: ${err.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
+  const handleBatchMoveList = async (targetListId: string | null) => {
+    if (selectedTaskIds.size === 0) return;
+    setIsBatchProcessing(true);
+    try {
+      const ids = Array.from(selectedTaskIds);
+      await Promise.all(
+        ids.map((id) =>
+          updateTask.mutateAsync({
+            id,
+            data: { list_id: targetListId ?? undefined },
+          })
+        )
+      );
+      setIsBatchMoveOpen(false);
+      setSelectedTaskIds(new Set());
+      setIsSelectionMode(false);
+    } catch (err: any) {
+      alert(`Batch move failed: ${err.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
+
+  const handleBatchAddTag = async (tagId: string) => {
+    if (selectedTaskIds.size === 0) return;
+    setIsBatchProcessing(true);
+    try {
+      const ids = Array.from(selectedTaskIds);
+      await Promise.all(
+        ids.map((id) => {
+          const task = allTasks.find((t) => t.id === id);
+          const currentTags = task?.tag_ids || [];
+          if (!currentTags.includes(tagId)) {
+            return updateTask.mutateAsync({
+              id,
+              data: { tag_ids: [...currentTags, tagId] },
+            });
+          }
+          return Promise.resolve();
+        })
+      );
+      setIsBatchTagOpen(false);
+    } catch (err: any) {
+      alert(`Batch add tag failed: ${err.message}`);
+    } finally {
+      setIsBatchProcessing(false);
+    }
+  };
 
   // Postpone task by 1 hour (for swipe action)
   const handlePostponeTask = (task: Task) => {
@@ -2543,6 +2704,30 @@ export default function Tasks() {
               <ArrowUpDown size={16} className="text-muted-foreground" />
             </button>
           </div>
+
+          {/* Select Mode Button */}
+          <button
+            type="button"
+            onClick={() => {
+              if (isSelectionMode) {
+                setIsSelectionMode(false);
+                setSelectedTaskIds(new Set());
+              } else {
+                setIsSelectionMode(true);
+              }
+            }}
+            className={cn(
+              "h-9 px-2.5 rounded-full border transition-all flex items-center gap-1.5 text-xs font-medium shrink-0 active:scale-90",
+              isSelectionMode
+                ? "border-primary bg-primary text-white"
+                : "border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 hover:bg-white/25 dark:hover:bg-white/10 text-muted-foreground"
+            )}
+            title={isSelectionMode ? "Cancel selection" : "Select tasks"}
+            aria-label="Select tasks"
+          >
+            <CheckSquare size={15} />
+            <span className="hidden sm:inline">{isSelectionMode ? "Done" : "Select"}</span>
+          </button>
           <button
             onClick={handleOpenNewTaskSheet}
             className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all md:flex hidden items-center justify-center shrink-0"
@@ -2554,7 +2739,88 @@ export default function Tasks() {
         </header>
 
         {/* Task List - swipe L/R at top to change view (Today/Week/Upcoming) on mobile */}
-        <div ref={taskListRef} className="flex-1 overflow-y-auto p-4">
+        <div ref={taskListRef} className="flex-1 overflow-y-auto p-4 pb-24 relative">
+          {/* Batch Selection Action Bar */}
+          {isSelectionMode && (
+            <div className="mb-4 p-3 bg-secondary/70 border border-border rounded-xl flex items-center justify-between gap-2 flex-wrap animate-fade-in">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-foreground">
+                  {selectedTaskIds.size} selected
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSelectAllVisible}
+                  className="text-xs text-primary hover:underline font-medium px-1.5 py-0.5"
+                >
+                  Select All
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSelectBraindumpTasks}
+                  className="text-xs bg-primary/15 text-primary hover:bg-primary/25 rounded px-2 py-0.5 font-medium transition-colors"
+                >
+                  Select Brain Dump
+                </button>
+                {selectedTaskIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTaskIds(new Set())}
+                    className="text-xs text-muted-foreground hover:text-foreground font-medium px-1.5 py-0.5"
+                  >
+                    Deselect
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.size === 0 || isBatchProcessing}
+                  onClick={handleBatchComplete}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  <CheckCircle2 size={13} />
+                  <span>Done</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.size === 0 || isBatchProcessing}
+                  onClick={handleBatchWontDo}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  <CircleSlash2 size={13} />
+                  <span>Won't do</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.size === 0 || isBatchProcessing}
+                  onClick={() => setIsBatchMoveOpen(true)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  <FolderInput size={13} />
+                  <span>Move</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.size === 0 || isBatchProcessing}
+                  onClick={() => setIsBatchTagOpen(true)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-purple-500/15 text-purple-600 dark:text-purple-400 hover:bg-purple-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  <TagIcon size={13} />
+                  <span>Tag</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.size === 0 || isBatchProcessing}
+                  onClick={() => setIsBatchDeleteConfirmOpen(true)}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            </div>
+          )}
           {/* Quick Add */}
           {isAddingTask && (
             <form onSubmit={handleQuickAdd} className="mb-4 p-3 rounded-xl border border-border bg-card relative">
@@ -3174,6 +3440,9 @@ Return ONLY raw JSON.`;
                             formatDueDate={formatDueDate}
                             isLast={isLast}
                             onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
+                            isSelectionMode={isSelectionMode}
+                            isSelected={selectedTaskIds.has(task.id)}
+                            onSelect={handleToggleTaskSelection}
                           />
                         </div>
                       </motion.div>
@@ -3258,6 +3527,9 @@ Return ONLY raw JSON.`;
                                 formatDueDate={formatDueDate}
                                 isLast={isLast}
                                 onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
+                                isSelectionMode={isSelectionMode}
+                                isSelected={selectedTaskIds.has(task.id)}
+                                onSelect={handleToggleTaskSelection}
                               />
                             </div>
                           </motion.div>
@@ -3329,6 +3601,9 @@ Return ONLY raw JSON.`;
                                 formatDueDate={formatDueDate}
                                 isLast={isLast}
                                 onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
+                                isSelectionMode={isSelectionMode}
+                                isSelected={selectedTaskIds.has(task.id)}
+                                onSelect={handleToggleTaskSelection}
                               />
                             </div>
                           </motion.div>
@@ -4038,11 +4313,78 @@ Return ONLY raw JSON.`;
         </AnimatePresence>,
         document.body
       )}
+
+      {/* Batch Move to List Modal */}
+      <Modal
+        isOpen={isBatchMoveOpen}
+        onClose={() => setIsBatchMoveOpen(false)}
+        title={`Move ${selectedTaskIds.size} Tasks to List`}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Select destination list:</p>
+          <div className="space-y-1 max-h-60 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => handleBatchMoveList(null)}
+              className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-secondary flex items-center gap-2 text-sm active:scale-[0.99] transition-transform"
+            >
+              <div className="w-3 h-3 rounded bg-zinc-400" />
+              <span>No List (Inbox)</span>
+            </button>
+            {taskLists.map((list) => (
+              <button
+                key={list.id}
+                type="button"
+                onClick={() => handleBatchMoveList(list.id)}
+                className="w-full text-left px-3 py-2.5 rounded-xl hover:bg-secondary flex items-center gap-2 text-sm active:scale-[0.99] transition-transform"
+              >
+                <div className="w-3 h-3 rounded" style={{ backgroundColor: list.color }} />
+                <span>{list.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Batch Add Tag Modal */}
+      <Modal
+        isOpen={isBatchTagOpen}
+        onClose={() => setIsBatchTagOpen(false)}
+        title={`Add Tag to ${selectedTaskIds.size} Tasks`}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">Select tag to attach:</p>
+          <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
+            {tags.map((tag) => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => handleBatchAddTag(tag.id)}
+                className="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border border-border hover:border-foreground/40 active:scale-95 transition-all"
+                style={{ backgroundColor: `${tag.color}15`, color: tag.color }}
+              >
+                <TagIcon size={12} />
+                <span>{tag.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </Modal>
+
+      {/* Batch Delete Confirmation */}
+      <ConfirmSheet
+        isOpen={isBatchDeleteConfirmOpen}
+        title="Delete Selected Tasks"
+        message={`Are you sure you want to permanently delete ${selectedTaskIds.size} selected tasks? This action cannot be undone.`}
+        confirmLabel="Delete All"
+        onCancel={() => setIsBatchDeleteConfirmOpen(false)}
+        onConfirm={handleBatchDelete}
+        isLoading={isBatchProcessing}
+      />
     </div>
   );
 }
 
-// Task Item Component
 interface TaskItemProps {
   task: Task;
   tags: Tag[];
@@ -4053,9 +4395,12 @@ interface TaskItemProps {
   formatDueDate: (task: Task) => { text: string; className: string };
   isLast?: boolean;
   onToggleSubtask?: (subtaskId: string) => void;
+  isSelectionMode?: boolean;
+  isSelected?: boolean;
+  onSelect?: (taskId: string) => void;
 }
 
-function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo: _onWontDo, formatDueDate, isLast, onToggleSubtask }: TaskItemProps) {
+function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo: _onWontDo, formatDueDate, isLast, onToggleSubtask, isSelectionMode, isSelected, onSelect }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
@@ -4103,53 +4448,76 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
           if (target?.closest('button, [role="checkbox"], input, a, [data-interactive="true"]')) {
             return;
           }
+          if (isSelectionMode && onSelect && !task.id.startsWith('habit-')) {
+            onSelect(task.id);
+            return;
+          }
           if (!task.id.startsWith('habit-')) {
             onEdit();
           }
         }}
       >
-        <button
-          onClick={handleToggleClick}
-          onTouchStart={(e) => {
-            e.stopPropagation();
-            if (!task.is_completed) void triggerSuccessTap();
-            else void triggerLightTap();
-          }}
-          onTouchEnd={(e) => {
-            e.stopPropagation();
-          }}
-          onMouseDown={(e) => {
-            e.stopPropagation();
-          }}
-          role="checkbox"
-          aria-checked={task.is_completed}
-          data-interactive="true"
-          className={cn(
-            "w-5 h-5 mt-[2px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
-            task.is_completed
-              ? "bg-green-500 border-green-500 scale-105"
-              : "border-muted-foreground hover:border-foreground"
-          )}
-          type="button"
-        >
-          <svg
+        {isSelectionMode && !task.id.startsWith('habit-') ? (
+          <button
+            type="button"
+            data-interactive="true"
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect?.(task.id);
+            }}
             className={cn(
-              "task-checkmark",
-              task.is_completed && "task-checkmark--active"
+              "w-5 h-5 mt-[2px] rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
+              isSelected
+                ? "bg-primary border-primary text-white scale-105"
+                : "border-muted-foreground hover:border-foreground"
             )}
-            viewBox="0 0 16 16"
           >
-            <path
-              className="task-checkmark__check"
-              d="M4 8.5 7 11 12 5"
-              fill="none"
-              stroke="white"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
+            {isSelected && <Check size={12} strokeWidth={3} />}
+          </button>
+        ) : (
+          <button
+            onClick={handleToggleClick}
+            onTouchStart={(e) => {
+              e.stopPropagation();
+              if (!task.is_completed) void triggerSuccessTap();
+              else void triggerLightTap();
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+            }}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+            }}
+            role="checkbox"
+            aria-checked={task.is_completed}
+            data-interactive="true"
+            className={cn(
+              "w-5 h-5 mt-[2px] rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all transform active:scale-90",
+              task.is_completed
+                ? "bg-green-500 border-green-500 scale-105"
+                : "border-muted-foreground hover:border-foreground"
+            )}
+            type="button"
+          >
+            <svg
+              className={cn(
+                "task-checkmark",
+                task.is_completed && "task-checkmark--active"
+              )}
+              viewBox="0 0 16 16"
+            >
+              <path
+                className="task-checkmark__check"
+                d="M4 8.5 7 11 12 5"
+                fill="none"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -4215,6 +4583,24 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
                 {tag.name}
               </span>
             ))}
+            {task.created_at && !task.id.startsWith('habit-') && (
+              <span
+                className="text-[11px] text-muted-foreground/80 flex items-center gap-1 shrink-0 ml-auto"
+                title={`Created ${format(new Date(task.created_at), 'yyyy-MM-dd HH:mm')}`}
+              >
+                <Clock size={11} className="opacity-70" />
+                <span>
+                  {(() => {
+                    try {
+                      const d = new Date(task.created_at);
+                      return isToday(d) ? format(d, 'h:mm a') : format(d, 'MMM d');
+                    } catch {
+                      return '';
+                    }
+                  })()}
+                </span>
+              </span>
+            )}
           </div>
         </div>
       </div>

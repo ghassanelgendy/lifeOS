@@ -1125,6 +1125,22 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           }
           helperText="Remind when you're in a conversation with the selected contact."
         />
+        {form.created_at && (
+          <>
+            <Divider />
+            <Row
+              icon={Clock}
+              label="Added"
+              value={(() => {
+                try {
+                  return format(new Date(String(form.created_at)), 'MMM d, yyyy · h:mm a');
+                } catch {
+                  return String(form.created_at);
+                }
+              })()}
+            />
+          </>
+        )}
       </Card>
 
       {/* Optional: Add Image — extra margin so it scrolls into view above safe area */}
