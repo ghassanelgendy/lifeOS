@@ -126,7 +126,7 @@ function ThemeSync() {
     } else {
       document.documentElement.classList.remove('pake-platform', 'linux-platform');
     }
-  }, [theme, accentTheme, platformUIOverride]);
+  }, [effectiveTheme, accentTheme, platformUIOverride]);
   return null;
 }
 
