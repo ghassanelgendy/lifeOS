@@ -105,9 +105,9 @@ interface UIState {
   prayerLocationLabel: string;
   setPrayerLocation: (lat: number, lng: number, label: string) => void;
 
-  // Theme (dark by default per PRD)
-  theme: 'dark' | 'light';
-  setTheme: (theme: 'dark' | 'light') => void;
+  // Theme (matches system/iOS by default)
+  theme: 'system' | 'dark' | 'light';
+  setTheme: (theme: 'system' | 'dark' | 'light') => void;
   accentTheme: AccentTheme;
   setAccentTheme: (accent: AccentTheme) => void;
   platformUIOverride: 'auto' | 'web' | 'pake' | 'linux';
@@ -244,7 +244,7 @@ export type PersistedUiSlice = {
   prayerLatitude: number;
   prayerLongitude: number;
   prayerLocationLabel: string;
-  theme: 'dark' | 'light';
+  theme: 'system' | 'dark' | 'light';
   accentTheme: AccentTheme;
   platformUIOverride: 'auto' | 'web' | 'pake' | 'linux';
   showSystemTray: boolean;
@@ -370,7 +370,7 @@ export const useUIStore = create<UIState>()(
         set({ prayerLatitude, prayerLongitude, prayerLocationLabel }),
 
       // Theme
-      theme: 'dark',
+      theme: 'system',
       setTheme: (theme) => set({ theme }),
       accentTheme: 'zinc',
       setAccentTheme: (accentTheme) => set({ accentTheme }),
@@ -569,8 +569,8 @@ export const useUIStore = create<UIState>()(
     }),
     {
       name: 'lifeos-ui-store',
-      version: 1,
-      migrate: (persistedState) => {
+      version: 2,
+      migrate: (persistedState, version) => {
         const state = persistedState as Partial<PersistedUiSlice> | null;
         if (!state) return state;
         const mobileNavItems = Array.isArray(state.mobileNavItems)
@@ -582,11 +582,16 @@ export const useUIStore = create<UIState>()(
         const desktopNavOrder = Array.isArray(state.desktopNavOrder)
           ? state.desktopNavOrder.map((item) => (item === '/' ? '/dashboard' : item))
           : state.desktopNavOrder;
+        
+        // Version 2 migration: default theme to 'system' so it dynamically matches iOS/OS appearance
+        const theme = version < 2 || !state.theme ? 'system' : state.theme;
+
         return {
           ...state,
           mobileNavItems,
           pinnedNavItems,
           desktopNavOrder,
+          theme,
         };
       },
       partialize: (state) => getPersistedUiSlice(state),

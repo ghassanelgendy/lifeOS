@@ -1,7 +1,7 @@
 import { Capacitor } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { App } from '@capacitor/app';
-import { Keyboard } from '@capacitor/keyboard';
+import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Share } from '@capacitor/share';
@@ -53,13 +53,22 @@ export async function shareContent(title: string, text: string, url?: string) {
   }
 }
 
-// Sync native status bar color with app theme
+// Sync native status bar color and keyboard appearance with app theme
 export async function syncStatusBar(theme: 'light' | 'dark') {
   if (!Capacitor.isNativePlatform()) return;
   try {
+    // Style.Dark: light text (for dark backgrounds)
+    // Style.Light: dark text (for light backgrounds)
     await StatusBar.setStyle({
       style: theme === 'dark' ? Style.Dark : Style.Light,
     });
+    try {
+      await Keyboard.setStyle({
+        style: theme === 'dark' ? KeyboardStyle.Dark : KeyboardStyle.Light,
+      });
+    } catch {
+      // Non-fatal if platform or version doesn't support Keyboard.setStyle
+    }
   } catch (e) {
     console.error('Status bar sync failed', e);
   }

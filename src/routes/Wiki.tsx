@@ -7,6 +7,7 @@ import WikiMarkdown from '../components/wiki/WikiMarkdown';
 import WikiGraphView from '../components/wiki/WikiGraphView';
 import { ShareModal } from '../components/collaboration/ShareModal';
 import { useUIStore } from '../stores/useUIStore';
+import { resolveEffectiveTheme } from '../lib/theme';
 import { useWikiStore } from '../stores/useWikiStore';
 import { useAuth } from '../hooks/useAuth';
 
@@ -120,8 +121,9 @@ export default function Wiki() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const effectiveTheme = resolveEffectiveTheme(theme);
   const toggleTheme = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(effectiveTheme === 'dark' ? 'light' : 'dark');
   };
 
   const scrollToHeading = (id: string) => {
@@ -178,9 +180,9 @@ export default function Wiki() {
             <button
               onClick={toggleTheme}
               className="p-2 hover:bg-secondary rounded-lg active:scale-95 transition-transform cursor-pointer mr-1"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={effectiveTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              {effectiveTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
             {/* Portal Navigation Button */}

@@ -42,6 +42,7 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
+import { useEffectiveTheme } from '../lib/theme';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button, ConfirmSheet, Input } from '../components/ui';
@@ -229,6 +230,7 @@ export default function SettingsPage() {
   const unarchiveHabit = useUnarchiveHabit();
   const push = usePushNotifications();
   const prayerNotif = usePrayerNotificationSettings();
+  const effectiveTheme = useEffectiveTheme();
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
@@ -491,32 +493,53 @@ export default function SettingsPage() {
         </div>
         <div className="p-4 space-y-4">
           {/* Theme Toggle */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
+              {effectiveTheme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
               <div>
                 <p className="font-medium">Theme</p>
-                <p className="text-sm text-muted-foreground">Switch between light and dark mode</p>
+                <p className="text-sm text-muted-foreground">
+                  {theme === 'system'
+                    ? `Match device (${effectiveTheme === 'dark' ? 'Dark' : 'Light'})`
+                    : theme === 'dark'
+                    ? 'Dark mode'
+                    : 'Light mode'}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-1 p-1 bg-secondary rounded-lg">
               <button
+                onClick={() => setTheme('system')}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors",
+                  theme === 'system' ? "bg-background shadow text-foreground font-semibold" : "hover:bg-background/50 text-muted-foreground"
+                )}
+                title="Match system appearance automatically"
+              >
+                <Smartphone size={15} />
+                <span>Auto</span>
+              </button>
+              <button
                 onClick={() => setTheme('light')}
                 className={cn(
-                  "px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                  theme === 'light' ? "bg-background shadow" : "hover:bg-background/50"
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors",
+                  theme === 'light' ? "bg-background shadow text-foreground font-semibold" : "hover:bg-background/50 text-muted-foreground"
                 )}
+                title="Always Light mode"
               >
-                <Sun size={16} />
+                <Sun size={15} />
+                <span>Light</span>
               </button>
               <button
                 onClick={() => setTheme('dark')}
                 className={cn(
-                  "px-3 py-1.5 rounded text-sm font-medium transition-colors",
-                  theme === 'dark' ? "bg-background shadow" : "hover:bg-background/50"
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors",
+                  theme === 'dark' ? "bg-background shadow text-foreground font-semibold" : "hover:bg-background/50 text-muted-foreground"
                 )}
+                title="Always Dark mode"
               >
-                <Moon size={16} />
+                <Moon size={15} />
+                <span>Dark</span>
               </button>
             </div>
           </div>

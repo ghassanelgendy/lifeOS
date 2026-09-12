@@ -13,6 +13,17 @@ html,
 body {
   overflow: hidden;
   height: 100%;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  color-scheme: dark;
+}
+html.dark,
+body.dark {
+  color-scheme: dark;
+}
+html.light,
+body.light {
+  color-scheme: light;
 }
 #root {
   height: 100%;

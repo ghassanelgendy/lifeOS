@@ -19,6 +19,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
+import { resolveEffectiveTheme } from '../lib/theme';
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal';
 
 export function CommandPalette() {
@@ -231,11 +232,14 @@ export function CommandPalette() {
               <span>{privacyMode ? 'Disable' : 'Enable'} Privacy Mode</span>
             </Command.Item>
             <Command.Item
-              onSelect={() => runCommand(() => setTheme(theme === 'dark' ? 'light' : 'dark'))}
+              onSelect={() => runCommand(() => {
+                const currentEffective = resolveEffectiveTheme(theme);
+                setTheme(currentEffective === 'dark' ? 'light' : 'dark');
+              })}
               className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
             >
-              {theme === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
-              <span>Toggle {theme === 'dark' ? 'Light' : 'Dark'} Mode</span>
+              {resolveEffectiveTheme(theme) === 'dark' ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+              <span>Switch to {resolveEffectiveTheme(theme) === 'dark' ? 'Light' : 'Dark'} Mode</span>
             </Command.Item>
           </Command.Group>
         </Command.List>

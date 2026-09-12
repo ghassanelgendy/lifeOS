@@ -4,6 +4,7 @@ import { cn } from '../lib/utils';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
+import { resolveEffectiveTheme } from '../lib/theme';
 import { PullToRefresh } from './PullToRefresh';
 import { OfflineBanner } from './OfflineBanner';
 import { AppFooter } from './AppFooter';
@@ -83,7 +84,7 @@ export function AppShell() {
 
   const currentTheme = useUIStore((s) => s.theme);
   const theme = useMemo<Theme>(() => {
-    const isDark = currentTheme === 'dark';
+    const isDark = resolveEffectiveTheme(currentTheme) === 'dark';
     const baseTheme = isDark ? webDarkTheme : webLightTheme;
     return {
       ...baseTheme,

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
+import { useEffectiveTheme } from './lib/theme';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { queryClient } from './lib/queryClient';
@@ -82,18 +83,32 @@ function UserAppSettingsBridge() {
 }
 
 function ThemeSync() {
-  const theme = useUIStore((s) => s.theme);
+  const effectiveTheme = useEffectiveTheme();
   const accentTheme = useUIStore((s) => s.accentTheme);
+
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
+    document.documentElement.classList.add(effectiveTheme);
     document.documentElement.setAttribute('data-accent', accentTheme);
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
-    
-    // Sync native iOS status bar theme
-    void syncStatusBar(theme);
-  }, [theme, accentTheme]);
+    document.documentElement.style.colorScheme = effectiveTheme;
+
+    // Set theme-color to seamlessly blend status bar with the iOS mobile header
+    // Light header: #F9F9F9, Dark header: #1C1C1E
+    const headerColor = effectiveTheme === 'dark' ? '#1C1C1E' : '#F9F9F9';
+    const metaList = document.querySelectorAll('meta[name="theme-color"]');
+    if (metaList.length > 0) {
+      metaList.forEach((m) => m.setAttribute('content', headerColor));
+    } else {
+      const m = document.createElement('meta');
+      m.name = 'theme-color';
+      m.content = headerColor;
+      document.head.appendChild(m);
+    }
+
+    // Sync native iOS status bar and keyboard style
+    void syncStatusBar(effectiveTheme);
+  }, [effectiveTheme, accentTheme]);
+
   return null;
 }
 

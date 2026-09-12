@@ -6,17 +6,29 @@
       (function() {
         try {
           var raw = localStorage.getItem('lifeos-ui-store');
-          var theme = 'dark';
+          var theme = 'system';
           var accent = 'zinc';
           if (raw) {
             var data = JSON.parse(raw);
             if (data.state) {
-              if (data.state.theme === 'light') theme = 'light';
+              if (data.state.theme) theme = data.state.theme;
               if (data.state.accentTheme && ['zinc','blue','green','violet','rose','amber'].indexOf(data.state.accentTheme) >= 0) accent = data.state.accentTheme;
             }
           }
-          document.documentElement.classList.add(theme);
+          var resolved = theme;
+          if (theme === 'system' || !theme) {
+            var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            resolved = prefersDark ? 'dark' : 'light';
+          }
+          document.documentElement.classList.remove('light', 'dark');
+          document.documentElement.classList.add(resolved);
           document.documentElement.setAttribute('data-accent', accent);
+          document.documentElement.style.colorScheme = resolved;
+          var headerColor = resolved === 'dark' ? '#1c1c1e' : '#f9f9f9';
+          var metas = document.querySelectorAll('meta[name="theme-color"]');
+          if (metas && metas.length > 0) {
+            metas.forEach(function(m) { m.setAttribute('content', headerColor); });
+          }
         } catch (e) {
           document.documentElement.classList.add('dark');
           document.documentElement.setAttribute('data-accent', 'zinc');
@@ -24,7 +36,9 @@
       })();
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#1c1c1e" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9f9f9" />
+    <meta name="theme-color" content="#1c1c1e" />
     <meta name="description" content="Your personal life operating system" />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />

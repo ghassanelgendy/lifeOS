@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { BrowserRouter, HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { useUIStore } from './stores/useUIStore';
+import { useEffectiveTheme } from './lib/theme';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import { queryClient } from './lib/queryClient';
@@ -90,15 +91,25 @@ function UserAppSettingsBridge() {
 }
 
 function ThemeSync() {
-  const theme = useUIStore((s) => s.theme);
+  const effectiveTheme = useEffectiveTheme();
   const accentTheme = useUIStore((s) => s.accentTheme);
   const platformUIOverride = useUIStore((s) => s.platformUIOverride) || 'auto';
   useEffect(() => {
     document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(theme);
+    document.documentElement.classList.add(effectiveTheme);
     document.documentElement.setAttribute('data-accent', accentTheme);
-    const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', theme === 'dark' ? '#09090b' : '#ffffff');
+    document.documentElement.style.colorScheme = effectiveTheme;
+
+    const metaList = document.querySelectorAll('meta[name="theme-color"]');
+    const headerColor = effectiveTheme === 'dark' ? '#1c1c1e' : '#f9f9f9';
+    if (metaList.length > 0) {
+      metaList.forEach((m) => m.setAttribute('content', headerColor));
+    } else {
+      const meta = document.createElement('meta');
+      meta.name = 'theme-color';
+      meta.content = headerColor;
+      document.head.appendChild(meta);
+    }
 
     const isPakeMode = import.meta.env.MODE === 'pake' || (typeof window !== 'undefined' && (window as any).pake);
     const isWindows = typeof navigator !== 'undefined' && (/windows|win32|win64/i.test(navigator.userAgent));

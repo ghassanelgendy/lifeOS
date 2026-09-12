@@ -117,7 +117,7 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.prayerLocationLabel = asStr(remote.prayerLocationLabel, 'Cairo, Egypt');
 
   const th = remote.theme;
-  patch.theme = th === 'light' || th === 'dark' ? th : 'dark';
+  patch.theme = th === 'light' || th === 'dark' || th === 'system' ? th : 'system';
 
   const ac = remote.accentTheme;
   patch.accentTheme = (ACCENT_THEMES as readonly string[]).includes(ac as string)
