@@ -12,6 +12,7 @@ import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
 import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
+import { HabitStatsModal } from '../components/HabitStatsModal';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
 import { supabase } from '../lib/supabase';
 import { HABITS_WIDGET_IDS, useUIStore, type HabitsWidgetId } from '../stores/useUIStore';
@@ -275,6 +276,7 @@ export default function Habits() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
+  const [selectedHabitForStats, setSelectedHabitForStats] = useState<Habit | null>(null);
   const [rescueConfirmDetails, setRescueConfirmDetails] = useState<{ habit: Habit; date: string; cost: number; rescuableStreak: number } | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const habitFormRef = useRef<HTMLFormElement | null>(null);
@@ -663,7 +665,14 @@ export default function Habits() {
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                            <span className="font-medium truncate">{habit.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedHabitForStats(habit)}
+                              className="font-medium truncate text-left hover:text-primary active:opacity-70 transition-colors"
+                              title="View habit stats"
+                            >
+                              {habit.title}
+                            </button>
                             {(() => {
                               const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
                               if (azkarCat) {
@@ -844,7 +853,14 @@ export default function Habits() {
                               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full" style={{ backgroundColor: habit.color }} />
                               <div className="flex items-center gap-3 pl-2">
                                 <div className="min-w-0">
-                                  <div className="font-medium truncate">{habit.title}</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedHabitForStats(habit)}
+                                    className="font-medium truncate text-left hover:text-primary active:opacity-70 transition-colors block"
+                                    title="View habit stats"
+                                  >
+                                    {habit.title}
+                                  </button>
                                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                                     <span>
                                       {detoxConfig
@@ -1026,7 +1042,16 @@ export default function Habits() {
                               <div className={cn("flex-1 min-w-0 py-4 flex items-center justify-between gap-4", !isLast && "border-b border-white/10")}>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
-                                    <h3 className="font-semibold text-[15px] truncate">{habit.title}</h3>
+                                    <h3
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedHabitForStats(habit);
+                                      }}
+                                      className="font-semibold text-[15px] truncate hover:text-primary active:opacity-70 cursor-pointer transition-colors"
+                                      title="View habit stats"
+                                    >
+                                      {habit.title}
+                                    </h3>
                                     {(() => {
                                       const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
                                       if (azkarCat) {
@@ -1493,6 +1518,16 @@ export default function Habits() {
           }
         }}
         onCancel={() => setRescueConfirmDetails(null)}
+      />
+      <HabitStatsModal
+        isOpen={!!selectedHabitForStats}
+        habit={selectedHabitForStats}
+        onClose={() => setSelectedHabitForStats(null)}
+        onEdit={(habit) => {
+          setSelectedHabitForStats(null);
+          handleOpenModal(habit);
+        }}
+        currentStreak={selectedHabitForStats ? streaks[selectedHabitForStats.id] || 0 : 0}
       />
     </div>
   );

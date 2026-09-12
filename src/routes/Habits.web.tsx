@@ -49,6 +49,7 @@ import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
 import { DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
+import { HabitStatsModal } from '../components/HabitStatsModal';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
 import { supabase } from '../lib/supabase';
 import { HABITS_WIDGET_IDS, useUIStore, type HabitsWidgetId } from '../stores/useUIStore';
@@ -295,6 +296,7 @@ export default function Habits() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [selectedHabitForStats, setSelectedHabitForStats] = useState<Habit | null>(null);
   const habitFormRef = useRef<HTMLFormElement | null>(null);
 
   const handleTriggerAddHabit = () => {
@@ -708,7 +710,14 @@ export default function Habits() {
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-                            <span className="font-medium truncate">{habit.title}</span>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedHabitForStats(habit)}
+                              className="font-medium truncate text-left hover:text-primary hover:underline transition-colors"
+                              title="View habit stats"
+                            >
+                              {habit.title}
+                            </button>
                             {(() => {
                               const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
                               if (azkarCat) {
@@ -913,7 +922,14 @@ export default function Habits() {
                               <div className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl" style={{ backgroundColor: habit.color }} />
                               <div className="flex items-center gap-3 pl-2">
                                 <div className="min-w-0">
-                                  <div className="font-medium truncate">{habit.title}</div>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedHabitForStats(habit)}
+                                    className="font-medium truncate text-left hover:text-primary hover:underline transition-colors block"
+                                    title="View habit stats"
+                                  >
+                                    {habit.title}
+                                  </button>
                                   <div className="text-xs text-muted-foreground flex items-center gap-2">
                                     <span>
                                       {detoxConfig
@@ -1122,7 +1138,16 @@ export default function Habits() {
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <h3 className="font-medium">{habit.title}</h3>
+                                  <h3
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setSelectedHabitForStats(habit);
+                                    }}
+                                    className="font-medium hover:text-primary hover:underline cursor-pointer transition-colors"
+                                    title="View habit stats"
+                                  >
+                                    {habit.title}
+                                  </h3>
                                   {(() => {
                                     const azkarCat = getAzkarHabitCategory(habit.title, habit.description);
                                     if (azkarCat) {
@@ -1558,6 +1583,16 @@ export default function Habits() {
           setArchiveHabitId(null);
         }}
         isLoading={deleteHabit.isPending}
+      />
+      <HabitStatsModal
+        isOpen={!!selectedHabitForStats}
+        habit={selectedHabitForStats}
+        onClose={() => setSelectedHabitForStats(null)}
+        onEdit={(habit) => {
+          setSelectedHabitForStats(null);
+          handleOpenModal(habit);
+        }}
+        currentStreak={selectedHabitForStats ? streaks[selectedHabitForStats.id] || 0 : 0}
       />
     </div>
   );
