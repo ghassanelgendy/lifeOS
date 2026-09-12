@@ -3,7 +3,7 @@ import { Sparkles, Brain, Check, Plus, Loader2, Mic, MicOff, Calendar, Flame, Ch
 import { Button, Modal } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useNotes, useCreateNote, useUpdateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
-import { useTasks, useCreateTask, useTaskLists, useTags } from '../hooks/useTasks';
+import { useTasks, useCreateTask, useCreateTag, useTaskLists, useTags } from '../hooks/useTasks';
 import { useHabits, useCreateHabit } from '../hooks/useHabits';
 import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
@@ -34,6 +34,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
   const updateNote = useUpdateNote();
   const createNoteFolder = useCreateNoteFolder();
   const createTask = useCreateTask();
+  const createTag = useCreateTag();
   const createHabit = useCreateHabit();
   const createCalendarEvent = useCreateCalendarEvent();
 
@@ -90,6 +91,35 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
     taskIndex: number;
     linkedTask: Task | undefined;
   }
+  // Helper to ensure 'braindump' tag is present and return its ID
+  const ensureBraindumpTagId = async (): Promise<string | null> => {
+    const existing = tags.find((t) => t.name.trim().toLowerCase() === 'braindump');
+    if (existing) return existing.id;
+    try {
+      const created = await createTag.mutateAsync({
+        name: 'braindump',
+        color: '#8b5cf6',
+      });
+      return created.id;
+    } catch {
+      return null;
+    }
+  };
+
+  const normalizeTitle = (t: string) =>
+    (t || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF\s]/g, '').replace(/\s+/g, ' ').trim();
+
+  const isSimilarTitle = (a: string, b: string) => {
+    const normA = normalizeTitle(a);
+    const normB = normalizeTitle(b);
+    if (normA === normB) return true;
+    const wordsA = normA.split(' ').filter((w) => w.length > 2);
+    const wordsB = normB.split(' ').filter((w) => w.length > 2);
+    if (wordsA.length === 0 || wordsB.length === 0) return false;
+    const matchCount = wordsA.filter((w) => wordsB.includes(w)).length;
+    return matchCount / Math.max(wordsA.length, wordsB.length) >= 0.6;
+  };
+
   const allBrainDumpTasks = useMemo<AggregatedBrainDumpTask[]>(() => {
     const items: AggregatedBrainDumpTask[] = [];
     for (const note of brainDumpNotes) {
@@ -98,11 +128,14 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
       noteTasks.forEach((task, taskIndex) => {
         const linkedTask =
           (task.task_id && tasks.find((t) => t.id === task.task_id)) ||
-          tasks.find(
-            (t) =>
-              t.source_note_id === note.id &&
-              t.title.trim().toLowerCase() === task.title.trim().toLowerCase()
-          );
+          tasks.find((t) => {
+            if (t.source_note_id === note.id) {
+              return isSimilarTitle(t.title, task.title);
+            }
+            return false;
+          }) ||
+          tasks.find((t) => isSimilarTitle(t.title, task.title));
+
         items.push({ note, task, taskIndex, linkedTask });
       });
     }
@@ -116,16 +149,32 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
 
   const handleCreateTaskForNote = async (note: Note, task: BrainDumpSuggestionTask) => {
     try {
+      // Check if already created or exists in tasks (even completed/won't do)
+      const alreadyExists = tasks.some((t) => {
+        if (t.source_note_id === note.id && isSimilarTitle(t.title, task.title)) return true;
+        return isSimilarTitle(t.title, task.title);
+      });
+
+      if (alreadyExists) {
+        setSaveSuccessMsg(`"${task.title}" is already on your Task List!`);
+        setTimeout(() => setSaveSuccessMsg(null), 2500);
+        return;
+      }
+
+      const braindumpTagId = await ensureBraindumpTagId();
       const targetList =
         taskLists.find((l) => l.name.toLowerCase() === task.suggested_list?.toLowerCase())?.id ||
         taskLists[0]?.id;
-      const targetTagIds = task.suggested_tag
-        ? ([tags.find((tg) => tg.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id].filter(
-            Boolean
-          ) as string[])
-        : [];
 
-      await createTask.mutateAsync({
+      const suggestedTagId = task.suggested_tag
+        ? tags.find((tg) => tg.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id
+        : null;
+
+      const targetTagIds: string[] = [];
+      if (braindumpTagId) targetTagIds.push(braindumpTagId);
+      if (suggestedTagId && suggestedTagId !== braindumpTagId) targetTagIds.push(suggestedTagId);
+
+      const created = await createTask.mutateAsync({
         title: task.title,
         description: note.body || undefined,
         priority: (task.priority as any) || 'medium',
@@ -137,8 +186,22 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
         source_note_id: note.id,
         is_completed: false,
       });
+
+      // Update task_id in note analysis if available
+      if (created?.id && note.ai_analysis?.tasks) {
+        const updatedAnalysisTasks = note.ai_analysis.tasks.map((t) =>
+          t.title === task.title ? { ...t, task_id: created.id } : t
+        );
+        void updateNote.mutateAsync({
+          id: note.id,
+          data: {
+            ai_analysis: { ...note.ai_analysis, tasks: updatedAnalysisTasks },
+          },
+        });
+      }
+
       void triggerHaptics('success');
-      setSaveSuccessMsg(`Added "${task.title}" to your To-Do List!`);
+      setSaveSuccessMsg(`Added "${task.title}" with #braindump to your To-Do List!`);
       setTimeout(() => setSaveSuccessMsg(null), 3000);
     } catch (err: any) {
       setSaveSuccessMsg(`Error adding task: ${err?.message || err}`);
@@ -548,21 +611,30 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
         // Actually create real Task rows (not just "- [ ]" checkboxes baked into the
         // note text), carrying the raw dump text into each task's description. Skip
         // titles already linked to this note so re-organizing doesn't create dupes.
+        const braindumpTagId = await ensureBraindumpTagId();
         const alreadyLinkedTitles = new Set(
           tasks
             .filter((t) => t.source_note_id === note.id)
-            .map((t) => t.title.trim().toLowerCase())
+            .map((t) => normalizeTitle(t.title))
         );
+
         for (const task of parsed.tasks) {
-          if (alreadyLinkedTitles.has(task.title.trim().toLowerCase())) continue;
+          const normTitle = normalizeTitle(task.title);
+          if (alreadyLinkedTitles.has(normTitle)) continue;
+          if (tasks.some((t) => (t.source_note_id === note.id || isSimilarTitle(t.title, task.title)))) continue;
+
           const targetList =
             taskLists.find((l) => l.name.toLowerCase() === task.suggested_list?.toLowerCase())?.id ||
             taskLists[0]?.id;
-          const targetTagIds = task.suggested_tag
-            ? ([tags.find((tg) => tg.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id].filter(
-                Boolean
-              ) as string[])
-            : [];
+
+          const suggestedTagId = task.suggested_tag
+            ? tags.find((tg) => tg.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id
+            : null;
+
+          const targetTagIds: string[] = [];
+          if (braindumpTagId) targetTagIds.push(braindumpTagId);
+          if (suggestedTagId && suggestedTagId !== braindumpTagId) targetTagIds.push(suggestedTagId);
+
           await createTask.mutateAsync({
             title: task.title,
             description: rawMaterial || undefined,
@@ -575,6 +647,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
             source_note_id: note.id,
             is_completed: false,
           });
+          alreadyLinkedTitles.add(normTitle);
         }
       }
 
@@ -639,16 +712,28 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
     customTagId?: string
   ) => {
     try {
+      const alreadyExists = tasks.some((t) => isSimilarTitle(t.title, task.title));
+      if (alreadyExists) {
+        setSaveSuccessMsg(`"${task.title}" is already on your Task List!`);
+        setTimeout(() => setSaveSuccessMsg(null), 2500);
+        return;
+      }
+
+      const braindumpTagId = await ensureBraindumpTagId();
       const targetList =
         customListId ||
         taskLists.find((l) => l.name.toLowerCase() === task.suggested_list?.toLowerCase())?.id ||
         taskLists[0]?.id;
 
-      const targetTagIds = customTagId
-        ? [customTagId]
+      const suggestedTagId = customTagId
+        ? customTagId
         : task.suggested_tag
-        ? [tags.find((t) => t.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id].filter(Boolean) as string[]
-        : [];
+        ? tags.find((t) => t.name.toLowerCase() === task.suggested_tag?.toLowerCase())?.id
+        : null;
+
+      const targetTagIds: string[] = [];
+      if (braindumpTagId) targetTagIds.push(braindumpTagId);
+      if (suggestedTagId && !targetTagIds.includes(suggestedTagId)) targetTagIds.push(suggestedTagId);
 
       await createTask.mutateAsync({
         title: task.title,
@@ -666,7 +751,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
       setAddedTasksMap((prev) => ({ ...prev, [taskIndex]: true }));
       void triggerHaptics('success');
       const listObj = taskLists.find((l) => l.id === targetList);
-      setSaveSuccessMsg(`Added "${task.title}" to ${listObj?.name || 'To-Do List'} (${task.due} @ ${task.due_time || 'anytime'})!`);
+      setSaveSuccessMsg(`Added "${task.title}" with #braindump to ${listObj?.name || 'To-Do List'}!`);
       setTimeout(() => setSaveSuccessMsg(null), 3500);
     } catch (err: any) {
       console.error('Create task failed:', err);
@@ -680,18 +765,26 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
   const handleExportSelectedTasks = async () => {
     if (!analysis?.tasks || selectedTaskIndexes.size === 0) return;
     try {
+      const braindumpTagId = await ensureBraindumpTagId();
       const tasksToExport = analysis.tasks
         .map((t, idx) => ({ t, idx }))
         .filter(({ idx }) => selectedTaskIndexes.has(idx));
 
       for (const { t, idx } of tasksToExport) {
+        const alreadyExists = tasks.some((task) => isSimilarTitle(task.title, t.title));
+        if (alreadyExists) continue;
+
         const targetList =
           taskLists.find((l) => l.name.toLowerCase() === t.suggested_list?.toLowerCase())?.id ||
           taskLists[0]?.id;
 
-        const targetTagIds = t.suggested_tag
-          ? [tags.find((tag) => tag.name.toLowerCase() === t.suggested_tag?.toLowerCase())?.id].filter(Boolean) as string[]
-          : [];
+        const suggestedTagId = t.suggested_tag
+          ? tags.find((tag) => tag.name.toLowerCase() === t.suggested_tag?.toLowerCase())?.id
+          : null;
+
+        const targetTagIds: string[] = [];
+        if (braindumpTagId) targetTagIds.push(braindumpTagId);
+        if (suggestedTagId && !targetTagIds.includes(suggestedTagId)) targetTagIds.push(suggestedTagId);
 
         await createTask.mutateAsync({
           title: t.title,
@@ -761,7 +854,11 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Brain Dump" className="max-w-3xl">
-      <div className="space-y-4">
+      <div
+        data-braindump-modal="true"
+        data-selectable="true"
+        className="space-y-4 select-text [user-select:text] [-webkit-user-select:text]"
+      >
         {/* Navigation Tabs Header */}
         <div className="flex items-center justify-between border-b border-border pb-2.5 flex-wrap gap-2">
           {/* iOS Segmented Navigation Pills */}
@@ -967,7 +1064,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
                       </span>
                     )}
                   </div>
-                  <div className="p-3.5 rounded-xl bg-secondary/30 border border-border text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans">
+                  <div className="p-3.5 rounded-xl bg-secondary/30 border border-border text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-sans select-text [user-select:text] cursor-text">
                     {previewNote.body || '(Empty note)'}
                   </div>
                 </div>

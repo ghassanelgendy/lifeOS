@@ -303,7 +303,11 @@ html.light[data-accent="amber"] {
   .prose,
   .note-selectable,
   .notes-content,
-  [data-selectable="true"] {
+  [data-selectable="true"],
+  [data-braindump-modal],
+  [data-braindump-modal] *,
+  .braindump-selectable,
+  .braindump-selectable * {
     -webkit-user-select: text !important;
     user-select: text !important;
   }

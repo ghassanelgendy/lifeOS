@@ -99,6 +99,17 @@ function extractRawMaterial(body: string): string {
   return body.slice(idx + marker.length).trim();
 }
 
+function computeRawContentHash(text: string): string {
+  let hash = 0;
+  const str = text.trim();
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return hash.toString(36);
+}
+
 /** Expands one resolved (baseUrl, apiKey) pair into one candidate per model in that
  * provider's priority list, so a single dead/renamed model doesn't sink an otherwise-valid key. */
 function expandCandidates(baseUrl: string, apiKey: string, models: string[]): CandidateConfig[] {
@@ -318,18 +329,25 @@ async function processNoteBatch(
   const processedResults: any[] = [];
 
   for (const rawDump of notes) {
-      if (!force && !forcedNoteId) {
-        const processedAt = rawDump.ai_analysis?.processed_at;
-        if (processedAt && new Date(rawDump.updated_at) <= new Date(processedAt)) {
-          // Already processed (organized or stamped empty) and not touched since — skip.
-          continue;
-        }
-      }
-
       const cleanBody = extractRawMaterial(rawDump.body || '')
         .replace(/\*\*🕒[^\n]+\*\*/g, '')
         .replace(/New Day Started\. Capture your thoughts\.\.\./g, '')
         .trim();
+
+      const rawContentHash = computeRawContentHash(cleanBody);
+
+      if (!force && !forcedNoteId) {
+        // If raw content hash matches previous analysis, thoughts have not changed — skip!
+        const processedHash = rawDump.ai_analysis?.raw_hash;
+        if (processedHash && processedHash === rawContentHash) {
+          continue;
+        }
+        const processedAt = rawDump.ai_analysis?.processed_at;
+        if (processedAt && new Date(rawDump.updated_at).getTime() <= new Date(processedAt).getTime() + 15000) {
+          // Already processed and not meaningfully modified since — skip.
+          continue;
+        }
+      }
 
       if (!cleanBody || cleanBody.length < 5) {
         // Mark as empty / processed to avoid repeatedly scanning empty template notes. Share
@@ -461,6 +479,18 @@ Return ONLY valid JSON in this format:
       try {
         const parsed = await callChatCompletion(candidates, systemPrompt, cleanBody);
 
+        // Ensure 'braindump' tag exists for this user
+        let braindumpTag = (userTags || []).find((t: any) => (t.name || '').trim().toLowerCase() === 'braindump');
+        if (!braindumpTag) {
+          const { data: createdTag } = await supabase
+            .from('tags')
+            .insert({ name: 'braindump', color: '#8b5cf6', user_id: noteUserId })
+            .select('id, name')
+            .single();
+          if (createdTag) braindumpTag = createdTag;
+        }
+        const braindumpTagId: string | null = braindumpTag?.id || null;
+
         // 4b. Actually create real Task rows for extracted action items (not just
         // "- [ ]" checkboxes baked into the note text), carrying the raw dump text
         // into each task's description. Skip titles already linked to this note so
@@ -470,17 +500,60 @@ Return ONLY valid JSON in this format:
             .from('tasks')
             .select('title')
             .eq('source_note_id', rawDump.id);
+
+          const normalizeTitle = (s: string) =>
+            (s || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF\s]/g, '').replace(/\s+/g, ' ').trim();
+
           const alreadyLinkedTitles = new Set(
-            (existingLinkedTasks || []).map((t: any) => (t.title || '').trim().toLowerCase())
+            (existingLinkedTasks || []).map((t: any) => normalizeTitle(t.title || ''))
           );
+
+          // Also check previously recorded task titles in ai_analysis (even if deleted/completed)
+          const previouslyExtracted = new Set(
+            (rawDump.ai_analysis?.created_task_titles || []).map((t: string) => normalizeTitle(t))
+          );
+
+          const newlyRecordedTitles: string[] = [...(rawDump.ai_analysis?.created_task_titles || [])];
+
+          // Semantic token overlap check (>60% word match means identical task)
+          const isSimilarToAny = (candidate: string, existingSet: Set<string>) => {
+            const words = candidate.split(' ').filter((w) => w.length > 2);
+            if (words.length === 0) return existingSet.has(candidate);
+            for (const existing of existingSet) {
+              if (existing === candidate) return true;
+              const existingWords = existing.split(' ').filter((w) => w.length > 2);
+              if (existingWords.length === 0) continue;
+              const matches = words.filter((w) => existingWords.includes(w)).length;
+              const overlap = matches / Math.max(words.length, existingWords.length);
+              if (overlap >= 0.6) return true;
+            }
+            return false;
+          };
+
           const listByName = new Map((userLists || []).map((l: any) => [l.name.toLowerCase(), l.id]));
           const tagByName = new Map((userTags || []).map((t: any) => [t.name.toLowerCase(), t.id]));
 
           for (const t of parsed.tasks) {
             const title = (t?.title || '').trim();
-            if (!title || alreadyLinkedTitles.has(title.toLowerCase())) continue;
+            const normTitle = normalizeTitle(title);
+            if (!title || !normTitle) continue;
+            if (
+              alreadyLinkedTitles.has(normTitle) ||
+              previouslyExtracted.has(normTitle) ||
+              isSimilarToAny(normTitle, alreadyLinkedTitles) ||
+              isSimilarToAny(normTitle, previouslyExtracted)
+            ) {
+              continue;
+            }
+
             const listId = listByName.get((t.suggested_list || '').toLowerCase()) || (userLists || [])[0]?.id || null;
-            const tagId = tagByName.get((t.suggested_tag || '').toLowerCase());
+            const suggestedTagId = tagByName.get((t.suggested_tag || '').toLowerCase());
+
+            // Build tag IDs ensuring the 'braindump' tag is always present
+            const finalTagIds: string[] = [];
+            if (braindumpTagId) finalTagIds.push(braindumpTagId);
+            if (suggestedTagId && suggestedTagId !== braindumpTagId) finalTagIds.push(suggestedTagId);
+
             // Prefer a date the AI extracted from the task text; fall back to a deterministic
             // numeric DAY/MONTH regex on the title in case the model missed it; only default
             // to today's date if the task genuinely names no day at all.
@@ -495,16 +568,24 @@ Return ONLY valid JSON in this format:
               due_date: dueDate,
               duration_minutes: t.estimated_duration || 30,
               list_id: listId,
-              tag_ids: tagId ? [tagId] : [],
+              tag_ids: finalTagIds,
               source_note_id: rawDump.id,
               user_id: noteUserId,
               is_completed: false,
             });
             if (taskInsertError) {
               console.error(`[BrainDump Organizer] Failed to create task "${title}" for note ${rawDump.id}:`, taskInsertError);
+            } else {
+              alreadyLinkedTitles.add(normTitle);
+              previouslyExtracted.add(normTitle);
+              newlyRecordedTitles.push(title);
             }
           }
+          parsed.created_task_titles = newlyRecordedTitles;
         }
+
+        // Store raw thoughts hash into analysis so next runs can reliably detect if content changed
+        parsed.raw_hash = rawContentHash;
 
         // 5. Build unified note body with structured AI summary on top and raw thoughts below
         const unifiedBody = [
@@ -533,7 +614,7 @@ Return ONLY valid JSON in this format:
           .update({
             title: organizedTitle,
             body: unifiedBody,
-            ai_analysis: { ...parsed, processed_at: processedAtIso },
+            ai_analysis: { ...parsed, processed_at: processedAtIso, raw_hash: rawContentHash },
             folder_id: orgFolderId,
             user_id: noteUserId,
             is_brain_dump: true,
