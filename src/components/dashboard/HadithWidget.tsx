@@ -45,7 +45,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
   }, [currentHadith]);
 
   const cardStyle = isIOS
-    ? 'rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-black/40 backdrop-blur-xl p-4 shadow-sm'
+    ? 'rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-black/40 backdrop-blur-xl p-4 shadow-sm'
     : 'rounded-2xl border border-border/70 bg-card/95 backdrop-blur-md p-4.5 shadow-sm hover:border-border transition-all duration-200';
 
   return (
@@ -134,7 +134,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
           {/* Arabic Hadith Text */}
           <div dir="rtl" className="text-right flex-1">
             <p className={cn(
-              'font-cairo font-sans text-emerald-900 dark:text-emerald-100 font-semibold tracking-wide text-right',
+              'font-cairo font-sans text-foreground dark:text-emerald-100 font-semibold tracking-wide text-right',
               compact ? 'text-base leading-relaxed' : 'text-lg leading-loose sm:text-xl sm:leading-loose'
             )}>
               «{currentHadith.text}»

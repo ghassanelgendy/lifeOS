@@ -1495,11 +1495,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               <React.Fragment key={`${ayah.surahNumber}-${ayah.numberInSurah}-${ayah.number}`}>
                                 {isNewSurahStart && (
                                   <div className="w-full block my-3">
-                                    <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-amber-950/20 via-zinc-900/80 to-amber-950/20 border border-amber-500/20 text-center space-y-0.5 shadow-md font-arabic-title">
-                                      <div className="text-lg sm:text-2xl font-extrabold text-amber-200 tracking-wide">
+                                    <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-r from-amber-100/80 via-amber-50/95 to-amber-100/80 dark:from-amber-950/20 dark:via-zinc-900/80 dark:to-amber-950/20 border border-amber-300/60 dark:border-amber-500/20 text-center space-y-0.5 shadow-sm dark:shadow-md font-arabic-title">
+                                      <div className="text-lg sm:text-2xl font-extrabold text-amber-950 dark:text-amber-200 tracking-wide">
                                         سُورَةُ {ayahSurah.name}
                                       </div>
-                                      <div className="text-[10px] text-amber-400 font-bold flex items-center justify-center gap-3">
+                                      <div className="text-[10px] text-amber-800/90 dark:text-amber-400 font-bold flex items-center justify-center gap-3">
                                         <span>{ayahSurah.type === 'Meccan' ? 'مَكِّيَّةٌ' : 'مَدَنِيَّةٌ'}</span>
                                         <span>•</span>
                                         <span>آيَاتُهَا {ayahSurah.versesCount}</span>
@@ -1889,11 +1889,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       <React.Fragment key={`fs-${ayah.surahNumber}-${ayah.numberInSurah}-${ayah.number}`}>
                                         {isNewSurahStart && (
                                           <div className="w-full block my-3">
-                                            <div className="p-2.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-950/30 via-zinc-900/90 to-amber-950/30 border border-amber-500/30 text-center space-y-1 shadow-lg font-arabic-title">
-                                              <div className="text-xl sm:text-3xl font-extrabold text-amber-200 tracking-wide">
+                                            <div className="p-2.5 sm:p-4 rounded-2xl bg-gradient-to-r from-amber-100/85 via-amber-50 to-amber-100/85 dark:from-amber-950/30 dark:via-zinc-900/90 dark:to-amber-950/30 border border-amber-300/70 dark:border-amber-500/30 text-center space-y-1 shadow-sm dark:shadow-lg font-arabic-title">
+                                              <div className="text-xl sm:text-3xl font-extrabold text-amber-950 dark:text-amber-200 tracking-wide">
                                                 سُورَةُ {ayahSurah.name}
                                               </div>
-                                              <div className="text-xs text-amber-400 font-bold flex items-center justify-center gap-3">
+                                              <div className="text-xs text-amber-800/90 dark:text-amber-400 font-bold flex items-center justify-center gap-3">
                                                 <span>{ayahSurah.type === 'Meccan' ? 'مَكِّيَّةٌ' : 'مَدَنِيَّةٌ'}</span>
                                                 <span>•</span>
                                                 <span>آيَاتُهَا {ayahSurah.versesCount}</span>

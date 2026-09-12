@@ -637,19 +637,19 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-sm rounded-3xl border border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-5 space-y-4 shadow-2xl text-center overscroll-contain animate-in fade-in zoom-in-95 duration-300 ease-out"
+              className="w-full max-w-sm rounded-3xl border border-emerald-500/30 dark:border-emerald-500/40 bg-card/95 backdrop-blur-2xl p-5 space-y-4 shadow-2xl text-center overscroll-contain animate-in fade-in zoom-in-95 duration-300 ease-out"
             >
               {/* Header Badge */}
               <div className="flex items-center justify-center">
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-cairo font-bold shadow-sm">
-                  <Sparkles className="size-3.5 text-emerald-400" />
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 text-[11px] font-cairo font-bold shadow-sm">
+                  <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>حديث اليوم في فضل القرآن</span>
                 </div>
               </div>
 
               {/* Enhanced Hadith Box for Mobile */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-emerald-500/30 bg-gradient-to-b from-emerald-950/40 via-emerald-950/20 to-zinc-950/50 shadow-inner space-y-3">
-                <blockquote className="font-arabic-quran text-xl sm:text-2xl text-emerald-200 font-bold leading-[2.3] text-center drop-shadow-sm select-none">
+              <div className="p-4 sm:p-5 rounded-2xl border border-emerald-500/20 dark:border-emerald-500/30 bg-gradient-to-b from-emerald-50/90 via-emerald-50/40 to-background dark:from-emerald-950/40 dark:via-emerald-950/20 dark:to-zinc-950/50 shadow-inner space-y-3">
+                <blockquote className="font-arabic-quran text-xl sm:text-2xl text-emerald-950 dark:text-emerald-200 font-bold leading-[2.3] text-center drop-shadow-sm select-none">
                   «{currentHadith.text}»
                 </blockquote>
 
