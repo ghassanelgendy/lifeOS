@@ -892,8 +892,10 @@ The system shall calculate points based on a date-only logic for task completion
 
 ### 3.15 Settings & Customization
 
-#### FR-SET-001: Theme Toggle
-Users shall be able to switch between Dark and Light themes.
+#### FR-SET-001: Theme Management & System/iOS Appearance Synchronization
+The system shall support three theme modes: System Auto, Light, and Dark.
+- In System Auto mode (default), the app shall dynamically match the host device (iOS / Android / Desktop) color scheme using `prefers-color-scheme` listeners and native app resumption hooks.
+- The system shall automatically synchronize the native status bar (`@capacitor/status-bar`), virtual keyboard (`@capacitor/keyboard`), and HTML `theme-color` / `color-scheme` properties with the active appearance and iOS safe area header (`#1c1c1e` dark / `#f9f9f9` light), preventing title bar color mismatches.
 
 #### FR-SET-002: Accent Color Selection
 Users shall be able to select from 6 accent themes: Zinc (default), Blue, Green, Violet, Rose, Amber.

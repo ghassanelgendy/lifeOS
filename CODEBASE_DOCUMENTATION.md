@@ -5046,6 +5046,25 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-lib-theme-ts"></a>
+### src/lib/theme.ts
+
+**File Purpose:** Theme resolution utilities and reactive hooks for dynamic iOS system appearance matching and status bar synchronization.
+
+**Functions & Classes:**
+- `getSystemTheme` (Function)
+- `resolveEffectiveTheme` (Function)
+- `useEffectiveTheme` (React Hook)
+
+**Function Details:**
+- **`getSystemTheme`** — Checks device media query `prefers-color-scheme: dark` to determine system mode.
+- **`resolveEffectiveTheme`** — Resolves an `AppTheme` (`system` | `dark` | `light`) to an effective active theme (`dark` | `light`).
+- **`useEffectiveTheme`** — Subscribes to UI store theme, real-time media query changes, and Capacitor app state changes to provide live reactive theming.
+
+**Lines:** 85
+
+---
+
 <a name="src-lib-userappsettings-ts"></a>
 ### src/lib/userAppSettings.ts
 

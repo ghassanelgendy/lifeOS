@@ -534,7 +534,8 @@ Vite Custom Plugin:
 
 ### 9.1 Design System
 - **Framework:** Tailwind CSS v4 with custom `@theme` directives
-- **Default Theme:** Dark mode (`#09090b` background)
+- **Theme Modes:** System Auto (matches iOS/device appearance automatically with dynamic `prefers-color-scheme` listener), Light mode, and Dark mode (`#09090b` background)
+- **Title Bar & Status Bar Integration:** Native status bar (`@capacitor/status-bar`), virtual keyboard (`@capacitor/keyboard`), and HTML `theme-color` / `color-scheme` dynamically synchronize with the active theme and iOS safe area header (`#1c1c1e` dark / `#f9f9f9` light), ensuring seamless visual integration without title bar glitches.
 - **Accent Themes:** 6 options (Zinc, Blue, Green, Violet, Rose, Amber) — full app tinting
 - **Border Radius:** XL (0.75rem), iOS Squircle (28px)
 - **Typography:** System font stack, 16px minimum on mobile inputs
