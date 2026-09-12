@@ -11,7 +11,7 @@ import { Flame } from 'lucide-react';
 import { cn, formatTime12h } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI, extractJSON } from '../lib/ai';
-import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWeekTasks, useCompletedTasks, useOverdueTasks, useCreateTask, useUpdateTask, useToggleTask, useDeleteTask, useCreateTaskList, useUpdateTaskList, useDeleteTaskList, useCreateTag, useUpdateTag, useDeleteTag, useConvertTaskToHabit, useTaskWithSubtasks, useCreateSubtask } from '../hooks/useTasks';
+import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWeekTasks, useCompletedTasks, useOverdueTasks, useCreateTask, useUpdateTask, useToggleTask, useDeleteTask, useBatchDeleteTasks, useCreateTaskList, useUpdateTaskList, useDeleteTaskList, useCreateTag, useUpdateTag, useDeleteTag, useConvertTaskToHabit, useTaskWithSubtasks, useCreateSubtask } from '../hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
@@ -184,6 +184,7 @@ export default function Tasks() {
   const updateCalendarEvent = useUpdateCalendarEvent();
   const toggleTask = useToggleTask();
   const deleteTask = useDeleteTask();
+  const batchDeleteTasks = useBatchDeleteTasks();
   const createTaskList = useCreateTaskList();
   const updateTaskList = useUpdateTaskList();
   const deleteTaskList = useDeleteTaskList();
@@ -2012,11 +2013,28 @@ export default function Tasks() {
 
   const handleSelectBraindumpTasks = () => {
     const ids = new Set<string>();
+
+    // If already viewing the braindump tag view, select all visible tasks in this tag view
+    if (activeView === 'tag' && activeTagId && braindumpTag && activeTagId === braindumpTag.id) {
+      mainTasksToRender.forEach((t) => {
+        if (!t.id.startsWith('habit-')) ids.add(t.id);
+      });
+      completedTasksToRender.forEach((t) => {
+        if (!t.id.startsWith('habit-')) ids.add(t.id);
+      });
+      wontDoTasksToRender.forEach((t) => {
+        if (!t.id.startsWith('habit-')) ids.add(t.id);
+      });
+      setSelectedTaskIds(ids);
+      return;
+    }
+
     allTasks.forEach((t) => {
       if (t.id.startsWith('habit-')) return;
       const hasBraindumpTag = braindumpTag && Array.isArray(t.tag_ids) && t.tag_ids.includes(braindumpTag.id);
       const hasBraindumpDesc = (t.description || '').toLowerCase().includes('braindump');
-      if (hasBraindumpTag || hasBraindumpDesc) {
+      const hasBraindumpNote = Boolean(t.source_note_id);
+      if (hasBraindumpTag || hasBraindumpDesc || hasBraindumpNote) {
         ids.add(t.id);
       }
     });
@@ -2084,7 +2102,7 @@ export default function Tasks() {
     setIsBatchProcessing(true);
     try {
       const ids = Array.from(selectedTaskIds);
-      await Promise.all(ids.map((id) => deleteTask.mutateAsync(id)));
+      await batchDeleteTasks.mutateAsync(ids);
       setSelectedTaskIds(new Set());
       setIsSelectionMode(false);
       setIsBatchDeleteConfirmOpen(false);

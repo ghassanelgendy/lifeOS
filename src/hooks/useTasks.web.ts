@@ -1033,12 +1033,71 @@ export function useDeleteTask() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      // 1. Also remove subtasks in memory
+      queryClient.setQueriesData({ queryKey: TASKS_KEY }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: Task) => t.id !== id && t.parent_id !== id);
+      });
+
+      // 2. Remove from IndexedDB
+      try {
+        const localTasks = await idbGetTasks();
+        const filtered = localTasks.filter((t: Task) => t.id !== id && t.parent_id !== id);
+        await idbSaveTasks(filtered);
+      } catch (err) {
+        console.warn('Failed to remove task from IndexedDB:', err);
+      }
+
       if (!isOnline()) {
         addToOfflineQueue({ entity: 'tasks', op: 'delete', id });
-        queryClient.setQueryData(TASKS_KEY, (old: Task[] | undefined) => (old ?? []).filter((t) => t.id !== id));
         return true;
       }
+
+      // Delete subtasks first to satisfy foreign key constraints
+      await supabase.from('tasks').delete().eq('parent_id', id);
       const { error } = await supabase.from('tasks').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: () => {
+      if (isOnline()) {
+        queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      }
+    },
+  });
+}
+
+export function useBatchDeleteTasks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      if (!ids.length) return true;
+      const idSet = new Set(ids);
+
+      // 1. Update React Query cache
+      queryClient.setQueriesData({ queryKey: TASKS_KEY }, (old: any) => {
+        if (!Array.isArray(old)) return old;
+        return old.filter((t: Task) => !idSet.has(t.id) && (!t.parent_id || !idSet.has(t.parent_id)));
+      });
+
+      // 2. Remove from IndexedDB
+      try {
+        const localTasks = await idbGetTasks();
+        const filtered = localTasks.filter((t: Task) => !idSet.has(t.id) && (!t.parent_id || !idSet.has(t.parent_id)));
+        await idbSaveTasks(filtered);
+      } catch (err) {
+        console.warn('Failed to remove batch tasks from IndexedDB:', err);
+      }
+
+      if (!isOnline()) {
+        ids.forEach((id) => addToOfflineQueue({ entity: 'tasks', op: 'delete', id }));
+        return true;
+      }
+
+      // Delete child subtasks first in chunks if needed
+      await supabase.from('tasks').delete().in('parent_id', ids);
+      const { error } = await supabase.from('tasks').delete().in('id', ids);
       if (error) throw error;
       return true;
     },
