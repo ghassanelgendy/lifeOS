@@ -306,6 +306,7 @@ export default function Tasks() {
   const [editingTagId, setEditingTagId] = useState<string | null>(null);
   const [listToDeleteId, setListToDeleteId] = useState<string | null>(null);
   const [tagToDeleteId, setTagToDeleteId] = useState<string | null>(null);
+  const [taskToDeleteId, setTaskToDeleteId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
   const [showWontDo, setShowWontDo] = useState(false);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
