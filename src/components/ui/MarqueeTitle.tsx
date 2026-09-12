@@ -7,7 +7,7 @@ interface MarqueeTitleProps {
   dir?: 'auto' | 'ltr' | 'rtl';
 }
 
-export function MarqueeTitle({ title, className, dir = 'auto' }: MarqueeTitleProps) {
+export function MarqueeTitle({ title = '', className, dir = 'auto' }: MarqueeTitleProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
@@ -22,6 +22,9 @@ export function MarqueeTitle({ title, className, dir = 'auto' }: MarqueeTitlePro
       setIsOverflowing(overflow);
       if (overflow) {
         setScrollDistance(textEl.scrollWidth - container.clientWidth);
+      } else {
+        setScrollDistance(0);
+        setIsHovered(false);
       }
     }
   }, [title]);

@@ -1266,12 +1266,28 @@ export default function Tasks() {
       case 'alpha':
         return list.sort((a, b) => a.title.localeCompare(b.title));
       case 'created':
-        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return list.sort((a, b) => {
+          const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          return (Number.isNaN(timeB) ? 0 : timeB) - (Number.isNaN(timeA) ? 0 : timeA);
+        });
       case 'smart':
       default:
         return list.sort((a, b) => {
-          const overdueA = !!a.due_date && isPast(new Date(a.due_date.split('T')[0]));
-          const overdueB = !!b.due_date && isPast(new Date(b.due_date.split('T')[0]));
+          let overdueA = false;
+          let overdueB = false;
+          try {
+            if (a.due_date) {
+              const dA = new Date(a.due_date.split('T')[0]);
+              overdueA = !isNaN(dA.getTime()) && isPast(dA);
+            }
+            if (b.due_date) {
+              const dB = new Date(b.due_date.split('T')[0]);
+              overdueB = !isNaN(dB.getTime()) && isPast(dB);
+            }
+          } catch {
+            // ignore date errors
+          }
           if (overdueA !== overdueB) return overdueA ? -1 : 1;
           return byDueAsc(a, b) || (priorityRank[a.priority] - priorityRank[b.priority]);
         });
@@ -4601,24 +4617,25 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
                 {tag.name}
               </span>
             ))}
-            {task.created_at && !task.id.startsWith('habit-') && (
-              <span
-                className="text-[11px] text-muted-foreground/80 flex items-center gap-1 shrink-0 ml-auto"
-                title={`Created ${format(new Date(task.created_at), 'yyyy-MM-dd HH:mm')}`}
-              >
-                <Clock size={11} className="opacity-70" />
-                <span>
-                  {(() => {
-                    try {
-                      const d = new Date(task.created_at);
-                      return isToday(d) ? format(d, 'h:mm a') : format(d, 'MMM d');
-                    } catch {
-                      return '';
-                    }
-                  })()}
-                </span>
-              </span>
-            )}
+            {task.created_at && !task.id?.startsWith('habit-') && (() => {
+              try {
+                const d = new Date(task.created_at);
+                if (isNaN(d.getTime())) return null;
+                const timeStr = isToday(d) ? format(d, 'h:mm a') : format(d, 'MMM d');
+                const titleStr = `Created ${format(d, 'yyyy-MM-dd HH:mm')}`;
+                return (
+                  <span
+                    className="text-[11px] text-muted-foreground/80 flex items-center gap-1 shrink-0 ml-auto"
+                    title={titleStr}
+                  >
+                    <Clock size={11} className="opacity-70" />
+                    <span>{timeStr}</span>
+                  </span>
+                );
+              } catch {
+                return null;
+              }
+            })()}
           </div>
         </div>
       </div>

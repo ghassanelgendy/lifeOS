@@ -1096,10 +1096,14 @@ export function useBatchDeleteTasks() {
         return true;
       }
 
-      // Delete child subtasks first in chunks if needed
-      await supabase.from('tasks').delete().in('parent_id', ids);
-      const { error } = await supabase.from('tasks').delete().in('id', ids);
-      if (error) throw error;
+      // Delete in safe chunks to avoid URL length overflow on large selections
+      const chunkSize = 40;
+      for (let i = 0; i < ids.length; i += chunkSize) {
+        const chunk = ids.slice(i, i + chunkSize);
+        await supabase.from('tasks').delete().in('parent_id', chunk);
+        const { error } = await supabase.from('tasks').delete().in('id', chunk);
+        if (error) throw error;
+      }
       return true;
     },
     onSuccess: () => {
