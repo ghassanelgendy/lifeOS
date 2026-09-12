@@ -27,7 +27,10 @@ if (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) {
 // You can pass a generic <Database> type here if you have generated types
 const storage = typeof window !== 'undefined' ? window.localStorage : undefined;
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder-lifeos.supabase.co',
+  supabaseAnonKey || 'placeholder-anon-key',
+  {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

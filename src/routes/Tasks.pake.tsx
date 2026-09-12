@@ -48,14 +48,23 @@ const WEEKDAY_OPTIONS = [
   { value: 6, label: 'Sat' },
 ];
 
+const isHabitTaskId = (id: unknown): boolean => typeof id === 'string' && id.startsWith('habit-');
+const isHabitTask = (t: unknown): boolean => Boolean(t && typeof (t as any).id === 'string' && (t as any).id.startsWith('habit-'));
+
 // Build a Date from due_date + due_time (DB may return due_time as "14:30:00"; avoid "T14:30:00:00")
-function parseDueDateTime(dateStr: string | undefined, timeStr: string | undefined): Date {
-  const datePart = dateStr?.split('T')[0] ?? '';
-  const timePart = timeStr && /^\d{1,2}:\d{2}(:\d{2})?$/.test(timeStr)
-    ? (timeStr.length === 5 ? `${timeStr}:00` : timeStr)
-    : '00:00:00';
-  const d = datePart ? new Date(`${datePart}T${timePart}`) : new Date();
-  return Number.isNaN(d.getTime()) ? new Date() : d;
+function parseDueDateTime(dateStr: unknown, timeStr: unknown): Date {
+  try {
+    const rawDate = typeof dateStr === 'string' ? dateStr : (dateStr instanceof Date ? dateStr.toISOString() : '');
+    const datePart = rawDate ? rawDate.split('T')[0] : '';
+    const rawTime = typeof timeStr === 'string' ? timeStr : '';
+    const timePart = rawTime && /^\d{1,2}:\d{2}(:\d{2})?$/.test(rawTime)
+      ? (rawTime.length === 5 ? `${rawTime}:00` : rawTime)
+      : '00:00:00';
+    const d = datePart ? new Date(`${datePart}T${timePart}`) : new Date();
+    return Number.isNaN(d.getTime()) ? new Date() : d;
+  } catch {
+    return new Date();
+  }
 }
 
 type ViewType = 'all' | 'today' | 'week' | 'upcoming' | 'completed' | 'wontdo' | 'list' | 'tag';
@@ -717,21 +726,22 @@ export default function Tasks() {
     }
 
     // Deduplicate tasks by ID to handle potential overlaps (e.g., overdue tasks also appearing in week view)
-    return Array.from(new Map(tasks.map(task => [task.id, task])).values());
+    const valid = tasks.filter((t): t is Task => Boolean(t && typeof t.id === 'string'));
+    return Array.from(new Map(valid.map(task => [task.id, task])).values());
   };
 
-  const hasWontDoMarker = (task: Task) => (task.description || '').includes(WONT_DO_MARKER);
-  const isWontDoTask = (task: Task) => task.is_wont_do ?? hasWontDoMarker(task);
+  const hasWontDoMarker = (task: Task) => (task?.description || '').includes(WONT_DO_MARKER);
+  const isWontDoTask = (task: Task) => task?.is_wont_do ?? hasWontDoMarker(task);
 
   const displayTasks = getDisplayTasks();
 
   const searchQueryNormalized = searchQuery.trim().toLowerCase();
   const searchedTasks = searchQueryNormalized
     ? displayTasks.filter((task) => {
-        const tagNames = (task.tag_ids || [])
-          .map((id) => tags.find((t) => t.id === id)?.name || '')
+        const tagNames = (Array.isArray(task?.tag_ids) ? task.tag_ids : [])
+          .map((id) => tags.find((t) => t?.id === id)?.name || '')
           .join(' ');
-        return `${task.title}\n${task.description || ''}\n${tagNames}`
+        return `${task?.title || ''}\n${task?.description || ''}\n${tagNames}`
           .toLowerCase()
           .includes(searchQueryNormalized);
       })
@@ -749,32 +759,52 @@ export default function Tasks() {
 
   const sortTasks = (tasks: Task[]) => {
     const priorityRank: Record<TaskPriority, number> = { high: 0, medium: 1, low: 2, none: 3 };
+    const getRank = (t?: Task) => {
+      const p = t?.priority;
+      return (p && priorityRank[p] !== undefined) ? priorityRank[p] : 3;
+    };
     const byDueAsc = (a: Task, b: Task) => {
-      const ad = a.due_date ? parseDueDateTime(a.due_date, a.due_time) : null;
-      const bd = b.due_date ? parseDueDateTime(b.due_date, b.due_time) : null;
+      const ad = a?.due_date ? parseDueDateTime(a.due_date, a.due_time) : null;
+      const bd = b?.due_date ? parseDueDateTime(b.due_date, b.due_time) : null;
       if (!ad && !bd) return 0;
       if (!ad) return 1;
       if (!bd) return -1;
       return ad.getTime() - bd.getTime();
     };
 
-    const list = [...tasks];
+    const list = (tasks || []).filter((t): t is Task => Boolean(t && typeof t.id === 'string'));
     switch (taskSort) {
       case 'due':
-        return list.sort((a, b) => byDueAsc(a, b) || (priorityRank[a.priority] - priorityRank[b.priority]));
+        return list.sort((a, b) => byDueAsc(a, b) || (getRank(a) - getRank(b)));
       case 'priority':
-        return list.sort((a, b) => (priorityRank[a.priority] - priorityRank[b.priority]) || byDueAsc(a, b));
+        return list.sort((a, b) => (getRank(a) - getRank(b)) || byDueAsc(a, b));
       case 'alpha':
-        return list.sort((a, b) => a.title.localeCompare(b.title));
+        return list.sort((a, b) => (a?.title || '').localeCompare(b?.title || ''));
       case 'created':
-        return list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        return list.sort((a, b) => {
+          const timeB = b?.created_at ? new Date(b.created_at).getTime() : 0;
+          const timeA = a?.created_at ? new Date(a.created_at).getTime() : 0;
+          return (Number.isNaN(timeB) ? 0 : timeB) - (Number.isNaN(timeA) ? 0 : timeA);
+        });
       case 'smart':
       default:
         return list.sort((a, b) => {
-          const overdueA = !!a.due_date && isPast(new Date(a.due_date.split('T')[0]));
-          const overdueB = !!b.due_date && isPast(new Date(b.due_date.split('T')[0]));
+          let overdueA = false;
+          let overdueB = false;
+          try {
+            if (a?.due_date && typeof a.due_date === 'string') {
+              const dA = new Date(a.due_date.split('T')[0]);
+              overdueA = !isNaN(dA.getTime()) && isPast(dA);
+            }
+            if (b?.due_date && typeof b.due_date === 'string') {
+              const dB = new Date(b.due_date.split('T')[0]);
+              overdueB = !isNaN(dB.getTime()) && isPast(dB);
+            }
+          } catch {
+            // ignore date errors
+          }
           if (overdueA !== overdueB) return overdueA ? -1 : 1;
-          return byDueAsc(a, b) || (priorityRank[a.priority] - priorityRank[b.priority]);
+          return byDueAsc(a, b) || (getRank(a) - getRank(b));
         });
     }
   };
@@ -1470,23 +1500,28 @@ export default function Tasks() {
 
   // Format due date display
   const formatDueDate = (task: Task): { text: string; className: string } => {
-    if (!task.due_date) return { text: '', className: '' };
+    if (!task?.due_date) return { text: '', className: '' };
 
-    const dueDate = new Date(task.due_date.split('T')[0]);
-    if (Number.isNaN(dueDate.getTime())) return { text: '', className: '' };
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    try {
+      const rawDate = typeof task.due_date === 'string' ? task.due_date : (task.due_date instanceof Date ? (task.due_date as Date).toISOString() : '');
+      const dueDate = new Date(rawDate.split('T')[0]);
+      if (Number.isNaN(dueDate.getTime())) return { text: '', className: '' };
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
 
-    if (isToday(dueDate)) {
-      return { text: 'Today', className: 'text-blue-500' };
+      if (isToday(dueDate)) {
+        return { text: 'Today', className: 'text-blue-500' };
+      }
+      if (isPast(dueDate) && !task.is_completed) {
+        return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
+      }
+      if (isTomorrow(dueDate)) {
+        return { text: 'Tomorrow', className: 'text-amber-500' };
+      }
+      return { text: format(dueDate, 'MMM d'), className: 'text-muted-foreground' };
+    } catch {
+      return { text: '', className: '' };
     }
-    if (isPast(dueDate) && !task.is_completed) {
-      return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
-    }
-    if (isTomorrow(dueDate)) {
-      return { text: 'Tomorrow', className: 'text-amber-500' };
-    }
-    return { text: format(dueDate, 'MMM d'), className: 'text-muted-foreground' };
   };
 
   return (
@@ -2595,12 +2630,13 @@ interface TaskItemProps {
 
 function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone, formatDueDate, onToggleSubtask }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const taskTags = tags.filter(t => task.tag_ids?.includes(t.id));
+  const isHabit = isHabitTaskId(task?.id);
+  const taskTags = Array.isArray(task?.tag_ids) ? tags.filter(t => t && task.tag_ids!.includes(t.id)) : [];
   const dueInfo = formatDueDate(task);
-  const priorityConfig = (task.priority && PRIORITY_CONFIG[task.priority]) || PRIORITY_CONFIG.none;
-  const isWontDo = task.is_wont_do ?? (task.description || '').includes(WONT_DO_MARKER);
+  const priorityConfig = (task?.priority && PRIORITY_CONFIG[task.priority]) || PRIORITY_CONFIG.none;
+  const isWontDo = task?.is_wont_do ?? (task?.description || '').includes(WONT_DO_MARKER);
 
-  const subtasks = task.subtasks || [];
+  const subtasks = task?.subtasks || [];
   const hasSubtasks = subtasks.length > 0;
   const completedCount = subtasks.filter((s) => s.is_completed).length;
   const totalCount = subtasks.length;
@@ -2610,19 +2646,19 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
     <div
       className={cn(
         "task-item group flex flex-col p-3 rounded-md w-full bg-transparent",
-        task.is_completed && "opacity-50"
+        task?.is_completed && "opacity-50"
       )}
     >
       <div 
         className="flex items-start gap-3 cursor-pointer w-full"
         onClick={() => {
-          if (!task.id.startsWith('habit-')) {
+          if (!isHabit) {
             onEdit();
           }
         }}
       >
         <Checkbox
-          checked={task.is_completed}
+          checked={task?.is_completed}
           shape="circular"
           onChange={(e, _data) => {
             e.stopPropagation();
@@ -2636,20 +2672,20 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
           <div className="flex items-center gap-2 flex-wrap">
             <div className="min-w-0 flex-1">
               <MarqueeTitle
-                title={task.title}
+                title={task?.title || ''}
                 className={cn(
                   "font-medium",
-                  task.is_completed && "line-through text-muted-foreground"
+                  task?.is_completed && "line-through text-muted-foreground"
                 )}
               />
             </div>
-            {task.id.startsWith('habit-') && (
+            {isHabit && (
               <Flame size={14} className="text-purple-500" />
             )}
-            {task.priority !== 'none' && priorityConfig?.icon && (
+            {task?.priority !== 'none' && priorityConfig?.icon && (
               <priorityConfig.icon size={14} className={priorityConfig.color} />
             )}
-            {task.recurrence !== 'none' && !task.id.startsWith('habit-') && (
+            {task?.recurrence !== 'none' && !isHabit && (
               <Repeat size={14} className="text-muted-foreground" />
             )}
             {isWontDo && (
@@ -2684,7 +2720,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
               <span className={cn("text-xs flex items-center gap-1", dueInfo.className)}>
                 <CalendarIcon size={12} />
                 {dueInfo.text}
-                {task.due_time && ` ${formatTime12h(task.due_time)}`}
+                {task?.due_time && ` ${formatTime12h(task.due_time)}`}
               </span>
             )}
             {taskTags.map((tag) => (
@@ -2699,7 +2735,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, onPostpone
           </div>
         </div>
 
-        {!task.id.startsWith('habit-') && (
+        {!isHabit && (
           <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 transition-all shrink-0">
             <button
               onClick={(e) => {

@@ -2324,12 +2324,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-errorboundary-tsx"></a>
 ### src/components/ErrorBoundary.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Top-level React error boundary preventing unexpected render crashes from blanking the screen on native iOS and web. Catches component crashes, logs to logger, renders the diagnostic error message, and provides "Reload App", "Go to Dashboard", and "Copy Error" recovery buttons.
 
 **Functions & Classes:**
 - `ErrorBoundary` (Class)
 
-**Lines:** 57
+**Lines:** 90
 
 ---
 

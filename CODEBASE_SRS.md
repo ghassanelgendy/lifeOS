@@ -273,6 +273,12 @@ The system shall display the creation timestamp (`created_at`) for every task:
 - As an informative Clock badge on list cards (formatted as 12-hour time if created today, or month/day for previous days, with full timestamp on hover).
 - As a dedicated "Added" creation date and time row within the Task Details bottom sheet and modal.
 
+#### FR-TASK-028: Defensive Task Rendering & UUID Mutation Guards
+The system shall safeguard task rendering and mutations against data inconsistencies:
+- The task list views (PC web, iOS, Pake desktop) shall defensively guard all object properties, date parsing (`parseDueDateTime`, `formatDueDate`), and tag arrays (`Array.isArray(task.tag_ids)`), ensuring malformed or null values never cause runtime render exceptions.
+- Mutation hooks (`useUpdateTask`, `useToggleTask`, `useDeleteTask`, `useBatchDeleteTasks`) shall validate task IDs against standard UUID regex before initiating Supabase Postgres operations, safely skipping non-UUID identifiers (such as habit pseudo-tasks or client-only tasks) to prevent PostgreSQL type 22P02 errors.
+- The global `ErrorBoundary` shall capture and display the runtime error message along with single-click clipboard copying and direct Dashboard navigation to allow recovery without getting stuck in a crash loop.
+
 ---
 
 ### 3.4 Habit Tracking

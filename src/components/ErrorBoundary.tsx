@@ -30,6 +30,16 @@ export class ErrorBoundary extends Component<Props, State> {
     window.location.reload();
   };
 
+  handleGoDashboard = () => {
+    window.location.href = '/';
+  };
+
+  handleCopyError = () => {
+    if (this.state.message) {
+      navigator.clipboard?.writeText(this.state.message).catch(() => {});
+    }
+  };
+
   render() {
     if (this.state.hasError) {
       return (
@@ -40,13 +50,39 @@ export class ErrorBoundary extends Component<Props, State> {
             <p className="text-sm text-muted-foreground">
               An unexpected error occurred. Your data is safe.
             </p>
-            <button
-              type="button"
-              onClick={this.handleReload}
-              className="w-full rounded-lg bg-primary text-primary-foreground font-medium h-11 hover:bg-primary/90 transition-colors"
-            >
-              Reload App
-            </button>
+            {this.state.message ? (
+              <div className="text-left bg-muted/60 border border-border/80 rounded-lg p-3 text-xs font-mono text-destructive break-all max-h-36 overflow-y-auto">
+                {this.state.message}
+              </div>
+            ) : null}
+            <div className="flex flex-col gap-2 pt-2">
+              <button
+                type="button"
+                onClick={this.handleReload}
+                className="w-full rounded-lg bg-primary text-primary-foreground font-medium h-11 hover:bg-primary/90 transition-colors"
+              >
+                Reload App
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={this.handleGoDashboard}
+                  className="flex-1 rounded-lg border border-border bg-muted/50 text-foreground font-medium h-10 hover:bg-muted transition-colors text-sm"
+                >
+                  Go to Dashboard
+                </button>
+                {this.state.message ? (
+                  <button
+                    type="button"
+                    onClick={this.handleCopyError}
+                    className="rounded-lg border border-border bg-muted/50 px-3 text-muted-foreground font-medium h-10 hover:bg-muted transition-colors text-xs"
+                    title="Copy error to clipboard"
+                  >
+                    Copy Error
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       );

@@ -12,6 +12,11 @@ const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
 const TAGS_KEY = ['tags'];
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(id: unknown): id is string {
+  return typeof id === 'string' && UUID_REGEX.test(id);
+}
+
 type RecurrenceEndType = 'never' | 'on_date' | 'after_count';
 
 // Columns that exist on public.tasks (must match DB exactly; unknown keys cause PostgREST 400).
@@ -506,6 +511,10 @@ export function useUpdateTask() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task>; skipInvalidate?: boolean }) => {
+      if (!isUUID(id)) {
+        return null;
+      }
+
       const hasDescription = 'description' in data;
       const { subtasks: parsedSubtasks, cleanedDescription } = hasDescription 
         ? extractSubtasksFromDescription(data.description) 
@@ -857,6 +866,10 @@ export function useToggleTask() {
 
   return useMutation({
     mutationFn: async (id: string) => {
+      if (!isUUID(id)) {
+        return null;
+      }
+
       if (!isOnline()) {
         const tasks = (queryClient.getQueryData(TASKS_KEY) as Task[] | undefined) ?? [];
         const task = tasks.find((t) => t.id === id);
@@ -1053,6 +1066,10 @@ export function useDeleteTask() {
         return true;
       }
 
+      if (!isUUID(id)) {
+        return true;
+      }
+
       // Delete subtasks first to satisfy foreign key constraints
       await supabase.from('tasks').delete().eq('parent_id', id);
       const { error } = await supabase.from('tasks').delete().eq('id', id);
@@ -1095,10 +1112,13 @@ export function useBatchDeleteTasks() {
         return true;
       }
 
+      const remoteIds = ids.filter(isUUID);
+      if (!remoteIds.length) return true;
+
       // Delete in safe chunks to avoid URL length overflow on large selections
       const chunkSize = 40;
-      for (let i = 0; i < ids.length; i += chunkSize) {
-        const chunk = ids.slice(i, i + chunkSize);
+      for (let i = 0; i < remoteIds.length; i += chunkSize) {
+        const chunk = remoteIds.slice(i, i + chunkSize);
         await supabase.from('tasks').delete().in('parent_id', chunk);
         const { error } = await supabase.from('tasks').delete().in('id', chunk);
         if (error) throw error;
