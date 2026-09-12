@@ -320,7 +320,7 @@ export default function Tasks() {
 
   // Smart Unscheduled Tasks Scheduler State
   const [isSmartScheduleModalOpen, setIsSmartScheduleModalOpen] = useState(false);
-  const [smartScheduleMode, setSmartScheduleMode] = useState<'unscheduled' | 'reorganize'>('unscheduled');
+  const [smartScheduleMode, setSmartScheduleMode] = useState<'unscheduled' | 'reorganize' | 'selected'>('unscheduled');
   const [smartScheduleHorizon, setSmartScheduleHorizon] = useState<'week' | 'month'>('week');
   const [isSmartScheduling, setIsSmartScheduling] = useState(false);
   const [smartSchedulePlan, setSmartSchedulePlan] = useState<Array<{
@@ -2262,54 +2262,68 @@ export default function Tasks() {
     });
   }, [weekTasks, overdueTasks]);
 
-  // Re-spreads tasks already scheduled for the current week across a wider or narrower
-  // horizon (stretch across the week, or across the whole month) instead of leaving them
-  // bunched up on the days they were originally dropped on.
-  const generateReorganizePlan = useCallback((horizon: 'week' | 'month' = smartScheduleHorizon) => {
-    if (currentWeekScheduledTasks.length === 0) return [];
+  // Selected tasks eligible for reorganization in batch mode
+  const selectedTasks = useMemo(() => {
+    if (selectedTaskIds.size === 0) return [];
+    return allTasks.filter((t) => selectedTaskIds.has(t.id) && !t.id.startsWith('habit-') && !t.is_wont_do);
+  }, [allTasks, selectedTaskIds]);
 
-    const { wakeHour, bedHour } = computeAwakeWindow();
-    const estimatedDurations = currentWeekScheduledTasks.map((t) => t.duration_minutes || estimateTaskDuration(t));
-    const horizonDays = horizon === 'month' ? 30 : 7;
+  // Re-spreads tasks already scheduled for the current week or arbitrarily selected tasks
+  // across a wider or narrower horizon (stretch across the week, or across the whole month)
+  // instead of leaving them bunched up on the days they were originally dropped on.
+  const generateReorganizePlan = useCallback(
+    (horizon: 'week' | 'month' = smartScheduleHorizon, tasksToReorganize?: Task[]) => {
+      const tasks = tasksToReorganize ?? currentWeekScheduledTasks;
+      if (tasks.length === 0) return [];
 
-    // Treat every other active task/event as a fixed obstacle; only the tasks being
-    // reorganized are free to move.
-    const reorganizeIds = new Set(currentWeekScheduledTasks.map((t) => t.id));
-    const otherTasks = allTasks.filter((t) => !reorganizeIds.has(t.id));
+      const { wakeHour, bedHour } = computeAwakeWindow();
+      const estimatedDurations = tasks.map((t) => t.duration_minutes || estimateTaskDuration(t));
+      const horizonDays = horizon === 'month' ? 30 : 7;
 
-    const slots = scheduleRespectingTitleDates(
-      currentWeekScheduledTasks,
-      estimatedDurations,
-      otherTasks,
-      calendarEvents,
-      wakeHour,
-      bedHour,
-      horizonDays,
-    );
+      // Treat every other active task/event as a fixed obstacle; only the tasks being
+      // reorganized are free to move.
+      const reorganizeIds = new Set(tasks.map((t) => t.id));
+      const otherTasks = allTasks.filter((t) => !reorganizeIds.has(t.id));
 
-    return currentWeekScheduledTasks.map((task, index) => {
-      const slot = slots[index] || slots[slots.length - 1];
-      const dur = estimatedDurations[index] || slot?.durationMinutes || 30;
-      return {
-        task,
-        dueDate: slot?.dueDate || task.due_date || format(new Date(), 'yyyy-MM-dd'),
-        dueTime: slot?.dueTime || task.due_time || '10:00',
-        durationMinutes: dur,
-        label: slot?.label || 'Today at 10:00 AM',
-        conflictFree: slot?.conflictFree ?? true,
-      };
-    });
-  }, [currentWeekScheduledTasks, smartScheduleHorizon, computeAwakeWindow, allTasks, calendarEvents]);
+      const slots = scheduleRespectingTitleDates(
+        tasks,
+        estimatedDurations,
+        otherTasks,
+        calendarEvents,
+        wakeHour,
+        bedHour,
+        horizonDays,
+      );
 
-  const generatePlanForMode = useCallback(
-    (mode: 'unscheduled' | 'reorganize', horizon: 'week' | 'month') =>
-      mode === 'reorganize' ? generateReorganizePlan(horizon) : generateSmartSchedulePlan(horizon),
-    [generateReorganizePlan, generateSmartSchedulePlan]
+      return tasks.map((task, index) => {
+        const slot = slots[index] || slots[slots.length - 1];
+        const dur = estimatedDurations[index] || slot?.durationMinutes || 30;
+        return {
+          task,
+          dueDate: slot?.dueDate || task.due_date || format(new Date(), 'yyyy-MM-dd'),
+          dueTime: slot?.dueTime || task.due_time || '10:00',
+          durationMinutes: dur,
+          label: slot?.label || 'Today at 10:00 AM',
+          conflictFree: slot?.conflictFree ?? true,
+        };
+      });
+    },
+    [currentWeekScheduledTasks, smartScheduleHorizon, computeAwakeWindow, allTasks, calendarEvents]
   );
 
-  const handleOpenSmartSchedule = (mode: 'unscheduled' | 'reorganize' = 'unscheduled') => {
-    setSmartScheduleMode(mode);
-    const plan = generatePlanForMode(mode, smartScheduleHorizon);
+  const generatePlanForMode = useCallback(
+    (mode: 'unscheduled' | 'reorganize' | 'selected', horizon: 'week' | 'month') => {
+      if (mode === 'selected') return generateReorganizePlan(horizon, selectedTasks);
+      if (mode === 'reorganize') return generateReorganizePlan(horizon, currentWeekScheduledTasks);
+      return generateSmartSchedulePlan(horizon);
+    },
+    [generateReorganizePlan, generateSmartSchedulePlan, selectedTasks, currentWeekScheduledTasks]
+  );
+
+  const handleOpenSmartSchedule = (mode?: 'unscheduled' | 'reorganize' | 'selected') => {
+    const targetMode = mode || (selectedTasks.length > 0 ? 'selected' : 'unscheduled');
+    setSmartScheduleMode(targetMode);
+    const plan = generatePlanForMode(targetMode, smartScheduleHorizon);
     setSmartSchedulePlan(plan);
     setIsSmartScheduleModalOpen(true);
   };
@@ -2328,6 +2342,7 @@ export default function Tasks() {
             due_date: item.dueDate,
             due_time: item.dueTime,
             duration_minutes: item.durationMinutes,
+            is_completed: false,
           },
           skipInvalidate: true,
         });
@@ -2335,6 +2350,10 @@ export default function Tasks() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setIsSmartScheduleModalOpen(false);
       setSmartSchedulePlan([]);
+      if (smartScheduleMode === 'selected') {
+        setSelectedTaskIds(new Set());
+        setIsSelectionMode(false);
+      }
     } catch (err) {
       console.error('Failed to apply smart schedule:', err);
     } finally {
@@ -2690,25 +2709,27 @@ export default function Tasks() {
           {/* Smart schedule / reorganize button */}
           <button
             type="button"
-            onClick={() => handleOpenSmartSchedule('unscheduled')}
+            onClick={() => handleOpenSmartSchedule(selectedTasks.length > 0 ? 'selected' : 'unscheduled')}
             className={cn(
               "h-9 px-2.5 rounded-full border backdrop-blur-md shadow-sm transition-all flex items-center gap-1.5 text-xs font-medium shrink-0 active:scale-90",
-              unscheduledTasks.length > 0
+              selectedTasks.length > 0 || unscheduledTasks.length > 0
                 ? "border-primary/25 bg-primary/10 hover:bg-primary/20 text-primary"
                 : "border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 hover:bg-white/25 dark:hover:bg-white/10 text-muted-foreground"
             )}
             title={
-              unscheduledTasks.length > 0
+              selectedTasks.length > 0
+                ? `Reorganize ${selectedTasks.length} selected task${selectedTasks.length > 1 ? 's' : ''}`
+                : unscheduledTasks.length > 0
                 ? `Smart schedule ${unscheduledTasks.length} unscheduled task${unscheduledTasks.length > 1 ? 's' : ''}`
-                : "No unscheduled tasks to schedule"
+                : "Smart schedule or reorganize tasks"
             }
-            aria-label="Smart schedule unscheduled tasks"
+            aria-label="Smart schedule or reorganize tasks"
           >
             <Wand2 size={14} />
-            <span className="hidden sm:inline">Schedule</span>
-            {unscheduledTasks.length > 0 && (
+            <span className="hidden sm:inline">{selectedTasks.length > 0 ? "Reorganize" : "Schedule"}</span>
+            {(selectedTasks.length > 0 || unscheduledTasks.length > 0) && (
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground font-bold">
-                {unscheduledTasks.length}
+                {selectedTasks.length > 0 ? selectedTasks.length : unscheduledTasks.length}
               </span>
             )}
           </button>
@@ -2824,6 +2845,15 @@ export default function Tasks() {
                 >
                   <CircleSlash2 size={13} />
                   <span>Won't do</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedTaskIds.size === 0 || isBatchProcessing}
+                  onClick={() => handleOpenSmartSchedule('selected')}
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                >
+                  <Wand2 size={13} />
+                  <span>Reorganize</span>
                 </button>
                 <button
                   type="button"
@@ -3904,10 +3934,31 @@ Return ONLY raw JSON.`;
           setIsSmartScheduleModalOpen(false);
           setSmartSchedulePlan([]);
         }}
-        title={smartScheduleMode === 'reorganize' ? "Reorganize This Week's Tasks" : "Smart Schedule Unscheduled Tasks"}
+        title={
+          smartScheduleMode === 'selected'
+            ? `Reorganize Selected Tasks (${selectedTasks.length})`
+            : smartScheduleMode === 'reorganize'
+            ? "Reorganize This Week's Tasks"
+            : "Smart Schedule Unscheduled Tasks"
+        }
       >
         <div className="space-y-4">
           <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-[11px]">
+            {selectedTasks.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSmartScheduleMode('selected');
+                  setSmartSchedulePlan(generatePlanForMode('selected', smartScheduleHorizon));
+                }}
+                className={cn(
+                  "flex-1 px-2.5 py-1.5 rounded-md transition-colors",
+                  smartScheduleMode === 'selected' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Selected ({selectedTasks.length})
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -3941,7 +3992,9 @@ Return ONLY raw JSON.`;
               <div className="flex items-center gap-2">
                 <Wand2 size={16} className="text-primary" />
                 <span className="text-xs font-semibold">
-                  {smartScheduleMode === 'reorganize'
+                  {smartScheduleMode === 'selected'
+                    ? `${selectedTasks.length} Selected Task${selectedTasks.length === 1 ? '' : 's'}`
+                    : smartScheduleMode === 'reorganize'
                     ? `${currentWeekScheduledTasks.length} Scheduled Task${currentWeekScheduledTasks.length === 1 ? '' : 's'} This Week`
                     : `${unscheduledTasks.length} Unscheduled Task${unscheduledTasks.length === 1 ? '' : 's'}`}
                 </span>
@@ -3958,7 +4011,7 @@ Return ONLY raw JSON.`;
                     smartScheduleHorizon === 'week' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {smartScheduleMode === 'reorganize' ? 'Stretch Over Week' : 'This Week'}
+                  {smartScheduleMode === 'unscheduled' ? 'This Week' : 'Stretch Over Week'}
                 </button>
                 <button
                   type="button"
@@ -3971,21 +4024,28 @@ Return ONLY raw JSON.`;
                     smartScheduleHorizon === 'month' ? "bg-card font-semibold shadow-xs text-foreground" : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  {smartScheduleMode === 'reorganize' ? 'Stretch Over Month' : 'Month'}
+                  {smartScheduleMode === 'unscheduled' ? 'Month' : 'Stretch Over Month'}
                 </button>
               </div>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              {smartScheduleMode === 'reorganize'
+              {smartScheduleMode === 'selected'
+                ? "Re-spreads selected tasks evenly across the selected horizon into awake time slots, avoiding other tasks and calendar events."
+                : smartScheduleMode === 'reorganize'
                 ? "Re-spreads tasks already scheduled for this week evenly across the selected horizon, avoiding your other tasks and calendar events."
                 : `Finds conflict-free awake time slots based on your sleep stats (sleep bedtime: ${avgBedtimeMinutes !== null ? `${Math.floor(avgBedtimeMinutes / 60)}:${String(avgBedtimeMinutes % 60).padStart(2, '0')}` : 'default 11:30 PM'}), avoiding existing tasks and calendar events with automatic breathing room buffers.`}
             </p>
           </div>
 
-          {(smartScheduleMode === 'reorganize' ? currentWeekScheduledTasks.length === 0 : unscheduledTasks.length === 0) ? (
+          {(smartScheduleMode === 'selected' ? selectedTasks.length === 0 : smartScheduleMode === 'reorganize' ? currentWeekScheduledTasks.length === 0 : unscheduledTasks.length === 0) ? (
             <div className="py-8 text-center text-muted-foreground text-sm">
               <CheckCircle2 size={36} className="mx-auto mb-2 text-emerald-500/60" />
-              {smartScheduleMode === 'reorganize' ? (
+              {smartScheduleMode === 'selected' ? (
+                <>
+                  <p className="font-medium">No tasks selected.</p>
+                  <p className="text-xs mt-1">Select one or more tasks to reorganize them into open time slots.</p>
+                </>
+              ) : smartScheduleMode === 'reorganize' ? (
                 <>
                   <p className="font-medium">No scheduled tasks this week.</p>
                   <p className="text-xs mt-1">There's nothing currently scheduled for this week to reorganize.</p>
@@ -4048,8 +4108,8 @@ Return ONLY raw JSON.`;
                 <Sparkles size={14} className="text-primary" />
               )}
               {isSmartScheduling
-                ? (smartScheduleMode === 'reorganize' ? "Reorganizing..." : "Scheduling...")
-                : `${smartScheduleMode === 'reorganize' ? 'Reorganize' : 'Apply Schedule'} (${smartSchedulePlan.length})`}
+                ? (smartScheduleMode === 'unscheduled' ? "Scheduling..." : "Reorganizing...")
+                : `${smartScheduleMode === 'unscheduled' ? 'Apply Schedule' : 'Reorganize'} (${smartSchedulePlan.length})`}
             </Button>
           </div>
         </div>
