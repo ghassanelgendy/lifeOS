@@ -258,6 +258,18 @@ Task row titles on the Tasks page (PC web, iOS, and desktop/Pake) shall use the 
 #### FR-TASK-025: Date-Aware Smart Scheduling
 The Smart Unscheduled Tasks Scheduler and Reorganize This Week mode shall detect an explicit date named in a task's title — a weekday, a relative day ("tomorrow"), a written date ("15 June"), or a numeric `D/M` date interpreted as DAY/MONTH (e.g. "10/9" = 10 September) — and pin that task to the named date (finding a conflict-free time within that date) instead of assigning it to whichever slot the free-slot distribution algorithm finds next. The same numeric-date parsing shall also run at Quick Add time so a typed date like "10/9" is captured into `due_date` immediately, rather than the task remaining unscheduled and being assigned an unrelated date later.
 
+#### FR-TASK-026: Multi-Select & Batch Processing (PC Web & iOS)
+The system shall provide a multi-select mode on the Tasks page accessible via a "Select" button in the header. When enabled:
+- Each task card displays a selection checkbox.
+- A batch toolbar appears with item count and quick selection actions ("Select All", "Select Brain Dump" to isolate auto-generated tasks, and "Deselect").
+- The system supports batch operations: Batch Mark Done, Batch Mark Won't Do, Batch Move to List (modal selection), Batch Add Tag (modal selection), and Batch Delete (with confirmed deletion dialog).
+- Selecting tasks in selection mode shall not trigger the task editing sheet or modal.
+
+#### FR-TASK-027: Task Creation Timestamp Display
+The system shall display the creation timestamp (`created_at`) for every task:
+- As an informative Clock badge on list cards (formatted as 12-hour time if created today, or month/day for previous days, with full timestamp on hover).
+- As a dedicated "Added" creation date and time row within the Task Details bottom sheet and modal.
+
 ---
 
 ### 3.4 Habit Tracking
@@ -302,6 +314,14 @@ For detox habits, the system shall automatically compute target values based on 
 
 #### FR-HABIT-012: Habit Notifications
 The system shall send reminders for habits scheduled on specific days/times.
+
+#### FR-HABIT-013: Habit Stats & Adherence Modal
+Clicking any habit in list, card, or matrix views shall open an interactive habit statistics modal (`HabitStatsModal.tsx`) presenting:
+- Current streak and longest streak records.
+- 7-day, 30-day, and 90-day adherence rate progress indicators.
+- A 30-day activity matrix heatmap visualizing completed and missed days.
+- Strongest day of the week analysis based on historical logs.
+- Direct shortcut to edit the habit's configuration.
 
 ---
 
@@ -560,6 +580,15 @@ The "Organize & File" action and the nightly `braindump-organizer` cron shall cr
 
 #### FR-NOTE-007c: Auto-Organizer Extracts Dates From Task Text
 For each AI-extracted action item, the `braindump-organizer` extraction prompt shall also request a `due_date` computed from any day or date named in the item's text (a weekday, "tomorrow", a written date, or a numeric `D/M` date interpreted as DAY/MONTH — e.g. "10/9" means 10 September, not October 9th), relative to the run's date boundary. If the model omits `due_date`, a deterministic numeric-date regex on the task title shall be tried as a fallback. Only when neither yields a date shall the created task default to today's date — it shall not be hardcoded to today regardless of what the text says.
+
+#### FR-NOTE-007d: Automatic `#braindump` Tagging & Cross-Status Deduplication
+All tasks extracted or synced from Brain Dumps shall be automatically associated with the user's `#braindump` tag (`color: #8b5cf6`). To prevent task duplication when notes are re-organized or updated:
+- The system shall query all existing tasks for the user across ALL statuses (`is_completed = true`, `is_completed = false`, `is_wont_do = true`).
+- A task shall be treated as a duplicate and skipped if its normalized title matches an existing task, or if string similarity exceeds 60%, or if its raw thought SHA-256 hash has already been processed.
+- Marking a braindump task as completed or won't-do shall not cause it to reappear or be re-created upon subsequent brain dump organizes.
+
+#### FR-NOTE-007e: Brain Dump Modal Text Selection
+The Brain Dump modal interface shall allow standard mouse and touch text selection (`user-select: text`) on all prompt responses, captured notes, and thought logs, ensuring users can copy and highlight contents.
 
 #### FR-NOTE-008: Note Pinning & Metadata
 The database schema (`public.notes`) shall support `is_pinned`, `is_brain_dump`, `ai_analysis` (jsonb), and `tags` (text[]) for organizing thoughts.

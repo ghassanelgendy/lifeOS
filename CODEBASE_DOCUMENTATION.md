@@ -246,6 +246,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/FinanceHeroCard.web.tsx](#src-components-financeherocard-web-tsx)
 - [src/components/FocusPiPWindow.tsx](#src-components-focuspipwindow-tsx)
 - [src/components/FocusSessionManager.tsx](#src-components-focussessionmanager-tsx)
+- [src/components/HabitStatsModal.tsx](#src-components-habitstatsmodal-tsx)
 - [src/components/KeyboardShortcutsModal.tsx](#src-components-keyboardshortcutsmodal-tsx)
 - [src/components/LinuxTitleBar.tsx](#src-components-linuxtitlebar-tsx)
 - [src/components/LinuxWindowResizer.tsx](#src-components-linuxwindowresizer-tsx)
@@ -2428,6 +2429,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`FocusSessionManager`** — Utility function for focus session manager.
 
 **Lines:** 136
+
+---
+
+<a name="src-components-habitstatsmodal-tsx"></a>
+### src/components/HabitStatsModal.tsx
+
+**File Purpose:** Interactive analytics and statistics modal for habits, visualizing completion streaks, adherence percentages across multiple time horizons (7d, 30d, 90d), a 30-day activity matrix heatmap, and strongest day calculations.
+
+**Functions & Classes:**
+- `HabitStatsModal` (React Component / Function)
+
+**Function Details:**
+- **`HabitStatsModal`** — Renders an in-depth modal displaying a habit's current streak, record streak, adherence rates, 30-day completion matrix, and weekday strength analysis with direct habit edit navigation.
+
+**Lines:** 353
 
 ---
 

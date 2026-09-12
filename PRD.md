@@ -133,6 +133,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Dashboard-Matched Row Styling (PC Web):** Task rows on the Tasks page share the Dashboard's entry styling — a persistent bordered/shadowed card (with a tinted completed state) and a larger `size-11` circular toggle with a focus ring and subtask progress indication, instead of the previous flat, border-on-hover-only row with a small 20px checkbox.
 - **Scrolling Task Titles:** Task row titles (PC web, iOS, and desktop/Pake) use the same `MarqueeTitle` component as Dashboard entries — a long title stays clipped to one line and scrolls horizontally on hover (or touch-hold on mobile) to reveal the full text, instead of wrapping and growing the card.
 - **Date-Aware Scheduling:** Both the Smart Unscheduled Tasks Scheduler and Reorganize This Week mode detect an explicit date named in a task's title (a weekday, "tomorrow", a written date, or a numeric `D/M` date — interpreted as DAY/MONTH, e.g. "10/9" = 10 September) and pin that task to the named date instead of dropping it into whichever slot the free-slot algorithm finds next; the numeric-date parser (`parseTaskInput`) also runs at Quick Add time so typed dates like "10/9" are captured as `due_date` immediately rather than never being recognized.
+- **Multi-Select & Batch Processing (PC Web & iOS):** Dedicated "Select" mode in the header allowing users to batch select tasks. Features quick action shortcuts including "Select All", "Select Brain Dump" (to quickly isolate and clean up auto-generated tasks), and "Deselect". Batch operations include Batch Complete, Batch Won't Do, Batch Move to List, Batch Add Tag, and Batch Permanent Delete with confirmation.
+- **Created Timestamp Visibility:** Every task displays when it was created ("Added <time>") both as a subtle Clock badge on task list cards and as an informative metadata field in the Task Details sheet.
 - iOS Features: Swipe to complete/delete, pull-to-refresh
 
 ### 5.3 Habits Engine
@@ -144,6 +146,12 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Detox Habit:** Progressive reduction with automatic target calculation (incremental or exponential decay from start value to target over weeks)
 - **Prayer Habit:** Track 5 daily prayers with status: On Time, Late, Missed, Excused
 - Streak tracking with current and best streak display
+- **Interactive Habit Stats & Adherence Modal:** Clicking any habit across mobile cards, desktop matrix tables, or today views opens an in-depth analytics modal displaying:
+  - Current streak and longest streak records.
+  - Multi-window adherence gauges (7-day, 30-day, and 90-day completion rates).
+  - 30-day chronological activity heatmap matrix with color-coded daily completion states.
+  - Strongest day of the week analysis based on historical logs.
+  - Quick action to edit habit details directly from the modal.
 - Streak Rescue: Spend points to restore a broken streak (cost = 2^(streak_length))
 - Adherence heatmap calendar (GitHub-style contribution graph)
 - Insights: Average adherence, best/worst day of week, trend direction
@@ -312,6 +320,9 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Auto-Organizer Now Creates Real Tasks:** Both the manual "Organize & File" action and the nightly `braindump-organizer` cron now actually insert real Task rows for extracted action items (deduped by title against tasks already linked to that note via `source_note_id`), instead of only baking `- [ ] title` checkboxes into the organized note's text with no underlying task.
 - **Fixed Compounding Re-Organize Body:** Re-running organize (manually or via the nightly cron) on a note that was already organized previously now extracts only the genuine raw entries appended since (from after the `### 🕒 Raw Thoughts Log` marker) instead of re-feeding the AI its own prior summary/checkboxes nested inside that marker — previously, repeated re-organizes buried the real content one level deeper each time until the AI saw nothing new to extract.
 - **Date-Aware Auto-Organizer:** The AI extraction prompt for each action item now also asks for a `due_date` computed from any day/date named in the text (weekday, "tomorrow", written date, or numeric `D/M` — DAY/MONTH, not month/day), falling back to a deterministic numeric-date regex on the title if the model omits it, and only defaulting to today's date when no day is mentioned at all — previously every auto-organized task was hardcoded to today's date regardless of what the text said.
+- **Universal `#braindump` Tagging:** All tasks generated from Brain Dumps (via manual extraction, batch sync, or the automated organizer) are automatically tagged with `#braindump` (color `#8b5cf6`), allowing instant filtering and mass cleanup.
+- **Cross-Status Deduplication & Idempotency:** The organizer checks existing tasks across ALL statuses (active, completed, won't do) using normalized titles and fuzzy similarity (>60% Dice/Jaccard metric) as well as raw content SHA-256 hashing. Once an action item has been created, marking it as completed or won't-do will NEVER result in it being re-created on subsequent brain dump processing.
+- **Full Text Selection in Modal:** The Brain Dump capture and review modal explicitly supports native text selection across web and mobile views (`.braindump-selectable`, `select-text`), ensuring users can highlight, copy, and excerpt notes seamlessly.
 
 ### 5.13 Gamification (Points System)
 **Purpose:** Behavioral reinforcement through reward mechanics.
