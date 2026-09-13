@@ -326,6 +326,7 @@ The system shall send reminders for habits scheduled on specific days/times.
 
 #### FR-HABIT-013: Habit Stats & Adherence Modal
 Clicking any habit in list, card, or matrix views shall open an interactive habit statistics modal (`HabitStatsModal.tsx`) presenting:
+- Full light and dark theme compatibility utilizing semantic design tokens (`bg-card`, `text-card-foreground`, `border-border`, `bg-secondary`, `text-foreground`).
 - Current streak and longest streak records.
 - 7-day, 30-day, and 90-day adherence rate progress indicators.
 - A 30-day activity matrix heatmap visualizing completed and missed days.
@@ -1240,7 +1241,7 @@ All interactive elements on touch devices shall have minimum 25px touch targets 
 All input fields on mobile shall use font-size >= 16px to prevent iOS zoom-on-focus.
 
 #### NFR-USE-005: Theme Consistency
-The application shall maintain consistent theming across all pages with no FOUC (inline theme script in HTML head).
+The application shall maintain consistent theming across all pages with no FOUC (inline theme script in HTML head). Tailwind CSS v4's `@custom-variant dark (&:where(.dark, .dark *));` shall bind dark styling directly to the document root `<html class="dark">` class rather than OS media queries, ensuring that user theme selections (Light, Dark, System) apply consistently across all modal sheets, sub-views, and standalone widgets (`HabitStatsModal`, `WeeklyPlanner`, `KhatmahPlannerView`, `AudioPlayerBar`, `QuranReaderView`).
 
 #### NFR-USE-006: Loading States
 All async data fetching shall display appropriate loading skeletons or spinners.

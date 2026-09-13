@@ -1458,13 +1458,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-audioplayerbar-tsx"></a>
 ### lib/quran-memorizer/src/components/AudioPlayerBar.tsx
 
-**File Purpose:** Source file. Part of the lifeOS application codebase.
+**File Purpose:** Quran recitation audio playback bar and settings drawer. Provides desktop docked audio player controls and an iOS floating pill bar with full-featured repeat, delay, reciter picker, and speed controls styled with semantic tokens for light and dark theme compatibility.
 
 **Functions & Classes:**
 - `getSheikhLastName` (Function)
+- `AudioPlayerBar` (React Component / Function)
 
 **Function Details:**
-- **`getSheikhLastName`** — Utility function for get sheikh last name.
+- **`getSheikhLastName`** — Extracts clean last name or display title for reciters.
+- **`AudioPlayerBar`** — Floating and docked Quran audio player with bottom sheet settings drawer for verse repetition, recitation delays, and reciter selection.
 
 **Lines:** 534
 
@@ -2435,15 +2437,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-habitstatsmodal-tsx"></a>
 ### src/components/HabitStatsModal.tsx
 
-**File Purpose:** Interactive analytics and statistics modal for habits, visualizing completion streaks, adherence percentages across multiple time horizons (7d, 30d, 90d), a 30-day activity matrix heatmap, and strongest day calculations.
+**File Purpose:** Interactive analytics and statistics modal for habits, visualizing completion streaks, adherence percentages across multiple time horizons (7d, 30d, 90d), a 30-day activity matrix heatmap, and strongest day calculations. Fully styled with semantic theme tokens (`bg-card`, `border-border`, `text-foreground`, `bg-secondary`) for seamless light and dark theme parity.
 
 **Functions & Classes:**
 - `HabitStatsModal` (React Component / Function)
 
 **Function Details:**
-- **`HabitStatsModal`** — Renders an in-depth modal displaying a habit's current streak, record streak, adherence rates, 30-day completion matrix, and weekday strength analysis with direct habit edit navigation.
+- **`HabitStatsModal`** — Renders an in-depth modal displaying a habit's current streak, record streak, adherence rates, 30-day completion matrix, and weekday strength analysis with direct habit edit navigation, adhering to the application's active theme.
 
-**Lines:** 353
+**Lines:** 355
 
 ---
 
@@ -5972,7 +5974,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-weeklyplanner-tsx"></a>
 ### src/routes/WeeklyPlanner.tsx
 
-**File Purpose:** Page-level route component for the WeeklyPlanner.tsx module. Renders the main view when navigating to this section.
+**File Purpose:** Page-level route component for the WeeklyPlanner module. Renders a comprehensive 7-day planning board, Must-Do lists, appointments, daily habits, self-care cards, notes, and an AI Wellbeing Coach, fully themed with semantic tokens for light and dark modes.
 
 **Functions & Classes:**
 - `WeeklyPlanner` (React Component)

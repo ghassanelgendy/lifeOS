@@ -604,48 +604,48 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
   return (
     <div className="max-w-7xl mx-auto p-0 md:p-6 space-y-6">
       {/* Top Banner Control - Desktop-only */}
-      <div className="hidden md:flex flex-row items-center justify-between bg-zinc-900/40 backdrop-blur-xl border border-zinc-800/80 p-4 rounded-2xl gap-4">
+      <div className="hidden md:flex flex-row items-center justify-between bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
+          <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500 dark:text-blue-400 border border-blue-500/20">
             <Grid className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white leading-tight">Weekly Planner</h1>
-            <p className="text-xs text-zinc-400">Sustainable daily systems over rigid annual goals</p>
+            <h1 className="text-xl font-bold text-foreground leading-tight">Weekly Planner</h1>
+            <p className="text-xs text-muted-foreground">Sustainable daily systems over rigid annual goals</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           {/* Week Selector */}
-          <div className="flex items-center gap-1 bg-zinc-855 p-1 rounded-xl border border-zinc-800">
+          <div className="flex items-center gap-1 bg-secondary p-1 rounded-xl border border-border">
             <Button
               onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
-              className="p-2 hover:bg-zinc-700/80 text-zinc-350 bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center"
+              className="p-2 hover:bg-muted text-foreground bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
             <div className="px-3 select-none flex items-center justify-center min-w-[70px]">
-              <span className="text-sm font-black text-zinc-200">Week {weekNumber}</span>
+              <span className="text-sm font-black text-foreground">Week {weekNumber}</span>
             </div>
             <Button
               onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
-              className="p-2 hover:bg-zinc-700/80 text-zinc-350 bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center"
+              className="p-2 hover:bg-muted text-foreground bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </Button>
           </div>
 
           {/* Weekly Load Badge Card */}
-          <div className="flex items-center gap-2 bg-zinc-855 px-3 py-2 rounded-xl border border-zinc-800 h-10">
-            <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider font-sans">Weekly Load:</span>
+          <div className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-xl border border-border h-10">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider font-sans">Weekly Load:</span>
             <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap leading-none", loadRating.color)}>
               {loadRating.text}
             </span>
           </div>
 
           {/* Icon-only Date picker selector */}
-          <div className="relative bg-zinc-850 hover:bg-zinc-800 border border-zinc-800 rounded-xl h-10 w-10 flex items-center justify-center cursor-pointer">
-            <CalendarIcon className="w-4 h-4 text-zinc-350" />
+          <div className="relative bg-secondary hover:bg-muted border border-border rounded-xl h-10 w-10 flex items-center justify-center cursor-pointer transition-colors">
+            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
             <input
               type="date"
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
@@ -662,18 +662,18 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
       </div>
 
       {/* Top Banner Control - iOS / Mobile Native Viewport */}
-      <div className="flex md:hidden items-center justify-between bg-black/10 dark:bg-white/5 border border-white/5 rounded-xl p-2 gap-2 h-11">
+      <div className="flex md:hidden items-center justify-between bg-card/90 border border-border rounded-xl p-2 gap-2 h-11">
         {/* Centered Week picker that opens native input wheel on tap */}
         <div className="flex items-center gap-0.5">
           <Button
             onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
-            className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0"
+            className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0 cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
 
-          <div className="relative flex items-center gap-1 hover:bg-white/5 px-2.5 py-1.5 rounded-lg active:scale-98 transition-transform select-none">
-            <span className="text-xs font-semibold text-zinc-200">Wk {weekNumber}</span>
+          <div className="relative flex items-center gap-1 hover:bg-secondary px-2.5 py-1.5 rounded-lg active:scale-98 transition-transform select-none cursor-pointer">
+            <span className="text-xs font-semibold text-foreground">Wk {weekNumber}</span>
             <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="date"
@@ -690,7 +690,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
           <Button
             onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
-            className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0"
+            className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0 cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -729,10 +729,10 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
               }}
               onDrop={(e) => handleDropOnDay(day.dateStr, e)}
               className={cn(
-                "bg-card/90 dark:bg-zinc-900/60 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col justify-between h-[510px] transition-all duration-200",
+                "bg-card/90 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-xs dark:shadow-md flex flex-col justify-between h-[510px] transition-all duration-200",
                 isDropTarget
                   ? "border-primary ring-2 ring-primary/40 bg-primary/5 scale-[1.01]"
-                  : "border-border/80 dark:border-zinc-800/80"
+                  : "border-border"
               )}
             >
               {/* Header colored dynamically based on relative crowdness */}
@@ -740,9 +740,10 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                 style={getHeaderStyle(idx)}
                 className="px-4 py-2.5 flex items-center justify-between transition-colors duration-300"
               >
-                <span className="font-semibold text-foreground dark:text-white text-sm">{day.dayName}</span>
-                <span className="text-xs text-muted-foreground dark:text-zinc-400 font-bold">{day.formatted}</span>
+                <span className="font-semibold text-foreground text-sm">{day.dayName}</span>
+                <span className="text-xs text-muted-foreground font-bold">{day.formatted}</span>
               </div>
+
 
               {/* Body - holds everything inside */}
               <div className="p-4 space-y-3.5 flex-1 flex flex-col justify-between overflow-hidden">
@@ -774,8 +775,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
                 {/* 4. Notes Section */}
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground dark:text-zinc-500 block">Notes:</label>
-                  <div className="border border-border/70 dark:border-zinc-800/50 rounded-lg overflow-hidden bg-muted/20 dark:bg-zinc-950/20">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">Notes:</label>
+                  <div className="border border-border/70 rounded-lg overflow-hidden bg-muted/20">
                     <DailyNoteArea
                       dateStr={day.dateStr}
                       dayName={day.dayName}
@@ -803,15 +804,15 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
       {/* AI Wellbeing Correlation Coach Section */}
       {aiEnabled && (
-        <div className="bg-card/90 dark:bg-zinc-900/60 backdrop-blur-xl border border-border/80 dark:border-zinc-800/80 rounded-2xl p-5 shadow-sm dark:shadow-xl space-y-4">
+        <div className="bg-card/90 backdrop-blur-xl border border-border rounded-2xl p-5 shadow-xs dark:shadow-md space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 bg-gradient-to-tr from-purple-500/20 to-pink-500/20 rounded-xl text-purple-400 border border-purple-500/20">
                 <Sparkles className="w-5 h-5" fill="currentColor" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-foreground dark:text-white leading-tight">✨ AI Wellbeing Correlation Coach</h2>
-                <p className="text-xs text-muted-foreground dark:text-zinc-400">Discover patterns between habits, tasks, screentime, and sleep</p>
+                <h2 className="text-base font-bold text-foreground leading-tight">✨ AI Wellbeing Correlation Coach</h2>
+                <p className="text-xs text-muted-foreground">Discover patterns between habits, tasks, screentime, and sleep</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -846,11 +847,11 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
           {coachFeedback ? (
             <div
-              className="text-sm text-foreground/90 leading-relaxed bg-muted/30 dark:bg-zinc-950/40 p-4 rounded-xl border border-border/70 dark:border-zinc-800/50 prose prose-sm dark:prose-invert max-w-none font-sans"
+              className="text-sm text-foreground/90 leading-relaxed bg-muted/30 p-4 rounded-xl border border-border/70 prose prose-sm dark:prose-invert max-w-none font-sans"
               dangerouslySetInnerHTML={{ __html: marked.parse(coachFeedback) as string }}
             />
           ) : (
-            <p className="text-xs text-muted-foreground/80 dark:text-zinc-450 italic">
+            <p className="text-xs text-muted-foreground/80 italic">
               Tap "Coach Me" to compile this week's sleep segments, screentime logs, checklist success rates, and task metrics, or use "Smart Schedule Next Week" to harvest unfinished tasks and brain dump action items into free awake slots.
             </p>
           )}
@@ -859,24 +860,24 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
       {/* Smart Next Week Scheduler Review Modal */}
       {showSmartScheduleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950/50">
+            <div className="px-5 py-4 border-b border-border flex items-center justify-between bg-muted/40">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500 dark:text-emerald-400 border border-emerald-500/20">
                   <CalendarCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">Smart Schedule for Next Week</h3>
-                  <p className="text-xs text-zinc-400">
+                  <h3 className="text-sm font-bold text-foreground">Smart Schedule for Next Week</h3>
+                  <p className="text-xs text-muted-foreground">
                     Harvested {smartCandidates.length} unfinished tasks & brain dump action points
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowSmartScheduleModal(false)}
-                className="text-zinc-500 hover:text-white p-1 rounded-lg hover:bg-zinc-800 transition-colors"
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-secondary transition-colors cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -886,11 +887,11 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
             <div className="p-5 overflow-y-auto space-y-3 flex-1">
               {smartCandidates.length === 0 ? (
                 <div className="text-center py-8 space-y-2">
-                  <div className="w-12 h-12 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto text-zinc-500">
-                    <Check className="w-6 h-6 text-emerald-400" />
+                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center mx-auto text-muted-foreground">
+                    <Check className="w-6 h-6 text-emerald-500" />
                   </div>
-                  <p className="text-sm font-medium text-zinc-300">All caught up!</p>
-                  <p className="text-xs text-zinc-500 max-w-sm mx-auto">
+                  <p className="text-sm font-medium text-foreground">All caught up!</p>
+                  <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                     No unfinished tasks or unfulfilled brain dump items found for the evaluated week.
                   </p>
                 </div>
@@ -899,24 +900,24 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                   return (
                     <div
                       key={`${candidate.title}-${idx}`}
-                      className="bg-zinc-950/40 border border-zinc-800/70 rounded-xl p-3 flex items-center justify-between gap-3 text-xs hover:border-zinc-700/80 transition-colors"
+                      className="bg-secondary/40 border border-border rounded-xl p-3 flex items-center justify-between gap-3 text-xs hover:border-border transition-colors"
                     >
                       <div className="flex-1 min-w-0 space-y-1">
                         <div className="flex items-center gap-2">
                           {candidate.sourceType === 'braindump' ? (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-purple-500/15 text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-purple-500/15 text-purple-600 dark:text-purple-300 px-1.5 py-0.5 rounded border border-purple-500/20 shrink-0">
                               <Brain className="w-3 h-3" /> Brain Dump
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-500/15 text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/20 shrink-0">
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-blue-500/15 text-blue-600 dark:text-blue-300 px-1.5 py-0.5 rounded border border-blue-500/20 shrink-0">
                               <AlertCircle className="w-3 h-3" /> Unfinished
                             </span>
                           )}
-                          <span className="font-medium text-zinc-200 truncate">{candidate.title}</span>
+                          <span className="font-medium text-foreground truncate">{candidate.title}</span>
                         </div>
 
                         {candidate.sourceNoteTitle && (
-                          <p className="text-[10px] text-zinc-500 truncate">
+                          <p className="text-[10px] text-muted-foreground truncate">
                             From note: {candidate.sourceNoteTitle}
                           </p>
                         )}
@@ -924,23 +925,23 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
                       {/* Schedule slot details & dropdown */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <div className="flex items-center gap-1 text-zinc-400 bg-zinc-800/40 px-2 py-1 rounded-lg border border-zinc-800">
-                          <Clock className="w-3 h-3 text-zinc-500" />
+                        <div className="flex items-center gap-1 text-muted-foreground bg-secondary px-2 py-1 rounded-lg border border-border">
+                          <Clock className="w-3 h-3 text-muted-foreground" />
                           <span className="text-[11px]">{candidate.durationMinutes}m</span>
                           {candidate.targetTime && (
-                            <span className="text-[11px] text-emerald-400 font-semibold ml-1">
+                            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold ml-1">
                               @{formatTimeAmPm(candidate.targetTime)}
                             </span>
                           )}
                         </div>
 
                         <select
-                          className="bg-zinc-800 border border-zinc-700 text-zinc-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                          className="bg-secondary border border-border text-foreground rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
                           value={candidate.targetDate}
                           onChange={(e) => handleChangeCandidateDay(idx, e.target.value)}
                         >
                           {nextWeekDays.map((d) => (
-                            <option key={d.dateStr} value={d.dateStr}>
+                            <option key={d.dateStr} value={d.dateStr} className="bg-card text-foreground">
                               {d.dayName.slice(0, 3)} ({d.formatted})
                             </option>
                           ))}
@@ -948,7 +949,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
 
                         <button
                           onClick={() => handleRemoveCandidate(idx)}
-                          className="text-zinc-500 hover:text-red-400 p-1 transition-colors"
+                          className="text-muted-foreground hover:text-red-500 p-1 transition-colors cursor-pointer"
                           title="Exclude this item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -961,8 +962,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
             </div>
 
             {/* Modal Footer */}
-            <div className="px-5 py-3 border-t border-zinc-800 bg-zinc-950/50 flex items-center justify-between">
-              <span className="text-xs text-zinc-500">
+            <div className="px-5 py-3 border-t border-border bg-muted/40 flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">
                 Awake window: {sleepMetrics.avgBedtimeMinutes ? 'Derived from sleep' : '8:00 AM - 11:00 PM (default)'}
               </span>
               <div className="flex items-center gap-2">
@@ -970,7 +971,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                   type="button"
                   variant="ghost"
                   onClick={() => setShowSmartScheduleModal(false)}
-                  className="text-xs text-zinc-400 hover:text-white"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   Cancel
                 </Button>
@@ -1486,24 +1487,24 @@ function SelfCareCard({
   };
 
   return (
-    <div className="bg-card/90 dark:bg-zinc-900/60 backdrop-blur-xl border border-border/80 dark:border-zinc-800/80 rounded-2xl overflow-hidden shadow-sm dark:shadow-xl flex flex-col h-[510px]">
-      <div className="bg-muted/40 dark:bg-zinc-800/80 px-4 py-2.5 border-b border-border/60 dark:border-zinc-850 flex items-center gap-2">
-        <Heart className="w-4 h-4 text-rose-400" />
-        <h3 className="font-semibold text-foreground dark:text-white text-sm">Self Care</h3>
+    <div className="bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-xs dark:shadow-md flex flex-col h-[510px]">
+      <div className="bg-muted/40 px-4 py-2.5 border-b border-border flex items-center gap-2">
+        <Heart className="w-4 h-4 text-rose-500" />
+        <h3 className="font-semibold text-foreground text-sm">Self Care</h3>
       </div>
       <div className="p-4 space-y-3 flex-1 flex flex-col justify-between overflow-y-auto">
         {/* Weekly Exercise Goals */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-300 block">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400 block">
             Weekly Exercise Goals
           </label>
           <div className="space-y-1">
             {exercise.map((item, i) => (
-              <div key={`ex-${i}`} className="flex items-center gap-1.5 border-b border-border/50 dark:border-zinc-850 pb-0.5">
-                <span className="text-[10px] text-muted-foreground/70 dark:text-zinc-550 w-3 shrink-0">{i + 1}.</span>
+              <div key={`ex-${i}`} className="flex items-center gap-1.5 border-b border-border/50 pb-0.5">
+                <span className="text-[10px] text-muted-foreground w-3 shrink-0">{i + 1}.</span>
                 <input
                   type="text"
-                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground/90 dark:text-zinc-200 placeholder-muted-foreground/50 dark:placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
+                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 leading-tight"
                   style={{ WebkitAppearance: 'none' }}
                   placeholder="Set exercise goal..."
                   value={item}
@@ -1517,16 +1518,16 @@ function SelfCareCard({
 
         {/* Weekly Self Care Goals */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-300 block">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 block">
             Weekly Self Care Goals
           </label>
           <div className="space-y-1">
             {selfCare.map((item, i) => (
-              <div key={`sc-${i}`} className="flex items-center gap-1.5 border-b border-border/50 dark:border-zinc-850 pb-0.5">
-                <span className="text-[10px] text-muted-foreground/70 dark:text-zinc-550 w-3 shrink-0">{i + 1}.</span>
+              <div key={`sc-${i}`} className="flex items-center gap-1.5 border-b border-border/50 pb-0.5">
+                <span className="text-[10px] text-muted-foreground w-3 shrink-0">{i + 1}.</span>
                 <input
                   type="text"
-                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground/90 dark:text-zinc-200 placeholder-muted-foreground/50 dark:placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
+                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 leading-tight"
                   style={{ WebkitAppearance: 'none' }}
                   placeholder="Set self care goal..."
                   value={item}
@@ -1540,16 +1541,16 @@ function SelfCareCard({
 
         {/* Gratitude */}
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300 block">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400 block">
             Gratitude Prompt
           </label>
           <div className="space-y-1">
             {gratitude.map((item, i) => (
-              <div key={`gr-${i}`} className="flex items-center gap-1.5 border-b border-border/50 dark:border-zinc-850 pb-0.5">
+              <div key={`gr-${i}`} className="flex items-center gap-1.5 border-b border-border/50 pb-0.5">
                 <Smile className="w-3 h-3 text-amber-500 shrink-0" />
                 <input
                   type="text"
-                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground/90 dark:text-zinc-200 placeholder-muted-foreground/50 dark:placeholder-zinc-750 focus:outline-none focus:ring-0 leading-tight"
+                  className="bg-transparent border-none p-0 w-full text-base md:text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-0 leading-tight"
                   style={{ WebkitAppearance: 'none' }}
                   placeholder="I am grateful for..."
                   value={item}

@@ -535,8 +535,9 @@ Vite Custom Plugin:
 ## 9. Design & UX Requirements
 
 ### 9.1 Design System
-- **Framework:** Tailwind CSS v4 with custom `@theme` directives
-- **Theme Modes:** System Auto (matches iOS/device appearance automatically with dynamic `prefers-color-scheme` listener), Light mode, and Dark mode (`#09090b` background)
+- **Framework:** Tailwind CSS v4 with custom `@theme` directives and explicit root variant (`@custom-variant dark (&:where(.dark, .dark *));`) ensuring class-based theme toggles accurately override OS-level dark media queries across all components.
+- **Theme Modes:** System Auto (matches iOS/device appearance automatically with dynamic `prefers-color-scheme` listener), Light mode, and Dark mode (`#09090b` background).
+- **Comprehensive Component Theme Parity:** Full light/dark semantic color consistency across previously dark-locked components, including the Habit Stats & Adherence modal (`HabitStatsModal`), the Weekly Planner days matrix and top banners (`WeeklyPlanner`), the Khatma planner dual daily wird cards (`KhatmahPlannerView`), Surah chapter banners and navigation elements (`QuranReaderView`), and the desktop & mobile audio player bar and settings drawer (`AudioPlayerBar`).
 - **Title Bar & Status Bar Integration:** Native status bar (`@capacitor/status-bar`), virtual keyboard (`@capacitor/keyboard`), and HTML `theme-color` / `color-scheme` dynamically synchronize with the active theme and iOS safe area header (`#1c1c1e` dark / `#f9f9f9` light), ensuring seamless visual integration without title bar glitches.
 - **Accent Themes:** 6 options (Zinc, Blue, Green, Violet, Rose, Amber) — full app tinting
 - **Border Radius:** XL (0.75rem), iOS Squircle (28px)

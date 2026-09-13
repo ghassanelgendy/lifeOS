@@ -137,18 +137,18 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-white dark:bg-dark-card rounded-2xl shadow-2xl border border-gray-100 dark:border-dark-border overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-lg bg-card text-card-foreground rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-5 border-b border-gray-100 dark:border-dark-border flex items-center justify-between">
+        <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-sm shrink-0"
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-xs shrink-0"
               style={{
                 backgroundColor: habit.color ? `${habit.color}20` : 'rgba(99, 102, 241, 0.15)',
                 color: habit.color || '#6366f1',
@@ -157,10 +157,10 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
               {habit.icon || '✨'}
             </div>
             <div className="min-w-0">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-dark-text truncate">
+              <h2 className="text-lg font-bold text-foreground truncate">
                 {habit.title}
               </h2>
-              <span className="text-xs font-medium text-gray-500 dark:text-dark-muted">
+              <span className="text-xs font-medium text-muted-foreground">
                 {habit.frequency || 'Daily'} • Target: {habit.target_count || 1}x
               </span>
             </div>
@@ -173,7 +173,7 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
                   onClose();
                   onEdit(habit);
                 }}
-                className="p-2 text-gray-400 hover:text-primary-500 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors"
+                className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors"
                 title="Edit Habit"
               >
                 <Edit2 className="w-4 h-4" />
@@ -181,7 +181,7 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
             )}
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-dark-text rounded-lg hover:bg-gray-100 dark:hover:bg-dark-hover transition-colors"
+              className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -196,10 +196,10 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
               <div className="flex items-center justify-center text-amber-500 mb-1">
                 <Flame className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-dark-text">
+              <div className="text-2xl font-bold text-foreground">
                 {stats.currentStreak}
               </div>
-              <div className="text-[11px] font-medium text-gray-500 dark:text-dark-muted">
+              <div className="text-[11px] font-medium text-muted-foreground">
                 Current Streak
               </div>
             </div>
@@ -208,10 +208,10 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
               <div className="flex items-center justify-center text-purple-500 mb-1">
                 <Trophy className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-dark-text">
+              <div className="text-2xl font-bold text-foreground">
                 {stats.bestStreak}
               </div>
-              <div className="text-[11px] font-medium text-gray-500 dark:text-dark-muted">
+              <div className="text-[11px] font-medium text-muted-foreground">
                 Best Streak
               </div>
             </div>
@@ -220,57 +220,57 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
               <div className="flex items-center justify-center text-emerald-500 mb-1">
                 <CheckCircle2 className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold text-gray-900 dark:text-dark-text">
+              <div className="text-2xl font-bold text-foreground">
                 {isLoading ? '...' : stats.totalCompletions}
               </div>
-              <div className="text-[11px] font-medium text-gray-500 dark:text-dark-muted">
+              <div className="text-[11px] font-medium text-muted-foreground">
                 Total Check-ins
               </div>
             </div>
           </div>
 
           {/* Adherence Rate Gauges */}
-          <div className="bg-gray-50 dark:bg-dark-hover/40 border border-gray-100 dark:border-dark-border rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-muted">
-              <TrendingUp className="w-4 h-4 text-primary-500" />
+          <div className="bg-secondary/40 border border-border/80 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <TrendingUp className="w-4 h-4 text-primary" />
               <span>Completion Rate</span>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <div className="text-center p-2 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-dark-border">
-                <span className="text-xs text-gray-400 block mb-1">Last 7 Days</span>
-                <span className={`text-lg font-bold ${stats.rate7 >= 70 ? 'text-emerald-500' : stats.rate7 >= 40 ? 'text-amber-500' : 'text-gray-500'}`}>
+              <div className="text-center p-2 rounded-lg bg-card border border-border">
+                <span className="text-xs text-muted-foreground block mb-1">Last 7 Days</span>
+                <span className={`text-lg font-bold ${stats.rate7 >= 70 ? 'text-emerald-500' : stats.rate7 >= 40 ? 'text-amber-500' : 'text-muted-foreground'}`}>
                   {stats.rate7}%
                 </span>
-                <div className="w-full bg-gray-100 dark:bg-dark-border h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
-                    className="h-full bg-primary-500 rounded-full transition-all"
+                    className="h-full bg-primary rounded-full transition-all"
                     style={{ width: `${stats.rate7}%` }}
                   />
                 </div>
               </div>
 
-              <div className="text-center p-2 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-dark-border">
-                <span className="text-xs text-gray-400 block mb-1">Last 30 Days</span>
-                <span className={`text-lg font-bold ${stats.rate30 >= 70 ? 'text-emerald-500' : stats.rate30 >= 40 ? 'text-amber-500' : 'text-gray-500'}`}>
+              <div className="text-center p-2 rounded-lg bg-card border border-border">
+                <span className="text-xs text-muted-foreground block mb-1">Last 30 Days</span>
+                <span className={`text-lg font-bold ${stats.rate30 >= 70 ? 'text-emerald-500' : stats.rate30 >= 40 ? 'text-amber-500' : 'text-muted-foreground'}`}>
                   {stats.rate30}%
                 </span>
-                <div className="w-full bg-gray-100 dark:bg-dark-border h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
-                    className="h-full bg-primary-500 rounded-full transition-all"
+                    className="h-full bg-primary rounded-full transition-all"
                     style={{ width: `${stats.rate30}%` }}
                   />
                 </div>
               </div>
 
-              <div className="text-center p-2 rounded-lg bg-white dark:bg-dark-card border border-gray-100 dark:border-dark-border">
-                <span className="text-xs text-gray-400 block mb-1">Last 90 Days</span>
-                <span className={`text-lg font-bold ${stats.rate90 >= 70 ? 'text-emerald-500' : stats.rate90 >= 40 ? 'text-amber-500' : 'text-gray-500'}`}>
+              <div className="text-center p-2 rounded-lg bg-card border border-border">
+                <span className="text-xs text-muted-foreground block mb-1">Last 90 Days</span>
+                <span className={`text-lg font-bold ${stats.rate90 >= 70 ? 'text-emerald-500' : stats.rate90 >= 40 ? 'text-amber-500' : 'text-muted-foreground'}`}>
                   {stats.rate90}%
                 </span>
-                <div className="w-full bg-gray-100 dark:bg-dark-border h-1.5 rounded-full mt-2 overflow-hidden">
+                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
                   <div
-                    className="h-full bg-primary-500 rounded-full transition-all"
+                    className="h-full bg-primary rounded-full transition-all"
                     style={{ width: `${stats.rate90}%` }}
                   />
                 </div>
@@ -279,13 +279,13 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
           </div>
 
           {/* 30-Day Activity Heatmap Grid */}
-          <div className="bg-gray-50 dark:bg-dark-hover/40 border border-gray-100 dark:border-dark-border rounded-xl p-4">
+          <div className="bg-secondary/40 border border-border/80 rounded-xl p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-muted">
-                <Calendar className="w-4 h-4 text-primary-500" />
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <Calendar className="w-4 h-4 text-primary" />
                 <span>Last 30 Days Activity</span>
               </div>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-muted-foreground">
                 {stats.past30Chronological.filter(d => d.isCompleted).length} / 30 days
               </span>
             </div>
@@ -298,14 +298,14 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
                   className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium transition-all ${
                     day.isCompleted
                       ? 'bg-emerald-500 text-white font-bold shadow-xs'
-                      : 'bg-gray-200/70 dark:bg-dark-border/80 text-gray-400'
-                  } ${day.isToday ? 'ring-2 ring-primary-500' : ''}`}
+                      : 'bg-muted text-muted-foreground border border-border/40'
+                  } ${day.isToday ? 'ring-2 ring-primary' : ''}`}
                 >
                   {format(day.date, 'd')}
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between text-[11px] text-gray-400 mt-2">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2">
               <span>30 days ago</span>
               <span>Today</span>
             </div>
@@ -313,17 +313,17 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
 
           {/* Insights / Details */}
           <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-gray-50 dark:bg-dark-hover/30 rounded-xl border border-gray-100 dark:border-dark-border">
-              <span className="text-gray-400 block mb-1">Strongest Day</span>
-              <span className="font-semibold text-gray-800 dark:text-dark-text text-sm flex items-center gap-1.5">
+            <div className="p-3 bg-secondary/30 rounded-xl border border-border/70">
+              <span className="text-muted-foreground block mb-1">Strongest Day</span>
+              <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-500" />
                 {stats.bestDay}
               </span>
             </div>
 
-            <div className="p-3 bg-gray-50 dark:bg-dark-hover/30 rounded-xl border border-gray-100 dark:border-dark-border">
-              <span className="text-gray-400 block mb-1">Created Date</span>
-              <span className="font-semibold text-gray-800 dark:text-dark-text text-sm flex items-center gap-1.5">
+            <div className="p-3 bg-secondary/30 rounded-xl border border-border/70">
+              <span className="text-muted-foreground block mb-1">Created Date</span>
+              <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-blue-500" />
                 {habit.created_at ? format(new Date(habit.created_at), 'MMM d, yyyy') : 'N/A'}
               </span>
@@ -331,23 +331,24 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
           </div>
 
           {habit.description && (
-            <div className="text-xs text-gray-500 dark:text-dark-muted bg-gray-50/50 dark:bg-dark-hover/20 p-3 rounded-lg border border-gray-100 dark:border-dark-border/50">
-              <span className="font-medium text-gray-700 dark:text-dark-text block mb-1">Note:</span>
+            <div className="text-xs text-muted-foreground bg-secondary/20 p-3 rounded-lg border border-border/50">
+              <span className="font-medium text-foreground block mb-1">Note:</span>
               {habit.description}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-100 dark:border-dark-border flex justify-end bg-gray-50/50 dark:bg-dark-card">
+        <div className="p-4 border-t border-border flex justify-end bg-card">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-gray-200 dark:bg-dark-hover text-gray-700 dark:text-dark-text hover:bg-gray-300 dark:hover:bg-dark-border transition-colors"
+            className="px-4 py-2 text-xs font-semibold rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border transition-colors cursor-pointer"
           >
             Close
           </button>
         </div>
       </div>
     </div>
+
   );
 };
