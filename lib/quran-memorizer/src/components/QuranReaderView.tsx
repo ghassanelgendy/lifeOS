@@ -265,6 +265,25 @@ interface QuranReaderViewProps {
   onFullscreenChange?: (value: boolean) => void;
 }
 
+const triggerSubtleHaptic = (style: 'light' | 'medium' | 'selection' = 'light') => {
+  try {
+    if (typeof window !== 'undefined') {
+      const w = window as any;
+      if (w.Capacitor?.isPluginAvailable?.('Haptics') && w.Capacitor.Plugins?.Haptics) {
+        if (style === 'selection') {
+          w.Capacitor.Plugins.Haptics.selectionChanged();
+        } else {
+          w.Capacitor.Plugins.Haptics.impact({ style: style === 'medium' ? 'MEDIUM' : 'LIGHT' });
+        }
+        return;
+      }
+      if (navigator?.vibrate) {
+        navigator.vibrate(style === 'medium' ? 25 : 12);
+      }
+    }
+  } catch {}
+};
+
 export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   surahNumber,
   onSelectSurah,
@@ -445,10 +464,34 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
 
   // Hovered menu action for slide-to-select gesture
   const [hoveredMenuAction, setHoveredMenuAction] = useState<string | null>(null);
+  const hoveredMenuActionRef = useRef<string | null>(null);
+  const startTouchPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Session-only hidden ayahs (set of global verse numbers)
   const [hiddenAyahs, setHiddenAyahs] = useState<Set<number>>(new Set());
   const [isPageOffline, setIsPageOffline] = useState(false);
+
+  // Visual viewport keyboard height detection for iOS
+  const [viewportKeyboardHeight, setViewportKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+
+    const handleViewportChange = () => {
+      const kbHeight = Math.max(0, window.innerHeight - vv.height);
+      setViewportKeyboardHeight(kbHeight > 50 ? kbHeight : 0);
+    };
+
+    vv.addEventListener('resize', handleViewportChange);
+    vv.addEventListener('scroll', handleViewportChange);
+    handleViewportChange();
+
+    return () => {
+      vv.removeEventListener('resize', handleViewportChange);
+      vv.removeEventListener('scroll', handleViewportChange);
+    };
+  }, []);
 
   // Long-press on an ayah opens the 3D action menu
   const longPressRef = React.useRef<{ ayahNumber: number; timer: number | null; triggered: boolean }>({
@@ -486,10 +529,14 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     }
     const foundAyah = ayahs.find((a) => a.numberInSurah === ayahNumber);
     if (foundAyah) {
-      setAyahContextMenu({ ayah: foundAyah, surah });
+      hoveredMenuActionRef.current = null;
       setHoveredMenuAction(null);
+      setAyahContextMenu({ ayah: foundAyah, surah });
     }
-    cancelLongPress();
+    if (longPressRef.current?.timer != null) {
+      window.clearTimeout(longPressRef.current.timer);
+      longPressRef.current.timer = null;
+    }
   };
 
   const startLongPress = (
@@ -502,6 +549,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     if (e.pointerType === 'mouse' && e.button !== 0) return;
 
     cancelLongPress();
+    startTouchPosRef.current = { x: e.clientX, y: e.clientY };
     setPressingAyah(ayahNumber);
     if (pressingTimerRef.current != null) window.clearTimeout(pressingTimerRef.current);
     pressingTimerRef.current = window.setTimeout(() => setPressingAyah(null), 600);
@@ -512,14 +560,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         const cur = longPressRef.current;
         if (cur && cur.ayahNumber === ayahNumber) {
           cur.triggered = true;
+          triggerSubtleHaptic('medium');
           openAyahContextMenu(null, ayahNumber, surah, ayahs);
         }
         setPressingAyah(null);
-      }, 450),
+      }, 400),
     };
   };
 
   const cancelLongPress = () => {
+    if (longPressRef.current?.triggered) return;
     const cur = longPressRef.current;
     if (cur && cur.timer != null) {
       window.clearTimeout(cur.timer);
@@ -530,6 +580,17 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
       pressingTimerRef.current = null;
     }
     setPressingAyah(null);
+    startTouchPosRef.current = null;
+  };
+
+  const handleAyahPointerMove = (e: React.PointerEvent) => {
+    if (longPressRef.current?.triggered) return;
+    if (startTouchPosRef.current && longPressRef.current?.timer != null) {
+      const dist = Math.hypot(e.clientX - startTouchPosRef.current.x, e.clientY - startTouchPosRef.current.y);
+      if (dist > 14) {
+        cancelLongPress();
+      }
+    }
   };
 
   const wasLongPress = (ayahNumber: number) =>
@@ -542,6 +603,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     const { ayah, surah } = ayahContextMenu;
     setAyahContextMenu(null);
     setHoveredMenuAction(null);
+    hoveredMenuActionRef.current = null;
 
     switch (action) {
       case 'hide':
@@ -564,6 +626,63 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
         break;
     }
   };
+
+  // Global 3D Touch gesture drag-to-select tracking
+  useEffect(() => {
+    const handleWindowMove = (e: TouchEvent | PointerEvent) => {
+      const clientX = 'touches' in e ? e.touches[0]?.clientX : (e as PointerEvent).clientX;
+      const clientY = 'touches' in e ? e.touches[0]?.clientY : (e as PointerEvent).clientY;
+      if (clientX === undefined || clientY === undefined) return;
+
+      if (longPressRef.current?.triggered && ayahContextMenu) {
+        if (e.cancelable) e.preventDefault();
+        const el = document.elementFromPoint(clientX, clientY);
+        const btn = el?.closest('[data-menu-action]') as HTMLElement | null;
+        const action = btn?.getAttribute('data-menu-action') || null;
+        if (action !== hoveredMenuActionRef.current) {
+          hoveredMenuActionRef.current = action;
+          setHoveredMenuAction(action);
+          if (action) {
+            triggerSubtleHaptic('selection');
+          }
+        }
+      }
+    };
+
+    const handleWindowUp = (e: TouchEvent | PointerEvent) => {
+      if (longPressRef.current?.triggered) {
+        const action = hoveredMenuActionRef.current;
+        if (action) {
+          if (e.cancelable) e.preventDefault();
+          triggerSubtleHaptic('medium');
+          handleAyahAction(action as any);
+        }
+        hoveredMenuActionRef.current = null;
+        setHoveredMenuAction(null);
+        startTouchPosRef.current = null;
+        window.setTimeout(() => {
+          if (longPressRef.current) {
+            longPressRef.current.triggered = false;
+            longPressRef.current.ayahNumber = -1;
+          }
+        }, 320);
+      } else {
+        cancelLongPress();
+      }
+    };
+
+    window.addEventListener('pointermove', handleWindowMove, { passive: false });
+    window.addEventListener('pointerup', handleWindowUp, { passive: false });
+    window.addEventListener('touchmove', handleWindowMove, { passive: false });
+    window.addEventListener('touchend', handleWindowUp, { passive: false });
+
+    return () => {
+      window.removeEventListener('pointermove', handleWindowMove);
+      window.removeEventListener('pointerup', handleWindowUp);
+      window.removeEventListener('touchmove', handleWindowMove);
+      window.removeEventListener('touchend', handleWindowUp);
+    };
+  }, [ayahContextMenu]);
 
   useEffect(() => {
     try {
@@ -1055,15 +1174,19 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
       {showSurahPicker &&
         createPortal(
           <div
-            className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md transition-opacity animate-in fade-in duration-300"
+            className="fixed inset-0 z-[10001] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/75 backdrop-blur-md transition-all animate-in fade-in duration-300"
             onClick={() => setShowSurahPicker(false)}
+            style={{
+              paddingBottom: viewportKeyboardHeight > 0 ? `${viewportKeyboardHeight}px` : 'var(--keyboard-height, 0px)',
+            }}
           >
             <div
               onClick={(e) => e.stopPropagation()}
-              className="w-full sm:max-w-lg bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-4 sm:p-6 space-y-3.5 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 ease-out font-arabic-title h-[88vh] sm:h-[82vh] flex flex-col overscroll-contain text-right pb-safe transition-all"
+              className="relative w-full sm:max-w-lg bg-card/95 backdrop-blur-2xl border-t sm:border border-border/70 rounded-t-[2.2rem] sm:rounded-3xl p-4 sm:p-6 space-y-3.5 shadow-2xl animate-in slide-in-from-bottom-8 duration-300 ease-out font-arabic-title h-[88vh] sm:h-[82vh] flex flex-col overscroll-contain text-right pb-safe transition-all"
               style={{
-                bottom: 'var(--keyboard-height, 0px)',
-                maxHeight: 'calc(90dvh - var(--keyboard-height, 0px))',
+                maxHeight: viewportKeyboardHeight > 0
+                  ? `calc(100dvh - ${viewportKeyboardHeight}px - 16px)`
+                  : 'calc(90dvh - var(--keyboard-height, 0px))',
               }}
               dir="rtl"
             >
@@ -1127,11 +1250,17 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       onChange={(e) => setPickerSearch(e.target.value)}
                       placeholder="ابحث عن اسم السورة..."
                       className="w-full pr-9 pl-3 py-2 bg-secondary/40 border border-border rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500 font-arabic-body"
-                      autoFocus
                     />
                   </div>
 
-                  <div className="overflow-y-auto overscroll-contain space-y-1 pr-1 flex-1 min-h-0 pb-16 touch-pan-y">
+                  <div 
+                    onScroll={() => {
+                      if (document.activeElement instanceof HTMLInputElement) {
+                        document.activeElement.blur();
+                      }
+                    }}
+                    className="overflow-y-auto overscroll-contain space-y-1 pr-1 flex-1 min-h-0 pb-16 touch-pan-y"
+                  >
                     {filteredSurahs.map((s) => (
                       <button
                         key={s.id}
@@ -1213,7 +1342,6 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       onChange={(e) => setPageInputVal(e.target.value)}
                       placeholder={`الحالية: ${activePage}`}
                       className="w-full p-3 bg-secondary/40 border border-border rounded-xl text-center font-mono text-lg font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                      autoFocus
                     />
                   </div>
 
@@ -1542,7 +1670,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                       onPointerUp={cancelLongPress}
                                       onPointerCancel={cancelLongPress}
-                                      onPointerMove={cancelLongPress}
+                                      onPointerMove={handleAyahPointerMove}
                                       onContextMenu={(e) => openAyahContextMenu(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                       className={`inline cursor-pointer rounded px-0.5 transition-colors tracking-normal font-bold ${
                                         isMemMarker && isReadMarker
@@ -1586,7 +1714,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                       onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                       onPointerUp={cancelLongPress}
                                       onPointerCancel={cancelLongPress}
-                                      onPointerMove={cancelLongPress}
+                                      onPointerMove={handleAyahPointerMove}
                                       onContextMenu={(e) => e.preventDefault()}
                                       className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-7 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-colors whitespace-nowrap select-none ${
                                         isMemWirdEnd
@@ -1936,8 +2064,8 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                               onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                               onPointerUp={cancelLongPress}
                                               onPointerCancel={cancelLongPress}
-                                              onPointerMove={cancelLongPress}
-                                              onContextMenu={(e) => e.preventDefault()}
+                                              onPointerMove={handleAyahPointerMove}
+                                              onContextMenu={(e) => openAyahContextMenu(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                               className={`inline cursor-pointer rounded px-0.5 transition-colors tracking-normal font-bold ${
                                                 isMemMarker && isReadMarker
                                                   ? 'bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-foreground border-b-2 border-amber-400'
@@ -1956,12 +2084,11 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                                   : ''
                                               }`}
                                             >
-                                              {repeatSettings.blindMode && isActive ? (
+                                              {repeatSettings.blindMode && (isActive ? isDelaying : !isAudioPlaying) ? (
                                                 words.map((w, wIdx) => (
                                                   <span
                                                     key={wIdx}
                                                     className="inline mx-1 px-1 rounded transition-all duration-300 text-indigo-400/20 bg-indigo-500/20 border border-indigo-500/30 blur-[6px] hover:blur-none hover:text-foreground hover:bg-transparent select-none cursor-pointer"
-                                                    title="انقر لإظهار الكلمة"
                                                   >
                                                     {w}{' '}
                                                   </span>
@@ -1981,7 +2108,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                                               onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, ayahSurah, pageAyahs)}
                                               onPointerUp={cancelLongPress}
                                               onPointerCancel={cancelLongPress}
-                                              onPointerMove={cancelLongPress}
+                                              onPointerMove={handleAyahPointerMove}
                                               onContextMenu={(e) => e.preventDefault()}
                                               className={`inline-flex items-center justify-center min-w-[2rem] h-6 sm:h-8 px-1.5 mx-1 rounded-full text-xs font-bold font-mono align-middle cursor-pointer transition-colors whitespace-nowrap select-none ${
                                                 isMemWirdEnd
@@ -2251,7 +2378,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                 onPointerDown={(e) => startLongPress(e, ayah.numberInSurah, currentSurah, verses)}
                 onPointerUp={cancelLongPress}
                 onPointerCancel={cancelLongPress}
-                onPointerMove={cancelLongPress}
+                onPointerMove={handleAyahPointerMove}
                 onContextMenu={(e) => openAyahContextMenu(e, ayah.numberInSurah, currentSurah, verses)}
                 className={`p-3.5 sm:p-5 rounded-2xl border transition-all cursor-pointer relative ${
                   isMemWirdEnd
@@ -2418,9 +2545,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                       type="button"
                       data-menu-action={item.id}
                       onClick={() => handleAyahAction(item.id)}
-                      className={`w-full flex items-center justify-between px-4 py-3 text-xs sm:text-sm font-medium transition-colors cursor-pointer ${
+                      className={`w-full flex items-center justify-between px-4 py-3.5 text-xs sm:text-sm font-medium transition-all duration-100 cursor-pointer select-none ${
                         isHovered
-                          ? 'bg-primary/10 text-primary font-bold'
+                          ? 'bg-primary/20 text-primary font-bold scale-[1.01] shadow-inner'
                           : 'text-foreground hover:bg-secondary/70 active:bg-secondary'
                       }`}
                     >

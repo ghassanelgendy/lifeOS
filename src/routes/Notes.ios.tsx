@@ -309,7 +309,7 @@ export default function NotesIOS() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -15 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="flex-1 flex flex-col min-h-0 overflow-y-auto pb-24 space-y-4 px-4"
+            className="flex-1 flex flex-col min-h-0 overflow-y-auto pb-[calc(110px+env(safe-area-inset-bottom))] space-y-4 px-4"
           >
             {/* Header matching lifeOS module headers */}
             <div className="space-y-3 pt-4">
@@ -540,14 +540,14 @@ export default function NotesIOS() {
             </div>
 
             {/* Floating Action Button */}
-            <div className="fixed bottom-[calc(80px+env(safe-area-inset-bottom))] right-4 z-30 flex items-center gap-2">
+            <div className="fixed bottom-[calc(96px+env(safe-area-inset-bottom))] right-5 z-[60] flex items-center gap-2">
               <button
                 type="button"
                 onClick={startNewNote}
-                className="w-12 h-12 rounded-full bg-primary text-primary-foreground shadow-xl flex items-center justify-center active:scale-90 transition-transform touch-manipulation"
+                className="w-13 h-13 rounded-full bg-primary text-primary-foreground shadow-2xl flex items-center justify-center active:scale-90 transition-transform touch-manipulation cursor-pointer border border-white/20"
                 aria-label="New Note"
               >
-                <Pencil size={20} />
+                <Pencil size={22} />
               </button>
             </div>
           </motion.div>
@@ -559,7 +559,7 @@ export default function NotesIOS() {
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="flex-1 flex flex-col min-h-0 bg-background pb-20 overflow-hidden"
+            className="flex-1 flex flex-col min-h-0 bg-background pb-[calc(100px+env(safe-area-inset-bottom))] overflow-hidden"
           >
             {/* Top Navigation Header */}
             <div className="flex items-center justify-between px-2 py-2 border-b border-border bg-card shrink-0">

@@ -5,7 +5,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ## Table of Contents
 
 ### .
+- [.mcp.json](#-mcp-json)
 - [API_EGRESS_FIX.md](#api-egress-fix-md)
+- [CLAUDE.md](#claude-md)
 - [CODEBASE_DOCUMENTATION.md](#codebase-documentation-md)
 - [CODEBASE_SRS.md](#codebase-srs-md)
 - [PRD.md](#prd-md)
@@ -229,6 +231,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/AppShell.pake.tsx](#src-components-appshell-pake-tsx)
 - [src/components/AppShell.tsx](#src-components-appshell-tsx)
 - [src/components/AppShell.web.tsx](#src-components-appshell-web-tsx)
+- [src/components/BankAccountsSettingsSection.tsx](#src-components-bankaccountssettingssection-tsx)
 - [src/components/BrainDumpGraphView.tsx](#src-components-braindumpgraphview-tsx)
 - [src/components/BrainDumpModal.tsx](#src-components-braindumpmodal-tsx)
 - [src/components/CommandPalette.tsx](#src-components-commandpalette-tsx)
@@ -282,10 +285,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/analytics/AnimatedCounter.tsx](#src-components-analytics-animatedcounter-tsx)
 - [src/components/analytics/DayDetailsModal.tsx](#src-components-analytics-daydetailsmodal-tsx)
 
+### src/components/azkar
+- [src/components/azkar/TasbihCounterModal.tsx](#src-components-azkar-tasbihcountermodal-tsx)
+- [src/components/azkar/ZekrCard.tsx](#src-components-azkar-zekrcard-tsx)
+
 ### src/components/collaboration
 - [src/components/collaboration/ShareModal.tsx](#src-components-collaboration-sharemodal-tsx)
 
 ### src/components/dashboard
+- [src/components/dashboard/AzkarDashboardWidget.tsx](#src-components-dashboard-azkardashboardwidget-tsx)
 - [src/components/dashboard/DashboardAnnualReview.tsx](#src-components-dashboard-dashboardannualreview-tsx)
 - [src/components/dashboard/DashboardQuickView.ios.tsx](#src-components-dashboard-dashboardquickview-ios-tsx)
 - [src/components/dashboard/DashboardQuickView.tsx](#src-components-dashboard-dashboardquickview-tsx)
@@ -312,6 +320,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/contexts/AuthContext.tsx](#src-contexts-authcontext-tsx)
 
 ### src/data
+- [src/data/azkar.json](#src-data-azkar-json)
 - [src/data/shortHadiths.test.ts](#src-data-shorthadiths-test-ts)
 - [src/data/shortHadiths.ts](#src-data-shorthadiths-ts)
 
@@ -322,6 +331,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### src/hooks
 - [src/hooks/useAnalytics.ts](#src-hooks-useanalytics-ts)
+- [src/hooks/useAuth.ts](#src-hooks-useauth-ts)
+- [src/hooks/useAzkar.ts](#src-hooks-useazkar-ts)
 - [src/hooks/useCalendar.ts](#src-hooks-usecalendar-ts)
 - [src/hooks/useConnectionStatus.ts](#src-hooks-useconnectionstatus-ts)
 - [src/hooks/useDashboardUpcomingItems.test.ts](#src-hooks-usedashboardupcomingitems-test-ts)
@@ -382,10 +393,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/queryClient.ts](#src-lib-queryclient-ts)
 - [src/lib/reportSuggestions.ts](#src-lib-reportsuggestions-ts)
 - [src/lib/screentimePlatform.ts](#src-lib-screentimeplatform-ts)
+- [src/lib/smartTaskScheduler.test.ts](#src-lib-smarttaskscheduler-test-ts)
 - [src/lib/smartTaskScheduler.ts](#src-lib-smarttaskscheduler-ts)
 - [src/lib/supabase.ts](#src-lib-supabase-ts)
+- [src/lib/taskInputSuggestions.test.ts](#src-lib-taskinputsuggestions-test-ts)
 - [src/lib/taskInputSuggestions.ts](#src-lib-taskinputsuggestions-ts)
 - [src/lib/taskSimilarityAnalyzer.ts](#src-lib-tasksimilarityanalyzer-ts)
+- [src/lib/theme.ts](#src-lib-theme-ts)
 - [src/lib/userAppSettings.ts](#src-lib-userappsettings-ts)
 - [src/lib/utils.test.ts](#src-lib-utils-test-ts)
 - [src/lib/utils.ts](#src-lib-utils-ts)
@@ -399,6 +413,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### src/routes
 - [src/routes/Analytics.tsx](#src-routes-analytics-tsx)
+- [src/routes/Azkar.ios.tsx](#src-routes-azkar-ios-tsx)
+- [src/routes/Azkar.tsx](#src-routes-azkar-tsx)
+- [src/routes/Azkar.web.tsx](#src-routes-azkar-web-tsx)
 - [src/routes/Calendar.ios.tsx](#src-routes-calendar-ios-tsx)
 - [src/routes/Calendar.pake.tsx](#src-routes-calendar-pake-tsx)
 - [src/routes/Calendar.tsx](#src-routes-calendar-tsx)
@@ -421,7 +438,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Notes.web.tsx](#src-routes-notes-web-tsx)
 - [src/routes/Points.tsx](#src-routes-points-tsx)
 - [src/routes/Quran.tsx](#src-routes-quran-tsx)
-- [src/routes/Azkar.tsx](#src-routes-azkar-tsx)
 - [src/routes/Screentime.ios.tsx](#src-routes-screentime-ios-tsx)
 - [src/routes/Screentime.tsx](#src-routes-screentime-tsx)
 - [src/routes/Screentime.web.tsx](#src-routes-screentime-web-tsx)
@@ -440,11 +456,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/routes/Wiki.tsx](#src-routes-wiki-tsx)
 
 ### src/stores
+- [src/stores/useAzkarStore.ts](#src-stores-useazkarstore-ts)
 - [src/stores/useFocusSessionStore.ts](#src-stores-usefocussessionstore-ts)
 - [src/stores/useUIStore.ts](#src-stores-useuistore-ts)
 - [src/stores/useWikiStore.ts](#src-stores-usewikistore-ts)
 
 ### src/types
+- [src/types/azkar.ts](#src-types-azkar-ts)
 - [src/types/schema.ts](#src-types-schema-ts)
 - [src/types/wiki.ts](#src-types-wiki-ts)
 
@@ -483,6 +501,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### supabase/functions/process-sms
 - [supabase/functions/process-sms/index.ts](#supabase-functions-process-sms-index-ts)
 - [supabase/functions/process-sms/parser.ts](#supabase-functions-process-sms-parser-ts)
+
+### supabase/functions/quick-expense
+- [supabase/functions/quick-expense/index.ts](#supabase-functions-quick-expense-index-ts)
 
 ### supabase/functions/reconcile-statement
 - [supabase/functions/reconcile-statement/index.ts](#supabase-functions-reconcile-statement-index-ts)
@@ -544,7 +565,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 15
+**Lines:** 19
 
 ---
 
@@ -577,7 +598,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 370
+**Lines:** 372
 
 ---
 
@@ -614,6 +635,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="-mcp-json"></a>
+### .mcp.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 8
+
+---
+
 <a name="-vscode-tasks-json"></a>
 ### .vscode/tasks.json
 
@@ -636,6 +668,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="claude-md"></a>
+### CLAUDE.md
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (Markdown documentation)
+
+**Lines:** 84
+
+---
+
 <a name="codebase-documentation-md"></a>
 ### CODEBASE_DOCUMENTATION.md
 
@@ -643,7 +686,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6662
+**Lines:** 6791
 
 ---
 
@@ -654,7 +697,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1249
+**Lines:** 1413
 
 ---
 
@@ -665,7 +708,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 905
+**Lines:** 967
 
 ---
 
@@ -689,13 +732,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `trimTrailingSlashes` (Function)
 - `normalizeAiBaseUrl` (Function)
 - `isAllowedAiHost` (Function)
+- `isPrivateOrReservedIp` (Function)
 
 **Function Details:**
 - **`trimTrailingSlashes`** — Utility function for trim trailing slashes.
 - **`normalizeAiBaseUrl`** — Utility function for normalize ai base url.
 - **`isAllowedAiHost`** — Utility function for is allowed ai host.
+- **`isPrivateOrReservedIp`** — Utility function for is private or reserved ip.
 
-**Lines:** 120
+**Lines:** 194
 
 ---
 
@@ -851,12 +896,32 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 29
+**Lines:** 33
 
 ---
 
 <a name="codemagic-yaml"></a>
 ### codemagic.yaml
+
+**File Purpose:** CI/CD pipeline configuration for automated iOS builds on Codemagic.
+
+**Functions & Classes:** None (YAML configuration)
+
+**Function Details:**
+- `workflows.ios-build` — Defines the iOS unsigned build workflow.
+- `max_build_duration: 30` — 30-minute timeout limit.
+- `instance_type: mac_mini_m1` — Builds on an Apple Silicon M1 Mac mini.
+- `triggering` — Triggers on pushes to the `main` branch.
+- `when.changeset` — Skips builds unless changes are detected in `ios/**`, `android/**`, `capacitor.config.*`, `package.json`, or `codemagic.yaml`.
+- Build steps:
+  1. Dependencies: `npm install -g pnpm && pnpm install`
+  2. Web build: `pnpm build:ios`
+  3. Capacitor sync: `pnpm cap add ios || true && pnpm cap sync ios`
+  4. iOS compilation: `xcodebuild` with `CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO`
+  5. Packaging: Creates `lifeOS.ipa` from the compiled `.app` bundle.
+- `artifacts` — Outputs `build/ios/*.ipa` files.
+
+---
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -913,6 +978,20 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="eslint-config-js"></a>
 ### eslint.config.js
 
+**File Purpose:** ESLint flat config for TypeScript, React, and React Hooks linting. Defines code quality rules for the project.
+
+**Functions & Classes:** None (configuration export)
+
+**Function Details:**
+- `globalIgnores` — Ignores `dist`, `src-tauri/**`, and `.lifeos-cache/**` from linting.
+- Extends recommended configs: `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`.
+- Targets files: `**/*.{ts,tsx}`.
+- Disabled rules (mid-migration to stricter standards): `@typescript-eslint/no-explicit-any`, `react-hooks/refs`, `react-hooks/set-state-in-effect`, `react-refresh/only-export-components`, etc.
+- Warnings: `@typescript-eslint/no-unused-vars` (ignores underscore-prefixed identifiers).
+- Language options: ECMAScript 2020 with browser globals.
+
+---
+
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:** None (configuration or re-export module)
@@ -945,7 +1024,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanDomain`** — Utility function for clean domain.
 - **`recordActiveInterval`** — Utility function for record active interval.
 
-**Lines:** 259
+**Lines:** 265
 
 ---
 
@@ -1001,9 +1080,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
+- `toEmptyUnlessAuthExpired` (Function)
+- `setDisconnectedBadge` (Function)
 - `SupabaseClient` (Class)
 
-**Lines:** 633
+**Function Details:**
+- **`toEmptyUnlessAuthExpired`** — Utility function for to empty unless auth expired.
+- **`setDisconnectedBadge`** — Utility function for set disconnected badge.
+
+**Lines:** 687
 
 ---
 
@@ -1062,7 +1147,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 227
+**Lines:** 226
 
 ---
 
@@ -1090,18 +1175,33 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`initQuickAddTask`** — Utility function for init quick add task.
 - **`renderNotesList`** — Utility function for render notes list.
 
-**Lines:** 705
+**Lines:** 764
 
 ---
 
 <a name="index-html"></a>
 ### index.html
 
+**File Purpose:** HTML entry point for the SPA. Contains critical inline script for FOUC-free theme initialization (reads saved theme/accent from localStorage before DOM paint) and PWA meta tags.
+
+**Functions & Classes:** None (HTML template)
+
+**Function Details:**
+- Inline IIFE script (lines 5-25): Reads `lifeos-ui-store` from localStorage, extracts `theme` and `accentTheme`, applies them to `<html>` class and data-attribute immediately. Prevents flash of unstyled content.
+- Viewport meta tag: Sets `width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover` — locks zoom, supports iOS safe area insets.
+- Favicon & icons: SVG, PNG 96x96, ICO, Apple Touch Icon (192x192), and web app manifest links.
+- PWA meta tags: `apple-mobile-web-app-title`, `mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style: default`.
+- Title: "lifeOS".
+- Root mount point: `<div id="root"></div>`.
+- Module script: `/src/main.tsx` (Vite entry).
+
+---
+
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 47
+**Lines:** 61
 
 ---
 
@@ -1162,6 +1262,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="knip-json"></a>
 ### knip.json
+
+**File Purpose:** Knip configuration for dead code detection and unused dependency analysis.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- `ignore` — Excludes `dist/**`, `dev-dist/**`, `node_modules/**`, `.lifeos-cache/**`, and `lifeos-agent-cli/**`.
+- `entry` — Defines application entry points: `index.html`, `src/main.tsx`, `src/App.tsx`, `src/sw.ts`, all `api/**/*.ts` files, and all Supabase Edge Function entry points.
+- `project` — Scopes analysis to `src/**/*.{ts,tsx}`, `api/**/*.ts`, and `supabase/functions/**/*.{ts,tsx}`.
+
+---
 
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
@@ -1490,7 +1601,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 1262
+**Lines:** 1268
 
 ---
 
@@ -1512,7 +1623,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 776
+**Lines:** 819
 
 ---
 
@@ -1523,7 +1634,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 2425
+**Lines:** 2617
 
 ---
 
@@ -1605,7 +1716,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`getAyahAudioUrl`** — Utility function for get ayah audio url.
 
-**Lines:** 297
+**Lines:** 233
 
 ---
 
@@ -1617,11 +1728,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `getSurahForPage` (Function)
 - `getCurrentWirdInfo` (Function)
+- `getKhatmaStats` (Function)
+- `saveKhatmaStats` (Function)
+- `addReadingSeconds` (Function)
+- `recordKhatmaCompletion` (Function)
 - `classifyQuranHabitTitle` (Function)
 - `advanceWirdOnHabitComplete` (Function)
 - `formatSurahAndAyahSpan` (Function)
 - `getQuranWirdAndReviewSummary` (Function)
 - `getSpecificSurahHabitTarget` (Function)
+- `QuranKhatmaStats` (Interface)
 - `QuranWirdSummary` (Interface)
 - `QuranHabitTarget` (Interface)
 - `AdvancedWirdResult` (Type)
@@ -1629,11 +1745,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`getSurahForPage`** — Utility function for get surah for page.
 - **`getCurrentWirdInfo`** — Utility function for get current wird info.
-- **`classifyQuranHabitTitle`** — Utility function for classify quran habit title.
-- **`advanceWirdOnHabitComplete`** — Utility function for advance wird on habit complete.
-- **`formatSurahAndAyahSpan`** — Utility function for format surah and ayah span.
+- **`getKhatmaStats`** — Utility function for get khatma stats.
+- **`saveKhatmaStats`** — Utility function for save khatma stats.
+- **`addReadingSeconds`** — Utility function for add reading seconds.
 
-**Lines:** 652
+**Lines:** 735
 
 ---
 
@@ -1701,11 +1817,31 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="package-json"></a>
 ### package.json
 
+**File Purpose:** Workspace root package manifest. Defines scripts, dependencies, dev dependencies, engine requirements, and PNPM workspace settings.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- `"name": "lifeos-workspace"`, `"private": true`, `"type": "module"`, `"packageManager": "pnpm@10.18.0"`.
+- Engines: Node `>=20.9.0`, PNPM `>=10`.
+- Key scripts:
+  - `dev` / `dev:ios` / `dev:pake` — Vite dev server with platform modes.
+  - `build` / `build:ios` / `build:pake` — Production builds.
+  - `pake:local` — Desktop app build using Pake CLI (Windows-specific with `copy` command).
+  - `lint` — ESLint on `src`.
+  - `test` / `test:watch` — Vitest (run/watch).
+  - `typecheck` — TypeScript noEmit check.
+- Key dependencies: React 19, React Router DOM, Zustand, React Query, Supabase, Recharts, date-fns, Adhan (prayer times), Lucide React, Framer Motion, Zod, uuid, Tailwind merge, clsx.
+- Key dev dependencies: Vite 8, Vitest, TypeScript 6, ESLint 10, Tailwind CSS v4, @vitejs/plugin-react, @vitejs/plugin-legacy, vite-plugin-pwa, Pake CLI, Sharp, jsdom.
+- PNPM architectures: Supported OS (current, darwin, linux, win32) and CPU (current, x64, arm64).
+
+---
+
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 135
+**Lines:** 136
 
 ---
 
@@ -1716,12 +1852,27 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 13444
+**Lines:** 13450
 
 ---
 
 <a name="pnpm-workspace-yaml"></a>
 ### pnpm-workspace.yaml
+
+**File Purpose:** PNPM workspace definition. Declares monorepo packages, shared dependency catalog versions, release policy, and native binary exclusions.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- Packages: `lib/*`, `lib/integrations/*`, `scripts`.
+- `autoInstallPeers: false`.
+- `catalog` — Defines shared dependency versions across the workspace: Tailwind CSS, React, TypeScript, Drizzle ORM, Framer Motion, Vite, Zod, etc.
+- `minimumReleaseAge: 1440` — 24-hour delay before installing new releases.
+- `minimumReleaseAgeExclude` — Replit packages, stripe-replit-sync, pake-cli, and Tauri packages excluded from release age restriction.
+- `onlyBuiltDependencies` — `@swc/core`, `esbuild`, `msw`, `unrs-resolver` require building from source.
+- `overrides` — Extensive list of native binary exclusions (replaced with `'-'`) for Ngrok, Tailwind CSS Oxide, esbuild, Lightning CSS, and Rollup. Pins esbuild to `0.27.3`.
+
+---
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -1733,6 +1884,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="postcss-config-js"></a>
 ### postcss.config.js
+
+**File Purpose:** PostCSS configuration for processing CSS in the build pipeline.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- Single plugin: `@tailwindcss/postcss` — Enables Tailwind CSS v4 PostCSS integration for processing utility classes and @theme rules.
+
+---
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -1878,7 +2038,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 103
+**Lines:** 107
 
 ---
 
@@ -1897,7 +2057,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`findPakeCliDistCliJs`** — Utility function for find pake cli dist cli js.
 - **`replaceOnce`** — Utility function for replace once.
 
-**Lines:** 297
+**Lines:** 315
 
 ---
 
@@ -1941,6 +2101,32 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-app-ios-tsx"></a>
 ### src/App.ios.tsx
 
+**File Purpose:** iOS native application root component. Extends the web version with Capacitor-native integrations: keyboard handling, deep links, local notifications, OTA updates, haptics, and native badge/status bar management.
+
+**Functions & Classes:**
+- `App` (default component)
+- `AppInner` (component)
+- `ProtectedRoute` (component)
+- `RequireGuest` (component)
+- `UserAppSettingsBridge` (component)
+- `ThemeSync` (component)
+
+**Function Details:**
+- **`App`** (component)
+  - Same structure as web but adds iOS-specific Capacitor integrations.
+- **`AppInner`** (component)
+  - Listens for keyboard show/hide events via Capacitor Keyboard plugin and stores `--keyboard-height` CSS variable.
+  - Sets up deep link listener for `lifeos://` URLs with route navigation.
+  - Schedules local notifications on app focus using native notification APIs.
+  - Checks for OTA updates on app resume via Capacitor Updater.
+  - Triggers native haptic feedback on task completion and habit toggle actions.
+- **`ThemeSync`** (component)
+  - Syncs status bar style (light/dark) with app theme via Capacitor Status Bar plugin.
+- **`ProtectedRoute` / `RequireGuest`** (components)
+  - Same auth behavior as web, adapted for iOS navigation.
+
+---
+
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
@@ -1969,7 +2155,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 542
+**Lines:** 562
 
 ---
 
@@ -1987,6 +2173,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-app-tsx"></a>
 ### src/App.tsx
 
+**File Purpose:** Platform abstraction entry point. Uses the `.platform` suffix resolution to delegate to the platform-specific App component (web, iOS, or pake).
+
+**Functions & Classes:** None (re-export module)
+
+**Function Details:**
+- `export * from './App.platform'` — Re-exports all named exports from the resolved platform-specific App file.
+- `export { default } from './App.platform'` — Re-exports the default export, making this file transparent to consumers who import `App`.
+
+---
+
 **File Purpose:** Platform abstraction entry point. Delegates to platform-specific App implementation (web, iOS, or pake) via Vite's platform-resolve plugin.
 
 **Functions & Classes:** None (configuration or re-export module)
@@ -1997,6 +2193,49 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="src-app-web-tsx"></a>
 ### src/App.web.tsx
+
+**File Purpose:** Web and Pake (desktop app wrapper) specific application root component. Sets up routing, providers, theme sync, offline support, PWA service worker management, and global keyboard shortcuts.
+
+**Functions & Classes:**
+- `App` (default component)
+- `AppInner` (component)
+- `ProtectedRoute` (component)
+- `RequireGuest` (component)
+- `UserAppSettingsBridge` (component)
+- `ThemeSync` (component)
+
+**Function Details:**
+- **`App`** (component)
+  - Wraps the entire application in `PersistQueryClientProvider` (caches React Query state to localStorage with 7-day max age) and `AuthProvider`.
+- **`AppInner`** (component)
+  - Initializes real-time transaction sync, Pake desktop notifications, and daily points sync.
+  - Seeds the local database when online.
+  - Sets up `window.addEventListener('online', ...)` to process the offline sync queue when connectivity is restored.
+  - Listens for service worker messages (`LIFEOS_SYNC_OFFLINE_QUEUE`) to trigger background sync.
+  - Global keyboard shortcut: `Ctrl/Cmd + Enter` inside form inputs automatically submits the nearest form or clicks the save/submit button in the current modal/sheet.
+  - PWA Service Worker management:
+    - Reloads the page when a new service worker takes control (skipping the initial claim to prevent loops).
+    - Implements a 10-second debounce (`pwa_reload_time` in sessionStorage) to prevent infinite reload loops.
+    - Checks for SW updates on initial load and when the document becomes visible again, throttled to once per 30 seconds.
+  - Router setup: Uses `BrowserRouter` for web, `HashRouter` for Pake desktop builds (fixes file:// protocol routing).
+  - Defines all application routes. Wraps authenticated routes in `AppShell`.
+  - Mounts `FaviconSync` to dynamically update the favicon based on notification counts.
+  - Includes Vercel Analytics (`<Analytics />`).
+- **`ProtectedRoute`** (component)
+  - Reads `user` and `loading` from `useAuth()`.
+  - Returns `<LoadingScreen />` while auth state loads.
+  - Redirects to `/login` if no user is authenticated.
+- **`RequireGuest`** (component)
+  - Redirects authenticated users to `/dashboard`.
+  - Shows `LoadingScreen` during auth initialization.
+- **`UserAppSettingsBridge`** (component)
+  - Invisible component that synchronizes user-specific app settings (theme, accent) to the database.
+- **`ThemeSync`** (component)
+  - Reads `theme` (light/dark), `accentTheme`, and `platformUIOverride` from `useUIStore()`.
+  - Applies CSS classes to `<html>` element and updates the `theme-color` meta tag.
+  - Adds/removes `pake-platform` class for desktop wrapper styling.
+
+---
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -2028,7 +2267,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`UserAppSettingsBridge`** — Utility function for user app settings bridge.
 - **`ThemeSync`** — Utility function for theme sync.
 
-**Lines:** 495
+**Lines:** 481
 
 ---
 
@@ -2061,7 +2300,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`todayInputDate`** — Utility function for today input date.
 - **`AINoteOrganizerSheet`** — Utility function for a i note organizer sheet.
 
-**Lines:** 576
+**Lines:** 665
 
 ---
 
@@ -2076,7 +2315,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`AISettingsSection`** — Utility function for a i settings section.
 
-**Lines:** 396
+**Lines:** 455
 
 ---
 
@@ -2147,7 +2386,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 806
+**Lines:** 850
 
 ---
 
@@ -2162,7 +2401,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 460
+**Lines:** 467
 
 ---
 
@@ -2192,7 +2431,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 746
+**Lines:** 754
+
+---
+
+<a name="src-components-bankaccountssettingssection-tsx"></a>
+### src/components/BankAccountsSettingsSection.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `BankAccountsSettingsSection` (Function)
+
+**Function Details:**
+- **`BankAccountsSettingsSection`** — Utility function for bank accounts settings section.
+
+**Lines:** 148
 
 ---
 
@@ -2222,7 +2476,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`BrainDumpModal`** — Utility function for brain dump modal.
 
-**Lines:** 1232
+**Lines:** 1572
 
 ---
 
@@ -2237,7 +2491,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`CommandPalette`** — Utility function for command palette.
 
-**Lines:** 256
+**Lines:** 274
 
 ---
 
@@ -2326,12 +2580,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-errorboundary-tsx"></a>
 ### src/components/ErrorBoundary.tsx
 
-**File Purpose:** Top-level React error boundary preventing unexpected render crashes from blanking the screen on native iOS and web. Catches component crashes, logs to logger, renders the diagnostic error message, and provides "Reload App", "Go to Dashboard", and "Copy Error" recovery buttons.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
 - `ErrorBoundary` (Class)
 
-**Lines:** 90
+**Lines:** 93
 
 ---
 
@@ -2363,7 +2617,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`FinanceHeroCard`** — Utility function for finance hero card.
 
-**Lines:** 115
+**Lines:** 122
 
 ---
 
@@ -2400,7 +2654,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`FinanceHeroCard`** — Utility function for finance hero card.
 
-**Lines:** 116
+**Lines:** 123
 
 ---
 
@@ -2439,8 +2693,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **File Purpose:** Interactive analytics and statistics modal for habits, visualizing completion streaks, adherence percentages across multiple time horizons (7d, 30d, 90d), a 30-day activity matrix heatmap, and strongest day calculations. Fully styled with semantic theme tokens (`bg-card`, `border-border`, `text-foreground`, `bg-secondary`) for seamless light and dark theme parity.
 
-**Functions & Classes:**
-- `HabitStatsModal` (React Component / Function)
+**Functions & Classes:** None (configuration or re-export module)
 
 **Function Details:**
 - **`HabitStatsModal`** — Renders an in-depth modal displaying a habit's current streak, record streak, adherence rates, 30-day completion matrix, and weekday strength analysis with direct habit edit navigation, adhering to the application's active theme.
@@ -2485,22 +2738,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`parseLayout`** — Utility function for parse layout.
 - **`LinuxTitleBar`** — Utility function for linux title bar.
 
-**Lines:** 135
+**Lines:** 138
 
 ---
 
 <a name="src-components-linuxwindowresizer-tsx"></a>
 ### src/components/LinuxWindowResizer.tsx
 
-**File Purpose:** Borderless window resize handle overlay for Linux desktop (Pake / Tauri v2). Attaches 8 boundary grab regions (4 edges, 4 corners) that call `startResizeDragging` to allow resizing undecorated windows.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
 - `LinuxWindowResizer` (Function)
 
 **Function Details:**
-- **`LinuxWindowResizer`** — React component rendering edge and corner resize grab areas mapped to window resize directions.
+- **`LinuxWindowResizer`** — Utility function for linux window resizer.
 
-**Lines:** 85
+**Lines:** 112
 
 ---
 
@@ -2623,7 +2876,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`PullToRefresh`** — Utility function for pull to refresh.
 
-**Lines:** 177
+**Lines:** 180
 
 ---
 
@@ -2752,7 +3005,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1141
+**Lines:** 1157
 
 ---
 
@@ -2795,7 +3048,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1111
+**Lines:** 1127
 
 ---
 
@@ -2968,6 +3221,36 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-azkar-tasbihcountermodal-tsx"></a>
+### src/components/azkar/TasbihCounterModal.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `TasbihCounterModal` (Function)
+
+**Function Details:**
+- **`TasbihCounterModal`** — Utility function for tasbih counter modal.
+
+**Lines:** 261
+
+---
+
+<a name="src-components-azkar-zekrcard-tsx"></a>
+### src/components/azkar/ZekrCard.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `ZekrCard` (Function)
+
+**Function Details:**
+- **`ZekrCard`** — Utility function for zekr card.
+
+**Lines:** 294
+
+---
+
 <a name="src-components-collaboration-sharemodal-tsx"></a>
 ### src/components/collaboration/ShareModal.tsx
 
@@ -2980,6 +3263,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ShareModal`** — Utility function for share modal.
 
 **Lines:** 151
+
+---
+
+<a name="src-components-dashboard-azkardashboardwidget-tsx"></a>
+### src/components/dashboard/AzkarDashboardWidget.tsx
+
+**File Purpose:** Dashboard widget/component. Displays aggregated life metrics and quick-view data panels.
+
+**Functions & Classes:**
+- `AzkarDashboardWidget` (Function)
+
+**Function Details:**
+- **`AzkarDashboardWidget`** — Utility function for azkar dashboard widget.
+
+**Lines:** 101
 
 ---
 
@@ -3025,7 +3323,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`mergeSegments`** — Utility function for merge segments.
 - **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 2323
+**Lines:** 2431
 
 ---
 
@@ -3062,7 +3360,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`mergeSegments`** — Utility function for merge segments.
 - **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 1783
+**Lines:** 1831
 
 ---
 
@@ -3094,7 +3392,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`HadithWidget`** — Utility function for hadith widget.
 
-**Lines:** 176
+**Lines:** 178
 
 ---
 
@@ -3106,7 +3404,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:**
 - `NavItem` (Interface)
 
-**Lines:** 46
+**Lines:** 48
 
 ---
 
@@ -3162,22 +3460,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`ConfirmSheet`** — Utility function for confirm sheet.
 
-**Lines:** 185
+**Lines:** 209
 
 ---
 
 <a name="src-components-ui-detailssheet-tsx"></a>
 ### src/components/ui/DetailsSheet.tsx
 
-**File Purpose:** UI primitive component providing platform-responsive detail sheets. Renders as a native-feel bottom slide sheet on mobile and iOS with touch-drag dismiss gestures, and as a centered, focused desktop dialog modal on PC web screens (`sm:` breakpoint).
+**File Purpose:** UI primitive component. Reusable design-system element used across the application.
 
 **Functions & Classes:**
 - `DetailsSheet` (Function)
 
 **Function Details:**
-- **`DetailsSheet`** — Responsive modal/sheet container that adapts between mobile bottom sheet and desktop centered modal with keyboard navigation, auto-focus, safe area padding, and smooth transition animations.
+- **`DetailsSheet`** — Utility function for details sheet.
 
-**Lines:** 316
+**Lines:** 358
 
 ---
 
@@ -3211,7 +3509,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`MarqueeTitle`** — Utility function for marquee title.
 
-**Lines:** 81
+**Lines:** 84
 
 ---
 
@@ -3226,7 +3524,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`Modal`** — Utility function for modal.
 
-**Lines:** 236
+**Lines:** 267
 
 ---
 
@@ -3287,20 +3585,29 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** React Context provider. Manages shared state and provides it to descendant components via React Context API.
 
 **Functions & Classes:**
-- `useAuth` (React Hook)
+- `AuthContext` (React Component)
 - `tryGetLocalSession` (Function)
 - `getSessionWithTimeout` (Function)
 - `AuthProvider` (Function)
-- `useAuth` (Function)
 
 **Function Details:**
-- **`useAuth`** — Custom React hook managing auth state and side effects.
+- **`AuthContext`** — React component rendering UI for AuthContext.
 - **`tryGetLocalSession`** — Utility function for try get local session.
 - **`getSessionWithTimeout`** — Utility function for get session with timeout.
 - **`AuthProvider`** — Utility function for auth provider.
-- **`useAuth`** — Utility function for use auth.
 
 **Lines:** 206
+
+---
+
+<a name="src-data-azkar-json"></a>
+### src/data/azkar.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 3107
 
 ---
 
@@ -3369,11 +3676,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `openDb` (Function)
 - `IdbQueueEntry` (Interface)
 - `IdbQuranPage` (Interface)
+- `IdbAzkarDailyRecord` (Interface)
 
 **Function Details:**
 - **`openDb`** — Utility function for open db.
 
-**Lines:** 470
+**Lines:** 626
 
 ---
 
@@ -3424,6 +3732,62 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useAnalyticsDailyRange`** — Utility function for use analytics daily range.
 
 **Lines:** 249
+
+---
+
+<a name="src-hooks-useauth-ts"></a>
+### src/hooks/useAuth.ts
+
+**File Purpose:** Custom React hook. Encapsulates Auth.ts logic for data fetching, state management, or side effects.
+
+**Functions & Classes:**
+- `useAuth` (React Hook)
+- `useAuth` (Function)
+
+**Function Details:**
+- **`useAuth`** — Custom React hook managing auth state and side effects.
+- **`useAuth`** — Utility function for use auth.
+
+**Lines:** 14
+
+---
+
+<a name="src-hooks-useazkar-ts"></a>
+### src/hooks/useAzkar.ts
+
+**File Purpose:** Custom React hook. Encapsulates Azkar.ts logic for data fetching, state management, or side effects.
+
+**Functions & Classes:**
+- `useAllAzkar` (React Hook)
+- `useAzkarCategories` (React Hook)
+- `useAzkarFavorites` (React Hook)
+- `useTodayAzkarProgress` (React Hook)
+- `useContextualAzkarCategory` (React Hook)
+- `useAzkarRealtime` (React Hook)
+- `stripTashkeel` (Function)
+- `useAllAzkar` (Function)
+- `useAzkarCategories` (Function)
+- `useAzkarFavorites` (Function)
+- `getTodayStr` (Function)
+- `getAzkarHabitDateStr` (Function)
+- `useTodayAzkarProgress` (Function)
+- `useContextualAzkarCategory` (Function)
+- `getAzkarHabitCategory` (Function)
+- `useAzkarRealtime` (Function)
+
+**Function Details:**
+- **`useAllAzkar`** — Custom React hook managing allazkar state and side effects.
+- **`useAzkarCategories`** — Custom React hook managing azkarcategories state and side effects.
+- **`useAzkarFavorites`** — Custom React hook managing azkarfavorites state and side effects.
+- **`useTodayAzkarProgress`** — Custom React hook managing todayazkarprogress state and side effects.
+- **`useContextualAzkarCategory`** — Custom React hook managing contextualazkarcategory state and side effects.
+- **`stripTashkeel`** — Utility function for strip tashkeel.
+- **`useAllAzkar`** — Utility function for use all azkar.
+- **`useAzkarCategories`** — Utility function for use azkar categories.
+- **`useAzkarFavorites`** — Utility function for use azkar favorites.
+- **`getTodayStr`** — Utility function for get today str.
+
+**Lines:** 509
 
 ---
 
@@ -3551,6 +3915,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `filterToCurrentUser` (Function)
 - `useTransactions` (Function)
 - `useCreateTransaction` (Function)
+- `escapeRegExp` (Function)
 - `useUpdateTransaction` (Function)
 - `useDeleteTransaction` (Function)
 - `useFinancialSummary` (Function)
@@ -3562,7 +3927,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTransactionsRealtime`** — Custom React hook managing transactionsrealtime state and side effects.
 - **`useTransactions`** — Custom React hook managing transactions state and side effects.
 - **`useCreateTransaction`** — Custom React hook managing createtransaction state and side effects.
-- **`useUpdateTransaction`** — Custom React hook managing updatetransaction state and side effects. When a manual edit changes a transaction's category, it also fire-and-forget upserts a `transaction_rules` row (via `learnCategoryFromCorrection`) keyed on the merchant entity/description, so future SMS and quick-expense transactions from the same merchant are categorized correctly without needing an AI call.
+- **`useUpdateTransaction`** — Custom React hook managing updatetransaction state and side effects.
 - **`useDeleteTransaction`** — Custom React hook managing deletetransaction state and side effects.
 - **`inferCashDirection`** — Utility function for infer cash direction.
 - **`isCashIn`** — Utility function for is cash in.
@@ -3570,7 +3935,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`transactionsKey`** — Utility function for transactions key.
 - **`useTransactionsRealtime`** — Utility function for use transactions realtime.
 
-**Lines:** 368
+**Lines:** 369
 
 ---
 
@@ -3626,7 +3991,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 1052
+**Lines:** 1056
 
 ---
 
@@ -3693,7 +4058,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 1028
+**Lines:** 1032
 
 ---
 
@@ -3768,11 +4133,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-hooks-useinvestments-ts"></a>
 ### src/hooks/useInvestments.ts
 
-**File Purpose:** Custom React hook. Encapsulates Investments.ts logic for data fetching, state management, or side effects. Includes CRUD for user-managed investment platforms (add/rename/remove, no longer limited to the seeded Thndr/Fawry defaults) and per-account balance calculation used by the Investment Correction Transaction flow.
+**File Purpose:** Custom React hook. Encapsulates Investments.ts logic for data fetching, state management, or side effects.
 
 **Functions & Classes:**
+- `INVESTMENT_TRANSACTION_TYPES` (React Component)
 - `useInvestmentAccounts` (React Hook)
 - `useEnsureDefaultInvestmentAccounts` (React Hook)
+- `useAddInvestmentAccount` (React Hook)
+- `useRenameInvestmentAccount` (React Hook)
+- `useRemoveInvestmentAccount` (React Hook)
 - `useInvestmentTransactions` (React Hook)
 - `useCreateInvestmentTransaction` (React Hook)
 - `useUpdateInvestmentTransaction` (React Hook)
@@ -3780,25 +4149,31 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `filterToCurrentUser` (Function)
 - `useInvestmentAccounts` (Function)
 - `useEnsureDefaultInvestmentAccounts` (Function)
+- `useAddInvestmentAccount` (Function)
+- `useRenameInvestmentAccount` (Function)
+- `useRemoveInvestmentAccount` (Function)
 - `useInvestmentTransactions` (Function)
 - `useCreateInvestmentTransaction` (Function)
 - `useUpdateInvestmentTransaction` (Function)
 - `useDeleteInvestmentTransaction` (Function)
 - `getInvestmentBreakdown` (Function)
+- `getInvestmentAccountBalance` (Function)
+- `InvestmentTransactionTypeValue` (Type)
 
 **Function Details:**
+- **`INVESTMENT_TRANSACTION_TYPES`** — React component rendering UI for INVESTMENT_TRANSACTION_TYPES.
 - **`useInvestmentAccounts`** — Custom React hook managing investmentaccounts state and side effects.
 - **`useEnsureDefaultInvestmentAccounts`** — Custom React hook managing ensuredefaultinvestmentaccounts state and side effects.
-- **`useInvestmentTransactions`** — Custom React hook managing investmenttransactions state and side effects.
-- **`useCreateInvestmentTransaction`** — Custom React hook managing createinvestmenttransaction state and side effects.
-- **`useUpdateInvestmentTransaction`** — Custom React hook managing updateinvestmenttransaction state and side effects.
+- **`useAddInvestmentAccount`** — Custom React hook managing addinvestmentaccount state and side effects.
+- **`useRenameInvestmentAccount`** — Custom React hook managing renameinvestmentaccount state and side effects.
+- **`useRemoveInvestmentAccount`** — Custom React hook managing removeinvestmentaccount state and side effects.
 - **`filterToCurrentUser`** — Utility function for filter to current user.
 - **`useInvestmentAccounts`** — Utility function for use investment accounts.
 - **`useEnsureDefaultInvestmentAccounts`** — Utility function for use ensure default investment accounts.
-- **`useInvestmentTransactions`** — Utility function for use investment transactions.
-- **`useCreateInvestmentTransaction`** — Utility function for use create investment transaction.
+- **`useAddInvestmentAccount`** — Utility function for use add investment account.
+- **`useRenameInvestmentAccount`** — Utility function for use rename investment account.
 
-**Lines:** 195
+**Lines:** 289
 
 ---
 
@@ -4054,7 +4429,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`usePrayerTimes`** — Custom React hook managing prayertimes state and side effects.
 - **`usePrayerTimes`** — Utility function for use prayer times.
 
-**Lines:** 92
+**Lines:** 96
 
 ---
 
@@ -4133,7 +4508,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useQuranCloudSync`** — Custom React hook managing qurancloudsync state and side effects.
 - **`useQuranCloudSync`** — Utility function for use quran cloud sync.
 
-**Lines:** 317
+**Lines:** 361
 
 ---
 
@@ -4329,6 +4704,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useDeleteTag` (React Hook)
 - `useTaskWithSubtasks` (React Hook)
 - `useConvertTaskToHabit` (React Hook)
+- `isUUID` (Function)
 - `extractSubtasksFromDescription` (Function)
 - `taskInsertPayload` (Function)
 - `taskUpdatePayload` (Function)
@@ -4343,7 +4719,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useUpcomingTasks` (Function)
 - `useWeekTasks` (Function)
 - `useCompletedTasks` (Function)
-- `useCreateTask` (Function)
 
 **Function Details:**
 - **`useTaskLists`** — Custom React hook managing tasklists state and side effects.
@@ -4351,13 +4726,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTasks`** — Custom React hook managing tasks state and side effects.
 - **`useTasksByList`** — Custom React hook managing tasksbylist state and side effects.
 - **`useTasksByProject`** — Custom React hook managing tasksbyproject state and side effects.
+- **`isUUID`** — Utility function for is u u i d.
 - **`extractSubtasksFromDescription`** — Utility function for extract subtasks from description.
 - **`taskInsertPayload`** — Utility function for task insert payload.
 - **`taskUpdatePayload`** — Utility function for task update payload.
 - **`useTaskLists`** — Utility function for use task lists.
-- **`useTags`** — Utility function for use tags.
 
-**Lines:** 1220
+**Lines:** 1316
 
 ---
 
@@ -4403,6 +4778,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useDeleteTag` (React Hook)
 - `useTaskWithSubtasks` (React Hook)
 - `useConvertTaskToHabit` (React Hook)
+- `isUUID` (Function)
 - `extractSubtasksFromDescription` (Function)
 - `taskInsertPayload` (Function)
 - `taskUpdatePayload` (Function)
@@ -4417,7 +4793,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useUpcomingTasks` (Function)
 - `useWeekTasks` (Function)
 - `useCompletedTasks` (Function)
-- `useCreateTask` (Function)
 
 **Function Details:**
 - **`useTaskLists`** — Custom React hook managing tasklists state and side effects.
@@ -4425,13 +4800,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useTasks`** — Custom React hook managing tasks state and side effects.
 - **`useTasksByList`** — Custom React hook managing tasksbylist state and side effects.
 - **`useTasksByProject`** — Custom React hook managing tasksbyproject state and side effects.
+- **`isUUID`** — Utility function for is u u i d.
 - **`extractSubtasksFromDescription`** — Utility function for extract subtasks from description.
 - **`taskInsertPayload`** — Utility function for task insert payload.
 - **`taskUpdatePayload`** — Utility function for task update payload.
 - **`useTaskLists`** — Utility function for use task lists.
-- **`useTags`** — Utility function for use tags.
 
-**Lines:** 1216
+**Lines:** 1315
 
 ---
 
@@ -4462,22 +4837,29 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `useUserBanks` (React Hook)
 - `useEnsureDefaultBanks` (React Hook)
 - `useAddBank` (React Hook)
+- `useRenameBank` (React Hook)
+- `useRemoveBank` (React Hook)
 - `userBanksKey` (Function)
 - `useUserBanks` (Function)
 - `useEnsureDefaultBanks` (Function)
 - `useAddBank` (Function)
+- `useRenameBank` (Function)
+- `useRemoveBank` (Function)
 
 **Function Details:**
 - **`DEFAULT_BANK_NAMES`** — React component rendering UI for DEFAULT_BANK_NAMES.
 - **`useUserBanks`** — Custom React hook managing userbanks state and side effects.
 - **`useEnsureDefaultBanks`** — Custom React hook managing ensuredefaultbanks state and side effects.
 - **`useAddBank`** — Custom React hook managing addbank state and side effects.
+- **`useRenameBank`** — Custom React hook managing renamebank state and side effects.
+- **`useRemoveBank`** — Custom React hook managing removebank state and side effects.
 - **`userBanksKey`** — Utility function for user banks key.
 - **`useUserBanks`** — Utility function for use user banks.
 - **`useEnsureDefaultBanks`** — Utility function for use ensure default banks.
 - **`useAddBank`** — Utility function for use add bank.
+- **`useRenameBank`** — Utility function for use rename bank.
 
-**Lines:** 87
+**Lines:** 144
 
 ---
 
@@ -4495,9 +4877,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar, font-hadith
+**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, braindump-selectable, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar (+1 more)
 
-**Lines:** 502
+**Lines:** 506
 
 ---
 
@@ -4515,9 +4897,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar, font-hadith
+**CSS Classes/Selectors:** dark, light, prose, note-selectable, notes-content, braindump-selectable, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card (+2 more)
 
-**Lines:** 502
+**Lines:** 517
 
 ---
 
@@ -4536,9 +4918,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** dark, css, font-arabic-title, font-arabic-body, font-cairo, font-arabic-quran, light, prose, note-selectable, notes-content, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper, recharts-surface (+23 more)
+**CSS Classes/Selectors:** dark, css, font-arabic-title, font-arabic-body, font-cairo, font-arabic-quran, light, prose, note-selectable, notes-content, braindump-selectable, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, task-checkmark__check, privacy-mode, recharts-wrapper (+24 more)
 
-**Lines:** 750
+**Lines:** 760
 
 ---
 
@@ -4549,7 +4931,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 112
+**Lines:** 115
 
 ---
 
@@ -4562,20 +4944,24 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `isNativeOrDesktop` (Function)
 - `cleanAiResponse` (Function)
 - `extractJSON` (Function)
+- `sanitizeUpstreamErrorText` (Function)
+- `hostnameMatchesDomain` (Function)
 
 **Function Details:**
 - **`isNativeOrDesktop`** — Utility function for is native or desktop.
 - **`cleanAiResponse`** — Utility function for clean ai response.
 - **`extractJSON`** — Utility function for extract j s o n.
+- **`sanitizeUpstreamErrorText`** — Utility function for sanitize upstream error text.
+- **`hostnameMatchesDomain`** — Utility function for hostname matches domain.
 
-**Lines:** 408
+**Lines:** 455
 
 ---
 
 <a name="src-lib-aifallback-ts"></a>
 ### src/lib/aiFallback.ts
 
-**File Purpose:** Multi-provider AI fallback and smart health routing engine supporting Dahl Inference API, Groq Cloud API (LPU inference), Bynara Router, and Custom OpenAI-compatible endpoints. Manages automatic error cascade (429 rate limit, 5xx, timeouts, 4xx), health tracking with cooldown penalties, and best-model memory persistence.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
 - `getModelDefinition` (Function)
@@ -4595,17 +4981,16 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `ModelHealthStat` (Interface)
 - `AIModelHealthState` (Interface)
 - `FallbackCandidate` (Interface)
-- `AIProviderId` (Type: 'dahl' | 'bynara' | 'groq' | 'custom')
+- `AIProviderId` (Type)
 
 **Function Details:**
-- **`getModelDefinition`** — Returns the model definition object from catalog.
-- **`getProviderForModel`** — Infers provider ('dahl', 'groq', 'bynara', 'custom') from model identifier.
-- **`loadModelHealthState`** — Retrieves persisted model latency and health statistics from localStorage.
-- **`saveModelHealthState`** — Persists health stats and best model memory to localStorage.
-- **`getModelStat`** — Retrieves health metrics, consecutive errors, and active cooldown for a model.
-- **`getFallbackCandidates`** — Builds prioritized cascade queue across Dahl, Groq, and Bynara resolving respective API keys.
+- **`getModelDefinition`** — Utility function for get model definition.
+- **`getProviderForModel`** — Utility function for get provider for model.
+- **`loadModelHealthState`** — Utility function for load model health state.
+- **`saveModelHealthState`** — Utility function for save model health state.
+- **`getModelStat`** — Utility function for get model stat.
 
-**Lines:** 680
+**Lines:** 682
 
 ---
 
@@ -4654,7 +5039,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `isCritical` (Function)
 - `isHeavyTable` (Function)
 - `sleep` (Function)
+- `authKeyFromInit` (Function)
 - `setBudgetMB` (Function)
+- `clearInFlightRequests` (Function)
 - `resetEgressCounter` (Function)
 - `getStatus` (Function)
 - `checkEmergency` (Function)
@@ -4668,7 +5055,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`tableFromUrl`** — Utility function for table from url.
 - **`isCritical`** — Utility function for is critical.
 
-**Lines:** 297
+**Lines:** 333
 
 ---
 
@@ -4803,7 +5190,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 918
+**Lines:** 927
 
 ---
 
@@ -4960,34 +5347,41 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-lib-smarttaskscheduler-test-ts"></a>
+### src/lib/smartTaskScheduler.test.ts
+
+**File Purpose:** Unit/integration tests for the corresponding implementation file.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 73
+
+---
+
 <a name="src-lib-smarttaskscheduler-ts"></a>
 ### src/lib/smartTaskScheduler.ts
 
-**File Purpose:** Utility library module. Provides smart task scheduling algorithms that distribute unscheduled tasks into conflict-free awake time slots based on user sleep patterns, existing tasks, and calendar events. `findConflictFreeSlotOnDate` finds a slot on one specific date, used to pin tasks whose title names an explicit date instead of letting them land on an arbitrary open day.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
 - `timeToMinutes` (Function)
 - `minutesToTime` (Function)
 - `formatSlotLabel` (Function)
-- `estimateTaskDuration` (Function) — **NEW**
+- `estimateTaskDuration` (Function)
 - `distributeTasksAcrossAwakeSlots` (Function)
+- `findConflictFreeSlotOnDate` (Function)
 - `SmartTimeSlot` (Interface)
 - `UserScheduleContext` (Interface)
-- `SmartScheduleOptions` (Interface) — **NEW**
+- `SmartScheduleOptions` (Interface)
 
 **Function Details:**
-- **`timeToMinutes`** — Parses `HH:mm` time string to minutes from midnight.
-- **`minutesToTime`** — Converts minutes from midnight back to `HH:mm` string.
-- **`formatSlotLabel`** — Formats a date+time into a friendly label like "Today at 2:30 PM" or "Wed, Sep 10 at 10:00 AM".
-- **`estimateTaskDuration(task)`** — Heuristically estimates realistic task duration in minutes. Checks for explicit duration patterns in title/description (`2h`, `45 mins`, `1.5h`), then applies semantic keyword matching: micro tasks (call/text/reply/email/pay → 15m), deep work (study/code/thesis/design doc → 60m), medium tasks (workout/meeting/doctor → 45m), routine tasks (read/journal/meditate → 25m), default fallback 30m.
-- **`distributeTasksAcrossAwakeSlots(taskCount, context, optionsOrDefaultDuration)`** — Distributes N tasks into conflict-free awake time slots. Avoids sleep hours, existing tasks/events, and enforces a daily task cap (`ceil(taskCount / min(horizonDays, 14))`) to prevent compressing all tasks into 3–4 days. Now accepts `SmartScheduleOptions` as overloaded third argument (also accepts legacy `number` for default duration).
+- **`timeToMinutes`** — Utility function for time to minutes.
+- **`minutesToTime`** — Utility function for minutes to time.
+- **`formatSlotLabel`** — Utility function for format slot label.
+- **`estimateTaskDuration`** — Utility function for estimate task duration.
+- **`distributeTasksAcrossAwakeSlots`** — Utility function for distribute tasks across awake slots.
 
-**SmartScheduleOptions Interface:**
-- `horizonDays?` — Schedule horizon (7 = week, 30 = month). Controls daily cap pacing.
-- `maxTasksPerDay?` — Hard override for daily task cap.
-- `estimatedDurations?` — Array of per-task durations (indexed same as tasks) to use instead of default.
-
-**Lines:** 289
+**Lines:** 384
 
 ---
 
@@ -4998,14 +5392,29 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 38
+**Lines:** 41
+
+---
+
+<a name="src-lib-taskinputsuggestions-test-ts"></a>
+### src/lib/taskInputSuggestions.test.ts
+
+**File Purpose:** Unit/integration tests for the corresponding implementation file.
+
+**Functions & Classes:**
+- `expectedDayMonth` (Function)
+
+**Function Details:**
+- **`expectedDayMonth`** — Utility function for expected day month.
+
+**Lines:** 47
 
 ---
 
 <a name="src-lib-taskinputsuggestions-ts"></a>
 ### src/lib/taskInputSuggestions.ts
 
-**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic. `parseTaskInput` also recognizes a bare numeric DAY/MONTH date (e.g. "10/9" = 10 September, not October 9th) in the title, in addition to weekday names, "today"/"tomorrow", and written month-day dates.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
 - `nextDayOfWeek` (Function)
@@ -5023,7 +5432,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`parseTaskInput`** — Utility function for parse task input.
 - **`toDateString`** — Utility function for to date string.
 
-**Lines:** 514
+**Lines:** 543
 
 ---
 
@@ -5051,19 +5460,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-theme-ts"></a>
 ### src/lib/theme.ts
 
-**File Purpose:** Theme resolution utilities and reactive hooks for dynamic iOS system appearance matching and status bar synchronization.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
+- `useEffectiveTheme` (React Hook)
 - `getSystemTheme` (Function)
 - `resolveEffectiveTheme` (Function)
-- `useEffectiveTheme` (React Hook)
+- `useEffectiveTheme` (Function)
+- `AppTheme` (Type)
+- `ResolvedTheme` (Type)
 
 **Function Details:**
-- **`getSystemTheme`** — Checks device media query `prefers-color-scheme: dark` to determine system mode.
-- **`resolveEffectiveTheme`** — Resolves an `AppTheme` (`system` | `dark` | `light`) to an effective active theme (`dark` | `light`).
-- **`useEffectiveTheme`** — Subscribes to UI store theme, real-time media query changes, and Capacitor app state changes to provide live reactive theming.
+- **`useEffectiveTheme`** — Custom React hook managing effectivetheme state and side effects.
+- **`getSystemTheme`** — Utility function for get system theme.
+- **`resolveEffectiveTheme`** — Utility function for resolve effective theme.
+- **`useEffectiveTheme`** — Utility function for use effective theme.
 
-**Lines:** 85
+**Lines:** 78
 
 ---
 
@@ -5095,7 +5508,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`asStrOrNull`** — Utility function for as str or null.
 - **`asNum`** — Utility function for as num.
 
-**Lines:** 192
+**Lines:** 199
 
 ---
 
@@ -5156,7 +5569,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getDayFreeSlots`** — Utility function for get day free slots.
 - **`scheduleCandidatesIntoNextWeek`** — Utility function for schedule candidates into next week.
 
-**Lines:** 334
+**Lines:** 337
 
 ---
 
@@ -5243,6 +5656,19 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-main-tsx"></a>
 ### src/main.tsx
 
+**File Purpose:** Application entry point. Bootstraps the React application into the DOM using StrictMode.
+
+**Functions & Classes:** None (top-level script)
+
+**Function Details:**
+- Imports `StrictMode` from React for highlighting potential problems in development.
+- Imports `createRoot` from `react-dom/client` for the concurrent React rendering API.
+- Imports global styles (`index.css`) and the root `App` component.
+- `createRoot(document.getElementById('root')!)` — Initializes the React root on the DOM element with id `root`.
+- `.render(...)` — Wraps the `App` component in `StrictMode` to enable double-rendering checks and development warnings.
+
+---
+
 **File Purpose:** Application entry point. Bootstraps the React root component into the DOM.
 
 **Functions & Classes:** None (configuration or re-export module)
@@ -5265,6 +5691,51 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Analytics`** — Utility function for analytics.
 
 **Lines:** 814
+
+---
+
+<a name="src-routes-azkar-ios-tsx"></a>
+### src/routes/Azkar.ios.tsx
+
+**File Purpose:** Page-level route component for the Azkar module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `AzkarRoute` (React Component)
+- `AzkarRoute` (Function)
+
+**Function Details:**
+- **`AzkarRoute`** — React component rendering UI for AzkarRoute.
+- **`AzkarRoute`** — Utility function for azkar route.
+
+**Lines:** 381
+
+---
+
+<a name="src-routes-azkar-tsx"></a>
+### src/routes/Azkar.tsx
+
+**File Purpose:** Page-level route component for the Azkar.tsx module. Renders the main view when navigating to this section.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 3
+
+---
+
+<a name="src-routes-azkar-web-tsx"></a>
+### src/routes/Azkar.web.tsx
+
+**File Purpose:** Page-level route component for the Azkar module. Renders the main view when navigating to this section.
+
+**Functions & Classes:**
+- `AzkarRoute` (React Component)
+- `AzkarRoute` (Function)
+
+**Function Details:**
+- **`AzkarRoute`** — React component rendering UI for AzkarRoute.
+- **`AzkarRoute`** — Utility function for azkar route.
+
+**Lines:** 456
 
 ---
 
@@ -5345,7 +5816,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Chat`** — Utility function for chat.
 - **`normalizeIsoWithLocalTz`** — Utility function for normalize iso with local tz.
 
-**Lines:** 1244
+**Lines:** 1263
 
 ---
 
@@ -5375,14 +5846,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ModeBody`** — Utility function for mode body.
 - **`parseDueDateTime`** — Utility function for parse due date time.
 
-**Lines:** 1165
+**Lines:** 1169
 
 ---
 
 <a name="src-routes-finance-ios-tsx"></a>
 ### src/routes/Finance.ios.tsx
 
-**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section. The Investments tab includes a user-managed "Platforms" panel (add/rename/remove), a Deposit/Withdrawal/Profit/Loss transaction type selector, and a Correction Transaction flow mirroring the bank reconciliation pattern.
+**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `Finance` (React Component)
@@ -5392,18 +5863,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Key Behaviors:**
-- **Carry-over balance**: The hero card balance is computed as `openingBalance + income - expenses`, where `openingBalance` is the running total of all transactions dated before the selected month. This means the balance carries forward month-to-month without needing a manual entry each month.
-- **Correction / Reconciliation**: `computeDetectedBalanceForIdentity` computes the system-detected balance for a given bank/card by summing **all** transactions (not just the current month), matching the carry-over logic. The correction transaction records only the diff (`realAmount - detectedBalance`) needed to reconcile.
-
-**Lines:** 1973
+**Lines:** 2274
 
 ---
 
 <a name="src-routes-finance-pake-tsx"></a>
 ### src/routes/Finance.pake.tsx
 
-**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section. The Investments tab includes a user-managed "Platforms" panel (add/rename/remove), a Deposit/Withdrawal/Profit/Loss transaction type selector, and a Correction Transaction flow mirroring the bank reconciliation pattern.
+**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `Finance` (React Component)
@@ -5413,7 +5880,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1692
+**Lines:** 1989
 
 ---
 
@@ -5431,7 +5898,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-finance-web-tsx"></a>
 ### src/routes/Finance.web.tsx
 
-**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section. The Investments tab includes a user-managed "Platforms" panel (add/rename/remove), a Deposit/Withdrawal/Profit/Loss transaction type selector, and a Correction Transaction flow mirroring the bank reconciliation pattern.
+**File Purpose:** Page-level route component for the Finance module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `Finance` (React Component)
@@ -5441,7 +5908,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 1876
+**Lines:** 2136
 
 ---
 
@@ -5485,7 +5952,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1444
+**Lines:** 1535
 
 ---
 
@@ -5523,7 +5990,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1508
+**Lines:** 1600
 
 ---
 
@@ -5544,7 +6011,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Health`** — Utility function for health.
 - **`DiffBadge`** — Utility function for diff badge.
 
-**Lines:** 403
+**Lines:** 407
 
 ---
 
@@ -5624,7 +6091,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
 
-**Lines:** 768
+**Lines:** 786
 
 ---
 
@@ -5661,7 +6128,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
 
-**Lines:** 864
+**Lines:** 996
 
 ---
 
@@ -5695,19 +6162,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`QuranRoute`** — React component rendering UI for QuranRoute.
 - **`QuranRoute`** — Utility function for quran route.
 
-**Lines:** 225
-
----
-
-<a name="src-routes-azkar-tsx"></a>
-### src/routes/Azkar.tsx
-
-**File Purpose:** Page-level route component for the 100% offline-compatible Azkar & Daily Supplications (الأذكار والأدعية) module based on `osamayy/azkar-db`. Supports category browsing, diacritic-insensitive search, tactile circular counting, favorites bookmarking, sleep-module-linked contextual recommendations, and digital tasbih modal. The iOS platform variant (`Azkar.ios.tsx`) features full-height edge-to-edge layout, RTL gesture sliding with velocity & distance thresholds, drag isolation against pull-to-refresh jitter, and a dedicated tactile counter target.
-
-**Functions & Classes:**
-- `AzkarRoute` (React Component)
-
-**Lines:** 360
+**Lines:** 226
 
 ---
 
@@ -5778,14 +6233,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Page-level route component for the Settings module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
+- `ToggleSwitch` (React Component)
+- `SettingsRow` (React Component)
 - `SettingsPage` (React Component)
+- `ToggleSwitch` (Function)
+- `SettingsRow` (Function)
 - `SettingsPage` (Function)
 
 **Function Details:**
+- **`ToggleSwitch`** — React component rendering UI for ToggleSwitch.
+- **`SettingsRow`** — React component rendering UI for SettingsRow.
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
+- **`ToggleSwitch`** — Utility function for toggle switch.
+- **`SettingsRow`** — Utility function for settings row.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1451
+**Lines:** 1607
 
 ---
 
@@ -5806,14 +6269,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Page-level route component for the Settings module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
+- `ToggleSwitch` (React Component)
+- `SettingsRow` (React Component)
 - `SettingsPage` (React Component)
+- `ToggleSwitch` (Function)
+- `SettingsRow` (Function)
 - `SettingsPage` (Function)
 
 **Function Details:**
+- **`ToggleSwitch`** — React component rendering UI for ToggleSwitch.
+- **`SettingsRow`** — React component rendering UI for SettingsRow.
 - **`SettingsPage`** — React component rendering UI for SettingsPage.
+- **`ToggleSwitch`** — Utility function for toggle switch.
+- **`SettingsRow`** — Utility function for settings row.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1439
+**Lines:** 1505
 
 ---
 
@@ -5894,12 +6365,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-ios-tsx"></a>
 ### src/routes/Tasks.ios.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows support both weekly reorganization and arbitrary batch-selected task reorganization, pinning tasks whose title names an explicit date instead of freely distributing them. Includes batch selection mode with 1-tap Reorganize, Done, Won't Do, Move, Tag, and Delete actions.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
 - `TaskItem` (React Component)
 - `parseDueDateTime` (Function)
+- `scheduleRespectingTitleDates` (Function)
 - `Tasks` (Function)
 - `TaskItem` (Function)
 
@@ -5907,17 +6379,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Tasks`** — React component rendering UI for Tasks.
 - **`TaskItem`** — React component rendering UI for TaskItem.
 - **`parseDueDateTime`** — Utility function for parse due date time.
+- **`scheduleRespectingTitleDates`** — Utility function for schedule respecting title dates.
 - **`Tasks`** — Utility function for tasks.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 3780
+**Lines:** 4767
 
 ---
 
 <a name="src-routes-tasks-pake-tsx"></a>
 ### src/routes/Tasks.pake.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows pin tasks whose title names an explicit date instead of freely distributing them.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
@@ -5933,7 +6406,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Tasks`** — Utility function for tasks.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2704
+**Lines:** 2805
 
 ---
 
@@ -5951,23 +6424,32 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-tasks-web-tsx"></a>
 ### src/routes/Tasks.web.tsx
 
-**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section. Includes a header search toggle that filters the active view's tasks by title, description, and tag name. Task row titles use the `MarqueeTitle` scroll-on-hover component, and the Smart Schedule / Reorganize flows support both weekly reorganization and arbitrary batch-selected task reorganization, pinning tasks whose title names an explicit date instead of freely distributing them. Includes batch selection mode with 1-tap Reorganize, Done, Won't Do, Move, Tag, and Delete actions.
+**File Purpose:** Page-level route component for the Tasks module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `Tasks` (React Component)
 - `TaskItem` (React Component)
+- `TaskKanbanBoard` (React Component)
+- `TaskGanttChart` (React Component)
 - `parseDueDateTime` (Function)
+- `scheduleRespectingTitleDates` (Function)
 - `Tasks` (Function)
 - `TaskItem` (Function)
+- `TaskKanbanBoard` (Function)
+- `TaskGanttChart` (Function)
 
 **Function Details:**
 - **`Tasks`** — React component rendering UI for Tasks.
 - **`TaskItem`** — React component rendering UI for TaskItem.
+- **`TaskKanbanBoard`** — React component rendering UI for TaskKanbanBoard.
+- **`TaskGanttChart`** — React component rendering UI for TaskGanttChart.
 - **`parseDueDateTime`** — Utility function for parse due date time.
+- **`scheduleRespectingTitleDates`** — Utility function for schedule respecting title dates.
 - **`Tasks`** — Utility function for tasks.
 - **`TaskItem`** — Utility function for task item.
+- **`TaskKanbanBoard`** — Utility function for task kanban board.
 
-**Lines:** 3099
+**Lines:** 4616
 
 ---
 
@@ -5983,6 +6465,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `DailyHabitsList` (React Component)
 - `DailyNoteArea` (React Component)
 - `SelfCareCard` (React Component)
+- `formatTimeAmPm` (Function)
 - `WeeklyPlanner` (Function)
 - `MustDoList` (Function)
 - `AppointmentsList` (Function)
@@ -5996,11 +6479,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`AppointmentsList`** — React component rendering UI for AppointmentsList.
 - **`DailyHabitsList`** — React component rendering UI for DailyHabitsList.
 - **`DailyNoteArea`** — React component rendering UI for DailyNoteArea.
+- **`formatTimeAmPm`** — Utility function for format time am pm.
 - **`WeeklyPlanner`** — Utility function for weekly planner.
 - **`MustDoList`** — Utility function for must do list.
 - **`AppointmentsList`** — Utility function for appointments list.
 - **`DailyHabitsList`** — Utility function for daily habits list.
-- **`DailyNoteArea`** — Utility function for daily note area.
 
 **Lines:** 1567
 
@@ -6019,7 +6502,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Wiki`** — React component rendering UI for Wiki.
 - **`Wiki`** — Utility function for wiki.
 
-**Lines:** 594
+**Lines:** 596
 
 ---
 
@@ -6031,6 +6514,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 2
+
+---
+
+<a name="src-stores-useazkarstore-ts"></a>
+### src/stores/useAzkarStore.ts
+
+**File Purpose:** Zustand state store. Manages global or domain-specific client-side state.
+
+**Functions & Classes:**
+- `useAzkarStore` (React Hook)
+
+**Function Details:**
+- **`useAzkarStore`** — Custom React hook managing azkarstore state and side effects.
+
+**Lines:** 75
 
 ---
 
@@ -6058,6 +6556,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:**
 - `DEFAULT_MOBILE_NAV` (React Component)
+- `DEFAULT_PINNED_NAV` (React Component)
 - `DEFAULT_DESKTOP_NAV` (React Component)
 - `DASHBOARD_WIDGET_IDS` (React Component)
 - `SLEEP_WIDGET_IDS` (React Component)
@@ -6078,15 +6577,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Function Details:**
 - **`DEFAULT_MOBILE_NAV`** — React component rendering UI for DEFAULT_MOBILE_NAV.
+- **`DEFAULT_PINNED_NAV`** — React component rendering UI for DEFAULT_PINNED_NAV.
 - **`DEFAULT_DESKTOP_NAV`** — React component rendering UI for DEFAULT_DESKTOP_NAV.
 - **`DASHBOARD_WIDGET_IDS`** — React component rendering UI for DASHBOARD_WIDGET_IDS.
 - **`SLEEP_WIDGET_IDS`** — React component rendering UI for SLEEP_WIDGET_IDS.
-- **`HABITS_WIDGET_IDS`** — React component rendering UI for HABITS_WIDGET_IDS.
 - **`useUIStore`** — Custom React hook managing uistore state and side effects.
 - **`isDashboardMode`** — Utility function for is dashboard mode.
 - **`getPersistedUiSlice`** — Utility function for get persisted ui slice.
 
-**Lines:** 620
+**Lines:** 665
 
 ---
 
@@ -6113,6 +6612,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 175
+
+---
+
+<a name="src-types-azkar-ts"></a>
+### src/types/azkar.ts
+
+**File Purpose:** TypeScript type definitions. Centralized type declarations for the application.
+
+**Functions & Classes:**
+- `AzkarItem` (Interface)
+- `AzkarCategoryMeta` (Interface)
+- `AzkarDailyProgress` (Interface)
+- `AzkarPreferences` (Interface)
+- `AzkarTimeWindow` (Type)
+
+**Lines:** 34
 
 ---
 
@@ -6203,7 +6718,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 28
+**Lines:** 31
 
 ---
 
@@ -6225,21 +6740,26 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="supabase-functions-braindump-organizer-index-ts"></a>
 ### supabase/functions/braindump-organizer/index.ts
 
-**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations. The extraction prompt now asks for a `due_date` per task computed from any day/date named in its text (numeric dates are DAY/MONTH), with a deterministic `extractExplicitDayMonth` regex fallback, instead of hardcoding every created task's due date to today.
+**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations.
 
 **Functions & Classes:**
 - `getAllowedOrigins` (Function)
 - `corsHeadersFor` (Function)
 - `cleanAiResponse` (Function)
 - `extractJSON` (Function)
+- `extractExplicitDayMonth` (Function)
+- `extractRawMaterial` (Function)
+- `computeRawContentHash` (Function)
+- `expandCandidates` (Function)
 
 **Function Details:**
 - **`getAllowedOrigins`** — Utility function for get allowed origins.
 - **`corsHeadersFor`** — Utility function for cors headers for.
 - **`cleanAiResponse`** — Utility function for clean ai response.
 - **`extractJSON`** — Utility function for extract j s o n.
+- **`extractExplicitDayMonth`** — Utility function for extract explicit day month.
 
-**Lines:** 375
+**Lines:** 654
 
 ---
 
@@ -6291,7 +6811,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`corsHeadersFor`** — Utility function for cors headers for.
 - **`isEventAtTime`** — Utility function for is event at time.
 
-**Lines:** 237
+**Lines:** 239
 
 ---
 
@@ -6335,7 +6855,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`get`** — Utility function for get.
 - **`createClient`** — Utility function for create client.
 
-**Lines:** 77
+**Lines:** 83
 
 ---
 
@@ -6364,7 +6884,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`normalizeMinuteOfDay`** — Utility function for normalize minute of day.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 
-**Lines:** 521
+**Lines:** 523
 
 ---
 
@@ -6388,7 +6908,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
 - **`isInQuietHours`** — Utility function for is in quiet hours.
 
-**Lines:** 244
+**Lines:** 247
 
 ---
 
@@ -6404,6 +6924,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `parseFormUrlEncoded` (Function)
 - `toSchemaCategory` (Function)
 - `getDefaultCategory` (Function)
+- `cleanAiResponse` (Function)
+- `parseAiAudit` (Function)
+- `baseUrlMatchesDomain` (Function)
 
 **Function Details:**
 - **`getMessageFromBody`** — Utility function for get message from body.
@@ -6411,11 +6934,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isPromotionQuickFilter`** — Utility function for is promotion quick filter.
 - **`parseFormUrlEncoded`** — Utility function for parse form url encoded.
 - **`toSchemaCategory`** — Utility function for to schema category.
-- **`auditSmsWithAi`** — Asynchronous multi-model full-field audit cascade across Bynara and Dahl for entity cleaning, bank/card resolution, direction checking, and category enhancement. Categorization reasoning is now general (merchant/business type + Franco-Arabic dialect meaning) rather than a fixed keyword enumeration, with a retry per model candidate and a 10s timeout.
-- **`recordToSelfAwarenessNote`** — Appends or creates 'LifeOS Self Awareness' note to communicate category proposals and reflections.
-- **`recordAiFailureNote`** — Appends a note when every AI candidate fails to categorize a transaction, so silent categorization failures are surfaced in-app instead of only in edge function logs.
 
-**Lines:** 862
+**Lines:** 886
 
 ---
 
@@ -6428,8 +6948,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `TransactionParser` (Class)
 - `ParsedTransaction` (Interface)
 
-Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class allowlists) so merchant names containing POS terminal noise (e.g. `FAWRY*LATCHO CAFE CA`) still extract correctly instead of falling back to a null entity.
-
 **Lines:** 474
 
 ---
@@ -6437,21 +6955,24 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 <a name="supabase-functions-quick-expense-index-ts"></a>
 ### supabase/functions/quick-expense/index.ts
 
-**File Purpose:** Supabase Edge Function. Webhook endpoint designed for iOS Shortcuts (or Back Tap) to quickly log cash expenses. Before falling back to AI, checks the user's learned `transaction_rules` (built from manual category corrections in the Finance UI) for an instant deterministic match against the description. Features an automatic multi-model fallback cascade across Bynara (`agnes-2.5-flash`, `agnes-2.0-flash`, `deepseek-v4-flash`) and Dahl (`MiniMax-M2.7`, `DeepSeek-V4-Flash`) with general-reasoning category system prompts (merchant/business type + Franco-Arabic dialect meaning, not a fixed keyword list), a retry per model candidate, duplicate request protection, and flexible account resolution.
+**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations.
 
 **Functions & Classes:**
+- `isValidUuid` (Function)
 - `cleanAiResponse` (Function)
 - `extractCategoryFromAi` (Function)
-- `classifyCategoryWithAi` (Function)
-- `recordAiFailureNote` (Function)
+- `baseUrlMatchesDomain` (Function)
 - `parseAmount` (Function)
 - `getLocalToday` (Function)
-- `parseIncoming` (Function)
 
 **Function Details:**
-- **`recordAiFailureNote`** — Appends a note when every AI candidate fails to categorize a quick-expense entry, so silent categorization failures are surfaced in-app instead of only in edge function logs.
+- **`isValidUuid`** — Utility function for is valid uuid.
+- **`cleanAiResponse`** — Utility function for clean ai response.
+- **`extractCategoryFromAi`** — Utility function for extract category from ai.
+- **`baseUrlMatchesDomain`** — Utility function for base url matches domain.
+- **`parseAmount`** — Utility function for parse amount.
 
-**Lines:** 528
+**Lines:** 565
 
 ---
 
@@ -6489,7 +7010,7 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 - **`corsHeadersFor`** — Utility function for cors headers for.
 - **`getLocalComponents`** — Utility function for get local components.
 
-**Lines:** 215
+**Lines:** 217
 
 ---
 
@@ -6508,7 +7029,7 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 - **`corsHeadersFor`** — Utility function for cors headers for.
 - **`formatInTz`** — Utility function for format in tz.
 
-**Lines:** 248
+**Lines:** 250
 
 ---
 
@@ -6623,7 +7144,7 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 - **`parseTimestamp`** — Utility function for parse timestamp.
 - **`buildUploadedAt`** — Utility function for build uploaded at.
 
-**Lines:** 1408
+**Lines:** 1423
 
 ---
 
@@ -6656,7 +7177,7 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 - **`parseTimestamp`** — Utility function for parse timestamp.
 - **`buildUploadedAt`** — Utility function for build uploaded at.
 
-**Lines:** 1538
+**Lines:** 1562
 
 ---
 
@@ -6708,6 +7229,23 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 <a name="tsconfig-app-json"></a>
 ### tsconfig.app.json
 
+**File Purpose:** TypeScript configuration for the browser application code. Manages bundler mode, JSX, and path aliases.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- Target: ES2022 with DOM, DOM.Iterable, WebWorker libs.
+- Module: ESNext with `bundler` resolution.
+- Types: `vite/client`.
+- JSX: `react-jsx` — automatic JSX runtime.
+- Strict linting: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `noUncheckedSideEffectImports`.
+- Path aliases:
+  - `@/*` → `./src/*`
+  - Multiple `*.platform` → fallback chain (pake → web) with explicit path mappings for hooks, components, UI, dashboard, and routes directories.
+- Includes `src` directory. Excludes `src/db`, `**/*.test.ts`, `src/sw.ts`.
+
+---
+
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
@@ -6718,6 +7256,21 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 
 <a name="tsconfig-base-json"></a>
 ### tsconfig.base.json
+
+**File Purpose:** Shared TypeScript compiler options base configuration extended by other tsconfig files.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- `isolatedModules: true` — Ensures each file can be transpiled independently (required for Babel/swc).
+- Targets ES2022 with `bundler` module resolution.
+- Strict type checking enabled: `strictNullChecks`, `strictBindCallApply`, `strictPropertyInitialization`, `noImplicitAny`, `noImplicitThis`, `alwaysStrict`.
+- `strictFunctionTypes: false` — Relaxed for compatibility.
+- `noImplicitOverride: false`, `noUnusedLocals: false`.
+- `customConditions`: `["workspace"]` — Custom import conditions for workspace resolution.
+- `skipLibCheck: true` — Skips type checking of declaration files.
+
+---
 
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
@@ -6730,6 +7283,16 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 <a name="tsconfig-json"></a>
 ### tsconfig.json
 
+**File Purpose:** TypeScript project references root. Delegates to separate tsconfig files for app and node contexts.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- `"files": []` — No files at root level; uses project references.
+- References: `./tsconfig.app.json` (browser/frontend code) and `./tsconfig.node.json` (Node.js tooling config).
+
+---
+
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
@@ -6740,6 +7303,19 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 
 <a name="tsconfig-node-json"></a>
 ### tsconfig.node.json
+
+**File Purpose:** TypeScript configuration for Node.js tooling (build scripts, configuration files).
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- Target: ES2023 with ES2023 lib.
+- Module: ESNext with `bundler` resolution.
+- Types: `node`.
+- Strict linting: same rules as tsconfig.app.json.
+- Includes: `vite.config.ts` only.
+
+---
 
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
@@ -6752,16 +7328,53 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 <a name="vercel-json"></a>
 ### vercel.json
 
+**File Purpose:** Vercel deployment configuration for the frontend SPA and API routes.
+
+**Functions & Classes:** None (configuration file)
+
+**Function Details:**
+- `installCommand`: `pnpm install --frozen-lockfile`.
+- `buildCommand`: `pnpm build`.
+- `outputDirectory`: `dist`.
+- `rewrites`: SPA fallback — all paths except `/api/*` serve `index.html`, enabling client-side routing.
+
+---
+
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 8
+**Lines:** 11
 
 ---
 
 <a name="vite-config-ts"></a>
 ### vite.config.ts
+
+**File Purpose:** Vite build configuration with multi-platform support (web, iOS, pake), custom platform-resolution plugin, development API proxy, and PWA integration.
+
+**Functions & Classes:**
+- `platformResolvePlugin` (function → Vite Plugin)
+
+**Function Details:**
+- `platformResolvePlugin(platform)` — Custom enforce-pre Vite plugin that resolves `*.platform` imports and `index.css` to platform-specific variants:
+  - Maps `.platform` to `.ios`, `.web`, or `.pake`.
+  - For Pake: falls back to `.web` if no `.pake.tsx` file exists.
+  - Similarly resolves `index.css` to `index.ios.css`, `index.web.css`, or `index.pake.css`.
+- Config factory (mode-dependent):
+  - Platform detection: `mode === 'ios' ? 'ios' : mode === 'pake' ? 'pake' : 'web'`.
+  - `base`: `'./'` for pake (desktop), `'/'` for web.
+  - Build target: `safari13` by default, `es5` for iOS 6 legacy mode.
+- Plugins:
+  - `devApiProxyPlugin` — Development server middleware:
+    - Proxies `/api/calendar/tasks` to the local API handler.
+    - Proxies `/api/proxy` for external URL fetching (webcal→https normalization, User-Agent header).
+  - `ignoreApiPlugin` — Stubs out `api/*` imports during Vite bundling (prevents esbuild errors on serverless code).
+  - `@vitejs/plugin-react` — React fast refresh.
+  - `@vitejs/plugin-legacy` — iOS 6 ES5 legacy bundle with polyfills.
+  - `VitePWA` — InjectManifest strategy with `src/sw.ts` as the service worker entry. Precaches JS/CSS/HTML/ico/png/svg/woff2 up to 3MB per file.
+
+---
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -6777,6 +7390,21 @@ Entity-extraction regexes use lazy `.+?` wildcards (not curated character-class 
 
 <a name="vitest-config-ts"></a>
 ### vitest.config.ts
+
+**File Purpose:** Vitest test runner configuration with platform resolution plugin for testing.
+
+**Functions & Classes:**
+- `platformResolvePlugin` (function → Vite Plugin)
+
+**Function Details:**
+- `platformResolvePlugin` — Same resolution logic as vite.config.ts (maps `.platform` to web, with pake fallback).
+- Plugins: platform resolver + React plugin.
+- Test settings:
+  - `globals: true` — enables global test APIs (describe, it, expect).
+  - `environment: 'jsdom'` — DOM simulation for component tests.
+  - `setupFiles: './src/setupTests.ts'` — Jest DOM matchers initialization.
+
+---
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
