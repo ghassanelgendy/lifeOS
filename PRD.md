@@ -338,7 +338,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Custom rewards: Users create rewards with point costs
 - Reward redemption flow
 - Task rescue: Spend points to un-overdue a task
-- Streak rescue: Spend exponentially increasing points to restore broken streaks
+- Streak rescue: Spend exponentially increasing points to restore broken streaks (detox habits excluded; checkboxes show standard checkmarks)
 
 ### 5.14 AI Assistant & Copilot
 **Purpose:** An intelligent chatbot companion that aggregates workspace data (tasks, habits, notes, events, transactions, sleep, screentime) as context to answer user queries, offer life-coaching, and execute database changes directly.

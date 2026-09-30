@@ -675,7 +675,7 @@ export function useHabitStreaks(habitIds: string[]) {
 }
 
 export function getRescuableStreak(habit: Habit, logs: string[]): number {
-  if (habit.habit_type === 'detox') return 0;
+  if (habit.habit_type === 'detox' || !!habit.detox_mode || habit.description?.includes('[detox:')) return 0;
   const logsSet = new Set(logs);
   const today = new Date();
 

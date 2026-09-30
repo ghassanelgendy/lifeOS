@@ -301,7 +301,7 @@ Users shall be able to log habit completion for a specific date with value/durat
 The system shall calculate and display current streaks and best streaks per habit.
 
 #### FR-HABIT-005: Streak Rescue
-Users shall be able to "rescue" a broken streak by spending points, with rescue cost increasing exponentially.
+Users shall be able to "rescue" a broken streak by spending points, with rescue cost increasing exponentially. Detox habits are excluded from streak rescue (sober streaks cannot be retroactively bought).
 
 #### FR-HABIT-006: Adherence Visualization
 The system shall display adherence calendars (heatmaps) showing habit completion history.
@@ -319,7 +319,7 @@ Users shall be able to restore archived habits.
 The system shall calculate weekly adherence percentages per habit.
 
 #### FR-HABIT-011: Detox Calculation
-For detox habits, the system shall automatically compute target values based on start value, target value, mode (incremental/exponential), and weeks elapsed.
+For detox habits, the system shall automatically compute target values based on start value, target value, mode (incremental/exponential), and weeks elapsed. Checkboxes for detox habits display a standard checkmark (`✔`) when completed/relapsed like normal habits, without showing 'R' icons or past-day streak rescue options.
 
 #### FR-HABIT-012: Habit Notifications
 The system shall send reminders for habits scheduled on specific days/times.

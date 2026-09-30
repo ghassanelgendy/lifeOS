@@ -218,6 +218,7 @@ export default function Habits() {
   const logHabit = useLogHabit();
 
   const handleRescueStreak = async (habit: Habit, rescuableStreak: number) => {
+    if (getHabitType(habit) === 'detox' || habit.habit_type === 'detox' || !!habit.detox_mode) return;
     const cost = getHabitRescueCost(rescuableStreak);
     if (pointsBalance < cost) {
       alert(`Insufficient points. You need ${cost} points to rescue this streak.`);
@@ -746,9 +747,9 @@ export default function Habits() {
                             const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
                             const isGracePeriod = new Date().getHours() < 6;
                             const canToggle = isScheduled && (isToday(day) || (isYesterday(day) && isGracePeriod));
-                            const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
-                            const canClick = canToggle || isPastMissed;
                             const isDetox = !!detoxConfig;
+                            const isPastMissed = !isDetox && isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
+                            const canClick = canToggle || isPastMissed;
                             return (
                               <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
                                 <span className={cn(
@@ -784,7 +785,7 @@ export default function Habits() {
                                   style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                                 >
                                   {isCompleted ? (
-                                    isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={14} />
+                                    <Check size={14} />
                                   ) : isPastMissed ? (
                                     <span className="text-[10px] text-amber-500/90 font-bold">R</span>
                                   ) : !isScheduled || day > today ? (
@@ -903,9 +904,9 @@ export default function Habits() {
                                const isCompleted = isScheduled && isHabitCompletedForDay(habit.id, day);
                                const isGracePeriod = new Date().getHours() < 6;
                                const canToggle = isScheduled && (isToday(day) || (isYesterday(day) && isGracePeriod));
-                               const isPastMissed = isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
-                               const canClick = canToggle || isPastMissed;
                                const isDetox = !!detoxConfig;
+                               const isPastMissed = !isDetox && isScheduled && !isCompleted && day < today && !isToday(day) && !(isYesterday(day) && isGracePeriod);
+                               const canClick = canToggle || isPastMissed;
 
                                return (
                                  <td
@@ -942,7 +943,7 @@ export default function Habits() {
                                      style={isCompleted && !isDetox ? { backgroundColor: habit.color } : undefined}
                                    >
                                      {isCompleted ? (
-                                       isDetox ? <span className="text-[10px] font-semibold">R</span> : <Check size={16} />
+                                       <Check size={16} />
                                      ) : isPastMissed ? (
                                        <span className="text-xs text-amber-500/90 font-bold">R</span>
                                      ) : !isScheduled || day > today ? (
@@ -954,7 +955,7 @@ export default function Habits() {
                              })}
                             <td className="p-2 text-center border-b border-white/10">
                               <div className="flex flex-col items-center justify-center gap-1 font-bold">
-                                {stats.streak === 0 && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
+                                {stats.streak === 0 && !isDetox && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
                                   <>
                                     <div className="flex items-center gap-1 opacity-50">
                                       {getStreakNode(0, 14)}
@@ -1098,7 +1099,7 @@ export default function Habits() {
                                     >
                                       <Edit2 size={12} />
                                     </button>
-                                    {stats.streak === 0 && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
+                                    {stats.streak === 0 && !isDetox && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -1179,7 +1180,7 @@ export default function Habits() {
                                 )}
                                 style={{ backgroundColor: isDetox ? '#ef4444' : habit.color }}
                               >
-                                {isDetox ? <span className="text-xs font-bold">R</span> : <Check size={20} />}
+                                <Check size={20} />
                               </div>
                               <div className={cn("flex-1 min-w-0 py-4 flex items-center justify-between gap-4", !isLast && "border-b border-white/10")}>
                                 <div className="min-w-0 flex-1">

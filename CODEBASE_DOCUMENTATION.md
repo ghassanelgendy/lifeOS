@@ -5945,7 +5945,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `Habits` (Function)
 
 **Function Details:**
-- **`Habits`** — React component rendering UI for Habits.
+- **`Habits`** — React component rendering UI for Habits (iOS) with support for standard and detox habits (detox habits exclude streak rescue and render standard checkmarks on completion).
 - **`parseLegacyDetoxDescription`** — Utility function for parse legacy detox description.
 - **`getDetoxConfig`** — Utility function for get detox config.
 - **`getHabitType`** — Utility function for get habit type.
@@ -5983,7 +5983,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `Habits` (Function)
 
 **Function Details:**
-- **`Habits`** — React component rendering UI for Habits.
+- **`Habits`** — React component rendering UI for Habits with support for standard and detox habits (detox habits exclude streak rescue and render standard checkmarks on completion).
 - **`parseLegacyDetoxDescription`** — Utility function for parse legacy detox description.
 - **`getDetoxConfig`** — Utility function for get detox config.
 - **`getHabitType`** — Utility function for get habit type.
