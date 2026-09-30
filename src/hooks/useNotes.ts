@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
+import { addToOfflineQueue, isOnline } from '../lib/offlineSync';
 import type { CreateInput, Note, NoteFolder, UpdateInput } from '../types/schema';
 
 const NOTES_KEY = ['notes'];
@@ -26,14 +27,18 @@ export function useNotes() {
   return useQuery({
     queryKey: [...NOTES_KEY, user?.id],
     queryFn: async () => {
-      const q = supabase
-        .from('notes')
-        .select('*')
-        .order('updated_at', { ascending: false });
-      if (user?.id) q.eq('user_id', user.id);
-      const { data, error } = await q;
-      if (error) throw error;
-      return data as Note[];
+      try {
+        const q = supabase
+          .from('notes')
+          .select('*')
+          .order('updated_at', { ascending: false });
+        if (user?.id) q.eq('user_id', user.id);
+        const { data, error } = await q;
+        if (error) throw error;
+        return data as Note[];
+      } catch {
+        return [];
+      }
     },
     enabled: !!user?.id,
   });
@@ -80,20 +85,46 @@ export function useCreateNoteFolder() {
 }
 
 export function useCreateNote() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: CreateInput<Note>) => {
-      const { data, error } = await supabase
-        .from('notes')
-        .insert(normalizeNoteInput(input))
-        .select()
-        .single();
-      if (error) throw error;
-      return data as Note;
+      const normalized = normalizeNoteInput(input);
+      const noteId = (input as any).id || (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `offline-n-${Date.now()}`);
+      const payload = {
+        ...normalized,
+        id: noteId,
+        user_id: user?.id,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'notes', op: 'create', payload });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) => [payload as Note, ...(old ?? [])]);
+        return payload as Note;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('notes')
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        return data as Note;
+      } catch (err) {
+        addToOfflineQueue({ entity: 'notes', op: 'create', payload });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) => [payload as Note, ...(old ?? [])]);
+        return payload as Note;
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+    onSuccess: (data) => {
+      queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) => {
+        if (!old) return [data];
+        return [data, ...old.filter((n) => n.id !== data.id)];
+      });
       queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
     },
   });
@@ -105,17 +136,36 @@ export function useUpdateNote() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Note> }) => {
-      const q = supabase
-        .from('notes')
-        .update(normalizeNoteInput(data))
-        .eq('id', id);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data: updated, error } = await q.select().single();
-      if (error) throw error;
-      return updated as Note;
+      const normalized = normalizeNoteInput(data);
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'notes', op: 'update', id, payload: normalized });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+          (old ?? []).map((n) => (n.id === id ? { ...n, ...normalized, updated_at: new Date().toISOString() } : n))
+        );
+        return { id, ...normalized } as Note;
+      }
+
+      try {
+        const q = supabase
+          .from('notes')
+          .update(normalized)
+          .eq('id', id);
+        if (user?.id) q.eq('user_id', user.id);
+        const { data: updated, error } = await q.select().single();
+        if (error) throw error;
+        return updated as Note;
+      } catch (err) {
+        addToOfflineQueue({ entity: 'notes', op: 'update', id, payload: normalized });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+          (old ?? []).map((n) => (n.id === id ? { ...n, ...normalized, updated_at: new Date().toISOString() } : n))
+        );
+        return { id, ...normalized } as Note;
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+    onSuccess: (updated) => {
+      queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+        (old ?? []).map((n) => (n.id === updated.id ? { ...n, ...updated } : n))
+      );
       queryClient.invalidateQueries({ queryKey: NOTE_FOLDERS_KEY });
     },
   });
@@ -127,17 +177,35 @@ export function useTogglePinNote() {
 
   return useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
-      const q = supabase
-        .from('notes')
-        .update({ is_pinned })
-        .eq('id', id);
-      if (user?.id) q.eq('user_id', user.id);
-      const { data: updated, error } = await q.select().single();
-      if (error) throw error;
-      return updated as Note;
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'notes', op: 'update', id, payload: { is_pinned } });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+          (old ?? []).map((n) => (n.id === id ? { ...n, is_pinned } : n))
+        );
+        return { id, is_pinned } as unknown as Note;
+      }
+
+      try {
+        const q = supabase
+          .from('notes')
+          .update({ is_pinned })
+          .eq('id', id);
+        if (user?.id) q.eq('user_id', user.id);
+        const { data: updated, error } = await q.select().single();
+        if (error) throw error;
+        return updated as Note;
+      } catch {
+        addToOfflineQueue({ entity: 'notes', op: 'update', id, payload: { is_pinned } });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+          (old ?? []).map((n) => (n.id === id ? { ...n, is_pinned } : n))
+        );
+        return { id, is_pinned } as unknown as Note;
+      }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: NOTES_KEY });
+    onSuccess: (updated) => {
+      queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+        (old ?? []).map((n) => (n.id === updated.id ? { ...n, is_pinned: updated.is_pinned } : n))
+      );
     },
   });
 }
@@ -191,11 +259,27 @@ export function useDeleteNote() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const q = supabase.from('notes').delete().eq('id', id);
-      if (user?.id) q.eq('user_id', user.id);
-      const { error } = await q;
-      if (error) throw error;
-      return true;
+      if (!isOnline()) {
+        addToOfflineQueue({ entity: 'notes', op: 'delete', id });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+          (old ?? []).filter((n) => n.id !== id)
+        );
+        return true;
+      }
+
+      try {
+        const q = supabase.from('notes').delete().eq('id', id);
+        if (user?.id) q.eq('user_id', user.id);
+        const { error } = await q;
+        if (error) throw error;
+        return true;
+      } catch {
+        addToOfflineQueue({ entity: 'notes', op: 'delete', id });
+        queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
+          (old ?? []).filter((n) => n.id !== id)
+        );
+        return true;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: NOTES_KEY });

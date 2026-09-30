@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button, Input } from '../components/ui';
-import { Loader2, Mail, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, ShieldCheck, WifiOff, Zap } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -28,7 +28,7 @@ function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
 }
 
 export default function Signup() {
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, continueOffline, isOffline } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,6 +38,11 @@ export default function Signup() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+
+  const handleContinueOffline = () => {
+    continueOffline(email || 'ghesso@best.com');
+    navigate('/dashboard', { replace: true });
+  };
 
   const handleGoogleSignIn = async () => {
     setError(null);
@@ -133,6 +138,16 @@ export default function Signup() {
             <GoogleIcon className="w-5 h-5" />
           )}
           Continue with Google
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full min-h-[40px] gap-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border/80"
+          onClick={handleContinueOffline}
+        >
+          <Zap size={14} className="text-primary" />
+          Use App Offline (No Account / Offline Mode)
         </Button>
 
         <div className="relative flex items-center gap-2">

@@ -398,15 +398,18 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 
 ## 7. Feature Specifications
 
-### 7.1 Authentication Flow
+### 7.1 Authentication Flow & 100% Offline Resilience
 ```
 [Login/Signup Page]
-  → Email+Password or Google OAuth
-  → Supabase Auth returns JWT session
-  → AuthContext updates global state
-  → user_app_settings fetched and applied (theme, accent, nav)
-  → Redirect to Dashboard
+  → Online: Email+Password or Google OAuth → Supabase Auth JWT session
+  → Offline: Direct Offline Mode / "Continue in Offline Mode" → Local UUID session
+  → AuthContext updates global state & synchronously hydrates from `lifeos_offline_session`
+  → user_app_settings fetched (or local fallback) and applied (theme, accent, nav)
+  → Instant Redirect to Dashboard (no loading flash on offline restarts)
 ```
+- **Session Preservation When Offline:** On network disconnect, Supabase token expiry, or transient fetch errors during background token refresh, `AuthContext` guarantees the active user session is never cleared. The app stays 100% functional offline indefinitely without being kicked to the login screen.
+- **Offline Workspace Access:** Users can access the app with zero internet connection via "Continue to Offline Workspace" or offline credentials. Mutations are optimistically rendered and queued in IndexedDB via `addToOfflineQueue` for replay upon reconnect.
+- **Explicit Sign-Out Contract:** Sessions and local user caches are only purged upon explicit, user-initiated logout via `signOut()`.
 
 ### 7.2 Dashboard State Machine
 ```

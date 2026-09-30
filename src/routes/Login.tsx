@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button, Input } from '../components/ui';
-import { Loader2, Copy, Check } from 'lucide-react';
+import { Loader2, Copy, Check, WifiOff, Zap } from 'lucide-react';
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -28,7 +28,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function Login() {
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, continueOffline, isOffline } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,6 +46,11 @@ export default function Login() {
   const handleAutoFill = () => {
     setEmail('ghesso@best.com');
     setPassword('123');
+  };
+
+  const handleContinueOffline = () => {
+    continueOffline(email || 'ghesso@best.com');
+    navigate('/dashboard', { replace: true });
   };
 
   const handleGoogleSignIn = async () => {
@@ -71,7 +76,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background select-text">
-      <div className="w-full max-w-md space-y-8 select-text">
+      <div className="w-full max-w-md space-y-6 select-text">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
           <p className="text-muted-foreground mt-1 text-sm">Sign in to your LifeOS account</p>
@@ -79,6 +84,29 @@ export default function Login() {
             Just signed up? Check your email and click the verification link before signing in.
           </p>
         </div>
+
+        {/* Offline notice & quick bypass */}
+        {isOffline && (
+          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs space-y-2.5 text-amber-600 dark:text-amber-400">
+            <div className="flex items-center gap-2 font-medium">
+              <WifiOff size={15} className="shrink-0 text-amber-500" />
+              <span>You're currently offline</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              LifeOS works 100% offline. You can continue directly to access your cached tasks, habits, prayers, and notes.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="w-full gap-2 text-xs font-semibold bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border-amber-500/30"
+              onClick={handleContinueOffline}
+            >
+              <Zap size={14} />
+              Continue to Offline Workspace
+            </Button>
+          </div>
+        )}
 
         <Button
           type="button"
@@ -93,6 +121,16 @@ export default function Login() {
             <GoogleIcon className="w-5 h-5" />
           )}
           Continue with Google
+        </Button>
+
+        <Button
+          type="button"
+          variant="ghost"
+          className="w-full min-h-[40px] gap-2 text-xs text-muted-foreground hover:text-foreground border border-dashed border-border/80"
+          onClick={handleContinueOffline}
+        >
+          <Zap size={14} className="text-primary" />
+          Use App Offline (No Account / Offline Mode)
         </Button>
 
         <div className="relative flex items-center gap-2">

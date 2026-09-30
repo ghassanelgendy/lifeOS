@@ -3582,21 +3582,29 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-contexts-authcontext-tsx"></a>
 ### src/contexts/AuthContext.tsx
 
-**File Purpose:** React Context provider. Manages shared state and provides it to descendant components via React Context API.
+**File Purpose:** React Context provider. Manages authentication, offline session persistence, token refreshes, and 100% offline access via `lifeos_offline_session`.
 
 **Functions & Classes:**
-- `AuthContext` (React Component)
+- `AuthContext` (React Context)
+- `getStoredOfflineSession` (Function)
+- `persistOfflineSession` (Function)
+- `clearOfflineSession` (Function)
+- `createOfflineUser` (Function)
 - `tryGetLocalSession` (Function)
 - `getSessionWithTimeout` (Function)
-- `AuthProvider` (Function)
+- `AuthProvider` (React Component)
 
 **Function Details:**
-- **`AuthContext`** — React component rendering UI for AuthContext.
-- **`tryGetLocalSession`** — Utility function for try get local session.
-- **`getSessionWithTimeout`** — Utility function for get session with timeout.
-- **`AuthProvider`** — Utility function for auth provider.
+- **`AuthContext`** — Context providing `user`, `session`, `loading`, `isOffline`, `signIn`, `signUp`, `signInWithGoogle`, `signOut`, and `continueOffline`.
+- **`getStoredOfflineSession`** — Hydrates cached offline session and user from localStorage (`lifeos_offline_session`).
+- **`persistOfflineSession`** — Persists active session and user credentials to guarantee offline access across restarts.
+- **`clearOfflineSession`** — Purges offline session storage on explicit user logout (`signOut()`).
+- **`createOfflineUser`** — Generates local offline profile with deterministic UUID and offline provider metadata.
+- **`tryGetLocalSession`** — Inspects localStorage for Supabase token structures (`sb-*-auth-token`).
+- **`getSessionWithTimeout`** — Wraps Supabase auth getSession with timeout to avoid freezing during network degradation.
+- **`AuthProvider`** — Root authentication provider implementing synchronous hydration and session retention.
 
-**Lines:** 206
+**Lines:** 318
 
 ---
 

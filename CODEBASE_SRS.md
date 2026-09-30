@@ -127,6 +127,9 @@ During authentication state initialization, the system shall display a loading s
 #### FR-AUTH-008: RLS Enforcement
 All Supabase database queries shall be protected by Row-Level Security policies ensuring users can only access their own data.
 
+#### FR-AUTH-009: 100% Offline Session Retention & Offline Workspace
+The system shall preserve active authenticated user sessions indefinitely while offline. The system shall never invalidate or clear an active session due to network disconnects, token expiration while offline, or failed background token refresh attempts. The system shall provide an offline authentication path ("Continue in Offline Mode") allowing users to access all local data (tasks, habits, prayer logs, notes, transactions) with zero network connectivity.
+
 ---
 
 ### 3.2 Dashboard & Navigation
