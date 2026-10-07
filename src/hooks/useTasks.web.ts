@@ -29,7 +29,7 @@ const TASK_INSERT_KEYS = [
   'reminders_enabled', 'recurrence_end_type', 'recurrence_count', 'calendar_event_id', 'calendar_source_key',
   'source_note_id',
   'ios_reminders_enabled', 'ios_reminder_id', 'ios_reminder_list', 'ios_reminder_updated_at',
-  'parent_id', 'sort_order', 'strategic_quarter_id', 'points_value',
+  'parent_id', 'sort_order', 'strategic_quarter_id', 'points_value', 'attachments',
 ] as const;
 
 function extractSubtasksFromDescription(description?: string | null): { subtasks: string[]; cleanedDescription: string } {

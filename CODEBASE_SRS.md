@@ -282,6 +282,14 @@ The system shall safeguard task rendering and mutations against data inconsisten
 - Mutation hooks (`useUpdateTask`, `useToggleTask`, `useDeleteTask`, `useBatchDeleteTasks`) shall validate task IDs against standard UUID regex before initiating Supabase Postgres operations, safely skipping non-UUID identifiers (such as habit pseudo-tasks or client-only tasks) to prevent PostgreSQL type 22P02 errors.
 - The global `ErrorBoundary` shall capture and display the runtime error message along with single-click clipboard copying and direct Dashboard navigation to allow recovery without getting stuck in a crash loop.
 
+#### FR-TASK-029: Task Image Attachments
+The system shall allow users to attach images to any task via the Task Details sheet (`TaskDetailsContent.web.tsx` and `TaskDetailsContent.ios.tsx`):
+- Support multiple image attachments stored as a JSONB array (`attachments`) on `public.tasks`.
+- Provide inline thumbnail gallery previews with hover titles and one-click remove buttons.
+- Support full-screen lightbox viewing for inspection and external opening.
+- Enforce client-side file type validation (images only) and size limits (<= 15MB).
+- Integrate with Cloudflare R2 object storage and offline IndexedDB fallback.
+
 ---
 
 ### 3.4 Habit Tracking
@@ -633,6 +641,13 @@ The system shall provide an in-app AI Note Organizer Sheet (`AINoteOrganizerShee
 - **Cognitive Action Items Extractor:** Parsing raw timestamps and bullets into discrete actionable tasks (e.g. calls, meetings, coding branches, emails, events).
 - **Context-Aware Scheduling:** Suggesting realistic due dates (e.g. mapping explicit dates like "Oct 2"), times distributed across awake slots based on sleep tracking metrics, and mapping to existing user task lists and tags.
 - **Interactive Review & Batch Creation:** Displaying an interactive task confirmation table where users can edit titles, dates, times, lists, and tags before committing them to the database.
+
+#### FR-NOTE-013: Note Image Attachments
+The system shall allow users to attach images to any note across desktop/web and iOS layouts (`Notes.web.tsx` and `Notes.ios.tsx`):
+- Support multiple image attachments stored as a JSONB array (`attachments`) on `public.notes`.
+- Display interactive thumbnail galleries directly beneath note content with lightbox modal preview.
+- Support add and remove actions during note editing, persisting on note save.
+- Integrate with Cloudflare R2 object storage and offline data URL caching.
 
 ---
 

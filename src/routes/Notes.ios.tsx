@@ -12,7 +12,8 @@ import { useCreateNote, useCreateNoteFolder, useDeleteNote, useNoteFolders, useN
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
 import { AINoteOrganizerSheet } from '../components/AINoteOrganizerSheet';
-import type { Note } from '../types/schema';
+import { AttachmentManager } from '../components/AttachmentManager';
+import type { Note, MediaAttachment } from '../types/schema';
 
 const NEW_NOTE_ID = 'new';
 const ALL_NOTES = 'all';
@@ -95,6 +96,7 @@ export default function NotesIOS() {
   const [draftFolderId, setDraftFolderId] = useState<string>(NO_FOLDER);
   const [draftIsPinned, setDraftIsPinned] = useState(false);
   const [draftIsBrainDump, setDraftIsBrainDump] = useState(false);
+  const [draftAttachments, setDraftAttachments] = useState<MediaAttachment[]>([]);
 
   // Status & Modal States
   const [saveMessage, setSaveMessage] = useState('');
@@ -128,6 +130,7 @@ export default function NotesIOS() {
         setDraftFolderId(activeNote.folder_id || NO_FOLDER);
         setDraftIsPinned(!!activeNote.is_pinned);
         setDraftIsBrainDump(!!activeNote.is_brain_dump);
+        setDraftAttachments(activeNote.attachments || []);
         setIsEditing(false);
       }
     }
@@ -184,12 +187,13 @@ export default function NotesIOS() {
     );
     setDraftIsPinned(false);
     setDraftIsBrainDump(activeFolderFilter === BRAIN_DUMP_NOTES);
+    setDraftAttachments([]);
     setIsEditing(true);
     setCurrentScreen('detail');
   };
 
   const handleSave = async () => {
-    if (!draftTitle.trim() && !draftBody.trim()) {
+    if (!draftTitle.trim() && !draftBody.trim() && draftAttachments.length === 0) {
       setSaveMessage('Note is empty.');
       return;
     }
@@ -201,6 +205,7 @@ export default function NotesIOS() {
       folder_id: draftFolderId === NO_FOLDER ? null : draftFolderId,
       is_pinned: draftIsPinned,
       is_brain_dump: draftIsBrainDump,
+      attachments: draftAttachments,
     };
 
     try {
@@ -684,6 +689,17 @@ export default function NotesIOS() {
                     }}
                   />
                 )}
+              </div>
+
+              {/* Attached Images */}
+              <div className="pt-3 border-t border-border/60">
+                <span className="text-xs font-medium text-muted-foreground mb-2 block">Attachments</span>
+                <AttachmentManager
+                  attachments={draftAttachments}
+                  onChange={setDraftAttachments}
+                  category="notes"
+                  readOnly={!isEditing}
+                />
               </div>
 
               {/* AI Toolbar */}

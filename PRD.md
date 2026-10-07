@@ -136,6 +136,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - **Multi-Select & Batch Processing (PC Web & iOS):** Dedicated "Select" mode in the header allowing users to batch select tasks. Features quick action shortcuts including "Select All", "Select Brain Dump" (to quickly isolate and clean up auto-generated tasks), and "Deselect". Batch operations include Batch Complete, Batch Won't Do, Batch Reorganize (spread selected tasks evenly into open awake slots), Batch Move to List, Batch Add Tag, and Batch Permanent Delete with confirmation.
 - **Created Timestamp Visibility:** Every task displays when it was created ("Added <time>") both as a subtle Clock badge on task list cards and as an informative metadata field in the Task Details sheet.
 - **Defensive Rendering & Robust Error Recovery:** All task items across web, iOS, and desktop platforms implement comprehensive null, undefined, date-string, and tag-array defensive checks, preventing malformed or offline cached records from crashing the view. Database mutation hooks (`useUpdateTask`, `useToggleTask`, `useDeleteTask`, `useBatchDeleteTasks`) strictly validate UUID formats, preventing non-UUID pseudo-tasks (such as habit tasks) from producing PostgreSQL syntax errors (HTTP 400). The global `ErrorBoundary` renders actionable error diagnostics, single-tap clipboard copy, and direct Dashboard recovery.
+- **Image Attachments:** Support attaching images to tasks via the Task Details sheet with thumbnail preview, lightbox zoom, multi-file selection, and Cloudflare R2 / offline storage integration.
 - iOS Features: Swipe to complete/delete, pull-to-refresh
 
 ### 5.3 Habits Engine
@@ -229,6 +230,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Database schema extensions (`is_pinned`, `is_brain_dump`, `ai_analysis`, `tags`).
 - **Full-Content Search:** The search box (both platforms) matches against note title AND body content, not just titles — made more visually prominent on PC web (larger input, clearer placeholder) since it was previously easy to miss.
 - **Multi-Select & Bulk Delete (PC Web):** A "Select" mode in the notes list adds per-note checkboxes, a "Select all" action scoped to whatever folder/filter is currently active, and a bulk-delete confirmation — the notes list also now uses the same rounded-card visual style (`rounded-xl border`) as Tasks/Dashboard entries instead of a flat divided list.
+- **Image Attachments:** Dedicated attachment gallery per note with thumbnail previews, lightbox viewing, and Cloudflare R2 / offline storage integration across both web and iOS views.
 
 ### 5.10 Focus Mode
 **Purpose:** Deep work sessions with task linkage.
@@ -725,6 +727,7 @@ interface Task {
   recurrence?: string;  // RRule string
   list_id?: string;     // FK to task_lists
   tag_ids: string[];    // FKs to tags
+  attachments?: Array<{ id: string; url: string; name: string; size?: number; type?: string }>;
   completed: boolean;
   archived: boolean;
   created_at: string;
@@ -868,6 +871,25 @@ interface FocusSession {
   duration?: number;    // Seconds
   phase: 'preparation' | 'focus' | 'break' | 'completed';
   created_at: string;
+}
+```
+
+### A.11 Note Entity
+```typescript
+interface Note {
+  id: string;
+  user_id?: string | null;
+  title: string;
+  body: string;
+  note_date: string;
+  folder_id?: string | null;
+  is_pinned?: boolean;
+  is_brain_dump?: boolean;
+  ai_analysis?: Record<string, unknown> | null;
+  tags?: string[];
+  attachments?: Array<{ id: string; url: string; name: string; size?: number; type?: string }>;
+  created_at: string;
+  updated_at: string;
 }
 ```
 

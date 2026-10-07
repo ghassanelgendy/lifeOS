@@ -11,7 +11,8 @@ import { useTasks, useToggleTask } from '../hooks/useTasks';
 import { BrainDumpModal } from '../components/BrainDumpModal';
 import { BrainDumpGraphView } from '../components/BrainDumpGraphView';
 import { AINoteOrganizerSheet } from '../components/AINoteOrganizerSheet';
-import type { Note } from '../types/schema';
+import { AttachmentManager } from '../components/AttachmentManager';
+import type { Note, MediaAttachment } from '../types/schema';
 
 const NEW_NOTE_ID = 'new';
 const ALL_NOTES = 'all';
@@ -93,6 +94,7 @@ export default function NotesWeb() {
   const [draftFolderId, setDraftFolderId] = useState<string>(NO_FOLDER);
   const [draftIsPinned, setDraftIsPinned] = useState(false);
   const [draftIsBrainDump, setDraftIsBrainDump] = useState(false);
+  const [draftAttachments, setDraftAttachments] = useState<MediaAttachment[]>([]);
   
   // Folder Management State
   const [newFolderName, setNewFolderName] = useState('');
@@ -143,6 +145,7 @@ export default function NotesWeb() {
     setDraftFolderId(activeNote.folder_id || NO_FOLDER);
     setDraftIsPinned(!!activeNote.is_pinned);
     setDraftIsBrainDump(!!activeNote.is_brain_dump);
+    setDraftAttachments(activeNote.attachments || []);
     setIsEditing(false);
   }, [activeId, activeNote, notes]);
 
@@ -196,14 +199,15 @@ export default function NotesWeb() {
     [folders]
   );
 
-  const hasContent = draftTitle.trim().length > 0 || draftBody.trim().length > 0;
+  const hasContent = draftTitle.trim().length > 0 || draftBody.trim().length > 0 || draftAttachments.length > 0;
   const isDirty = activeNote
     ? draftTitle !== activeNote.title ||
       draftBody !== activeNote.body ||
       draftDate !== (activeNote.note_date?.split('T')[0] || '') ||
       draftFolderId !== (activeNote.folder_id || NO_FOLDER) ||
       draftIsPinned !== !!activeNote.is_pinned ||
-      draftIsBrainDump !== !!activeNote.is_brain_dump
+      draftIsBrainDump !== !!activeNote.is_brain_dump ||
+      JSON.stringify(draftAttachments) !== JSON.stringify(activeNote.attachments || [])
     : hasContent;
 
   const startNewNote = (folderIdDefault?: string) => {
@@ -218,6 +222,7 @@ export default function NotesWeb() {
     );
     setDraftIsPinned(false);
     setDraftIsBrainDump(activeFolderFilter === BRAIN_DUMP_NOTES);
+    setDraftAttachments([]);
     setSaveMessage('');
   };
 
@@ -255,6 +260,7 @@ export default function NotesWeb() {
       folder_id: draftFolderId === NO_FOLDER ? null : draftFolderId,
       is_pinned: draftIsPinned,
       is_brain_dump: draftIsBrainDump,
+      attachments: draftAttachments,
     };
 
     if (activeNote) {
@@ -873,6 +879,16 @@ export default function NotesWeb() {
                 }}
               />
             )}
+            {/* Attached Images */}
+            <div className="mt-4 pt-4 border-t border-border/60">
+              <span className="text-xs font-medium text-muted-foreground mb-2 block">Attachments</span>
+              <AttachmentManager
+                attachments={draftAttachments}
+                onChange={setDraftAttachments}
+                category="notes"
+                readOnly={!isEditing}
+              />
+            </div>
           </div>
 
           {/* Bottom Actions & AI Tools (Permanently Docked at Bottom of Note Card) */}

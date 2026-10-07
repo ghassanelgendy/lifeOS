@@ -194,6 +194,15 @@ export interface BrainDumpAnalysis {
   analyzed_at?: string;
 }
 
+export interface MediaAttachment {
+  id: string;
+  url: string;
+  name: string;
+  size?: number;
+  type?: string;
+  created_at?: string;
+}
+
 export interface Note {
   id: string;
   user_id?: string | null;
@@ -205,6 +214,7 @@ export interface Note {
   is_brain_dump?: boolean;
   ai_analysis?: BrainDumpAnalysis | null;
   tags?: string[];
+  attachments?: MediaAttachment[];
   is_shared?: boolean;
   shared_with?: string[];
   owner_email?: string;
@@ -306,6 +316,7 @@ export interface Task {
   ios_reminder_id?: string | null;
   ios_reminder_list?: string | null;
   ios_reminder_updated_at?: string | null;
+  attachments?: MediaAttachment[];
   // Timestamps
   created_at: string;
   updated_at: string;

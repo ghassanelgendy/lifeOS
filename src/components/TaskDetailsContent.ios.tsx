@@ -6,7 +6,8 @@ import type { Task } from '../types/schema';
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import { cn } from '../lib/utils';
-import type { TaskList, Tag, TaskPriority, TaskRecurrence, TaskRecurrenceEndType } from '../types/schema';
+import type { TaskList, Tag, TaskPriority, TaskRecurrence, TaskRecurrenceEndType, MediaAttachment } from '../types/schema';
+import { AttachmentManager } from './AttachmentManager';
 import { formatTime12h } from '../lib/utils';
 import { parseTaskInput } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
@@ -69,6 +70,7 @@ export interface TaskDetailsFormState {
   reminders_enabled?: boolean;
   duration_minutes?: number | null;
   ios_reminders_enabled?: boolean;
+  attachments?: MediaAttachment[];
   [key: string]: unknown;
 }
 
@@ -1143,14 +1145,14 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
         )}
       </Card>
 
-      {/* Optional: Add Image — extra margin so it scrolls into view above safe area */}
-      <button
-        type="button"
-        className="w-full min-h-[48px] flex items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors mt-2 mb-10"
-        aria-label="Add image"
-      >
-        Add Image...
-      </button>
+      {/* Image Attachments */}
+      <div className="mt-2 mb-10">
+        <AttachmentManager
+          attachments={form.attachments || []}
+          onChange={(newAttachments) => setForm((prev) => ({ ...prev, attachments: newAttachments }))}
+          category="tasks"
+        />
+      </div>
     </div>
   );
 }

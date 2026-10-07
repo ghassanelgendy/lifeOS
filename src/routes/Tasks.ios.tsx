@@ -265,6 +265,7 @@ export default function Tasks() {
       early_reminder_minutes: null,
       ios_reminders_enabled: false,
       focus_time_seconds: 0,
+      attachments: [],
     };
   }, [activeView, defaultListId, activeListId]);
   const [activeTagId, setActiveTagId] = useState<string | null>(null);
@@ -1623,6 +1624,7 @@ export default function Tasks() {
       early_reminder_minutes: task.early_reminder_minutes ?? null,
       ios_reminders_enabled: task.ios_reminders_enabled ?? false,
       focus_time_seconds: task.focus_time_seconds ?? 0,
+      attachments: task.attachments ?? [],
       created_at: task.created_at,
     });
     setIsEditModalOpen(true);

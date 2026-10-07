@@ -223,6 +223,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/AIChatModal.tsx](#src-components-aichatmodal-tsx)
 - [src/components/AINoteOrganizerSheet.tsx](#src-components-ainoteorganizersheet-tsx)
 - [src/components/AISettingsSection.tsx](#src-components-aisettingssection-tsx)
+- [src/components/AttachmentManager.tsx](#src-components-attachmentmanager-tsx)
 - [src/components/AppFooter.ios.tsx](#src-components-appfooter-ios-tsx)
 - [src/components/AppFooter.pake.tsx](#src-components-appfooter-pake-tsx)
 - [src/components/AppFooter.tsx](#src-components-appfooter-tsx)
@@ -378,6 +379,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/aiFallback.ts](#src-lib-aifallback-ts)
 - [src/lib/analytics-utils.ts](#src-lib-analytics-utils-ts)
 - [src/lib/api-limiter.ts](#src-lib-api-limiter-ts)
+- [src/lib/attachments.ts](#src-lib-attachments-ts)
 - [src/lib/calendarExport.ts](#src-lib-calendarexport-ts)
 - [src/lib/focusSessionEvents.ts](#src-lib-focussessionevents-ts)
 - [src/lib/icalSubscribe.ts](#src-lib-icalsubscribe-ts)
@@ -2316,6 +2318,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`AISettingsSection`** — Utility function for a i settings section.
 
 **Lines:** 455
+
+---
+
+<a name="src-components-attachmentmanager-tsx"></a>
+### src/components/AttachmentManager.tsx
+
+**File Purpose:** Interactive image attachment manager supporting gallery thumbnails, lightbox modal inspection, and Cloudflare R2 / offline data URL uploads.
+
+**Functions & Classes:**
+- `AttachmentManager` (React Component)
+
+**Function Details:**
+- **`AttachmentManager`** — Reusable attachment manager component rendering image thumbnails, upload triggers with validation, remove actions, and full-resolution lightbox viewer.
+
+**Lines:** 155
 
 ---
 
@@ -5064,6 +5081,27 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isCritical`** — Utility function for is critical.
 
 **Lines:** 333
+
+---
+
+<a name="src-lib-attachments-ts"></a>
+### src/lib/attachments.ts
+
+**File Purpose:** Media attachment utilities for validating images, generating unique storage keys, and uploading assets to Cloudflare R2 bucket with local data URL fallback.
+
+**Functions & Classes:**
+- `validateImageFile` (Function)
+- `fileToDataUrl` (Function)
+- `generateAttachmentKey` (Function)
+- `uploadAttachment` (Function)
+
+**Function Details:**
+- **`validateImageFile`** — Validates mime type (`image/*`) and checks file size against safety thresholds (15MB).
+- **`fileToDataUrl`** — Converts File blobs to Base64 data URLs for local-first and offline-first rendering.
+- **`generateAttachmentKey`** — Generates collision-resistant keys partitioned by module and date (`tasks/YYYY-MM-DD/...`).
+- **`uploadAttachment`** — Manages upload workflow to Cloudflare R2 presigned endpoints or fallback local data storage.
+
+**Lines:** 110
 
 ---
 
