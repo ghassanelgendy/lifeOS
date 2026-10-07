@@ -1363,6 +1363,7 @@ export default function Tasks() {
       location: editForm.location ?? undefined,
       when_messaging: editForm.when_messaging ?? false,
       early_reminder_minutes: editForm.early_reminder_minutes ?? undefined,
+      attachments: editForm.attachments ?? [],
     };
     if (recurrence !== 'weekly') {
       payload.recurrence_days = [];

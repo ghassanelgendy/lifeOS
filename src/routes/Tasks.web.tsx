@@ -1595,6 +1595,7 @@ export default function Tasks() {
       when_messaging: editForm.when_messaging ?? false,
       early_reminder_minutes: editForm.early_reminder_minutes ?? undefined,
       points_value: editForm.points_value ?? 0,
+      attachments: editForm.attachments ?? [],
     };
     if (recurrence !== 'weekly') {
       payload.recurrence_days = [];

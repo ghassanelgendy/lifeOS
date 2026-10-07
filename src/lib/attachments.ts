@@ -63,37 +63,33 @@ export async function uploadAttachment(
   const fileId = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
   const key = generateAttachmentKey(file, category, userId);
 
-  // If Cloudflare Worker / presigned endpoint is available via env or local edge function:
-  const presignEndpoint = (import.meta as any).env?.VITE_R2_UPLOAD_ENDPOINT;
-  
-  if (presignEndpoint) {
-    try {
-      const res = await fetch(presignEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key, contentType: file.type }),
+  // Attempt to get presigned R2 upload URL via Supabase Edge Function or custom endpoint
+  try {
+    const { supabase } = await import('./supabase');
+    const { data: presignData, error: presignError } = await supabase.functions.invoke('r2-presign', {
+      body: { key, contentType: file.type },
+    });
+
+    if (!presignError && presignData?.uploadUrl) {
+      const uploadRes = await fetch(presignData.uploadUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': file.type },
+        body: file,
       });
-      if (res.ok) {
-        const { uploadUrl, publicUrl } = await res.json();
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 'Content-Type': file.type },
-          body: file,
-        });
-        if (uploadRes.ok) {
-          return {
-            id: fileId,
-            url: publicUrl || `${R2_PUBLIC_BASE_URL}/${key}`,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            created_at: new Date().toISOString(),
-          };
-        }
+
+      if (uploadRes.ok) {
+        return {
+          id: fileId,
+          url: presignData.publicUrl || `${R2_PUBLIC_BASE_URL}/${key}`,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+          created_at: new Date().toISOString(),
+        };
       }
-    } catch (e) {
-      console.warn('Presigned R2 upload failed, falling back to local data URL:', e);
     }
+  } catch (e) {
+    console.warn('R2 presigned upload failed, falling back:', e);
   }
 
   // Direct client fallback: generate responsive data URL (or direct R2 object URL if proxy/worker configured)
