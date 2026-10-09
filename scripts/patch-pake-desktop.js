@@ -140,11 +140,12 @@ pub fn set_dock_badge(app: AppHandle, count: Option<i64>) -> Result<(), String> 
   replaceOnce(
     libRs,
     `    invoke::{
-        clear_dock_badge, download_file, increment_dock_badge, send_notification, set_dock_badge,
-        set_dock_badge_label, set_zoom, update_theme_mode, webview_navigate,
+        clear_dock_badge, close_notification, download_file, increment_dock_badge,
+        send_notification, set_dock_badge, set_dock_badge_label, set_zoom, update_theme_mode,
+        webview_navigate,
     },`,
     `    invoke::{
-        clear_dock_badge, download_file, get_gnome_button_layout, increment_dock_badge,
+        clear_dock_badge, close_notification, download_file, get_gnome_button_layout, increment_dock_badge,
         send_notification, set_dock_badge, set_dock_badge_label, set_tray_visible, set_zoom,
         update_theme_mode, webview_navigate,
     },`,
@@ -224,16 +225,14 @@ pub fn get_gnome_button_layout() -> Result<String, String> {
   //    layout live.
   replaceOnce(
     libRs,
-    `            app.manage(MultiWindowState::new(
-                pake_config.clone(),
-                tauri_config.clone(),
-            ));
+    `            // Main thread: installs the native notification-click delegate so a
+            // click can be routed back to the page that raised the notification.
+            app::notification::init_native_click(app.app_handle());
 
             // --- Menu Construction Start ---`,
-    `            app.manage(MultiWindowState::new(
-                pake_config.clone(),
-                tauri_config.clone(),
-            ));
+    `            // Main thread: installs the native notification-click delegate so a
+            // click can be routed back to the page that raised the notification.
+            app::notification::init_native_click(app.app_handle());
 
             // Let the Linux-only custom title bar follow the user's GNOME
             // button layout (left/right, order) live instead of only reading

@@ -45,6 +45,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### .github/workflows
 - [.github/workflows/backup.yaml](#-github-workflows-backup-yaml)
+- [.github/workflows/build-android.yml](#-github-workflows-build-android-yml)
 - [.github/workflows/build-desktop.yml](#-github-workflows-build-desktop-yml)
 - [.github/workflows/ci.yml](#-github-workflows-ci-yml)
 - [.github/workflows/dependabot-auto-merge.yml](#-github-workflows-dependabot-auto-merge-yml)
@@ -52,6 +53,34 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### .vscode
 - [.vscode/tasks.json](#-vscode-tasks-json)
+
+### android/app/src/main/assets
+- [android/app/src/main/assets/capacitor.config.json](#android-app-src-main-assets-capacitor-config-json)
+- [android/app/src/main/assets/capacitor.plugins.json](#android-app-src-main-assets-capacitor-plugins-json)
+
+### android/app/src/main/assets/public
+- [android/app/src/main/assets/public/cordova.js](#android-app-src-main-assets-public-cordova-js)
+- [android/app/src/main/assets/public/cordova_plugins.js](#android-app-src-main-assets-public-cordova-plugins-js)
+- [android/app/src/main/assets/public/index.html](#android-app-src-main-assets-public-index-html)
+- [android/app/src/main/assets/public/registerSW.js](#android-app-src-main-assets-public-registersw-js)
+- [android/app/src/main/assets/public/sw.js](#android-app-src-main-assets-public-sw-js)
+
+### android/app/src/main/assets/public/assets
+- [android/app/src/main/assets/public/assets/index-9gfemQjI.css](#android-app-src-main-assets-public-assets-index-9gfemqji-css)
+- [android/app/src/main/assets/public/assets/index-Ddr2vyc2.js](#android-app-src-main-assets-public-assets-index-ddr2vyc2-js)
+- [android/app/src/main/assets/public/assets/web-BEB7ICGt.js](#android-app-src-main-assets-public-assets-web-beb7icgt-js)
+- [android/app/src/main/assets/public/assets/web-Bq2funfg.js](#android-app-src-main-assets-public-assets-web-bq2funfg-js)
+- [android/app/src/main/assets/public/assets/web-Bynbwss5.js](#android-app-src-main-assets-public-assets-web-bynbwss5-js)
+- [android/app/src/main/assets/public/assets/web-D5UmMYvz.js](#android-app-src-main-assets-public-assets-web-d5ummyvz-js)
+- [android/app/src/main/assets/public/assets/web-KkF8fNIt.js](#android-app-src-main-assets-public-assets-web-kkf8fnit-js)
+- [android/app/src/main/assets/public/assets/web-kFiy15pm.js](#android-app-src-main-assets-public-assets-web-kfiy15pm-js)
+- [android/app/src/main/assets/public/assets/web-mGO0eZSx.js](#android-app-src-main-assets-public-assets-web-mgo0ezsx-js)
+
+### android/app/src/main/assets/public/ios6-lite
+- [android/app/src/main/assets/public/ios6-lite/index.html](#android-app-src-main-assets-public-ios6-lite-index-html)
+- [android/app/src/main/assets/public/ios6-lite/legacy-autologin.example.js](#android-app-src-main-assets-public-ios6-lite-legacy-autologin-example-js)
+- [android/app/src/main/assets/public/ios6-lite/legacy-autologin.js](#android-app-src-main-assets-public-ios6-lite-legacy-autologin-js)
+- [android/app/src/main/assets/public/ios6-lite/legacy-autologin.local.js](#android-app-src-main-assets-public-ios6-lite-legacy-autologin-local-js)
 
 ### api
 - [api/ai.ts](#api-ai-ts)
@@ -223,7 +252,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/AIChatModal.tsx](#src-components-aichatmodal-tsx)
 - [src/components/AINoteOrganizerSheet.tsx](#src-components-ainoteorganizersheet-tsx)
 - [src/components/AISettingsSection.tsx](#src-components-aisettingssection-tsx)
-- [src/components/AttachmentManager.tsx](#src-components-attachmentmanager-tsx)
 - [src/components/AppFooter.ios.tsx](#src-components-appfooter-ios-tsx)
 - [src/components/AppFooter.pake.tsx](#src-components-appfooter-pake-tsx)
 - [src/components/AppFooter.tsx](#src-components-appfooter-tsx)
@@ -233,6 +261,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/AppShell.pake.tsx](#src-components-appshell-pake-tsx)
 - [src/components/AppShell.tsx](#src-components-appshell-tsx)
 - [src/components/AppShell.web.tsx](#src-components-appshell-web-tsx)
+- [src/components/AttachmentManager.tsx](#src-components-attachmentmanager-tsx)
 - [src/components/BankAccountsSettingsSection.tsx](#src-components-bankaccountssettingssection-tsx)
 - [src/components/BrainDumpGraphView.tsx](#src-components-braindumpgraphview-tsx)
 - [src/components/BrainDumpModal.tsx](#src-components-braindumpmodal-tsx)
@@ -319,6 +348,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/wiki/WikiMarkdown.tsx](#src-components-wiki-wikimarkdown-tsx)
 
 ### src/contexts
+- [src/contexts/AuthContext.test.tsx](#src-contexts-authcontext-test-tsx)
 - [src/contexts/AuthContext.tsx](#src-contexts-authcontext-tsx)
 
 ### src/data
@@ -508,6 +538,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### supabase/functions/quick-expense
 - [supabase/functions/quick-expense/index.ts](#supabase-functions-quick-expense-index-ts)
 
+### supabase/functions/r2-presign
+- [supabase/functions/r2-presign/index.ts](#supabase-functions-r2-presign-index-ts)
+
 ### supabase/functions/reconcile-statement
 - [supabase/functions/reconcile-statement/index.ts](#supabase-functions-reconcile-statement-index-ts)
 
@@ -591,6 +624,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration file)
 
 **Lines:** 96
+
+---
+
+<a name="-github-workflows-build-android-yml"></a>
+### .github/workflows/build-android.yml
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration file)
+
+**Lines:** 82
 
 ---
 
@@ -689,7 +733,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 6791
+**Lines:** 7487
 
 ---
 
@@ -700,7 +744,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 1413
+**Lines:** 1454
 
 ---
 
@@ -711,7 +755,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (Markdown documentation)
 
-**Lines:** 967
+**Lines:** 1015
 
 ---
 
@@ -723,6 +767,241 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (Markdown documentation)
 
 **Lines:** 134
+
+---
+
+<a name="android-app-src-main-assets-capacitor-config-json"></a>
+### android/app/src/main/assets/capacitor.config.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 33
+
+---
+
+<a name="android-app-src-main-assets-capacitor-plugins-json"></a>
+### android/app/src/main/assets/capacitor.plugins.json
+
+**File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
+
+**Functions & Classes:** None (JSON data/config)
+
+**Lines:** 55
+
+---
+
+<a name="android-app-src-main-assets-public-assets-index-9gfemqji-css"></a>
+### android/app/src/main/assets/public/assets/index-9gfemQjI.css
+
+**File Purpose:** Stylesheet. Provides CSS rules, animations, and theming for the application.
+
+**Keyframes:**
+- `@keyframes modal-backdrop-in` — CSS animation definition
+- `@keyframes modal-sheet-up` — CSS animation definition
+- `@keyframes section-slide-in` — CSS animation definition
+- `@keyframes loading-bar` — CSS animation definition
+- `@keyframes report-count-up` — CSS animation definition
+- `@keyframes report-section-in` — CSS animation definition
+- `@keyframes report-ring-fill` — CSS animation definition
+- `@keyframes spin` — CSS animation definition
+- `@keyframes ping` — CSS animation definition
+- `@keyframes pulse` — CSS animation definition
+- `@keyframes bounce` — CSS animation definition
+- `@keyframes task-enter` — CSS animation definition
+- `@keyframes checkmark-draw` — CSS animation definition
+
+**CSS Classes/Selectors:** 2, 4, 6, prose, note-selectable, notes-content, braindump-selectable, icon-touch, pointer-events-auto, pointer-events-none, collapse, invisible, visible, sr-only, absolute, fixed, relative, static, sticky, -inset-3 (+742 more)
+
+**Lines:** 3
+
+---
+
+<a name="android-app-src-main-assets-public-assets-index-ddr2vyc2-js"></a>
+### android/app/src/main/assets/public/assets/index-Ddr2vyc2.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 780
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-beb7icgt-js"></a>
+### android/app/src/main/assets/public/assets/web-BEB7ICGt.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-bq2funfg-js"></a>
+### android/app/src/main/assets/public/assets/web-Bq2funfg.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-bynbwss5-js"></a>
+### android/app/src/main/assets/public/assets/web-Bynbwss5.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-d5ummyvz-js"></a>
+### android/app/src/main/assets/public/assets/web-D5UmMYvz.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-kkf8fnit-js"></a>
+### android/app/src/main/assets/public/assets/web-KkF8fNIt.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-kfiy15pm-js"></a>
+### android/app/src/main/assets/public/assets/web-kFiy15pm.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-assets-web-mgo0ezsx-js"></a>
+### android/app/src/main/assets/public/assets/web-mGO0eZSx.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 2
+
+---
+
+<a name="android-app-src-main-assets-public-cordova-js"></a>
+### android/app/src/main/assets/public/cordova.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 1
+
+---
+
+<a name="android-app-src-main-assets-public-cordova-plugins-js"></a>
+### android/app/src/main/assets/public/cordova_plugins.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 1
+
+---
+
+<a name="android-app-src-main-assets-public-index-html"></a>
+### android/app/src/main/assets/public/index.html
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration file)
+
+**Lines:** 62
+
+---
+
+<a name="android-app-src-main-assets-public-ios6-lite-index-html"></a>
+### android/app/src/main/assets/public/ios6-lite/index.html
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration file)
+
+**Lines:** 2492
+
+---
+
+<a name="android-app-src-main-assets-public-ios6-lite-legacy-autologin-example-js"></a>
+### android/app/src/main/assets/public/ios6-lite/legacy-autologin.example.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 11
+
+---
+
+<a name="android-app-src-main-assets-public-ios6-lite-legacy-autologin-js"></a>
+### android/app/src/main/assets/public/ios6-lite/legacy-autologin.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 6
+
+---
+
+<a name="android-app-src-main-assets-public-ios6-lite-legacy-autologin-local-js"></a>
+### android/app/src/main/assets/public/ios6-lite/legacy-autologin.local.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 7
+
+---
+
+<a name="android-app-src-main-assets-public-registersw-js"></a>
+### android/app/src/main/assets/public/registerSW.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 1
+
+---
+
+<a name="android-app-src-main-assets-public-sw-js"></a>
+### android/app/src/main/assets/public/sw.js
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 3
 
 ---
 
@@ -906,31 +1185,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="codemagic-yaml"></a>
 ### codemagic.yaml
 
-**File Purpose:** CI/CD pipeline configuration for automated iOS builds on Codemagic.
-
-**Functions & Classes:** None (YAML configuration)
-
-**Function Details:**
-- `workflows.ios-build` — Defines the iOS unsigned build workflow.
-- `max_build_duration: 30` — 30-minute timeout limit.
-- `instance_type: mac_mini_m1` — Builds on an Apple Silicon M1 Mac mini.
-- `triggering` — Triggers on pushes to the `main` branch.
-- `when.changeset` — Skips builds unless changes are detected in `ios/**`, `android/**`, `capacitor.config.*`, `package.json`, or `codemagic.yaml`.
-- Build steps:
-  1. Dependencies: `npm install -g pnpm && pnpm install`
-  2. Web build: `pnpm build:ios`
-  3. Capacitor sync: `pnpm cap add ios || true && pnpm cap sync ios`
-  4. iOS compilation: `xcodebuild` with `CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO`
-  5. Packaging: Creates `lifeOS.ipa` from the compiled `.app` bundle.
-- `artifacts` — Outputs `build/ios/*.ipa` files.
-
----
-
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 55
+**Lines:** 100
 
 ---
 
@@ -980,20 +1239,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="eslint-config-js"></a>
 ### eslint.config.js
-
-**File Purpose:** ESLint flat config for TypeScript, React, and React Hooks linting. Defines code quality rules for the project.
-
-**Functions & Classes:** None (configuration export)
-
-**Function Details:**
-- `globalIgnores` — Ignores `dist`, `src-tauri/**`, and `.lifeos-cache/**` from linting.
-- Extends recommended configs: `@eslint/js`, `typescript-eslint`, `eslint-plugin-react-hooks`, `eslint-plugin-react-refresh`.
-- Targets files: `**/*.{ts,tsx}`.
-- Disabled rules (mid-migration to stricter standards): `@typescript-eslint/no-explicit-any`, `react-hooks/refs`, `react-hooks/set-state-in-effect`, `react-refresh/only-export-components`, etc.
-- Warnings: `@typescript-eslint/no-unused-vars` (ignores underscore-prefixed identifiers).
-- Language options: ECMAScript 2020 with browser globals.
-
----
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -1185,21 +1430,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="index-html"></a>
 ### index.html
 
-**File Purpose:** HTML entry point for the SPA. Contains critical inline script for FOUC-free theme initialization (reads saved theme/accent from localStorage before DOM paint) and PWA meta tags.
-
-**Functions & Classes:** None (HTML template)
-
-**Function Details:**
-- Inline IIFE script (lines 5-25): Reads `lifeos-ui-store` from localStorage, extracts `theme` and `accentTheme`, applies them to `<html>` class and data-attribute immediately. Prevents flash of unstyled content.
-- Viewport meta tag: Sets `width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover` — locks zoom, supports iOS safe area insets.
-- Favicon & icons: SVG, PNG 96x96, ICO, Apple Touch Icon (192x192), and web app manifest links.
-- PWA meta tags: `apple-mobile-web-app-title`, `mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style: default`.
-- Title: "lifeOS".
-- Root mount point: `<div id="root"></div>`.
-- Module script: `/src/main.tsx` (Vite entry).
-
----
-
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:** None (configuration file)
@@ -1248,7 +1478,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 44
+**Lines:** 48
 
 ---
 
@@ -1265,17 +1495,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="knip-json"></a>
 ### knip.json
-
-**File Purpose:** Knip configuration for dead code detection and unused dependency analysis.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- `ignore` — Excludes `dist/**`, `dev-dist/**`, `node_modules/**`, `.lifeos-cache/**`, and `lifeos-agent-cli/**`.
-- `entry` — Defines application entry points: `index.html`, `src/main.tsx`, `src/App.tsx`, `src/sw.ts`, all `api/**/*.ts` files, and all Supabase Edge Function entry points.
-- `project` — Scopes analysis to `src/**/*.{ts,tsx}`, `api/**/*.ts`, and `supabase/functions/**/*.{ts,tsx}`.
-
----
 
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
@@ -1572,15 +1791,13 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="lib-quran-memorizer-src-components-audioplayerbar-tsx"></a>
 ### lib/quran-memorizer/src/components/AudioPlayerBar.tsx
 
-**File Purpose:** Quran recitation audio playback bar and settings drawer. Provides desktop docked audio player controls and an iOS floating pill bar with full-featured repeat, delay, reciter picker, and speed controls styled with semantic tokens for light and dark theme compatibility.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
 - `getSheikhLastName` (Function)
-- `AudioPlayerBar` (React Component / Function)
 
 **Function Details:**
-- **`getSheikhLastName`** — Extracts clean last name or display title for reciters.
-- **`AudioPlayerBar`** — Floating and docked Quran audio player with bottom sheet settings drawer for verse repetition, recitation delays, and reciter selection.
+- **`getSheikhLastName`** — Utility function for get sheikh last name.
 
 **Lines:** 534
 
@@ -1637,7 +1854,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 2617
+**Lines:** 2618
 
 ---
 
@@ -1820,31 +2037,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="package-json"></a>
 ### package.json
 
-**File Purpose:** Workspace root package manifest. Defines scripts, dependencies, dev dependencies, engine requirements, and PNPM workspace settings.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- `"name": "lifeos-workspace"`, `"private": true`, `"type": "module"`, `"packageManager": "pnpm@10.18.0"`.
-- Engines: Node `>=20.9.0`, PNPM `>=10`.
-- Key scripts:
-  - `dev` / `dev:ios` / `dev:pake` — Vite dev server with platform modes.
-  - `build` / `build:ios` / `build:pake` — Production builds.
-  - `pake:local` — Desktop app build using Pake CLI (Windows-specific with `copy` command).
-  - `lint` — ESLint on `src`.
-  - `test` / `test:watch` — Vitest (run/watch).
-  - `typecheck` — TypeScript noEmit check.
-- Key dependencies: React 19, React Router DOM, Zustand, React Query, Supabase, Recharts, date-fns, Adhan (prayer times), Lucide React, Framer Motion, Zod, uuid, Tailwind merge, clsx.
-- Key dev dependencies: Vite 8, Vitest, TypeScript 6, ESLint 10, Tailwind CSS v4, @vitejs/plugin-react, @vitejs/plugin-legacy, vite-plugin-pwa, Pake CLI, Sharp, jsdom.
-- PNPM architectures: Supported OS (current, darwin, linux, win32) and CPU (current, x64, arm64).
-
----
-
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
 
-**Lines:** 136
+**Lines:** 139
 
 ---
 
@@ -1855,27 +2052,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 13450
+**Lines:** 13515
 
 ---
 
 <a name="pnpm-workspace-yaml"></a>
 ### pnpm-workspace.yaml
-
-**File Purpose:** PNPM workspace definition. Declares monorepo packages, shared dependency catalog versions, release policy, and native binary exclusions.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- Packages: `lib/*`, `lib/integrations/*`, `scripts`.
-- `autoInstallPeers: false`.
-- `catalog` — Defines shared dependency versions across the workspace: Tailwind CSS, React, TypeScript, Drizzle ORM, Framer Motion, Vite, Zod, etc.
-- `minimumReleaseAge: 1440` — 24-hour delay before installing new releases.
-- `minimumReleaseAgeExclude` — Replit packages, stripe-replit-sync, pake-cli, and Tauri packages excluded from release age restriction.
-- `onlyBuiltDependencies` — `@swc/core`, `esbuild`, `msw`, `unrs-resolver` require building from source.
-- `overrides` — Extensive list of native binary exclusions (replaced with `'-'`) for Ngrok, Tailwind CSS Oxide, esbuild, Lightning CSS, and Rollup. Pins esbuild to `0.27.3`.
-
----
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -1887,15 +2069,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="postcss-config-js"></a>
 ### postcss.config.js
-
-**File Purpose:** PostCSS configuration for processing CSS in the build pipeline.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- Single plugin: `@tailwindcss/postcss` — Enables Tailwind CSS v4 PostCSS integration for processing utility classes and @theme rules.
-
----
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -2060,7 +2233,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`findPakeCliDistCliJs`** — Utility function for find pake cli dist cli js.
 - **`replaceOnce`** — Utility function for replace once.
 
-**Lines:** 315
+**Lines:** 314
 
 ---
 
@@ -2104,33 +2277,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-app-ios-tsx"></a>
 ### src/App.ios.tsx
 
-**File Purpose:** iOS native application root component. Extends the web version with Capacitor-native integrations: keyboard handling, deep links, local notifications, OTA updates, haptics, and native badge/status bar management.
-
-**Functions & Classes:**
-- `App` (default component)
-- `AppInner` (component)
-- `ProtectedRoute` (component)
-- `RequireGuest` (component)
-- `UserAppSettingsBridge` (component)
-- `ThemeSync` (component)
-
-**Function Details:**
-- **`App`** (component)
-  - Same structure as web but adds iOS-specific Capacitor integrations.
-- **`AppInner`** (component)
-  - Listens for keyboard show/hide events via Capacitor Keyboard plugin and stores `--keyboard-height` CSS variable.
-  - Sets up deep link listener for `lifeos://` URLs with route navigation (including `lifeos://tasks?action=new`, `lifeos://braindump`, `lifeos://finance?action=new`, and `lifeos://quran`).
-  - Supports iOS `UIApplicationShortcutItems` Quick Actions dispatched via `AppDelegate.swift` and Web App Manifest launcher shortcuts on Android / Desktop.
-  - Schedules local notifications on app focus using native notification APIs.
-  - Checks for OTA updates on app resume via Capacitor Updater.
-  - Triggers native haptic feedback on task completion and habit toggle actions.
-- **`ThemeSync`** (component)
-  - Syncs status bar style (light/dark) with app theme via Capacitor Status Bar plugin.
-- **`ProtectedRoute` / `RequireGuest`** (components)
-  - Same auth behavior as web, adapted for iOS navigation.
-
----
-
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
@@ -2159,7 +2305,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`ThemeSync`** — Utility function for theme sync.
 - **`AppInner`** — Utility function for app inner.
 
-**Lines:** 562
+**Lines:** 578
 
 ---
 
@@ -2177,16 +2323,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-app-tsx"></a>
 ### src/App.tsx
 
-**File Purpose:** Platform abstraction entry point. Uses the `.platform` suffix resolution to delegate to the platform-specific App component (web, iOS, or pake).
-
-**Functions & Classes:** None (re-export module)
-
-**Function Details:**
-- `export * from './App.platform'` — Re-exports all named exports from the resolved platform-specific App file.
-- `export { default } from './App.platform'` — Re-exports the default export, making this file transparent to consumers who import `App`.
-
----
-
 **File Purpose:** Platform abstraction entry point. Delegates to platform-specific App implementation (web, iOS, or pake) via Vite's platform-resolve plugin.
 
 **Functions & Classes:** None (configuration or re-export module)
@@ -2197,49 +2333,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="src-app-web-tsx"></a>
 ### src/App.web.tsx
-
-**File Purpose:** Web and Pake (desktop app wrapper) specific application root component. Sets up routing, providers, theme sync, offline support, PWA service worker management, and global keyboard shortcuts.
-
-**Functions & Classes:**
-- `App` (default component)
-- `AppInner` (component)
-- `ProtectedRoute` (component)
-- `RequireGuest` (component)
-- `UserAppSettingsBridge` (component)
-- `ThemeSync` (component)
-
-**Function Details:**
-- **`App`** (component)
-  - Wraps the entire application in `PersistQueryClientProvider` (caches React Query state to localStorage with 7-day max age) and `AuthProvider`.
-- **`AppInner`** (component)
-  - Initializes real-time transaction sync, Pake desktop notifications, and daily points sync.
-  - Seeds the local database when online.
-  - Sets up `window.addEventListener('online', ...)` to process the offline sync queue when connectivity is restored.
-  - Listens for service worker messages (`LIFEOS_SYNC_OFFLINE_QUEUE`) to trigger background sync.
-  - Global keyboard shortcut: `Ctrl/Cmd + Enter` inside form inputs automatically submits the nearest form or clicks the save/submit button in the current modal/sheet.
-  - PWA Service Worker management:
-    - Reloads the page when a new service worker takes control (skipping the initial claim to prevent loops).
-    - Implements a 10-second debounce (`pwa_reload_time` in sessionStorage) to prevent infinite reload loops.
-    - Checks for SW updates on initial load and when the document becomes visible again, throttled to once per 30 seconds.
-  - Router setup: Uses `BrowserRouter` for web, `HashRouter` for Pake desktop builds (fixes file:// protocol routing).
-  - Defines all application routes. Wraps authenticated routes in `AppShell`.
-  - Mounts `FaviconSync` to dynamically update the favicon based on notification counts.
-  - Includes Vercel Analytics (`<Analytics />`).
-- **`ProtectedRoute`** (component)
-  - Reads `user` and `loading` from `useAuth()`.
-  - Returns `<LoadingScreen />` while auth state loads.
-  - Redirects to `/login` if no user is authenticated.
-- **`RequireGuest`** (component)
-  - Redirects authenticated users to `/dashboard`.
-  - Shows `LoadingScreen` during auth initialization.
-- **`UserAppSettingsBridge`** (component)
-  - Invisible component that synchronizes user-specific app settings (theme, accent) to the database.
-- **`ThemeSync`** (component)
-  - Reads `theme` (light/dark), `accentTheme`, and `platformUIOverride` from `useUIStore()`.
-  - Applies CSS classes to `<html>` element and updates the `theme-color` meta tag.
-  - Adds/removes `pake-platform` class for desktop wrapper styling.
-
----
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -2323,21 +2416,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
-<a name="src-components-attachmentmanager-tsx"></a>
-### src/components/AttachmentManager.tsx
-
-**File Purpose:** Interactive image attachment manager supporting gallery thumbnails, lightbox modal inspection, and Cloudflare R2 / offline data URL uploads.
-
-**Functions & Classes:**
-- `AttachmentManager` (React Component)
-
-**Function Details:**
-- **`AttachmentManager`** — Reusable attachment manager component rendering image thumbnails, upload triggers with validation, remove actions, and full-resolution lightbox viewer.
-
-**Lines:** 155
-
----
-
 <a name="src-components-appfooter-ios-tsx"></a>
 ### src/components/AppFooter.ios.tsx
 
@@ -2397,15 +2475,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-appjoyridetour-tsx"></a>
 ### src/components/AppJoyrideTour.tsx
 
-**File Purpose:** Interactive user onboarding and feature walkthrough tour powered by React Joyride.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:**
-- `AppJoyrideTour` (Function Component)
+- `AppJoyrideTour` (Function)
 
 **Function Details:**
-- **`AppJoyrideTour`** — Renders the sequential spotlight tour highlighting Day progress, metric cards, action items, brain dump, and navigation modules. Automatically marks `hasCompletedTour` on completion or skip.
+- **`AppJoyrideTour`** — Utility function for app joyride tour.
 
-**Lines:** 190
+**Lines:** 192
 
 ---
 
@@ -2420,7 +2498,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Function Details:**
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 850
+**Lines:** 878
 
 ---
 
@@ -2465,7 +2543,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — Utility function for mobile nav link.
 - **`AppShell`** — Utility function for app shell.
 
-**Lines:** 754
+**Lines:** 788
+
+---
+
+<a name="src-components-attachmentmanager-tsx"></a>
+### src/components/AttachmentManager.tsx
+
+**File Purpose:** Source file. Part of the lifeOS application codebase.
+
+**Functions & Classes:**
+- `AttachmentManager` (Function)
+
+**Function Details:**
+- **`AttachmentManager`** — Utility function for attachment manager.
+
+**Lines:** 188
 
 ---
 
@@ -2725,12 +2818,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-habitstatsmodal-tsx"></a>
 ### src/components/HabitStatsModal.tsx
 
-**File Purpose:** Interactive analytics and statistics modal for habits, visualizing completion streaks, adherence percentages across multiple time horizons (7d, 30d, 90d), a 30-day activity matrix heatmap, and strongest day calculations. Fully styled with semantic theme tokens (`bg-card`, `border-border`, `text-foreground`, `bg-secondary`) for seamless light and dark theme parity.
+**File Purpose:** Source file. Part of the lifeOS application codebase.
 
 **Functions & Classes:** None (configuration or re-export module)
-
-**Function Details:**
-- **`HabitStatsModal`** — Renders an in-depth modal displaying a habit's current streak, record streak, adherence rates, 30-day completion matrix, and weekday strength analysis with direct habit edit navigation, adhering to the application's active theme.
 
 **Lines:** 355
 
@@ -3039,7 +3129,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1157
+**Lines:** 1159
 
 ---
 
@@ -3082,7 +3172,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Divider`** — Utility function for divider.
 - **`TaskDetailsContent`** — Utility function for task details content.
 
-**Lines:** 1127
+**Lines:** 1129
 
 ---
 
@@ -3394,7 +3484,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`mergeSegments`** — Utility function for merge segments.
 - **`intersectSegments`** — Utility function for intersect segments.
 
-**Lines:** 1831
+**Lines:** 1832
 
 ---
 
@@ -3613,32 +3703,48 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-contexts-authcontext-test-tsx"></a>
+### src/contexts/AuthContext.test.tsx
+
+**File Purpose:** Unit/integration tests for the corresponding implementation file.
+
+**Functions & Classes:**
+- `Consumer` (React Component)
+- `Consumer` (Function)
+
+**Function Details:**
+- **`Consumer`** — React component rendering UI for Consumer.
+- **`Consumer`** — Utility function for consumer.
+
+**Lines:** 113
+
+---
+
 <a name="src-contexts-authcontext-tsx"></a>
 ### src/contexts/AuthContext.tsx
 
-**File Purpose:** React Context provider. Manages authentication, offline session persistence, token refreshes, and 100% offline access via `lifeos_offline_session`.
+**File Purpose:** React Context provider. Manages shared state and provides it to descendant components via React Context API.
 
 **Functions & Classes:**
-- `AuthContext` (React Context)
+- `AuthContext` (React Component)
 - `getStoredOfflineSession` (Function)
 - `persistOfflineSession` (Function)
 - `clearOfflineSession` (Function)
 - `createOfflineUser` (Function)
 - `tryGetLocalSession` (Function)
 - `getSessionWithTimeout` (Function)
-- `AuthProvider` (React Component)
+- `AuthProvider` (Function)
+- `AuthState` (Interface)
 
 **Function Details:**
-- **`AuthContext`** — Context providing `user`, `session`, `loading`, `isOffline`, `signIn`, `signUp`, `signInWithGoogle`, `signOut`, and `continueOffline`.
-- **`getStoredOfflineSession`** — Hydrates cached offline session and user from localStorage (`lifeos_offline_session`).
-- **`persistOfflineSession`** — Persists active session and user credentials to guarantee offline access across restarts.
-- **`clearOfflineSession`** — Purges offline session storage on explicit user logout (`signOut()`).
-- **`createOfflineUser`** — Generates local offline profile with deterministic UUID and offline provider metadata.
-- **`tryGetLocalSession`** — Inspects localStorage for Supabase token structures (`sb-*-auth-token`).
-- **`getSessionWithTimeout`** — Wraps Supabase auth getSession with timeout to avoid freezing during network degradation.
-- **`AuthProvider`** — Root authentication provider implementing synchronous hydration and session retention.
+- **`AuthContext`** — React component rendering UI for AuthContext.
+- **`getStoredOfflineSession`** — Utility function for get stored offline session.
+- **`persistOfflineSession`** — Utility function for persist offline session.
+- **`clearOfflineSession`** — Utility function for clear offline session.
+- **`createOfflineUser`** — Utility function for create offline user.
+- **`tryGetLocalSession`** — Utility function for try get local session.
 
-**Lines:** 318
+**Lines:** 418
 
 ---
 
@@ -4100,7 +4206,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useHabits`** — Utility function for use habits.
 - **`useHabit`** — Utility function for use habit.
 
-**Lines:** 1032
+**Lines:** 1053
 
 ---
 
@@ -4311,7 +4417,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useNoteFolders`** — Utility function for use note folders.
 - **`useCreateNoteFolder`** — Utility function for use create note folder.
 
-**Lines:** 207
+**Lines:** 291
 
 ---
 
@@ -4453,7 +4559,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`useSetPrayerStatusAtDate`** — Utility function for use set prayer status at date.
 - **`usePrayerNotificationSettings`** — Utility function for use prayer notification settings.
 
-**Lines:** 846
+**Lines:** 868
 
 ---
 
@@ -4919,9 +5025,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `@keyframes report-section-in` — CSS animation definition
 - `@keyframes report-ring-fill` — CSS animation definition
 
-**CSS Classes/Selectors:** light, prose, note-selectable, notes-content, braindump-selectable, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card, no-scrollbar (+1 more)
+**CSS Classes/Selectors:** dark, light, prose, note-selectable, notes-content, braindump-selectable, icon-touch, modal-backdrop-ios, modal-sheet-ios, 32, 72, section-slide-in, privacy-mode, recharts-wrapper, recharts-surface, recharts-tooltip-cursor, report-count-up, report-section-in, report-ring-fill, liquid-glass-card (+2 more)
 
-**Lines:** 506
+**Lines:** 508
 
 ---
 
@@ -5104,21 +5210,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-attachments-ts"></a>
 ### src/lib/attachments.ts
 
-**File Purpose:** Media attachment utilities for validating images, generating unique storage keys, and uploading assets to Cloudflare R2 bucket with local data URL fallback.
+**File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
+- `R2_PUBLIC_BASE_URL` (React Component)
 - `validateImageFile` (Function)
 - `fileToDataUrl` (Function)
 - `generateAttachmentKey` (Function)
-- `uploadAttachment` (Function)
+- `AttachmentUploadOptions` (Interface)
 
 **Function Details:**
-- **`validateImageFile`** — Validates mime type (`image/*`) and checks file size against safety thresholds (15MB).
-- **`fileToDataUrl`** — Converts File blobs to Base64 data URLs for local-first and offline-first rendering.
-- **`generateAttachmentKey`** — Generates collision-resistant keys partitioned by module and date (`tasks/YYYY-MM-DD/...`).
-- **`uploadAttachment`** — Manages upload workflow to Cloudflare R2 presigned endpoints or fallback local data storage.
+- **`R2_PUBLIC_BASE_URL`** — React component rendering UI for R2_PUBLIC_BASE_URL.
+- **`validateImageFile`** — Utility function for validate image file.
+- **`fileToDataUrl`** — Utility function for file to data url.
+- **`generateAttachmentKey`** — Utility function for generate attachment key.
 
-**Lines:** 110
+**Lines:** 118
 
 ---
 
@@ -5237,6 +5344,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **File Purpose:** Utility library module. Provides helper functions, client configuration, or domain-specific logic.
 
 **Functions & Classes:**
+- `LifeOSAndroidBridge` (React Component)
 - `setupDeepLinkListener` (Function)
 - `hashCode` (Function)
 - `generateEventInstances` (Function)
@@ -5245,16 +5353,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `isInQuietHours` (Function)
 - `taskTriggerDate` (Function)
 - `setupNotificationActionListeners` (Function)
-- `LifeOSAndroidBridge` (Capacitor Plugin)
-- `syncAndroidNativeBridge` (Function)
+- `LifeOSAndroidBridgePluginType` (Interface)
 
 **Function Details:**
+- **`LifeOSAndroidBridge`** — React component rendering UI for LifeOSAndroidBridge.
 - **`setupDeepLinkListener`** — Utility function for setup deep link listener.
 - **`hashCode`** — Utility function for hash code.
 - **`generateEventInstances`** — Utility function for generate event instances.
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
-- **`syncAndroidNativeBridge`** — Utility function to synchronize authenticated User ID and Supabase credentials to native Android SharedPreferences and schedule periodic screen time background syncs.
 
 **Lines:** 960
 
@@ -5722,19 +5829,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-main-tsx"></a>
 ### src/main.tsx
 
-**File Purpose:** Application entry point. Bootstraps the React application into the DOM using StrictMode.
-
-**Functions & Classes:** None (top-level script)
-
-**Function Details:**
-- Imports `StrictMode` from React for highlighting potential problems in development.
-- Imports `createRoot` from `react-dom/client` for the concurrent React rendering API.
-- Imports global styles (`index.css`) and the root `App` component.
-- `createRoot(document.getElementById('root')!)` — Initializes the React root on the DOM element with id `root`.
-- `.render(...)` — Wraps the `App` component in `StrictMode` to enable double-rendering checks and development warnings.
-
----
-
 **File Purpose:** Application entry point. Bootstraps the React root component into the DOM.
 
 **Functions & Classes:** None (configuration or re-export module)
@@ -5929,7 +6023,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 2274
+**Lines:** 2285
 
 ---
 
@@ -5974,7 +6068,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Finance`** — React component rendering UI for Finance.
 - **`Finance`** — Utility function for finance.
 
-**Lines:** 2136
+**Lines:** 2147
 
 ---
 
@@ -6011,14 +6105,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `Habits` (Function)
 
 **Function Details:**
-- **`Habits`** — React component rendering UI for Habits (iOS) with support for standard and detox habits (detox habits exclude streak rescue and render standard checkmarks on completion).
+- **`Habits`** — React component rendering UI for Habits.
 - **`parseLegacyDetoxDescription`** — Utility function for parse legacy detox description.
 - **`getDetoxConfig`** — Utility function for get detox config.
 - **`getHabitType`** — Utility function for get habit type.
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1535
+**Lines:** 1536
 
 ---
 
@@ -6049,14 +6143,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `Habits` (Function)
 
 **Function Details:**
-- **`Habits`** — React component rendering UI for Habits with support for standard and detox habits (detox habits exclude streak rescue and render standard checkmarks on completion).
+- **`Habits`** — React component rendering UI for Habits.
 - **`parseLegacyDetoxDescription`** — Utility function for parse legacy detox description.
 - **`getDetoxConfig`** — Utility function for get detox config.
 - **`getHabitType`** — Utility function for get habit type.
 - **`getVisibleDescription`** — Utility function for get visible description.
 - **`weeksSince`** — Utility function for weeks since.
 
-**Lines:** 1600
+**Lines:** 1601
 
 ---
 
@@ -6131,7 +6225,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`GoogleIcon`** — Utility function for google icon.
 - **`Login`** — Utility function for login.
 
-**Lines:** 214
+**Lines:** 252
 
 ---
 
@@ -6157,7 +6251,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
 
-**Lines:** 786
+**Lines:** 802
 
 ---
 
@@ -6194,7 +6288,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`cleanMarkdownPreview`** — Utility function for clean markdown preview.
 - **`formatNoteDate`** — Utility function for format note date.
 
-**Lines:** 996
+**Lines:** 1012
 
 ---
 
@@ -6314,7 +6408,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsRow`** — Utility function for settings row.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1607
+**Lines:** 1709
 
 ---
 
@@ -6350,7 +6444,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`SettingsRow`** — Utility function for settings row.
 - **`SettingsPage`** — Utility function for settings page.
 
-**Lines:** 1505
+**Lines:** 1600
 
 ---
 
@@ -6375,7 +6469,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`PasswordRequirement`** — Utility function for password requirement.
 - **`Signup`** — Utility function for signup.
 
-**Lines:** 220
+**Lines:** 235
 
 ---
 
@@ -6449,7 +6543,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Tasks`** — Utility function for tasks.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 4767
+**Lines:** 4789
 
 ---
 
@@ -6472,7 +6566,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Tasks`** — Utility function for tasks.
 - **`TaskItem`** — Utility function for task item.
 
-**Lines:** 2805
+**Lines:** 2808
 
 ---
 
@@ -6515,14 +6609,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`TaskItem`** — Utility function for task item.
 - **`TaskKanbanBoard`** — Utility function for task kanban board.
 
-**Lines:** 4616
+**Lines:** 4627
 
 ---
 
 <a name="src-routes-weeklyplanner-tsx"></a>
 ### src/routes/WeeklyPlanner.tsx
 
-**File Purpose:** Page-level route component for the WeeklyPlanner module. Renders a comprehensive 7-day planning board, Must-Do lists, appointments, daily habits, self-care cards, notes, and an AI Wellbeing Coach, fully themed with semantic tokens for light and dark modes.
+**File Purpose:** Page-level route component for the WeeklyPlanner.tsx module. Renders the main view when navigating to this section.
 
 **Functions & Classes:**
 - `WeeklyPlanner` (React Component)
@@ -6551,7 +6645,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`AppointmentsList`** — Utility function for appointments list.
 - **`DailyHabitsList`** — Utility function for daily habits list.
 
-**Lines:** 1567
+**Lines:** 1568
 
 ---
 
@@ -6651,7 +6745,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`isDashboardMode`** — Utility function for is dashboard mode.
 - **`getPersistedUiSlice`** — Utility function for get persisted ui slice.
 
-**Lines:** 665
+**Lines:** 673
 
 ---
 
@@ -6716,6 +6810,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `BrainDumpSuggestionHabit` (Interface)
 - `BrainDumpSuggestionEvent` (Interface)
 - `BrainDumpAnalysis` (Interface)
+- `MediaAttachment` (Interface)
 - `Note` (Interface)
 - `NoteFolder` (Interface)
 - `TaskList` (Interface)
@@ -6747,7 +6842,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `CreateInput` (Type)
 - `UpdateInput` (Type)
 
-**Lines:** 463
+**Lines:** 474
 
 ---
 
@@ -6784,7 +6879,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration file)
 
-**Lines:** 31
+**Lines:** 34
 
 ---
 
@@ -7042,6 +7137,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="supabase-functions-r2-presign-index-ts"></a>
+### supabase/functions/r2-presign/index.ts
+
+**File Purpose:** Supabase Edge Function. Serverless function running on Deno for backend operations, notifications, and integrations.
+
+**Functions & Classes:** None (configuration or re-export module)
+
+**Lines:** 82
+
+---
+
 <a name="supabase-functions-reconcile-statement-index-ts"></a>
 ### supabase/functions/reconcile-statement/index.ts
 
@@ -7295,23 +7401,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="tsconfig-app-json"></a>
 ### tsconfig.app.json
 
-**File Purpose:** TypeScript configuration for the browser application code. Manages bundler mode, JSX, and path aliases.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- Target: ES2022 with DOM, DOM.Iterable, WebWorker libs.
-- Module: ESNext with `bundler` resolution.
-- Types: `vite/client`.
-- JSX: `react-jsx` — automatic JSX runtime.
-- Strict linting: `strict: true`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `noUncheckedSideEffectImports`.
-- Path aliases:
-  - `@/*` → `./src/*`
-  - Multiple `*.platform` → fallback chain (pake → web) with explicit path mappings for hooks, components, UI, dashboard, and routes directories.
-- Includes `src` directory. Excludes `src/db`, `**/*.test.ts`, `src/sw.ts`.
-
----
-
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
@@ -7322,21 +7411,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="tsconfig-base-json"></a>
 ### tsconfig.base.json
-
-**File Purpose:** Shared TypeScript compiler options base configuration extended by other tsconfig files.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- `isolatedModules: true` — Ensures each file can be transpiled independently (required for Babel/swc).
-- Targets ES2022 with `bundler` module resolution.
-- Strict type checking enabled: `strictNullChecks`, `strictBindCallApply`, `strictPropertyInitialization`, `noImplicitAny`, `noImplicitThis`, `alwaysStrict`.
-- `strictFunctionTypes: false` — Relaxed for compatibility.
-- `noImplicitOverride: false`, `noUnusedLocals: false`.
-- `customConditions`: `["workspace"]` — Custom import conditions for workspace resolution.
-- `skipLibCheck: true` — Skips type checking of declaration files.
-
----
 
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
@@ -7349,16 +7423,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="tsconfig-json"></a>
 ### tsconfig.json
 
-**File Purpose:** TypeScript project references root. Delegates to separate tsconfig files for app and node contexts.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- `"files": []` — No files at root level; uses project references.
-- References: `./tsconfig.app.json` (browser/frontend code) and `./tsconfig.node.json` (Node.js tooling config).
-
----
-
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
@@ -7369,19 +7433,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="tsconfig-node-json"></a>
 ### tsconfig.node.json
-
-**File Purpose:** TypeScript configuration for Node.js tooling (build scripts, configuration files).
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- Target: ES2023 with ES2023 lib.
-- Module: ESNext with `bundler` resolution.
-- Types: `node`.
-- Strict linting: same rules as tsconfig.app.json.
-- Includes: `vite.config.ts` only.
-
----
 
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
@@ -7394,18 +7445,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="vercel-json"></a>
 ### vercel.json
 
-**File Purpose:** Vercel deployment configuration for the frontend SPA and API routes.
-
-**Functions & Classes:** None (configuration file)
-
-**Function Details:**
-- `installCommand`: `pnpm install --frozen-lockfile`.
-- `buildCommand`: `pnpm build`.
-- `outputDirectory`: `dist`.
-- `rewrites`: SPA fallback — all paths except `/api/*` serve `index.html`, enabling client-side routing.
-
----
-
 **File Purpose:** JSON configuration or data file. Used for settings, manifests, or structured data.
 
 **Functions & Classes:** None (JSON data/config)
@@ -7416,31 +7455,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="vite-config-ts"></a>
 ### vite.config.ts
-
-**File Purpose:** Vite build configuration with multi-platform support (web, iOS, pake), custom platform-resolution plugin, development API proxy, and PWA integration.
-
-**Functions & Classes:**
-- `platformResolvePlugin` (function → Vite Plugin)
-
-**Function Details:**
-- `platformResolvePlugin(platform)` — Custom enforce-pre Vite plugin that resolves `*.platform` imports and `index.css` to platform-specific variants:
-  - Maps `.platform` to `.ios`, `.web`, or `.pake`.
-  - For Pake: falls back to `.web` if no `.pake.tsx` file exists.
-  - Similarly resolves `index.css` to `index.ios.css`, `index.web.css`, or `index.pake.css`.
-- Config factory (mode-dependent):
-  - Platform detection: `mode === 'ios' ? 'ios' : mode === 'pake' ? 'pake' : 'web'`.
-  - `base`: `'./'` for pake (desktop), `'/'` for web.
-  - Build target: `safari13` by default, `es5` for iOS 6 legacy mode.
-- Plugins:
-  - `devApiProxyPlugin` — Development server middleware:
-    - Proxies `/api/calendar/tasks` to the local API handler.
-    - Proxies `/api/proxy` for external URL fetching (webcal→https normalization, User-Agent header).
-  - `ignoreApiPlugin` — Stubs out `api/*` imports during Vite bundling (prevents esbuild errors on serverless code).
-  - `@vitejs/plugin-react` — React fast refresh.
-  - `@vitejs/plugin-legacy` — iOS 6 ES5 legacy bundle with polyfills.
-  - `VitePWA` — InjectManifest strategy with `src/sw.ts` as the service worker entry. Precaches JS/CSS/HTML/ico/png/svg/woff2 up to 3MB per file.
-
----
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
@@ -7456,21 +7470,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 <a name="vitest-config-ts"></a>
 ### vitest.config.ts
-
-**File Purpose:** Vitest test runner configuration with platform resolution plugin for testing.
-
-**Functions & Classes:**
-- `platformResolvePlugin` (function → Vite Plugin)
-
-**Function Details:**
-- `platformResolvePlugin` — Same resolution logic as vite.config.ts (maps `.platform` to web, with pake fallback).
-- Plugins: platform resolver + React plugin.
-- Test settings:
-  - `globals: true` — enables global test APIs (describe, it, expect).
-  - `environment: 'jsdom'` — DOM simulation for component tests.
-  - `setupFiles: './src/setupTests.ts'` — Jest DOM matchers initialization.
-
----
 
 **File Purpose:** Source file. Part of the lifeOS application codebase.
 
