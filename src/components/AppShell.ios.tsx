@@ -15,6 +15,7 @@ import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 import LiquidTabBar from './LiquidTabBar';
+import { AppJoyrideTour } from './AppJoyrideTour';
 
 export function AppShell() {
   const {
@@ -691,6 +692,7 @@ export function AppShell() {
           <FocusPiPWindow />
           <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
           <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
+          <AppJoyrideTour />
 
         {/* iOS Quick Plus Dashboard Menu */}
         <AnimatePresence>

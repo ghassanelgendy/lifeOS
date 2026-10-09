@@ -1420,7 +1420,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       {/* Top Row Grid: Custom column ratios on PC/Desktop, 2 columns on tablet, stacked on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
         {/* Col 1: Day Progress (First thing) */}
-        <section aria-labelledby="qv-day-progress-heading" className="rounded-xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both flex flex-col justify-between">
+        <section data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="rounded-xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both flex flex-col justify-between">
           <div className="flex items-center justify-between mb-3">
             <p id="qv-day-progress-heading" className="text-[11px] text-muted-foreground/60 font-bold uppercase tracking-widest flex items-center gap-1.5">
               <Sparkles className="size-3 text-primary/70 shrink-0" />
@@ -1535,7 +1535,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </section>
 
         {/* Col 2: 4 metrics/icons */}
-        <div className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100 flex flex-col justify-center min-h-[180px] lg:min-h-0">
+        <div data-tour="metric-cards" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100 flex flex-col justify-center min-h-[180px] lg:min-h-0">
           <div className="grid grid-cols-2 gap-3 flex-1 items-center">
             {/* Remaining Tasks */}
             <Link to="/" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
@@ -1738,6 +1738,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
       {/* Row 2: Due Today Entries (3 Columns on Desktop) */}
       <section
+        data-tour="due-today"
         className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both w-full"
         aria-labelledby="qv-due-today-heading"
       >

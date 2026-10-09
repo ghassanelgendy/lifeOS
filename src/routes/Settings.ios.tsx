@@ -1659,9 +1659,22 @@ export default function SettingsPage() {
                 A local-first, privacy-centric life dashboard for tracking your health, habits, academics, and finances.
                 All data is stored locally in your browser.
               </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Database size={14} />
-                <span>Data stored in browser localStorage</span>
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Database size={14} />
+                  <span>Data stored in browser localStorage</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    useUIStore.getState().setTourCompleted(false);
+                    alert('Feature tour restarted! Head to the Dashboard to see it.');
+                  }}
+                  className="text-xs"
+                >
+                  Restart Feature Tour
+                </Button>
               </div>
             </div>
           </section>

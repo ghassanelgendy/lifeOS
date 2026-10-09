@@ -1,7 +1,7 @@
 {
   "name": "lifeos-workspace",
   "private": true,
-  "version": "2.2.5",
+  "version": "2.2.6",
   "author": "Ghassan Elgendy",
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -65,6 +65,7 @@
     "react": "19.3.0",
     "react-big-calendar": "^1.20.0",
     "react-dom": "19.3.0",
+    "react-joyride": "^3.2.0",
     "react-router-dom": "^7.18.4",
     "recharts": "^3.10.1",
     "supabase": "^2.120.0",

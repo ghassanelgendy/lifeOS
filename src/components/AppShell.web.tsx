@@ -14,6 +14,7 @@ import { AIChatModal } from './AIChatModal';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
+import { AppJoyrideTour } from './AppJoyrideTour';
 
 function MobileNavLink({
   item,
@@ -517,6 +518,7 @@ export function AppShell() {
 
         <div className="px-2 pb-2">
           <button
+            data-tour="brain-dump"
             type="button"
             onClick={() => setIsBrainDumpOpen(true)}
             className={cn(
@@ -536,7 +538,7 @@ export function AppShell() {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 gap-[2px] flex flex-col px-2">
+        <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto overflow-x-hidden py-2 gap-[2px] flex flex-col px-2">
           {desktopNavigation.map((item) => {
             const isAnalytics = item.href === '/analytics';
             const showDot = isAnalytics && showWrappedTakeover;
@@ -610,6 +612,7 @@ export function AppShell() {
             </NavLink>
           ) : (
             <NavLink
+              data-tour="settings-nav"
               to="/settings"
               className={({ isActive }) => cn(
                 "flex items-center gap-3 w-full rounded-md px-3 py-2 text-[13px] font-normal transition-all duration-150 relative",
@@ -644,6 +647,7 @@ export function AppShell() {
           style={{ paddingTop: 'env(safe-area-inset-top)', minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}
         >
           <button
+            data-tour="mobile-menu"
             onClick={() => setMobileSidebarOpen(true)}
             className="p-2 -ml-2 hover:bg-secondary rounded-lg active:scale-95 transition-transform touch-manipulation"
             aria-label="Open menu"
@@ -652,6 +656,7 @@ export function AppShell() {
           </button>
           <span className="font-bold text-lg">LifeOS</span>
           <button
+            data-tour="mobile-brain-dump"
             onClick={() => setIsBrainDumpOpen(true)}
             className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg active:scale-95 transition-transform touch-manipulation flex items-center gap-1"
             title="Cognitive Brain Dump (Alt+B)"
@@ -701,6 +706,7 @@ export function AppShell() {
         <FocusPiPWindow />
         <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
         <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
+        <AppJoyrideTour />
 
         {/* Wrap Toast Notification */}
         {activeToast && (
@@ -751,6 +757,7 @@ export function AppShell() {
         {/* Mobile Bottom Tab Bar */}
         {location.pathname !== '/chat' && location.pathname !== '/quran' && (
           <nav 
+            data-tour="mobile-nav"
             className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
             style={{
               paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',

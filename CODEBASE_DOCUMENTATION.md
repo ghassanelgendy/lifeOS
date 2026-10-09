@@ -228,6 +228,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/AppFooter.pake.tsx](#src-components-appfooter-pake-tsx)
 - [src/components/AppFooter.tsx](#src-components-appfooter-tsx)
 - [src/components/AppFooter.web.tsx](#src-components-appfooter-web-tsx)
+- [src/components/AppJoyrideTour.tsx](#src-components-appjoyridetour-tsx)
 - [src/components/AppShell.ios.tsx](#src-components-appshell-ios-tsx)
 - [src/components/AppShell.pake.tsx](#src-components-appshell-pake-tsx)
 - [src/components/AppShell.tsx](#src-components-appshell-tsx)
@@ -2390,6 +2391,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`AppFooter`** — Utility function for app footer.
 
 **Lines:** 56
+
+---
+
+<a name="src-components-appjoyridetour-tsx"></a>
+### src/components/AppJoyrideTour.tsx
+
+**File Purpose:** Interactive user onboarding and feature walkthrough tour powered by React Joyride.
+
+**Functions & Classes:**
+- `AppJoyrideTour` (Function Component)
+
+**Function Details:**
+- **`AppJoyrideTour`** — Renders the sequential spotlight tour highlighting Day progress, metric cards, action items, brain dump, and navigation modules. Automatically marks `hasCompletedTour` on completion or skip.
+
+**Lines:** 190
 
 ---
 

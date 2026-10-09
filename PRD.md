@@ -475,6 +475,16 @@ On Reconnect:
   → Invalidate React Query cache
 ```
 
+### 7.7 Feature Walkthrough & Guided Tour (`react-joyride`)
+- **First-Run Experience:** First-time users are greeted with an interactive guided tour spotlighting key workflows:
+  - 24-Hour Day Progress timeline (`[data-tour="day-progress"]`)
+  - Core Quick Metrics (Tasks, Habits, Screen time, Sleep) (`[data-tour="metric-cards"]`)
+  - Due Today checklist & spiritual action stream (`[data-tour="due-today"]`)
+  - Cognitive Brain Dump AI capture (`[data-tour="brain-dump"]` / `[data-tour="mobile-brain-dump"]`)
+  - Multi-domain Navigation & Mobile bar (`[data-tour="sidebar-nav"]` / `[data-tour="mobile-nav"]`)
+  - Settings & Autonomous mobile background integrations (`[data-tour="settings-nav"]` / `[data-tour="mobile-menu"]`)
+- **Persistence & Replayability:** Completion state (`hasCompletedTour`) is tracked in Zustand and persisted to `localStorage` and Supabase. Users can restart the tour anytime via Settings -> About -> *Restart Feature Tour*.
+
 ---
 
 ## 8. Platform Strategy

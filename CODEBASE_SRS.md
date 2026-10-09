@@ -1102,6 +1102,16 @@ The system shall generate secure tokenized URLs for iCal calendar feeds.
 #### FR-DL-010: Automated Task Creation Webhook Integration
 Supabase Edge Function (`create-task`) shall accept automated POST requests from iOS Mail Automations, Apple Shortcuts, and external webhooks to create tasks with intelligent parsing of subject, body, due date/time, priorities, lists, subtasks, and tags.
 
+#### FR-TOUR-001: Introductory Feature Tour & Interactive Tips
+The application shall provide an onboarding tour using `react-joyride` that activates automatically on first launch (`hasCompletedTour === false`). The tour shall sequentially spotlight:
+1. 24-hour day progress timeline (`[data-tour="day-progress"]`)
+2. Core quick metrics cards (`[data-tour="metric-cards"]`)
+3. Due today checklist & prayer action stream (`[data-tour="due-today"]`)
+4. Cognitive brain dump AI capture (`[data-tour="brain-dump"]` / `[data-tour="mobile-brain-dump"]`)
+5. LifeOS module navigation (`[data-tour="sidebar-nav"]` / `[data-tour="mobile-nav"]`)
+6. Settings & mobile background automation (`[data-tour="settings-nav"]` / `[data-tour="mobile-menu"]`)
+The completion/skip status shall be persisted to `useUIStore`. Users shall be capable of restarting the tour at any time via Settings -> About.
+
 ---
 
 ### 3.19 AI Assistant & Copilot

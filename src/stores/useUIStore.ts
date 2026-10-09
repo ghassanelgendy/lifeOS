@@ -221,6 +221,9 @@ interface UIState {
   aiActiveModel: string;
   /** Opt-in (default off) for the server-side cron job that auto-organizes Brain Dump notes with AI. */
   brainDumpAutoOrganizeEnabled: boolean;
+  /** Whether the user has completed or dismissed the introductory React Joyride tour */
+  hasCompletedTour: boolean;
+  setTourCompleted: (completed: boolean) => void;
   setAiEnabled: (enabled: boolean) => void;
   setAiApiKey: (key: string) => void;
   setAiBaseUrl: (url: string) => void;
@@ -294,6 +297,7 @@ export type PersistedUiSlice = {
   aiFallbackEnabled: boolean;
   aiActiveModel: string;
   brainDumpAutoOrganizeEnabled: boolean;
+  hasCompletedTour: boolean;
 };
 
 export const useUIStore = create<UIState>()(
@@ -476,6 +480,9 @@ export const useUIStore = create<UIState>()(
       setCalendarShowTasks: (calendarShowTasks) => set({ calendarShowTasks }),
       tasksUseModalForCreate: false,
       setTasksUseModalForCreate: (tasksUseModalForCreate) => set({ tasksUseModalForCreate }),
+
+      hasCompletedTour: false,
+      setTourCompleted: (hasCompletedTour) => set({ hasCompletedTour }),
 
       // AI Default values & Setters
       aiEnabled: Boolean(
@@ -660,5 +667,6 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     aiFallbackEnabled: state.aiFallbackEnabled,
     aiActiveModel: state.aiActiveModel,
     brainDumpAutoOrganizeEnabled: state.brainDumpAutoOrganizeEnabled,
+    hasCompletedTour: state.hasCompletedTour,
   };
 }
