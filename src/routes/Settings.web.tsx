@@ -25,6 +25,8 @@ import {
   ChevronRight,
   Sparkles,
   Puzzle,
+  Zap,
+  Copy,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
@@ -85,6 +87,7 @@ const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
 
 const SETTINGS_NAV = [
   { id: 'account', label: 'Account' },
+  { id: 'shortcuts', label: 'Shortcuts & Mobile' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'defaults', label: 'App defaults' },
   { id: 'accounts', label: 'Bank accounts' },
@@ -483,6 +486,85 @@ export default function SettingsPage() {
             <LogOut size={18} />
             Sign out
           </Button>
+        </div>
+      </section>
+
+      {/* Shortcuts & Mobile Launcher */}
+      <section id="settings-shortcuts" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div>
+            <h2 className="font-semibold flex items-center gap-2">
+              <Zap size={18} className="text-amber-400" />
+              Mobile App Shortcuts & Quick Actions
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Instant 1-tap capture on Android & iOS without installing external automation apps
+            </p>
+          </div>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">Your Account User ID</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (user?.id) {
+                    navigator.clipboard.writeText(user.id);
+                    alert('User ID copied to clipboard!');
+                  }
+                }}
+                className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium"
+              >
+                <Copy size={13} /> Copy ID
+              </button>
+            </div>
+            <p className="font-mono text-xs text-foreground/80 break-all select-all bg-black/30 p-2 rounded-lg">
+              {user?.id ?? 'Not signed in'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-base">🤖</span> Android Homescreen Shortcuts
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Install LifeOS as an app (Chrome menu → <em>Install App</em> or native APK). <strong>Long-press</strong> the LifeOS icon to reveal instant shortcuts: <em>Add Expense</em>, <em>Brain Dump</em>, <em>New Task</em>, and <em>Quran</em>. You can drag any of them onto your home screen!
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-base">📲</span> Android Share Sheet
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                When reading articles, tweets, or text in any Android browser/app, tap the system <strong>Share</strong> button and choose <strong>LifeOS</strong> to automatically drop the link or text into your Brain Dump note.
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-base">💬</span> Native Bank SMS Parser
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                In the native Android app, bank transaction SMS alerts (QNB, NBE, CIB, Instapay, Fawry, Vodafone Cash, etc.) are intercepted in the background and automatically logged with zero manual steps!
+              </p>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
+              <p className="font-medium text-sm flex items-center gap-2">
+                <span className="text-base">⏱️</span> Native Background Screen Time
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Android UsageStats runs periodic background syncs into LifeOS Screen Time analytics automatically. No third-party tools (Tasker, HTTP Shortcuts) required.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            💡 <strong>Native &amp; Production-Ready:</strong> Works natively with zero external automation tools, no manual webhook URLs, and no JSON editing required.
+          </p>
         </div>
       </section>
 

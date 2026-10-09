@@ -1321,8 +1321,16 @@ export default function Tasks() {
   // in-page 'n' keyboard shortcut or the header button.
   useEffect(() => {
     window.addEventListener('lifeos:openNewTask', handleOpenNewTaskSheet);
+
+    if (searchParams.get('quick') === 'add' || searchParams.get('action') === 'new') {
+      handleOpenNewTaskSheet();
+      searchParams.delete('quick');
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+
     return () => window.removeEventListener('lifeos:openNewTask', handleOpenNewTaskSheet);
-  }, [handleOpenNewTaskSheet]);
+  }, [handleOpenNewTaskSheet, searchParams, setSearchParams]);
 
   // Open Details sheet (full-height bottom sheet)
   const handleEditTask = (task: Task) => {

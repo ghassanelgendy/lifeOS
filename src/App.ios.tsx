@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from './lib/supabase';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
-import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners, registerNotificationActionTypes } from './lib/nativeBridge';
+import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners, registerNotificationActionTypes, syncAndroidNativeBridge } from './lib/nativeBridge';
 import { useTasks } from './hooks/useTasks';
 import { useHabits, useTodayHabitLogs, useHabitAverages } from './hooks/useHabits';
 import { useCalendarEvents } from './hooks/useCalendar';
@@ -171,6 +171,12 @@ function AppInner() {
   }, []);
 
   useEffect(() => {
+    if (user?.id) {
+      void syncAndroidNativeBridge(user.id);
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
     if (!tasks || !habits || !events) return;
     // Use [] fallback for prayerSettings so tasks/habits/events are scheduled
     // immediately without waiting on prayer settings to finish loading
@@ -206,11 +212,21 @@ function AppInner() {
           // Handled by router — app opens to dashboard route by default
           window.location.href = '/dashboard';
         } else if (parsedUrl.host === 'tasks') {
-          window.location.href = '/tasks';
+          const params = new URLSearchParams(parsedUrl.search);
+          if (params.get('quick') === 'add' || params.get('action') === 'new') {
+            window.location.href = '/tasks?quick=add';
+          } else {
+            window.location.href = '/tasks';
+          }
         } else if (parsedUrl.host === 'calendar') {
           window.location.href = '/calendar';
         } else if (parsedUrl.host === 'finance') {
-          window.location.href = '/finance';
+          const params = new URLSearchParams(parsedUrl.search);
+          if (params.get('quick') === 'expense' || params.get('action') === 'new') {
+            window.location.href = '/finance?quick=expense';
+          } else {
+            window.location.href = '/finance';
+          }
         } else if (parsedUrl.host === 'quran') {
           const params = new URLSearchParams(parsedUrl.search);
           const page = params.get('page') ? Number(params.get('page')) : undefined;

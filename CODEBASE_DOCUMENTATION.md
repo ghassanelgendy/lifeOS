@@ -2118,7 +2118,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
   - Same structure as web but adds iOS-specific Capacitor integrations.
 - **`AppInner`** (component)
   - Listens for keyboard show/hide events via Capacitor Keyboard plugin and stores `--keyboard-height` CSS variable.
-  - Sets up deep link listener for `lifeos://` URLs with route navigation.
+  - Sets up deep link listener for `lifeos://` URLs with route navigation (including `lifeos://tasks?action=new`, `lifeos://braindump`, `lifeos://finance?action=new`, and `lifeos://quran`).
+  - Supports iOS `UIApplicationShortcutItems` Quick Actions dispatched via `AppDelegate.swift` and Web App Manifest launcher shortcuts on Android / Desktop.
   - Schedules local notifications on app focus using native notification APIs.
   - Checks for OTA updates on app resume via Capacitor Updater.
   - Triggers native haptic feedback on task completion and habit toggle actions.
@@ -5228,6 +5229,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `isInQuietHours` (Function)
 - `taskTriggerDate` (Function)
 - `setupNotificationActionListeners` (Function)
+- `LifeOSAndroidBridge` (Capacitor Plugin)
+- `syncAndroidNativeBridge` (Function)
 
 **Function Details:**
 - **`setupDeepLinkListener`** — Utility function for setup deep link listener.
@@ -5235,8 +5238,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`generateEventInstances`** — Utility function for generate event instances.
 - **`isHabitScheduledForDate`** — Utility function for is habit scheduled for date.
 - **`parseTimeToMinutes`** — Utility function for parse time to minutes.
+- **`syncAndroidNativeBridge`** — Utility function to synchronize authenticated User ID and Supabase credentials to native Android SharedPreferences and schedule periodic screen time background syncs.
 
-**Lines:** 927
+**Lines:** 960
 
 ---
 

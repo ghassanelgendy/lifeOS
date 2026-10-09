@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Shield, Download, Upload, Trash2, Moon, Sun, Database, Info, RefreshCw, Smartphone, Check, Bell, ChevronUp, ChevronDown, GripVertical, LogOut, User, RotateCcw, MapPin, Loader2, HelpCircle, BookOpen, ChevronRight } from 'lucide-react';
+import { Shield, Download, Upload, Trash2, Moon, Sun, Database, Info, RefreshCw, Smartphone, Check, Bell, ChevronUp, ChevronDown, GripVertical, LogOut, User, RotateCcw, MapPin, Loader2, HelpCircle, BookOpen, ChevronRight, Copy, Zap, ExternalLink } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_MODES, DASHBOARD_MODE_LABELS, PAGE_WIDGET_DEFAULTS, DEFAULT_DESKTOP_NAV, DEFAULT_PINNED_NAV, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme, type DashboardMode } from '../stores/useUIStore';
@@ -52,6 +52,7 @@ const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
 
 const SETTINGS_NAV = [
   { id: 'account', label: 'Account' },
+  { id: 'shortcuts', label: 'Apple Shortcuts' },
   { id: 'appearance', label: 'Appearance' },
   { id: 'defaults', label: 'App defaults' },
   { id: 'accounts', label: 'Bank accounts' },
@@ -467,6 +468,94 @@ export default function SettingsPage() {
                 <LogOut size={18} />
                 Sign out
               </Button>
+            </div>
+          </section>
+
+          {/* Apple Shortcuts & Siri Integrations */}
+          <section id="settings-shortcuts" className="liquid-glass-card overflow-hidden scroll-mt-20">
+            <div className="p-4 border-b border-border flex items-center justify-between">
+              <div>
+                <h2 className="font-semibold flex items-center gap-2">
+                  <Zap size={18} className="text-amber-400" />
+                  Apple Shortcuts & Siri
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  1-Click install into iOS Shortcuts with your account pre-configured
+                </p>
+              </div>
+            </div>
+            <div className="p-4 space-y-4">
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">Your Account User ID</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (user?.id) {
+                        navigator.clipboard.writeText(user.id);
+                        alert('User ID copied to clipboard!');
+                      }
+                    }}
+                    className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium"
+                  >
+                    <Copy size={13} /> Copy ID
+                  </button>
+                </div>
+                <p className="font-mono text-xs text-foreground/80 break-all select-all bg-black/30 p-2 rounded-lg">
+                  {user?.id ?? 'Not signed in'}
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
+                  <div>
+                    <p className="font-medium text-sm">Quick Expense Shortcut</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Log expenses hands-free via Siri or Back Tap into LifeOS finance
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
+                    onClick={() => {
+                      if (user?.id) {
+                        navigator.clipboard.writeText(user.id);
+                      }
+                      window.open('https://www.icloud.com/shortcuts/', '_blank');
+                    }}
+                  >
+                    <ExternalLink size={14} />
+                    Add to Shortcuts
+                  </Button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
+                  <div>
+                    <p className="font-medium text-sm">Brain Dump / Voice Capture</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Dictate thoughts directly to your daily midnight AI organizer
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 shrink-0"
+                    onClick={() => {
+                      if (user?.id) {
+                        navigator.clipboard.writeText(user.id);
+                      }
+                      window.open('https://www.icloud.com/shortcuts/', '_blank');
+                    }}
+                  >
+                    <ExternalLink size={14} />
+                    Add to Shortcuts
+                  </Button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                💡 <strong>How it works:</strong> Tapping &quot;Add to Shortcuts&quot; automatically copies your User ID to your clipboard and opens Apple Shortcuts. When prompted on your iPhone, simply tap <em>&quot;Add Shortcut&quot;</em>!
+              </p>
             </div>
           </section>
 

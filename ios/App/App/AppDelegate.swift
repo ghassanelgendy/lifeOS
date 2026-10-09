@@ -57,11 +57,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         case "com.ghassanelgendy.lifeos.dashboard":
             urlString = "lifeos://dashboard"
         case "com.ghassanelgendy.lifeos.tasks":
-            urlString = "lifeos://tasks"
+            urlString = "lifeos://tasks?action=new"
+        case "com.ghassanelgendy.lifeos.braindump":
+            urlString = "lifeos://braindump"
         case "com.ghassanelgendy.lifeos.calendar":
             urlString = "lifeos://calendar"
         case "com.ghassanelgendy.lifeos.addexpense":
-            urlString = "lifeos://finance"
+            urlString = "lifeos://finance?action=new"
         default:
             return false
         }

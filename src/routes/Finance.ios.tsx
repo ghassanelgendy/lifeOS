@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import {
   Plus,
   ArrowUpRight,
@@ -134,6 +134,7 @@ const QNB_CREDIT = /1473|\*\*\*1473/;
 export default function Finance() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<FinanceTab>('transactions');
   const { data: transactions = [], isLoading } = useTransactions();
   const { data: banks = [], isLoading: banksLoading } = useUserBanks();
@@ -894,6 +895,16 @@ Return ONLY raw JSON object.`;
 
   useEffect(() => {
     const state = location.state as { triggerAdd?: boolean } | null;
+    const isQuickExpense = searchParams.get('quick') === 'expense' || searchParams.get('action') === 'new';
+
+    if (isQuickExpense) {
+      searchParams.delete('quick');
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+      handleOpenModalRef.current();
+      return;
+    }
+
     if (state?.triggerAdd) {
       navigate(location.pathname, { replace: true, state: {} });
       if (activeTab === 'investments') {
@@ -902,7 +913,7 @@ Return ONLY raw JSON object.`;
         handleOpenModalRef.current();
       }
     }
-  }, [location.state, navigate, location.pathname, activeTab]);
+  }, [location.state, navigate, location.pathname, activeTab, searchParams, setSearchParams]);
 
   if (isLoading) {
     return (

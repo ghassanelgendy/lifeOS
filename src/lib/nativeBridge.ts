@@ -1,4 +1,4 @@
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { App } from '@capacitor/app';
 import { Keyboard, KeyboardStyle } from '@capacitor/keyboard';
@@ -924,3 +924,36 @@ export function setupNotificationActionListeners(supabaseClient: any, queryClien
     }
   });
 }
+
+// Android Native Background Bridge Plugin Interface
+export interface LifeOSAndroidBridgePluginType {
+  configureUser(options: { userId: string; supabaseUrl?: string; supabaseAnonKey?: string }): Promise<{ configured: boolean; userId: string }>;
+  getAutomationStatus(): Promise<{
+    isAndroid: boolean;
+    hasSmsPermission: boolean;
+    hasUsageStatsPermission: boolean;
+    isConfigured: boolean;
+    configuredUserId?: string | null;
+  }>;
+  requestUsageStatsPermission(): Promise<{ granted?: boolean; openedSettings?: boolean }>;
+  triggerScreenTimeSyncNow(): Promise<{ triggered: boolean }>;
+}
+
+export const LifeOSAndroidBridge = registerPlugin<LifeOSAndroidBridgePluginType>('LifeOSAndroidBridge');
+
+export async function syncAndroidNativeBridge(userId: string) {
+  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wckvsmeymvwchwweadfs.supabase.co';
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || '';
+    await LifeOSAndroidBridge.configureUser({
+      userId,
+      supabaseUrl,
+      supabaseAnonKey,
+    });
+    addSystemLog(`syncAndroidNativeBridge: Configured native bridge for user ${userId}`, 'info');
+  } catch (err: any) {
+    addSystemLog(`syncAndroidNativeBridge failed: ${err?.message || err}`, 'warn');
+  }
+}
+

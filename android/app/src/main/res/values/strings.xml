@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">lifeOS</string>
+    <string name="title_activity_main">lifeOS</string>
+    <string name="package_name">com.ghassanelgendy.lifeos</string>
+    <string name="custom_url_scheme">com.ghassanelgendy.lifeos</string>
+    <string name="shortcut_expense_short">Expense</string>
+    <string name="shortcut_expense_long">Add Expense</string>
+    <string name="shortcut_brain_short">Brain Dump</string>
+    <string name="shortcut_brain_long">Quick Brain Dump</string>
+    <string name="shortcut_task_short">New Task</string>
+    <string name="shortcut_task_long">Add New Task</string>
+    <string name="shortcut_quran_short">Quran</string>
+    <string name="shortcut_quran_long">Open Quran</string>
+</resources>

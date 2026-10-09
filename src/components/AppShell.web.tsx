@@ -120,6 +120,33 @@ export function AppShell() {
     window.addEventListener('lifeos:openBrainDump', handleOpenBrainDump as EventListener);
     window.addEventListener('lifeos:openAIChat', handleOpenAIChat as EventListener);
 
+    // Handle deep links / launcher shortcuts / web share target from URL query params
+    const searchParams = new URLSearchParams(window.location.search);
+    const openParam = searchParams.get('open');
+    const shareText = searchParams.get('share_text') || searchParams.get('text');
+    const shareUrl = searchParams.get('share_url') || searchParams.get('url');
+    const shareTitle = searchParams.get('share_title') || searchParams.get('title');
+
+    if (openParam === 'braindump' || shareText || shareUrl) {
+      const combinedText = [shareTitle, shareText, shareUrl].filter(Boolean).join('\n');
+      if (combinedText) {
+        setBrainDumpInitialText(combinedText);
+      }
+      setIsBrainDumpOpen(true);
+
+      // Clean up URL parameters without full page reload
+      searchParams.delete('open');
+      searchParams.delete('share_text');
+      searchParams.delete('share_url');
+      searchParams.delete('share_title');
+      searchParams.delete('text');
+      searchParams.delete('url');
+      searchParams.delete('title');
+      const newQuery = searchParams.toString();
+      const newRelativePathQuery = window.location.pathname + (newQuery ? `?${newQuery}` : '');
+      window.history.replaceState(null, '', newRelativePathQuery);
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = (e.key || '').toLowerCase();
       const code = (e.code || '').toLowerCase();

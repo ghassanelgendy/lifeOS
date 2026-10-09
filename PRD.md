@@ -479,13 +479,24 @@ On Reconnect:
 
 ## 8. Platform Strategy
 
-### 8.1 Web/PWA (Primary)
-- Target: Modern browsers, installable as PWA
+### 8.1 Web/PWA
+- Target: Modern browsers, installable as PWA (Desktop / Mobile web)
 - Router: BrowserRouter
 - Service Worker: Workbox-based injectManifest with precaching
 - Push: Web Push API with VAPID
 - Storage: localStorage + IndexedDB
+- App Shortcuts: W3C Web App Manifest shortcuts for Quick Expense (`/finance?quick=expense`), Brain Dump (`/dashboard?open=braindump`), New Task (`/tasks?quick=add`), and Quran (`/quran`)
+- Web Share Target: Ingest shared text, links, and titles directly into Brain Dump capture
 - Base URL: `/`
+
+### 8.2 Android Native (Capacitor & WorkManager)
+- Target: Android 7.0+ (API 24+)
+- Router: BrowserRouter
+- Native SMS Broadcast Receiver (`SmsBroadcastReceiver`): Intercepts incoming bank SMS alerts and posts them directly to `/functions/v1/process-sms` with zero user configuration.
+- Native Background Screen Time Worker (`ScreenTimeWorker`): Background WorkManager periodic worker (every 4 hours) querying `UsageStatsManager` for daily app usage and syncing with `/functions/v1/upload-screentime`.
+- App Shortcuts: Android static `shortcuts.xml` long-press launcher shortcuts for Add Expense, Brain Dump, New Task, and Quran.
+- Deep Links: `lifeos://` custom URL scheme (`lifeos://finance?quick=expense`, `lifeos://braindump`, `lifeos://tasks?quick=add`, `lifeos://quran`).
+- Native Bridge Plugin: `LifeOSAndroidBridge` providing user authentication sync, permission inspection, and immediate screentime triggers.
 
 ### 8.2 iOS Native (Capacitor)
 - Target: iOS 13+
@@ -494,7 +505,8 @@ On Reconnect:
 - Local Notifications: Capacitor Local Notifications
 - Haptics: Capacitor Haptics
 - Keyboard: Capacitor Keyboard (resize: none, style: dark)
-- Deep Links: `lifeos://` URL scheme
+- App Shortcuts: UIApplicationShortcutItems (3D / Haptic Touch long-press launcher shortcuts for Add Expense, Brain Dump, New Task, and Dashboard)
+- Deep Links: `lifeos://` URL scheme (`lifeos://finance?action=new`, `lifeos://braindump`, `lifeos://tasks?action=new`, `lifeos://quran`)
 - Status Bar: Synced with app theme
 - Badge: Updated based on notification count
 - OTA: Capacitor Updater (manual checks)

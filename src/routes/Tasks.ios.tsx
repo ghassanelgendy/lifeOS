@@ -1630,7 +1630,26 @@ export default function Tasks() {
     setIsEditModalOpen(true);
   };
 
-  // Redirect to edit/add task if navigation state payload contains editTaskId or triggerAdd
+  // Redirect to edit/add task if navigation state payload contains editTaskId or triggerAdd, or quick=add param
+  useEffect(() => {
+    const handleOpenNewTaskSheet = () => {
+      setSelectedTask(null);
+      setEditForm(getDefaultEditFormForNewTask());
+      setIsEditModalOpen(true);
+    };
+
+    window.addEventListener('lifeos:openNewTask', handleOpenNewTaskSheet);
+
+    if (searchParams.get('quick') === 'add' || searchParams.get('action') === 'new') {
+      handleOpenNewTaskSheet();
+      searchParams.delete('quick');
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+
+    return () => window.removeEventListener('lifeos:openNewTask', handleOpenNewTaskSheet);
+  }, [getDefaultEditFormForNewTask, searchParams, setSearchParams]);
+
   useEffect(() => {
     const state = location.state as { editTaskId?: string; triggerAdd?: boolean; dueDate?: string } | null;
     if (state?.triggerAdd) {

@@ -17,5 +17,69 @@
   ],
   "theme_color": "#ffffff",
   "background_color": "#ececec",
-  "display": "standalone"
+  "display": "standalone",
+  "start_url": "/dashboard",
+  "shortcuts": [
+    {
+      "name": "Add Expense",
+      "short_name": "Expense",
+      "description": "Log an expense transaction quickly",
+      "url": "/finance?quick=expense",
+      "icons": [
+        {
+          "src": "/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Brain Dump",
+      "short_name": "Brain Dump",
+      "description": "Quickly capture a note or idea",
+      "url": "/dashboard?open=braindump",
+      "icons": [
+        {
+          "src": "/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "New Task",
+      "short_name": "New Task",
+      "description": "Create a new task",
+      "url": "/tasks?quick=add",
+      "icons": [
+        {
+          "src": "/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Quran",
+      "short_name": "Quran",
+      "description": "Open Quran reader",
+      "url": "/quran",
+      "icons": [
+        {
+          "src": "/web-app-manifest-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "share_target": {
+    "action": "/dashboard",
+    "method": "GET",
+    "params": {
+      "title": "share_title",
+      "text": "share_text",
+      "url": "share_url"
+    }
+  }
 }

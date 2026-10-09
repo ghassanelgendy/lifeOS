@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="quick_expense"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_expense"
+        android:shortcutShortLabel="@string/shortcut_expense_short"
+        android:shortcutLongLabel="@string/shortcut_expense_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ghassanelgendy.lifeos"
+            android:targetClass="com.ghassanelgendy.lifeos.MainActivity"
+            android:data="lifeos://finance?quick=expense" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="quick_braindump"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_brain"
+        android:shortcutShortLabel="@string/shortcut_brain_short"
+        android:shortcutLongLabel="@string/shortcut_brain_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ghassanelgendy.lifeos"
+            android:targetClass="com.ghassanelgendy.lifeos.MainActivity"
+            android:data="lifeos://braindump" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="quick_task"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_task"
+        android:shortcutShortLabel="@string/shortcut_task_short"
+        android:shortcutLongLabel="@string/shortcut_task_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ghassanelgendy.lifeos"
+            android:targetClass="com.ghassanelgendy.lifeos.MainActivity"
+            android:data="lifeos://tasks?quick=add" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="quick_quran"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_quran"
+        android:shortcutShortLabel="@string/shortcut_quran_short"
+        android:shortcutLongLabel="@string/shortcut_quran_long">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.ghassanelgendy.lifeos"
+            android:targetClass="com.ghassanelgendy.lifeos.MainActivity"
+            android:data="lifeos://quran" />
+        <categories android:name="android.shortcut.conversation" />
+    </shortcut>
+</shortcuts>

@@ -1,7 +1,7 @@
 {
   "name": "lifeos-workspace",
   "private": true,
-  "version": "2.2.4",
+  "version": "2.2.5",
   "author": "Ghassan Elgendy",
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -26,6 +26,7 @@
     "icons:apple": "node scripts/generate-apple-touch-icons.mjs"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.3",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
     "@capacitor/device": "^8.0.3",

@@ -1072,11 +1072,23 @@ Deep links to `lifeos://dashboard`, `lifeos://tasks`, `lifeos://calendar`, `life
 #### FR-DL-004: iOS 6 Lite Mode
 The system shall provide a lightweight HTML page for iOS 6 compatibility with legacy auto-login support.
 
+#### FR-DL-007: Homescreen App Shortcuts & Web Share Target
+The application shall support native long-press launcher shortcuts (Quick Expense, Brain Dump, New Task, Quran) across both iOS (via `UIApplicationShortcutItems`), Android Native (via `res/xml/shortcuts.xml`), and Web / PWA (via W3C Web App Manifest `shortcuts`). On web and mobile platforms, the app shall support Web Share Target to ingest shared text, URLs, and titles directly into Brain Dump capture.
+
+#### FR-AND-001: Native Android Bank SMS Broadcast Receiver
+The Android native application shall register `SmsBroadcastReceiver` with high intent priority (`999`) to automatically intercept incoming SMS messages from banking and payment providers (e.g. QNB, NBE, CIB, Fawry, Vodafone Cash, Instapay). The receiver shall securely extract message text and sender, read the stored User ID from `SharedPreferences`, and dispatch asynchronous HTTP requests to `/functions/v1/process-sms` with zero user configuration.
+
+#### FR-AND-002: Native Android Background Screen Time Worker
+The Android native application shall implement `ScreenTimeWorker` via Android `WorkManager` (scheduled periodically every 4 hours with network constraints). When the `PACKAGE_USAGE_STATS` permission is granted, the worker shall query `UsageStatsManager` for foreground app durations, construct daily screen time payloads, and POST them directly to `/functions/v1/upload-screentime`.
+
+#### FR-AND-003: Native Android Bridge Plugin
+The Android application shall provide a custom Capacitor plugin `LifeOSAndroidBridge` allowing the web runtime to synchronize authenticated user credentials, query automation status (SMS & UsageStats permissions), request system usage access settings, and trigger immediate screen time uploads.
+
 #### FR-DL-005: InBody Sync Integration
 Supabase Edge Function shall sync InBody data from external APIs.
 
 #### FR-DL-006: Screen Time Upload Integration
-Supabase Edge Functions shall parse and ingest screen time data from external trackers.
+Supabase Edge Functions shall parse and ingest screen time data from external trackers and native Android WorkManager workers.
 
 #### FR-DL-007: Sleep Data Upload Integration
 Supabase Edge Functions shall parse and ingest sleep data from Chronos and other formats.
