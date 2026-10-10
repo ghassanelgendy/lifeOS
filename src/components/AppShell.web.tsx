@@ -15,6 +15,8 @@ import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 import { AppJoyrideTour } from './AppJoyrideTour';
+import { useAuth } from '../hooks/useAuth';
+import { UserBlobatar } from './ui/UserBlobatar';
 
 function MobileNavLink({
   item,
@@ -95,6 +97,7 @@ export function AppShell() {
     showAppFooter,
     aiEnabled,
   } = useUIStore();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -484,8 +487,13 @@ export function AppShell() {
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Settings size={26} className="shrink-0" />
-                <span className="min-w-0 break-words">Settings</span>
+                <UserBlobatar identifier={user?.email || user?.id} size={28} />
+                <div className="flex flex-col min-w-0 leading-tight">
+                  <span className="min-w-0 truncate font-semibold text-foreground text-base">
+                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Settings & Profile</span>
+                </div>
               </NavLink>
             )}
           </div>
@@ -615,23 +623,35 @@ export function AppShell() {
               data-tour="settings-nav"
               to="/settings"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-md px-3 py-2 text-[13px] font-normal transition-all duration-150 relative",
+                "flex items-center gap-3 w-full rounded-md px-2.5 py-1.5 text-[13px] font-normal transition-all duration-150 relative group",
                 "hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground",
                 isActive 
                   ? "bg-black/[0.04] dark:bg-white/[0.06] text-foreground font-medium" 
                   : "text-muted-foreground",
-                isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
+                isSidebarCollapsed && "justify-center px-0 w-12 h-10 mx-auto"
               )}
+              title={user?.email || 'User Settings'}
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
                     <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
                   )}
-                  <div className="relative flex items-center justify-center shrink-0">
-                    <Settings size={16} strokeWidth={isActive ? 2.2 : 1.8} />
-                  </div>
-                  {!isSidebarCollapsed && <span>Settings</span>}
+                  <UserBlobatar
+                    identifier={user?.email || user?.id}
+                    size={24}
+                    className="ring-1 ring-border shrink-0 transition-transform group-hover:scale-105"
+                  />
+                  {!isSidebarCollapsed && (
+                    <div className="flex flex-col min-w-0 leading-tight">
+                      <span className="font-medium text-xs text-foreground truncate">
+                        {user?.email ? user.email.split('@')[0] : 'Settings'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        Preferences
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
             </NavLink>
@@ -655,14 +675,23 @@ export function AppShell() {
             <Menu size={24} />
           </button>
           <span className="font-bold text-lg">LifeOS</span>
-          <button
-            data-tour="mobile-brain-dump"
-            onClick={() => setIsBrainDumpOpen(true)}
-            className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg active:scale-95 transition-transform touch-manipulation flex items-center gap-1"
-            title="Cognitive Brain Dump (Alt+B)"
-          >
-            <Brain size={20} />
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              data-tour="mobile-brain-dump"
+              onClick={() => setIsBrainDumpOpen(true)}
+              className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg active:scale-95 transition-transform touch-manipulation flex items-center gap-1"
+              title="Cognitive Brain Dump (Alt+B)"
+            >
+              <Brain size={20} />
+            </button>
+            <NavLink
+              to="/settings"
+              className="p-1 rounded-full active:scale-95 transition-transform touch-manipulation"
+              title="Settings & Profile"
+            >
+              <UserBlobatar identifier={user?.email || user?.id} size={28} />
+            </NavLink>
+          </div>
         </header>
 
         <OfflineBanner />

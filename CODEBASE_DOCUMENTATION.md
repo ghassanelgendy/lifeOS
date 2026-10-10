@@ -2481,9 +2481,22 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `AppJoyrideTour` (Function)
 
 **Function Details:**
-- **`AppJoyrideTour`** — Utility function for app joyride tour.
+- **`AppJoyrideTour`** — First-use onboarding tour introducing the user's Blobatar profile avatar as their lifeOS Assistant, stepping through day progress, quick metrics, due today, cognitive brain dump, life modules, and settings. Automatically marks tour as completed across local storage and cloud sync so guidance only appears on first use, with a dedicated replay mechanism via `useUIStore.restartTour()` available from Settings.
 
-**Lines:** 192
+**Lines:** 223
+
+---
+
+<a name="src-components-ui-userblobatar-tsx"></a>
+### src/components/ui/UserBlobatar.tsx
+
+**File Purpose:** Deterministic user profile avatar component powered by `@blobatar/react` and `blobatar`.
+
+**Functions & Classes:**
+- `UserBlobatar` (Function component)
+
+**Function Details:**
+- **`UserBlobatar`** — Renders a deterministic geometric profile picture for each user based on user ID or email seed. Embedded across the navigation sidebar, mobile header, drawer profile preview, Settings account card, and the first-use Assistant onboarding guide.
 
 ---
 

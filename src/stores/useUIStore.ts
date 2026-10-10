@@ -224,6 +224,9 @@ interface UIState {
   /** Whether the user has completed or dismissed the introductory React Joyride tour */
   hasCompletedTour: boolean;
   setTourCompleted: (completed: boolean) => void;
+  /** Counter or token to force restart the tour even if previously completed */
+  tourSessionKey: number;
+  restartTour: () => void;
   setAiEnabled: (enabled: boolean) => void;
   setAiApiKey: (key: string) => void;
   setAiBaseUrl: (url: string) => void;
@@ -483,6 +486,8 @@ export const useUIStore = create<UIState>()(
 
       hasCompletedTour: false,
       setTourCompleted: (hasCompletedTour) => set({ hasCompletedTour }),
+      tourSessionKey: 0,
+      restartTour: () => set((state) => ({ hasCompletedTour: false, tourSessionKey: state.tourSessionKey + 1 })),
 
       // AI Default values & Setters
       aiEnabled: Boolean(

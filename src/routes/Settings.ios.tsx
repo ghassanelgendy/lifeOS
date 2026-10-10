@@ -9,10 +9,11 @@ import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
 import { Button, ConfirmSheet, Input, Modal } from '../components/ui';
+import { UserBlobatar } from '../components/ui/UserBlobatar';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
@@ -199,6 +200,7 @@ export default function SettingsPage() {
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
   } = useUIStore();
+  const navigate = useNavigate();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
   const unarchiveHabit = useUnarchiveHabit();
@@ -470,7 +472,7 @@ export default function SettingsPage() {
             </div>
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-3">
-                <User size={20} className="text-muted-foreground" />
+                <UserBlobatar identifier={user?.email || user?.id} size={48} />
                 <div>
                   <p className="font-medium">{user?.email ?? '—'}</p>
                   <p className="text-sm text-muted-foreground">Signed in with Supabase Auth</p>
@@ -646,7 +648,7 @@ export default function SettingsPage() {
               </div>
 
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                💡 <strong>Instant iOS Integration:</strong> Use the buttons above to get 1-click deep links, Back Tap triggers, or Webhook URLs tailored with your User ID.
+                <strong>Instant iOS Integration:</strong> Use the buttons above to get 1-click deep links, Back Tap triggers, or Webhook URLs tailored with your User ID.
               </p>
             </div>
           </section>
@@ -1860,6 +1862,28 @@ export default function SettingsPage() {
                   </Button>
                 </Link>
               </div>
+              <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="font-medium flex items-center gap-2">
+                    <Sparkles size={18} className="text-primary" />
+                    <span>Interactive Feature Tour</span>
+                  </p>
+                  <p className="text-sm text-muted-foreground max-w-xl">
+                    Revisit the introductory guidance tour explaining your lifeOS Assistant avatar, timeline, widgets, and key navigation modules.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    useUIStore.getState().restartTour();
+                    navigate('/dashboard');
+                  }}
+                  className="gap-2 shrink-0"
+                >
+                  <RotateCcw size={15} />
+                  Replay Tour Now
+                </Button>
+              </div>
               <div className="pt-4 border-t border-border/50">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Popular Articles</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1903,8 +1927,8 @@ export default function SettingsPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    useUIStore.getState().setTourCompleted(false);
-                    alert('Feature tour restarted! Head to the Dashboard to see it.');
+                    useUIStore.getState().restartTour();
+                    navigate('/dashboard');
                   }}
                   className="text-xs"
                 >

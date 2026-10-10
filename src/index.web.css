@@ -758,3 +758,14 @@ html.light[data-accent="amber"] {
 .font-hadith {
   font-family: 'Cairo', sans-serif !important;
 }
+
+/* Joyride mobile responsiveness and clean overlay */
+.__floater__body {
+  max-width: calc(100vw - 32px) !important;
+  box-sizing: border-box !important;
+}
+
+div[data-joyride="overlay"] {
+  backdrop-filter: blur(2px) !important;
+  -webkit-backdrop-filter: blur(2px) !important;
+}

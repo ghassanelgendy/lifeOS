@@ -2,28 +2,44 @@ import React, { useMemo } from 'react';
 import { Joyride, STATUS, EVENTS, type Step, type EventHandler, type EventData } from 'react-joyride';
 import { useUIStore } from '../stores/useUIStore';
 import { useEffectiveTheme } from '../lib/theme';
+import { useAuth } from '../hooks/useAuth';
+import { UserBlobatar } from './ui/UserBlobatar';
 
 interface AppJoyrideTourProps {
   run?: boolean;
 }
 
 export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
-  const { hasCompletedTour, setTourCompleted } = useUIStore();
+  const { hasCompletedTour, setTourCompleted, tourSessionKey } = useUIStore();
+  const { user } = useAuth();
   const effectiveTheme = useEffectiveTheme();
   const isDarkMode = effectiveTheme === 'dark';
+
+  const userIdentifier = user?.email || user?.id || 'lifeos-assistant';
 
   const steps: Step[] = useMemo(() => [
     {
       target: 'body',
       placement: 'center',
-      title: '👋 Welcome to lifeOS!',
+      title: 'Welcome to lifeOS',
       content: (
-        <div className="space-y-2 text-left">
-          <p className="text-sm">
-            Your unified personal operating system for daily execution, habits, spiritual routines, and automated tracking.
+        <div className="space-y-3 text-left">
+          <div className="flex items-center gap-3.5 p-3 rounded-xl bg-secondary/50 border border-border">
+            <UserBlobatar identifier={userIdentifier} size={50} className="ring-1 ring-border shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">
+                Your lifeOS Assistant
+              </p>
+              <p className="text-xs text-muted-foreground leading-snug">
+                Your unique deterministic profile avatar, created for {user?.email ? user.email.split('@')[0] : 'you'}.
+              </p>
+            </div>
+          </div>
+          <p className="text-xs leading-relaxed text-foreground/90">
+            A unified operating system for daily tasks, habits, spiritual routines, and automated tracking.
           </p>
-          <p className="text-xs text-muted-foreground">
-            Let's take a quick 1-minute tour through key features to help you get the most out of your dashboard!
+          <p className="text-[11px] text-muted-foreground">
+            This brief introductory tour highlights key sections to help you get started.
           </p>
         </div>
       ),
@@ -31,95 +47,95 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
     },
     {
       target: '[data-tour="day-progress"]',
-      title: '📊 24-Hour Day Progress Timeline',
+      title: '24-Hour Day Progress Timeline',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            Visualizes your entire 24-hour day in real time. Colored bars represent your <strong>Sleep</strong>, <strong>PC</strong>, <strong>Phone screen time</strong>, and <strong>Web browsing</strong>.
+            Visualizes your 24-hour day in real time. Colored segments track your <strong>Sleep</strong>, <strong>PC</strong>, <strong>Phone screen time</strong>, and <strong>Web browsing</strong>.
           </p>
           <p className="text-muted-foreground">
-            Markers on the timeline show your scheduled prayers, habits, and tasks.
+            Markers on the timeline display scheduled prayers, habits, and tasks.
           </p>
         </div>
       ),
-      placement: 'bottom',
+      placement: 'auto',
     },
     {
       target: '[data-tour="metric-cards"]',
-      title: '🎯 Daily Quick Metrics',
+      title: 'Daily Quick Metrics',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            Instant glance at your core numbers: <strong>Remaining Tasks</strong>, <strong>Habit completion</strong>, <strong>Screen Time</strong>, and <strong>Sleep duration</strong>.
+            An instant overview of core metrics: <strong>Remaining Tasks</strong>, <strong>Habit completion</strong>, <strong>Screen Time</strong>, and <strong>Sleep duration</strong>.
           </p>
           <p className="text-muted-foreground">
-            Tap any card to dive deep into dedicated charts and analytics!
+            Tap any card to view detailed charts and analytics.
           </p>
         </div>
       ),
-      placement: 'bottom',
+      placement: 'auto',
     },
     {
       target: '[data-tour="due-today"]',
-      title: '✅ Due Today & Action Stream',
+      title: 'Due Today and Action Stream',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            Your prioritized checklist for today — combining due tasks, habits, and prayer times ordered chronologically.
+            Your prioritized daily checklist combining due tasks, habits, and prayers ordered chronologically.
           </p>
           <p className="text-muted-foreground">
-            Tick items off as you go, and completed entries automatically sync to your streak and score.
+            Completing items updates your streak and productivity score automatically.
           </p>
         </div>
       ),
-      placement: 'top',
+      placement: 'auto',
     },
     {
       target: '[data-tour="mobile-brain-dump"], [data-tour="brain-dump"]',
-      title: '🧠 Cognitive Brain Dump',
+      title: 'Cognitive Brain Dump',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            Have a fleeting thought or idea? Press <strong>Alt+B</strong> or tap the Brain Dump button.
+            Capture fleeting thoughts or ideas quickly with <strong>Alt+B</strong> or the Brain Dump button.
           </p>
           <p className="text-muted-foreground">
-            Your daily midnight AI organizer sorts thoughts into actionable tasks, notes, and habits automatically!
+            The organizer structures thoughts into tasks, notes, and habits automatically.
           </p>
         </div>
       ),
-      placement: 'bottom',
+      placement: 'auto',
     },
     {
       target: '[data-tour="mobile-nav"], [data-tour="sidebar-nav"]',
-      title: '🧭 Comprehensive Life Modules',
+      title: 'Life Modules Navigation',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            Switch seamlessly between <strong>Quran & Azkar</strong>, <strong>Tasks</strong>, <strong>Weekly Planner</strong>, <strong>Deep Focus</strong>, <strong>Habits</strong>, <strong>Finance</strong>, and <strong>Analytics</strong>.
+            Navigate between <strong>Quran &amp; Azkar</strong>, <strong>Tasks</strong>, <strong>Weekly Planner</strong>, <strong>Deep Focus</strong>, <strong>Habits</strong>, <strong>Finance</strong>, and <strong>Analytics</strong>.
           </p>
           <p className="text-muted-foreground">
-            Everything is local-first and synchronized across all your devices.
+            Data is stored locally and synchronized securely across devices.
           </p>
         </div>
       ),
-      placement: 'top',
+      placement: 'auto',
     },
     {
       target: '[data-tour="mobile-menu"], [data-tour="settings-nav"]',
-      title: '⚙️ Settings & Mobile Integrations',
+      title: 'Settings, Profile & Integrations',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            Head to <strong>Settings</strong> to customize themes, layout widgets, configure AI, and enable <strong>1-tap Apple Shortcuts</strong> or <strong>Native Android bank SMS parsing &amp; screen time sync</strong>!
+            Manage your profile picture, customize themes, layout widgets, and configure integrations. You can replay this guide anytime from the bottom of Settings.
           </p>
           <p className="text-muted-foreground">
-            You're all set to master your days with lifeOS! 🚀
+            You are ready to get started with lifeOS.
           </p>
         </div>
       ),
-      placement: 'bottom',
+      placement: 'auto',
     },
-  ], []);
+  ], [userIdentifier, user?.email]);
 
   const shouldRun = run !== undefined ? run : !hasCompletedTour;
 
@@ -136,56 +152,63 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
 
   return (
     <Joyride
+      key={tourSessionKey}
       steps={steps}
       run={shouldRun}
       continuous
       showProgress
       showSkipButton
       scrollToFirstStep={false}
-      disableScrolling={true}
-      disableScrollParentFix={true}
+      disableScrolling={false}
+      scrollOffset={80}
       callback={handleJoyrideCallback}
+      floatingOptions={{
+        shift: { padding: 16 },
+      }}
       styles={{
         options: {
-          arrowColor: isDarkMode ? '#1e1e24' : '#ffffff',
-          backgroundColor: isDarkMode ? '#1e1e24' : '#ffffff',
-          overlayColor: 'rgba(0, 0, 0, 0.65)',
-          primaryColor: '#3b82f6',
+          arrowColor: isDarkMode ? '#18181b' : '#ffffff',
+          backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
+          overlayColor: 'rgba(0, 0, 0, 0.45)',
+          primaryColor: isDarkMode ? '#2563eb' : '#3b82f6',
           textColor: isDarkMode ? '#f4f4f5' : '#09090b',
           zIndex: 10000,
         },
         tooltip: {
-          borderRadius: '16px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
-          border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.08)',
-          backgroundColor: isDarkMode ? '#1e1e24' : '#ffffff',
+          borderRadius: '12px',
+          boxShadow: isDarkMode 
+            ? '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
+            : '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08)',
+          backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
           color: isDarkMode ? '#f4f4f5' : '#09090b',
-          padding: '18px',
+          padding: '16px',
           fontFamily: 'inherit',
-          maxWidth: '360px',
+          width: 'min(340px, calc(100vw - 32px))',
+          maxWidth: '340px',
         },
         tooltipContent: {
-          padding: '4px 0 12px 0',
+          padding: '2px 0 10px 0',
           color: isDarkMode ? '#f4f4f5' : '#09090b',
         },
         tooltipTitle: {
-          fontSize: '15px',
-          fontWeight: 700,
-          marginBottom: '8px',
+          fontSize: '14px',
+          fontWeight: 600,
+          marginBottom: '6px',
           color: isDarkMode ? '#ffffff' : '#09090b',
+          letterSpacing: '-0.01em',
         },
         buttonPrimary: {
           backgroundColor: '#3b82f6',
           color: '#ffffff',
-          borderRadius: '8px',
-          padding: '8px 16px',
+          borderRadius: '6px',
+          padding: '6px 14px',
           fontSize: '12px',
-          fontWeight: 600,
+          fontWeight: 500,
           outline: 'none',
         },
         buttonBack: {
           color: isDarkMode ? '#a1a1aa' : '#71717a',
-          marginRight: '8px',
+          marginRight: '6px',
           fontSize: '12px',
           fontWeight: 500,
         },
@@ -197,9 +220,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       locale={{
         back: 'Back',
         close: 'Close',
-        last: 'Get Started 🎉',
+        last: 'Get Started',
         next: 'Next',
-        skip: 'Skip Tour',
+        skip: 'Skip',
       }}
     />
   );

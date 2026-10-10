@@ -16,6 +16,8 @@ import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 import LiquidTabBar from './LiquidTabBar';
 import { AppJoyrideTour } from './AppJoyrideTour';
+import { useAuth } from '../hooks/useAuth';
+import { UserBlobatar } from './ui/UserBlobatar';
 
 export function AppShell() {
   const {
@@ -35,6 +37,7 @@ export function AppShell() {
     setLastNotifiedMonthlyWrap,
     aiEnabled,
   } = useUIStore();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -516,8 +519,13 @@ export function AppShell() {
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Settings size={19} className="shrink-0" />
-                <span className="min-w-0 break-words">Settings</span>
+                <UserBlobatar identifier={user?.email || user?.id} size={24} />
+                <div className="flex flex-col min-w-0 leading-tight">
+                  <span className="min-w-0 truncate font-medium text-foreground">
+                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">Settings & Profile</span>
+                </div>
               </NavLink>
             )}
           </div>
@@ -596,13 +604,27 @@ export function AppShell() {
               data-tour="settings-nav"
               to="/settings"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors",
+                "flex items-center gap-3 w-full rounded-lg px-2.5 py-1.5 text-sm font-medium hover:bg-secondary transition-colors group",
                 isActive ? "bg-secondary text-foreground" : "text-muted-foreground",
-                isSidebarCollapsed && "justify-center px-2"
+                isSidebarCollapsed && "justify-center px-0 w-12 h-10 mx-auto"
               )}
+              title={user?.email || 'Settings'}
             >
-              <Settings size={20} />
-              {!isSidebarCollapsed && <span>Settings</span>}
+              <UserBlobatar
+                identifier={user?.email || user?.id}
+                size={26}
+                className="ring-1 ring-border shrink-0 transition-transform group-hover:scale-105"
+              />
+              {!isSidebarCollapsed && (
+                <div className="flex flex-col min-w-0 leading-tight">
+                  <span className="font-medium text-xs text-foreground truncate">
+                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground truncate">
+                    Preferences
+                  </span>
+                </div>
+              )}
             </NavLink>
           )}
         </div>

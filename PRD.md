@@ -345,8 +345,9 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 ### 5.14 AI Assistant & Copilot
 **Purpose:** An intelligent chatbot companion that aggregates workspace data (tasks, habits, notes, events, transactions, sleep, screentime) as context to answer user queries, offer life-coaching, and execute database changes directly.
 
-- **Knowledge Ingestion Toggles:** Let the user select which databases (Tasks, Calendar, Habits, Notes, Finance, sleep/health) are serialized and injected into the AI's system prompt.
 - **Conversational UX:** Premium chat interface with backdrop-blur, custom avatars, scroll-anchoring, and slide-in animations.
+- **Deterministic User Profile Avatars (Blobatar):** Every user is automatically assigned a deterministic geometric Blobatar avatar generated from their email or user ID. The avatar is displayed consistently in Settings, the navigation sidebar, and the mobile drawer header, giving each user a personalized profile picture with zero external storage requirements.
+- **First-Use lifeOS Assistant Guidance (Joyride Tour):** On initial use, a welcoming interactive tour introduces the user's Blobatar as their personal "lifeOS Assistant". The guidance steps through Day Progress, Quick Metrics, Due Today, Brain Dump, Life Modules, and Settings. Completion is persisted to local storage and synchronized with cloud user app settings so the walkthrough runs only once upon first use. Users can force replay the tour at any time via Settings (Help & Documentation and About sections), which immediately directs them to the Dashboard and relaunches the walkthrough.
 - **Agentic Quick Actions:** Parse structured tags from the AI response (e.g. `[ACTION:create_task|...]`) to render interactive cards. Users can click "Execute" to write directly to their database.
 - **Onboarding Redirection:** Renders instructions and direct settings links if AI integration or API keys are missing.
 - **Shortcut Templates:** Quick-prompt buttons for daily schedules, weekly sleep/screentime coaching, expense auditing, and note synthesizing.

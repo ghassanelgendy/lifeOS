@@ -17,6 +17,8 @@ import { LinuxTitleBar } from './LinuxTitleBar';
 import { LinuxWindowResizer } from './LinuxWindowResizer';
 import { BrainDumpModal } from './BrainDumpModal';
 import { AIChatModal } from './AIChatModal';
+import { useAuth } from '../hooks/useAuth';
+import { UserBlobatar } from './ui/UserBlobatar';
 
 // Fluent UI React Components
 import { FluentProvider, webDarkTheme, webLightTheme, type Theme } from '@fluentui/react-components';
@@ -44,6 +46,7 @@ export function AppShell() {
     showAppFooter,
     aiEnabled,
   } = useUIStore();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -323,6 +326,24 @@ export function AppShell() {
                 );
               })}
             </nav>
+            <div className="p-4 border-t" style={{ borderColor: 'var(--colorNeutralStroke2)' }}>
+              <NavLink
+                to="/settings"
+                className={({ isActive }) => cn(
+                  "flex items-center gap-4 w-full rounded-xl px-4 py-3 text-base font-medium transition-colors hover:bg-neutral-hover/10 min-h-[3.25rem]",
+                  isActive ? "bg-neutral-hover/5 text-foreground" : "text-muted-foreground"
+                )}
+                onClick={() => setMobileSidebarOpen(false)}
+              >
+                <UserBlobatar identifier={user?.email || user?.id} size={28} />
+                <div className="flex flex-col min-w-0 leading-tight">
+                  <span className="min-w-0 truncate font-semibold text-foreground">
+                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">Settings & Profile</span>
+                </div>
+              </NavLink>
+            </div>
           </aside>
         </>
         {/* Desktop Sidebar */}
@@ -399,23 +420,35 @@ export function AppShell() {
             <NavLink
               to="/settings"
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-md px-3 py-2 text-[13px] font-normal transition-all duration-150 relative",
+                "flex items-center gap-3 w-full rounded-md px-2.5 py-1.5 text-[13px] font-normal transition-all duration-150 relative group",
                 "hover:bg-white/10 hover:text-foreground",
                 isActive 
                   ? "bg-white/[0.08] text-foreground font-semibold" 
                   : "text-muted-foreground",
-                isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
+                isSidebarCollapsed && "justify-center px-0 w-12 h-10 mx-auto"
               )}
+              title={user?.email || 'Settings'}
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
                     <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-brand-primary" />
                   )}
-                  <div className="relative flex items-center justify-center shrink-0">
-                    <Settings size={16} strokeWidth={isActive ? 2.2 : 1.8} className="text-foreground" />
-                  </div>
-                  {!isSidebarCollapsed && <span className="text-foreground">Settings</span>}
+                  <UserBlobatar
+                    identifier={user?.email || user?.id}
+                    size={24}
+                    className="ring-1 ring-border shrink-0 transition-transform group-hover:scale-105"
+                  />
+                  {!isSidebarCollapsed && (
+                    <div className="flex flex-col min-w-0 leading-tight">
+                      <span className="text-foreground text-xs font-medium truncate">
+                        {user?.email ? user.email.split('@')[0] : 'Settings'}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground truncate">
+                        Preferences
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
             </NavLink>

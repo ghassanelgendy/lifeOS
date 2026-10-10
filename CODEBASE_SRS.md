@@ -130,6 +130,9 @@ All Supabase database queries shall be protected by Row-Level Security policies 
 #### FR-AUTH-009: 100% Offline Session Retention & Offline Workspace
 The system shall preserve active authenticated user sessions indefinitely while offline. The system shall never invalidate or clear an active session due to network disconnects, token expiration while offline, or failed background token refresh attempts. The system shall provide an offline authentication path ("Continue in Offline Mode") allowing users to access all local data (tasks, habits, prayer logs, notes, transactions) with zero network connectivity.
 
+#### FR-AUTH-010: Deterministic User Profile Avatars (Blobatar) & Assistant Guide
+The system shall generate a deterministic geometric profile picture (Blobatar) for each user based on their unique identifier/email. The avatar shall serve as the user's profile image across settings, navigation sidebars, and headers, and shall be introduced as their personalized lifeOS Assistant in the first-use onboarding tour. First-use guidance (tiptool tour) shall run only once upon first use and persist completion state locally and to cloud settings. The system shall provide an option in Settings (Help & Documentation and About sections) allowing users to force replay the interactive tour at any time, navigating directly to the Dashboard and resetting the tour session key.
+
 ---
 
 ### 3.2 Dashboard & Navigation

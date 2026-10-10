@@ -1,7 +1,7 @@
 {
   "name": "lifeos-workspace",
   "private": true,
-  "version": "2.2.8",
+  "version": "2.2.9",
   "author": "Ghassan Elgendy",
   "type": "module",
   "packageManager": "pnpm@10.18.0",
@@ -26,6 +26,7 @@
     "icons:apple": "node scripts/generate-apple-touch-icons.mjs"
   },
   "dependencies": {
+    "@blobatar/react": "^2.7.0",
     "@capacitor/android": "^8.5.3",
     "@capacitor/app": "^8.1.2",
     "@capacitor/core": "^8.5.3",
@@ -54,6 +55,7 @@
     "@vercel/analytics": "^2.0.1",
     "adhan": "^4.4.6",
     "aws4fetch": "^1.0.20",
+    "blobatar": "^2.7.0",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^4.4.0",

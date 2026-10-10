@@ -27,6 +27,10 @@ import {
   Puzzle,
   Zap,
   Copy,
+  Share2,
+  MessageSquare,
+  Clock,
+  Lightbulb,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
@@ -43,6 +47,7 @@ import {
 } from '../stores/useUIStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTaskLists } from '../hooks/useTasks';
+import { UserBlobatar } from '../components/ui/UserBlobatar';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { useEffectiveTheme } from '../lib/theme';
 import { dbUtils } from '../db/database';
@@ -51,7 +56,7 @@ import { Button, ConfirmSheet, Input } from '../components/ui';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 import { AISettingsSection } from '../components/AISettingsSection';
@@ -228,6 +233,7 @@ export default function SettingsPage() {
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
   } = useUIStore();
+  const navigate = useNavigate();
   const { data: taskLists = [] } = useTaskLists();
   const { data: archivedHabits = [] } = useArchivedHabits();
   const unarchiveHabit = useUnarchiveHabit();
@@ -476,7 +482,7 @@ export default function SettingsPage() {
         </div>
         <div className="p-4 space-y-4">
           <div className="flex items-center gap-3">
-            <User size={20} className="text-muted-foreground" />
+            <UserBlobatar identifier={user?.email || user?.id} size={48} />
             <div>
               <p className="font-medium">{user?.email ?? '—'}</p>
               <p className="text-sm text-muted-foreground">Signed in with Supabase Auth</p>
@@ -527,7 +533,8 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
               <p className="font-medium text-sm flex items-center gap-2">
-                <span className="text-base">🤖</span> Android Homescreen Shortcuts
+                <Smartphone size={16} className="text-primary shrink-0" />
+                <span>Android Homescreen Shortcuts</span>
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Install LifeOS as an app (Chrome menu → <em>Install App</em> or native APK). <strong>Long-press</strong> the LifeOS icon to reveal instant shortcuts: <em>Add Expense</em>, <em>Brain Dump</em>, <em>New Task</em>, and <em>Quran</em>. You can drag any of them onto your home screen!
@@ -536,7 +543,8 @@ export default function SettingsPage() {
 
             <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
               <p className="font-medium text-sm flex items-center gap-2">
-                <span className="text-base">📲</span> Android Share Sheet
+                <Share2 size={16} className="text-sky-500 shrink-0" />
+                <span>Android Share Sheet</span>
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 When reading articles, tweets, or text in any Android browser/app, tap the system <strong>Share</strong> button and choose <strong>LifeOS</strong> to automatically drop the link or text into your Brain Dump note.
@@ -545,7 +553,8 @@ export default function SettingsPage() {
 
             <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
               <p className="font-medium text-sm flex items-center gap-2">
-                <span className="text-base">💬</span> Native Bank SMS Parser
+                <MessageSquare size={16} className="text-emerald-500 shrink-0" />
+                <span>Native Bank SMS Parser</span>
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 In the native Android app, bank transaction SMS alerts (QNB, NBE, CIB, Instapay, Fawry, Vodafone Cash, etc.) are intercepted in the background and automatically logged with zero manual steps!
@@ -554,7 +563,8 @@ export default function SettingsPage() {
 
             <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
               <p className="font-medium text-sm flex items-center gap-2">
-                <span className="text-base">⏱️</span> Native Background Screen Time
+                <Clock size={16} className="text-violet-500 shrink-0" />
+                <span>Native Background Screen Time</span>
               </p>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 Android UsageStats runs periodic background syncs into LifeOS Screen Time analytics automatically. No third-party tools (Tasker, HTTP Shortcuts) required.
@@ -562,8 +572,9 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            💡 <strong>Native &amp; Production-Ready:</strong> Works natively with zero external automation tools, no manual webhook URLs, and no JSON editing required.
+          <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5">
+            <Lightbulb size={13} className="text-amber-400 shrink-0" />
+            <span><strong>Native Integration:</strong> Works natively with zero external automation tools, no manual webhook URLs, and no JSON editing required.</span>
           </p>
         </div>
       </section>
@@ -1516,6 +1527,28 @@ export default function SettingsPage() {
               </Button>
             </Link>
           </div>
+          <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <p className="font-medium flex items-center gap-2">
+                <Sparkles size={18} className="text-primary" />
+                <span>Interactive Feature Tour</span>
+              </p>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                Revisit the introductory guidance tour explaining your lifeOS Assistant avatar, timeline, widgets, and key navigation modules.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => {
+                useUIStore.getState().restartTour();
+                navigate('/dashboard');
+              }}
+              className="gap-2 shrink-0"
+            >
+              <RotateCcw size={15} />
+              Replay Tour Now
+            </Button>
+          </div>
           <div className="pt-4 border-t border-border/50">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Popular Articles</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1559,8 +1592,8 @@ export default function SettingsPage() {
               variant="outline"
               size="sm"
               onClick={() => {
-                useUIStore.getState().setTourCompleted(false);
-                alert('Feature tour restarted! Head to the Dashboard to see it.');
+                useUIStore.getState().restartTour();
+                navigate('/dashboard');
               }}
               className="text-xs"
             >
