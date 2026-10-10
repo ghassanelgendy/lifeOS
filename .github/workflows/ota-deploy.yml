@@ -70,16 +70,19 @@ jobs:
         run: |
           BUNDLE_NAME="update-${{ env.VERSION }}.zip"
           BUNDLE_URL="${{ secrets.VITE_SUPABASE_URL }}/storage/v1/object/public/app-updates/${BUNDLE_NAME}"
+          BUNDLE_CHECKSUM=$(sha256sum update.zip | awk '{print $1}')
+          echo "Bundle SHA256: ${BUNDLE_CHECKSUM}"
           node -e '
             const fs = require("fs");
             const data = {
               version: process.env.VERSION,
               url: process.argv[1],
+              checksum: process.argv[2],
               commit: process.env.GITHUB_SHA,
               message: process.env.COMMIT_MESSAGE || ""
             };
-            fs.writeFileSync("version.json", JSON.stringify(data));
-          ' "$BUNDLE_URL"
+            fs.writeFileSync("version.json", JSON.stringify(data, null, 2));
+          ' "$BUNDLE_URL" "$BUNDLE_CHECKSUM"
           cat version.json
 
       - name: Upload bundle zip to Supabase Storage

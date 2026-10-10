@@ -178,19 +178,22 @@ function AppInner() {
 
   useEffect(() => {
     if (!tasks || !habits || !events) return;
-    // Use [] fallback for prayerSettings so tasks/habits/events are scheduled
-    // immediately without waiting on prayer settings to finish loading
-    void syncAllLocalNotifications(
-      tasks,
-      habits,
-      events,
-      prayerSettings ?? [],
-      lat,
-      lng,
-      todayHabitLogs,
-      todayPrayerLogs,
-      habitAverages
-    );
+    // Debounce notification sync by 350ms to prevent rapid consecutive cancel/re-schedule cycles
+    const timer = setTimeout(() => {
+      void syncAllLocalNotifications(
+        tasks,
+        habits,
+        events,
+        prayerSettings ?? [],
+        lat,
+        lng,
+        todayHabitLogs,
+        todayPrayerLogs,
+        habitAverages
+      );
+    }, 350);
+
+    return () => clearTimeout(timer);
   }, [tasks, habits, events, prayerSettings, lat, lng, todayHabitLogs, todayPrayerLogs, isPushEnabled, habitAverages, quranSyncTrigger]);
 
   useEffect(() => {

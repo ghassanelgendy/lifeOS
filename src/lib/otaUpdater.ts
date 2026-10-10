@@ -59,10 +59,31 @@ export async function checkAndApplyUpdates() {
 
       addSystemLog(`OTA check: New update found (${latest.version} / ${latest.commit?.slice(0, 7)}). Downloading...`, 'info');
       
-      // 3. Download the zip bundle
+      // 3. Ensure checksum is present (required by @capgo/capacitor-updater)
+      let checksum = latest.checksum ? String(latest.checksum).trim() : '';
+
+      // If manifest omitted checksum, calculate sha256 directly from the bundle bytes
+      if (!checksum) {
+        try {
+          addSystemLog('OTA check: Manifest has no checksum, calculating SHA-256 hash from bundle...', 'info');
+          const bundleRes = await fetch(bundleUrl);
+          if (bundleRes.ok) {
+            const buffer = await bundleRes.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            checksum = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+            addSystemLog(`OTA check: Computed bundle SHA-256 = ${checksum}`, 'info');
+          }
+        } catch (hashErr) {
+          addSystemLog(`OTA check: Failed to compute fallback checksum: ${String(hashErr)}`, 'warn');
+        }
+      }
+
+      // 4. Download the zip bundle
       const updateBundle = await CapacitorUpdater.download({
         url: bundleUrl,
         version: latest.version || latest.commit,
+        ...(checksum ? { checksum } : {}),
       });
       addSystemLog(`OTA check: Download completed. Setting active bundle...`, 'info');
 
