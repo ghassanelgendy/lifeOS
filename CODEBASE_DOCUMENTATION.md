@@ -2496,7 +2496,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `UserBlobatar` (Function component)
 
 **Function Details:**
-- **`UserBlobatar`** — Renders a deterministic geometric profile picture for each user based on user ID or email seed. Embedded across the navigation sidebar, mobile header, drawer profile preview, Settings account card, and the first-use Assistant onboarding guide.
+- **`UserBlobatar`** — Renders a deterministic geometric profile picture for each user based on user ID or email seed. Supports an `unbordered` mode to render the raw avatar organically without circular frame/ring boundaries. Embedded across the navigation sidebar, mobile header, drawer profile preview, Settings account card, and the first-use Assistant onboarding guide.
 
 ---
 

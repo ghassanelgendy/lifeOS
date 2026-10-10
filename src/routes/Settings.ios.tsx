@@ -1,5 +1,43 @@
-import { useState, useEffect } from 'react';
-import { Shield, Download, Upload, Trash2, Moon, Sun, Database, Info, RefreshCw, Smartphone, Check, Bell, ChevronUp, ChevronDown, GripVertical, LogOut, User, RotateCcw, MapPin, Loader2, HelpCircle, BookOpen, ChevronRight, Copy, Zap, ExternalLink } from 'lucide-react';
+import {
+  Shield,
+  Download,
+  Upload,
+  Trash2,
+  Moon,
+  Sun,
+  Database,
+  Info,
+  RefreshCw,
+  Smartphone,
+  Check,
+  Bell,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
+  LogOut,
+  User,
+  RotateCcw,
+  MapPin,
+  Loader2,
+  HelpCircle,
+  BookOpen,
+  ChevronRight,
+  Copy,
+  Zap,
+  ExternalLink,
+  Search,
+  X,
+  Palette,
+  SlidersHorizontal,
+  CreditCard,
+  LayoutGrid,
+  Bot,
+  Compass,
+  CheckCircle2,
+  Target,
+  Lock,
+  FileText,
+} from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_MODES, DASHBOARD_MODE_LABELS, PAGE_WIDGET_DEFAULTS, DEFAULT_DESKTOP_NAV, DEFAULT_PINNED_NAV, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme, type DashboardMode } from '../stores/useUIStore';
@@ -51,24 +89,35 @@ const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
   },
 };
 
-const SETTINGS_NAV = [
-  { id: 'account', label: 'Account' },
-  { id: 'shortcuts', label: 'Apple Shortcuts' },
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'defaults', label: 'App defaults' },
-  { id: 'accounts', label: 'Bank accounts' },
-  { id: 'layout', label: 'Layout & widgets' },
-  { id: 'ai', label: 'AI Integration' },
-  { id: 'notifications', label: 'Notifications' },
-  { id: 'prayer', label: 'Prayer times' },
-  { id: 'habits', label: 'Habits' },
-  { id: 'goals', label: 'Goals & targets' },
-  { id: 'privacy', label: 'Privacy & analytics' },
-  { id: 'data', label: 'Data & backup' },
-  { id: 'logs', label: 'System logs' },
-  { id: 'help', label: 'Help & Docs' },
-  { id: 'about', label: 'About' },
-] as const;
+export interface SettingsNavItem {
+  id: string;
+  label: string;
+  category: 'General' | 'Personalization' | 'Modules' | 'System';
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  keywords: string;
+}
+
+const SETTINGS_NAV: SettingsNavItem[] = [
+  { id: 'account', label: 'Account', category: 'General', icon: User, keywords: 'user email profile avatar login signout' },
+  { id: 'appearance', label: 'Appearance', category: 'General', icon: Palette, keywords: 'theme dark mode light accent color glass background' },
+  { id: 'defaults', label: 'App defaults', category: 'General', icon: SlidersHorizontal, keywords: 'default tab task view calendar modals' },
+  { id: 'shortcuts', label: 'Apple Shortcuts', category: 'General', icon: Zap, keywords: 'ios siri shortcuts capture quick action user id share sheet' },
+
+  { id: 'layout', label: 'Layout & widgets', category: 'Personalization', icon: LayoutGrid, keywords: 'dashboard widgets order hide reorder drag nav items' },
+  { id: 'ai', label: 'AI Integration', category: 'Personalization', icon: Bot, keywords: 'gemini groq openai api key artificial intelligence assistant model' },
+  { id: 'notifications', label: 'Notifications', category: 'Personalization', icon: Bell, keywords: 'push alerts reminders sound' },
+
+  { id: 'prayer', label: 'Prayer times', category: 'Modules', icon: Compass, keywords: 'athan azan fajr dhuhr asr maghrib isha cairo gps city' },
+  { id: 'habits', label: 'Habits', category: 'Modules', icon: CheckCircle2, keywords: 'habits routines streaks archive unarchive' },
+  { id: 'goals', label: 'Goals & targets', category: 'Modules', icon: Target, keywords: 'autopilot sleep target screen report weekly habits' },
+  { id: 'accounts', label: 'Bank accounts', category: 'Modules', icon: CreditCard, keywords: 'finance transactions balance banks cards currencies' },
+  { id: 'privacy', label: 'Privacy & analytics', category: 'Modules', icon: Lock, keywords: 'blur sensitive numbers privacy tips wrap report' },
+
+  { id: 'data', label: 'Data & backup', category: 'System', icon: Database, keywords: 'export import backup restore clear json sync' },
+  { id: 'logs', label: 'System logs', category: 'System', icon: FileText, keywords: 'console error debug warning telemetry' },
+  { id: 'help', label: 'Help & Docs', category: 'System', icon: HelpCircle, keywords: 'wiki documentation tour guide assistant guide faq' },
+  { id: 'about', label: 'About', category: 'System', icon: Info, keywords: 'version release storage local developer restart tour' },
+];
 
 type LayoutWidgetPage = 'habits' | 'sleep';
 
@@ -205,8 +254,31 @@ export default function SettingsPage() {
   const { data: archivedHabits = [] } = useArchivedHabits();
   const unarchiveHabit = useUnarchiveHabit();
   const push = usePushNotifications();
-  const prayerNotif = usePrayerNotificationSettings();
   const effectiveTheme = useEffectiveTheme();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeSection, setActiveSection] = useState<string>('account');
+
+  // Track active section as user scrolls
+  useEffect(() => {
+    const sectionIds = SETTINGS_NAV.map((item) => `settings-${item.id}`);
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.find((e) => e.isIntersecting);
+        if (visible && visible.target.id) {
+          const rawId = visible.target.id.replace('settings-', '');
+          setActiveSection(rawId);
+        }
+      },
+      { rootMargin: '-10% 0px -70% 0px', threshold: 0 }
+    );
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, []);
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
@@ -435,34 +507,137 @@ export default function SettingsPage() {
     .map((href) => desktopNavCandidates.find((item) => item.href === href))
     .filter((item, index, items): item is (typeof NAV_ITEMS)[number] => !!item && items.findIndex((candidate) => candidate?.href === item.href) === index);
 
+  const filteredNavItems = SETTINGS_NAV.filter((item) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return item.label.toLowerCase().includes(q) || item.keywords.toLowerCase().includes(q);
+  });
+
+  const categories = ['General', 'Personalization', 'Modules', 'System'] as const;
+
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-6xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your app preferences and data</p>
-        {user ? (
-          <p className="text-xs text-muted-foreground mt-2">
-            Signed-in preferences (theme, layout, prayer location, etc.) sync to your account automatically.
-          </p>
-        ) : null}
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-6xl mx-auto pb-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-5">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <p className="text-muted-foreground mt-0.5">Manage preferences, customize appearance, and configure integrations</p>
+          {user ? (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+              <span>Signed in as <strong>{user.email}</strong>. Preferences sync to cloud automatically.</span>
+            </p>
+          ) : null}
+        </div>
+
+        {/* Global Quick Action: Replay Tour */}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            useUIStore.getState().restartTour();
+            navigate('/dashboard');
+          }}
+          className="gap-2 shrink-0 text-xs self-start sm:self-auto"
+        >
+          <RotateCcw size={14} />
+          <span>Interactive Tour</span>
+        </Button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 lg:items-start">
-        <nav
-          aria-label="Settings sections"
-          className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 lg:w-52 shrink-0 lg:sticky lg:top-20 lg:max-h-[calc(100vh-5rem)] lg:overflow-y-auto border-b border-border lg:border-b-0 lg:pr-2"
-        >
-          {SETTINGS_NAV.map(({ id, label }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => scrollToSettingsSection(id)}
-              className="text-left text-sm px-3 py-2 rounded-lg whitespace-nowrap lg:whitespace-normal text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors shrink-0 lg:shrink"
-            >
-              {label}
-            </button>
-          ))}
-        </nav>
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start">
+        {/* Sticky Desktop & Mobile Settings Navigation */}
+        <aside className="lg:w-64 shrink-0 lg:sticky lg:top-16 z-20 space-y-3">
+          {/* Quick Search Field */}
+          <div className="relative">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search settings..."
+              className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-secondary/50 border border-border focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all placeholder:text-muted-foreground"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-foreground"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
+          {/* Navigation Items (Categorized on desktop, horizontal chip on mobile) */}
+          <nav
+            aria-label="Settings sections"
+            className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 p-1 lg:p-2 rounded-xl bg-card/60 border border-border/60 backdrop-blur-xs lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto"
+          >
+            {searchQuery.trim() ? (
+              // Search Filtered flat list
+              filteredNavItems.length > 0 ? (
+                filteredNavItems.map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => {
+                      scrollToSettingsSection(id);
+                      setActiveSection(id);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2.5 text-left text-xs px-3 py-2 rounded-lg whitespace-nowrap transition-all shrink-0 lg:shrink w-full",
+                      activeSection === id
+                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground hover:bg-secondary/70 font-medium"
+                    )}
+                  >
+                    <Icon size={15} className="shrink-0" />
+                    <span className="truncate">{label}</span>
+                  </button>
+                ))
+              ) : (
+                <div className="p-3 text-center text-xs text-muted-foreground">
+                  No matching settings found
+                </div>
+              )
+            ) : (
+              // Grouped by Category
+              categories.map((cat) => {
+                const itemsInCat = SETTINGS_NAV.filter((item) => item.category === cat);
+                if (itemsInCat.length === 0) return null;
+                return (
+                  <div key={cat} className="space-y-0.5 mb-2.5 last:mb-0">
+                    <div className="hidden lg:block px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                      {cat}
+                    </div>
+                    {itemsInCat.map(({ id, label, icon: Icon }) => {
+                      const isActive = activeSection === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => {
+                            scrollToSettingsSection(id);
+                            setActiveSection(id);
+                          }}
+                          className={cn(
+                            "flex items-center gap-2.5 text-left text-xs px-3 py-2 rounded-lg whitespace-nowrap transition-all shrink-0 lg:shrink w-full",
+                            isActive
+                              ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                              : "text-muted-foreground hover:text-foreground hover:bg-secondary/70 font-medium"
+                          )}
+                        >
+                          <Icon size={15} className="shrink-0" />
+                          <span className="truncate">{label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })
+            )}
+          </nav>
+        </aside>
 
         <div className="flex-1 min-w-0 space-y-10">
           {/* Account */}

@@ -27,4 +27,11 @@ describe('UserBlobatar Component', () => {
     expect(avatarEl.style.width).toBe('48px');
     expect(avatarEl.style.height).toBe('48px');
   });
+
+  it('renders unbordered avatar without rounded-full and ring classes', () => {
+    const { container } = render(<UserBlobatar identifier="user123" size={24} unbordered />);
+    const wrapper = container.firstChild as HTMLElement;
+    expect(wrapper.className).not.toContain('rounded-full');
+    expect(wrapper.className).not.toContain('ring-1');
+  });
 });

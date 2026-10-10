@@ -613,7 +613,8 @@ export function AppShell() {
               <UserBlobatar
                 identifier={user?.email || user?.id}
                 size={26}
-                className="ring-1 ring-border shrink-0 transition-transform group-hover:scale-105"
+                unbordered
+                className="shrink-0 transition-transform group-hover:scale-110 drop-shadow-xs"
               />
               {!isSidebarCollapsed && (
                 <div className="flex flex-col min-w-0 leading-tight">

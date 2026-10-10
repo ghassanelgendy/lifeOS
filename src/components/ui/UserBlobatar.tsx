@@ -11,6 +11,8 @@ export interface UserBlobatarProps {
   className?: string;
   /** Custom alt / title attribute */
   title?: string;
+  /** If true, renders raw avatar without circle wrapper, ring, or shadow (default: false) */
+  unbordered?: boolean;
 }
 
 export const UserBlobatar: React.FC<UserBlobatarProps> = ({
@@ -18,9 +20,22 @@ export const UserBlobatar: React.FC<UserBlobatarProps> = ({
   size = 36,
   className,
   title,
+  unbordered = false,
 }) => {
   // Use user id/email or a clean default seed
   const seed = (identifier && identifier.trim().length > 0) ? identifier.trim() : 'lifeos-user';
+
+  if (unbordered) {
+    return (
+      <div
+        className={cn('relative inline-flex items-center justify-center shrink-0', className)}
+        style={{ width: size, height: size }}
+        title={title || seed}
+      >
+        <Blobatar name={seed} size={size} />
+      </div>
+    );
+  }
 
   return (
     <div
