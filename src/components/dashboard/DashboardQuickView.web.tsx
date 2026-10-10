@@ -1407,7 +1407,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
       {/* Daily Spiritual Banners: Hadith & Azkar — shares the same grid template as the
           Day progress / metrics row below so both rows line up to the same total width. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
+      <div data-tour="spiritual-banners" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
         <div className="lg:col-span-2 flex flex-col">
           <HadithWidget className="h-full" />
         </div>
@@ -1546,7 +1546,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Remaining</p>
             </Link>
             {/* Habits */}
-            <Link to="/habits" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
+            <Link to="/habits" data-tour="metric-habits" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
               <div className="flex items-center justify-center size-8 rounded-lg bg-orange-500/10">
                 <Flame className="size-4 text-orange-500 shrink-0" />
               </div>
@@ -1557,7 +1557,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Habits</p>
             </Link>
             {/* Screen */}
-            <Link to="/screentime" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
+            <Link to="/screentime" data-tour="metric-screentime" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
               <div className="flex items-center justify-center size-8 rounded-lg bg-sky-500/10">
                 <Monitor className="size-4 text-sky-500 shrink-0" />
               </div>
@@ -1580,7 +1580,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </div>
 
         {/* Col 3: Weekly Habit Performance Chart */}
-        <section aria-labelledby="qv-weekly-adherence-heading" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in fade-in duration-700 fill-mode-both flex flex-col justify-between">
+        <section data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in fade-in duration-700 fill-mode-both flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <p id="qv-weekly-adherence-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
               This week

@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 // Default mobile nav items (5 max)
 export const DEFAULT_MOBILE_NAV = ['/dashboard', '/tasks', '/focus', '/habits', '/calendar'];
 // Default pinned items for the iOS drawer's horizontal icon-only row (4 max)
-export const DEFAULT_PINNED_NAV = ['/dashboard', '/tasks', '/habits'];
+export const DEFAULT_PINNED_NAV = ['/habits', '/screentime', '/quran', '/azkar'];
 export const DEFAULT_DESKTOP_NAV = [
   '/dashboard',
   '/tasks',

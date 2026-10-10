@@ -2481,7 +2481,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `AppJoyrideTour` (Function)
 
 **Function Details:**
-- **`AppJoyrideTour`** — First-use onboarding tour introducing the user's Blobatar profile avatar as their lifeOS Assistant, stepping through day progress, quick metrics, due today, cognitive brain dump, life modules, and settings. Automatically marks tour as completed across local storage and cloud sync so guidance only appears on first use, with a dedicated replay mechanism via `useUIStore.restartTour()` available from Settings.
+- **`AppJoyrideTour`** — First-use onboarding tour introducing the user's Blobatar profile avatar as their lifeOS Assistant, stepping through day progress, spiritual guidance (Hadith & Azkar), quick metrics, habits tracking, screen time wellbeing, weekly consistency charts, due today action stream, cognitive brain dump, life modules navigation, and settings. Automatically marks tour as completed across local storage and cloud sync so guidance only appears on first use, with a dedicated replay mechanism via `useUIStore.restartTour()` available from Settings. Pinned navigation defaults to Habits, Screen Time, Quran, and Azkar.
 
 **Lines:** 223
 

@@ -1964,7 +1964,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight text-primary">{dueTodayBundleCount}</p>
             </Link>
             <div className="w-px bg-muted-foreground/10 self-stretch my-1" />
-            <Link to="/habits" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+            <Link to="/habits" data-tour="metric-habits" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
               <Flame className="size-5 text-orange-500 mb-1 shrink-0" />
               <p className="text-2xl sm:text-3xl font-black tabular-nums tracking-tight">
                 {todayHabitCompleted}
@@ -1973,7 +1973,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             </Link>
           </div>
           <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-150">
-            <Link to="/screentime" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
+            <Link to="/screentime" data-tour="metric-screentime" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
               <Monitor className="size-5 text-sky-500 mb-1 shrink-0" />
               <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}

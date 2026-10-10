@@ -1390,7 +1390,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => {
                       if (pinnedNavItems.length === 0) {
-                        setPinnedNavItems(DEFAULT_PINNED_NAV.slice(0, 3));
+                        setPinnedNavItems(DEFAULT_PINNED_NAV.slice(0, 4));
                       }
                     }}
                     className={cn(

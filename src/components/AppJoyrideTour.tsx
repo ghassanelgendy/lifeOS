@@ -61,15 +61,72 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       placement: 'auto',
     },
     {
+      target: '[data-tour="spiritual-banners"]',
+      title: 'Spiritual Anchor: Hadith & Azkar',
+      content: (
+        <div className="space-y-1.5 text-left text-xs">
+          <p>
+            Daily prophetic wisdom and contextual dhikr. Browse daily authentic hadiths or tap to cycle through curated wisdom and copy quotes.
+          </p>
+          <p className="text-muted-foreground">
+            Spiritual guidance stays anchored at the top of your day alongside prayer timings.
+          </p>
+        </div>
+      ),
+      placement: 'auto',
+    },
+    {
       target: '[data-tour="metric-cards"]',
       title: 'Daily Quick Metrics',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
-            An instant overview of core metrics: <strong>Remaining Tasks</strong>, <strong>Habit completion</strong>, <strong>Screen Time</strong>, and <strong>Sleep duration</strong>.
+            An instant overview of core metrics: <strong>Remaining Tasks</strong>, <strong>Habits</strong>, <strong>Screen Time</strong>, and <strong>Sleep duration</strong>.
           </p>
           <p className="text-muted-foreground">
-            Tap any card to view detailed charts and analytics.
+            Tap any metric to jump directly into its dedicated analytics and management view.
+          </p>
+        </div>
+      ),
+      placement: 'auto',
+    },
+    {
+      target: '[data-tour="metric-habits"]',
+      title: 'Habit Tracking & Streaks',
+      content: (
+        <div className="space-y-1.5 text-left text-xs">
+          <p>
+            Monitor completed habits against your daily quota. Build discipline with streak tracking, frequency rules, and customizable reminders.
+          </p>
+          <p className="text-muted-foreground">
+            Habits are also pinned directly in your navigation bar for immediate access.
+          </p>
+        </div>
+      ),
+      placement: 'auto',
+    },
+    {
+      target: '[data-tour="metric-screentime"]',
+      title: 'Screen Time & Device Wellbeing',
+      content: (
+        <div className="space-y-1.5 text-left text-xs">
+          <p>
+            Consolidates active application and browser usage across PC, mobile, and web.
+          </p>
+          <p className="text-muted-foreground">
+            Compare screen time with deep focus sessions and set healthy daily thresholds.
+          </p>
+        </div>
+      ),
+      placement: 'auto',
+    },
+    {
+      target: '[data-tour="weekly-habits"]',
+      title: 'Weekly Consistency Overview',
+      content: (
+        <div className="space-y-1.5 text-left text-xs">
+          <p>
+            Inspect 7-day adherence trends at a glance. Visual bar charts highlight consistency and momentum across the week.
           </p>
         </div>
       ),
