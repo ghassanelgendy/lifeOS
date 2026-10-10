@@ -1,12 +1,14 @@
 import { useMemo } from 'react';
 import { useState } from 'react';
 import { format, parseISO, subDays } from 'date-fns';
-import { Moon } from 'lucide-react';
+import { Moon, ExternalLink, Zap, Check, Copy } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
+import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
+import { Button, Modal } from '../components/ui';
 import { useUIStore, PAGE_WIDGET_DEFAULTS } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
@@ -159,7 +161,9 @@ export default function Sleep() {
   const { avgSleepMinutes } = useSleepMetrics(7);
   const sessions = useMemo(() => buildSessions(stages), [stages]);
   const active = useMemo(() => sessions[0], [sessions]);
-  const [selectedSession, setSelectedSession] = useState<NightSession | null>(null);
+  const { user } = useAuth();
+  const [showSyncModal, setShowSyncModal] = useState(false);
+  const [copiedUrl, setCopiedUrl] = useState(false);
   const weekly = useMemo(() => sessions.slice(0, 7).reverse(), [sessions]);
   const monthly = useMemo(() => sessions.slice(0, 30).reverse(), [sessions]);
 
@@ -202,6 +206,15 @@ export default function Sleep() {
           <h1 className="text-3xl font-bold tracking-tight">Sleep</h1>
           <p className="text-muted-foreground">Track your sleep quality and patterns</p>
         </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
+          onClick={() => setShowSyncModal(true)}
+        >
+          <Zap size={14} />
+          Apple Health Sync
+        </Button>
       </div>
 
       {isLoading ? (
@@ -210,10 +223,22 @@ export default function Sleep() {
           Loading sleep data...
         </div>
       ) : !active ? (
-        <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl">
-          <Moon className="mx-auto mb-2 text-primary" size={28} />
-          <p className="text-sm font-medium text-foreground">No sleep sessions yet.</p>
-          <p className="text-xs mt-1">Start tracking your sleep to see insights here.</p>
+        <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl space-y-4">
+          <Moon className="mx-auto text-primary" size={32} />
+          <div>
+            <p className="text-base font-semibold text-foreground">No sleep sessions logged yet</p>
+            <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+              Automatically sync your sleep stages from Apple Watch & Apple Health every morning!
+            </p>
+          </div>
+          <Button
+            size="sm"
+            className="gap-2 bg-indigo-600 hover:bg-indigo-500 text-white mx-auto shadow-lg shadow-indigo-600/20"
+            onClick={() => setShowSyncModal(true)}
+          >
+            <Zap size={15} />
+            Set Up Apple Health Auto-Sync
+          </Button>
         </div>
       ) : (
         sleepOrder.filter(visible).map((sectionId) => {
@@ -633,6 +658,77 @@ export default function Sleep() {
           </div>
         )}
       </DetailsSheet>
+
+      {/* Apple Health Sync Modal */}
+      <Modal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+        title="Apple Health Sleep Auto-Sync"
+      >
+        <div className="space-y-4 text-xs select-text">
+          <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-indigo-400">Sleep Ingestion Webhook</span>
+              <Button
+                size="sm"
+                variant="secondary"
+                className="h-7 text-xs gap-1"
+                onClick={() => {
+                  navigator.clipboard.writeText('https://vlbgxbzwasgpbfzfabnl.supabase.co/functions/v1/upload-sleep');
+                  setCopiedUrl(true);
+                  setTimeout(() => setCopiedUrl(false), 2000);
+                }}
+              >
+                {copiedUrl ? <Check size={13} className="text-indigo-400" /> : <Copy size={13} />}
+                {copiedUrl ? 'Copied' : 'Copy URL'}
+              </Button>
+            </div>
+            <code className="block bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
+              https://vlbgxbzwasgpbfzfabnl.supabase.co/functions/v1/upload-sleep
+            </code>
+            <p className="text-muted-foreground leading-relaxed text-[11px]">
+              User ID: <span className="font-mono text-foreground">{user?.id || 'Sign in to copy'}</span>
+            </p>
+          </div>
+
+          <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
+            <p className="font-semibold text-foreground">Option 1: Apple Shortcuts Wake-Up Automation (Zero Touch)</p>
+            <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
+              <li>Open iOS <strong>Shortcuts</strong> → Tap <strong>Automation</strong> → <strong>+</strong></li>
+              <li>Choose <strong>When Waking Up</strong> (or When Alarm is Stopped) → Set to <strong>Run Immediately</strong>.</li>
+              <li>Add action: <strong>Find Health Samples</strong> (Category: Sleep Analysis, Start Date is Today).</li>
+              <li>Add action: <strong>Get Contents of URL</strong> → POST to the webhook above with your User ID.</li>
+            </ol>
+          </div>
+
+          <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
+            <p className="font-semibold text-foreground">Option 2: AutoSleep / SleepWatch / Pillow Export</p>
+            <p className="text-muted-foreground leading-relaxed text-[11px]">
+              If you use an Apple Watch sleep tracker app, configure webhook or CSV export to the same endpoint. LifeOS automatically parses Core, Deep, REM, and Awake stages.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-border">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                window.open('shortcuts://', '_blank');
+              }}
+              className="gap-1.5"
+            >
+              <ExternalLink size={13} />
+              Open Shortcuts App
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => setShowSyncModal(false)}
+            >
+              Done
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

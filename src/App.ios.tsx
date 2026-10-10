@@ -207,6 +207,36 @@ function AppInner() {
       console.log('Deep link received:', url);
       try {
         const parsedUrl = new URL(url);
+
+        // Supabase OAuth deep link callback (e.g. lifeos://auth/callback#access_token=... or lifeos://login-callback?access_token=...)
+        if (
+          parsedUrl.host === 'auth' ||
+          parsedUrl.host === 'login-callback' ||
+          parsedUrl.pathname.includes('callback') ||
+          parsedUrl.hash.includes('access_token') ||
+          parsedUrl.search.includes('access_token')
+        ) {
+          const rawHash = parsedUrl.hash.startsWith('#') ? parsedUrl.hash.substring(1) : parsedUrl.hash;
+          const hashParams = new URLSearchParams(rawHash);
+          const searchParams = parsedUrl.searchParams;
+
+          const accessToken = hashParams.get('access_token') || searchParams.get('access_token');
+          const refreshToken = hashParams.get('refresh_token') || searchParams.get('refresh_token');
+
+          if (accessToken) {
+            void supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            }).then(() => {
+              void triggerHaptics('success');
+              window.location.href = '/dashboard';
+            }).catch((err) => {
+              console.error('Failed to set Supabase session from deep link:', err);
+            });
+            return;
+          }
+        }
+
         // Handlers for deep link paths
         if (parsedUrl.host === 'dashboard') {
           // Handled by router — app opens to dashboard route by default

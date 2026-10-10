@@ -120,7 +120,7 @@ export default function LiquidTabBar({
       `}</style>
 
       {/* Layout Shell Render */}
-      <nav className={cn("liquid-tab-bar-container", !isVisible && "shrunk")}>
+      <nav data-tour="mobile-nav" className={cn("liquid-tab-bar-container", !isVisible && "shrunk")}>
         {tabs.map((tab) => {
           const isActive = tab.href === '/'
             ? activeTabHref === '/'

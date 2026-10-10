@@ -540,7 +540,7 @@ export function AppShell() {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto py-4 gap-1 flex flex-col px-2">
+        <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto py-4 gap-1 flex flex-col px-2">
           {desktopNavigation.map((item) => {
             const isAnalytics = item.href === '/analytics';
             const showDot = isAnalytics && showWrappedTakeover;
@@ -593,6 +593,7 @@ export function AppShell() {
             </NavLink>
           ) : (
             <NavLink
+              data-tour="settings-nav"
               to="/settings"
               className={({ isActive }) => cn(
                 "flex items-center gap-3 w-full rounded-lg px-3 py-2 text-sm font-medium hover:bg-secondary transition-colors",
@@ -618,6 +619,7 @@ export function AppShell() {
           }}
         >
           <button
+            data-tour="mobile-menu"
             onClick={() => setMobileSidebarOpen(true)}
             className="absolute left-3 p-1.5 hover:bg-secondary/60 rounded-full active:scale-95 transition-transform touch-manipulation text-muted-foreground"
             aria-label="Open menu"
@@ -638,6 +640,7 @@ export function AppShell() {
 
           <div className="absolute right-3 flex items-center gap-1.5">
             <button
+              data-tour="mobile-brain-dump"
               onClick={() => setIsBrainDumpOpen(true)}
               className="w-9 h-9 flex items-center justify-center rounded-full bg-purple-500/10 border border-purple-500/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-purple-500/20 transition-all touch-manipulation text-purple-600 dark:text-purple-400"
               aria-label="Brain Dump"

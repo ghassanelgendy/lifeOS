@@ -1,15 +1,16 @@
 import React, { useMemo } from 'react';
-import { Joyride, STATUS, type Step, type EventHandler, type EventData } from 'react-joyride';
+import { Joyride, STATUS, EVENTS, type Step, type EventHandler, type EventData } from 'react-joyride';
 import { useUIStore } from '../stores/useUIStore';
+import { useEffectiveTheme } from '../lib/theme';
 
 interface AppJoyrideTourProps {
   run?: boolean;
 }
 
 export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
-  const { hasCompletedTour, setTourCompleted, theme } = useUIStore();
-
-  const isDarkMode = theme === 'dark' || (theme === 'system' && typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const { hasCompletedTour, setTourCompleted } = useUIStore();
+  const effectiveTheme = useEffectiveTheme();
+  const isDarkMode = effectiveTheme === 'dark';
 
   const steps: Step[] = useMemo(() => [
     {
@@ -74,7 +75,7 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       placement: 'top',
     },
     {
-      target: window.innerWidth < 768 ? '[data-tour="mobile-brain-dump"]' : '[data-tour="brain-dump"]',
+      target: '[data-tour="mobile-brain-dump"], [data-tour="brain-dump"]',
       title: '🧠 Cognitive Brain Dump',
       content: (
         <div className="space-y-1.5 text-left text-xs">
@@ -86,10 +87,10 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
           </p>
         </div>
       ),
-      placement: window.innerWidth < 768 ? 'bottom' : 'right',
+      placement: 'bottom',
     },
     {
-      target: window.innerWidth < 768 ? '[data-tour="mobile-nav"]' : '[data-tour="sidebar-nav"]',
+      target: '[data-tour="mobile-nav"], [data-tour="sidebar-nav"]',
       title: '🧭 Comprehensive Life Modules',
       content: (
         <div className="space-y-1.5 text-left text-xs">
@@ -101,11 +102,11 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
           </p>
         </div>
       ),
-      placement: window.innerWidth < 768 ? 'top' : 'right',
+      placement: 'top',
     },
     {
-      target: window.innerWidth < 768 ? '[data-tour="mobile-menu"]' : '[data-tour="settings-nav"]',
-      title: '⚙️ Settings & Autonomous Mobile Sync',
+      target: '[data-tour="mobile-menu"], [data-tour="settings-nav"]',
+      title: '⚙️ Settings & Mobile Integrations',
       content: (
         <div className="space-y-1.5 text-left text-xs">
           <p>
@@ -116,16 +117,20 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
           </p>
         </div>
       ),
-      placement: window.innerWidth < 768 ? 'bottom' : 'right',
+      placement: 'bottom',
     },
   ], []);
 
   const shouldRun = run !== undefined ? run : !hasCompletedTour;
 
   const handleJoyrideCallback: EventHandler = (data: EventData) => {
-    const { status } = data;
+    const { status, type } = data;
     if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
       setTourCompleted(true);
+    }
+    // If a step element cannot be found on current viewport, do not break entire tour
+    if (type === EVENTS.TARGET_NOT_FOUND) {
+      console.warn('[Joyride] Target element not found for step, skipping:', data);
     }
   };
 
@@ -136,13 +141,14 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       continuous
       showProgress
       showSkipButton
-      scrollToFirstStep
-      disableScrolling={false}
+      scrollToFirstStep={false}
+      disableScrolling={true}
+      disableScrollParentFix={true}
       callback={handleJoyrideCallback}
       styles={{
         options: {
-          arrowColor: isDarkMode ? '#18181b' : '#ffffff',
-          backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
+          arrowColor: isDarkMode ? '#1e1e24' : '#ffffff',
+          backgroundColor: isDarkMode ? '#1e1e24' : '#ffffff',
           overlayColor: 'rgba(0, 0, 0, 0.65)',
           primaryColor: '#3b82f6',
           textColor: isDarkMode ? '#f4f4f5' : '#09090b',
@@ -150,18 +156,27 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         },
         tooltip: {
           borderRadius: '16px',
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3)',
-          border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid rgba(0, 0, 0, 0.08)',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4)',
+          border: isDarkMode ? '1px solid rgba(255, 255, 255, 0.15)' : '1px solid rgba(0, 0, 0, 0.08)',
+          backgroundColor: isDarkMode ? '#1e1e24' : '#ffffff',
+          color: isDarkMode ? '#f4f4f5' : '#09090b',
           padding: '18px',
           fontFamily: 'inherit',
+          maxWidth: '360px',
+        },
+        tooltipContent: {
+          padding: '4px 0 12px 0',
+          color: isDarkMode ? '#f4f4f5' : '#09090b',
         },
         tooltipTitle: {
           fontSize: '15px',
           fontWeight: 700,
           marginBottom: '8px',
+          color: isDarkMode ? '#ffffff' : '#09090b',
         },
         buttonPrimary: {
           backgroundColor: '#3b82f6',
+          color: '#ffffff',
           borderRadius: '8px',
           padding: '8px 16px',
           fontSize: '12px',

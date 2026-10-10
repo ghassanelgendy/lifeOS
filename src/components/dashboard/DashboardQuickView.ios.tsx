@@ -1957,7 +1957,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        <div data-tour="metric-cards" className="grid grid-cols-2 gap-3 sm:gap-4">
           <div className="liquid-glass-card group flex items-stretch p-4 sm:p-5 min-w-0 gap-3 sm:gap-4 transition-all animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100">
             <Link to="/" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
               <CheckCircle2 className="size-5 text-primary mb-1 shrink-0" />
@@ -1990,7 +1990,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </div>
 
         <div className="mt-3 sm:mt-4">
-          <div className="liquid-glass-card p-4 sm:p-5">
+          <div data-tour="day-progress" className="liquid-glass-card p-4 sm:p-5">
             <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider flex items-center gap-1.5">
@@ -2107,6 +2107,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       </section>
 
       <section
+        data-tour="due-today"
         className="liquid-glass-card overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both delay-150"
         aria-labelledby="qv-due-today-heading"
       >

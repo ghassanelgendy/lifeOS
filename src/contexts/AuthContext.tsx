@@ -1,5 +1,6 @@
 import { createContext, useEffect, useRef, useState } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
+import { Capacitor } from '@capacitor/core';
 import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
 import { idbClearAll } from '../db/indexedDb';
@@ -378,10 +379,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     }
 
+    const isNative = Capacitor.isNativePlatform();
+    // On native iOS/Android, redirect to custom scheme lifeos://auth/callback so app resumes directly
+    const redirectTo = isNative
+      ? 'lifeos://auth/callback'
+      : typeof window !== 'undefined'
+      ? `${window.location.origin}/dashboard`
+      : undefined;
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined,
+        redirectTo,
       },
     });
     return { error: error as Error | null };

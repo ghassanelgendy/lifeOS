@@ -516,7 +516,7 @@ On Reconnect:
 - Haptics: Capacitor Haptics
 - Keyboard: Capacitor Keyboard (resize: none, style: dark)
 - App Shortcuts: UIApplicationShortcutItems (3D / Haptic Touch long-press launcher shortcuts for Add Expense, Brain Dump, New Task, and Dashboard)
-- Deep Links: `lifeos://` URL scheme (`lifeos://finance?action=new`, `lifeos://braindump`, `lifeos://tasks?action=new`, `lifeos://quran`)
+- Deep Links & OAuth: `lifeos://` URL scheme (`lifeos://finance?action=new`, `lifeos://braindump`, `lifeos://tasks?action=new`, `lifeos://quran`, and `lifeos://auth/callback` for Supabase Google OAuth handoff).
 - Status Bar: Synced with app theme
 - Badge: Updated based on notification count
 - OTA: Capacitor Updater (manual checks)

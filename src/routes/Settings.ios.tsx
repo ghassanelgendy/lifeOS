@@ -8,7 +8,7 @@ import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
-import { Button, ConfirmSheet, Input } from '../components/ui';
+import { Button, ConfirmSheet, Input, Modal } from '../components/ui';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
@@ -216,6 +216,18 @@ export default function SettingsPage() {
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
+  const [shortcutModal, setShortcutModal] = useState<{
+    isOpen: boolean;
+    type: 'expense' | 'braindump' | 'sms' | 'sleep';
+    title: string;
+    url: string;
+  }>({
+    isOpen: false,
+    type: 'expense',
+    title: '',
+    url: '',
+  });
+  const [copiedShortcutUrl, setCopiedShortcutUrl] = useState(false);
 
   // Report targets are typed numbers, so they're batched into a draft and only written to the
   // store (and the "current" trackers used elsewhere in the app) when Save is pressed — that
@@ -507,11 +519,12 @@ export default function SettingsPage() {
               </div>
 
               <div className="space-y-3">
+                {/* 1. Quick Expense */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
                   <div>
                     <p className="font-medium text-sm">Quick Expense Shortcut</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Log expenses hands-free via Siri or Back Tap into LifeOS finance
+                      Log expenses hands-free via Siri or Back Tap directly into LifeOS
                     </p>
                   </div>
                   <Button
@@ -521,14 +534,88 @@ export default function SettingsPage() {
                       if (user?.id) {
                         navigator.clipboard.writeText(user.id);
                       }
-                      window.open('https://www.icloud.com/shortcuts/', '_blank');
+                      setShortcutModal({
+                        isOpen: true,
+                        type: 'expense',
+                        title: 'Quick Expense Apple Shortcut',
+                        url: 'lifeos://finance?quick=expense',
+                      });
                     }}
                   >
-                    <ExternalLink size={14} />
-                    Add to Shortcuts
+                    <Zap size={14} />
+                    Set Up Shortcut
                   </Button>
                 </div>
 
+                {/* 2. Bank SMS Automated Ingestion */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">Automated Bank SMS Ingestion</p>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        Zero Manual Entry
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Automatically parse incoming CIB, NBE, QNB, or Vodafone Cash SMS
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 shrink-0 border-emerald-500/40 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
+                    onClick={() => {
+                      if (user?.id) {
+                        navigator.clipboard.writeText(user.id);
+                      }
+                      setShortcutModal({
+                        isOpen: true,
+                        type: 'sms',
+                        title: 'Bank SMS Automation Setup',
+                        url: `https://vlbgxbzwasgpbfzfabnl.supabase.co/functions/v1/process-sms?user_id=${user?.id || ''}`,
+                      });
+                    }}
+                  >
+                    <Zap size={14} />
+                    Set Up SMS Sync
+                  </Button>
+                </div>
+
+                {/* 3. Sleep & Apple Health Automation */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">Apple Health Sleep Sync</p>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        Apple Watch
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Sync nightly stages (Core, Deep, REM) automatically upon waking up
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 shrink-0 border-indigo-500/40 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
+                    onClick={() => {
+                      if (user?.id) {
+                        navigator.clipboard.writeText(user.id);
+                      }
+                      setShortcutModal({
+                        isOpen: true,
+                        type: 'sleep',
+                        title: 'Apple Health Sleep Automation',
+                        url: `https://vlbgxbzwasgpbfzfabnl.supabase.co/functions/v1/upload-sleep`,
+                      });
+                    }}
+                  >
+                    <Moon size={14} />
+                    Set Up Sleep Sync
+                  </Button>
+                </div>
+
+                {/* 4. Brain Dump Voice Capture */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
                   <div>
                     <p className="font-medium text-sm">Brain Dump / Voice Capture</p>
@@ -544,20 +631,168 @@ export default function SettingsPage() {
                       if (user?.id) {
                         navigator.clipboard.writeText(user.id);
                       }
-                      window.open('https://www.icloud.com/shortcuts/', '_blank');
+                      setShortcutModal({
+                        isOpen: true,
+                        type: 'braindump',
+                        title: 'Brain Dump Voice Capture Shortcut',
+                        url: 'lifeos://braindump',
+                      });
                     }}
                   >
-                    <ExternalLink size={14} />
-                    Add to Shortcuts
+                    <Zap size={14} />
+                    Set Up Shortcut
                   </Button>
                 </div>
               </div>
 
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                💡 <strong>How it works:</strong> Tapping &quot;Add to Shortcuts&quot; automatically copies your User ID to your clipboard and opens Apple Shortcuts. When prompted on your iPhone, simply tap <em>&quot;Add Shortcut&quot;</em>!
+                💡 <strong>Instant iOS Integration:</strong> Use the buttons above to get 1-click deep links, Back Tap triggers, or Webhook URLs tailored with your User ID.
               </p>
             </div>
           </section>
+
+          {/* Apple Shortcut Guide Modal */}
+          <Modal
+            isOpen={shortcutModal.isOpen}
+            onClose={() => setShortcutModal((s) => ({ ...s, isOpen: false }))}
+            title={shortcutModal.title}
+          >
+            <div className="space-y-4 text-xs select-text">
+              {shortcutModal.type === 'sms' ? (
+                <>
+                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
+                    <p className="font-semibold text-emerald-400">⚡ Autonomous iOS Personal Automation</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Whenever your bank (CIB, NBE, QNB, Vodafone Cash, etc.) texts you an expense or transfer, iOS automatically forwards it to LifeOS AI to parse and record without opening the app!
+                    </p>
+                    <div className="pt-1 flex items-center gap-2">
+                      <code className="flex-1 bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
+                        {shortcutModal.url}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="shrink-0 gap-1"
+                        onClick={() => {
+                          navigator.clipboard.writeText(shortcutModal.url);
+                          setCopiedShortcutUrl(true);
+                          setTimeout(() => setCopiedShortcutUrl(false), 2000);
+                        }}
+                      >
+                        {copiedShortcutUrl ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                        {copiedShortcutUrl ? 'Copied' : 'Copy Webhook'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
+                    <p className="font-semibold text-foreground">3-Step Setup in Apple Shortcuts:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
+                      <li>Open the iOS <strong>Shortcuts</strong> app → Tap the <strong>Automation</strong> tab at bottom.</li>
+                      <li>Tap <strong>+</strong> (New Automation) → Choose <strong>Message</strong>.</li>
+                      <li>Set <strong>Sender</strong> to your Bank Name/Number (e.g. CIB or Vodafone Cash) and select <strong>Run Immediately</strong> (Turn off &quot;Ask Before Running&quot;).</li>
+                      <li>Add Action: <strong>&quot;Get Contents of URL&quot;</strong>, paste the Webhook URL above, set Method to <strong>POST</strong>, and pass Request Body JSON with <code className="text-emerald-400 font-mono">&#123;&quot;message&quot;: Shortcut Input&#125;</code>.</li>
+                    </ol>
+                  </div>
+                </>
+              ) : shortcutModal.type === 'sleep' ? (
+                <>
+                  <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
+                    <p className="font-semibold text-indigo-400">🛌 Apple Watch & Health Sleep Sync</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Every morning upon wake-up or alarm turn-off, your Apple Watch sleep stages (Core, Deep, REM) sync straight to LifeOS.
+                    </p>
+                    <div className="pt-1 flex items-center gap-2">
+                      <code className="flex-1 bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
+                        {shortcutModal.url}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="shrink-0 gap-1"
+                        onClick={() => {
+                          navigator.clipboard.writeText(shortcutModal.url);
+                          setCopiedShortcutUrl(true);
+                          setTimeout(() => setCopiedShortcutUrl(false), 2000);
+                        }}
+                      >
+                        {copiedShortcutUrl ? <Check size={13} className="text-indigo-400" /> : <Copy size={13} />}
+                        {copiedShortcutUrl ? 'Copied' : 'Copy URL'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
+                    <p className="font-semibold text-foreground">Quick Setup:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
+                      <li>In Apple Shortcuts → Tap <strong>Automation</strong> → <strong>+</strong> → Choose <strong>When Waking Up</strong> (or When Alarm is Stopped).</li>
+                      <li>Set to <strong>Run Immediately</strong>.</li>
+                      <li>Add Action: <strong>Find Health Samples</strong> (Type: Sleep Analysis, Start Date is Today).</li>
+                      <li>Add Action: <strong>Get Contents of URL</strong> → POST to the endpoint above with your User ID <code className="text-indigo-400 font-mono">({user?.id || 'User ID'})</code>.</li>
+                    </ol>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-1">
+                    <p className="font-semibold text-primary">Option 1: 1-Tap Native App Deep Link (Recommended)</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Opens the native LifeOS app instantly and launches the {shortcutModal.type === 'expense' ? 'expense logger' : 'voice brain dump modal'}!
+                    </p>
+                    <div className="pt-2 flex items-center gap-2">
+                      <code className="flex-1 bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
+                        {shortcutModal.url}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        className="shrink-0 gap-1"
+                        onClick={() => {
+                          navigator.clipboard.writeText(shortcutModal.url);
+                          setCopiedShortcutUrl(true);
+                          setTimeout(() => setCopiedShortcutUrl(false), 2000);
+                        }}
+                      >
+                        {copiedShortcutUrl ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
+                        {copiedShortcutUrl ? 'Copied' : 'Copy'}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
+                    <p className="font-semibold text-foreground">How to add in Apple Shortcuts:</p>
+                    <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
+                      <li>Open the iOS <strong>Shortcuts</strong> app on your iPhone.</li>
+                      <li>Tap <strong>+</strong> in the top right to create a new shortcut.</li>
+                      <li>Add the action <strong>&quot;Open URL&quot;</strong> and paste the link above: <code className="text-primary font-mono">{shortcutModal.url}</code></li>
+                      <li>Rename the shortcut to <em>&quot;{shortcutModal.type === 'expense' ? 'Log Expense' : 'Brain Dump'}&quot;</em>.</li>
+                      <li>Optional: Go to <strong>Settings → Accessibility → Touch → Back Tap</strong> and assign it to Double Tap!</li>
+                    </ol>
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-border">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    window.open('shortcuts://', '_blank');
+                  }}
+                  className="gap-1.5"
+                >
+                  <ExternalLink size={13} />
+                  Open Shortcuts App
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setShortcutModal((s) => ({ ...s, isOpen: false }))}
+                >
+                  Done
+                </Button>
+              </div>
+            </div>
+          </Modal>
 
           {/* Appearance */}
           <section id="settings-appearance" className="liquid-glass-card overflow-hidden scroll-mt-20">
