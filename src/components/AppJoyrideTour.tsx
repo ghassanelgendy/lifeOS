@@ -1,12 +1,137 @@
 import React, { useMemo } from 'react';
-import { Joyride, STATUS, EVENTS, type Step, type EventHandler, type EventData } from 'react-joyride';
+import { Joyride, STATUS, EVENTS, type Step, type EventHandler, type EventData, type TooltipRenderProps } from 'react-joyride';
 import { useUIStore } from '../stores/useUIStore';
 import { useEffectiveTheme } from '../lib/theme';
 import { useAuth } from '../hooks/useAuth';
 import { UserBlobatar } from './ui/UserBlobatar';
+import { X, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { cn } from '../lib/utils';
 
 interface AppJoyrideTourProps {
   run?: boolean;
+}
+
+function CustomJoyrideTooltip({
+  continuous,
+  index,
+  isLastStep,
+  size,
+  step,
+  backProps,
+  closeProps,
+  primaryProps,
+  skipProps,
+  tooltipProps,
+}: TooltipRenderProps) {
+  const currentStep = index + 1;
+  const progressPct = Math.round((currentStep / size) * 100);
+
+  return (
+    <div
+      {...tooltipProps}
+      className={cn(
+        "relative flex flex-col font-sans select-none overflow-hidden",
+        "w-[calc(100vw-32px)] sm:w-[350px] max-w-[360px]",
+        "rounded-2xl border border-white/20 dark:border-white/10",
+        "bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl shadow-2xl",
+        "text-zinc-900 dark:text-zinc-100",
+        "animate-in fade-in zoom-in-95 duration-200"
+      )}
+      style={{
+        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08)",
+      }}
+    >
+      {/* Top micro progress bar */}
+      <div className="w-full h-1 bg-zinc-200/50 dark:bg-zinc-800/60 overflow-hidden">
+        <div
+          className="h-full bg-primary transition-all duration-300 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <div className="p-4 sm:p-5 flex flex-col gap-3">
+        {/* Header: Step counter pill + Title + Close icon */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1 min-w-0 pr-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-primary/10 text-primary border border-primary/20">
+                Step {currentStep} of {size}
+              </span>
+            </div>
+            {step.title && (
+              <h3 className="text-sm font-semibold tracking-tight text-foreground leading-snug">
+                {step.title}
+              </h3>
+            )}
+          </div>
+
+          <button
+            {...closeProps}
+            type="button"
+            className="p-1 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 -mr-1 -mt-1"
+            title="Close Guide"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Content body */}
+        <div className="text-xs text-foreground/80 leading-relaxed min-h-[40px]">
+          {step.content}
+        </div>
+
+        {/* Action Controls Footer */}
+        <div className="pt-2 flex items-center justify-between gap-2 border-t border-border/40 mt-1">
+          {/* Skip option */}
+          {!isLastStep ? (
+            <button
+              {...skipProps}
+              type="button"
+              className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-1.5 py-1"
+            >
+              Skip
+            </button>
+          ) : (
+            <div />
+          )}
+
+          {/* Navigation buttons */}
+          <div className="flex items-center gap-1.5">
+            {index > 0 && (
+              <button
+                {...backProps}
+                type="button"
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg text-foreground bg-muted/60 hover:bg-muted active:scale-95 transition-all"
+              >
+                <ArrowLeft className="size-3" />
+                Back
+              </button>
+            )}
+
+            {continuous && (
+              <button
+                {...primaryProps}
+                type="button"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-primary text-primary-foreground hover:brightness-105 active:scale-95 shadow-sm transition-all"
+              >
+                {isLastStep ? (
+                  <>
+                    <span>Get Started</span>
+                    <Check className="size-3.5" />
+                  </>
+                ) : (
+                  <>
+                    <span>Next</span>
+                    <ArrowRight className="size-3.5" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
@@ -219,59 +344,23 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       disableScrolling={false}
       scrollOffset={80}
       callback={handleJoyrideCallback}
+      tooltipComponent={CustomJoyrideTooltip}
       floatingOptions={{
         shift: { padding: 16 },
       }}
       styles={{
         options: {
-          arrowColor: isDarkMode ? '#18181b' : '#ffffff',
-          backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
-          overlayColor: 'rgba(0, 0, 0, 0.45)',
+          arrowColor: 'transparent',
+          backgroundColor: 'transparent',
+          overlayColor: isDarkMode ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.4)',
           primaryColor: isDarkMode ? '#2563eb' : '#3b82f6',
           textColor: isDarkMode ? '#f4f4f5' : '#09090b',
           zIndex: 10000,
         },
         tooltip: {
-          borderRadius: '12px',
-          boxShadow: isDarkMode 
-            ? '0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1)' 
-            : '0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.08)',
-          backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
-          color: isDarkMode ? '#f4f4f5' : '#09090b',
-          padding: '16px',
-          fontFamily: 'inherit',
-          width: 'min(340px, calc(100vw - 32px))',
-          maxWidth: '340px',
-        },
-        tooltipContent: {
-          padding: '2px 0 10px 0',
-          color: isDarkMode ? '#f4f4f5' : '#09090b',
-        },
-        tooltipTitle: {
-          fontSize: '14px',
-          fontWeight: 600,
-          marginBottom: '6px',
-          color: isDarkMode ? '#ffffff' : '#09090b',
-          letterSpacing: '-0.01em',
-        },
-        buttonPrimary: {
-          backgroundColor: '#3b82f6',
-          color: '#ffffff',
-          borderRadius: '6px',
-          padding: '6px 14px',
-          fontSize: '12px',
-          fontWeight: 500,
-          outline: 'none',
-        },
-        buttonBack: {
-          color: isDarkMode ? '#a1a1aa' : '#71717a',
-          marginRight: '6px',
-          fontSize: '12px',
-          fontWeight: 500,
-        },
-        buttonSkip: {
-          color: isDarkMode ? '#71717a' : '#a1a1aa',
-          fontSize: '12px',
+          padding: 0,
+          backgroundColor: 'transparent',
+          boxShadow: 'none',
         },
       }}
       locale={{
