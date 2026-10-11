@@ -14,6 +14,35 @@
   $$ language plpgsql security definer;
 
   -- ========================
+  -- Ensure core tables exist before altering
+  -- ========================
+  create table if not exists projects (
+    id uuid primary key default uuid_generate_v4(),
+    title text not null,
+    type text not null,
+    status text not null,
+    description text,
+    target_date date,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  create table if not exists academic_papers (
+    id uuid primary key default uuid_generate_v4(),
+    project_id uuid references projects(id) on delete cascade not null,
+    title text not null,
+    authors text,
+    methodology text not null,
+    status text not null,
+    year integer,
+    key_finding text,
+    notes text,
+    url text,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+  );
+
+  -- ========================
   -- Add user_id column to all user-scoped tables
   -- ========================
   alter table inbody_scans

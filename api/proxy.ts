@@ -89,9 +89,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   let resolvedAddresses: { address: string; family: 4 | 6 }[];
   const literalFamily = isIP(hostname);
   try {
-    resolvedAddresses = literalFamily
-      ? [{ address: hostname, family: literalFamily as 4 | 6 }]
-      : await dns.lookup(hostname, { all: true, verbatim: true });
+    if (literalFamily) {
+      resolvedAddresses = [{ address: hostname, family: literalFamily as 4 | 6 }];
+    } else {
+      const rawResolved = await dns.lookup(hostname, { all: true, verbatim: true });
+      resolvedAddresses = rawResolved.map((a) => ({
+        address: a.address,
+        family: (a.family === 6 ? 6 : 4) as 4 | 6,
+      }));
+    }
   } catch {
     return res.status(400).json({ error: 'Unable to resolve host' });
   }
