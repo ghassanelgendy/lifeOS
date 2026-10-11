@@ -322,7 +322,7 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
             Navigate between <strong>Quran &amp; Azkar</strong>, <strong>Tasks</strong>, <strong>Weekly Planner</strong>, <strong>Deep Focus</strong>, <strong>Habits</strong>, <strong>Finance</strong>, and <strong>Analytics</strong>.
           </p>
           <p className="text-muted-foreground">
-            Data is stored locally and synchronized securely across devices.
+            Synchronized securely to your account with offline caching support.
           </p>
         </div>
       ),

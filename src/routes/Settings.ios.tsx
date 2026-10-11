@@ -2090,13 +2090,13 @@ export default function SettingsPage() {
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                A local-first, privacy-centric life dashboard for tracking your health, habits, academics, and finances.
-                All data is stored locally in your browser.
+                A unified, privacy-conscious operating system for tracking your habits, routines, schedule, and productivity.
+                Synchronized securely to your account with local offline support.
               </p>
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border/40">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Database size={14} />
-                  <span>Data stored in browser localStorage</span>
+                  <span>Cloud sync &amp; local offline cache</span>
                 </div>
                 <Button
                   variant="outline"
