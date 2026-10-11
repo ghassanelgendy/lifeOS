@@ -78,7 +78,7 @@ create policy weekly_planner_items_delete_own
   using (auth.uid() = user_id);
 
 drop trigger if exists weekly_planner_items_set_updated_at on public.weekly_planner_items;
-create trigger weekly_planner_items_set_updated_at
+create or replace trigger weekly_planner_items_set_updated_at
   before update on public.weekly_planner_items
   for each row execute function public.set_strategic_goals_updated_at();
 
@@ -112,7 +112,7 @@ end;
 $$;
 
 drop trigger if exists tasks_enforce_strategic_quarter_owner on public.tasks;
-create trigger tasks_enforce_strategic_quarter_owner
+create or replace trigger tasks_enforce_strategic_quarter_owner
   before insert or update of strategic_quarter_id, user_id on public.tasks
   for each row
   execute function public.enforce_task_strategic_quarter_owner();

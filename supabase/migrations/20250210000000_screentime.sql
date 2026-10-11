@@ -114,16 +114,19 @@ drop policy if exists "Users own screentime_daily_app_stats" on screentime_daily
 drop policy if exists "Users own screentime_daily_website_stats" on screentime_daily_website_stats;
 drop policy if exists "Users own screentime_daily_summary" on screentime_daily_summary;
 
+drop policy if exists "Users own screentime_daily_app_stats" on screentime_daily_app_stats;
 create policy "Users own screentime_daily_app_stats"
   on screentime_daily_app_stats for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists "Users own screentime_daily_website_stats" on screentime_daily_website_stats;
 create policy "Users own screentime_daily_website_stats"
   on screentime_daily_website_stats for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists "Users own screentime_daily_summary" on screentime_daily_summary;
 create policy "Users own screentime_daily_summary"
   on screentime_daily_summary for all
   using (user_id = auth.uid())

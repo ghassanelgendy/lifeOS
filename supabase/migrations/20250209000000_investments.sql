@@ -54,11 +54,13 @@ create or replace trigger set_user_id_investment_transactions
 alter table investment_accounts enable row level security;
 alter table investment_transactions enable row level security;
 
+drop policy if exists "Users own investment_accounts" on investment_accounts;
 create policy "Users own investment_accounts"
   on investment_accounts for all
   using (user_id = auth.uid())
   with check (user_id = auth.uid());
 
+drop policy if exists "Users own investment_transactions" on investment_transactions;
 create policy "Users own investment_transactions"
   on investment_transactions for all
   using (user_id = auth.uid())

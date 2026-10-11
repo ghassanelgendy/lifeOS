@@ -7,14 +7,17 @@ create table if not exists public.user_ical_subscriptions (
 
 alter table public.user_ical_subscriptions enable row level security;
 
+drop policy if exists "Users can read own ical subscriptions" on public.user_ical_subscriptions;
 create policy "Users can read own ical subscriptions"
   on public.user_ical_subscriptions for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert own ical subscriptions" on public.user_ical_subscriptions;
 create policy "Users can insert own ical subscriptions"
   on public.user_ical_subscriptions for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update own ical subscriptions" on public.user_ical_subscriptions;
 create policy "Users can update own ical subscriptions"
   on public.user_ical_subscriptions for update
   using (auth.uid() = user_id)
@@ -30,7 +33,7 @@ end;
 $$ language plpgsql security definer;
 
 drop trigger if exists set_updated_at_user_ical_subscriptions on public.user_ical_subscriptions;
-create trigger set_updated_at_user_ical_subscriptions
+create or replace trigger set_updated_at_user_ical_subscriptions
   before update on public.user_ical_subscriptions
   for each row execute function public.set_updated_at();
 

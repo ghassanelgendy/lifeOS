@@ -46,7 +46,7 @@ end;
 $$;
 
 drop trigger if exists user_app_settings_set_updated_at on public.user_app_settings;
-create trigger user_app_settings_set_updated_at
+create or replace trigger user_app_settings_set_updated_at
   before update on public.user_app_settings
   for each row
   execute function public.set_user_app_settings_updated_at();

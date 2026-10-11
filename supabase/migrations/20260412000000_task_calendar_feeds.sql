@@ -46,7 +46,7 @@ end;
 $$;
 
 drop trigger if exists task_calendar_feeds_set_updated_at on public.task_calendar_feeds;
-create trigger task_calendar_feeds_set_updated_at
+create or replace trigger task_calendar_feeds_set_updated_at
   before update on public.task_calendar_feeds
   for each row
   execute function public.set_task_calendar_feeds_updated_at();

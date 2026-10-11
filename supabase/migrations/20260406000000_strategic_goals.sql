@@ -119,11 +119,11 @@ end;
 $$;
 
 drop trigger if exists strategic_goals_set_updated_at on public.strategic_goals;
-create trigger strategic_goals_set_updated_at
+create or replace trigger strategic_goals_set_updated_at
   before update on public.strategic_goals
   for each row execute function public.set_strategic_goals_updated_at();
 
 drop trigger if exists strategic_goal_quarters_set_updated_at on public.strategic_goal_quarters;
-create trigger strategic_goal_quarters_set_updated_at
+create or replace trigger strategic_goal_quarters_set_updated_at
   before update on public.strategic_goal_quarters
   for each row execute function public.set_strategic_goals_updated_at();

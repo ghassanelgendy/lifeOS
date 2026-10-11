@@ -41,7 +41,7 @@ create unique index if not exists calendar_task_links_event_task_idx
 
 -- Auto-fill user_id from auth.uid() for inserts.
 drop trigger if exists set_user_id_calendar_task_links on public.calendar_task_links;
-create trigger set_user_id_calendar_task_links
+create or replace trigger set_user_id_calendar_task_links
   before insert on public.calendar_task_links
   for each row execute function public.set_user_id();
 

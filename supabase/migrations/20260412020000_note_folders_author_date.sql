@@ -16,7 +16,7 @@ create index if not exists note_folders_user_sort_idx
   on public.note_folders (user_id, sort_order, name);
 
 drop trigger if exists set_user_id_note_folders on public.note_folders;
-create trigger set_user_id_note_folders
+create or replace trigger set_user_id_note_folders
   before insert on public.note_folders
   for each row execute function public.set_user_id();
 
@@ -33,7 +33,7 @@ end;
 $$;
 
 drop trigger if exists note_folders_set_updated_at on public.note_folders;
-create trigger note_folders_set_updated_at
+create or replace trigger note_folders_set_updated_at
   before update on public.note_folders
   for each row execute function public.set_note_folders_updated_at();
 

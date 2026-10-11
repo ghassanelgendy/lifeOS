@@ -3,19 +3,23 @@
 -- This adds owner-scoped policies so the client can learn categorization rules from a user's
 -- manual transaction corrections (see useUpdateTransaction in src/hooks/useFinance.ts).
 
+drop policy if exists "Users can view their own transaction rules" on public.transaction_rules;
 create policy "Users can view their own transaction rules"
   on public.transaction_rules for select
   using (auth.uid() = user_id);
 
+drop policy if exists "Users can insert their own transaction rules" on public.transaction_rules;
 create policy "Users can insert their own transaction rules"
   on public.transaction_rules for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can update their own transaction rules" on public.transaction_rules;
 create policy "Users can update their own transaction rules"
   on public.transaction_rules for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "Users can delete their own transaction rules" on public.transaction_rules;
 create policy "Users can delete their own transaction rules"
   on public.transaction_rules for delete
   using (auth.uid() = user_id);

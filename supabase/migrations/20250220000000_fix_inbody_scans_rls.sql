@@ -24,6 +24,7 @@ drop policy if exists "Allow full access to authenticated users" on inbody_scans
 -- This policy ensures:
 -- - Users can only SELECT their own records (using clause filters rows)
 -- - Users can only INSERT/UPDATE/DELETE their own records (with check clause validates operations)
+drop policy if exists "Users own inbody_scans" on inbody_scans;
 create policy "Users own inbody_scans"
   on inbody_scans
   for all

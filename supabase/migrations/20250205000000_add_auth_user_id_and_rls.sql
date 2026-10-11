@@ -166,60 +166,70 @@
   drop policy if exists "Service role all push_subscriptions" on push_subscriptions;
 
   -- inbody_scans
+  drop policy if exists "Users own inbody_scans" on inbody_scans;
   create policy "Users own inbody_scans"
     on inbody_scans for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- projects
+  drop policy if exists "Users own projects" on projects;
   create policy "Users own projects"
     on projects for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- academic_papers (scoped by project ownership)
+  drop policy if exists "Users own academic_papers via projects" on academic_papers;
   create policy "Users own academic_papers via projects"
     on academic_papers for all
     using (exists (select 1 from projects p where p.id = academic_papers.project_id and p.user_id = auth.uid()))
     with check (exists (select 1 from projects p where p.id = academic_papers.project_id and p.user_id = auth.uid()));
 
   -- calendar_events
+  drop policy if exists "Users own calendar_events" on calendar_events;
   create policy "Users own calendar_events"
     on calendar_events for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- task_lists
+  drop policy if exists "Users own task_lists" on task_lists;
   create policy "Users own task_lists"
     on task_lists for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- tags
+  drop policy if exists "Users own tags" on tags;
   create policy "Users own tags"
     on tags for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- tasks
+  drop policy if exists "Users own tasks" on tasks;
   create policy "Users own tasks"
     on tasks for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- habits
+  drop policy if exists "Users own habits" on habits;
   create policy "Users own habits"
     on habits for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- habit_logs (scoped by habit ownership)
+  drop policy if exists "Users own habit_logs via habits" on habit_logs;
   create policy "Users own habit_logs via habits"
     on habit_logs for all
     using (exists (select 1 from habits h where h.id = habit_logs.habit_id and h.user_id = auth.uid()))
     with check (exists (select 1 from habits h where h.id = habit_logs.habit_id and h.user_id = auth.uid()));
 
   -- transactions
+  drop policy if exists "Users own transactions" on transactions;
   create policy "Users own transactions"
     on transactions for all
     using (user_id = auth.uid())
@@ -229,12 +239,14 @@
   alter table budgets drop constraint if exists budgets_category_key;
   create unique index if not exists budgets_user_category_key on budgets (user_id, category);
 
+  drop policy if exists "Users own budgets" on budgets;
   create policy "Users own budgets"
     on budgets for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
   -- wellness_logs
+  drop policy if exists "Users own wellness_logs" on wellness_logs;
   create policy "Users own wellness_logs"
     on wellness_logs for all
     using (user_id = auth.uid())
@@ -246,23 +258,28 @@
   drop policy if exists "Allow anon update for push subscriptions" on push_subscriptions;
   drop policy if exists "Service role all" on push_subscriptions;
 
+  drop policy if exists "Users own push_subscriptions" on push_subscriptions;
   create policy "Users own push_subscriptions"
     on push_subscriptions for all
     using (user_id = auth.uid())
     with check (user_id = auth.uid());
 
+  drop policy if exists "Anon can insert push_subscriptions" on push_subscriptions;
   create policy "Anon can insert push_subscriptions"
     on push_subscriptions for insert
     to anon with check (user_id is null);
 
+  drop policy if exists "Anon can select null user push_subscriptions" on push_subscriptions;
   create policy "Anon can select null user push_subscriptions"
     on push_subscriptions for select
     to anon using (user_id is null);
 
+  drop policy if exists "Anon can update null user push_subscriptions" on push_subscriptions;
   create policy "Anon can update null user push_subscriptions"
     on push_subscriptions for update
     to anon using (user_id is null) with check (user_id is null);
 
+  drop policy if exists "Service role all push_subscriptions" on push_subscriptions;
   create policy "Service role all push_subscriptions"
     on push_subscriptions for all
     to service_role using (true) with check (true);

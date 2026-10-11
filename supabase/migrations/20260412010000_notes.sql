@@ -13,7 +13,7 @@ create index if not exists notes_user_updated_at_idx
   on public.notes (user_id, updated_at desc);
 
 drop trigger if exists set_user_id_notes on public.notes;
-create trigger set_user_id_notes
+create or replace trigger set_user_id_notes
   before insert on public.notes
   for each row execute function public.set_user_id();
 
@@ -30,7 +30,7 @@ end;
 $$;
 
 drop trigger if exists notes_set_updated_at on public.notes;
-create trigger notes_set_updated_at
+create or replace trigger notes_set_updated_at
   before update on public.notes
   for each row execute function public.set_notes_updated_at();
 

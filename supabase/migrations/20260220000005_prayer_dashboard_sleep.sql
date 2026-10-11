@@ -121,32 +121,32 @@ end $$;
 
 -- set user id triggers
 drop trigger if exists set_user_id_prayer_habits on public.prayer_habits;
-create trigger set_user_id_prayer_habits
+create or replace trigger set_user_id_prayer_habits
   before insert on public.prayer_habits
   for each row execute function public.set_user_id();
 
 drop trigger if exists set_user_id_prayer_logs on public.prayer_logs;
-create trigger set_user_id_prayer_logs
+create or replace trigger set_user_id_prayer_logs
   before insert on public.prayer_logs
   for each row execute function public.set_user_id();
 
 drop trigger if exists set_user_id_prayer_notification_settings on public.prayer_notification_settings;
-create trigger set_user_id_prayer_notification_settings
+create or replace trigger set_user_id_prayer_notification_settings
   before insert on public.prayer_notification_settings
   for each row execute function public.set_user_id();
 
 drop trigger if exists set_user_id_notification_delivery_logs on public.notification_delivery_logs;
-create trigger set_user_id_notification_delivery_logs
+create or replace trigger set_user_id_notification_delivery_logs
   before insert on public.notification_delivery_logs
   for each row execute function public.set_user_id();
 
 drop trigger if exists set_user_id_dashboard_widget_preferences on public.dashboard_widget_preferences;
-create trigger set_user_id_dashboard_widget_preferences
+create or replace trigger set_user_id_dashboard_widget_preferences
   before insert on public.dashboard_widget_preferences
   for each row execute function public.set_user_id();
 
 drop trigger if exists set_user_id_sleep_sessions on public.sleep_sessions;
-create trigger set_user_id_sleep_sessions
+create or replace trigger set_user_id_sleep_sessions
   before insert on public.sleep_sessions
   for each row execute function public.set_user_id();
 

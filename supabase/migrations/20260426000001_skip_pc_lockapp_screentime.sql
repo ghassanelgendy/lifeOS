@@ -35,7 +35,7 @@ $$;
 
 drop trigger if exists skip_pc_lockapp_screentime on public.screentime_daily_app_stats;
 
-create trigger skip_pc_lockapp_screentime
+create or replace trigger skip_pc_lockapp_screentime
   before insert or update on public.screentime_daily_app_stats
   for each row
   execute function public.skip_pc_lockapp_screentime();
