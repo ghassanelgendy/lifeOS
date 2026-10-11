@@ -57,6 +57,11 @@ export function useUserAppSettingsSync(userId: string | null | undefined) {
         return;
       }
 
+      // Completed tour is sticky: a stale remote `false` must not re-trigger it.
+      if (useUIStore.getState().hasCompletedTour) {
+        patch.hasCompletedTour = true;
+      }
+
       applyingRemote.current = true;
       useUIStore.setState(patch);
       applyingRemote.current = false;
