@@ -549,7 +549,7 @@ export default function SettingsPage() {
 
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start">
         {/* Sticky Desktop & Mobile Settings Navigation */}
-        <aside className="lg:w-64 shrink-0 lg:sticky lg:top-16 z-20 space-y-3">
+        <aside className="lg:w-64 shrink-0 lg:sticky lg:top-4 z-20 space-y-3">
           {/* Quick Search Field */}
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />

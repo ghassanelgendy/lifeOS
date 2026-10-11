@@ -507,7 +507,7 @@ button, a {
   font-family: 'Cairo', sans-serif !important;
 }
 
-/* Joyride mobile responsiveness and clean overlay */
+/* Joyride mobile responsiveness, clean overlay, and suppressed beacons */
 .__floater__body {
   max-width: calc(100vw - 32px) !important;
   box-sizing: border-box !important;
@@ -516,4 +516,12 @@ button, a {
 div[data-joyride="overlay"] {
   backdrop-filter: blur(2px) !important;
   -webkit-backdrop-filter: blur(2px) !important;
+}
+
+.react-joyride__beacon,
+[data-testid="floater-beacon"],
+[data-testid="button-beacon"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
