@@ -211,3 +211,32 @@ create table if not exists push_subscriptions (
   timezone text default 'UTC',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+create table if not exists public.bank_senders (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  bank_name text NOT NULL,
+  sender_id text NOT NULL,
+  is_active boolean DEFAULT true,
+  user_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT bank_senders_pkey PRIMARY KEY (id),
+  CONSTRAINT bank_senders_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+
+create table if not exists public.transaction_rules (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id uuid,
+  entity_pattern text,
+  bank text,
+  transaction_type text,
+  category text NOT NULL,
+  type text NOT NULL CHECK (type = ANY (ARRAY['income'::text, 'expense'::text])),
+  priority integer DEFAULT 0,
+  is_active boolean DEFAULT true,
+  notes text,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT transaction_rules_pkey PRIMARY KEY (id),
+  CONSTRAINT transaction_rules_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
+);
+
