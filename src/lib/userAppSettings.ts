@@ -193,7 +193,9 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.reportHabitsTargetPrevious = asNum(remote.reportHabitsTargetPrevious, asNum(remote.reportHabitsTarget, 100));
   patch.lastAutopilotAdjustedWeek = asStrOrNull(remote.lastAutopilotAdjustedWeek);
   patch.brainDumpAutoOrganizeEnabled = asBool(remote.brainDumpAutoOrganizeEnabled, false);
-  patch.hasCompletedTour = asBool(remote.hasCompletedTour, false);
+  if (typeof remote.hasCompletedTour === 'boolean') {
+    patch.hasCompletedTour = remote.hasCompletedTour;
+  }
 
   return patch;
 }

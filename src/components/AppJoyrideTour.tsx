@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Joyride, STATUS, EVENTS, type Step, type EventHandler, type EventData, type TooltipRenderProps } from 'react-joyride';
+import { Joyride, STATUS, ACTIONS, EVENTS, type Step, type EventHandler, type EventData, type TooltipRenderProps } from 'react-joyride';
 import { useUIStore } from '../stores/useUIStore';
 import { useEffectiveTheme } from '../lib/theme';
 import { useAuth } from '../hooks/useAuth';
@@ -68,6 +68,10 @@ function CustomJoyrideTooltip({
           <button
             {...closeProps}
             type="button"
+            onClick={(e) => {
+              useUIStore.getState().setTourCompleted(true);
+              closeProps?.onClick?.(e);
+            }}
             className="p-1 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 -mr-1 -mt-1"
             title="Close Guide"
           >
@@ -87,6 +91,10 @@ function CustomJoyrideTooltip({
             <button
               {...skipProps}
               type="button"
+              onClick={(e) => {
+                useUIStore.getState().setTourCompleted(true);
+                skipProps?.onClick?.(e);
+              }}
               className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-1.5 py-1"
             >
               Skip
@@ -354,8 +362,14 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
   const shouldRun = run !== undefined ? run : !hasCompletedTour;
 
   const handleJoyrideCallback: EventHandler = (data: EventData) => {
-    const { status, type } = data;
-    if (status === STATUS.FINISHED || status === STATUS.SKIPPED) {
+    const { status, type, action } = data;
+    if (
+      status === STATUS.FINISHED ||
+      status === STATUS.SKIPPED ||
+      action === ACTIONS.SKIP ||
+      action === ACTIONS.CLOSE ||
+      type === EVENTS.TOUR_END
+    ) {
       setTourCompleted(true);
     }
     // If a step element cannot be found on current viewport, do not break entire tour

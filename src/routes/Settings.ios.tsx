@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react';
 import {
   Shield,
   Download,
@@ -39,7 +40,6 @@ import {
   FileText,
   Sparkles,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_MODES, DASHBOARD_MODE_LABELS, PAGE_WIDGET_DEFAULTS, DEFAULT_DESKTOP_NAV, DEFAULT_PINNED_NAV, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme, type DashboardMode } from '../stores/useUIStore';
