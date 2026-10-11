@@ -86,6 +86,7 @@ begin
   end if;
   
   -- Add correct constraint
+  alter table public.habit_logs drop constraint if exists habit_logs_source_check;
   alter table public.habit_logs
     add constraint habit_logs_source_check
     check (source in ('manual', 'prayer', 'auto'));

@@ -13,6 +13,7 @@ begin
     from pg_constraint
     where conname = 'tasks_recurrence_end_type_check'
   ) then
+    alter table public.tasks drop constraint if exists tasks_recurrence_end_type_check;
     alter table public.tasks
       add constraint tasks_recurrence_end_type_check
       check (recurrence_end_type in ('never', 'on_date', 'after_count'));

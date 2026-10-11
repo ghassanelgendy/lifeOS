@@ -16,6 +16,7 @@ begin
   if not exists (
     select 1 from pg_constraint where conname = 'sleep_stages_user_started_key'
   ) then
+    alter table sleep_stages drop constraint if exists sleep_stages_user_started_key;
     alter table sleep_stages add constraint sleep_stages_user_started_key unique (user_id, started_at);
   end if;
 end $$;

@@ -113,6 +113,7 @@ begin
   if not exists (
     select 1 from pg_constraint where conname = 'habit_logs_source_check'
   ) then
+    alter table public.habit_logs drop constraint if exists habit_logs_source_check;
     alter table public.habit_logs
       add constraint habit_logs_source_check
       check (source in ('manual', 'prayer', 'auto'));

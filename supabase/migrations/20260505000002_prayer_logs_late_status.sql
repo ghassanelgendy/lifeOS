@@ -11,6 +11,7 @@ begin
   end if;
 end $$;
 
+alter table public.prayer_logs drop constraint if exists prayer_logs_status_check;
 alter table public.prayer_logs
   add constraint prayer_logs_status_check
   check (status in ('Prayed', 'Missed', 'Skipped', 'Late'));

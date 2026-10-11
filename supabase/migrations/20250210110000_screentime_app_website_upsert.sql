@@ -6,6 +6,7 @@
   -- ========================
   update screentime_daily_app_stats set device_id = '' where device_id is null;
   drop index if exists screentime_app_stats_unique_idx;
+  alter table screentime_daily_app_stats drop constraint if exists screentime_app_stats_unique_key;
   alter table screentime_daily_app_stats
     add constraint screentime_app_stats_unique_key
     unique (user_id, date, source, device_id, platform, app_name);
@@ -15,6 +16,7 @@
   -- ========================
   update screentime_daily_website_stats set device_id = '' where device_id is null;
   drop index if exists screentime_website_stats_unique_idx;
+  alter table screentime_daily_website_stats drop constraint if exists screentime_website_stats_unique_key;
   alter table screentime_daily_website_stats
     add constraint screentime_website_stats_unique_key
     unique (user_id, date, source, device_id, platform, domain);

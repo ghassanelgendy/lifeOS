@@ -11,6 +11,7 @@ where device_id is null;
 drop index if exists screentime_daily_summary_unique_idx;
 
 -- Add a UNIQUE constraint on the exact columns (required for upsert onConflict)
+alter table screentime_daily_summary drop constraint if exists screentime_daily_summary_unique_key;
 alter table screentime_daily_summary
   add constraint screentime_daily_summary_unique_key
   unique (user_id, date, source, device_id, platform);
