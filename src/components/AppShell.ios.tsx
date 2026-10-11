@@ -462,7 +462,7 @@ export function AppShell() {
           )}
           {/* Rows are deliberately compact (44px, the accessibility touch-target floor) so all
               nav entries fit on a phone screen with little or no scrolling. */}
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col px-2.5">
+          <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col px-2.5">
             {unpinnedDrawerItems.map((item) => {
               const isAnalytics = item.href === '/analytics';
               const showDot = isAnalytics && showWrappedTakeover;

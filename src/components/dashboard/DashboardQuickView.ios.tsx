@@ -1938,7 +1938,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      <section aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+      <section data-tour="spiritual-banners" aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
         <div className="flex items-center justify-between mb-3">
           <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
             Today
@@ -2096,7 +2096,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 <span className="absolute right-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
               </div>
             </div>
-            <div className="mt-6 flex items-center justify-between gap-2 text-[11px] font-medium text-muted-foreground">
+            <div data-tour="weekly-habits" className="mt-6 flex items-center justify-between gap-2 text-[11px] font-medium text-muted-foreground">
               <span>24h clock</span>
               <span className={cn('tabular-nums font-semibold text-foreground/80', privacyMode && 'blur-sm')}>
                 Habit Adherence: {habitAdherencePct}%{sleepTimeStr}

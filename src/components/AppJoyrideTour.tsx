@@ -169,21 +169,8 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       disableBeacon: true,
-    },
-    {
-      target: '[data-tour="day-progress"]',
-      title: '24-Hour Day Progress Timeline',
-      content: (
-        <div className="space-y-1.5 text-left text-xs">
-          <p>
-            Visualizes your 24-hour day in real time. Colored segments track your <strong>Sleep</strong>, <strong>PC</strong>, <strong>Phone screen time</strong>, and <strong>Web browsing</strong>.
-          </p>
-          <p className="text-muted-foreground">
-            Markers on the timeline display scheduled prayers, habits, and tasks.
-          </p>
-        </div>
-      ),
-      placement: 'auto',
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="spiritual-banners"]',
@@ -199,6 +186,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="metric-cards"]',
@@ -214,6 +204,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="metric-habits"]',
@@ -229,6 +222,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="metric-screentime"]',
@@ -244,6 +240,27 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
+    },
+    {
+      target: '[data-tour="day-progress"]',
+      title: '24-Hour Day Progress Timeline',
+      content: (
+        <div className="space-y-1.5 text-left text-xs">
+          <p>
+            Visualizes your 24-hour day in real time. Colored segments track your <strong>Sleep</strong>, <strong>PC</strong>, <strong>Phone screen time</strong>, and <strong>Web browsing</strong>.
+          </p>
+          <p className="text-muted-foreground">
+            Markers on the timeline display scheduled prayers, habits, and tasks.
+          </p>
+        </div>
+      ),
+      placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="weekly-habits"]',
@@ -256,6 +273,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="due-today"]',
@@ -271,6 +291,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="mobile-brain-dump"], [data-tour="brain-dump"]',
@@ -286,6 +309,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="mobile-nav"], [data-tour="sidebar-nav"]',
@@ -301,6 +327,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
     {
       target: '[data-tour="mobile-menu"], [data-tour="settings-nav"]',
@@ -316,6 +345,9 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
         </div>
       ),
       placement: 'auto',
+      disableBeacon: true,
+      targetWaitTimeout: 0,
+      skipScroll: true,
     },
   ], [userIdentifier, user?.email]);
 
@@ -341,8 +373,6 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       showProgress
       showSkipButton
       scrollToFirstStep={false}
-      disableScrolling={false}
-      scrollOffset={80}
       callback={handleJoyrideCallback}
       tooltipComponent={CustomJoyrideTooltip}
       floatingOptions={{
