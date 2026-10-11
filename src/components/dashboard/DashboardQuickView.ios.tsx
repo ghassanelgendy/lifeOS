@@ -1747,7 +1747,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     const isDone = isTask
       ? !!item.is_completed
       : isHabit
-        ? !!todayHabitLogs[item.entityId || '']
+        ? isHabitDoneToday(item.entityId || '')
         : Boolean(item.is_completed || isManuallyDone);
 
     timelineRawItems.push({

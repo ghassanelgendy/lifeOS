@@ -37,7 +37,9 @@ import {
   Target,
   Lock,
   FileText,
+  Sparkles,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
 import { useUIStore, DASHBOARD_MODES, DASHBOARD_MODE_LABELS, PAGE_WIDGET_DEFAULTS, DEFAULT_DESKTOP_NAV, DEFAULT_PINNED_NAV, ACCENT_THEMES, ACCENT_THEME_LABELS, type AccentTheme, type DashboardMode } from '../stores/useUIStore';
@@ -254,6 +256,7 @@ export default function SettingsPage() {
   const { data: archivedHabits = [] } = useArchivedHabits();
   const unarchiveHabit = useUnarchiveHabit();
   const push = usePushNotifications();
+  const prayerNotif = usePrayerNotificationSettings();
   const effectiveTheme = useEffectiveTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState<string>('account');

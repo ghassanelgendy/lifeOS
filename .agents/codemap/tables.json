@@ -1,0 +1,478 @@
+{
+ "generatedAt": "2026-10-11T02:49:03.775Z",
+ "note": "Supabase tables/RPCs referenced via .from()/.rpc(), and edge functions, with their consumers.",
+ "tables": [
+  {
+   "table": "azkar_daily_progress",
+   "readWrite": [
+    "src/hooks/useAzkar.ts"
+   ]
+  },
+  {
+   "table": "azkar_favorites",
+   "readWrite": [
+    "src/hooks/useAzkar.ts"
+   ]
+  },
+  {
+   "table": "budgets",
+   "readWrite": [
+    "supabase/functions/process-sms/index.ts"
+   ]
+  },
+  {
+   "table": "calendar_events",
+   "readWrite": [
+    "src/hooks/useCalendar.ts",
+    "api/calendar/tasks.ts",
+    "supabase/functions/calendar-feed/index.ts",
+    "supabase/functions/calendar-notifications-dispatch/index.ts"
+   ]
+  },
+  {
+   "table": "calendar_task_links",
+   "readWrite": [
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx"
+   ]
+  },
+  {
+   "table": "custom_rewards",
+   "readWrite": [
+    "src/hooks/usePoints.ts"
+   ]
+  },
+  {
+   "table": "habit_logs",
+   "readWrite": [
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/lib/nativeBridge.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "supabase/functions/calendar-feed/index.ts",
+    "supabase/functions/habit-notifications-dispatch/index.ts"
+   ]
+  },
+  {
+   "table": "habits",
+   "readWrite": [
+    "src/db/seed.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/lib/nativeBridge.ts",
+    "supabase/functions/calendar-feed/index.ts",
+    "supabase/functions/habit-notifications-dispatch/index.ts"
+   ]
+  },
+  {
+   "table": "inbody_scans",
+   "readWrite": [
+    "src/hooks/useHealthData.ts",
+    "supabase/functions/sync-inbody/index.ts"
+   ]
+  },
+  {
+   "table": "investment_accounts",
+   "readWrite": [
+    "src/hooks/useInvestments.ts"
+   ]
+  },
+  {
+   "table": "investment_transactions",
+   "readWrite": [
+    "src/hooks/useInvestments.ts"
+   ]
+  },
+  {
+   "table": "note_folders",
+   "readWrite": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/hooks/useNotes.ts",
+    "supabase/functions/append-braindump/index.ts",
+    "supabase/functions/braindump-organizer/index.ts"
+   ]
+  },
+  {
+   "table": "notes",
+   "readWrite": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/routes/Quran.tsx",
+    "supabase/functions/append-braindump/index.ts",
+    "supabase/functions/braindump-organizer/index.ts",
+    "supabase/functions/process-sms/index.ts",
+    "supabase/functions/quick-expense/index.ts"
+   ]
+  },
+  {
+   "table": "points_transactions",
+   "readWrite": [
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts"
+   ]
+  },
+  {
+   "table": "prayer_habits",
+   "readWrite": [
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/routes/Analytics.tsx",
+    "supabase/functions/habit-notifications-dispatch/index.ts"
+   ]
+  },
+  {
+   "table": "prayer_logs",
+   "readWrite": [
+    "src/App.ios.tsx",
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/lib/nativeBridge.ts",
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "table": "prayer_notification_settings",
+   "readWrite": [
+    "src/App.ios.tsx",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "supabase/functions/prayer-notifications-dispatch/index.ts"
+   ]
+  },
+  {
+   "table": "push_subscriptions",
+   "readWrite": [
+    "src/hooks/usePushNotifications.ios.ts",
+    "src/hooks/usePushNotifications.web.ts",
+    "supabase/functions/calendar-notifications-dispatch/index.ts",
+    "supabase/functions/habit-notifications-dispatch/index.ts",
+    "supabase/functions/prayer-notifications-dispatch/index.ts",
+    "supabase/functions/report-notification-dispatch/index.ts",
+    "supabase/functions/send-task-reminders/index.ts",
+    "supabase/functions/send-test-notification/index.ts"
+   ]
+  },
+  {
+   "table": "quran_hifdh_records",
+   "readWrite": [
+    "src/hooks/useQuranCloudSync.ts"
+   ]
+  },
+  {
+   "table": "quran_khatmah_plans",
+   "readWrite": [
+    "src/hooks/useQuranCloudSync.ts",
+    "supabase/functions/habit-notifications-dispatch/index.ts"
+   ]
+  },
+  {
+   "table": "screentime_daily_app_stats",
+   "readWrite": [
+    "src/hooks/useScreentime.ts",
+    "supabase/functions/upload-screentime/index.ts",
+    "supabase/functions/upload-screentime-chronos/index.ts"
+   ]
+  },
+  {
+   "table": "screentime_daily_summary",
+   "readWrite": [
+    "src/hooks/useScreentime.ts",
+    "supabase/functions/upload-screentime/index.ts",
+    "supabase/functions/upload-screentime-chronos/index.ts"
+   ]
+  },
+  {
+   "table": "screentime_daily_website_stats",
+   "readWrite": [
+    "src/hooks/useScreentime.ts",
+    "supabase/functions/upload-screentime/index.ts",
+    "supabase/functions/upload-screentime-chronos/index.ts"
+   ]
+  },
+  {
+   "table": "sleep_stages",
+   "readWrite": [
+    "src/hooks/useSleep.ts",
+    "supabase/functions/upload-sleep/index.ts"
+   ]
+  },
+  {
+   "table": "tags",
+   "readWrite": [
+    "src/db/seed.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "supabase/functions/braindump-organizer/index.ts",
+    "supabase/functions/create-task/index.ts"
+   ]
+  },
+  {
+   "table": "task_calendar_feeds",
+   "readWrite": [
+    "src/hooks/useTaskCalendarFeed.ts",
+    "api/calendar/tasks.ts",
+    "supabase/functions/calendar-feed/index.ts"
+   ]
+  },
+  {
+   "table": "task_lists",
+   "readWrite": [
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "supabase/functions/braindump-organizer/index.ts",
+    "supabase/functions/create-task/index.ts",
+    "supabase/functions/sync-reminders/index.ts"
+   ]
+  },
+  {
+   "table": "tasks",
+   "readWrite": [
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/lib/nativeBridge.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "api/calendar/tasks.ts",
+    "supabase/functions/braindump-organizer/index.ts",
+    "supabase/functions/calendar-feed/index.ts",
+    "supabase/functions/create-task/index.ts",
+    "supabase/functions/send-task-reminders/index.ts",
+    "supabase/functions/sync-reminders/index.ts"
+   ]
+  },
+  {
+   "table": "transaction_rules",
+   "readWrite": [
+    "src/hooks/useFinance.ts",
+    "supabase/functions/process-sms/index.ts",
+    "supabase/functions/quick-expense/index.ts"
+   ]
+  },
+  {
+   "table": "transactions",
+   "readWrite": [
+    "src/hooks/useFinance.ts",
+    "src/hooks/useUserBanks.ts",
+    "supabase/functions/process-sms/index.ts",
+    "supabase/functions/quick-expense/index.ts",
+    "supabase/functions/reconcile-statement/index.ts"
+   ]
+  },
+  {
+   "table": "user_app_settings",
+   "readWrite": [
+    "src/hooks/useUserAppSettingsSync.ts",
+    "supabase/functions/braindump-organizer/index.ts",
+    "supabase/functions/process-sms/index.ts",
+    "supabase/functions/quick-expense/index.ts"
+   ]
+  },
+  {
+   "table": "user_banks",
+   "readWrite": [
+    "src/hooks/useUserBanks.ts"
+   ]
+  },
+  {
+   "table": "user_ical_subscriptions",
+   "readWrite": [
+    "src/hooks/useIcalSubscriptions.ts"
+   ]
+  }
+ ],
+ "edgeFunctions": [
+  {
+   "name": "append-braindump",
+   "defines": [
+    "supabase/functions/append-braindump/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "braindump-organizer",
+   "defines": [
+    "supabase/functions/braindump-organizer/index.ts"
+   ],
+   "calledBy": [
+    "api/cron/braindump-organizer.ts"
+   ]
+  },
+  {
+   "name": "calendar-feed",
+   "defines": [
+    "supabase/functions/calendar-feed/index.ts"
+   ],
+   "calledBy": [
+    "src/hooks/useTaskCalendarFeed.ts"
+   ]
+  },
+  {
+   "name": "calendar-notifications-dispatch",
+   "defines": [
+    "supabase/functions/calendar-notifications-dispatch/index.ts"
+   ],
+   "calledBy": [
+    "api/cron/calendar-notifications-dispatch.ts"
+   ]
+  },
+  {
+   "name": "create-task",
+   "defines": [
+    "supabase/functions/create-task/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "habit-notifications-dispatch",
+   "defines": [
+    "supabase/functions/habit-notifications-dispatch/index.ts"
+   ],
+   "calledBy": [
+    "api/cron/habit-notifications-dispatch.ts"
+   ]
+  },
+  {
+   "name": "prayer-notifications-dispatch",
+   "defines": [
+    "supabase/functions/prayer-notifications-dispatch/index.ts"
+   ],
+   "calledBy": [
+    "api/cron/prayer-notifications-dispatch.ts"
+   ]
+  },
+  {
+   "name": "process-sms",
+   "defines": [
+    "supabase/functions/process-sms/index.ts"
+   ],
+   "calledBy": [
+    "src/routes/Settings.ios.tsx"
+   ]
+  },
+  {
+   "name": "quick-expense",
+   "defines": [
+    "supabase/functions/quick-expense/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "r2-presign",
+   "defines": [
+    "supabase/functions/r2-presign/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "reconcile-statement",
+   "defines": [
+    "supabase/functions/reconcile-statement/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "report-notification-dispatch",
+   "defines": [
+    "supabase/functions/report-notification-dispatch/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "send-task-reminders",
+   "defines": [
+    "supabase/functions/send-task-reminders/index.ts"
+   ],
+   "calledBy": [
+    "api/cron/send-task-reminders.ts"
+   ]
+  },
+  {
+   "name": "send-test-notification",
+   "defines": [
+    "supabase/functions/send-test-notification/index.ts"
+   ],
+   "calledBy": [
+    "src/hooks/usePushNotifications.ios.ts",
+    "src/hooks/usePushNotifications.web.ts"
+   ]
+  },
+  {
+   "name": "sync-inbody",
+   "defines": [
+    "supabase/functions/sync-inbody/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "sync-reminders",
+   "defines": [
+    "supabase/functions/sync-reminders/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "upload-screentime",
+   "defines": [
+    "supabase/functions/upload-screentime/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "upload-screentime-chronos",
+   "defines": [
+    "supabase/functions/upload-screentime-chronos/index.ts"
+   ],
+   "calledBy": []
+  },
+  {
+   "name": "upload-sleep",
+   "defines": [
+    "supabase/functions/upload-sleep/index.ts"
+   ],
+   "calledBy": [
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Sleep.ios.tsx"
+   ]
+  }
+ ]
+}

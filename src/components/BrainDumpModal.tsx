@@ -531,7 +531,7 @@ Return JSON ONLY. No markdown wrapping or conversational text.`;
 
         parsed.tasks = parsed.tasks.map((task, i) => ({
           ...task,
-          due: slots[i]?.dueDate || task.due || todayStr,
+          due: slots[i]?.dueDate || task.due || getLocalDateString(),
           due_time: slots[i]?.dueTime || '14:00',
           estimated_duration: task.estimated_duration || slots[i]?.durationMinutes || 30,
           scheduling_reason: slots[i]?.reason || 'Distributed during awake hours',
@@ -602,7 +602,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
         });
         parsed.tasks = parsed.tasks.map((task, i) => ({
           ...task,
-          due: slots[i]?.dueDate || todayStr,
+          due: slots[i]?.dueDate || getLocalDateString(),
           due_time: slots[i]?.dueTime || '14:00',
           estimated_duration: task.estimated_duration || 30,
           scheduling_reason: slots[i]?.reason || 'Distributed during awake hours',
@@ -639,7 +639,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
             title: task.title,
             description: rawMaterial || undefined,
             priority: (task.priority as any) || 'medium',
-            due_date: task.due || todayStr,
+            due_date: task.due || getLocalDateString(),
             due_time: task.due_time || undefined,
             duration_minutes: task.estimated_duration || 30,
             list_id: targetList,
@@ -739,7 +739,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
         title: task.title,
         description: targetNoteToAnalyze?.body || lastAnalyzedRawText || undefined,
         priority: (task.priority as any) || 'medium',
-        due_date: task.due || todayStr,
+        due_date: task.due || getLocalDateString(),
         due_time: task.due_time || undefined,
         duration_minutes: task.estimated_duration || 30,
         list_id: targetList,
@@ -790,7 +790,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
           title: t.title,
           description: targetNoteToAnalyze?.body || lastAnalyzedRawText || undefined,
           priority: (t.priority as any) || 'medium',
-          due_date: t.due || todayStr,
+          due_date: t.due || getLocalDateString(),
           due_time: t.due_time || undefined,
           duration_minutes: t.estimated_duration || 30,
           list_id: targetList,
@@ -1447,7 +1447,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
                                 await createNote.mutateAsync({
                                   title: item.title,
                                   body: item.content,
-                                  note_date: todayStr,
+                                  note_date: getLocalDateString(),
                                   is_brain_dump: false,
                                 });
                                 setSaveSuccessMsg(`Converted "${item.title}" into a dedicated Note!`);

@@ -164,6 +164,7 @@ export default function Sleep() {
   const { user } = useAuth();
   const [showSyncModal, setShowSyncModal] = useState(false);
   const [copiedUrl, setCopiedUrl] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<NightSession | null>(null);
   const weekly = useMemo(() => sessions.slice(0, 7).reverse(), [sessions]);
   const monthly = useMemo(() => sessions.slice(0, 30).reverse(), [sessions]);
 

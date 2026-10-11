@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Marked } from 'marked';
+import { Capacitor } from '@capacitor/core';
 import { Sparkles, Send, Brain, Check, Loader2, Calendar, CheckSquare, Wallet, Activity, FileText, Moon, Settings, AlertCircle, Trash2, Plus, PanelLeft, Copy, RotateCw, X, MessageSquare, Mic } from 'lucide-react';
 import { Button } from '../components/ui';
 import { cn } from '../lib/utils';

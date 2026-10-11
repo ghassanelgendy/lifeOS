@@ -14,6 +14,7 @@ import { AIChatModal } from './AIChatModal';
 import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
+import { triggerHaptics } from '../lib/nativeBridge';
 import LiquidTabBar from './LiquidTabBar';
 import { AppJoyrideTour } from './AppJoyrideTour';
 import { useAuth } from '../hooks/useAuth';

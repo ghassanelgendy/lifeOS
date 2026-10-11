@@ -9,6 +9,8 @@ import { queryClient } from './lib/queryClient';
 
 import { seedDatabase } from './db/seed';
 import { processOfflineQueue, isOnline } from './lib/offlineSync';
+import { supabase } from './lib/supabase';
+import { askAI, extractJSON } from './lib/ai';
 import { useTransactionsRealtime } from './hooks/useFinance';
 import { useAzkarRealtime } from './hooks/useAzkar';
 import { usePakeLocalNotifications } from './hooks/usePakeLocalNotifications';

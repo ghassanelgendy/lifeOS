@@ -12,6 +12,7 @@ import { Capacitor } from '@capacitor/core';
 import { seedDatabase } from './db/seed';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from './lib/supabase';
+import { askAI, extractJSON } from './lib/ai';
 import { processOfflineQueue, isOnline, addToOfflineQueue } from './lib/offlineSync';
 import { checkAndApplyUpdates } from './lib/otaUpdater';
 import { setupDeepLinkListener, triggerHaptics, initializeNativeApp, syncStatusBar, syncAllLocalNotifications, setupNotificationActionListeners, registerNotificationActionTypes, syncAndroidNativeBridge } from './lib/nativeBridge';

@@ -1,0 +1,8459 @@
+{
+ "generatedAt": "2026-10-11T02:49:03.775Z",
+ "generator": "scripts/build-codemap.mjs",
+ "stats": {
+  "files": 286,
+  "loc": 116621,
+  "edges": 936,
+  "byKind": {
+   "app-entry": 6,
+   "test": 14,
+   "component": 75,
+   "ui-primitive": 10,
+   "context": 1,
+   "static-data": 1,
+   "local-db": 3,
+   "hook": 38,
+   "lib": 30,
+   "route": 42,
+   "store": 4,
+   "types": 3,
+   "vercel-fn": 4,
+   "vercel-cron": 5,
+   "edge-fn": 21,
+   "extension": 7,
+   "workspace-pkg": 22
+  }
+ },
+ "nodes": [
+  {
+   "id": "src/App.ios.tsx",
+   "kind": "app-entry",
+   "platform": "ios",
+   "loc": 612,
+   "exports": [],
+   "default": "App",
+   "tables": [
+    "note_folders",
+    "notes",
+    "prayer_logs",
+    "prayer_notification_settings"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "local-push-prayer-settings",
+    "today-prayer-logs-for-notifs",
+    "transactions"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/AppShell.tsx",
+    "src/components/ErrorBoundary.tsx",
+    "src/components/FaviconSync.tsx",
+    "src/components/LoadingScreen.tsx",
+    "src/contexts/AuthContext.tsx",
+    "src/db/seed.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePushNotifications.ts",
+    "src/hooks/useTasks.ts",
+    "src/hooks/useUserAppSettingsSync.ts",
+    "src/lib/ai.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/otaUpdater.ts",
+    "src/lib/queryClient.ts",
+    "src/lib/supabase.ts",
+    "src/lib/theme.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Azkar.tsx",
+    "src/routes/Calendar.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Finance.tsx",
+    "src/routes/Focus.tsx",
+    "src/routes/Habits.tsx",
+    "src/routes/Health.tsx",
+    "src/routes/Login.tsx",
+    "src/routes/Notes.tsx",
+    "src/routes/Points.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/Screentime.tsx",
+    "src/routes/Settings.tsx",
+    "src/routes/Signup.tsx",
+    "src/routes/Sleep.tsx",
+    "src/routes/Tasks.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/App.test.tsx",
+   "kind": "test",
+   "platform": null,
+   "loc": 9,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "src/App.tsx",
+   "kind": "app-entry",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/App.web.tsx"
+   ],
+   "importedBy": [
+    "src/main.tsx"
+   ]
+  },
+  {
+   "id": "src/App.web.tsx",
+   "kind": "app-entry",
+   "platform": "web",
+   "loc": 483,
+   "exports": [],
+   "default": "App",
+   "tables": [
+    "note_folders",
+    "notes"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AppShell.tsx",
+    "src/components/ErrorBoundary.tsx",
+    "src/components/FaviconSync.tsx",
+    "src/components/LoadingScreen.tsx",
+    "src/contexts/AuthContext.tsx",
+    "src/db/seed.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useNativeTraySync.ts",
+    "src/hooks/usePakeLocalNotifications.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/useUserAppSettingsSync.ts",
+    "src/lib/ai.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/queryClient.ts",
+    "src/lib/supabase.ts",
+    "src/lib/theme.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Azkar.tsx",
+    "src/routes/Calendar.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Finance.tsx",
+    "src/routes/Focus.tsx",
+    "src/routes/Habits.tsx",
+    "src/routes/Health.tsx",
+    "src/routes/Landing.tsx",
+    "src/routes/Login.tsx",
+    "src/routes/Notes.tsx",
+    "src/routes/Points.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/Screentime.tsx",
+    "src/routes/Settings.tsx",
+    "src/routes/Signup.tsx",
+    "src/routes/Sleep.tsx",
+    "src/routes/Tasks.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "src/routes/Wiki.tsx",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AIChatModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 26,
+   "exports": [
+    "AIChatModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/routes/Chat.tsx"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AINoteOrganizerSheet.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 665,
+   "exports": [
+    "AINoteOrganizerSheet",
+    "ExtractedActionTask"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/smartTaskScheduler.ts",
+    "src/lib/taskSimilarityAnalyzer.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AISettingsSection.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 455,
+   "exports": [
+    "AISettingsSection"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/lib/ai.ts",
+    "src/lib/aiFallback.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AppFooter.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 60,
+   "exports": [
+    "AppFooter"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useSyncStatus.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/AppFooter.pake.tsx",
+   "kind": "component",
+   "platform": "pake",
+   "loc": 62,
+   "exports": [
+    "AppFooter"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useSyncStatus.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/AppFooter.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AppFooter.web.tsx"
+   ],
+   "importedBy": [
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AppFooter.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 56,
+   "exports": [
+    "AppFooter"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useSyncStatus.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/AppFooter.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AppJoyrideTour.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 406,
+   "exports": [
+    "AppJoyrideTour"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/UserBlobatar.tsx",
+    "src/hooks/useAuth.ts",
+    "src/lib/theme.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AppShell.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 905,
+   "exports": [
+    "AppShell"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AIChatModal.tsx",
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/CommandPalette.tsx",
+    "src/components/FocusPiPWindow.tsx",
+    "src/components/FocusSessionManager.tsx",
+    "src/components/LiquidTabBar.tsx",
+    "src/components/OfflineBanner.tsx",
+    "src/components/PullToRefresh.tsx",
+    "src/components/navItems.ts",
+    "src/components/ui/UserBlobatar.tsx",
+    "src/hooks/useAuth.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/utils.ts",
+    "src/lib/wrapHelpers.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/AppShell.pake.tsx",
+   "kind": "component",
+   "platform": "pake",
+   "loc": 501,
+   "exports": [
+    "AppShell"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AIChatModal.tsx",
+    "src/components/AppFooter.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/CommandPalette.tsx",
+    "src/components/FocusPiPWindow.tsx",
+    "src/components/FocusSessionManager.tsx",
+    "src/components/LinuxTitleBar.tsx",
+    "src/components/LinuxWindowResizer.tsx",
+    "src/components/OfflineBanner.tsx",
+    "src/components/PullToRefresh.tsx",
+    "src/components/navItems.ts",
+    "src/components/ui/UserBlobatar.tsx",
+    "src/hooks/useAuth.ts",
+    "src/lib/theme.ts",
+    "src/lib/utils.ts",
+    "src/lib/wrapHelpers.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/AppShell.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AppShell.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AppShell.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 818,
+   "exports": [
+    "AppShell"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AIChatModal.tsx",
+    "src/components/AppFooter.tsx",
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/CommandPalette.tsx",
+    "src/components/FocusPiPWindow.tsx",
+    "src/components/FocusSessionManager.tsx",
+    "src/components/OfflineBanner.tsx",
+    "src/components/PullToRefresh.tsx",
+    "src/components/navItems.ts",
+    "src/components/ui/UserBlobatar.tsx",
+    "src/hooks/useAuth.ts",
+    "src/lib/utils.ts",
+    "src/lib/wrapHelpers.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.tsx"
+   ]
+  },
+  {
+   "id": "src/components/AttachmentManager.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 188,
+   "exports": [
+    "AttachmentManager"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/attachments.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/BankAccountsSettingsSection.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 148,
+   "exports": [
+    "BankAccountsSettingsSection"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useUserBanks.ts"
+   ],
+   "importedBy": [
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/BrainDumpGraphView.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 552,
+   "exports": [
+    "BrainDumpGraphView"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/BrainDumpModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 1572,
+   "exports": [
+    "BrainDumpModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/smartTaskScheduler.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/CommandPalette.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 274,
+   "exports": [
+    "CommandPalette"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/KeyboardShortcutsModal.tsx",
+    "src/lib/theme.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/CompactPrayerHabit.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 144,
+   "exports": [
+    "CompactPrayerHabit"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/usePrayerHabits.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/CompactPrayerHabit.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/CompactPrayerHabit.web.tsx"
+   ],
+   "importedBy": [
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/CompactPrayerHabit.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 156,
+   "exports": [
+    "CompactPrayerHabit"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/usePrayerHabits.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/CompactPrayerHabit.tsx"
+   ]
+  },
+  {
+   "id": "src/components/DataCard.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 69,
+   "exports": [
+    "DataCard"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/DataCard.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/DataCard.web.tsx"
+   ],
+   "importedBy": [
+    "src/components/analytics/AnalyticsOverview.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Sleep.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/DataCard.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 69,
+   "exports": [
+    "DataCard"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/DataCard.tsx"
+   ]
+  },
+  {
+   "id": "src/components/ErrorBoundary.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 93,
+   "exports": [
+    "ErrorBoundary"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/logger.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/FaviconSync.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 48,
+   "exports": [
+    "FaviconSync"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/FinanceHeroCard.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 122,
+   "exports": [
+    "FinanceHeroCard"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/FinanceHeroCard.test.tsx",
+   "kind": "test",
+   "platform": null,
+   "loc": 64,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/FinanceHeroCard.tsx",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/FinanceHeroCard.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/FinanceHeroCard.web.tsx"
+   ],
+   "importedBy": [
+    "src/components/FinanceHeroCard.test.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/FinanceHeroCard.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 123,
+   "exports": [
+    "FinanceHeroCard"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/FinanceHeroCard.tsx"
+   ]
+  },
+  {
+   "id": "src/components/FocusPiPWindow.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 364,
+   "exports": [
+    "FocusPiPWindow"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/stores/useFocusSessionStore.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/FocusSessionManager.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 136,
+   "exports": [
+    "FocusSessionManager"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useTasks.ts",
+    "src/lib/focusSessionEvents.ts",
+    "src/lib/utils.ts",
+    "src/stores/useFocusSessionStore.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/HabitStatsModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 355,
+   "exports": [
+    "HabitStatsModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useHabits.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/KeyboardShortcutsModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 167,
+   "exports": [
+    "KeyboardShortcutsModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts"
+   ],
+   "importedBy": [
+    "src/components/CommandPalette.tsx"
+   ]
+  },
+  {
+   "id": "src/components/LinuxTitleBar.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 138,
+   "exports": [
+    "LinuxTitleBar"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AppShell.pake.tsx"
+   ]
+  },
+  {
+   "id": "src/components/LinuxWindowResizer.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 112,
+   "exports": [
+    "LinuxWindowResizer"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AppShell.pake.tsx"
+   ]
+  },
+  {
+   "id": "src/components/LiquidTabBar.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 172,
+   "exports": [
+    "LiquidTab"
+   ],
+   "default": "LiquidTabBar",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useNativeInteraction.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx"
+   ]
+  },
+  {
+   "id": "src/components/LoadingScreen.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 27,
+   "exports": [
+    "LoadingScreen"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/OfflineBanner.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 52,
+   "exports": [
+    "OfflineBanner"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/offlineSync.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/PrayerBacklog.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 332,
+   "exports": [
+    "PrayerBacklog"
+   ],
+   "default": null,
+   "tables": [
+    "prayer_habits",
+    "prayer_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "prayer-tracker"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePrayerHabits.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/PrayerBacklog.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/PrayerBacklog.web.tsx"
+   ],
+   "importedBy": [
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/PrayerBacklog.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 330,
+   "exports": [
+    "PrayerBacklog"
+   ],
+   "default": null,
+   "tables": [
+    "prayer_habits",
+    "prayer_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "prayer-tracker"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePrayerHabits.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/PrayerBacklog.tsx"
+   ]
+  },
+  {
+   "id": "src/components/PrayerTimesWidget.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 75,
+   "exports": [
+    "PrayerTimesWidget"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/usePrayerTimes.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/PullToRefresh.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 180,
+   "exports": [
+    "PullToRefresh"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/PullToRefresh.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/PullToRefresh.web.tsx"
+   ],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/PullToRefresh.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 127,
+   "exports": [
+    "PullToRefresh"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/PullToRefresh.tsx"
+   ]
+  },
+  {
+   "id": "src/components/QuranOfflineDownloader.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 146,
+   "exports": [
+    "QuranOfflineDownloader"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "src/components/ui/index.ts",
+    "src/db/indexedDb.ts"
+   ],
+   "importedBy": [
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/SwipeableRow.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 150,
+   "exports": [
+    "SwipeableRow"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/SwipeableRow.pake.tsx",
+   "kind": "component",
+   "platform": "pake",
+   "loc": 130,
+   "exports": [
+    "SwipeableRow"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/SwipeableRow.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/SwipeableRow.web.tsx"
+   ],
+   "importedBy": [
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/SwipeableRow.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 131,
+   "exports": [
+    "SwipeableRow"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/SwipeableRow.tsx"
+   ]
+  },
+  {
+   "id": "src/components/TaskDetailsContent.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 1159,
+   "exports": [
+    "TaskDetailsContent",
+    "TaskDetailsFormState"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AttachmentManager.tsx",
+    "src/components/ui/index.ts",
+    "src/lib/ai.ts",
+    "src/lib/listIdFromTagIds.ts",
+    "src/lib/taskInputSuggestions.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/TaskDetailsContent.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/TaskDetailsContent.web.tsx"
+   ],
+   "importedBy": [
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/TaskDetailsContent.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 1129,
+   "exports": [
+    "TaskDetailsContent",
+    "TaskDetailsFormState"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AttachmentManager.tsx",
+    "src/components/ui/index.ts",
+    "src/lib/ai.ts",
+    "src/lib/listIdFromTagIds.ts",
+    "src/lib/taskInputSuggestions.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/TaskDetailsContent.tsx"
+   ]
+  },
+  {
+   "id": "src/components/TaskSimilarityMergeModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 261,
+   "exports": [
+    "TaskSimilarityMergeModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/taskSimilarityAnalyzer.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsDeepInsights.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 283,
+   "exports": [
+    "AnalyticsDeepInsights"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/analytics-utils.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsDigital.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 137,
+   "exports": [
+    "AnalyticsDigital"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/analytics-utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsHabits.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 296,
+   "exports": [
+    "AnalyticsHabits"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/analytics-utils.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsHealthWealth.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 148,
+   "exports": [
+    "AnalyticsHealthWealth"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/analytics-utils.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsOverview.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 339,
+   "exports": [
+    "AnalyticsOverview"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/DataCard.tsx",
+    "src/lib/ai.ts",
+    "src/lib/analytics-utils.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsPoints.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 279,
+   "exports": [
+    "AnalyticsPoints"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnalyticsReport.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 838,
+   "exports": [
+    "AnalyticsReport"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/analytics/AnimatedCounter.tsx",
+    "src/hooks/useReport.ts",
+    "src/lib/utils.ts",
+    "src/lib/wrapHelpers.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/AnimatedCounter.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 58,
+   "exports": [
+    "AnimatedCounter"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/analytics/AnalyticsReport.tsx"
+   ]
+  },
+  {
+   "id": "src/components/analytics/DayDetailsModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 106,
+   "exports": [
+    "DayDetailsModal",
+    "DayDetailsProps"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/lib/analytics-utils.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/components/azkar/TasbihCounterModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 261,
+   "exports": [
+    "TasbihCounterModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/stores/useAzkarStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Azkar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/azkar/ZekrCard.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 294,
+   "exports": [
+    "ZekrCard"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAzkar.ts",
+    "src/lib/utils.ts",
+    "src/stores/useAzkarStore.ts",
+    "src/types/azkar.ts"
+   ],
+   "importedBy": [
+    "src/routes/Azkar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/collaboration/ShareModal.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 151,
+   "exports": [
+    "ShareModal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/Modal.tsx",
+    "src/lib/nativeBridge.ts"
+   ],
+   "importedBy": [
+    "src/routes/Tasks.web.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/components/dashboard/AzkarDashboardWidget.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 101,
+   "exports": [
+    "AzkarDashboardWidget"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAzkar.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/dashboard/DashboardAnnualReview.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 218,
+   "exports": [
+    "DashboardAnnualReview"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAnalytics.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Dashboard.tsx"
+   ]
+  },
+  {
+   "id": "src/components/dashboard/DashboardQuickView.ios.tsx",
+   "kind": "component",
+   "platform": "ios",
+   "loc": 2432,
+   "exports": [
+    "DashboardQuickView"
+   ],
+   "default": null,
+   "tables": [
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/MarqueeTitle.tsx",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useNativeInteraction.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/dashboard/DashboardQuickView.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/dashboard/DashboardQuickView.web.tsx"
+   ],
+   "importedBy": [
+    "src/routes/Dashboard.tsx"
+   ]
+  },
+  {
+   "id": "src/components/dashboard/DashboardQuickView.web.tsx",
+   "kind": "component",
+   "platform": "web",
+   "loc": 1832,
+   "exports": [
+    "DashboardQuickView"
+   ],
+   "default": null,
+   "tables": [
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/dashboard/AzkarDashboardWidget.tsx",
+    "src/components/dashboard/HadithWidget.tsx",
+    "src/components/ui/MarqueeTitle.tsx",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.tsx"
+   ]
+  },
+  {
+   "id": "src/components/dashboard/DashboardStrategic.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 121,
+   "exports": [
+    "DashboardStrategic"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAnalytics.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Dashboard.tsx"
+   ]
+  },
+  {
+   "id": "src/components/dashboard/HadithWidget.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 178,
+   "exports": [
+    "HadithWidget"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/data/shortHadiths.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/navItems.ts",
+   "kind": "component",
+   "platform": null,
+   "loc": 48,
+   "exports": [
+    "NAV_ITEMS",
+    "NavItem"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/ui/Button.ios.tsx",
+   "kind": "ui-primitive",
+   "platform": "ios",
+   "loc": 42,
+   "exports": [
+    "Button"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/ui/Button.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/Button.web.tsx"
+   ],
+   "importedBy": [
+    "src/components/ui/ConfirmSheet.tsx",
+    "src/components/ui/index.ts"
+   ]
+  },
+  {
+   "id": "src/components/ui/Button.web.tsx",
+   "kind": "ui-primitive",
+   "platform": "web",
+   "loc": 41,
+   "exports": [
+    "Button"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/ui/Button.tsx"
+   ]
+  },
+  {
+   "id": "src/components/ui/ConfirmSheet.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 209,
+   "exports": [
+    "ConfirmSheet"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/Button.tsx",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/ui/index.ts"
+   ]
+  },
+  {
+   "id": "src/components/ui/DetailsSheet.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 358,
+   "exports": [
+    "DetailsSheet"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/ui/index.ts",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Sleep.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/ui/Input.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 113,
+   "exports": [
+    "Input",
+    "Select",
+    "TextArea"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/ui/index.ts"
+   ]
+  },
+  {
+   "id": "src/components/ui/MarqueeTitle.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 84,
+   "exports": [
+    "MarqueeTitle"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/ui/Modal.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 267,
+   "exports": [
+    "Modal"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/collaboration/ShareModal.tsx",
+    "src/components/ui/index.ts"
+   ]
+  },
+  {
+   "id": "src/components/ui/UserBlobatar.test.tsx",
+   "kind": "test",
+   "platform": null,
+   "loc": 38,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/UserBlobatar.tsx"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/components/ui/UserBlobatar.tsx",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 53,
+   "exports": [
+    "UserBlobatar",
+    "UserBlobatarProps"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/components/ui/UserBlobatar.test.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/components/ui/index.ts",
+   "kind": "ui-primitive",
+   "platform": null,
+   "loc": 6,
+   "exports": [
+    "Button",
+    "ConfirmSheet",
+    "DetailsSheet",
+    "Input",
+    "Modal",
+    "Select",
+    "TextArea"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/Button.tsx",
+    "src/components/ui/ConfirmSheet.tsx",
+    "src/components/ui/DetailsSheet.tsx",
+    "src/components/ui/Input.tsx",
+    "src/components/ui/Modal.tsx"
+   ],
+   "importedBy": [
+    "src/components/AIChatModal.tsx",
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AISettingsSection.tsx",
+    "src/components/BankAccountsSettingsSection.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/KeyboardShortcutsModal.tsx",
+    "src/components/QuranOfflineDownloader.tsx",
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/components/analytics/DayDetailsModal.tsx",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx",
+    "src/routes/Focus.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Health.tsx",
+    "src/routes/Login.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/Signup.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/components/wiki/WikiGraphView.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 358,
+   "exports": [],
+   "default": "WikiGraphView",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/wikiData.ts",
+    "src/types/wiki.ts"
+   ],
+   "importedBy": [
+    "src/routes/Landing.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/components/wiki/WikiMarkdown.tsx",
+   "kind": "component",
+   "platform": null,
+   "loc": 88,
+   "exports": [],
+   "default": "WikiMarkdown",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/contexts/AuthContext.test.tsx",
+   "kind": "test",
+   "platform": null,
+   "loc": 113,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/contexts/AuthContext.tsx",
+    "src/hooks/useAuth.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/contexts/AuthContext.tsx",
+   "kind": "context",
+   "platform": null,
+   "loc": 427,
+   "exports": [
+    "AuthContext",
+    "AuthProvider",
+    "AuthState"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/lib/api-limiter.ts",
+    "src/lib/queryClient.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/contexts/AuthContext.test.tsx",
+    "src/hooks/useAuth.ts"
+   ]
+  },
+  {
+   "id": "src/data/shortHadiths.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 53,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/data/shortHadiths.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/data/shortHadiths.ts",
+   "kind": "static-data",
+   "platform": null,
+   "loc": 2696,
+   "exports": [
+    "SHORT_HADITHS",
+    "ShortHadith",
+    "getDailyHadith",
+    "getLocalDateString",
+    "getRandomHadith"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/dashboard/HadithWidget.tsx",
+    "src/data/shortHadiths.test.ts"
+   ]
+  },
+  {
+   "id": "src/db/database.ts",
+   "kind": "local-db",
+   "platform": null,
+   "loc": 836,
+   "exports": [
+    "calendarDB",
+    "dbUtils",
+    "habitDB",
+    "habitLogDB",
+    "inBodyDB",
+    "round1",
+    "tagDB",
+    "taskDB",
+    "taskListDB",
+    "transactionDB"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/db/indexedDb.ts",
+   "kind": "local-db",
+   "platform": null,
+   "loc": 626,
+   "exports": [
+    "IdbAzkarDailyRecord",
+    "IdbQueueEntry",
+    "IdbQuranPage",
+    "idbAddCustomReward",
+    "idbAddPointsTransaction",
+    "idbClear",
+    "idbClearAll",
+    "idbDelete",
+    "idbDeleteCustomReward",
+    "idbGetAll",
+    "idbGetAzkarDailyLog",
+    "idbGetAzkarFavorites",
+    "idbGetCalendarEvents",
+    "idbGetCustomRewards",
+    "idbGetHabitLogs",
+    "idbGetHabits",
+    "idbGetInBodyScans",
+    "idbGetOfflineQueue",
+    "idbGetPointsTransactions",
+    "idbGetPrayerHabits",
+    "idbGetPrayerLogs",
+    "idbGetQuranCachedCount",
+    "idbGetQuranPage",
+    "idbGetScreentimeAppStats",
+    "idbGetScreentimeDailySummaries",
+    "idbGetScreentimeWebsiteStats",
+    "idbGetSleepStages",
+    "idbGetTasks",
+    "idbGetTransactions",
+    "idbPut",
+    "idbPutAzkarDailyLog",
+    "idbPutMany",
+    "idbReplaceAzkarFavorites",
+    "idbResetAzkarDailyLog",
+    "idbSaveCalendarEvents",
+    "idbSaveCustomRewards",
+    "idbSaveHabitLogs",
+    "idbSaveHabits",
+    "idbSaveInBodyScans",
+    "idbSavePointsTransactions",
+    "idbSavePrayerHabits",
+    "idbSavePrayerLogs",
+    "idbSaveScreentimeAppStats",
+    "idbSaveScreentimeDailySummaries",
+    "idbSaveScreentimeWebsiteStats",
+    "idbSaveSleepStages",
+    "idbSaveTags",
+    "idbSaveTaskLists",
+    "idbSaveTasks",
+    "idbSaveTransactions",
+    "idbSetAzkarCount",
+    "idbSetOfflineQueue",
+    "idbSetQuranPage",
+    "idbSetQuranPagesBatch",
+    "idbToggleAzkarFavorite"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "src/components/QuranOfflineDownloader.tsx",
+    "src/contexts/AuthContext.tsx",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useReport.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/lib/offlineSync.ts"
+   ]
+  },
+  {
+   "id": "src/db/seed.ts",
+   "kind": "local-db",
+   "platform": null,
+   "loc": 127,
+   "exports": [
+    "resetDatabase",
+    "seedDatabase"
+   ],
+   "default": null,
+   "tables": [
+    "habits",
+    "tags"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useAnalytics.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 249,
+   "exports": [
+    "AnalyticsDailyFinanceRow",
+    "AnalyticsDailyHabitsRow",
+    "AnalyticsDailyScreentimeRow",
+    "AnalyticsDailySleepRow",
+    "AnalyticsDailyTasksRow",
+    "AnalyticsRangeDays",
+    "AnalyticsTopAppRow",
+    "AnalyticsTopCategoryRow",
+    "AnalyticsTopDomainRow",
+    "AnalyticsTopMerchantRow",
+    "getRangeBounds",
+    "useAnalyticsDaily",
+    "useAnalyticsDailyRange",
+    "useAnalyticsTop"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [
+    "analytics_top_apps",
+    "analytics_top_domains",
+    "analytics_top_expense_categories",
+    "analytics_top_merchants"
+   ],
+   "queryKeys": [
+    "analytics"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardAnnualReview.tsx",
+    "src/components/dashboard/DashboardStrategic.tsx",
+    "src/hooks/useReport.ts",
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useAuth.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 14,
+   "exports": [
+    "useAuth"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/contexts/AuthContext.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/contexts/AuthContext.test.tsx",
+    "src/hooks/useAnalytics.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/useIcalSubscriptions.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/usePakeLocalNotifications.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useQuranCloudSync.ts",
+    "src/hooks/useReport.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTaskCalendarFeed.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/hooks/useUserBanks.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx",
+    "src/routes/Login.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/Signup.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useAzkar.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 509,
+   "exports": [
+    "CATEGORY_METADATA",
+    "getAzkarHabitCategory",
+    "stripTashkeel",
+    "useAllAzkar",
+    "useAzkarCategories",
+    "useAzkarFavorites",
+    "useAzkarRealtime",
+    "useContextualAzkarCategory",
+    "useTodayAzkarProgress"
+   ],
+   "default": null,
+   "tables": [
+    "azkar_daily_progress",
+    "azkar_favorites",
+    "habit_logs",
+    "habits"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "azkar-daily-log",
+    "azkar-favorites",
+    "habit-logs",
+    "habits"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useSleep.ts",
+    "src/lib/supabase.ts",
+    "src/types/azkar.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/azkar/ZekrCard.tsx",
+    "src/components/dashboard/AzkarDashboardWidget.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/routes/Azkar.ios.tsx",
+    "src/routes/Azkar.web.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useCalendar.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 272,
+   "exports": [
+    "useCalendarEvents",
+    "useCreateCalendarEvent",
+    "useDeleteCalendarEvent",
+    "useExpandedCalendarEvents",
+    "useIcalSubscriptionEvents",
+    "useTasksForCalendar",
+    "useToggleCalendarEvent",
+    "useUpcomingEvents",
+    "useUpdateCalendarEvent"
+   ],
+   "default": null,
+   "tables": [
+    "calendar_events",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useIcalSubscriptions.ts",
+    "src/lib/icalSubscribe.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/usePakeLocalNotifications.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useConnectionStatus.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 28,
+   "exports": [
+    "useConnectionStatus"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/offlineSync.ts"
+   ],
+   "importedBy": [
+    "src/hooks/useSyncStatus.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/useDashboardUpcomingItems.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 66,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useDashboardUpcomingItems.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 177,
+   "exports": [
+    "DashboardUpcomingItem",
+    "DashboardUpcomingItemKind",
+    "habitMatchesDay",
+    "isHabitShownInQuickView",
+    "useDashboardUpcomingItems"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/hooks/useTasks.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useDashboardUpcomingItems.test.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/useFinance.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 80,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useFinance.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useFinance.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 369,
+   "exports": [
+    "getBreakdownFromTransactions",
+    "useCategoryBreakdown",
+    "useCreateTransaction",
+    "useDeleteTransaction",
+    "useFinancialSummary",
+    "useTransactions",
+    "useTransactionsRealtime",
+    "useUpdateTransaction"
+   ],
+   "default": null,
+   "tables": [
+    "transaction_rules",
+    "transactions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/hooks/useFinance.test.ts",
+    "src/routes/Chat.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useHabits.ios.ts",
+   "kind": "hook",
+   "platform": "ios",
+   "loc": 1056,
+   "exports": [
+    "HabitInsight",
+    "formatHourLabel",
+    "getHabitAdherenceWeight",
+    "getHabitRescueCost",
+    "getHabitStreak",
+    "getRescuableStreak",
+    "isHabitScheduledForDate",
+    "useArchivedHabits",
+    "useCreateHabit",
+    "useDeleteHabit",
+    "useHabit",
+    "useHabitAverages",
+    "useHabitInsights",
+    "useHabitLogs",
+    "useHabitRescuableStreaks",
+    "useHabitStreak",
+    "useHabitStreaks",
+    "useHabits",
+    "useLogHabit",
+    "useTodayHabitLogs",
+    "useToggleHabitLog",
+    "useUnarchiveHabit",
+    "useUpdateHabit",
+    "useWeeklyAdherence"
+   ],
+   "default": null,
+   "tables": [
+    "habit_logs",
+    "habits",
+    "points_transactions",
+    "prayer_habits",
+    "prayer_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-averages",
+    "points-transactions",
+    "prayer-habits",
+    "prayer-logs"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useHabits.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useHabits.web.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/HabitStatsModal.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/usePakeLocalNotifications.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useHabits.web.ts",
+   "kind": "hook",
+   "platform": "web",
+   "loc": 1053,
+   "exports": [
+    "HabitInsight",
+    "formatHourLabel",
+    "getHabitAdherenceWeight",
+    "getHabitRescueCost",
+    "getHabitStreak",
+    "getRescuableStreak",
+    "isHabitScheduledForDate",
+    "useArchivedHabits",
+    "useCreateHabit",
+    "useDeleteHabit",
+    "useHabit",
+    "useHabitAverages",
+    "useHabitInsights",
+    "useHabitLogs",
+    "useHabitRescuableStreaks",
+    "useHabitStreak",
+    "useHabitStreaks",
+    "useHabits",
+    "useLogHabit",
+    "useTodayHabitLogs",
+    "useToggleHabitLog",
+    "useUnarchiveHabit",
+    "useUpdateHabit",
+    "useWeeklyAdherence"
+   ],
+   "default": null,
+   "tables": [
+    "habit_logs",
+    "habits",
+    "points_transactions",
+    "prayer_habits",
+    "prayer_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-averages",
+    "points-transactions",
+    "prayer-habits",
+    "prayer-logs"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useHabits.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/useHealthData.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 214,
+   "exports": [
+    "useCreateInBodyScan",
+    "useDeleteInBodyScan",
+    "useHealthMetrics",
+    "useInBodyScan",
+    "useInBodyScans",
+    "useUpdateInBodyScan"
+   ],
+   "default": null,
+   "tables": [
+    "inbody_scans"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Chat.tsx",
+    "src/routes/Health.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useIcalSubscriptions.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 127,
+   "exports": [
+    "IcalSubscription",
+    "useIcalSubscriptions"
+   ],
+   "default": null,
+   "tables": [
+    "user_ical_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/hooks/useCalendar.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useInvestments.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 43,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useInvestments.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useInvestments.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 289,
+   "exports": [
+    "INVESTMENT_TRANSACTION_TYPES",
+    "InvestmentTransactionTypeValue",
+    "getInvestmentAccountBalance",
+    "getInvestmentBreakdown",
+    "useAddInvestmentAccount",
+    "useCreateInvestmentTransaction",
+    "useDeleteInvestmentTransaction",
+    "useEnsureDefaultInvestmentAccounts",
+    "useInvestmentAccounts",
+    "useInvestmentTransactions",
+    "useRemoveInvestmentAccount",
+    "useRenameInvestmentAccount",
+    "useUpdateInvestmentTransaction"
+   ],
+   "default": null,
+   "tables": [
+    "investment_accounts",
+    "investment_transactions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/hooks/useInvestments.test.ts",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useNativeInteraction.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 67,
+   "exports": [
+    "useNativeInteraction"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/LiquidTabBar.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/routes/Tasks.ios.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useNativeLocalNotifications.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 58,
+   "exports": [
+    "useNativeLocalNotifications"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useNativeTraySync.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 38,
+   "exports": [
+    "useNativeTraySync"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useNotes.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 291,
+   "exports": [
+    "useCreateNote",
+    "useCreateNoteFolder",
+    "useDeleteNote",
+    "useDeleteNoteFolder",
+    "useNoteFolders",
+    "useNotes",
+    "useTogglePinNote",
+    "useUpdateNote",
+    "useUpdateNoteFolder"
+   ],
+   "default": null,
+   "tables": [
+    "note_folders",
+    "notes"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/usePakeLocalNotifications.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 368,
+   "exports": [
+    "usePakeLocalNotifications"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useTasks.ts"
+   ],
+   "importedBy": [
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/usePoints.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 450,
+   "exports": [
+    "CUSTOM_REWARDS_KEY",
+    "POINTS_TX_KEY",
+    "PointsConfig",
+    "getPointsConfig",
+    "isDateEligibleForPoints",
+    "isTaskCompletedOnTime",
+    "savePointsConfig",
+    "useAddPointsTransaction",
+    "useCreateCustomReward",
+    "useCustomRewards",
+    "useDailyPointsSync",
+    "useDeleteCustomReward",
+    "usePointsBalance",
+    "usePointsTransactions",
+    "useRedeemReward",
+    "useRescueTask"
+   ],
+   "default": null,
+   "tables": [
+    "custom_rewards",
+    "points_transactions",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Points.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/usePrayerHabits.ios.ts",
+   "kind": "hook",
+   "platform": "ios",
+   "loc": 940,
+   "exports": [
+    "PrayerTrackerItem",
+    "usePrayerNotificationSettings",
+    "usePrayerTracker",
+    "useSetPrayerStatusAtDate"
+   ],
+   "default": null,
+   "tables": [
+    "habit_logs",
+    "habits",
+    "points_transactions",
+    "prayer_habits",
+    "prayer_logs",
+    "prayer_notification_settings"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-logs",
+    "habits",
+    "points-transactions",
+    "prayer-logs"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/usePrayerHabits.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/usePrayerHabits.web.ts"
+   ],
+   "importedBy": [
+    "src/components/CompactPrayerHabit.ios.tsx",
+    "src/components/CompactPrayerHabit.web.tsx",
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/usePrayerHabits.web.ts",
+   "kind": "hook",
+   "platform": "web",
+   "loc": 868,
+   "exports": [
+    "PrayerTrackerItem",
+    "usePrayerNotificationSettings",
+    "usePrayerTracker",
+    "useSetPrayerStatusAtDate"
+   ],
+   "default": null,
+   "tables": [
+    "habit_logs",
+    "habits",
+    "points_transactions",
+    "prayer_habits",
+    "prayer_logs",
+    "prayer_notification_settings"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-logs",
+    "habits",
+    "points-transactions",
+    "prayer-logs"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/usePrayerHabits.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/usePrayerTimes.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 96,
+   "exports": [
+    "PrayerTimeData",
+    "usePrayerTimes"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/CompactPrayerHabit.ios.tsx",
+    "src/components/CompactPrayerHabit.web.tsx",
+    "src/components/PrayerTimesWidget.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/usePushNotifications.ios.ts",
+   "kind": "hook",
+   "platform": "ios",
+   "loc": 145,
+   "exports": [
+    "usePushNotifications"
+   ],
+   "default": null,
+   "tables": [
+    "push_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "send-test-notification"
+   ],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/lib/push.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/usePushNotifications.pake.ts",
+   "kind": "hook",
+   "platform": "pake",
+   "loc": 50,
+   "exports": [
+    "usePushNotifications"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/usePushNotifications.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/usePushNotifications.web.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/usePushNotifications.web.ts",
+   "kind": "hook",
+   "platform": "web",
+   "loc": 106,
+   "exports": [
+    "usePushNotifications"
+   ],
+   "default": null,
+   "tables": [
+    "push_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "send-test-notification"
+   ],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/lib/push.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/hooks/usePushNotifications.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/useQuranCloudSync.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 361,
+   "exports": [
+    "useQuranCloudSync"
+   ],
+   "default": null,
+   "tables": [
+    "quran_hifdh_records",
+    "quran_khatmah_plans"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "quran-hifdh-records",
+    "quran-khatmah-plan"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/routes/Quran.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useReport.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 78,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useReport.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useReport.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 666,
+   "exports": [
+    "DayMetrics",
+    "Outlier",
+    "ReportData",
+    "TopApp",
+    "TopCategory",
+    "getMonthBounds",
+    "getWeekBounds",
+    "useMonthlyReport",
+    "useWeeklyReport"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [
+    "analytics_top_apps",
+    "analytics_top_expense_categories"
+   ],
+   "queryKeys": [
+    "report"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAnalytics.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/analytics-utils.ts",
+    "src/lib/reportSuggestions.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/lib/wrapHelpers.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/components/analytics/AnalyticsReport.tsx",
+    "src/hooks/useReport.test.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/useScreentime.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 477,
+   "exports": [
+    "useScreentimeAppStats",
+    "useScreentimeDailySummaries",
+    "useScreentimeMetrics",
+    "useScreentimeWebsiteStats",
+    "useTodayScreentime"
+   ],
+   "default": null,
+   "tables": [
+    "screentime_daily_app_stats",
+    "screentime_daily_summary",
+    "screentime_daily_website_stats"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/screentimePlatform.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Screentime.ios.tsx",
+    "src/routes/Screentime.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useSleep.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 195,
+   "exports": [
+    "groupSegmentsByNight",
+    "useLastNightSleepMinutes",
+    "useSleepMetrics",
+    "useSleepMinutesForDay",
+    "useSleepStages"
+   ],
+   "default": null,
+   "tables": [
+    "sleep_stages"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useAzkar.ts",
+    "src/routes/Chat.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Sleep.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useSyncStatus.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 54,
+   "exports": [
+    "useSyncStatus"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useConnectionStatus.ts",
+    "src/lib/offlineSync.ts"
+   ],
+   "importedBy": [
+    "src/components/AppFooter.ios.tsx",
+    "src/components/AppFooter.pake.tsx",
+    "src/components/AppFooter.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useTaskCalendarFeed.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 143,
+   "exports": [
+    "TaskCalendarFeed",
+    "useTaskCalendarFeed"
+   ],
+   "default": null,
+   "tables": [
+    "task_calendar_feeds"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "calendar-feed"
+   ],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useTasks.ios.ts",
+   "kind": "hook",
+   "platform": "ios",
+   "loc": 1316,
+   "exports": [
+    "syncTaskCompletionToLinkedNote",
+    "useBatchDeleteTasks",
+    "useCompletedTasks",
+    "useConvertTaskToHabit",
+    "useCreateSubtask",
+    "useCreateTag",
+    "useCreateTask",
+    "useCreateTaskList",
+    "useDeleteTag",
+    "useDeleteTask",
+    "useDeleteTaskList",
+    "useOverdueTasks",
+    "useTags",
+    "useTaskLists",
+    "useTaskWithSubtasks",
+    "useTasks",
+    "useTasksByList",
+    "useTasksByProject",
+    "useTasksByTag",
+    "useTodayTasks",
+    "useToggleTask",
+    "useUpcomingTasks",
+    "useUpdateTag",
+    "useUpdateTask",
+    "useUpdateTaskList",
+    "useWeekTasks"
+   ],
+   "default": null,
+   "tables": [
+    "habits",
+    "notes",
+    "points_transactions",
+    "tags",
+    "task_lists",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "points-transactions"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/hooks/useTasks.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useTasks.web.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/FocusSessionManager.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/usePakeLocalNotifications.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Focus.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useTasks.web.ts",
+   "kind": "hook",
+   "platform": "web",
+   "loc": 1315,
+   "exports": [
+    "syncTaskCompletionToLinkedNote",
+    "useBatchDeleteTasks",
+    "useCompletedTasks",
+    "useConvertTaskToHabit",
+    "useCreateSubtask",
+    "useCreateTag",
+    "useCreateTask",
+    "useCreateTaskList",
+    "useDeleteTag",
+    "useDeleteTask",
+    "useDeleteTaskList",
+    "useOverdueTasks",
+    "useTags",
+    "useTaskLists",
+    "useTaskWithSubtasks",
+    "useTasks",
+    "useTasksByList",
+    "useTasksByProject",
+    "useTasksByTag",
+    "useTodayTasks",
+    "useToggleTask",
+    "useUpcomingTasks",
+    "useUpdateTag",
+    "useUpdateTask",
+    "useUpdateTaskList",
+    "useWeekTasks"
+   ],
+   "default": null,
+   "tables": [
+    "habits",
+    "notes",
+    "points_transactions",
+    "tags",
+    "task_lists",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "points-transactions"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useTasks.ts"
+   ]
+  },
+  {
+   "id": "src/hooks/useUserAppSettingsSync.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 117,
+   "exports": [
+    "useUserAppSettingsSync"
+   ],
+   "default": null,
+   "tables": [
+    "user_app_settings"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/supabase.ts",
+    "src/lib/userAppSettings.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/hooks/useUserBanks.ts",
+   "kind": "hook",
+   "platform": null,
+   "loc": 144,
+   "exports": [
+    "DEFAULT_BANK_NAMES",
+    "useAddBank",
+    "useEnsureDefaultBanks",
+    "useRemoveBank",
+    "useRenameBank",
+    "useUserBanks"
+   ],
+   "default": null,
+   "tables": [
+    "transactions",
+    "user_banks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAuth.ts",
+    "src/lib/supabase.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/BankAccountsSettingsSection.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/__tests__/aiFallback.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 115,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/ai.ts",
+    "src/lib/aiFallback.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/lib/ai.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 455,
+   "exports": [
+    "askAI",
+    "cleanAiResponse",
+    "extractJSON",
+    "testAllCatalogModels",
+    "testSingleModel"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/aiFallback.ts",
+    "src/lib/logger.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AISettingsSection.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/components/analytics/AnalyticsOverview.tsx",
+    "src/lib/__tests__/aiFallback.test.ts",
+    "src/lib/taskSimilarityAnalyzer.ts",
+    "src/routes/Chat.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.web.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/aiFallback.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 682,
+   "exports": [
+    "AIModelDefinition",
+    "AIModelHealthState",
+    "AIProviderConfig",
+    "AIProviderId",
+    "AI_PROVIDERS",
+    "ALL_MODELS",
+    "FallbackCandidate",
+    "ModelHealthStat",
+    "calculateModelScore",
+    "getFallbackCandidates",
+    "getModelDefinition",
+    "getModelStat",
+    "getProviderForModel",
+    "getStoredBestModel",
+    "isModelInCooldown",
+    "loadModelHealthState",
+    "recordModelFailure",
+    "recordModelSuccess",
+    "resetModelHealth"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AISettingsSection.tsx",
+    "src/lib/__tests__/aiFallback.test.ts",
+    "src/lib/ai.ts"
+   ]
+  },
+  {
+   "id": "src/lib/analytics-utils.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 148,
+   "exports": [
+    "addDaysYmd",
+    "aggregateWeekly",
+    "clamp",
+    "eachDateInclusive",
+    "formatMinutes",
+    "formatSeconds",
+    "mean",
+    "pctChange",
+    "pearson",
+    "quantile",
+    "regressionIntercept",
+    "regressionSlope",
+    "stddev",
+    "sum"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/analytics/AnalyticsDeepInsights.tsx",
+    "src/components/analytics/AnalyticsDigital.tsx",
+    "src/components/analytics/AnalyticsHabits.tsx",
+    "src/components/analytics/AnalyticsHealthWealth.tsx",
+    "src/components/analytics/AnalyticsOverview.tsx",
+    "src/components/analytics/DayDetailsModal.tsx",
+    "src/hooks/useReport.ts",
+    "src/lib/reportSuggestions.ts",
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/api-limiter.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 333,
+   "exports": [
+    "clearInFlightRequests",
+    "getStatus",
+    "installApiLimiter",
+    "resetEgressCounter",
+    "setBudgetMB",
+    "uninstallApiLimiter"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/contexts/AuthContext.tsx",
+    "src/lib/queryClient.ts",
+    "src/lib/supabase.ts"
+   ]
+  },
+  {
+   "id": "src/lib/attachments.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 118,
+   "exports": [
+    "AttachmentUploadOptions",
+    "R2_PUBLIC_BASE_URL",
+    "fileToDataUrl",
+    "generateAttachmentKey",
+    "uploadAttachment",
+    "validateImageFile"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/AttachmentManager.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/calendarExport.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 96,
+   "exports": [
+    "buildIcs",
+    "downloadCalendarIcs"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/focusSessionEvents.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 13,
+   "exports": [
+    "onFocusManualRecord",
+    "requestFocusManualRecord"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/FocusSessionManager.tsx",
+    "src/routes/Focus.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/icalSubscribe.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 344,
+   "exports": [
+    "IcalEvent",
+    "fetchIcalEvents",
+    "parseIcalToEvents"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/hooks/useCalendar.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/listIdFromTagIds.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 11,
+   "exports": [
+    "listIdFromTagIds"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/logger.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 55,
+   "exports": [
+    "SystemLog",
+    "addSystemLog",
+    "clearSystemLogs",
+    "getSystemLogs"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/ErrorBoundary.tsx",
+    "src/lib/ai.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/otaUpdater.ts",
+    "src/routes/Settings.ios.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/nativeBridge.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 960,
+   "exports": [
+    "LifeOSAndroidBridge",
+    "LifeOSAndroidBridgePluginType",
+    "initializeNativeApp",
+    "registerNotificationActionTypes",
+    "rescheduleNotificationSnooze",
+    "sendTestNotification",
+    "setupDeepLinkListener",
+    "setupNotificationActionListeners",
+    "shareContent",
+    "syncAllLocalNotifications",
+    "syncAndroidNativeBridge",
+    "syncStatusBar",
+    "triggerHaptics"
+   ],
+   "default": null,
+   "tables": [
+    "habit_logs",
+    "habits",
+    "prayer_logs",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-logs",
+    "habits",
+    "prayer-logs",
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "src/lib/logger.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AppShell.ios.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/components/collaboration/ShareModal.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/HadithWidget.tsx",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Tasks.ios.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/offlineSync.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 170,
+   "exports": [
+    "QueuedOp",
+    "addToOfflineQueue",
+    "getLastSyncAt",
+    "getOfflineQueueLength",
+    "getOfflineQueueLengthAsync",
+    "isOnline",
+    "processOfflineQueue"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/db/indexedDb.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/OfflineBanner.tsx",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useConnectionStatus.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useQuranCloudSync.ts",
+    "src/hooks/useSyncStatus.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/routes/Quran.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/otaUpdater.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 106,
+   "exports": [
+    "checkAndApplyUpdates"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/logger.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/prayerGeocoding.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 87,
+   "exports": [
+    "GeocodeHit",
+    "reverseGeocodeLabel",
+    "searchCities"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/prayerStatus.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 32,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/prayerStatus.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/lib/prayerStatus.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 10,
+   "exports": [
+    "getPrayerStatusChoices",
+    "isPrayerStatusComplete"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/CompactPrayerHabit.ios.tsx",
+    "src/components/CompactPrayerHabit.web.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/lib/prayerStatus.test.ts",
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/push.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 69,
+   "exports": [
+    "getNotificationPermission",
+    "isPushSupported",
+    "isVapidConfigured",
+    "requestNotificationPermission",
+    "subscribePush",
+    "subscriptionToJson"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/hooks/usePushNotifications.ios.ts",
+    "src/hooks/usePushNotifications.web.ts"
+   ]
+  },
+  {
+   "id": "src/lib/queryClient.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 32,
+   "exports": [
+    "queryClient"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/api-limiter.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/contexts/AuthContext.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/reportSuggestions.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 156,
+   "exports": [
+    "Suggestion",
+    "generateSuggestions"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/analytics-utils.ts"
+   ],
+   "importedBy": [
+    "src/hooks/useReport.ts"
+   ]
+  },
+  {
+   "id": "src/lib/screentimePlatform.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 50,
+   "exports": [
+    "ScreentimeUiPlatform",
+    "platformLabelTracked",
+    "screentimeDateKey",
+    "screentimeUiPlatform"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/hooks/useScreentime.ts",
+    "src/routes/Screentime.ios.tsx",
+    "src/routes/Screentime.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/smartTaskScheduler.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 73,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/smartTaskScheduler.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/lib/smartTaskScheduler.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 384,
+   "exports": [
+    "SmartScheduleOptions",
+    "SmartTimeSlot",
+    "UserScheduleContext",
+    "distributeTasksAcrossAwakeSlots",
+    "estimateTaskDuration",
+    "findConflictFreeSlotOnDate"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/lib/smartTaskScheduler.test.ts",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/supabase.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 41,
+   "exports": [
+    "supabase"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/api-limiter.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/contexts/AuthContext.tsx",
+    "src/db/seed.ts",
+    "src/hooks/useAnalytics.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/useIcalSubscriptions.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/usePushNotifications.ios.ts",
+    "src/hooks/usePushNotifications.web.ts",
+    "src/hooks/useQuranCloudSync.ts",
+    "src/hooks/useReport.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTaskCalendarFeed.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/hooks/useUserAppSettingsSync.ts",
+    "src/hooks/useUserBanks.ts",
+    "src/lib/offlineSync.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Quran.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/taskInputSuggestions.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 47,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/taskInputSuggestions.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/lib/taskInputSuggestions.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 543,
+   "exports": [
+    "SuggestionTrigger",
+    "TaskInputParseResult",
+    "parseTaskInput",
+    "toDateString"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/lib/taskInputSuggestions.test.ts",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/taskSimilarityAnalyzer.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 219,
+   "exports": [
+    "TaskSimilarityAnalysisResult",
+    "TaskSimilarityMatch",
+    "analyzeTaskSimilarityWithAI",
+    "findLexicalCandidates",
+    "quickLexicalSimilarity"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/ai.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.web.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/theme.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 78,
+   "exports": [
+    "AppTheme",
+    "ResolvedTheme",
+    "getSystemTheme",
+    "resolveEffectiveTheme",
+    "useEffectiveTheme"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/CommandPalette.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/userAppSettings.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 200,
+   "exports": [
+    "parsePersistedUiFromRemote"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/hooks/useUserAppSettingsSync.ts"
+   ]
+  },
+  {
+   "id": "src/lib/utils.test.ts",
+   "kind": "test",
+   "platform": null,
+   "loc": 47,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/lib/utils.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/lib/utils.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 55,
+   "exports": [
+    "CURRENCY_SYMBOL",
+    "cn",
+    "formatCurrency",
+    "formatDayMonth",
+    "formatDuration",
+    "formatTime12h",
+    "round1"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AppFooter.ios.tsx",
+    "src/components/AppFooter.pake.tsx",
+    "src/components/AppFooter.web.tsx",
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/components/AttachmentManager.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/CompactPrayerHabit.ios.tsx",
+    "src/components/CompactPrayerHabit.web.tsx",
+    "src/components/DataCard.ios.tsx",
+    "src/components/DataCard.web.tsx",
+    "src/components/FinanceHeroCard.ios.tsx",
+    "src/components/FinanceHeroCard.test.tsx",
+    "src/components/FinanceHeroCard.web.tsx",
+    "src/components/FocusPiPWindow.tsx",
+    "src/components/FocusSessionManager.tsx",
+    "src/components/LiquidTabBar.tsx",
+    "src/components/OfflineBanner.tsx",
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/components/PrayerTimesWidget.tsx",
+    "src/components/PullToRefresh.ios.tsx",
+    "src/components/PullToRefresh.web.tsx",
+    "src/components/SwipeableRow.ios.tsx",
+    "src/components/SwipeableRow.pake.tsx",
+    "src/components/SwipeableRow.web.tsx",
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/components/analytics/AnalyticsDeepInsights.tsx",
+    "src/components/analytics/AnalyticsHabits.tsx",
+    "src/components/analytics/AnalyticsHealthWealth.tsx",
+    "src/components/analytics/AnalyticsOverview.tsx",
+    "src/components/analytics/AnalyticsPoints.tsx",
+    "src/components/analytics/AnalyticsReport.tsx",
+    "src/components/analytics/DayDetailsModal.tsx",
+    "src/components/azkar/TasbihCounterModal.tsx",
+    "src/components/azkar/ZekrCard.tsx",
+    "src/components/dashboard/AzkarDashboardWidget.tsx",
+    "src/components/dashboard/DashboardAnnualReview.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/components/dashboard/DashboardStrategic.tsx",
+    "src/components/dashboard/HadithWidget.tsx",
+    "src/components/ui/Button.ios.tsx",
+    "src/components/ui/Button.web.tsx",
+    "src/components/ui/ConfirmSheet.tsx",
+    "src/components/ui/DetailsSheet.tsx",
+    "src/components/ui/Input.tsx",
+    "src/components/ui/MarqueeTitle.tsx",
+    "src/components/ui/Modal.tsx",
+    "src/components/ui/UserBlobatar.tsx",
+    "src/components/wiki/WikiMarkdown.tsx",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/useReport.ts",
+    "src/lib/utils.test.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Azkar.ios.tsx",
+    "src/routes/Azkar.web.tsx",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx",
+    "src/routes/Focus.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Health.tsx",
+    "src/routes/Landing.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Points.tsx",
+    "src/routes/Screentime.ios.tsx",
+    "src/routes/Screentime.web.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/Signup.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Sleep.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/weeklyCoachScheduler.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 337,
+   "exports": [
+    "AwakeInterval",
+    "CandidateWeeklyTask",
+    "DayFreeSlot",
+    "getAwakeWindow",
+    "getDayFreeSlots",
+    "harvestUnfinishedWeeklyTasks",
+    "scheduleCandidatesIntoNextWeek"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/wikiData.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 412,
+   "exports": [
+    "WIKI_PAGES",
+    "WikiDocPage",
+    "WikiGraphNodeInfo",
+    "getWikiLinkGraph",
+    "getWikiPage",
+    "normalizeTitle",
+    "searchWikiPages"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/wiki/WikiGraphView.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/lib/wikiStorage.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 177,
+   "exports": [
+    "deletePage",
+    "extractWikiLinks",
+    "getAllPages",
+    "getLinkGraph",
+    "getPageById",
+    "getPageByTitle",
+    "normalizeTitle",
+    "savePage",
+    "searchPages",
+    "seedWikiIfEmpty",
+    "sharePage",
+    "unsharePage"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/types/wiki.ts"
+   ],
+   "importedBy": [
+    "src/stores/useWikiStore.ts"
+   ]
+  },
+  {
+   "id": "src/lib/wrapHelpers.ts",
+   "kind": "lib",
+   "platform": null,
+   "loc": 34,
+   "exports": [
+    "checkWrapStatus",
+    "getMonthlyWrapKey",
+    "getWeeklyWrapKey"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/components/analytics/AnalyticsReport.tsx",
+    "src/hooks/useReport.ts",
+    "src/routes/Analytics.tsx"
+   ]
+  },
+  {
+   "id": "src/main.tsx",
+   "kind": "app-entry",
+   "platform": null,
+   "loc": 10,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/App.tsx"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Analytics.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 814,
+   "exports": [],
+   "default": "Analytics",
+   "tables": [
+    "habit_logs",
+    "prayer_habits",
+    "prayer_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-logs-range",
+    "prayer-habits-active",
+    "prayer-logs-range",
+    "tt-habit-logs",
+    "tt-prayer-logs"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/analytics/AnalyticsDeepInsights.tsx",
+    "src/components/analytics/AnalyticsDigital.tsx",
+    "src/components/analytics/AnalyticsHabits.tsx",
+    "src/components/analytics/AnalyticsHealthWealth.tsx",
+    "src/components/analytics/AnalyticsOverview.tsx",
+    "src/components/analytics/AnalyticsPoints.tsx",
+    "src/components/analytics/AnalyticsReport.tsx",
+    "src/components/analytics/DayDetailsModal.tsx",
+    "src/hooks/useAnalytics.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/analytics-utils.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/lib/wrapHelpers.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Azkar.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 381,
+   "exports": [],
+   "default": "AzkarRoute",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useAzkar.ts",
+    "src/lib/utils.ts",
+    "src/stores/useAzkarStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Azkar.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Azkar.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Azkar.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 456,
+   "exports": [],
+   "default": "AzkarRoute",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/azkar/TasbihCounterModal.tsx",
+    "src/components/azkar/ZekrCard.tsx",
+    "src/hooks/useAzkar.ts",
+    "src/lib/utils.ts",
+    "src/stores/useAzkarStore.ts",
+    "src/types/azkar.ts"
+   ],
+   "importedBy": [
+    "src/routes/Azkar.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Calendar.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 1688,
+   "exports": [],
+   "default": "CalendarPage",
+   "tables": [
+    "calendar_task_links",
+    "tags",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useIcalSubscriptions.ts",
+    "src/hooks/useTaskCalendarFeed.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/calendarExport.ts",
+    "src/lib/icalSubscribe.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Calendar.pake.tsx",
+   "kind": "route",
+   "platform": "pake",
+   "loc": 1656,
+   "exports": [],
+   "default": "CalendarPage",
+   "tables": [
+    "calendar_task_links",
+    "tags",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useIcalSubscriptions.ts",
+    "src/hooks/useTaskCalendarFeed.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/calendarExport.ts",
+    "src/lib/icalSubscribe.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Calendar.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Calendar.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Calendar.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 1711,
+   "exports": [],
+   "default": "CalendarPage",
+   "tables": [
+    "calendar_task_links",
+    "tags",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useIcalSubscriptions.ts",
+    "src/hooks/useTaskCalendarFeed.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/calendarExport.ts",
+    "src/lib/icalSubscribe.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Calendar.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Chat.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 1264,
+   "exports": [],
+   "default": "Chat",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/AIChatModal.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Dashboard.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 1169,
+   "exports": [],
+   "default": "Dashboard",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/dashboard/DashboardAnnualReview.tsx",
+    "src/components/dashboard/DashboardQuickView.tsx",
+    "src/components/dashboard/DashboardStrategic.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Finance.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 2285,
+   "exports": [],
+   "default": "Finance",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/FinanceHeroCard.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useUserBanks.ts",
+    "src/lib/ai.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Finance.pake.tsx",
+   "kind": "route",
+   "platform": "pake",
+   "loc": 1989,
+   "exports": [],
+   "default": "Finance",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/FinanceHeroCard.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useUserBanks.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Finance.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Finance.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Finance.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 2147,
+   "exports": [],
+   "default": "Finance",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/FinanceHeroCard.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useUserBanks.ts",
+    "src/lib/ai.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Finance.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Focus.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 271,
+   "exports": [],
+   "default": "Focus",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/focusSessionEvents.ts",
+    "src/lib/utils.ts",
+    "src/stores/useFocusSessionStore.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Habits.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 1536,
+   "exports": [],
+   "default": "Habits",
+   "tables": [
+    "habit_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-logs",
+    "habit-relapses",
+    "points-transactions"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/CompactPrayerHabit.tsx",
+    "src/components/HabitStatsModal.tsx",
+    "src/components/PrayerBacklog.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Habits.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Habits.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Habits.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 1601,
+   "exports": [],
+   "default": "Habits",
+   "tables": [
+    "habit_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "habit-logs",
+    "habit-relapses",
+    "points-transactions"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/CompactPrayerHabit.tsx",
+    "src/components/HabitStatsModal.tsx",
+    "src/components/PrayerBacklog.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useAzkar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePoints.ts",
+    "src/lib/supabase.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Habits.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Health.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 407,
+   "exports": [],
+   "default": "Health",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useHealthData.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Landing.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 533,
+   "exports": [],
+   "default": "Landing",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/wiki/WikiGraphView.tsx",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Login.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 252,
+   "exports": [],
+   "default": "Login",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Notes.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 802,
+   "exports": [],
+   "default": "NotesIOS",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AttachmentManager.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useNotes.ts",
+    "src/lib/ai.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Notes.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Notes.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Notes.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 1012,
+   "exports": [],
+   "default": "NotesWeb",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AttachmentManager.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Notes.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Points.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 332,
+   "exports": [],
+   "default": "Points",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/usePoints.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Quran.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 226,
+   "exports": [
+    "QuranRoute"
+   ],
+   "default": "QuranRoute",
+   "tables": [
+    "notes"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useQuranCloudSync.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/offlineSync.ts",
+    "src/lib/supabase.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Screentime.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 1422,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [
+    "screentime"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useScreentime.ts",
+    "src/lib/screentimePlatform.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Screentime.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Screentime.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Screentime.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 1344,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/hooks/useScreentime.ts",
+    "src/lib/screentimePlatform.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Screentime.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Settings.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 2146,
+   "exports": [
+    "SettingsNavItem"
+   ],
+   "default": "SettingsPage",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "process-sms",
+    "upload-sleep"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AISettingsSection.tsx",
+    "src/components/BankAccountsSettingsSection.tsx",
+    "src/components/QuranOfflineDownloader.tsx",
+    "src/components/navItems.ts",
+    "src/components/ui/UserBlobatar.tsx",
+    "src/components/ui/index.ts",
+    "src/db/database.ts",
+    "src/db/seed.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePrayerHabits.ts",
+    "src/hooks/usePushNotifications.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/logger.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/prayerGeocoding.ts",
+    "src/lib/theme.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Settings.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Settings.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Settings.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 1782,
+   "exports": [
+    "SettingsNavItem"
+   ],
+   "default": "SettingsPage",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/AISettingsSection.tsx",
+    "src/components/BankAccountsSettingsSection.tsx",
+    "src/components/QuranOfflineDownloader.tsx",
+    "src/components/navItems.ts",
+    "src/components/ui/UserBlobatar.tsx",
+    "src/components/ui/index.ts",
+    "src/db/database.ts",
+    "src/db/seed.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/usePrayerHabits.ts",
+    "src/hooks/usePushNotifications.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/prayerGeocoding.ts",
+    "src/lib/theme.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "src/routes/Settings.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Signup.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 235,
+   "exports": [],
+   "default": "Signup",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts",
+    "src/lib/utils.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Sleep.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 736,
+   "exports": [],
+   "default": "Sleep",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "upload-sleep"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/DataCard.tsx",
+    "src/components/ui/DetailsSheet.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useSleep.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Sleep.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Sleep.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Sleep.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 715,
+   "exports": [],
+   "default": "Sleep",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/DataCard.tsx",
+    "src/components/ui/DetailsSheet.tsx",
+    "src/hooks/useSleep.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Sleep.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Tasks.ios.tsx",
+   "kind": "route",
+   "platform": "ios",
+   "loc": 4789,
+   "exports": [],
+   "default": "Tasks",
+   "tables": [
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/TaskDetailsContent.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/components/ui/MarqueeTitle.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useNativeInteraction.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/listIdFromTagIds.ts",
+    "src/lib/nativeBridge.ts",
+    "src/lib/smartTaskScheduler.ts",
+    "src/lib/supabase.ts",
+    "src/lib/taskInputSuggestions.ts",
+    "src/lib/taskSimilarityAnalyzer.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Tasks.pake.tsx",
+   "kind": "route",
+   "platform": "pake",
+   "loc": 2808,
+   "exports": [],
+   "default": "Tasks",
+   "tables": [
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/TaskDetailsContent.tsx",
+    "src/components/ui/MarqueeTitle.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/listIdFromTagIds.ts",
+    "src/lib/supabase.ts",
+    "src/lib/taskInputSuggestions.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "src/routes/Tasks.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 3,
+   "exports": [
+    "default"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/routes/Tasks.web.tsx"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Tasks.web.tsx",
+   "kind": "route",
+   "platform": "web",
+   "loc": 4627,
+   "exports": [],
+   "default": "Tasks",
+   "tables": [
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "src/components/SwipeableRow.tsx",
+    "src/components/TaskDetailsContent.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/components/collaboration/ShareModal.tsx",
+    "src/components/ui/MarqueeTitle.tsx",
+    "src/components/ui/index.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/listIdFromTagIds.ts",
+    "src/lib/smartTaskScheduler.ts",
+    "src/lib/supabase.ts",
+    "src/lib/taskInputSuggestions.ts",
+    "src/lib/taskSimilarityAnalyzer.ts",
+    "src/lib/utils.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/routes/Tasks.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/WeeklyPlanner.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 1568,
+   "exports": [],
+   "default": "WeeklyPlanner",
+   "tables": [
+    "habit_logs"
+   ],
+   "rpcs": [],
+   "queryKeys": [
+    "tasks",
+    "weekly-planner-logs"
+   ],
+   "invokesEdgeFns": [],
+   "usesReactQuery": true,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "src/components/ui/index.ts",
+    "src/hooks/useAuth.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useHabits.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ts",
+    "src/lib/ai.ts",
+    "src/lib/supabase.ts",
+    "src/lib/theme.ts",
+    "src/lib/utils.ts",
+    "src/lib/weeklyCoachScheduler.ts",
+    "src/stores/useUIStore.ts",
+    "src/types/schema.ts"
+   ],
+   "importedBy": [
+    "src/App.ios.tsx",
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/routes/Wiki.tsx",
+   "kind": "route",
+   "platform": null,
+   "loc": 596,
+   "exports": [],
+   "default": "Wiki",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "src/components/collaboration/ShareModal.tsx",
+    "src/components/wiki/WikiGraphView.tsx",
+    "src/components/wiki/WikiMarkdown.tsx",
+    "src/hooks/useAuth.ts",
+    "src/lib/theme.ts",
+    "src/lib/utils.ts",
+    "src/lib/wikiData.ts",
+    "src/stores/useUIStore.ts",
+    "src/stores/useWikiStore.ts"
+   ],
+   "importedBy": [
+    "src/App.web.tsx"
+   ]
+  },
+  {
+   "id": "src/setupTests.ts",
+   "kind": "app-entry",
+   "platform": null,
+   "loc": 2,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "src/stores/useAzkarStore.ts",
+   "kind": "store",
+   "platform": null,
+   "loc": 75,
+   "exports": [
+    "useAzkarStore"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": true,
+   "imports": [
+    "src/types/azkar.ts"
+   ],
+   "importedBy": [
+    "src/components/azkar/TasbihCounterModal.tsx",
+    "src/components/azkar/ZekrCard.tsx",
+    "src/routes/Azkar.ios.tsx",
+    "src/routes/Azkar.web.tsx"
+   ]
+  },
+  {
+   "id": "src/stores/useFocusSessionStore.ts",
+   "kind": "store",
+   "platform": null,
+   "loc": 97,
+   "exports": [
+    "FocusPhase",
+    "SelectedTaskInfo",
+    "useFocusSessionStore"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": true,
+   "imports": [],
+   "importedBy": [
+    "src/components/FocusPiPWindow.tsx",
+    "src/components/FocusSessionManager.tsx",
+    "src/routes/Focus.tsx"
+   ]
+  },
+  {
+   "id": "src/stores/useUIStore.ts",
+   "kind": "store",
+   "platform": null,
+   "loc": 678,
+   "exports": [
+    "ACCENT_THEMES",
+    "ACCENT_THEME_LABELS",
+    "AccentTheme",
+    "DASHBOARD_MODES",
+    "DASHBOARD_MODE_LABELS",
+    "DASHBOARD_WIDGET_IDS",
+    "DEFAULT_DASHBOARD_MODE",
+    "DEFAULT_DESKTOP_NAV",
+    "DEFAULT_MOBILE_NAV",
+    "DEFAULT_PINNED_NAV",
+    "DashboardMode",
+    "DashboardWidgetId",
+    "HABITS_WIDGET_IDS",
+    "HabitsWidgetId",
+    "PAGE_WIDGET_DEFAULTS",
+    "PersistedUiSlice",
+    "PrayerLocationMode",
+    "SLEEP_WIDGET_IDS",
+    "SleepWidgetId",
+    "StrategicHorizonDays",
+    "getPersistedUiSlice",
+    "isDashboardMode",
+    "useUIStore"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": true,
+   "imports": [],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/AudioPlayerBar.tsx",
+    "src/App.ios.tsx",
+    "src/App.web.tsx",
+    "src/components/AISettingsSection.tsx",
+    "src/components/AppJoyrideTour.tsx",
+    "src/components/AppShell.ios.tsx",
+    "src/components/AppShell.pake.tsx",
+    "src/components/AppShell.web.tsx",
+    "src/components/CommandPalette.tsx",
+    "src/components/DataCard.ios.tsx",
+    "src/components/DataCard.web.tsx",
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/components/analytics/AnalyticsReport.tsx",
+    "src/components/dashboard/DashboardAnnualReview.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/components/dashboard/DashboardStrategic.tsx",
+    "src/components/ui/DetailsSheet.tsx",
+    "src/components/ui/Modal.tsx",
+    "src/hooks/useNativeTraySync.ts",
+    "src/hooks/usePrayerTimes.ts",
+    "src/hooks/useReport.ts",
+    "src/hooks/useUserAppSettingsSync.ts",
+    "src/lib/ai.ts",
+    "src/lib/theme.ts",
+    "src/lib/userAppSettings.ts",
+    "src/routes/Analytics.tsx",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Chat.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Health.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Screentime.ios.tsx",
+    "src/routes/Screentime.web.tsx",
+    "src/routes/Settings.ios.tsx",
+    "src/routes/Settings.web.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Sleep.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx",
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/stores/useWikiStore.ts",
+   "kind": "store",
+   "platform": null,
+   "loc": 109,
+   "exports": [
+    "useWikiStore"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": true,
+   "imports": [
+    "src/lib/wikiStorage.ts",
+    "src/types/wiki.ts"
+   ],
+   "importedBy": [
+    "src/routes/Wiki.tsx"
+   ]
+  },
+  {
+   "id": "src/sw.ts",
+   "kind": "app-entry",
+   "platform": null,
+   "loc": 175,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "src/types/azkar.ts",
+   "kind": "types",
+   "platform": null,
+   "loc": 34,
+   "exports": [
+    "AzkarCategoryMeta",
+    "AzkarDailyProgress",
+    "AzkarItem",
+    "AzkarPreferences",
+    "AzkarTimeWindow"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/azkar/ZekrCard.tsx",
+    "src/hooks/useAzkar.ts",
+    "src/routes/Azkar.web.tsx",
+    "src/stores/useAzkarStore.ts"
+   ]
+  },
+  {
+   "id": "src/types/schema.ts",
+   "kind": "types",
+   "platform": null,
+   "loc": 474,
+   "exports": [
+    "AppSettings",
+    "BrainDumpAnalysis",
+    "BrainDumpSuggestionEvent",
+    "BrainDumpSuggestionHabit",
+    "BrainDumpSuggestionTask",
+    "CalendarEvent",
+    "CreateInput",
+    "CustomReward",
+    "DetoxMode",
+    "EventType",
+    "Habit",
+    "HabitFrequency",
+    "HabitLog",
+    "HabitType",
+    "InBodyScan",
+    "InvestmentAccount",
+    "InvestmentTransaction",
+    "MediaAttachment",
+    "Note",
+    "NoteFolder",
+    "PointTransaction",
+    "PrayerHabit",
+    "PrayerLog",
+    "PrayerName",
+    "PrayerNotificationSetting",
+    "PrayerStatus",
+    "RecurrencePattern",
+    "ScreentimeAppStat",
+    "ScreentimeDailySummary",
+    "ScreentimeWebsiteStat",
+    "SleepStage",
+    "SleepStageType",
+    "Tag",
+    "Task",
+    "TaskList",
+    "TaskPriority",
+    "TaskRecurrence",
+    "TaskRecurrenceEndType",
+    "TaskWithSubtasks",
+    "Transaction",
+    "TransactionCategory",
+    "TransactionType",
+    "UpdateInput",
+    "UserBank"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/AINoteOrganizerSheet.tsx",
+    "src/components/AttachmentManager.tsx",
+    "src/components/BrainDumpGraphView.tsx",
+    "src/components/BrainDumpModal.tsx",
+    "src/components/CompactPrayerHabit.ios.tsx",
+    "src/components/CompactPrayerHabit.web.tsx",
+    "src/components/HabitStatsModal.tsx",
+    "src/components/PrayerBacklog.ios.tsx",
+    "src/components/PrayerBacklog.web.tsx",
+    "src/components/TaskDetailsContent.ios.tsx",
+    "src/components/TaskDetailsContent.web.tsx",
+    "src/components/TaskSimilarityMergeModal.tsx",
+    "src/components/analytics/AnalyticsPoints.tsx",
+    "src/components/dashboard/DashboardQuickView.ios.tsx",
+    "src/components/dashboard/DashboardQuickView.web.tsx",
+    "src/db/database.ts",
+    "src/hooks/useCalendar.ts",
+    "src/hooks/useDashboardUpcomingItems.test.ts",
+    "src/hooks/useDashboardUpcomingItems.ts",
+    "src/hooks/useFinance.test.ts",
+    "src/hooks/useFinance.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useHealthData.ts",
+    "src/hooks/useInvestments.test.ts",
+    "src/hooks/useInvestments.ts",
+    "src/hooks/useNotes.ts",
+    "src/hooks/usePoints.ts",
+    "src/hooks/usePrayerHabits.ios.ts",
+    "src/hooks/usePrayerHabits.web.ts",
+    "src/hooks/useScreentime.ts",
+    "src/hooks/useSleep.ts",
+    "src/hooks/useTasks.ios.ts",
+    "src/hooks/useTasks.web.ts",
+    "src/hooks/useUserBanks.ts",
+    "src/lib/attachments.ts",
+    "src/lib/calendarExport.ts",
+    "src/lib/listIdFromTagIds.ts",
+    "src/lib/prayerStatus.ts",
+    "src/lib/smartTaskScheduler.ts",
+    "src/lib/taskSimilarityAnalyzer.ts",
+    "src/lib/weeklyCoachScheduler.ts",
+    "src/routes/Calendar.ios.tsx",
+    "src/routes/Calendar.pake.tsx",
+    "src/routes/Calendar.web.tsx",
+    "src/routes/Dashboard.tsx",
+    "src/routes/Finance.ios.tsx",
+    "src/routes/Finance.pake.tsx",
+    "src/routes/Finance.web.tsx",
+    "src/routes/Habits.ios.tsx",
+    "src/routes/Habits.web.tsx",
+    "src/routes/Health.tsx",
+    "src/routes/Notes.ios.tsx",
+    "src/routes/Notes.web.tsx",
+    "src/routes/Sleep.ios.tsx",
+    "src/routes/Sleep.web.tsx",
+    "src/routes/Tasks.ios.tsx",
+    "src/routes/Tasks.pake.tsx",
+    "src/routes/Tasks.web.tsx",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "src/types/wiki.ts",
+   "kind": "types",
+   "platform": null,
+   "loc": 35,
+   "exports": [
+    "WikiGraphEdge",
+    "WikiGraphNode",
+    "WikiLink",
+    "WikiPage"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "src/components/wiki/WikiGraphView.tsx",
+    "src/lib/wikiStorage.ts",
+    "src/stores/useWikiStore.ts"
+   ]
+  },
+  {
+   "id": "api/ai.ts",
+   "kind": "vercel-fn",
+   "platform": null,
+   "loc": 194,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/calendar/tasks.ts",
+   "kind": "vercel-fn",
+   "platform": null,
+   "loc": 434,
+   "exports": [],
+   "default": "async",
+   "tables": [
+    "calendar_events",
+    "task_calendar_feeds",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/cron/braindump-organizer.ts",
+   "kind": "vercel-cron",
+   "platform": null,
+   "loc": 46,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "braindump-organizer"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/cron/calendar-notifications-dispatch.ts",
+   "kind": "vercel-cron",
+   "platform": null,
+   "loc": 46,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "calendar-notifications-dispatch"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/cron/habit-notifications-dispatch.ts",
+   "kind": "vercel-cron",
+   "platform": null,
+   "loc": 46,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "habit-notifications-dispatch"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/cron/prayer-notifications-dispatch.ts",
+   "kind": "vercel-cron",
+   "platform": null,
+   "loc": 46,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "prayer-notifications-dispatch"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/cron/send-task-reminders.ts",
+   "kind": "vercel-cron",
+   "platform": null,
+   "loc": 47,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [
+    "send-task-reminders"
+   ],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/lib/supabaseServer.ts",
+   "kind": "vercel-fn",
+   "platform": null,
+   "loc": 39,
+   "exports": [
+    "getSupabaseAnon",
+    "getSupabaseService",
+    "getUserIdFromRequest"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "api/proxy.ts",
+   "kind": "vercel-fn",
+   "platform": null,
+   "loc": 137,
+   "exports": [],
+   "default": "async",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/append-braindump/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 257,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "note_folders",
+    "notes"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/braindump-organizer/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 654,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "note_folders",
+    "notes",
+    "tags",
+    "task_lists",
+    "tasks",
+    "user_app_settings"
+   ],
+   "rpcs": [
+    "verify_braindump_cron_secret"
+   ],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/calendar-feed/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 514,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "calendar_events",
+    "habit_logs",
+    "habits",
+    "task_calendar_feeds",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/calendar-notifications-dispatch/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 239,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "calendar_events",
+    "push_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/create-task/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 590,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "tags",
+    "task_lists",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/deno.d.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 83,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/habit-notifications-dispatch/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 523,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "habit_logs",
+    "habits",
+    "prayer_habits",
+    "push_subscriptions",
+    "quran_khatmah_plans"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/prayer-notifications-dispatch/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 247,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "prayer_notification_settings",
+    "push_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/process-sms/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 886,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "budgets",
+    "notes",
+    "transaction_rules",
+    "transactions",
+    "user_app_settings"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "supabase/functions/process-sms/parser.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/process-sms/parser.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 474,
+   "exports": [
+    "ParsedTransaction",
+    "TransactionParser"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "supabase/functions/process-sms/index.ts"
+   ]
+  },
+  {
+   "id": "supabase/functions/quick-expense/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 565,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "notes",
+    "transaction_rules",
+    "transactions",
+    "user_app_settings"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/r2-presign/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 82,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/reconcile-statement/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 271,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "transactions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/report-notification-dispatch/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 217,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "push_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/send-task-reminders/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 250,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "push_subscriptions",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/send-test-notification/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 142,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "push_subscriptions"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/sync-inbody/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 70,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "inbody_scans"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/sync-reminders/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 573,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "task_lists",
+    "tasks"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/upload-screentime/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 1562,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "screentime_daily_app_stats",
+    "screentime_daily_summary",
+    "screentime_daily_website_stats"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/upload-screentime-chronos/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 1423,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "screentime_daily_app_stats",
+    "screentime_daily_summary",
+    "screentime_daily_website_stats"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "supabase/functions/upload-sleep/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 264,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "sleep_stages"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "extension/background.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 265,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "extension/lib/aiClient.js",
+    "extension/lib/supabaseClient.js"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "extension/content.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 124,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "extension/lib/aiClient.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 203,
+   "exports": [
+    "AIClient",
+    "aiClient"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "extension/lib/envConfig.js"
+   ],
+   "importedBy": [
+    "extension/background.js",
+    "extension/popup/popup.js"
+   ]
+  },
+  {
+   "id": "extension/lib/envConfig.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 41,
+   "exports": [
+    "ENV_CONFIG"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "extension/lib/aiClient.js",
+    "extension/lib/supabaseClient.js"
+   ]
+  },
+  {
+   "id": "extension/lib/supabaseClient.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 687,
+   "exports": [
+    "SupabaseClient",
+    "supabaseClient"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "extension/lib/envConfig.js"
+   ],
+   "importedBy": [
+    "extension/background.js",
+    "extension/options/options.js",
+    "extension/popup/popup.js"
+   ]
+  },
+  {
+   "id": "extension/options/options.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 58,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "extension/lib/supabaseClient.js"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "extension/popup/popup.js",
+   "kind": "extension",
+   "platform": null,
+   "loc": 764,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "extension/lib/aiClient.js",
+    "extension/lib/supabaseClient.js"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "lib/api-client-react/src/custom-fetch.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 378,
+   "exports": [
+    "ApiError",
+    "AuthTokenGetter",
+    "BodyType",
+    "CustomFetchOptions",
+    "ErrorType",
+    "ResponseParseError",
+    "customFetch",
+    "setAuthTokenGetter",
+    "setBaseUrl"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "lib/api-client-react/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/api-client-react/src/index.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 5,
+   "exports": [
+    "setAuthTokenGetter",
+    "setBaseUrl"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/api-client-react/src/custom-fetch.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "lib/api-spec/orval.config.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 73,
+   "exports": [],
+   "default": "defineConfig",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "lib/api-zod/src/index.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 3,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "lib/db/drizzle.config.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 15,
+   "exports": [],
+   "default": "defineConfig",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
+   "id": "lib/db/src/index.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 17,
+   "exports": [
+    "db",
+    "pool"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/db/src/schema/index.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "lib/db/src/schema/index.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 20,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "lib/db/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/AudioPlayerBar.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 534,
+   "exports": [
+    "AudioPlayerBar"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts",
+    "src/stores/useUIStore.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/BlindModeOverlay.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 140,
+   "exports": [
+    "BlindModeOverlay"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/KhatmahPlannerView.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 1268,
+   "exports": [
+    "KhatmahPlannerView",
+    "advanceReverseKhatmah",
+    "isReversePlan"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/MutashabihatView.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 120,
+   "exports": [
+    "MutashabihatView"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 819,
+   "exports": [
+    "QuranMemorizerMain"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/components/AudioPlayerBar.tsx",
+    "lib/quran-memorizer/src/components/KhatmahPlannerView.tsx",
+    "lib/quran-memorizer/src/components/MutashabihatView.tsx",
+    "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+    "lib/quran-memorizer/src/components/RevisionScheduler.tsx",
+    "lib/quran-memorizer/src/hooks/useQuranAudio.ts",
+    "lib/quran-memorizer/src/hooks/useQuranMemorizer.ts",
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/index.ts",
+    "lib/quran-memorizer/src/main.tsx"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 2618,
+   "exports": [
+    "QuranReaderView"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/components/BlindModeOverlay.tsx",
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/components/RevisionScheduler.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 209,
+   "exports": [
+    "RevisionScheduler"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/hooks/useQuranAudio.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 316,
+   "exports": [
+    "useQuranAudio"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/hooks/useQuranMemorizer.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 245,
+   "exports": [
+    "useQuranMemorizer"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/index.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/index.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 12,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/components/AudioPlayerBar.tsx",
+    "lib/quran-memorizer/src/components/BlindModeOverlay.tsx",
+    "lib/quran-memorizer/src/components/MutashabihatView.tsx",
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+    "lib/quran-memorizer/src/components/RevisionScheduler.tsx",
+    "lib/quran-memorizer/src/hooks/useQuranAudio.ts",
+    "lib/quran-memorizer/src/hooks/useQuranMemorizer.ts",
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "lib/quran-memorizer/src/main.tsx",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 11,
+   "exports": [],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx"
+   ],
+   "importedBy": []
+  },
+  {
+   "id": "lib/quran-memorizer/src/services/quranApi.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 233,
+   "exports": [
+    "downloadAndCacheFullQuran",
+    "fetchPageVerses",
+    "fetchSurahVerses",
+    "getAyahAudioUrl"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/types/quran.ts",
+    "src/db/indexedDb.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+    "lib/quran-memorizer/src/hooks/useQuranAudio.ts",
+    "lib/quran-memorizer/src/index.ts",
+    "src/components/QuranOfflineDownloader.tsx",
+    "src/routes/Quran.tsx"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/services/quranData.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 735,
+   "exports": [
+    "AdvancedWirdResult",
+    "MUTASHABIHAT_SAMPLE",
+    "QuranHabitTarget",
+    "QuranKhatmaStats",
+    "QuranWirdSummary",
+    "RECITERS",
+    "SURAHS",
+    "addReadingSeconds",
+    "advanceWirdOnHabitComplete",
+    "classifyQuranHabitTitle",
+    "formatSurahAndAyahSpan",
+    "getCurrentWirdInfo",
+    "getKhatmaStats",
+    "getQuranWirdAndReviewSummary",
+    "getSpecificSurahHabitTarget",
+    "getSurahForPage",
+    "recordKhatmaCompletion"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [
+    "lib/quran-memorizer/src/types/quran.ts"
+   ],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/AudioPlayerBar.tsx",
+    "lib/quran-memorizer/src/components/KhatmahPlannerView.tsx",
+    "lib/quran-memorizer/src/components/MutashabihatView.tsx",
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+    "lib/quran-memorizer/src/components/RevisionScheduler.tsx",
+    "lib/quran-memorizer/src/index.ts",
+    "src/hooks/useHabits.ios.ts",
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/usePakeLocalNotifications.ts",
+    "src/hooks/useQuranCloudSync.ts",
+    "src/lib/nativeBridge.ts",
+    "src/routes/WeeklyPlanner.tsx"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/src/types/quran.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 142,
+   "exports": [
+    "Ayah",
+    "HifdhRecord",
+    "KhatmahDirection",
+    "KhatmahGoalType",
+    "KhatmahPlan",
+    "LifeOSIntegrationProps",
+    "LinkedLifeOSEvent",
+    "LinkedLifeOSHabit",
+    "LinkedLifeOSTask",
+    "MemorizationStatus",
+    "MutashabihItem",
+    "RatingGrade",
+    "ReadingWirdPlan",
+    "Reciter",
+    "RepeatSettings",
+    "SheikhHalqahNote",
+    "SurahMeta"
+   ],
+   "default": null,
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": [
+    "lib/quran-memorizer/src/components/AudioPlayerBar.tsx",
+    "lib/quran-memorizer/src/components/BlindModeOverlay.tsx",
+    "lib/quran-memorizer/src/components/KhatmahPlannerView.tsx",
+    "lib/quran-memorizer/src/components/QuranMemorizerMain.tsx",
+    "lib/quran-memorizer/src/components/QuranReaderView.tsx",
+    "lib/quran-memorizer/src/components/RevisionScheduler.tsx",
+    "lib/quran-memorizer/src/hooks/useQuranAudio.ts",
+    "lib/quran-memorizer/src/hooks/useQuranMemorizer.ts",
+    "lib/quran-memorizer/src/index.ts",
+    "lib/quran-memorizer/src/services/quranApi.ts",
+    "lib/quran-memorizer/src/services/quranData.ts",
+    "src/hooks/useQuranCloudSync.ts"
+   ]
+  },
+  {
+   "id": "lib/quran-memorizer/vite.config.ts",
+   "kind": "workspace-pkg",
+   "platform": null,
+   "loc": 10,
+   "exports": [],
+   "default": "defineConfig",
+   "tables": [],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  }
+ ],
+ "variantFamilies": [
+  {
+   "base": "src/App",
+   "web": "src/App.web.tsx",
+   "ios": "src/App.ios.tsx",
+   "pake": null,
+   "shim": "src/App.tsx"
+  },
+  {
+   "base": "src/components/AppFooter",
+   "web": "src/components/AppFooter.web.tsx",
+   "ios": "src/components/AppFooter.ios.tsx",
+   "pake": "src/components/AppFooter.pake.tsx",
+   "shim": "src/components/AppFooter.tsx"
+  },
+  {
+   "base": "src/components/AppShell",
+   "web": "src/components/AppShell.web.tsx",
+   "ios": "src/components/AppShell.ios.tsx",
+   "pake": "src/components/AppShell.pake.tsx",
+   "shim": "src/components/AppShell.tsx"
+  },
+  {
+   "base": "src/components/CompactPrayerHabit",
+   "web": "src/components/CompactPrayerHabit.web.tsx",
+   "ios": "src/components/CompactPrayerHabit.ios.tsx",
+   "pake": null,
+   "shim": "src/components/CompactPrayerHabit.tsx"
+  },
+  {
+   "base": "src/components/DataCard",
+   "web": "src/components/DataCard.web.tsx",
+   "ios": "src/components/DataCard.ios.tsx",
+   "pake": null,
+   "shim": "src/components/DataCard.tsx"
+  },
+  {
+   "base": "src/components/FinanceHeroCard",
+   "web": "src/components/FinanceHeroCard.web.tsx",
+   "ios": "src/components/FinanceHeroCard.ios.tsx",
+   "pake": null,
+   "shim": "src/components/FinanceHeroCard.tsx"
+  },
+  {
+   "base": "src/components/PrayerBacklog",
+   "web": "src/components/PrayerBacklog.web.tsx",
+   "ios": "src/components/PrayerBacklog.ios.tsx",
+   "pake": null,
+   "shim": "src/components/PrayerBacklog.tsx"
+  },
+  {
+   "base": "src/components/PullToRefresh",
+   "web": "src/components/PullToRefresh.web.tsx",
+   "ios": "src/components/PullToRefresh.ios.tsx",
+   "pake": null,
+   "shim": "src/components/PullToRefresh.tsx"
+  },
+  {
+   "base": "src/components/SwipeableRow",
+   "web": "src/components/SwipeableRow.web.tsx",
+   "ios": "src/components/SwipeableRow.ios.tsx",
+   "pake": "src/components/SwipeableRow.pake.tsx",
+   "shim": "src/components/SwipeableRow.tsx"
+  },
+  {
+   "base": "src/components/TaskDetailsContent",
+   "web": "src/components/TaskDetailsContent.web.tsx",
+   "ios": "src/components/TaskDetailsContent.ios.tsx",
+   "pake": null,
+   "shim": "src/components/TaskDetailsContent.tsx"
+  },
+  {
+   "base": "src/components/dashboard/DashboardQuickView",
+   "web": "src/components/dashboard/DashboardQuickView.web.tsx",
+   "ios": "src/components/dashboard/DashboardQuickView.ios.tsx",
+   "pake": null,
+   "shim": "src/components/dashboard/DashboardQuickView.tsx"
+  },
+  {
+   "base": "src/components/ui/Button",
+   "web": "src/components/ui/Button.web.tsx",
+   "ios": "src/components/ui/Button.ios.tsx",
+   "pake": null,
+   "shim": "src/components/ui/Button.tsx"
+  },
+  {
+   "base": "src/hooks/useHabits",
+   "web": "src/hooks/useHabits.web.ts",
+   "ios": "src/hooks/useHabits.ios.ts",
+   "pake": null,
+   "shim": "src/hooks/useHabits.ts"
+  },
+  {
+   "base": "src/hooks/usePrayerHabits",
+   "web": "src/hooks/usePrayerHabits.web.ts",
+   "ios": "src/hooks/usePrayerHabits.ios.ts",
+   "pake": null,
+   "shim": "src/hooks/usePrayerHabits.ts"
+  },
+  {
+   "base": "src/hooks/usePushNotifications",
+   "web": "src/hooks/usePushNotifications.web.ts",
+   "ios": "src/hooks/usePushNotifications.ios.ts",
+   "pake": "src/hooks/usePushNotifications.pake.ts",
+   "shim": "src/hooks/usePushNotifications.ts"
+  },
+  {
+   "base": "src/hooks/useTasks",
+   "web": "src/hooks/useTasks.web.ts",
+   "ios": "src/hooks/useTasks.ios.ts",
+   "pake": null,
+   "shim": "src/hooks/useTasks.ts"
+  },
+  {
+   "base": "src/routes/Azkar",
+   "web": "src/routes/Azkar.web.tsx",
+   "ios": "src/routes/Azkar.ios.tsx",
+   "pake": null,
+   "shim": "src/routes/Azkar.tsx"
+  },
+  {
+   "base": "src/routes/Calendar",
+   "web": "src/routes/Calendar.web.tsx",
+   "ios": "src/routes/Calendar.ios.tsx",
+   "pake": "src/routes/Calendar.pake.tsx",
+   "shim": "src/routes/Calendar.tsx"
+  },
+  {
+   "base": "src/routes/Finance",
+   "web": "src/routes/Finance.web.tsx",
+   "ios": "src/routes/Finance.ios.tsx",
+   "pake": "src/routes/Finance.pake.tsx",
+   "shim": "src/routes/Finance.tsx"
+  },
+  {
+   "base": "src/routes/Habits",
+   "web": "src/routes/Habits.web.tsx",
+   "ios": "src/routes/Habits.ios.tsx",
+   "pake": null,
+   "shim": "src/routes/Habits.tsx"
+  },
+  {
+   "base": "src/routes/Notes",
+   "web": "src/routes/Notes.web.tsx",
+   "ios": "src/routes/Notes.ios.tsx",
+   "pake": null,
+   "shim": "src/routes/Notes.tsx"
+  },
+  {
+   "base": "src/routes/Screentime",
+   "web": "src/routes/Screentime.web.tsx",
+   "ios": "src/routes/Screentime.ios.tsx",
+   "pake": null,
+   "shim": "src/routes/Screentime.tsx"
+  },
+  {
+   "base": "src/routes/Settings",
+   "web": "src/routes/Settings.web.tsx",
+   "ios": "src/routes/Settings.ios.tsx",
+   "pake": null,
+   "shim": "src/routes/Settings.tsx"
+  },
+  {
+   "base": "src/routes/Sleep",
+   "web": "src/routes/Sleep.web.tsx",
+   "ios": "src/routes/Sleep.ios.tsx",
+   "pake": null,
+   "shim": "src/routes/Sleep.tsx"
+  },
+  {
+   "base": "src/routes/Tasks",
+   "web": "src/routes/Tasks.web.tsx",
+   "ios": "src/routes/Tasks.ios.tsx",
+   "pake": "src/routes/Tasks.pake.tsx",
+   "shim": "src/routes/Tasks.tsx"
+  }
+ ],
+ "topExternalDeps": [
+  {
+   "pkg": "react",
+   "count": 133
+  },
+  {
+   "pkg": "lucide-react",
+   "count": 91
+  },
+  {
+   "pkg": "date-fns",
+   "count": 55
+  },
+  {
+   "pkg": "@tanstack/react-query",
+   "count": 39
+  },
+  {
+   "pkg": "react-router-dom",
+   "count": 33
+  },
+  {
+   "pkg": "@capacitor/core",
+   "count": 18
+  },
+  {
+   "pkg": "npm:@supabase",
+   "count": 18
+  },
+  {
+   "pkg": "recharts",
+   "count": 15
+  },
+  {
+   "pkg": "vitest",
+   "count": 14
+  },
+  {
+   "pkg": "framer-motion",
+   "count": 14
+  },
+  {
+   "pkg": "react-dom",
+   "count": 13
+  },
+  {
+   "pkg": "uuid",
+   "count": 9
+  },
+  {
+   "pkg": "@vercel/node",
+   "count": 8
+  },
+  {
+   "pkg": "@fluentui/react-components",
+   "count": 7
+  },
+  {
+   "pkg": "https:",
+   "count": 7
+  },
+  {
+   "pkg": "zustand",
+   "count": 6
+  },
+  {
+   "pkg": "marked",
+   "count": 5
+  },
+  {
+   "pkg": "@formkit/auto-animate",
+   "count": 4
+  },
+  {
+   "pkg": "@capacitor/keyboard",
+   "count": 3
+  },
+  {
+   "pkg": "@testing-library/react",
+   "count": 3
+  },
+  {
+   "pkg": "@capacitor/haptics",
+   "count": 3
+  },
+  {
+   "pkg": "@supabase/supabase-js",
+   "count": 3
+  },
+  {
+   "pkg": "@capacitor/local-notifications",
+   "count": 3
+  },
+  {
+   "pkg": "@vercel/analytics",
+   "count": 2
+  },
+  {
+   "pkg": "@tanstack/react-query-persist-client",
+   "count": 2
+  },
+  {
+   "pkg": "@tanstack/query-sync-storage-persister",
+   "count": 2
+  },
+  {
+   "pkg": "@fluentui/react-icons",
+   "count": 2
+  },
+  {
+   "pkg": "adhan",
+   "count": 2
+  },
+  {
+   "pkg": "@capacitor/app",
+   "count": 2
+  },
+  {
+   "pkg": "node:dns",
+   "count": 2
+  },
+  {
+   "pkg": "node:net",
+   "count": 2
+  },
+  {
+   "pkg": "path",
+   "count": 2
+  },
+  {
+   "pkg": "react-joyride",
+   "count": 1
+  },
+  {
+   "pkg": "{note.title}",
+   "count": 1
+  },
+  {
+   "pkg": "cmdk",
+   "count": 1
+  },
+  {
+   "pkg": "@blobatar/react",
+   "count": 1
+  },
+  {
+   "pkg": "aws4fetch",
+   "count": 1
+  },
+  {
+   "pkg": "@capacitor/status-bar",
+   "count": 1
+  },
+  {
+   "pkg": "@capacitor/splash-screen",
+   "count": 1
+  },
+  {
+   "pkg": "@capacitor/share",
+   "count": 1
+  }
+ ]
+}
