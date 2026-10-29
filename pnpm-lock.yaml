@@ -187,8 +187,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       zod:
-        specifier: 4.6.5
-        version: 4.6.5
+        specifier: 4.6.6
+        version: 4.6.6
       zustand:
         specifier: ^5.0.15
         version: 5.0.15(@types/react@19.3.0)(immer@11.1.15)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
@@ -306,7 +306,7 @@ importers:
     devDependencies:
       orval:
         specifier: ^8.40.0
-        version: 8.40.0(@tanstack/react-query@5.104.1(react@19.3.0))(typescript@7.0.2)(zod@4.6.5)
+        version: 8.40.0(@tanstack/react-query@5.104.1(react@19.3.0))(typescript@7.0.2)(zod@4.6.6)
 
   lib/api-zod:
     dependencies:
@@ -6731,8 +6731,8 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
-  zod@4.6.5:
-    resolution: {integrity: sha512-v5l/aFXZQeai4awLbOpSoHecE9UiMrnfx75tEXLjNonXVARxQ5mOeipTjROUchszUNCqnE+hqAMujRsRHsut2Q==}
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
   zustand@5.0.15:
     resolution: {integrity: sha512-MpSEjRiBkA9crSYeOUH32rJC7SVqAbm0Fqcqge/bUi2PPoLcBWKOsG+C8mevmpr8TwXHBVkChbbJiyvkE+i/3A==}
@@ -9246,21 +9246,21 @@ snapshots:
     transitivePeerDependencies:
       - '@faker-js/faker'
 
-  '@orval/hono@8.40.0(typescript@7.0.2)(zod@4.6.5)':
+  '@orval/hono@8.40.0(typescript@7.0.2)(zod@4.6.6)':
     dependencies:
       '@orval/core': 8.40.0
-      '@orval/zod': 8.40.0(zod@4.6.5)
+      '@orval/zod': 8.40.0(zod@4.6.6)
     optionalDependencies:
       typescript: 7.0.2
     transitivePeerDependencies:
       - '@faker-js/faker'
       - zod
 
-  '@orval/mcp@8.40.0(zod@4.6.5)':
+  '@orval/mcp@8.40.0(zod@4.6.6)':
     dependencies:
       '@orval/core': 8.40.0
       '@orval/fetch': 8.40.0
-      '@orval/zod': 8.40.0(zod@4.6.5)
+      '@orval/zod': 8.40.0(zod@4.6.6)
     transitivePeerDependencies:
       - '@faker-js/faker'
       - zod
@@ -9299,12 +9299,12 @@ snapshots:
     transitivePeerDependencies:
       - '@faker-js/faker'
 
-  '@orval/zod@8.40.0(zod@4.6.5)':
+  '@orval/zod@8.40.0(zod@4.6.6)':
     dependencies:
       '@orval/core': 8.40.0
       jsesc: 3.1.0
     optionalDependencies:
-      zod: 4.6.5
+      zod: 4.6.6
     transitivePeerDependencies:
       - '@faker-js/faker'
 
@@ -9755,7 +9755,7 @@ snapshots:
       '@scalar/helpers': 0.16.2
       nanoid: 5.1.16
       type-fest: 5.10.0
-      zod: 4.6.5
+      zod: 4.6.6
 
   '@sec-ant/readable-stream@0.4.1': {}
 
@@ -11072,8 +11072,8 @@ snapshots:
       '@babel/parser': 7.29.7
       eslint: 10.12.0(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 4.6.5
-      zod-validation-error: 4.0.2(zod@4.6.5)
+      zod: 4.6.6
+      zod-validation-error: 4.0.2(zod@4.6.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -12024,7 +12024,7 @@ snapshots:
       stdin-discarder: 0.3.2
       string-width: 8.3.0
 
-  orval@8.40.0(@tanstack/react-query@5.104.1(react@19.3.0))(typescript@7.0.2)(zod@4.6.5):
+  orval@8.40.0(@tanstack/react-query@5.104.1(react@19.3.0))(typescript@7.0.2)(zod@4.6.6):
     dependencies:
       '@commander-js/extra-typings': 15.0.0(commander@15.0.0)
       '@orval/angular': 8.40.0
@@ -12032,14 +12032,14 @@ snapshots:
       '@orval/core': 8.40.0
       '@orval/effect': 8.40.0
       '@orval/fetch': 8.40.0
-      '@orval/hono': 8.40.0(typescript@7.0.2)(zod@4.6.5)
-      '@orval/mcp': 8.40.0(zod@4.6.5)
+      '@orval/hono': 8.40.0(typescript@7.0.2)(zod@4.6.6)
+      '@orval/mcp': 8.40.0(zod@4.6.6)
       '@orval/mock': 8.40.0
       '@orval/pinia-colada': 8.40.0
       '@orval/query': 8.40.0(@tanstack/react-query@5.104.1(react@19.3.0))
       '@orval/solid-start': 8.40.0
       '@orval/swr': 8.40.0
-      '@orval/zod': 8.40.0(zod@4.6.5)
+      '@orval/zod': 8.40.0(zod@4.6.6)
       '@scalar/json-magic': 0.15.6
       '@scalar/openapi-parser': 0.29.12
       '@scalar/openapi-types': 0.9.7
@@ -13530,13 +13530,13 @@ snapshots:
 
   yoctocolors@2.2.0: {}
 
-  zod-validation-error@4.0.2(zod@4.6.5):
+  zod-validation-error@4.0.2(zod@4.6.6):
     dependencies:
-      zod: 4.6.5
+      zod: 4.6.6
 
   zod@4.4.3: {}
 
-  zod@4.6.5: {}
+  zod@4.6.6: {}
 
   zustand@5.0.15(@types/react@19.3.0)(immer@11.1.15)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0)):
     optionalDependencies:
