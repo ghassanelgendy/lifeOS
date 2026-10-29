@@ -26,7 +26,7 @@ catalogs:
       version: 4.4.3
 
 overrides:
-  undici: ^8.11.2
+  undici: ^8.12.2
   uuid: ^14.0.2
   '@xmldom/xmldom': ^0.9.12
   esbuild: ^0.28.2
@@ -178,8 +178,8 @@ importers:
         specifier: ^3.7.0
         version: 3.7.0
       undici:
-        specifier: ^8.11.2
-        version: 8.11.2
+        specifier: ^8.12.2
+        version: 8.12.3
       uuid:
         specifier: ^14.0.2
         version: 14.0.2
@@ -6356,8 +6356,8 @@ packages:
   undici-types@8.9.0:
     resolution: {integrity: sha512-KTDyRTYX8sWmKXAikPHHSyc63CRPETMctyjKFupcC6OBLXT3xsN0e9aF7m+mIXutFWpUXuedtowG7iLOzp0kQg==}
 
-  undici@8.11.2:
-    resolution: {integrity: sha512-u4UB2/IrKdU6lFxumHmmo1a3fCQO5tzQllRorfoRS63txhrB7xTpSn1PftwC4qEHkOaqP95fCWW4lJzwErwzhQ==}
+  undici@8.12.3:
+    resolution: {integrity: sha512-+fdndUTwBP86cVjihTp21hZHo7d6oj1c/47XPA3lL8mM0XHs+C4EkcjmgRsFnFk2f/UONGDy9ItBItmXsLOQHw==}
     engines: {node: '>=22.19.0'}
 
   unicode-canonical-property-names-ecmascript@2.0.1:
@@ -9714,7 +9714,7 @@ snapshots:
     dependencies:
       '@scalar/helpers': 0.16.2
       pathe: 2.0.3
-      undici: 8.11.2
+      undici: 8.12.3
       yaml: 2.9.1
 
   '@scalar/json-schema-validator@0.1.11':
@@ -10327,7 +10327,7 @@ snapshots:
       ts-morph: 12.0.0
       tsx: 4.21.0
       typescript: 5.9.3
-      undici: 8.11.2
+      undici: 8.12.3
     transitivePeerDependencies:
       - '@emnapi/core'
       - '@emnapi/runtime'
@@ -11661,7 +11661,7 @@ snapshots:
       parse5: 8.0.1
       saxes: 6.0.0
       tough-cookie: 6.0.2
-      undici: 8.11.2
+      undici: 8.12.3
       w3c-xmlserializer: 6.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -13134,7 +13134,7 @@ snapshots:
 
   undici-types@8.9.0: {}
 
-  undici@8.11.2: {}
+  undici@8.12.3: {}
 
   unicode-canonical-property-names-ecmascript@2.0.1: {}
 
