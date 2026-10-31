@@ -189,8 +189,8 @@ importers:
         specifier: ^1.1.2
         version: 1.1.2(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       zod:
-        specifier: 4.6.7
-        version: 4.6.7
+        specifier: 4.6.6
+        version: 4.6.6
       zustand:
         specifier: ^5.0.16
         version: 5.0.16(@types/react@19.3.0)(immer@11.1.15)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
@@ -6749,6 +6749,9 @@ packages:
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
+  zod@4.6.6:
+    resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
+
   zod@4.6.7:
     resolution: {integrity: sha512-g8W2D2kU6a8untc053fX1uVBKzM7yqAxW/3zwk83+6RyF2+SKOuV+c0wBDhUwzV1PaGapmZH+rmcUzPf+3CGwg==}
 
@@ -11117,8 +11120,8 @@ snapshots:
       '@babel/parser': 7.29.7
       eslint: 10.13.0(jiti@2.7.0)
       hermes-parser: 0.25.1
-      zod: 4.6.7
-      zod-validation-error: 4.0.2(zod@4.6.7)
+      zod: 4.6.6
+      zod-validation-error: 4.0.2(zod@4.6.6)
     transitivePeerDependencies:
       - supports-color
 
@@ -13572,11 +13575,13 @@ snapshots:
 
   yoctocolors@2.2.0: {}
 
-  zod-validation-error@4.0.2(zod@4.6.7):
+  zod-validation-error@4.0.2(zod@4.6.6):
     dependencies:
-      zod: 4.6.7
+      zod: 4.6.6
 
   zod@4.4.3: {}
+
+  zod@4.6.6: {}
 
   zod@4.6.7: {}
 
