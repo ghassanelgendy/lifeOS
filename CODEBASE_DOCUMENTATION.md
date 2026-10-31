@@ -291,6 +291,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/PrayerBacklog.tsx](#src-components-prayerbacklog-tsx)
 - [src/components/PrayerBacklog.web.tsx](#src-components-prayerbacklog-web-tsx)
 - [src/components/PrayerTimesWidget.tsx](#src-components-prayertimeswidget-tsx)
+- [src/components/QadaaWidget.tsx](#src-components-qadaawidget-tsx)
+- [src/components/QadaaSetupModal.tsx](#src-components-qadaasetupmodal-tsx)
 - [src/components/PullToRefresh.ios.tsx](#src-components-pulltorefresh-ios-tsx)
 - [src/components/PullToRefresh.tsx](#src-components-pulltorefresh-tsx)
 - [src/components/PullToRefresh.web.tsx](#src-components-pulltorefresh-web-tsx)
@@ -388,6 +390,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/hooks/usePrayerHabits.ts](#src-hooks-useprayerhabits-ts)
 - [src/hooks/usePrayerHabits.web.ts](#src-hooks-useprayerhabits-web-ts)
 - [src/hooks/usePrayerTimes.ts](#src-hooks-useprayertimes-ts)
+- [src/hooks/useQadaaTracker.ts](#src-hooks-useqadaatracker-ts)
 - [src/hooks/usePushNotifications.ios.ts](#src-hooks-usepushnotifications-ios-ts)
 - [src/hooks/usePushNotifications.pake.ts](#src-hooks-usepushnotifications-pake-ts)
 - [src/hooks/usePushNotifications.ts](#src-hooks-usepushnotifications-ts)
@@ -4591,6 +4594,21 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`usePrayerTimes`** — Utility function for use prayer times.
 
 **Lines:** 96
+
+---
+
+<a name="src-hooks-useqadaatracker-ts"></a>
+### src/hooks/useQadaaTracker.ts
+
+**File Purpose:** Core business logic and data hook for the Dynamic Qadaa (قضاء الصلوات) module. Manages Fiqh calculations across the 4 Sunni Madhabs, lunar/solar year conversion, user-driven daily commitment $D$, real-time target forecasting, and actual 7-day rolling velocity ($V_{7\text{d}}$).
+
+**Functions & Classes:**
+- `useQadaaTracker` (React Hook)
+- `calculateQadaaBaseline` (Function)
+- `formatDurationFromDays` (Function)
+- `QadaaCalculationParams` (Interface)
+
+**Lines:** ~320
 
 ---
 

@@ -708,6 +708,15 @@ Supabase Edge Functions shall dispatch prayer notifications to all subscribed de
 #### FR-PRAYER-009: Quiet Hours
 Prayer notifications shall respect quiet hours configuration (e.g., no notifications during sleep).
 
+#### FR-PRAYER-010: Dynamic Qadaa Backlog & Dual-Velocity Engine
+The system shall provide a dynamic Qadaa make-up prayer tracking system:
+1. Calculate missed prayers from puberty/takleef through current age based on the 4 Sunni Madhabs (Shafi'i, Maliki, Hanbali, Hanafi) or actual known age of puberty.
+2. Provide precision toggles for Lunar Hijri years (354.37 d/yr) vs Solar years (365.25 d/yr) and Hanafi Witr (6 prayers/day).
+3. Allow user-defined daily capacity commitment ($D$).
+4. Compute and update dynamic multi-year completion dates in real-time.
+5. Provide dual-velocity tracking comparing planned target ETA vs actual 7-day rolling velocity ($V_{7\text{d}}$).
+6. Enable 1-tap full-day batch logging (`+1 يوم كامل`), single-prayer quick actions, and instant undo.
+
 ---
 
 ### 3.12.1 Quran Memorizer & Smart Sheikh Halqah Notes

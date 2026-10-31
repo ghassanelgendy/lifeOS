@@ -12,6 +12,7 @@ import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
 import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
+import { QadaaWidget } from '../components/QadaaWidget';
 import { HabitStatsModal } from '../components/HabitStatsModal';
 import type { Habit, HabitLog, CreateInput, HabitFrequency, HabitType, DetoxMode } from '../types/schema';
 import { supabase } from '../lib/supabase';
@@ -152,6 +153,7 @@ export default function Habits() {
   const habitsPageWidgetOrder = useUIStore((s) => s.pageWidgetOrder.habits);
   const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
   const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
+  const [prayerViewTab, setPrayerViewTab] = useState<'daily' | 'qadaa'>('daily');
 
   useEffect(() => {
     const handleTriggerAddHabit = () => {
@@ -608,26 +610,62 @@ export default function Habits() {
       </div>
       </div>
 
-      {/* Prayer + Prayer Backlog — collapsible; default state from Settings */}
+      {/* Prayer + Prayer Backlog + Qadaa — collapsible; default state from Settings */}
       <div {...getDesktopSectionProps('prayer')}>
       <div className="liquid-glass-card overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setPrayerSectionExpanded((v) => !v)}
-          className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-white/5 transition-colors"
-        >
-          <span className="font-semibold">Prayer tracking</span>
-          {prayerSectionExpanded ? (
-            <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
-          ) : (
-            <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-secondary/20 border-b border-white/10 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setPrayerSectionExpanded((v) => !v)}
+            className="flex items-center gap-2 text-left font-semibold hover:opacity-80 transition"
+          >
+            <span>Prayer & Spiritual tracking</span>
+            {prayerSectionExpanded ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            )}
+          </button>
+
+          {prayerSectionExpanded && (
+            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-white/10 text-xs font-medium">
+              <button
+                type="button"
+                onClick={() => setPrayerViewTab('daily')}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  prayerViewTab === 'daily'
+                    ? 'bg-card text-foreground shadow-sm font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                الصلوات اليومية
+              </button>
+              <button
+                type="button"
+                onClick={() => setPrayerViewTab('qadaa')}
+                className={`px-3 py-1 rounded-lg transition-all ${
+                  prayerViewTab === 'qadaa'
+                    ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                قضاء الفوائت (Qadaa)
+              </button>
+            </div>
           )}
-        </button>
+        </div>
+
         {prayerSectionExpanded && (
-          <div className="px-4 pb-4 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-stretch border-t border-white/10 bg-secondary/5">
-            <CompactPrayerHabit embedded />
-            <PrayerBacklog embedded />
-          </div>
+          prayerViewTab === 'daily' ? (
+            <div className="px-4 pb-4 pt-4 grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-stretch bg-secondary/5">
+              <CompactPrayerHabit embedded />
+              <PrayerBacklog embedded />
+            </div>
+          ) : (
+            <div className="p-4 bg-transparent">
+              <QadaaWidget />
+            </div>
+          )
         )}
       </div>
       </div>

@@ -55,7 +55,7 @@ begin
     and table_name = 'habit_logs' 
     and column_name = 'note'
   ) then
-    alter table public.habit_logs add column note text;
+    alter table public.habit_logs add column if not exists note text;
   end if;
 end $$;
 

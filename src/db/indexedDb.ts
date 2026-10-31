@@ -3,7 +3,7 @@
 // No deprecated WebSQL / appCache — only modern IndexedDB APIs.
 
 const DB_NAME = 'lifeos-indexeddb';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 const STORES = {
   tasks: 'tasks',
@@ -26,6 +26,8 @@ const STORES = {
   quranPages: 'quran_pages',
   azkarFavorites: 'azkar_favorites',
   azkarDailyLogs: 'azkar_daily_logs',
+  qadaaSettings: 'qadaa_settings',
+  qadaaLogs: 'qadaa_logs',
 } as const;
 
 type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -108,6 +110,12 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.azkarDailyLogs)) {
         db.createObjectStore(STORES.azkarDailyLogs, { keyPath: 'date' });
+      }
+      if (!db.objectStoreNames.contains(STORES.qadaaSettings)) {
+        db.createObjectStore(STORES.qadaaSettings, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(STORES.qadaaLogs)) {
+        db.createObjectStore(STORES.qadaaLogs, { keyPath: 'id' });
       }
     };
 

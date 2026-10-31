@@ -17,6 +17,7 @@ import {
   Sparkles,
   BookOpen,
   Sun,
+  Compass,
 } from 'lucide-react';
 
 export interface NavItem {
@@ -30,6 +31,7 @@ export const NAV_ITEMS: NavItem[] = [
   { label: 'Tasks', icon: CheckSquare, href: '/tasks' },
   { label: 'Quran', icon: BookOpen, href: '/quran' },
   { label: 'Azkar', icon: Sun, href: '/azkar' },
+  { label: 'Qadaa', icon: Compass, href: '/qadaa' },
   { label: 'Weekly Planner', icon: CalendarDays, href: '/weekly-planner' },
   { label: 'Focus', icon: FocusIcon, href: '/focus' },
   { label: 'Habits', icon: Target, href: '/habits' },

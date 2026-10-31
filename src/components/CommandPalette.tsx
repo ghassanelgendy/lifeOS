@@ -17,6 +17,7 @@ import {
   BarChart3,
   Brain,
   Sparkles,
+  Compass,
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { resolveEffectiveTheme } from '../lib/theme';
@@ -162,6 +163,13 @@ export function CommandPalette() {
             >
               <Sparkles className="mr-2 h-4 w-4" />
               <span>Azkar (الأذكار)</span>
+            </Command.Item>
+            <Command.Item
+              onSelect={() => runCommand(() => navigate('/qadaa'))}
+              className="group relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none aria-selected:bg-accent aria-selected:text-accent-foreground"
+            >
+              <Compass className="mr-2 h-4 w-4" />
+              <span>قضاء الصلوات (Qadaa Prayers)</span>
             </Command.Item>
             <Command.Item
               onSelect={() => runCommand(() => navigate('/health'))}

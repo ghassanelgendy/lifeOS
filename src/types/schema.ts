@@ -471,3 +471,46 @@ export interface CustomReward {
   icon?: string | null;
   created_at: string;
 }
+
+
+// ========================
+// Qadaa Prayers Backlog
+// ========================
+export type QadaaMadhab = 'shafii' | 'maliki' | 'hanbali' | 'hanafi' | 'custom';
+export type QadaaCalculationBasis = 'actual_age' | 'jumhur_15' | 'madhab_minimum' | 'custom_date';
+
+export interface QadaaSettings {
+  id: string;
+  user_id: string;
+  madhab: QadaaMadhab;
+  calculation_basis: QadaaCalculationBasis;
+  birth_date?: string | null;
+  takleef_age: number;
+  current_age: number;
+  is_lunar_calendar: boolean;
+  include_witr: boolean;
+  target_fajr: number;
+  target_dhuhr: number;
+  target_asr: number;
+  target_maghrib: number;
+  target_isha: number;
+  target_witr: number;
+  daily_target_prayers: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QadaaLog {
+  id: string;
+  user_id: string;
+  date: string;
+  fajr_count: number;
+  dhuhr_count: number;
+  asr_count: number;
+  maghrib_count: number;
+  isha_count: number;
+  witr_count: number;
+  created_at: string;
+  updated_at: string;
+}

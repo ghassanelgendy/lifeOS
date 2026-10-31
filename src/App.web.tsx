@@ -45,6 +45,7 @@ import { useDailyPointsSync } from './hooks/usePoints';
 import Landing from './routes/Landing';
 import QuranRoute from './routes/Quran';
 import Azkar from './routes/Azkar';
+import Qadaa from './routes/Qadaa';
 import './App.css';
 
 const persister = createSyncStoragePersister({
@@ -445,6 +446,7 @@ function AppInner() {
               <Route path="tasks" element={<Tasks />} />
               <Route path="quran" element={<QuranRoute />} />
               <Route path="azkar" element={<Azkar />} />
+              <Route path="qadaa" element={<Qadaa />} />
               <Route path="weekly-planner" element={<WeeklyPlanner />} />
               <Route path="focus" element={<Focus />} />
               <Route path="health" element={<Health />} />
