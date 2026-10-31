@@ -26,7 +26,12 @@
     "typecheck": "node scripts/typecheck.mjs",
     "typecheck:raw": "node scripts/typecheck.mjs --raw",
     "typecheck:baseline": "node scripts/typecheck.mjs --update",
-    "icons:apple": "node scripts/generate-apple-touch-icons.mjs"
+    "icons:apple": "node scripts/generate-apple-touch-icons.mjs",
+    "mcp:analytics": "bash scripts/run-google-analytics-mcp.sh",
+    "analytics:setup": "bash tools/google-analytics-mcp/setup.sh",
+    "analytics:test": "python3 scripts/test-google-analytics-mcp.py",
+    "analytics:query": "node scripts/query-google-analytics.mjs",
+    "analytics:link": "bash -c 'tools/google-analytics-mcp/.venv/bin/python scripts/setup-ga4-property.py'"
   },
   "dependencies": {
     "@blobatar/react": "^2.7.0",

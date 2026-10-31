@@ -125,6 +125,7 @@ Built with a modern, high-performance, and scalable stack:
 - **Serverless Power:** Supabase Edge Functions (`supabase/functions/`) & Vercel API routes (`api/`)
 - **Deployment:** Vercel (`vercel.json`)
 - **Offline / PWA:** `src/sw.ts` + `vite-plugin-pwa`
+- **Model Context Protocol (MCP):** Native MCP server integration with Google Analytics 4 (`tools/google-analytics-mcp`) and Supabase for AI agents and telemetry querying
 
 ---
 

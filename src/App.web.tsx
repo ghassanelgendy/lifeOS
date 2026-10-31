@@ -21,6 +21,7 @@ import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FaviconSync } from './components/FaviconSync';
+import { GoogleAnalyticsTracker } from './components/GoogleAnalyticsTracker';
 import { LoadingScreen } from './components/LoadingScreen';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
@@ -434,6 +435,7 @@ function AppInner() {
       <Analytics />
       <Router>
         <FaviconSync />
+        <GoogleAnalyticsTracker />
         <Routes>
           <Route path="/" element={<PublicHome />} />
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />

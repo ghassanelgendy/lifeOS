@@ -275,6 +275,18 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Suggestions engine: Pattern-based recommendations
 - Day details modal: Click any chart day for full breakdown
 
+#### 5.12.1 Google Analytics MCP Server Integration
+**Purpose:** Expose real-time product telemetry, user acquisition, and traffic analytics to AI agents and development workflows via the official Google Analytics Model Context Protocol (MCP) server.
+
+- **Embedded Tooling:** Cloned and installed official `googleanalytics/google-analytics-mcp` inside `tools/google-analytics-mcp/` with dedicated Python 3.12 virtual environment and automated setup script (`pnpm analytics:setup`).
+- **Standardized Server Runner:** `scripts/run-google-analytics-mcp.sh` sources environment variables, handles relative credential file paths, and manages stdio execution with fallback paths.
+- **MCP Client Diagnostic & Query CLI:** `scripts/test-google-analytics-mcp.py` provides automated JSON-RPC handshake verification; `scripts/query-google-analytics.mjs` allows querying real-time visitors, 30-day traffic, and account metadata directly via `pnpm analytics:query`.
+- **Cross-Agent Availability:** Configured in project `.mcp.json` (for Claude Code, Cursor, Windsurf) and machine-level `~/.gemini/config/mcp_config.json` (for Antigravity AI).
+- **Core MCP Tools:** `get_account_summaries`, `get_property_details`, `list_google_ads_links`, `list_property_annotations`, `get_custom_dimensions_and_metrics`, `run_report`, `run_realtime_report`, `run_funnel_report`, `run_conversions_report`, and `create_property_annotation` (with `--allow-write`).
+- **Deep Frontend SPA Telemetry (`G-E33S655RMQ`):** Embedded global Google tag (`gtag.js`) in `index.html`, synchronized with React Router via `<GoogleAnalyticsTracker />` in `src/App.web.tsx` for client-side route transitions, and user ID binding via `useAuth()`.
+- **Domain Event Helpers (`src/lib/gtag.ts`):** Standardized, typed telemetry for task creations, task completions, habit streaks, focus sessions, prayer fulfillment, and financial transactions.
+- **Automated Property Linking & Provisioning:** `scripts/setup-ga4-property.py` (`pnpm analytics:link`) scans local credentials JSON, resolves the property matching `G-E33S655RMQ`, and supports programmatically creating new GA4 properties and web data streams (`--create`).
+
 ### 5.13 Quran Memorizer, Khatmah Planner & Smart Sheikh Halqah Notes
 **Purpose:** Manage Quran memorization, daily reading wirds, revision schedules, and smart Sheikh recitation session notes.
 

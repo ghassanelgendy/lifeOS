@@ -6,6 +6,7 @@ import type { Transaction, CreateInput, UpdateInput } from '../types/schema';
 import { round1 } from '../lib/utils';
 import { useAuth } from './useAuth';
 import { idbSaveTransactions, idbGetTransactions } from '../db/indexedDb';
+import { trackTransactionLogged } from '../lib/gtag';
 
 const TRANSACTIONS_KEY = ['transactions'];
 
@@ -147,6 +148,7 @@ export function useCreateTransaction() {
         const next = [optimistic, ...prev];
         queryClient.setQueryData(key, next);
         void idbSaveTransactions(next);
+        trackTransactionLogged({ type: input.type as any, category: input.category || undefined, amount: Number(input.amount) });
         return optimistic;
       }
 
@@ -157,6 +159,7 @@ export function useCreateTransaction() {
       const next = [created, ...prev];
       queryClient.setQueryData(key, next);
       void idbSaveTransactions(next);
+      trackTransactionLogged({ type: created.type as any, category: created.category || undefined, amount: Number(created.amount) });
       return created;
     },
     onSuccess: () => {

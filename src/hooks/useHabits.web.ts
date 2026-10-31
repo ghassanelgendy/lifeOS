@@ -11,6 +11,7 @@ import { idbAddPointsTransaction, idbSaveHabits, idbGetHabits, idbSaveHabitLogs,
 import { getPointsConfig, isDateEligibleForPoints } from './usePoints';
 import { advanceWirdOnHabitComplete } from '../../lib/quran-memorizer/src/services/quranData';
 import { v4 as uuidv4 } from 'uuid';
+import { trackHabitLogged } from '../lib/gtag';
 
 const HABITS_KEY = ['habits'];
 const HABIT_LOGS_KEY = ['habit-logs'];
@@ -490,6 +491,9 @@ export function useLogHabit() {
           .single();
         if (error) throw error;
         result = data;
+      }
+      if (completed) {
+        trackHabitLogged({ id: habitId });
       }
       return result as HabitLog;
     },

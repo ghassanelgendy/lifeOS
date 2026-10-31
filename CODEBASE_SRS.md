@@ -1114,6 +1114,9 @@ The system shall generate secure tokenized URLs for iCal calendar feeds.
 #### FR-DL-010: Automated Task Creation Webhook Integration
 Supabase Edge Function (`create-task`) shall accept automated POST requests from iOS Mail Automations, Apple Shortcuts, and external webhooks to create tasks with intelligent parsing of subject, body, due date/time, priorities, lists, subtasks, and tags.
 
+#### FR-DL-011: Google Analytics Model Context Protocol (MCP) & Deep Telemetry Integration
+The system shall support the official Google Analytics Model Context Protocol server (`googleanalytics/google-analytics-mcp`), exposing Google Analytics 4 Admin and Data API tools over standard input/output (stdio JSON-RPC). The system shall provide automated environment isolation (`tools/google-analytics-mcp/.venv`), automated setup (`tools/google-analytics-mcp/setup.sh`), environment variable resolution (`scripts/run-google-analytics-mcp.sh`), protocol diagnostics (`scripts/test-google-analytics-mcp.py`), and a CLI query client (`scripts/query-google-analytics.mjs`) compatible with Antigravity, Claude Code, and Cursor. Furthermore, the web application shall deeply integrate Google Analytics 4 (`G-E33S655RMQ`) via `gtag.js` in `index.html`, automated client-side route transition tracking via `<GoogleAnalyticsTracker />`, user ID session attribution via `useAuth()`, domain event helpers in `src/lib/gtag.ts`, and automated credentials linking and property provisioning via `scripts/setup-ga4-property.py` (`pnpm analytics:link`).
+
 #### FR-TOUR-001: Introductory Feature Tour & Interactive Tips
 The application shall provide an onboarding tour using `react-joyride` that activates automatically on first launch (`hasCompletedTour === false`). The tour shall sequentially spotlight:
 1. 24-hour day progress timeline (`[data-tour="day-progress"]`)

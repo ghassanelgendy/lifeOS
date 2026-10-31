@@ -7,6 +7,7 @@ import { useAuth } from './useAuth';
 import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } from '../types/schema';
 import { idbSaveTasks, idbSaveTaskLists, idbSaveTags, idbGetTasks, idbAddPointsTransaction } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints, isTaskCompletedOnTime } from './usePoints';
+import { trackTaskCreated, trackTaskCompleted } from '../lib/gtag';
 
 const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
@@ -435,6 +436,7 @@ export function useCreateTask() {
         addToOfflineQueue({ entity: 'tasks', op: 'create', payload: optimistic as unknown as Record<string, unknown> });
         // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
         if (!skipInvalidate) void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+        trackTaskCreated({ priority: optimistic.priority, list: optimistic.list_id || undefined, hasDue: !!optimistic.due_date });
         return optimistic;
       }
 
@@ -473,6 +475,7 @@ export function useCreateTask() {
       await idbSaveTasks([...existing, ...createdTasks]);
       // Ensure any filtered task lists (today/week/upcoming/etc) refresh immediately.
       if (!skipInvalidate) void queryClient.invalidateQueries({ queryKey: TASKS_KEY });
+      trackTaskCreated({ priority: created.priority, list: created.list_id || undefined, hasDue: !!created.due_date });
 
       return created;
     },
@@ -899,6 +902,10 @@ export function useToggleTask() {
           return list;
         });
 
+        if (newCompleted) {
+          trackTaskCompleted({ priority: task.priority });
+        }
+
         return { ...task, ...payload } as Task;
       }
 
@@ -996,6 +1003,10 @@ export function useToggleTask() {
       }
 
       void syncTaskCompletionToLinkedNote(updatedTask, newCompleted);
+
+      if (newCompleted) {
+        trackTaskCompleted({ priority: updatedTask.priority });
+      }
 
       return updatedTask;
     },

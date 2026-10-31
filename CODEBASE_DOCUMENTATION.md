@@ -101,6 +101,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ### docs
 - [docs/CRON.md](#docs-cron-md)
+- [docs/GOOGLE_ANALYTICS_MCP.md](#docs-google-analytics-mcp-md)
 - [docs/PRD.md](#docs-prd-md)
 - [docs/README.md](#docs-readme-md)
 
@@ -230,7 +231,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [scripts/pake-inject.js](#scripts-pake-inject-js)
 - [scripts/patch-pake-config.js](#scripts-patch-pake-config-js)
 - [scripts/patch-pake-desktop.js](#scripts-patch-pake-desktop-js)
+- [scripts/query-google-analytics.mjs](#scripts-query-google-analytics-mjs)
+- [scripts/run-google-analytics-mcp.sh](#scripts-run-google-analytics-mcp-sh)
+- [scripts/setup-ga4-property.py](#scripts-setup-ga4-property-py)
+- [scripts/test-google-analytics-mcp.py](#scripts-test-google-analytics-mcp-py)
 - [scripts/tsconfig.json](#scripts-tsconfig-json)
+
+### tools/google-analytics-mcp
+- [tools/google-analytics-mcp/setup.sh](#tools-google-analytics-mcp-setup-sh)
 
 ### scripts/src
 - [scripts/src/hello.ts](#scripts-src-hello-ts)
@@ -280,6 +288,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/FinanceHeroCard.web.tsx](#src-components-financeherocard-web-tsx)
 - [src/components/FocusPiPWindow.tsx](#src-components-focuspipwindow-tsx)
 - [src/components/FocusSessionManager.tsx](#src-components-focussessionmanager-tsx)
+- [src/components/GoogleAnalyticsTracker.tsx](#src-components-googleanalyticstracker-tsx)
 - [src/components/HabitStatsModal.tsx](#src-components-habitstatsmodal-tsx)
 - [src/components/KeyboardShortcutsModal.tsx](#src-components-keyboardshortcutsmodal-tsx)
 - [src/components/LinuxTitleBar.tsx](#src-components-linuxtitlebar-tsx)
@@ -416,6 +425,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/lib/attachments.ts](#src-lib-attachments-ts)
 - [src/lib/calendarExport.ts](#src-lib-calendarexport-ts)
 - [src/lib/focusSessionEvents.ts](#src-lib-focussessionevents-ts)
+- [src/lib/gtag.ts](#src-lib-gtag-ts)
 - [src/lib/icalSubscribe.ts](#src-lib-icalsubscribe-ts)
 - [src/lib/listIdFromTagIds.ts](#src-lib-listidfromtagids-ts)
 - [src/lib/logger.ts](#src-lib-logger-ts)
@@ -1204,6 +1214,17 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (Markdown documentation)
 
 **Lines:** 105
+
+---
+
+<a name="docs-google-analytics-mcp-md"></a>
+### docs/GOOGLE_ANALYTICS_MCP.md
+
+**File Purpose:** Architectural and operational guide for the official Google Analytics Model Context Protocol (MCP) server integration in lifeOS. Details installation, tools reference, authentication options (Service Account, ADC), and usage guides for Antigravity, Claude Code, and CLI querying.
+
+**Functions & Classes:** None (Markdown documentation)
+
+**Lines:** 115
 
 ---
 
@@ -2262,6 +2283,67 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="scripts-query-google-analytics-mjs"></a>
+### scripts/query-google-analytics.mjs
+
+**File Purpose:** Command-line query client for interacting with Google Analytics via the project's Model Context Protocol (MCP) server. Implements a lightweight stdio JSON-RPC MCP client to inspect available tools, query account summaries, run 30-day traffic reports, and monitor real-time users.
+
+**Functions & Classes:**
+- `McpClient` (Class) — Manages stdio subprocess lifecycle, JSON-RPC message exchange, initialization handshake, and tool invocation.
+- `main` (Async Function) — CLI dispatcher supporting `tools`, `accounts`, `property`, `report`, and `realtime` commands.
+
+**Lines:** 165
+
+---
+
+<a name="scripts-run-google-analytics-mcp-sh"></a>
+### scripts/run-google-analytics-mcp.sh
+
+**File Purpose:** Primary executable runner for the Google Analytics MCP server. Dynamically sources `.env` and `.env.local`, auto-detects root credentials JSON (`service-account.json`, `credentials.json`), resolves relative credential paths, detects the local Python 3.12 virtual environment, and executes `analytics-mcp`.
+
+**Functions & Classes:** None (Bash script)
+
+**Lines:** 53
+
+---
+
+<a name="scripts-setup-ga4-property-py"></a>
+### scripts/setup-ga4-property.py
+
+**File Purpose:** Automated property locator and provisioning script for Google Analytics 4. Auto-detects local credential JSON files, connects via Google Analytics Admin API, searches accounts for the property matching measurement ID `G-E33S655RMQ`, writes configurations to `.env`, and supports automated property and web stream creation (`--create`).
+
+**Functions & Classes:**
+- `find_credentials_file` (Function) — Scans for service account and OAuth credential files.
+- `update_env_file` (Function) — Persists Google Cloud project, GA4 property ID, and measurement ID to `.env`.
+- `main` (Function) — Executes account traversal, stream identification, and provisioning logic.
+
+**Lines:** 152
+
+---
+
+<a name="scripts-test-google-analytics-mcp-py"></a>
+### scripts/test-google-analytics-mcp.py
+
+**File Purpose:** Automated diagnostics and testing script for the Google Analytics MCP server. Launches the server over stdio, validates JSON-RPC protocol compliance, checks Google Cloud credential configuration, and prints discovered MCP tools and schemas.
+
+**Functions & Classes:**
+- `main` (Function) — Performs end-to-end handshake, notifications exchange, and tool listing validation.
+
+**Lines:** 95
+
+---
+
+<a name="tools-google-analytics-mcp-setup-sh"></a>
+### tools/google-analytics-mcp/setup.sh
+
+**File Purpose:** Environment initialization script for the cloned Google Analytics MCP server repository in `tools/google-analytics-mcp/`. Automates virtualenv creation (Python 3.12 via `uv` or `python3`) and installs the server in editable mode.
+
+**Functions & Classes:** None (Bash script)
+
+**Lines:** 30
+
+---
+
 <a name="src-app-css"></a>
 ### src/App.css
 
@@ -2828,6 +2910,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`FocusSessionManager`** — Utility function for focus session manager.
 
 **Lines:** 136
+
+---
+
+<a name="src-components-googleanalyticstracker-tsx"></a>
+### src/components/GoogleAnalyticsTracker.tsx
+
+**File Purpose:** Headless Google Analytics 4 tracking component mounted inside `<Router>`. Monitors SPA route transitions via `useLocation()` to send `page_view` events for all lifeOS pages and synchronizes authenticated user IDs from `useAuth()` to `gtag.js`.
+
+**Functions & Classes:**
+- `GoogleAnalyticsTracker` (Function) — React component observing route location and auth state.
+
+**Lines:** 28
 
 ---
 
@@ -5297,6 +5391,28 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`onFocusManualRecord`** — Utility function for on focus manual record.
 
 **Lines:** 13
+
+---
+
+<a name="src-lib-gtag-ts"></a>
+### src/lib/gtag.ts
+
+**File Purpose:** Typed client-side Google Analytics 4 (`gtag.js`) library. Wraps the global `dataLayer` and `window.gtag` functions defensively, handles route transition pageviews, user ID binding, and domain-specific telemetry for tasks, habits, focus sessions, prayers, transactions, and notes.
+
+**Functions & Classes:**
+- `gtag` (Function) — Defensive wrapper for `window.gtag`.
+- `trackPageView` (Function) — Dispatches pageview events with path and document title.
+- `trackEvent` (Function) — Dispatches custom GA4 events with parameters.
+- `setUserId` (Function) — Binds or unbinds user ID to active GA session.
+- `trackTaskCreated` (Function) — Tracks task creation with priority and due date presence.
+- `trackTaskCompleted` (Function) — Tracks task completion events.
+- `trackHabitLogged` (Function) — Logs habit completion with streak status.
+- `trackFocusSession` (Function) — Logs focus session completion and duration.
+- `trackPrayerLogged` (Function) — Logs prayer fulfillment events.
+- `trackTransactionLogged` (Function) — Logs financial activity by type and category.
+- `trackNoteCreated` (Function) — Logs note creation and attachment presence.
+
+**Lines:** 98
 
 ---
 
