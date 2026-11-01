@@ -132,7 +132,7 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
             container.removeEventListener('touchmove', handleTouchMove);
             container.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [startY, pullDistance, isRefreshing, refresh]);
+    }, [startY, pullDistance, isRefreshing, refresh, location.pathname]);
 
     // Calculate scale and rotation based on pull distance
     const pullRatio = Math.min(pullDistance / THRESHOLD, 1);

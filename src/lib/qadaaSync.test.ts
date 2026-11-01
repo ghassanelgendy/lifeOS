@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   detectQadaaPrayerFromTaskTitle,
-  PRAYER_KEY_MAP,
   ARABIC_PRAYER_NAMES,
   QADAA_HABIT_TITLE,
 } from './qadaaSync';

@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Image as ImageIcon, X, Loader2, ExternalLink, Paperclip } from 'lucide-react';
+import { Image as ImageIcon, X, Loader2, ExternalLink } from 'lucide-react';
 import type { MediaAttachment } from '../types/schema';
 import { uploadAttachment, validateImageFile } from '../lib/attachments';
 import { cn } from '../lib/utils';

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Loader2, Columns3, Search, X, CheckSquare, ListFilter, FolderInput } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Loader2, Columns3, Search, X, CheckSquare, FolderInput } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -58,7 +58,6 @@ const WEEKDAY_OPTIONS = [
 ];
 
 const isHabitTaskId = (id: unknown): boolean => typeof id === 'string' && id.startsWith('habit-');
-const isHabitTask = (t: unknown): boolean => Boolean(t && typeof (t as any).id === 'string' && (t as any).id.startsWith('habit-'));
 
 // Build a Date from due_date + due_time (DB may return due_time as "14:30:00"; avoid "T14:30:00:00")
 function parseDueDateTime(dateStr: unknown, timeStr: unknown): Date {
@@ -258,7 +257,6 @@ export default function Tasks() {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
   const [isBatchProcessing, setIsBatchProcessing] = useState(false);
-  const [batchMoveListId, setBatchMoveListId] = useState<string | null>(null);
   const [isBatchMoveOpen, setIsBatchMoveOpen] = useState(false);
   const [isBatchTagOpen, setIsBatchTagOpen] = useState(false);
   const [isBatchDeleteConfirmOpen, setIsBatchDeleteConfirmOpen] = useState(false);

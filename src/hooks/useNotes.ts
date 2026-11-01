@@ -114,7 +114,7 @@ export function useCreateNote() {
           .single();
         if (error) throw error;
         return data as Note;
-      } catch (err) {
+      } catch {
         addToOfflineQueue({ entity: 'notes', op: 'create', payload });
         queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) => [payload as Note, ...(old ?? [])]);
         return payload as Note;
@@ -154,7 +154,7 @@ export function useUpdateNote() {
         const { data: updated, error } = await q.select().single();
         if (error) throw error;
         return updated as Note;
-      } catch (err) {
+      } catch {
         addToOfflineQueue({ entity: 'notes', op: 'update', id, payload: normalized });
         queryClient.setQueryData([...NOTES_KEY, user?.id], (old: Note[] | undefined) =>
           (old ?? []).map((n) => (n.id === id ? { ...n, ...normalized, updated_at: new Date().toISOString() } : n))

@@ -166,7 +166,10 @@ export function useQadaaTracker() {
     enabled: !!user?.id,
   });
 
-  const totals = allTimeTotals || { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0, total: 0 };
+  const totals = useMemo(
+    () => allTimeTotals || { fajr: 0, dhuhr: 0, asr: 0, maghrib: 0, isha: 0, witr: 0, total: 0 },
+    [allTimeTotals]
+  );
 
   // 4. Today's log
   const todayLog = useMemo(() => {

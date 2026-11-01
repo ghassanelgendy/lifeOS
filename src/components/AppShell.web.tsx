@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles, Brain } from 'lucide-react';
+import { Menu, X, Sparkles, Brain } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';

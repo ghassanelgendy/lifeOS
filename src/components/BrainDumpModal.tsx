@@ -21,6 +21,20 @@ interface BrainDumpModalProps {
   initialTab?: 'capture' | 'inbox' | 'plan' | 'all';
 }
 
+const normalizeTitle = (t: string) =>
+  (t || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF\s]/g, '').replace(/\s+/g, ' ').trim();
+
+const isSimilarTitle = (a: string, b: string) => {
+  const normA = normalizeTitle(a);
+  const normB = normalizeTitle(b);
+  if (normA === normB) return true;
+  const wordsA = normA.split(' ').filter((w) => w.length > 2);
+  const wordsB = normB.split(' ').filter((w) => w.length > 2);
+  if (wordsA.length === 0 || wordsB.length === 0) return false;
+  const matchCount = wordsA.filter((w) => wordsB.includes(w)).length;
+  return matchCount / Math.max(wordsA.length, wordsB.length) >= 0.6;
+};
+
 export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote, initialTab }: BrainDumpModalProps) {
   const { data: allNotes = [] } = useNotes();
   const { data: noteFolders = [] } = useNoteFolders();
@@ -106,19 +120,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
     }
   };
 
-  const normalizeTitle = (t: string) =>
-    (t || '').toLowerCase().replace(/[^a-z0-9\u0600-\u06FF\s]/g, '').replace(/\s+/g, ' ').trim();
 
-  const isSimilarTitle = (a: string, b: string) => {
-    const normA = normalizeTitle(a);
-    const normB = normalizeTitle(b);
-    if (normA === normB) return true;
-    const wordsA = normA.split(' ').filter((w) => w.length > 2);
-    const wordsB = normB.split(' ').filter((w) => w.length > 2);
-    if (wordsA.length === 0 || wordsB.length === 0) return false;
-    const matchCount = wordsA.filter((w) => wordsB.includes(w)).length;
-    return matchCount / Math.max(wordsA.length, wordsB.length) >= 0.6;
-  };
 
   const allBrainDumpTasks = useMemo<AggregatedBrainDumpTask[]>(() => {
     const items: AggregatedBrainDumpTask[] = [];

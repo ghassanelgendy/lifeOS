@@ -58,7 +58,6 @@ const WEEKDAY_OPTIONS = [
 ];
 
 const isHabitTaskId = (id: unknown): boolean => typeof id === 'string' && id.startsWith('habit-');
-const isHabitTask = (t: unknown): boolean => Boolean(t && typeof (t as any).id === 'string' && (t as any).id.startsWith('habit-'));
 
 // Build a Date from due_date + due_time (DB may return due_time as "14:30:00"; avoid "T14:30:00:00")
 function parseDueDateTime(dateStr: unknown, timeStr: unknown): Date {

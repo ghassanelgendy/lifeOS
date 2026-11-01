@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  Sparkles,
   Search,
   Bookmark,
   RotateCcw,

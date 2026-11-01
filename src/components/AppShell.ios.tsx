@@ -1,4 +1,4 @@
-import { Menu, X, Settings, Sparkles, Plus, Brain, Wallet, Calendar, Flame } from 'lucide-react';
+import { Menu, X, Sparkles, Plus, Brain, Wallet, Calendar, Flame } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../lib/utils';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';

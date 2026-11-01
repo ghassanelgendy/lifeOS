@@ -23,7 +23,7 @@ export function gtag(...args: any[]) {
     window.gtag(...args);
   } else if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push(arguments);
+    window.dataLayer.push(args);
   }
 }
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Button, Input } from '../components/ui';
-import { Loader2, Mail, CheckCircle2, ShieldCheck, WifiOff, Zap } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, ShieldCheck, Zap } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 function GoogleIcon({ className }: { className?: string }) {
@@ -28,7 +28,7 @@ function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
 }
 
 export default function Signup() {
-  const { signUp, signInWithGoogle, continueOffline, isOffline } = useAuth();
+  const { signUp, signInWithGoogle, continueOffline } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
