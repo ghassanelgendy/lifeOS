@@ -192,38 +192,38 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
         <div className="p-5 overflow-y-auto space-y-6">
           {/* Top Metric Cards */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 border border-amber-500/20 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center text-amber-500 mb-1">
-                <Flame className="w-5 h-5" />
+            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center text-muted-foreground mb-1">
+                <Flame className="w-4 h-4 text-amber-500" />
               </div>
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold tabular-nums text-foreground">
                 {stats.currentStreak}
               </div>
-              <div className="text-[11px] font-medium text-muted-foreground">
+              <div className="text-[11px] font-medium text-muted-foreground mt-0.5">
                 Current Streak
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-500/10 to-indigo-500/10 border border-purple-500/20 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center text-purple-500 mb-1">
-                <Trophy className="w-5 h-5" />
+            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center text-muted-foreground mb-1">
+                <Trophy className="w-4 h-4 text-primary" />
               </div>
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold tabular-nums text-foreground">
                 {stats.bestStreak}
               </div>
-              <div className="text-[11px] font-medium text-muted-foreground">
+              <div className="text-[11px] font-medium text-muted-foreground mt-0.5">
                 Best Streak
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center text-emerald-500 mb-1">
-                <CheckCircle2 className="w-5 h-5" />
+            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 text-center">
+              <div className="flex items-center justify-center text-muted-foreground mb-1">
+                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               </div>
-              <div className="text-2xl font-bold text-foreground">
+              <div className="text-2xl font-bold tabular-nums text-foreground">
                 {isLoading ? '...' : stats.totalCompletions}
               </div>
-              <div className="text-[11px] font-medium text-muted-foreground">
+              <div className="text-[11px] font-medium text-muted-foreground mt-0.5">
                 Total Check-ins
               </div>
             </div>

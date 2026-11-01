@@ -741,10 +741,9 @@ export function AppShell() {
         {/* Wrap Toast Notification */}
         {activeToast && (
           <div className="fixed bottom-[calc(100px+env(safe-area-inset-bottom))] md:bottom-6 right-4 left-4 md:left-auto md:w-96 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-300">
-            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-xl p-4 shadow-2xl flex gap-3.5 items-start">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/5 to-transparent pointer-events-none" />
+            <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 shadow-xl flex gap-3.5 items-start">
               <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0 relative">
-                <Sparkles size={20} className="animate-pulse" />
+                <Sparkles size={18} />
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-sm text-foreground">

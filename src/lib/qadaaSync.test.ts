@@ -37,4 +37,16 @@ describe('qadaaSync - Task Title Detection & Constants', () => {
     });
     expect(QADAA_HABIT_TITLE).toBe('قضاء الصلوات اليومية');
   });
+
+  it('handles invalid user or prayer name gracefully in syncQadaaTargetOnMissedPrayer', async () => {
+    const { syncQadaaTargetOnMissedPrayer } = await import('./qadaaSync');
+    const res1 = await syncQadaaTargetOnMissedPrayer('', 'Fajr', null, 'Missed');
+    expect(res1).toBe(0);
+
+    const res2 = await syncQadaaTargetOnMissedPrayer('u1', 'Unknown', null, 'Missed');
+    expect(res2).toBe(0);
+
+    const res3 = await syncQadaaTargetOnMissedPrayer('u1', 'Fajr', 'Prayed', 'Late');
+    expect(res3).toBe(0);
+  });
 });

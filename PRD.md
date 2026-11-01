@@ -256,6 +256,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
   - **Dual-Velocity Forecasting:** Real-time side-by-side comparison of planned target finish date vs. actual 7-day rolling velocity ($V_{7\text{d}}$) with schedule delta indicators (ahead/behind).
   - **Direct Inline Qadaa Logging:** 1-tap `+1 قضاء` action embedded in daily prayer cards (`CompactPrayerHabit`), eliminating context switching.
   - **Automated Habit Synchronization:** Auto-creates and automatically counts towards the daily "قضاء الصلوات اليومية" habit when daily target pace is reached.
+  - **Auto-Increment on Missed/Skipped Prayers:** Any daily prayer marked as Missed or Skipped in the daily tracker automatically increments the user's Qadaa target backlog (+1 owed prayer), and decrements when marked as Prayed/Late.
   - **Task Push & Completion Sync:** 1-tap generation of daily Qadaa tasks into Today's task list; completing a Qadaa task automatically increments the corresponding Qadaa prayer count and updates velocity in real time.
   - **Anti-Slop Modern UI/UX:** Flat, calm surfaces with 1px borders, large tabular numbers, zero rainbow gradients or emoji badges, and ergonomic tactile steppers.
   - **Fast Multi-Prayer Actions:** Single-tap `+1 يوم كامل` batch logging, individual prayer `+1` / `+5`, and instant undo.

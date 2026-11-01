@@ -50,16 +50,6 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
 
   return (
     <div className={cn(cardStyle, 'relative overflow-hidden group h-full flex flex-col justify-between', className)}>
-      {/* Subtle background decorative ornament */}
-      <div 
-        className="pointer-events-none absolute -left-6 -top-6 size-28 rounded-full bg-emerald-500/5 blur-2xl dark:bg-emerald-400/10" 
-        aria-hidden="true" 
-      />
-      <div 
-        className="pointer-events-none absolute -right-6 -bottom-6 size-28 rounded-full bg-amber-500/5 blur-2xl dark:bg-amber-400/10" 
-        aria-hidden="true" 
-      />
-
       <div>
         {/* Header bar */}
         <div className="flex items-center justify-between gap-2 mb-3 border-b border-border/30 pb-2.5">

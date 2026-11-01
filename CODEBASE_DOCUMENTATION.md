@@ -4717,6 +4717,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `syncQadaaHabitProgress` (Function)
 - `pushQadaaTasksForToday` (Function)
 - `syncQadaaFromTaskToggle` (Function)
+- `syncQadaaTargetOnMissedPrayer` (Function)
 
 **Lines:** ~280
 

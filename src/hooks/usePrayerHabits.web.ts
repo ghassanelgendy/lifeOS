@@ -10,6 +10,7 @@ import { isOnline } from '../lib/offlineSync';
 import { idbAddPointsTransaction, idbSavePrayerHabits, idbGetPrayerHabits, idbSavePrayerLogs, idbGetPrayerLogs } from '../db/indexedDb';
 import { isDateEligibleForPoints } from './usePoints';
 import { v4 as uuidv4 } from 'uuid';
+import { syncQadaaTargetOnMissedPrayer } from '../lib/qadaaSync';
 
 
 const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
@@ -469,6 +470,14 @@ export function usePrayerTracker(date: Date = new Date()) {
             oldStatus,
             null
           );
+          if (oldStatus === 'Missed' || oldStatus === 'Skipped') {
+            void syncQadaaTargetOnMissedPrayer(
+              user.id,
+              input.prayer.prayerName,
+              oldStatus,
+              'Prayed'
+            );
+          }
         }
 
         return;
@@ -488,6 +497,12 @@ export function usePrayerTracker(date: Date = new Date()) {
           user.id,
           result.habitTitle,
           input.prayer.prayerHabitId,
+          result.oldStatus,
+          input.status
+        );
+        void syncQadaaTargetOnMissedPrayer(
+          user.id,
+          input.prayer.prayerName,
           result.oldStatus,
           input.status
         );
@@ -579,6 +594,8 @@ export function usePrayerTracker(date: Date = new Date()) {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       queryClient.invalidateQueries({ queryKey: ['prayer-logs'] });
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['qadaa-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['qadaa-totals'] });
     },
   });
 
@@ -673,6 +690,13 @@ export function useSetPrayerStatusAtDate() {
           user.id,
           result.habitTitle,
           input.prayerHabitId,
+          result.oldStatus,
+          input.status
+        );
+        const prayerName = habit?.prayer_name || habitTitle.split(' ')[0];
+        void syncQadaaTargetOnMissedPrayer(
+          user.id,
+          prayerName,
           result.oldStatus,
           input.status
         );
@@ -779,6 +803,8 @@ export function useSetPrayerStatusAtDate() {
         queryClient.invalidateQueries({ queryKey: ['habits'], refetchType: 'active' });
         queryClient.invalidateQueries({ queryKey: ['prayer-logs'], refetchType: 'active' });
         queryClient.invalidateQueries({ queryKey: ['points-transactions'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['qadaa-settings'], refetchType: 'active' });
+        queryClient.invalidateQueries({ queryKey: ['qadaa-totals'], refetchType: 'active' });
       }
     },
   });

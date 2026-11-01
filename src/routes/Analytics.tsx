@@ -678,7 +678,7 @@ export default function Analytics() {
           {isWrapDay && (
             <button
               onClick={() => setShowWrap(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-gradient-to-r from-primary/80 to-accent/80 text-primary-foreground rounded-lg shadow hover:opacity-90 transition-all cursor-pointer sm:mt-1 w-fit"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg shadow-sm hover:bg-primary/90 transition-all cursor-pointer sm:mt-1 w-fit"
             >
               <Sparkles size={14} />
               View Wrap

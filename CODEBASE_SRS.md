@@ -722,6 +722,7 @@ The system shall provide a dynamic Qadaa make-up prayer tracking system:
 2. The system shall automatically synchronize with a daily "قضاء الصلوات اليومية" habit in the habit tracking engine, updating adherence when the daily pace is completed.
 3. The system shall provide an action to push today's remaining Qadaa prayers as individual tasks into the user's task list (e.g. `قضاء الفجر`, `قضاء الظهر`).
 4. Checking off a Qadaa task as completed in the Tasks view shall automatically detect the prayer key and increment the corresponding Qadaa log count and recalculate velocity.
+5. Any daily prayer marked as Missed or Skipped in the daily tracker (or Prayer Backlog) shall automatically increment the user's corresponding Qadaa backlog target by +1. If subsequently restored to Prayed or Late, it shall decrement the backlog target by 1.
 
 #### FR-PRAYER-012: Anti-Slop Prayer Cards & High-Tactile Interface
 1. Prayer and Qadaa cards shall adhere to anti-slop guidelines: neutral surfaces, 1px subtle borders, no rainbow gradients or artificial drop-shadows.

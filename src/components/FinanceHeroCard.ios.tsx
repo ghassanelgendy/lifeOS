@@ -21,15 +21,6 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
         isOverspending ? "border-red-500/25" : "border-green-500/25"
       )}
     >
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full blur-3xl"
-        style={{
-          background: isOverspending
-            ? 'radial-gradient(circle, rgba(239,68,68,0.18), transparent 70%)'
-            : 'radial-gradient(circle, rgba(34,197,94,0.14), transparent 70%)',
-        }}
-      />
 
       {/* Status badge */}
       <span

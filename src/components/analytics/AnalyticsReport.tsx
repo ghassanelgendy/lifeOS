@@ -301,8 +301,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
     <div className="w-full max-w-4xl mx-auto pb-20 space-y-6 overflow-x-hidden">
       {/* ── Header ──────────────────────────────────────────────── */}
       <Section>
-        <div className="rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-card to-accent/10 p-6 sm:p-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent pointer-events-none" />
+        <div className="rounded-2xl border border-border/70 bg-card p-6 sm:p-8 relative overflow-hidden shadow-sm">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <button
@@ -522,16 +521,16 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             {data.bestDay && (
               <div
                 onClick={() => onOpenDayDetails?.(data.bestDay!.date)}
-                className="rounded-xl border border-green-500/20 bg-gradient-to-br from-green-500/5 to-card p-4 cursor-pointer hover:bg-green-500/10 transition-colors"
+                className="rounded-xl border border-border/70 bg-card p-4 cursor-pointer hover:bg-muted/30 transition-colors shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Trophy size={16} className="text-green-500" />
-                  <span className="text-xs text-green-500 uppercase tracking-wider font-semibold">Best Day</span>
+                  <Trophy size={16} className="text-emerald-500" />
+                  <span className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider font-semibold">Best Day</span>
                 </div>
                 <p className="text-lg font-bold">{format(new Date(`${data.bestDay.date}T12:00:00`), 'EEEE, MMM d')}</p>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {data.bestDay.reasons.map((r, i) => (
-                    <span key={i} className="text-xs bg-green-500/10 text-green-400 px-2 py-0.5 rounded-md">{r}</span>
+                    <span key={i} className="text-xs bg-muted/50 text-foreground border border-border/50 px-2 py-0.5 rounded-md">{r}</span>
                   ))}
                 </div>
               </div>
@@ -539,16 +538,16 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             {data.worstDay && data.worstDay.date !== data.bestDay?.date && (
               <div
                 onClick={() => onOpenDayDetails?.(data.worstDay!.date)}
-                className="rounded-xl border border-red-500/20 bg-gradient-to-br from-red-500/5 to-card p-4 cursor-pointer hover:bg-red-500/10 transition-colors"
+                className="rounded-xl border border-border/70 bg-card p-4 cursor-pointer hover:bg-muted/30 transition-colors shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown size={16} className="text-red-400" />
-                  <span className="text-xs text-red-400 uppercase tracking-wider font-semibold">Toughest Day</span>
+                  <TrendingDown size={16} className="text-rose-500" />
+                  <span className="text-xs text-rose-500 uppercase tracking-wider font-semibold">Toughest Day</span>
                 </div>
                 <p className="text-lg font-bold">{format(new Date(`${data.worstDay.date}T12:00:00`), 'EEEE, MMM d')}</p>
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {data.worstDay.reasons.map((r, i) => (
-                    <span key={i} className="text-xs bg-red-500/10 text-red-400 px-2 py-0.5 rounded-md">{r}</span>
+                    <span key={i} className="text-xs bg-muted/50 text-foreground border border-border/50 px-2 py-0.5 rounded-md">{r}</span>
                   ))}
                 </div>
               </div>
@@ -685,7 +684,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
 
       {/* ── Section 7: Game Plan ────────────────────────────────── */}
       <Section delay={600}>
-        <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-card p-4 relative overflow-hidden">
+        <div className="rounded-xl border border-border/70 bg-card p-4 relative overflow-hidden shadow-sm">
           {/* Confetti particles */}
           {confetti.map((p) => (
             <div
@@ -814,7 +813,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
 
       {/* ── Section 8: Week Score ───────────────────────────────── */}
       <Section delay={700}>
-        <div className="rounded-2xl border border-border bg-gradient-to-br from-card via-card to-primary/5 p-6 text-center">
+        <div className="rounded-2xl border border-border/70 bg-card p-6 text-center shadow-sm">
           <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase tracking-wider">
             {mode === 'weekly' ? 'Week' : 'Month'} Score
           </h3>

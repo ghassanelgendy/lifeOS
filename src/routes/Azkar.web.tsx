@@ -274,7 +274,7 @@ export default function AzkarRoute() {
       <div className="mx-auto max-w-6xl space-y-6 px-4 pt-6 sm:px-6">
         {/* Contextual Recommendation Banner */}
         {!searchQuery && !showFavoritesOnly && (
-          <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-5 sm:flex-row sm:items-center sm:p-6">
+          <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border/70 bg-card p-5 sm:flex-row sm:items-center sm:p-6 shadow-sm">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <span className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-semibold text-primary-foreground">

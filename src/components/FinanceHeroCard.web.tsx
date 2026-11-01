@@ -15,104 +15,88 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
   const incomeRatio = total > 0 ? (income / total) * 100 : 50;
 
   return (
-    <div
-      className="rounded-3xl p-5 relative overflow-hidden"
-      style={{
-        background: 'linear-gradient(145deg, var(--color-card) 0%, var(--color-secondary) 100%)',
-        boxShadow: `0 0 0 1px ${isOverspending ? 'rgba(239,68,68,0.12)' : 'rgba(34,197,94,0.08)'}, inset 0 1px 0 rgba(255,255,255,0.04), 0 12px 40px rgba(0,0,0,0.4)`,
-      }}
-    >
-      {/* Ambient glow */}
-      <div
-        className="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full blur-3xl"
-        style={{
-          background: isOverspending
-            ? 'radial-gradient(circle, rgba(239,68,68,0.14), transparent 70%)'
-            : 'radial-gradient(circle, rgba(34,197,94,0.10), transparent 70%)',
-        }}
-      />
+    <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm space-y-4">
+      {/* Top Header: Badge & Trend */}
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <span
+          className={cn(
+            'inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md border',
+            isOverspending
+              ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+          )}
+        >
+          {isOverspending ? <AlertTriangle size={12} /> : <CheckCircle size={12} />}
+          {isOverspending ? 'Overspending' : 'Healthy Balance'}
+        </span>
 
-      {/* Status badge */}
-      <span
-        className={cn(
-          'inline-flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1 rounded-full mb-3',
-          isOverspending
-            ? 'bg-red-500/10 text-red-400 ring-1 ring-red-500/20'
-            : 'bg-green-500/10 text-green-400 ring-1 ring-green-500/20'
-        )}
-      >
-        {isOverspending ? <AlertTriangle size={10} /> : <CheckCircle size={10} />}
-        {isOverspending ? 'Overspending' : 'Healthy Balance'}
-      </span>
-
-      {/* Label */}
-      <p className="text-[11px] font-medium tracking-widest text-muted-foreground uppercase mb-1">
-        Net Balance
-      </p>
-
-      {/* Primary number */}
-      <p
-        className={cn(
-          'text-[44px] font-black tabular-nums leading-none mb-1',
-          isOverspending ? 'text-red-400' : 'text-green-400',
-          privacyMode && 'blur-sm'
-        )}
-      >
-        {isOverspending ? '−' : ''}{formatCurrency(Math.abs(balance))}
-      </p>
-
-      {!!openingBalance && (
-        <p className={cn('text-[11px] text-muted-foreground/70 -mt-0.5 mb-4', privacyMode && 'blur-sm')}>
-          Carried over from last month: {formatCurrency(openingBalance)}
-        </p>
-      )}
-
-      {/* Trend */}
-      <div
-        className={cn(
-          'flex items-center gap-1 text-xs mb-5',
-          isOverspending ? 'text-red-400/60' : 'text-green-400/60'
-        )}
-      >
-        {isOverspending ? <TrendingDown size={11} /> : <TrendingUp size={11} />}
-        <span>{isOverspending ? 'Worse than last period' : 'Better than last period'}</span>
+        <div
+          className={cn(
+            'flex items-center gap-1 text-xs font-medium',
+            isOverspending ? 'text-rose-500' : 'text-emerald-600 dark:text-emerald-400'
+          )}
+        >
+          {isOverspending ? <TrendingDown size={13} /> : <TrendingUp size={13} />}
+          <span>{isOverspending ? 'Worse than last period' : 'Better than last period'}</span>
+        </div>
       </div>
 
-      {/* Income / Expenses columns */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-background/40 rounded-2xl p-3">
+      {/* Primary Balance */}
+      <div>
+        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase mb-1">
+          Net Balance
+        </p>
+        <p
+          className={cn(
+            'text-3xl sm:text-4xl font-extrabold tabular-nums tracking-tight leading-none',
+            isOverspending ? 'text-red-400' : 'text-green-400',
+            privacyMode && 'blur-sm'
+          )}
+        >
+          {isOverspending ? '−' : ''}{formatCurrency(Math.abs(balance))}
+        </p>
+
+        {!!openingBalance && (
+          <p className={cn('text-xs text-muted-foreground mt-1.5', privacyMode && 'blur-sm')}>
+            Carried over from last month: {formatCurrency(openingBalance)}
+          </p>
+        )}
+      </div>
+
+      {/* Income / Expenses 2-Column Metric Strip */}
+      <div className="grid grid-cols-2 gap-3 pt-1">
+        <div className="bg-muted/20 border border-border/60 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-            <span className="text-[11px] text-muted-foreground">Income</span>
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Income</span>
           </div>
-          <p className={cn('text-[15px] font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
+          <p className={cn('text-base font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
             {formatCurrency(income)}
           </p>
         </div>
-        <div className="bg-background/40 rounded-2xl p-3">
+
+        <div className="bg-muted/20 border border-border/60 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
-            <span className="text-[11px] text-muted-foreground">Expenses</span>
+            <div className="w-2 h-2 rounded-full bg-rose-500" />
+            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Expenses</span>
           </div>
-          <p className={cn('text-[15px] font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
+          <p className={cn('text-base font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
             {formatCurrency(expenses)}
           </p>
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="space-y-1.5">
-        <div className="h-2 rounded-full bg-border overflow-hidden">
+      {/* Cashflow Ratio Progress Bar */}
+      <div className="space-y-1.5 pt-1">
+        <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full"
+            className="h-full rounded-full bg-primary transition-all duration-500"
             style={{
               width: `${Math.min(Math.max(incomeRatio, 0), 100)}%`,
-              background: 'linear-gradient(90deg, #22c55e, #16a34a)',
-              transition: 'width 0.6s ease',
             }}
           />
         </div>
-        <div className="flex justify-between text-[10px] text-muted-foreground">
+        <div className="flex justify-between text-[11px] text-muted-foreground font-medium tabular-nums">
           <span>{Math.round(incomeRatio)}% in</span>
           <span>{Math.round(100 - incomeRatio)}% out</span>
         </div>

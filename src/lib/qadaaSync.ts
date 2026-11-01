@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import { supabase } from './supabase';
 import { trackHabitLogged, trackTaskCompleted } from './gtag';
 import type { QadaaPrayerKey } from '../hooks/useQadaaTracker';
-import type { Habit } from '../types/schema';
+import type { Habit, PrayerStatus } from '../types/schema';
 
 export const QADAA_HABIT_TITLE = 'قضاء الصلوات اليومية';
 
@@ -274,3 +274,62 @@ export async function syncQadaaFromTaskToggle(
     return { synced: false, prayer, delta };
   }
 }
+
+/**
+ * Synchronizes a missed or skipped daily prayer to the user's Qadaa backlog target.
+ * When a prayer is missed or skipped, the user owes an additional Qadaa prayer (+1 target).
+ * If a previously missed prayer is subsequently marked as Prayed or Late, it decrements (-1 target).
+ */
+export async function syncQadaaTargetOnMissedPrayer(
+  userId: string,
+  prayerName: string,
+  oldStatus: PrayerStatus | null,
+  newStatus: PrayerStatus
+): Promise<number> {
+  if (!userId || !prayerName) return 0;
+
+  const wasMissed = oldStatus === 'Missed' || oldStatus === 'Skipped';
+  const isNowMissed = newStatus === 'Missed' || newStatus === 'Skipped';
+
+  let delta = 0;
+  if (!wasMissed && isNowMissed) {
+    delta = 1;
+  } else if (wasMissed && !isNowMissed) {
+    delta = -1;
+  }
+
+  if (delta === 0) return 0;
+
+  const key = prayerName.toLowerCase().trim() as QadaaPrayerKey;
+  if (!['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].includes(key)) {
+    return 0;
+  }
+
+  try {
+    const { data: settings } = await supabase
+      .from('qadaa_settings')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (settings) {
+      const column = `target_${key}`;
+      const currentVal = (settings as any)[column] ?? 0;
+      const nextVal = Math.max(0, currentVal + delta);
+
+      await supabase
+        .from('qadaa_settings')
+        .update({
+          [column]: nextVal,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', settings.id);
+    }
+
+    return delta;
+  } catch (err) {
+    console.error('syncQadaaTargetOnMissedPrayer error:', err);
+    return 0;
+  }
+}
+
