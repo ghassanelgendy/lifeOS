@@ -670,11 +670,11 @@ export default function Habits() {
           </button>
 
           {prayerSectionExpanded && (
-            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/40 text-xs font-medium">
+            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border/40 text-xs font-medium w-full sm:w-auto">
               <button
                 type="button"
                 onClick={() => setPrayerViewTab('daily')}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all text-center ${
                   prayerViewTab === 'daily'
                     ? 'bg-card text-foreground shadow-sm font-semibold'
                     : 'text-muted-foreground hover:text-foreground'
@@ -685,7 +685,7 @@ export default function Habits() {
               <button
                 type="button"
                 onClick={() => setPrayerViewTab('qadaa')}
-                className={`px-3 py-1 rounded-lg transition-all ${
+                className={`flex-1 sm:flex-initial px-3 py-1.5 rounded-lg transition-all text-center ${
                   prayerViewTab === 'qadaa'
                     ? 'bg-primary text-primary-foreground shadow-sm font-semibold'
                     : 'text-muted-foreground hover:text-foreground'

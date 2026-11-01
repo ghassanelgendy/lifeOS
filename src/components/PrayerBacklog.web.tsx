@@ -224,8 +224,8 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
       </div>
 
       {/* Calendar Grid */}
-      <div className="overflow-x-auto mt-4 flex-1 min-h-0">
-        <div className="min-w-full h-full flex flex-col">
+      <div className="overflow-x-auto mt-4 flex-1 min-h-0 -mx-1 px-1">
+        <div className="min-w-[340px] sm:min-w-full h-full flex flex-col">
           {/* Header row with prayer names */}
           <div className="grid grid-cols-6 gap-2 mb-2">
             <div className="text-xs font-medium text-muted-foreground p-2">Date</div>

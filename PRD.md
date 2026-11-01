@@ -611,8 +611,14 @@ Vite Custom Plugin:
 - **Liquid Glass (iOS):** Backdrop-filter blur + SVG refraction filter for native feel.
 - **Optimistic Interactions:** State toggling (tasks completion, habits logging, and backlog prayer status updates) transitions state client-side immediately, resolving Supabase mutations in the background to ensure a zero-latency experience.
 
-### 9.3 Responsive Breakpoints
+### 9.3 Responsive Breakpoints & Mobile Browser UX
 - Mobile: < 768px (bottom nav, single column, touch-optimized)
+  - **Dynamic Viewport Height (`100dvh`):** Full adaptation to mobile browser URL/navigation bars collapsing and expanding, eliminating bottom clipping and layout shifts across Chrome, Safari, and Firefox.
+  - **Scroll-Preserving Gesture Hygiene:** Elimination of accidental center-screen swipe tab switching during vertical thumb scrolling, preserving standard vertical page flow and horizontal card interactions.
+  - **Frosted Native-Feel Bottom Navigation:** Backdrop-blur (`backdrop-blur-2xl`) container with active indicator pills, safe-area inset compensation, and smooth scroll-to-top when tapping the currently active tab.
+  - **Contextual Mobile Header:** Displays active route title (e.g. Dashboard, Tasks, Habits, Focus, Calendar, Analytics) with quick actions and profile navigation.
+  - **Stabilized Mobile FAB:** Increased scroll delta threshold (35px) preventing rapid flickering/resizing during normal touchscreen jitter, positioned comfortably above the bottom navigation bar.
+  - **Virtual Keyboard Resizing:** Viewport meta `interactive-widget=resizes-content` ensuring forms and sheets resize cleanly without layout distortion on mobile browser keyboards.
 - Tablet: 768px - 1024px (collapsible sidebar, 2-column grids)
 - Desktop: > 1024px (full sidebar, multi-column layouts, keyboard shortcuts)
 

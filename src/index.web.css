@@ -13,11 +13,14 @@ html,
 body {
   overflow: hidden;
   height: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
   /* Let native form controls (select popups, scrollbars) render in the
      right palette instead of defaulting to a light theme regardless of
      the app's dark class — this is what makes WebKitGTK <select> popups
      show white-on-white in the desktop build. */
   color-scheme: light;
+  -webkit-tap-highlight-color: transparent;
 }
 html.dark,
 body.dark {
@@ -25,7 +28,17 @@ body.dark {
 }
 #root {
   height: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
   overflow: hidden;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 /* Arabic type utilities used by the Quran reader/memorizer. These live here

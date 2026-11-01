@@ -33,19 +33,17 @@ function MobileNavLink({
   const isActive = !!match;
   const Icon = item.icon;
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     if (isMobileSidebarOpen) {
       setMobileSidebarOpen(false);
-      if (isActive && (item.href === '/dashboard' || item.href === '/')) {
-        e.preventDefault();
-      }
       return;
     }
 
     if (isActive) {
-      if (item.href === '/dashboard' || item.href === '/') {
-        e.preventDefault();
-        setMobileSidebarOpen(true);
+      // Smoothly scroll active page to top on tap
+      const scrollRoot = document.querySelector('[data-lifeos-scroll-root]');
+      if (scrollRoot) {
+        scrollRoot.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
@@ -56,28 +54,33 @@ function MobileNavLink({
       end={item.href === '/'}
       onClick={handleClick}
       className={({ isActive: active }) => cn(
-        "flex flex-col items-center justify-center w-full h-full active:opacity-70 transition-all duration-150 relative",
-        active ? "text-foreground" : "text-muted-foreground"
+        "flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-95 transition-all duration-150 relative select-none touch-manipulation",
+        active ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
       )}
     >
-      <div className="relative">
-        <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+      <div className={cn(
+        "relative flex items-center justify-center px-3.5 py-1 rounded-full transition-all duration-200",
+        isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
+      )}>
+        <Icon size={20} strokeWidth={isActive ? 2.4 : 1.9} />
         {showDot && (
-          <span className="absolute -top-1 -right-1 flex h-2 w-2">
+          <span className="absolute top-1 right-2 flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
           </span>
         )}
       </div>
-      <span className="text-[11px] mt-0.5 font-medium">{item.label}</span>
+      <span className={cn(
+        "text-[10px] mt-0.5 tracking-tight transition-colors",
+        isActive ? "text-foreground font-semibold" : "text-muted-foreground"
+      )}>
+        {item.label}
+      </span>
     </NavLink>
   );
 }
 
 const SWIPE_EDGE_PX = 24;
-const SWIPE_MIN_DELTA = 50;
-const CENTER_SWIPE_MIN = 0.25;
-const CENTER_SWIPE_MAX = 0.75;
 
 export function AppShell() {
   const {
@@ -215,6 +218,18 @@ export function AppShell() {
       return item;
     });
   }, [mobileNavItems, showWrappedTakeover, isWeeklyWrapDay, isMonthlyWrapDay, aiEnabled]);
+
+  const currentNavLabel = useMemo(() => {
+    if (location.pathname === '/' || location.pathname === '/dashboard') return 'Dashboard';
+    if (location.pathname === '/settings') return 'Settings';
+    if (location.pathname === '/points') return 'Points & Rewards';
+    if (location.pathname === '/quran') return 'Quran Memorizer';
+    if (location.pathname === '/azkar') return 'Daily Azkar';
+    const found = NAV_ITEMS.find((nav) =>
+      location.pathname === nav.href || location.pathname.startsWith(nav.href + '/')
+    );
+    return found?.label || 'LifeOS';
+  }, [location.pathname]);
 
   const desktopNavigation = useMemo(() => {
     const navItems = NAV_ITEMS.filter((item) => item.href !== '/settings' && (aiEnabled || item.href !== '/chat'));
@@ -367,42 +382,19 @@ export function AppShell() {
     if (isOnQuran || !touchStart.current) return;
     const t = e.changedTouches[0];
     const deltaX = t.clientX - touchStart.current.x;
-    const deltaY = t.clientY - touchStart.current.y;
-    const w = window.innerWidth;
 
     // Swipe from left edge on ANY page → open mobile sidebar
-    if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 30) {
+    if (touchStart.current.x < SWIPE_EDGE_PX && deltaX > 40) {
       setMobileSidebarOpen(true);
       touchStart.current = null;
       return;
     }
 
-    // On Tasks page, disable horizontal tab navigation so task swipe actions work smoothly
-    if (isOnTasks) {
-      touchStart.current = null;
-      return;
-    }
-
-    // Swipe from center → navigate tabs (only if mostly horizontal)
-    if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < SWIPE_MIN_DELTA) {
-      touchStart.current = null;
-      return;
-    }
-    const startRatio = touchStart.current.x / w;
-    if (startRatio < CENTER_SWIPE_MIN || startRatio > CENTER_SWIPE_MAX) {
-      touchStart.current = null;
-      return;
-    }
-    if (deltaX > SWIPE_MIN_DELTA && currentIndex > 0) {
-      navigate(mobileNavigationMapped[currentIndex - 1].href);
-    } else if (deltaX < -SWIPE_MIN_DELTA && currentIndex >= 0 && currentIndex < mobileNavigationMapped.length - 1) {
-      navigate(mobileNavigationMapped[currentIndex + 1].href);
-    }
     touchStart.current = null;
-  }, [isOnTasks, isOnQuran, currentIndex, mobileNavigationMapped, navigate, setMobileSidebarOpen]);
+  }, [isOnQuran, setMobileSidebarOpen]);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground font-sans">
+    <div className="flex h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-background text-foreground font-sans">
       <CommandPalette />
       {/* Mobile drawer (slide from left) */}
       <>
@@ -416,10 +408,10 @@ export function AppShell() {
         />
         <aside
           className={cn(
-            "md:hidden fixed top-0 left-0 z-50 w-[min(22rem,94vw)] min-w-[18rem] h-full flex flex-col bg-card border-r border-border shadow-xl transition-transform duration-150 ease-out will-change-transform transform-gpu",
+            "md:hidden fixed top-0 left-0 z-50 w-[min(22rem,88vw)] min-w-[17rem] h-[100dvh] max-h-[100dvh] flex flex-col bg-card border-r border-border shadow-2xl transition-transform duration-200 ease-out will-change-transform transform-gpu",
             isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
-          style={{ paddingTop: 'env(safe-area-inset-top)' }}
+          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
           <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
             <span className="text-xl font-bold tracking-tight">LifeOS</span>
@@ -664,30 +656,41 @@ export function AppShell() {
       <main className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Mobile Header — safe area top for iOS standalone (notch/status bar) */}
         <header
-          className="md:hidden flex h-14 items-center justify-between border-b border-border px-4 bg-background shrink-0"
+          className="md:hidden flex h-14 items-center justify-between border-b border-border/70 px-3.5 bg-background/95 backdrop-blur-xl shrink-0 z-30"
           style={{ paddingTop: 'env(safe-area-inset-top)', minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}
         >
-          <button
-            data-tour="mobile-menu"
-            onClick={() => setMobileSidebarOpen(true)}
-            className="p-2 -ml-2 hover:bg-secondary rounded-lg active:scale-95 transition-transform touch-manipulation"
-            aria-label="Open menu"
-          >
-            <Menu size={24} />
-          </button>
-          <span className="font-bold text-lg">LifeOS</span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <button
+              data-tour="mobile-menu"
+              onClick={() => setMobileSidebarOpen(true)}
+              className="p-2 -ml-1 hover:bg-secondary/80 rounded-xl active:scale-95 transition-all touch-manipulation text-foreground cursor-pointer"
+              aria-label="Open menu"
+            >
+              <Menu size={22} />
+            </button>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-base tracking-tight text-foreground truncate">
+                {currentNavLabel}
+              </span>
+              {currentNavLabel !== 'LifeOS' && (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase tracking-wider hidden sm:inline-block">
+                  LifeOS
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               data-tour="mobile-brain-dump"
               onClick={() => setIsBrainDumpOpen(true)}
-              className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-lg active:scale-95 transition-transform touch-manipulation flex items-center gap-1"
+              className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl active:scale-95 transition-all touch-manipulation flex items-center justify-center cursor-pointer"
               title="Cognitive Brain Dump (Alt+B)"
             >
-              <Brain size={20} />
+              <Brain size={19} />
             </button>
             <NavLink
               to="/settings"
-              className="p-1 rounded-full active:scale-95 transition-transform touch-manipulation"
+              className="p-1 rounded-full active:scale-95 transition-all touch-manipulation cursor-pointer flex items-center justify-center"
               title="Settings & Profile"
             >
               <UserBlobatar identifier={user?.email || user?.id} size={28} />
@@ -712,7 +715,7 @@ export function AppShell() {
               location.pathname === '/chat'
                 ? "h-full min-h-0 overflow-hidden p-0"
                 : (isOnTasks || isOnNotes
-                    ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
+                    ? "h-full min-h-0 overflow-hidden p-3.5 sm:p-4 md:p-6"
                     // overflow-x-hidden alone forces the UA to compute overflow-y as `auto`
                     // (per spec, an axis can't stay `visible` while the other isn't), which
                     // silently makes THIS div a scroll container/containing block for any
@@ -720,7 +723,7 @@ export function AppShell() {
                     // though it never actually scrolls — breaking sticky against the real
                     // scroll root two levels up (PullToRefresh's `data-lifeos-scroll-root`).
                     // overflow-y-visible keeps only the X axis clipped.
-                    : "min-h-full overflow-x-hidden overflow-y-visible p-4 md:p-6 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6")
+                    : "min-h-full overflow-x-hidden overflow-y-visible p-3.5 sm:p-4 md:p-6 pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-6")
             )}
             style={
               {
@@ -787,13 +790,13 @@ export function AppShell() {
         {location.pathname !== '/chat' && location.pathname !== '/quran' && (
           <nav 
             data-tour="mobile-nav"
-            className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-xl z-50"
+            className="md:hidden fixed bottom-0 left-0 right-0 border-t border-border/80 bg-background/90 backdrop-blur-2xl z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.06)]"
             style={{
-              paddingBottom: 'max(env(safe-area-inset-bottom), 0px)',
-              height: 'calc(64px + env(safe-area-inset-bottom))'
+              paddingBottom: 'max(env(safe-area-inset-bottom), 6px)',
+              height: 'calc(62px + env(safe-area-inset-bottom))'
             }}
           >
-            <div className="flex justify-around items-center h-16">
+            <div className="flex justify-around items-center h-full px-1 max-w-lg mx-auto">
               {mobileNavigationMapped.map((item) => {
                 const isAnalytics = item.href === '/analytics';
                 const showDot = isAnalytics && showWrappedTakeover;

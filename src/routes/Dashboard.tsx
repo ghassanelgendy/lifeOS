@@ -750,7 +750,7 @@ export default function Dashboard() {
       }
 
       const diff = scrollTop - lastScrollTop.current;
-      if (Math.abs(diff) > 6) {
+      if (Math.abs(diff) > 35) {
         if (diff > 0) {
           setShowFab(false);
           setIsMenuOpen(false);
@@ -1080,8 +1080,8 @@ export default function Dashboard() {
           data-fab-container 
           className="fixed z-[99] transition-all duration-[300ms] ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu"
           style={{
-            bottom: 'calc(96px + env(safe-area-inset-bottom))',
-            right: '24px',
+            bottom: 'calc(78px + env(safe-area-inset-bottom))',
+            right: '20px',
             transform: showFab ? 'scale(1)' : 'scale(0)',
             opacity: showFab ? 1 : 0,
             pointerEvents: showFab ? 'auto' : 'none',

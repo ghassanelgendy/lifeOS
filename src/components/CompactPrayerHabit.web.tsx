@@ -160,8 +160,8 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                 <div
                   key={item.prayerName}
                   className={cn(
-                    'flex items-center justify-between gap-2.5 p-2 rounded-xl transition-colors border border-transparent',
-                    'hover:bg-muted/30'
+                    'flex items-center justify-between gap-2 p-2 rounded-xl transition-colors border border-transparent',
+                    'hover:bg-muted/30 flex-wrap sm:flex-nowrap'
                   )}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -182,9 +182,9 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 select-none shrink-0">
+                  <div className="flex items-center gap-1 select-none shrink-0 flex-wrap sm:flex-nowrap justify-end">
                     {/* Fardh Status Buttons */}
-                    <div className="flex items-center gap-1 bg-muted/20 p-0.5 rounded-lg border border-border/40">
+                    <div className="flex items-center gap-0.5 sm:gap-1 bg-muted/20 p-0.5 rounded-lg border border-border/40">
                       {statusOptions.map((status) => {
                         const meta = STATUS_BUTTONS[status];
                         const isActive = item.status === status;
@@ -197,7 +197,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                               togglePrayerStatus(item, status);
                             }}
                             className={cn(
-                              'text-[11px] font-medium px-2 py-1 rounded-md transition-all cursor-pointer',
+                              'text-[10px] sm:text-[11px] font-medium px-1.5 sm:px-2 py-1 rounded-md transition-all cursor-pointer',
                               isActive
                                 ? meta.className
                                 : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -219,13 +219,13 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                         }}
                         title={`تسجيل قضاء ${item.prayerName} اليوم`}
                         className={cn(
-                          'text-xs font-semibold px-2 py-1 rounded-lg transition-all border flex items-center gap-1 shrink-0 cursor-pointer',
+                          'text-[11px] sm:text-xs font-semibold px-2 py-1 rounded-lg transition-all border flex items-center gap-1 shrink-0 cursor-pointer',
                           doneQadaaToday > 0
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                             : 'bg-secondary/40 hover:bg-secondary border-border/60 text-muted-foreground hover:text-foreground'
                         )}
                       >
-                        <span className="text-[11px]">قضاء</span>
+                        <span className="text-[10px] sm:text-[11px]">قضاء</span>
                         {doneQadaaToday > 0 ? (
                           <span className="text-[10px] font-bold tabular-nums">+{doneQadaaToday}</span>
                         ) : (

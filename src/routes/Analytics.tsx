@@ -704,7 +704,7 @@ export default function Analytics() {
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-1 p-1 bg-secondary/30 rounded-xl w-full shadow-inner border border-border/50">
+      <div className="flex overflow-x-auto no-scrollbar gap-1.5 p-1 bg-secondary/30 rounded-xl w-full shadow-inner border border-border/50">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -713,14 +713,14 @@ export default function Analytics() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
               className={cn(
-                "flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 whitespace-normal sm:whitespace-nowrap text-center leading-tight flex-1 sm:flex-none min-w-0",
+                "flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 whitespace-nowrap text-center shrink-0 cursor-pointer",
                 isActive
-                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50"
+                  ? "bg-background text-foreground shadow-sm ring-1 ring-border/50 font-semibold"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/50"
               )}
             >
-              <Icon size={16} className={cn(isActive && "text-primary")} />
-              {tab.label}
+              <Icon size={15} className={cn(isActive && "text-primary")} />
+              <span>{tab.label}</span>
             </button>
           );
         })}

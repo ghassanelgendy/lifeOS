@@ -1426,7 +1426,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <Sparkles className="size-3 text-primary/70 shrink-0" />
               Day progress
             </p>
-            <div className="flex items-center gap-x-2 text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+            <div className="flex items-center gap-x-2 gap-y-1 text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-widest flex-wrap justify-end">
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-indigo-500" /> Sleep</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-violet-500" /> Phone</span>
