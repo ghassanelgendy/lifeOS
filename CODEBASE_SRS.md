@@ -719,10 +719,11 @@ The system shall provide a dynamic Qadaa make-up prayer tracking system:
 
 #### FR-PRAYER-011: Deep Qadaa Habit & Task Synchronization
 1. The system shall support 1-tap inline Qadaa logging directly within the daily prayer rows (`CompactPrayerHabit`), allowing instantaneous logging after daily prayers.
-2. The system shall automatically synchronize with a daily "قضاء الصلوات اليومية" habit in the habit tracking engine, updating adherence when the daily pace is completed.
-3. The system shall provide an action to push today's remaining Qadaa prayers as individual tasks into the user's task list (e.g. `قضاء الفجر`, `قضاء الظهر`).
-4. Checking off a Qadaa task as completed in the Tasks view shall automatically detect the prayer key and increment the corresponding Qadaa log count and recalculate velocity.
-5. Any daily prayer marked as Missed or Skipped in the daily tracker (or Prayer Backlog) shall automatically increment the user's corresponding Qadaa backlog target by +1. If subsequently restored to Prayed or Late, it shall decrement the backlog target by 1.
+2. The system shall provide an option (`auto_sync_habit`, default true) to automatically synchronize with a daily "قضاء الصلوات اليومية" habit in the habit tracking engine, updating adherence when the daily pace is completed.
+3. The system shall provide both manual and automatic task pushing (`auto_push_tasks`) to schedule today's remaining Qadaa prayers as individual tasks in the user's task list.
+4. Qadaa tasks shall be scheduled **BEFORE the real obligatory prayer time** by an adjustable offset (`task_offset_minutes`, default 60 minutes, configurable to 15, 30, 45, 60, 90, 120 minutes) based on calculated Adhan times.
+5. Checking off a Qadaa task as completed in the Tasks view shall automatically detect the prayer key and increment the corresponding Qadaa log count and recalculate velocity.
+6. Any daily prayer marked as Missed or Skipped in the daily tracker (or Prayer Backlog) shall automatically increment the user's corresponding Qadaa backlog target by +1. If subsequently restored to Prayed or Late, it shall decrement the backlog target by 1.
 
 #### FR-PRAYER-012: Anti-Slop Prayer Cards & High-Tactile Interface
 1. Prayer and Qadaa cards shall adhere to anti-slop guidelines: neutral surfaces, 1px subtle borders, no rainbow gradients or artificial drop-shadows.

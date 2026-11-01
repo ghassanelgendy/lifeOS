@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { addDays, format, subDays } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
+import { usePrayerTimes } from './usePrayerTimes';
 import type { QadaaSettings, QadaaLog, QadaaMadhab, QadaaCalculationBasis } from '../types/schema';
 import { ensureQadaaHabit, syncQadaaHabitProgress, pushQadaaTasksForToday } from '../lib/qadaaSync';
 
@@ -88,6 +89,7 @@ export type QadaaPrayerKey = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha' | 'wi
 export function useQadaaTracker() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { times: prayerTimesList } = usePrayerTimes();
   const todayStr = useMemo(() => format(new Date(), 'yyyy-MM-dd'), []);
 
   // 1. Fetch user Qadaa Settings
@@ -185,7 +187,14 @@ export function useQadaaTracker() {
 
   // 5. Effective settings (with sensible defaults if user hasn't initialized yet)
   const effectiveSettings: QadaaSettings = useMemo(() => {
-    if (settings) return settings;
+    if (settings) {
+      return {
+        ...settings,
+        auto_push_tasks: settings.auto_push_tasks ?? false,
+        auto_sync_habit: settings.auto_sync_habit ?? true,
+        task_offset_minutes: settings.task_offset_minutes ?? 60,
+      };
+    }
     const defBaseline = calculateQadaaBaseline({
       madhab: 'shafii',
       calculationBasis: 'actual_age',
@@ -211,6 +220,9 @@ export function useQadaaTracker() {
       target_isha: defBaseline.targetPerPrayer,
       target_witr: 0,
       daily_target_prayers: 5,
+      auto_push_tasks: false,
+      auto_sync_habit: true,
+      task_offset_minutes: 60,
       is_active: true,
       created_at: '',
       updated_at: '',
@@ -368,7 +380,7 @@ export function useQadaaTracker() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['qadaa-totals', user?.id] });
-      if (user?.id) {
+      if (user?.id && (effectiveSettings.auto_sync_habit ?? true)) {
         // Sync progress to Qadaa habit
         const log = queryClient.getQueryData<QadaaLog[]>(['qadaa-recent-logs', user.id, thirtyDaysAgoStr])?.find((l) => l.date === todayStr);
         const totalPrayed = log
@@ -421,7 +433,7 @@ export function useQadaaTracker() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['qadaa-totals', user?.id] });
-      if (user?.id) {
+      if (user?.id && (effectiveSettings.auto_sync_habit ?? true)) {
         // Sync progress to Qadaa habit
         const log = queryClient.getQueryData<QadaaLog[]>(['qadaa-recent-logs', user.id, thirtyDaysAgoStr])?.find((l) => l.date === todayStr);
         const totalPrayed = log
@@ -476,14 +488,61 @@ export function useQadaaTracker() {
         witr: todayLog.witr_count || 0,
       };
 
-      return await pushQadaaTasksForToday(user.id, activeKeys, counts, 1);
+      return await pushQadaaTasksForToday(user.id, activeKeys, counts, 1, {
+        prayerTimes: prayerTimesList,
+        offsetMinutes: effectiveSettings.task_offset_minutes ?? 60,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
-  // 12. Ensure / Sync Qadaa Habit Mutation
+  // 12. Auto-push effect when enabled in settings
+  useEffect(() => {
+    if (!user?.id || !effectiveSettings.auto_push_tasks || !effectiveSettings.is_active) return;
+    const storageKey = `qadaa_auto_pushed_${todayStr}_${user.id}`;
+    if (typeof window !== 'undefined' && window.sessionStorage) {
+      if (window.sessionStorage.getItem(storageKey)) return;
+      window.sessionStorage.setItem(storageKey, 'pending');
+
+      const activeKeys: QadaaPrayerKey[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+      if (effectiveSettings.include_witr) activeKeys.push('witr');
+      const counts: Record<string, number> = {
+        fajr: todayLog.fajr_count || 0,
+        dhuhr: todayLog.dhuhr_count || 0,
+        asr: todayLog.asr_count || 0,
+        maghrib: todayLog.maghrib_count || 0,
+        isha: todayLog.isha_count || 0,
+        witr: todayLog.witr_count || 0,
+      };
+
+      pushQadaaTasksForToday(user.id, activeKeys, counts, 1, {
+        prayerTimes: prayerTimesList,
+        offsetMinutes: effectiveSettings.task_offset_minutes ?? 60,
+      })
+        .then(() => {
+          window.sessionStorage.setItem(storageKey, 'done');
+          queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        })
+        .catch((err) => {
+          console.warn('Auto-push Qadaa tasks failed:', err);
+          window.sessionStorage.removeItem(storageKey);
+        });
+    }
+  }, [
+    user?.id,
+    effectiveSettings.auto_push_tasks,
+    effectiveSettings.is_active,
+    effectiveSettings.task_offset_minutes,
+    effectiveSettings.include_witr,
+    todayStr,
+    prayerTimesList,
+    todayLog,
+    queryClient,
+  ]);
+
+  // 13. Ensure / Sync Qadaa Habit Mutation
   const syncHabitMutation = useMutation({
     mutationFn: async () => {
       if (!user?.id) return null;

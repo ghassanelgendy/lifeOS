@@ -7,7 +7,7 @@ import {
   type QadaaCalculationParams,
 } from '../hooks/useQadaaTracker';
 import type { QadaaSettings, QadaaMadhab, QadaaCalculationBasis } from '../types/schema';
-import { Calendar, Check, Compass, Sparkles, TrendingUp } from 'lucide-react';
+import { Calendar, Check, Compass, Sparkles, TrendingUp, Clock, ListTodo, BookmarkCheck } from 'lucide-react';
 import { addDays, format } from 'date-fns';
 
 interface QadaaSetupModalProps {
@@ -32,6 +32,15 @@ export const QadaaSetupModal: React.FC<QadaaSetupModalProps> = ({
   const [isLunar, setIsLunar] = useState<boolean>(currentSettings.is_lunar_calendar ?? true);
   const [includeWitr, setIncludeWitr] = useState<boolean>(currentSettings.include_witr ?? false);
   const [dailyTarget, setDailyTarget] = useState<number>(currentSettings.daily_target_prayers || 5);
+  const [autoPushTasks, setAutoPushTasks] = useState<boolean>(
+    currentSettings.auto_push_tasks ?? false
+  );
+  const [autoSyncHabit, setAutoSyncHabit] = useState<boolean>(
+    currentSettings.auto_sync_habit ?? true
+  );
+  const [taskOffsetMinutes, setTaskOffsetMinutes] = useState<number>(
+    currentSettings.task_offset_minutes ?? 60
+  );
   const [isSaving, setIsSaving] = useState(false);
 
   // Live calculation based on inputs
@@ -75,6 +84,9 @@ export const QadaaSetupModal: React.FC<QadaaSetupModalProps> = ({
         target_isha: calculation.targetPerPrayer,
         target_witr: includeWitr ? calculation.targetPerPrayer : 0,
         daily_target_prayers: dailyTarget,
+        auto_push_tasks: autoPushTasks,
+        auto_sync_habit: autoSyncHabit,
+        task_offset_minutes: taskOffsetMinutes,
         is_active: true,
       });
       onOpenChange(false);
@@ -356,6 +368,103 @@ export const QadaaSetupModal: React.FC<QadaaSetupModalProps> = ({
               <Calendar className="w-3.5 h-3.5" />
               <span>تاريخ الإتمام التقديري: {format(calculation.finishDate, 'dd MMMM yyyy')}</span>
             </p>
+          </div>
+        </div>
+
+        {/* Section 6: Automation & Smart Scheduling */}
+        <div className="space-y-3 p-4 bg-muted/20 border border-border/60 rounded-xl">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-semibold flex items-center gap-1.5 text-foreground">
+              <Clock className="w-4 h-4 text-primary" />
+              <span>خيارات الأتمتة وجدولة المهام والعادات</span>
+            </span>
+            <span className="text-xs text-muted-foreground font-normal">تلقائي وسلس</span>
+          </div>
+
+          <div className="space-y-2.5">
+            {/* Auto Sync Habit Toggle */}
+            <label className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-background/60 hover:bg-muted/30 cursor-pointer transition">
+              <input
+                type="checkbox"
+                checked={autoSyncHabit}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAutoSyncHabit(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
+              />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <BookmarkCheck className="w-3.5 h-3.5 text-primary" />
+                  <p className="text-sm font-medium text-foreground">مزامنة تلقائية كعادة يومية (Auto-sync Habit)</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  تثبيت عادة قضاء الصلوات وتحديث نسبة إنجازها اليومي في جدول العادات تلقائياً عند تسجيل أي قضاء.
+                </p>
+              </div>
+            </label>
+
+            {/* Auto Push Tasks Toggle */}
+            <label className="flex items-start gap-3 p-3 rounded-lg border border-border/50 bg-background/60 hover:bg-muted/30 cursor-pointer transition">
+              <input
+                type="checkbox"
+                checked={autoPushTasks}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAutoPushTasks(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded text-primary focus:ring-primary"
+              />
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <ListTodo className="w-3.5 h-3.5 text-primary" />
+                  <p className="text-sm font-medium text-foreground">دفع صلوات القضاء كمهام يومية تلقائياً (Auto-push Tasks)</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  جدولة مهام قضاء صلوات اليوم تلقائياً في قائمة المهام مع تحديد موعدها قبل وقت الفريضة الحاضرة.
+                </p>
+              </div>
+            </label>
+
+            {/* Timing Before Real Prayer */}
+            <div className={`pt-2.5 border-t border-border/40 space-y-2 transition-opacity ${autoPushTasks ? 'opacity-100' : 'opacity-70'}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-foreground flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>موعد مهمة القضاء قبل أذان الفريضة (Scheduled Before Real Prayer)</span>
+                </span>
+                <span className="text-xs font-bold text-primary tabular-nums">
+                  قبل الفريضة بـ {taskOffsetMinutes} دقيقة
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {[
+                  { label: 'ساعة كاملة (60 د) - موصى به', val: 60 },
+                  { label: '45 دقيقة قبل الأذان', val: 45 },
+                  { label: '30 دقيقة قبل الأذان', val: 30 },
+                  { label: '15 دقيقة قبل الأذان', val: 15 },
+                  { label: 'ساعة ونصف (90 د)', val: 90 },
+                  { label: 'ساعتان (120 د)', val: 120 },
+                ].map((opt) => (
+                  <button
+                    key={opt.val}
+                    type="button"
+                    onClick={() => setTaskOffsetMinutes(opt.val)}
+                    className={`text-xs px-2.5 py-2 rounded-lg border text-center transition ${
+                      taskOffsetMinutes === opt.val
+                        ? 'bg-primary text-primary-foreground border-primary font-medium'
+                        : 'border-border/60 hover:bg-muted/40 text-muted-foreground'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-background/80 border border-border/40 text-xs text-muted-foreground leading-relaxed">
+                <span className="font-semibold text-foreground">مثال توضيحي: </span>
+                إذا كان أذان الظهر في الساعة <span className="font-mono text-foreground font-medium">12:30</span>، ستُجدول مهمة قضاء الظهر في الساعة{' '}
+                <span className="font-mono text-primary font-bold">
+                  {taskOffsetMinutes === 60 ? '11:30' : taskOffsetMinutes === 45 ? '11:45' : taskOffsetMinutes === 30 ? '12:00' : taskOffsetMinutes === 15 ? '12:15' : taskOffsetMinutes === 90 ? '11:00' : '10:30'}
+                </span>{' '}
+                (قبل الفريضة بـ {taskOffsetMinutes} دقيقة) لتتمكن من قضائها بهدوء قبل دخول وقت الفريضة.
+              </div>
+            </div>
           </div>
         </div>
 

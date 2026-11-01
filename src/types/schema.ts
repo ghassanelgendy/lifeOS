@@ -496,6 +496,9 @@ export interface QadaaSettings {
   target_isha: number;
   target_witr: number;
   daily_target_prayers: number;
+  auto_push_tasks?: boolean;
+  auto_sync_habit?: boolean;
+  task_offset_minutes?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;

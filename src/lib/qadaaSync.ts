@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, subMinutes } from 'date-fns';
 import { supabase } from './supabase';
 import { trackHabitLogged, trackTaskCompleted } from './gtag';
 import type { QadaaPrayerKey } from '../hooks/useQadaaTracker';
@@ -157,14 +157,51 @@ export async function syncQadaaHabitProgress(
   }
 }
 
+export interface PushQadaaTaskOptions {
+  prayerTimes?: Array<{ name: string; time: Date }>;
+  offsetMinutes?: number;
+}
+
+export const DEFAULT_QADAA_DUE_TIMES: Record<QadaaPrayerKey, string> = {
+  fajr: '04:00',
+  dhuhr: '11:30',
+  asr: '14:30',
+  maghrib: '16:45',
+  isha: '18:15',
+  witr: '21:00',
+};
+
 /**
- * Pushes today's remaining Qadaa prayers as actionable tasks into the user's tasks list.
+ * Calculates due time for a Qadaa task scheduled before the real prayer time.
+ * For instance, if real prayer is at 05:00 and offset is 60 mins, scheduled time is 04:00.
+ */
+export function calculateQadaaTaskDueTime(
+  prayer: QadaaPrayerKey,
+  prayerTimes?: Array<{ name: string; time: Date }>,
+  offsetMinutes = 60
+): string {
+  if (prayerTimes && prayerTimes.length > 0) {
+    const matched = prayerTimes.find(
+      (t) => t.name.toLowerCase() === prayer.toLowerCase()
+    );
+    if (matched && matched.time instanceof Date && !isNaN(matched.time.getTime())) {
+      const scheduled = subMinutes(matched.time, offsetMinutes);
+      return format(scheduled, 'HH:mm');
+    }
+  }
+  return DEFAULT_QADAA_DUE_TIMES[prayer] || '12:00';
+}
+
+/**
+ * Pushes today's remaining Qadaa prayers as actionable tasks into the user's tasks list,
+ * scheduled with due_time set before the real prayer time.
  */
 export async function pushQadaaTasksForToday(
   userId: string,
   activePrayers: QadaaPrayerKey[],
   todayPrayerCounts: Record<string, number>,
-  dailyTargetPerPrayer = 1
+  dailyTargetPerPrayer = 1,
+  options?: PushQadaaTaskOptions
 ): Promise<{ created: number; skipped: number }> {
   if (!userId) return { created: 0, skipped: 0 };
 
@@ -198,13 +235,20 @@ export async function pushQadaaTasksForToday(
         continue;
       }
 
-      const description = `صلاة قضاء فريضة ${ARABIC_PRAYER_NAMES[prayer]} · إتمام هذه المهمة يُسجل الصلاة تلقائياً في سجل القضاء ويحدث السرعة الزمنية`;
+      const dueTime = calculateQadaaTaskDueTime(
+        prayer,
+        options?.prayerTimes,
+        options?.offsetMinutes ?? 60
+      );
+
+      const description = `صلاة قضاء فريضة ${ARABIC_PRAYER_NAMES[prayer]} (مجدولة قبل موعد الفريضة)`;
 
       const { error } = await supabase.from('tasks').insert({
         user_id: userId,
         title: taskTitle,
         description,
         due_date: todayStr,
+        due_time: dueTime,
         priority: 'medium',
         is_completed: false,
         is_wont_do: false,

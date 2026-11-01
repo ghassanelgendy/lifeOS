@@ -92,6 +92,18 @@ export const QadaaWidget: React.FC = () => {
               <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-secondary/80 text-muted-foreground border border-border/50">
                 مذهب {settings.madhab.toUpperCase()} · سن {settings.takleef_age}
               </span>
+              {settings.auto_push_tasks && (
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1">
+                  <ListTodo className="w-3 h-3" />
+                  <span>دفع تلقائي (قبل الفريضة بـ {settings.task_offset_minutes ?? 60} د)</span>
+                </span>
+              )}
+              {settings.auto_sync_habit && (
+                <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 inline-flex items-center gap-1">
+                  <BookmarkCheck className="w-3 h-3" />
+                  <span>مزامنة العادة</span>
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
               متابعة الفوائت ومحاكاة الجدول الزمني التقديري ديناميكياً مع مزامنة العادات والمهام

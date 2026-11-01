@@ -255,9 +255,9 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
   - **User-Driven Daily Capacity ($D$):** Interactive commitment setting ($D$ prayers/day) with instant multi-year projection.
   - **Dual-Velocity Forecasting:** Real-time side-by-side comparison of planned target finish date vs. actual 7-day rolling velocity ($V_{7\text{d}}$) with schedule delta indicators (ahead/behind).
   - **Direct Inline Qadaa Logging:** 1-tap `+1 قضاء` action embedded in daily prayer cards (`CompactPrayerHabit`), eliminating context switching.
-  - **Automated Habit Synchronization:** Auto-creates and automatically counts towards the daily "قضاء الصلوات اليومية" habit when daily target pace is reached.
+  - **Automated Habit Synchronization:** Configurable toggle (`auto_sync_habit`) that auto-creates and automatically synchronizes progress towards the daily "قضاء الصلوات اليومية" habit when Qadaa prayers are performed.
   - **Auto-Increment on Missed/Skipped Prayers:** Any daily prayer marked as Missed or Skipped in the daily tracker automatically increments the user's Qadaa target backlog (+1 owed prayer), and decrements when marked as Prayed/Late.
-  - **Task Push & Completion Sync:** 1-tap generation of daily Qadaa tasks into Today's task list; completing a Qadaa task automatically increments the corresponding Qadaa prayer count and updates velocity in real time.
+  - **Auto-Push & Pre-Prayer Scheduling:** Configurable auto-push option (`auto_push_tasks`) that automatically generates daily Qadaa tasks scheduled **BEFORE the real prayer** time using an adjustable offset (`task_offset_minutes`, default 60 min, with options for 15, 30, 45, 60, 90, 120 min), ensuring users are prompted to perform make-up prayers prior to the current obligatory prayer time. Completing a Qadaa task automatically increments the corresponding Qadaa prayer count and updates velocity in real time.
   - **Anti-Slop Modern UI/UX:** Flat, calm surfaces with 1px borders, large tabular numbers, zero rainbow gradients or emoji badges, and ergonomic tactile steppers.
   - **Fast Multi-Prayer Actions:** Single-tap `+1 يوم كامل` batch logging, individual prayer `+1` / `+5`, and instant undo.
 - Prayer widget on Dashboard with countdown
