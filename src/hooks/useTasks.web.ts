@@ -8,6 +8,7 @@ import type { Task, TaskList, Tag, CreateInput, UpdateInput, TaskWithSubtasks } 
 import { idbSaveTasks, idbSaveTaskLists, idbSaveTags, idbGetTasks, idbAddPointsTransaction } from '../db/indexedDb';
 import { getPointsConfig, isDateEligibleForPoints, isTaskCompletedOnTime } from './usePoints';
 import { trackTaskCreated, trackTaskCompleted } from '../lib/gtag';
+import { syncQadaaFromTaskToggle } from '../lib/qadaaSync';
 
 const TASKS_KEY = ['tasks'];
 const LISTS_KEY = ['task-lists'];
@@ -511,6 +512,7 @@ export function useCreateSubtask() {
 
 export function useUpdateTask() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateInput<Task>; skipInvalidate?: boolean }) => {
@@ -707,6 +709,16 @@ export function useUpdateTask() {
 
       if (updatedData.is_completed !== undefined) {
         void syncTaskCompletionToLinkedNote(updatedTask, Boolean(updatedData.is_completed));
+        const targetUserId = (updatedTask as any).user_id || (user as any)?.id;
+        if (targetUserId) {
+          void syncQadaaFromTaskToggle(targetUserId, updatedTask.title, Boolean(updatedData.is_completed)).then((res) => {
+            if (res.synced) {
+              queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs'] });
+              queryClient.invalidateQueries({ queryKey: ['qadaa-totals'] });
+              queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+            }
+          });
+        }
       }
 
       return updatedTask;
@@ -866,6 +878,7 @@ const pendingToggleOriginalCompleted = new Map<string, boolean>();
 
 export function useToggleTask() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -1003,6 +1016,16 @@ export function useToggleTask() {
       }
 
       void syncTaskCompletionToLinkedNote(updatedTask, newCompleted);
+      const targetUserId = (updatedTask as any).user_id || (user as any)?.id;
+      if (targetUserId) {
+        void syncQadaaFromTaskToggle(targetUserId, updatedTask.title, newCompleted).then((res) => {
+          if (res.synced) {
+            queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs'] });
+            queryClient.invalidateQueries({ queryKey: ['qadaa-totals'] });
+            queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+          }
+        });
+      }
 
       if (newCompleted) {
         trackTaskCompleted({ priority: updatedTask.priority });

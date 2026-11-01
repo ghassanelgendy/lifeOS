@@ -4,6 +4,7 @@ import { addDays, format, subDays } from 'date-fns';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import type { QadaaSettings, QadaaLog, QadaaMadhab, QadaaCalculationBasis } from '../types/schema';
+import { ensureQadaaHabit, syncQadaaHabitProgress, pushQadaaTasksForToday } from '../lib/qadaaSync';
 
 export const LUNAR_DAYS_PER_YEAR = 354.367;
 export const SOLAR_DAYS_PER_YEAR = 365.2425;
@@ -367,6 +368,17 @@ export function useQadaaTracker() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['qadaa-totals', user?.id] });
+      if (user?.id) {
+        // Sync progress to Qadaa habit
+        const log = queryClient.getQueryData<QadaaLog[]>(['qadaa-recent-logs', user.id, thirtyDaysAgoStr])?.find((l) => l.date === todayStr);
+        const totalPrayed = log
+          ? (log.fajr_count || 0) + (log.dhuhr_count || 0) + (log.asr_count || 0) + (log.maghrib_count || 0) + (log.isha_count || 0) + (effectiveSettings.include_witr ? log.witr_count || 0 : 0)
+          : 0;
+        void syncQadaaHabitProgress(user.id, todayStr, totalPrayed, effectiveSettings.daily_target_prayers).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['habits'] });
+          queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+        });
+      }
     },
   });
 
@@ -409,6 +421,17 @@ export function useQadaaTracker() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['qadaa-totals', user?.id] });
+      if (user?.id) {
+        // Sync progress to Qadaa habit
+        const log = queryClient.getQueryData<QadaaLog[]>(['qadaa-recent-logs', user.id, thirtyDaysAgoStr])?.find((l) => l.date === todayStr);
+        const totalPrayed = log
+          ? (log.fajr_count || 0) + (log.dhuhr_count || 0) + (log.asr_count || 0) + (log.maghrib_count || 0) + (log.isha_count || 0) + (effectiveSettings.include_witr ? log.witr_count || 0 : 0)
+          : 0;
+        void syncQadaaHabitProgress(user.id, todayStr, totalPrayed, effectiveSettings.daily_target_prayers).then(() => {
+          queryClient.invalidateQueries({ queryKey: ['habits'] });
+          queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+        });
+      }
     },
   });
 
@@ -437,6 +460,40 @@ export function useQadaaTracker() {
     },
   });
 
+  // 11. Push Today's Qadaa Tasks Mutation
+  const pushTasksMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) return { created: 0, skipped: 0 };
+      const activeKeys: QadaaPrayerKey[] = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+      if (effectiveSettings.include_witr) activeKeys.push('witr');
+
+      const counts: Record<string, number> = {
+        fajr: todayLog.fajr_count || 0,
+        dhuhr: todayLog.dhuhr_count || 0,
+        asr: todayLog.asr_count || 0,
+        maghrib: todayLog.maghrib_count || 0,
+        isha: todayLog.isha_count || 0,
+        witr: todayLog.witr_count || 0,
+      };
+
+      return await pushQadaaTasksForToday(user.id, activeKeys, counts, 1);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  // 12. Ensure / Sync Qadaa Habit Mutation
+  const syncHabitMutation = useMutation({
+    mutationFn: async () => {
+      if (!user?.id) return null;
+      return await ensureQadaaHabit(user.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+    },
+  });
+
   return {
     isConfigured: !!settings,
     isLoading: isSettingsLoading || isRecentLogsLoading || isTotalsLoading,
@@ -450,6 +507,10 @@ export function useQadaaTracker() {
     decrementPrayer: (prayer: QadaaPrayerKey, amount = 1) =>
       logPrayerMutation.mutate({ prayer, delta: -amount }),
     batchFullDay: (amount = 1) => batchFullDayMutation.mutate({ delta: amount }),
+    pushTasks: () => pushTasksMutation.mutateAsync(),
+    isPushingTasks: pushTasksMutation.isPending,
+    syncHabit: () => syncHabitMutation.mutateAsync(),
+    isSyncingHabit: syncHabitMutation.isPending,
     saveSettings: (newSettings: Partial<QadaaSettings>) => saveSettingsMutation.mutateAsync(newSettings),
     isSavingSettings: saveSettingsMutation.isPending,
   };

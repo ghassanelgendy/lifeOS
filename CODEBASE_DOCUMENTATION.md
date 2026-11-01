@@ -4694,7 +4694,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-hooks-useqadaatracker-ts"></a>
 ### src/hooks/useQadaaTracker.ts
 
-**File Purpose:** Core business logic and data hook for the Dynamic Qadaa (قضاء الصلوات) module. Manages Fiqh calculations across the 4 Sunni Madhabs, lunar/solar year conversion, user-driven daily commitment $D$, real-time target forecasting, and actual 7-day rolling velocity ($V_{7\text{d}}$).
+**File Purpose:** Core business logic and data hook for the Dynamic Qadaa (قضاء الصلوات) module. Manages Fiqh calculations across the 4 Sunni Madhabs, lunar/solar year conversion, user-driven daily commitment $D$, real-time target forecasting, actual 7-day rolling velocity ($V_{7\text{d}}$), automated habit synchronization (`ensureQadaaHabit`, `syncQadaaHabitProgress`), and task generation (`pushTasks`).
 
 **Functions & Classes:**
 - `useQadaaTracker` (React Hook)
@@ -4702,7 +4702,23 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `formatDurationFromDays` (Function)
 - `QadaaCalculationParams` (Interface)
 
-**Lines:** ~320
+**Lines:** ~500
+
+---
+
+<a name="src-lib-qadaasync-ts"></a>
+### src/lib/qadaaSync.ts
+
+**File Purpose:** Integration bridge between the Dynamic Qadaa engine, the daily Habit tracker, and the Task execution engine. Provides title parsing, auto-creation of Qadaa habits, daily pace logging, task generation, and task toggle synchronization.
+
+**Functions & Classes:**
+- `detectQadaaPrayerFromTaskTitle` (Function)
+- `ensureQadaaHabit` (Function)
+- `syncQadaaHabitProgress` (Function)
+- `pushQadaaTasksForToday` (Function)
+- `syncQadaaFromTaskToggle` (Function)
+
+**Lines:** ~280
 
 ---
 

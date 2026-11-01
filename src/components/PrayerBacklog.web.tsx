@@ -198,19 +198,28 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3 mt-4">
-        <div className="rounded-lg border border-green-500/30 bg-green-500/10 p-3">
-          <div className="text-xs text-green-500 mb-1">Prayed</div>
-          <div className="text-xl font-bold text-green-500">{stats.prayed}</div>
+      {/* Stats Strip */}
+      <div className="grid grid-cols-3 gap-3 mt-3.5 p-3 rounded-xl border border-border/60 bg-muted/20">
+        <div>
+          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Prayed</div>
+          <div className="text-xl font-bold text-foreground tabular-nums mt-0.5 flex items-center gap-1.5">
+            <span>{stats.prayed}</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          </div>
         </div>
-        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
-          <div className="text-xs text-amber-500 mb-1">Late</div>
-          <div className="text-xl font-bold text-amber-500">{stats.late}</div>
+        <div>
+          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Late</div>
+          <div className="text-xl font-bold text-foreground tabular-nums mt-0.5 flex items-center gap-1.5">
+            <span>{stats.late}</span>
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+          </div>
         </div>
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
-          <div className="text-xs text-red-500 mb-1">Missed</div>
-          <div className="text-xl font-bold text-red-500">{stats.missed}</div>
+        <div>
+          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Missed</div>
+          <div className="text-xl font-bold text-foreground tabular-nums mt-0.5 flex items-center gap-1.5">
+            <span>{stats.missed}</span>
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+          </div>
         </div>
       </div>
 

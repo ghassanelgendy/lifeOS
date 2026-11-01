@@ -717,6 +717,18 @@ The system shall provide a dynamic Qadaa make-up prayer tracking system:
 5. Provide dual-velocity tracking comparing planned target ETA vs actual 7-day rolling velocity ($V_{7\text{d}}$).
 6. Enable 1-tap full-day batch logging (`+1 يوم كامل`), single-prayer quick actions, and instant undo.
 
+#### FR-PRAYER-011: Deep Qadaa Habit & Task Synchronization
+1. The system shall support 1-tap inline Qadaa logging directly within the daily prayer rows (`CompactPrayerHabit`), allowing instantaneous logging after daily prayers.
+2. The system shall automatically synchronize with a daily "قضاء الصلوات اليومية" habit in the habit tracking engine, updating adherence when the daily pace is completed.
+3. The system shall provide an action to push today's remaining Qadaa prayers as individual tasks into the user's task list (e.g. `قضاء الفجر`, `قضاء الظهر`).
+4. Checking off a Qadaa task as completed in the Tasks view shall automatically detect the prayer key and increment the corresponding Qadaa log count and recalculate velocity.
+
+#### FR-PRAYER-012: Anti-Slop Prayer Cards & High-Tactile Interface
+1. Prayer and Qadaa cards shall adhere to anti-slop guidelines: neutral surfaces, 1px subtle borders, no rainbow gradients or artificial drop-shadows.
+2. KPIs and counts shall use large tabular typography rather than saturated icon boxes.
+3. Emojis shall be removed from all status badges and metric indicators.
+4. Action buttons shall provide tactile, ergonomic stepping with clear hover, active, and disabled states.
+
 ---
 
 ### 3.12.1 Quran Memorizer & Smart Sheikh Halqah Notes

@@ -248,12 +248,16 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Location modes: Device GPS or manual city search with geocoding
 - Prayer tracking: Log status per prayer (On Time, Late, Missed, Excused)
 - Prayer backlog: Track missed prayers for make-up (qada)
-- **Dynamic Qadaa (قضاء الصلوات الفائتة):** Comprehensive long-term make-up prayer tracking engine:
+- **Dynamic Qadaa (قضاء الصلوات الفائتة) & Deep Habit/Task Integration:** Comprehensive long-term make-up prayer tracking engine:
   - **Takleef Baseline Calculator:** Computes missed prayers from puberty/takleef to current age across the 4 Sunni Madhabs (Shafi'i, Maliki, Hanbali, Hanafi) or actual known age of puberty.
   - **Lunar (Hijri) & Solar Precision:** Toggle for classical Islamic lunar years (354.37 days/yr) vs solar years (365.25 days/yr).
   - **Hanafi Witr Option:** Optional toggle to include Witr prayer (6 prayers/day).
   - **User-Driven Daily Capacity ($D$):** Interactive commitment setting ($D$ prayers/day) with instant multi-year projection.
   - **Dual-Velocity Forecasting:** Real-time side-by-side comparison of planned target finish date vs. actual 7-day rolling velocity ($V_{7\text{d}}$) with schedule delta indicators (ahead/behind).
+  - **Direct Inline Qadaa Logging:** 1-tap `+1 قضاء` action embedded in daily prayer cards (`CompactPrayerHabit`), eliminating context switching.
+  - **Automated Habit Synchronization:** Auto-creates and automatically counts towards the daily "قضاء الصلوات اليومية" habit when daily target pace is reached.
+  - **Task Push & Completion Sync:** 1-tap generation of daily Qadaa tasks into Today's task list; completing a Qadaa task automatically increments the corresponding Qadaa prayer count and updates velocity in real time.
+  - **Anti-Slop Modern UI/UX:** Flat, calm surfaces with 1px borders, large tabular numbers, zero rainbow gradients or emoji badges, and ergonomic tactile steppers.
   - **Fast Multi-Prayer Actions:** Single-tap `+1 يوم كامل` batch logging, individual prayer `+1` / `+5`, and instant undo.
 - Prayer widget on Dashboard with countdown
 - Per-prayer notification settings: Pre-alarm offset, sound, enabled/disabled

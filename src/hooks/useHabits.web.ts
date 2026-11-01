@@ -494,6 +494,27 @@ export function useLogHabit() {
       }
       if (completed) {
         trackHabitLogged({ id: habitId });
+        try {
+          const { data: qHabit } = await supabase.from('habits').select('title').eq('id', habitId).maybeSingle();
+          if (qHabit?.title?.includes('قضاء الصلوات') && user?.id) {
+            const { data: todayQadaa } = await supabase.from('qadaa_logs').select('*').eq('user_id', user.id).eq('date', dateOnly).maybeSingle();
+            const hasLogs = todayQadaa && ((todayQadaa.fajr_count || 0) > 0 || (todayQadaa.dhuhr_count || 0) > 0 || (todayQadaa.asr_count || 0) > 0 || (todayQadaa.maghrib_count || 0) > 0 || (todayQadaa.isha_count || 0) > 0);
+            if (!hasLogs) {
+              await supabase.from('qadaa_logs').upsert({
+                user_id: user.id,
+                date: dateOnly,
+                fajr_count: 1,
+                dhuhr_count: 1,
+                asr_count: 1,
+                maghrib_count: 1,
+                isha_count: 1,
+                updated_at: new Date().toISOString(),
+              }, { onConflict: 'user_id,date' });
+              queryClient.invalidateQueries({ queryKey: ['qadaa-recent-logs'] });
+              queryClient.invalidateQueries({ queryKey: ['qadaa-totals'] });
+            }
+          }
+        } catch {}
       }
       return result as HabitLog;
     },
