@@ -41,6 +41,7 @@ tools/**/credentials*.json
 /src-tauri/target
 /src-tauri
 *.txt
+!public/robots.txt
 
 *.sql
 !supabase/migrations/*.sql

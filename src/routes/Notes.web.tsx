@@ -433,7 +433,7 @@ export default function NotesWeb() {
   const charCount = draftBody.length;
 
   return (
-    <div className="flex flex-col h-full min-h-0 space-y-4 pt-3 md:pt-0">
+    <div className="flex flex-col h-full min-h-0 space-y-4 pt-3 md:pt-0 px-2 sm:px-4 pb-28 md:pb-0">
       {/* Desktop Top Header Bar */}
       <header className="flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div>

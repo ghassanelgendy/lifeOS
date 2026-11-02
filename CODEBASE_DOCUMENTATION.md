@@ -4707,7 +4707,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-lib-qadaasync-ts"></a>
 ### src/lib/qadaaSync.ts
 
-**File Purpose:** Integration bridge between the Dynamic Qadaa engine, the daily Habit tracker, and the Task execution engine. Provides title parsing, auto-creation of Qadaa habits, daily pace logging, pre-prayer task offset calculation (`calculateQadaaTaskDueTime`), task generation, task toggle synchronization, and auto-increment/decrement of Qadaa targets on missed/restored prayers.
+**File Purpose:** Integration bridge between the Dynamic Qadaa engine, the daily Habit tracker, and the Task execution engine. Provides title parsing, auto-creation of Qadaa habits, daily pace logging, pre-prayer task offset calculation (`calculateQadaaTaskDueTime`), task generation with native reminder synchronization (`reminders_enabled`), task toggle synchronization, and auto-increment/decrement of Qadaa targets on missed/restored prayers.
 
 **Functions & Classes:**
 - `detectQadaaPrayerFromTaskTitle` (Function)

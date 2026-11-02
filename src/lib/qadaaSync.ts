@@ -252,6 +252,7 @@ export async function pushQadaaTasksForToday(
         priority: 'medium',
         is_completed: false,
         is_wont_do: false,
+        reminders_enabled: true,
         tag_ids: [],
         recurrence: 'none',
       });

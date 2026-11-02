@@ -42,6 +42,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
   const {
     todayLog,
     settings: qadaaSettings,
+    remaining,
     incrementPrayer,
     batchFullDay,
     pushTasks,
@@ -252,6 +253,11 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                   style={{ width: `${qadaaPercentage}%` }}
                 />
               </div>
+              {remaining && remaining.completionPct > 0 && (
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
+                  {remaining.completionPct}% مكتمل
+                </span>
+              )}
             </div>
 
             <div className="flex items-center gap-1.5">

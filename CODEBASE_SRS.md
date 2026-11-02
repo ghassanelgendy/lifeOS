@@ -728,6 +728,8 @@ The system shall provide a dynamic Qadaa make-up prayer tracking system:
 4. Qadaa tasks shall be scheduled **BEFORE the real obligatory prayer time** by an adjustable offset (`task_offset_minutes`, default 60 minutes, configurable to 15, 30, 45, 60, 90, 120 minutes) based on calculated Adhan times.
 5. Checking off a Qadaa task as completed in the Tasks view shall automatically detect the prayer key and increment the corresponding Qadaa log count and recalculate velocity.
 6. Any daily prayer marked as Missed or Skipped in the daily tracker (or Prayer Backlog) shall automatically increment the user's corresponding Qadaa backlog target by +1. If subsequently restored to Prayed or Late, it shall decrement the backlog target by 1.
+7. Pushed Qadaa tasks shall explicitly register `reminders_enabled: true` to trigger local native device notifications before prayer time.
+8. The daily prayer card shall render an unobtrusive milestone completion percentage badge when user backlog progress is active.
 
 #### FR-PRAYER-012: Anti-Slop Prayer Cards & High-Tactile Interface
 1. Prayer and Qadaa cards shall adhere to anti-slop guidelines: neutral surfaces, 1px subtle borders, no rainbow gradients or artificial drop-shadows.

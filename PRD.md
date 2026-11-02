@@ -257,8 +257,9 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
   - **Direct Inline Qadaa Logging:** 1-tap `+1 قضاء` action embedded in daily prayer cards (`CompactPrayerHabit`), eliminating context switching.
   - **Automated Habit Synchronization:** Configurable toggle (`auto_sync_habit`) that auto-creates and automatically synchronizes progress towards the daily "قضاء الصلوات اليومية" habit when Qadaa prayers are performed.
   - **Auto-Increment on Missed/Skipped Prayers:** Any daily prayer marked as Missed or Skipped in the daily tracker automatically increments the user's Qadaa target backlog (+1 owed prayer), and decrements when marked as Prayed/Late.
-  - **Auto-Push & Pre-Prayer Scheduling:** Configurable auto-push option (`auto_push_tasks`) that automatically generates daily Qadaa tasks scheduled **BEFORE the real prayer** time using an adjustable offset (`task_offset_minutes`, default 60 min, with options for 15, 30, 45, 60, 90, 120 min), ensuring users are prompted to perform make-up prayers prior to the current obligatory prayer time. Completing a Qadaa task automatically increments the corresponding Qadaa prayer count and updates velocity in real time.
-  - **Anti-Slop Modern UI/UX:** Flat, calm surfaces with 1px borders, large tabular numbers, zero rainbow gradients or emoji badges, and ergonomic tactile steppers.
+  - **Auto-Push & Pre-Prayer Scheduling:** Configurable auto-push option (`auto_push_tasks`) that automatically generates daily Qadaa tasks scheduled **BEFORE the real prayer** time using an adjustable offset (`task_offset_minutes`, default 60 min, with options for 15, 30, 45, 60, 90, 120 min), ensuring users are prompted to perform make-up prayers prior to the current obligatory prayer time. Completing a Qadaa task automatically increments the corresponding Qadaa prayer count and updates velocity in real time. Automatically registers native `reminders_enabled` to synchronize with local device notifications.
+  - **Milestone & Progress Badging:** Embedded real-time overall progress percentage badge and streak indicators in daily habit cards and backlog views.
+  - **Anti-Slop Modern UI/UX:** Flat, calm surfaces with 1px borders, large tabular numbers, zero rainbow gradients or emoji badges, and ergonomic tactile steppers. Full mobile browser layout support with safe-area insets and `100dvh` viewport handling.
   - **Fast Multi-Prayer Actions:** Single-tap `+1 يوم كامل` batch logging, individual prayer `+1` / `+5`, and instant undo.
 - Prayer widget on Dashboard with countdown
 - Per-prayer notification settings: Pre-alarm offset, sound, enabled/disabled
@@ -523,6 +524,8 @@ On Reconnect:
 - Storage: localStorage + IndexedDB
 - App Shortcuts: W3C Web App Manifest shortcuts for Quick Expense (`/finance?quick=expense`), Brain Dump (`/dashboard?open=braindump`), New Task (`/tasks?quick=add`), and Quran (`/quran`)
 - Web Share Target: Ingest shared text, links, and titles directly into Brain Dump capture
+- Technical SEO & Discovery: Structured Schema.org (`WebApplication` JSON-LD), compliant `public/robots.txt` with explicit AI crawler definitions (GPTBot, ClaudeBot, PerplexityBot), `public/sitemap.xml`, and complete Open Graph / Twitter Card metadata.
+- Viewport & Mobile Web Ergonomics: Native `100dvh` viewport boundary, liquid tab bar bottom clearance (`pb-28 sm:pb-12`), dynamic safe-area insets (`env(safe-area-inset-*)`), and zero horizontal jitter across mobile browsers.
 - Base URL: `/`
 
 ### 8.2 Android Native (Capacitor & WorkManager)
