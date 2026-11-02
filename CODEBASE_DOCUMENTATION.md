@@ -2629,7 +2629,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-appshell-web-tsx"></a>
 ### src/components/AppShell.web.tsx
 
-**File Purpose:** Primary application shell and responsive navigation wrapper for web and mobile browsers. Houses the desktop collapsible sidebar, dynamic contextual mobile header, slide-out drawer, bottom frosted navigation bar (`backdrop-blur-2xl`), pull-to-refresh container, global command palette, and audio/focus managers. Built with `100dvh` viewport constraints and scroll-safe touch handling.
+**File Purpose:** Primary application shell and responsive navigation wrapper for web and mobile browsers. Houses the desktop collapsible sidebar, dynamic contextual mobile header, iOS-style floating glassmorphic drawer (`z-[280]` on `z-[270]` backdrop with pinned items and compact 44px rows), bottom frosted navigation bar (`backdrop-blur-2xl`), pull-to-refresh container, global command palette, and audio/focus managers. Built with `100dvh` viewport constraints and scroll-safe touch handling.
 
 **Functions & Classes:**
 - `MobileNavLink` (React Component)
@@ -2639,7 +2639,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`MobileNavLink`** — React component rendering an active-pill touch-optimized tab button with smooth scroll-to-top on active press.
 - **`AppShell`** — Root layout component orchestrating sidebar, mobile header, bottom navigation bar, and routed child outlets.
 
-**Lines:** ~800
+**Lines:** 859
 
 ---
 

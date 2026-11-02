@@ -2148,19 +2148,19 @@ export default function Tasks() {
       {/* Mobile Sidebar Backdrop */}
       {showListsSidebar && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          className="md:hidden fixed inset-0 bg-black/50 z-[270]"
           onClick={() => setShowListsSidebar(false)}
         />
       )}
 
-      {/* Sidebar - Fixed overlay on mobile; space above bottom bar so content isn't cut */}
+      {/* Sidebar - Fixed overlay on mobile; rendered cleanly above bottom bar */}
       <aside
         className={cn(
           "flex flex-col border-r border-border bg-card transition-all duration-300 shrink-0",
-          "fixed md:relative inset-y-0 left-0 z-50 md:min-h-0",
+          "fixed md:relative inset-y-0 left-0 z-[280] md:z-auto md:min-h-0",
           "h-[100dvh] md:h-full md:min-h-full",
           "overflow-hidden",
-          "pt-[env(safe-area-inset-top)] pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-4",
+          "pt-[env(safe-area-inset-top)] pb-[calc(16px+env(safe-area-inset-bottom))] md:pb-4",
           showListsSidebar ? "w-[min(20rem,85vw)] md:w-80 translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:overflow-hidden"
         )}
       >

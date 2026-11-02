@@ -158,6 +158,7 @@ Users shall be able to reorder dashboard widgets via up/down controls.
 #### FR-DASH-006: Mobile Navigation Bar & Mobile Browser Ergonomics
 1. The system shall display a bottom navigation bar on mobile with 5 customizable slots (default: Dashboard, Tasks, Focus, Habits, Calendar).
 2. The bottom bar shall render with a frosted `backdrop-blur-2xl` background, active tab pill indicators, safe-area inset accommodation, and smooth scroll-to-top execution on active tab tap (without opening the sidebar drawer).
+3. The mobile navigation drawer on web shall use an iOS-style floating glassmorphic card (`z-[280]` on `z-[270]` backdrop, `rounded-[24px]`, `backdrop-blur-xl`), floating 12px from viewport edges. It shall sit with higher z-index priority over the mobile bottom navigation bar (`z-50`), ensuring drawer items and settings remain fully visible and accessible. It shall include a horizontal pinned item bar (`pinnedNavItems`) and 44px compact touch-target rows.
 3. The mobile web shell shall strictly bind to `100dvh` (Dynamic Viewport Height) to eliminate clipping caused by mobile browser address bars and bottom toolbars.
 4. Vertical thumb scrolling on mobile web shall not trigger horizontal tab switching or route hijacking.
 5. The mobile header shall dynamically display the current active view title and provide accessible touch targets for menu, brain dump, and profile settings.

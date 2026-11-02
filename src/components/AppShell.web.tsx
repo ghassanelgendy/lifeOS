@@ -87,6 +87,7 @@ export function AppShell() {
     isSidebarCollapsed,
     toggleSidebar,
     mobileNavItems,
+    pinnedNavItems,
     desktopNavOrder,
     desktopNavVisible,
     isMobileSidebarOpen,
@@ -240,6 +241,19 @@ export function AppShell() {
     const missing = navItems.filter((item) => !savedOrder.some((saved) => saved.href === item.href));
     return [...savedOrder, ...missing].filter((item) => desktopNavVisible[item.href] !== false);
   }, [desktopNavOrder, desktopNavVisible, aiEnabled]);
+
+  // Drawer items pinned to the horizontal icon-only row up top (in user's chosen order),
+  // with the rest of desktopNavigation below as the regular vertical list (matching iOS).
+  const pinnedDrawerItems = useMemo(
+    () => (pinnedNavItems || [])
+      .map((href) => desktopNavigation.find((item) => item.href === href))
+      .filter((item): item is NavItem => !!item),
+    [pinnedNavItems, desktopNavigation]
+  );
+  const unpinnedDrawerItems = useMemo(
+    () => desktopNavigation.filter((item) => !(pinnedNavItems || []).includes(item.href)),
+    [desktopNavigation, pinnedNavItems]
+  );
 
   const currentIndex = mobileNavigationMapped.findIndex(
     (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
@@ -396,11 +410,11 @@ export function AppShell() {
   return (
     <div className="flex h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-background text-foreground font-sans">
       <CommandPalette />
-      {/* Mobile drawer (slide from left) */}
+      {/* Mobile drawer (slide from left) - iOS-style floating glassmorphic card */}
       <>
         <div
           className={cn(
-            "md:hidden fixed inset-0 z-40 bg-black/50 transition-opacity duration-150",
+            "md:hidden fixed inset-0 z-[270] bg-black/50 transition-opacity duration-150",
             isMobileSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
           )}
           onClick={() => setMobileSidebarOpen(false)}
@@ -408,22 +422,48 @@ export function AppShell() {
         />
         <aside
           className={cn(
-            "md:hidden fixed top-0 left-0 z-50 w-[min(22rem,88vw)] min-w-[17rem] h-[100dvh] max-h-[100dvh] flex flex-col bg-card border-r border-border shadow-2xl transition-transform duration-200 ease-out will-change-transform transform-gpu",
-            isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+            "md:hidden fixed z-[280] w-[min(20rem,85vw)] min-w-[16rem] flex flex-col transition-transform duration-250 ease-out will-change-transform transform-gpu rounded-[24px]",
+            "bg-[#F9F9F9]/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl",
+            isMobileSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+24px)]"
           )}
-          style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+          style={{ 
+            top: 'calc(12px + env(safe-area-inset-top))', 
+            left: '12px',
+            height: 'calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom))'
+          }}
         >
-          <div className="flex h-14 items-center justify-between px-4 border-b border-border shrink-0">
-            <span className="text-xl font-bold tracking-tight">LifeOS</span>
+          <div className="flex h-11 items-center justify-between px-4 border-b border-border/40 shrink-0">
+            <span className="text-base font-bold tracking-tight">LifeOS</span>
             <button 
               onClick={() => setMobileSidebarOpen(false)} 
-              className="p-1 hover:bg-secondary rounded-md active:scale-95 transition-transform touch-manipulation"
+              className="p-1.5 hover:bg-secondary/60 rounded-full active:scale-95 transition-transform touch-manipulation text-muted-foreground"
+              aria-label="Close menu"
             >
-              <X size={24} />
+              <X size={18} />
             </button>
           </div>
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-4 flex flex-col gap-0.5 px-3">
-            {desktopNavigation.map((item) => {
+          {pinnedDrawerItems.length > 0 && (
+            <div className="flex items-center justify-around gap-1 px-2.5 py-2 border-b border-border/40 shrink-0">
+              {pinnedDrawerItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  to={item.href}
+                  end={item.href === '/'}
+                  aria-label={item.label}
+                  className={({ isActive }) => cn(
+                    "flex flex-col items-center justify-center gap-1 rounded-xl p-2 min-w-[3.25rem] transition-colors hover:bg-secondary/50",
+                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
+                  )}
+                  onClick={() => setMobileSidebarOpen(false)}
+                >
+                  <item.icon size={22} className="shrink-0" />
+                </NavLink>
+              ))}
+            </div>
+          )}
+          {/* Rows are deliberately compact (44px) so all nav entries fit on a phone screen with little or no scrolling */}
+          <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto overflow-x-hidden py-2 flex flex-col px-2.5">
+            {unpinnedDrawerItems.map((item) => {
               const isAnalytics = item.href === '/analytics';
               const showDot = isAnalytics && showWrappedTakeover;
               return (
@@ -432,13 +472,13 @@ export function AppShell() {
                   to={item.href}
                   end={item.href === '/'}
                   className={({ isActive }) => cn(
-                    "flex items-center gap-4 rounded-xl px-4 py-3.5 text-lg font-medium transition-colors hover:bg-secondary min-h-[3.25rem] relative",
-                    isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
+                    "flex items-center gap-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-secondary/50 min-h-[2.75rem] relative",
+                    isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
                   )}
                   onClick={() => setMobileSidebarOpen(false)}
                 >
                   <div className="relative">
-                    <item.icon size={26} className="shrink-0" />
+                    <item.icon size={19} className="shrink-0" />
                     {showDot && (
                       <span className="absolute -top-1 -right-1 flex h-2 w-2">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -451,40 +491,40 @@ export function AppShell() {
               );
             })}
           </nav>
-          <div className="p-4 border-t border-border">
+          <div className="p-2.5 border-t border-border/40">
             {showWrappedTakeover ? (
               <NavLink
                 to="/analytics"
                 className={({ isActive }) => cn(
-                  "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-lg font-medium hover:bg-secondary min-h-[3.25rem] relative border border-primary/20 bg-primary/5 text-primary",
+                  "flex items-center gap-3 w-full rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-secondary/50 min-h-[2.75rem] relative border border-primary/20 bg-primary/5 text-primary",
                   isActive ? "bg-primary text-primary-foreground" : ""
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Sparkles size={26} className="shrink-0 text-primary animate-pulse" />
+                <Sparkles size={19} className="shrink-0 text-primary animate-pulse" />
                 <span className="min-w-0 break-words font-semibold">
                   {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
                 </span>
-                <span className="absolute top-3 right-3 flex h-2.5 w-2.5">
+                <span className="absolute top-2.5 right-3 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                 </span>
               </NavLink>
             ) : (
               <NavLink
                 to="/settings"
                 className={({ isActive }) => cn(
-                  "flex items-center gap-4 w-full rounded-xl px-4 py-3.5 text-lg font-medium hover:bg-secondary min-h-[3.25rem]",
-                  isActive ? "bg-secondary text-foreground" : "text-muted-foreground"
+                  "flex items-center gap-3 w-full rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-secondary/50 min-h-[2.75rem]",
+                  isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <UserBlobatar identifier={user?.email || user?.id} size={28} />
+                <UserBlobatar identifier={user?.email || user?.id} size={24} />
                 <div className="flex flex-col min-w-0 leading-tight">
-                  <span className="min-w-0 truncate font-semibold text-foreground text-base">
+                  <span className="min-w-0 truncate font-medium text-foreground text-sm">
                     {user?.email ? user.email.split('@')[0] : 'Settings'}
                   </span>
-                  <span className="text-xs text-muted-foreground">Settings & Profile</span>
+                  <span className="text-[10px] text-muted-foreground">Settings & Profile</span>
                 </div>
               </NavLink>
             )}
