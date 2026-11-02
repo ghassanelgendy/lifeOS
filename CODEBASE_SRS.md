@@ -542,7 +542,7 @@ Screen time data ingestion shall support both standard and Chronos platform form
 ### 3.14 Shared Collaboration
 
 #### FR-COLLAB-001: Shared Todo Lists Collaboration
-The system shall allow users to share an entire Task List with other users by email. Collaborators shall be able to view, create, edit, and mark tasks complete within shared lists in real-time.
+The system shall allow users to share an entire Task List with other users by email across both Web and iOS native clients. Collaborators shall be able to view, create, edit, and mark tasks complete within shared lists in real-time, managed through the integrated `ShareModal` component.
 
 #### FR-COLLAB-002: Shared Notes Collaboration
 The system shall allow users to share Wiki Notes with other users by email. Collaborators shall be able to view and edit shared notes.
@@ -897,7 +897,7 @@ Dedicated analytics view for habit adherence trends, day-of-week patterns, and s
 Dedicated analytics view for screen time trends, app usage patterns, and website visit analytics.
 
 #### FR-ANALYTICS-016: Health-Wealth Analytics
-Cross-domain analytics comparing health metrics (sleep) and financial patterns.
+Cross-domain analytics comparing health metrics (sleep duration and quality) and financial patterns. The system shall compute impulse expenditure deltas comparing restricted sleep nights (<6.5h) to restorative sleep nights (7h+), display statistical Pearson correlation coefficient ($r$), and visualize trends via a dual-axis Recharts ComposedChart with daily expense bars and sleep hour lines.
 
 #### FR-ANALYTICS-017: Points Analytics
 Analytics view showing points earned/consumed over time, reward redemption history, and balance trends.

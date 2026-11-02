@@ -3347,15 +3347,15 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-analytics-analyticshealthwealth-tsx"></a>
 ### src/components/analytics/AnalyticsHealthWealth.tsx
 
-**File Purpose:** Analytics visualization component. Renders charts, reports, and trend analysis UI.
+**File Purpose:** Cross-domain analytics component linking sleep duration and quality metrics with financial transactions. Renders impulse spending metrics (<6.5h vs 7h+ sleep), Pearson correlation coefficients, and an interactive dual-axis Recharts timeline chart with expense bars and sleep hour lines.
 
 **Functions & Classes:**
 - `AnalyticsHealthWealth` (Function)
 
 **Function Details:**
-- **`AnalyticsHealthWealth`** — Utility function for analytics health wealth.
+- **`AnalyticsHealthWealth`** — Cross-domain analytics visualization rendering health and wealth correlations.
 
-**Lines:** 148
+**Lines:** 399
 
 ---
 

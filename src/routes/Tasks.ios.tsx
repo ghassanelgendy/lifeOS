@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2, Search, X, CheckSquare, FolderInput } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2, Search, X, CheckSquare, FolderInput, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { triggerHaptics } from '../lib/nativeBridge';
@@ -17,13 +17,14 @@ import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar'
 import { useSleepMetrics } from '../hooks/useSleep';
 import { distributeTasksAcrossAwakeSlots, estimateTaskDuration, findConflictFreeSlotOnDate, type SmartTimeSlot } from '../lib/smartTaskScheduler';
 import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { ShareModal } from '../components/collaboration/ShareModal';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
 import { analyzeTaskSimilarityWithAI, type TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
 import { TaskDetailsContent, type TaskDetailsFormState } from '../components/TaskDetailsContent';
 import { MarqueeTitle } from '../components/ui/MarqueeTitle';
 import { parseTaskInput, type SuggestionTrigger, toDateString } from '../lib/taskInputSuggestions';
 import { listIdFromTagIds } from '../lib/listIdFromTagIds';
-import type { Task, Tag, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType, CalendarEvent } from '../types/schema';
+import type { Task, Tag, TaskList, CreateInput, TaskPriority, TaskRecurrence, TaskRecurrenceEndType, CalendarEvent } from '../types/schema';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
@@ -327,6 +328,36 @@ export default function Tasks() {
   const [similarityMatches, setSimilarityMatches] = useState<TaskSimilarityMatch[]>([]);
   const [pendingDraftTaskPayload, setPendingDraftTaskPayload] = useState<CreateInput<Task> | null>(null);
   const [_isCheckingSimilarity, setIsCheckingSimilarity] = useState(false);
+
+  const [shareListModalOpen, setShareListModalOpen] = useState(false);
+  const [shareListTarget, setShareListTarget] = useState<TaskList | null>(null);
+
+  const handleShareList = (email: string) => {
+    if (!shareListTarget) return;
+    const currentShared = shareListTarget.shared_with || [];
+    const updatedShared = Array.from(new Set([...currentShared, email]));
+    updateTaskList.mutate({
+      id: shareListTarget.id,
+      data: {
+        is_shared: true,
+        shared_with: updatedShared,
+      },
+    });
+    setShareListTarget({ ...shareListTarget, is_shared: true, shared_with: updatedShared });
+  };
+
+  const handleUnshareList = (email: string) => {
+    if (!shareListTarget) return;
+    const updatedShared = (shareListTarget.shared_with || []).filter((e) => e.toLowerCase() !== email.toLowerCase());
+    updateTaskList.mutate({
+      id: shareListTarget.id,
+      data: {
+        is_shared: updatedShared.length > 0,
+        shared_with: updatedShared,
+      },
+    });
+    setShareListTarget({ ...shareListTarget, is_shared: updatedShared.length > 0, shared_with: updatedShared });
+  };
 
   // Smart Unscheduled Tasks Scheduler State
   const [isSmartScheduleModalOpen, setIsSmartScheduleModalOpen] = useState(false);
@@ -2538,6 +2569,19 @@ export default function Tasks() {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
+                        setShareListTarget(list);
+                        setShareListModalOpen(true);
+                      }}
+                      className="p-1.5 rounded hover:bg-background/70 text-indigo-400"
+                      aria-label={`Share list ${list.name}`}
+                      title="Share list"
+                    >
+                      <Users size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         openEditListModal(list.id);
                       }}
                       className="p-1.5 rounded hover:bg-background/70"
@@ -2680,6 +2724,24 @@ export default function Tasks() {
           {/* Desktop title */}
           <h1 className="text-2xl font-bold md:block hidden shrink-0">{getViewTitle()}</h1>
 
+          {activeView === 'list' && activeListId && (() => {
+            const currentList = taskLists.find((l) => l.id === activeListId);
+            if (!currentList) return null;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setShareListTarget(currentList);
+                  setShareListModalOpen(true);
+                }}
+                className="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card hover:bg-secondary text-xs font-semibold text-foreground transition-all cursor-pointer shadow-xs ml-2"
+              >
+                <Users className="size-3.5 text-indigo-400" />
+                <span>{currentList.is_shared ? `Shared (${currentList.shared_with?.length || 0})` : 'Share List'}</span>
+              </button>
+            );
+          })()}
+
           {/* Mobile: center title that fills the gap between the two icon buttons */}
           <div className="flex-1 min-w-0 flex flex-col items-center md:hidden">
             <span className="text-[15px] font-semibold text-foreground truncate leading-tight">
@@ -2690,6 +2752,23 @@ export default function Tasks() {
                 {overdueTasks.length} overdue
               </span>
             )}
+            {activeView === 'list' && activeListId && (() => {
+              const currentList = taskLists.find((l) => l.id === activeListId);
+              if (!currentList) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShareListTarget(currentList);
+                    setShareListModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-400 hover:text-indigo-300 mt-0.5"
+                >
+                  <Users size={11} />
+                  <span>{currentList.is_shared ? `Shared (${currentList.shared_with?.length || 0})` : 'Share'}</span>
+                </button>
+              );
+            })()}
           </div>
 
           {/* Desktop: overdue badge */}
@@ -3126,7 +3205,7 @@ Return ONLY raw JSON.`;
                   )}
                   {newTaskListId && (
                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-secondary">
-                      List: {taskLists.find((l) => l.id === newTaskListId)?.name ?? '—'}
+                      List: {taskLists.find((l: TaskList) => l.id === newTaskListId)?.name ?? '—'}
                     </span>
                   )}
                   {newTaskTagIds.length > 0 && (
@@ -3859,7 +3938,7 @@ Return ONLY raw JSON.`;
             }
             options={[
               { value: '', label: 'None' },
-              ...(taskLists ?? []).map((l) => ({ value: l.id, label: l.name })),
+              ...(taskLists ?? []).map((l: TaskList) => ({ value: l.id, label: l.name })),
             ]}
           />
           <p className="text-xs text-muted-foreground -mt-2">
@@ -4516,6 +4595,20 @@ Return ONLY raw JSON.`;
         onCancel={() => setIsBatchDeleteConfirmOpen(false)}
         onConfirm={handleBatchDelete}
         isLoading={isBatchProcessing}
+      />
+
+      <ShareModal
+        isOpen={shareListModalOpen}
+        onClose={() => {
+          setShareListModalOpen(false);
+          setShareListTarget(null);
+        }}
+        title={`Share List: ${shareListTarget?.name || ''}`}
+        entityName={shareListTarget?.name || ''}
+        entityType="list"
+        sharedWith={shareListTarget?.shared_with || []}
+        onShare={handleShareList}
+        onUnshare={handleUnshareList}
       />
     </div>
   );

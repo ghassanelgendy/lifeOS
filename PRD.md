@@ -118,7 +118,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 **Purpose:** More than a to-do list. Task management tied to goals and calendar.
 
 - Smart Lists: Today, Week, Upcoming, All Tasks, Completed, Won't Do
-- Lists (Projects): Custom lists with color coding, drag ordering, and shared collaboration (invite users by email to co-manage whole todo lists)
+- Lists (Projects): Custom lists with color coding, drag ordering, and shared collaboration across Web and iOS native views (invite users by email via `ShareModal` to co-manage whole todo lists in real-time)
 - Tags: Multi-tag support for cross-cutting categorization
 - **Search:** A search toggle in the Tasks page header (PC web, iOS, and desktop/Pake) expands into an inline text input that filters the currently active view (smart list, custom list, or tag) by task title, description, and tag names, case-insensitively; clearing or closing the search (X button or Escape) restores the unfiltered view. Search applies across List, Board, and Timeline display modes on PC web.
 - Natural Language Input: "Submit report tomorrow at 3pm !!" creates a high-priority task due tomorrow at 15:00
@@ -154,7 +154,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
   - 30-day chronological activity heatmap matrix with color-coded daily completion states.
   - Strongest day of the week analysis based on historical logs.
   - Quick action to edit habit details directly from the modal.
-- Streak Rescue: Spend points to restore a broken streak (cost = 2^(streak_length))
+- Streak Rescue: Spend points to restore a broken streak (cost = 2^(streak_length)), verified via native in-app `ConfirmSheet` dialogs with real-time balance checks and immediate optimistic streak restoration without browser popups.
 - Adherence heatmap calendar (GitHub-style contribution graph)
 - Insights: Average adherence, best/worst day of week, trend direction
 - Archiving: Soft-delete habits preserving all history
@@ -275,7 +275,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Deep insights: Correlation analysis between habits ⟷ sleep ⟷ tasks ⟷ screen time
 - Digital analytics: Screen time trends, app/website usage patterns
 - Habits analytics: Adherence trends, day-of-week patterns, streak visualization
-- Health-wealth analytics: Sleep quality vs. spending patterns
+- Health-wealth analytics: Sleep quality and duration vs. daily spending patterns, featuring impulse expenditure delta calculations (<6.5h sleep vs. 7h+ rest), statistical Pearson correlation coefficient ($r$), and an interactive dual-axis Recharts timeline composed chart (expense bars paired with sleep duration hours line).
 - Points analytics: Earning/consumption trends, reward history
 - Score rings and delta badges for visual impact
 - Suggestions engine: Pattern-based recommendations

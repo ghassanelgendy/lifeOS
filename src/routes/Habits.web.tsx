@@ -300,6 +300,7 @@ export default function Habits() {
   const [archiveHabitId, setArchiveHabitId] = useState<string | null>(null);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [selectedHabitForStats, setSelectedHabitForStats] = useState<Habit | null>(null);
+  const [rescueConfirmDetails, setRescueConfirmDetails] = useState<{ habit: Habit; date: string; cost: number; rescuableStreak: number } | null>(null);
   const habitFormRef = useRef<HTMLFormElement | null>(null);
 
   const handleTriggerAddHabit = () => {
@@ -849,30 +850,11 @@ export default function Habits() {
                                       const dateStr = format(day, 'yyyy-MM-dd');
                                       const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
                                       const cost = getHabitRescueCost(rescuableStreak);
-                                      if (window.confirm(`Rescuing "${habit.title}" on ${dateStr} will cost ${cost} points. Proceed?`)) {
-                                        if (pointsBalance < cost) {
-                                          alert(`Insufficient points. You need ${cost} points.`);
-                                          return;
-                                        }
-                                        try {
-                                          await addPointsTx.mutateAsync({
-                                            amount: -cost,
-                                            description: `Rescued Streak: ${habit.title} (${rescuableStreak} days)`,
-                                            reference_type: 'habit_rescue',
-                                            reference_id: habit.id,
-                                          });
-                                          await logHabit.mutateAsync({
-                                            habitId: habit.id,
-                                            date: dateStr,
-                                            completed: true,
-                                            note: 'rescue',
-                                          });
-                                          queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
-                                          queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
-                                        } catch (err: any) {
-                                          alert(err.message || 'Failed to rescue streak');
-                                        }
+                                      if (pointsBalance < cost) {
+                                        alert(`Insufficient points. You need ${cost} points to rescue this streak.`);
+                                        return;
                                       }
+                                      setRescueConfirmDetails({ habit, date: dateStr, cost, rescuableStreak });
                                     }
                                   }}
                                   disabled={!canClick}
@@ -1031,32 +1013,11 @@ export default function Habits() {
                                         const dateStr = format(day, 'yyyy-MM-dd');
                                         const rescuableStreak = rescuableStreaks[habit.id] ?? 0;
                                         const cost = getHabitRescueCost(rescuableStreak);
-                                        if (window.confirm(`Rescuing "${habit.title}" on ${dateStr} will cost ${cost} points. Proceed?`)) {
-                                          if (pointsBalance < cost) {
-                                            alert(`Insufficient points. You need ${cost} points.`);
-                                            return;
-                                          }
-                                          try {
-                                            await addPointsTx.mutateAsync({
-                                              amount: -cost,
-                                              description: `Rescued Streak: ${habit.title} (${rescuableStreak} days)`,
-                                              reference_type: 'habit_rescue',
-                                              reference_id: habit.id,
-                                            });
-
-                                            await logHabit.mutateAsync({
-                                              habitId: habit.id,
-                                              date: dateStr,
-                                              completed: true,
-                                              note: 'rescue',
-                                            });
-
-                                            queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
-                                            queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
-                                          } catch (err: any) {
-                                            alert(err.message || 'Failed to rescue streak');
-                                          }
+                                        if (pointsBalance < cost) {
+                                          alert(`Insufficient points. You need ${cost} points to rescue this streak.`);
+                                          return;
                                         }
+                                        setRescueConfirmDetails({ habit, date: dateStr, cost, rescuableStreak });
                                       }
                                     }}
                                     disabled={!canClick}
@@ -1622,6 +1583,40 @@ export default function Habits() {
           setArchiveHabitId(null);
         }}
         isLoading={deleteHabit.isPending}
+      />
+      <ConfirmSheet
+        isOpen={!!rescueConfirmDetails}
+        title="Rescue Streak?"
+        message={`Rescuing "${rescueConfirmDetails?.habit.title}" on ${rescueConfirmDetails ? format(new Date(rescueConfirmDetails.date), 'MMMM d, yyyy') : ''} will cost ${rescueConfirmDetails?.cost} points. This retroactively ticks this habit as done to restore your streak.`}
+        confirmLabel={rescueConfirmDetails ? `Rescue (-${rescueConfirmDetails.cost} pts)` : 'Rescue'}
+        cancelLabel="Cancel"
+        confirmVariant="secondary"
+        onConfirm={async () => {
+          if (!rescueConfirmDetails) return;
+          const { habit, date, cost, rescuableStreak } = rescueConfirmDetails;
+          setRescueConfirmDetails(null);
+          try {
+            await addPointsTx.mutateAsync({
+              amount: -cost,
+              description: `Rescued Streak: ${habit.title} (${rescuableStreak} days)`,
+              reference_type: 'habit_rescue',
+              reference_id: habit.id,
+            });
+
+            await logHabit.mutateAsync({
+              habitId: habit.id,
+              date: date,
+              completed: true,
+              note: 'rescue',
+            });
+
+            queryClient.invalidateQueries({ queryKey: ['habit-logs'] });
+            queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
+          } catch (err: any) {
+            alert(err.message || 'Failed to rescue streak');
+          }
+        }}
+        onCancel={() => setRescueConfirmDetails(null)}
       />
       <HabitStatsModal
         isOpen={!!selectedHabitForStats}

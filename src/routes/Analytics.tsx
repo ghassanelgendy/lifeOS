@@ -778,6 +778,8 @@ export default function Analytics() {
             financeAgg={financeAgg}
             topExpenseCategories={top.topExpenseCategories}
             topMerchants={top.topMerchants}
+            dailySleep={daily.sleep.data ?? []}
+            dailyFinance={daily.finance.data ?? []}
             rangeLabel={rangeLabel}
             privacyMode={privacyMode}
             analyticsShowTips={analyticsShowTips}
