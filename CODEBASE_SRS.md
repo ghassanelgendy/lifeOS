@@ -412,30 +412,6 @@ The system shall provide a smart next-week scheduling engine integrated into the
 - Distributes harvested candidates into free awake time slots across next week's days, sorted by priority (urgent/high first).
 - Provides an interactive review modal allowing users to inspect suggested day and time slots, change days, exclude candidates, and batch-apply with a single click.
 
-#### FR-CAL-017: Smart Task Tracker (متتبع المهام الذكي - Panoramic 7-Day Board)
-The Weekly Planner shall support an interactive 7-day horizontal panoramic board:
-- Renders 7 color-coded columns (Violet, Blue, Emerald, Cyan, Amber, Orange, Rose) matching the Nasiqli Productivity design system.
-- Displays dynamic SVG circular radial progress gauges showing daily completion percentages with animated stroke-dashoffset transitions.
-- Displays summary KPI cards for total weekly completed tasks, incomplete tasks, total scheduled tasks, and a 7-day mini vertical progress bar chart.
-- Supports customizable week starting day (Saturday for Middle East/Arab regions, Sunday, or Monday).
-- Provides interactive task items with checkbox toggle, title, due date, hover delete, and inline quick-add input per day column.
-- Displays bottom column summary metrics: completed tasks (`المكتمل`), incomplete tasks (`غير مكتمل`), and total tasks (`عدد المهام`).
-
-#### FR-CAL-018: 30-Day Rainbow Habit & Sleep Matrix (مصفوفة العادات والنوم)
-The Weekly Planner shall support a monthly habit matrix and sleep correlation view:
-- Renders an interactive matrix table of active habits across all days of the selected month, grouped into 5 color-coded weekly clusters.
-- Features interactive checkbox cells connected to `habit_logs` with optimistic cache updating.
-- Computes monthly target days, percentage progress bar, and completion count per habit.
-- Displays daily sleep duration (hours) derived from Apple Health sleep stage segments and daily sleep quality rating (1-10) with monthly statistical averages.
-- Displays weekly milestone summary cards (Weeks 1 to 5) tracking progress rates and completions.
-
-#### FR-CAL-019: Planner View Mode Switcher & URL Query Persistence
-The Weekly Planner shall provide a segmented control switcher allowing instant toggling between:
-- Smart Task Tracker (`smart_tracker`)
-- Habit & Sleep Matrix (`habit_matrix`)
-- Classic 2x4 Grid (`classic`)
-The user's selection shall be synchronized bidirectionally with the URL search param (`?view=...`) and persisted to `localStorage` (`lifeos_planner_mode`) across sessions. Native haptic feedback shall be triggered upon switching.
-
 ---
 
 ### 3.6 Finance Management

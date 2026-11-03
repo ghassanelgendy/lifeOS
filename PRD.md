@@ -124,11 +124,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 - Natural Language Input: "Submit report tomorrow at 3pm !!" creates a high-priority task due tomorrow at 15:00
 - Subtasks: Extracted from markdown `- [ ]` checkboxes in description
 - Recurrence: Daily, weekly, monthly with end conditions
-- Weekly Planner: Full-featured weekly productivity suite with three toggleable modes:
-  - **Smart Task Tracker (متتبع المهام الذكي):** Recreates the popular horizontal 7-day panoramic board with dynamic circular SVG progress gauges for each day, top summary KPI badges (completed, incomplete, total tasks), interactive 7-day mini progress chart, customizable week starting day (Saturday, Sunday, Monday), inline quick task creation, and bottom status breakdown cards (المكتمل, غير مكتمل, عدد المهام).
-  - **30-Day Rainbow Habit & Sleep Matrix (مصفوفة العادات والنوم):** A companion monthly habit matrix table with 5 color-coded weekly segments, daily completion checkboxes with instant optimistic caching, habit-by-habit progress bars & completion rates, and daily sleep duration & quality (1-10) correlation rows with monthly statistical averages.
-  - **Classic 2x4 Grid:** Drag-and-drop tasks and calendar events onto specific days of the week, with crowdness color coding, weekly load sparkline, and self-care reflection notes.
-  - **View Mode Switcher:** Instant segmented control with URL query synchronization (`?view=smart_tracker|habit_matrix|classic`) and persistent local storage preference.
+- Weekly Planner: Drag tasks onto specific days of the week
 - Task-to-Habit Conversion: Promote a recurring task to a formal habit
 - Calendar Feed: Export tasks as iCal for external calendar subscription
 - **Smart Unscheduled Tasks Scheduler:** 1-click schedule button that analyzes unscheduled tasks and calculates conflict-free awake time slots across the upcoming week or month, strictly avoiding sleep hours (derived from user sleep metrics) and avoiding clashes with existing tasks and calendar events. Smart duration estimation parses task titles/descriptions for explicit duration patterns (`2h`, `45m`) and semantic keyword matching (calls/texts → 15m, study/code → 60m, workout/meeting → 45m, journaling → 25m). Tasks are evenly paced across the horizon to prevent 3–4 day compression (daily cap = `ceil(taskCount / horizonDays)`). On apply, `duration_minutes` is persisted per task. The modal shows estimated duration badges on each proposed item and uses a proper Loader2 spinner (instead of rotating Wand2) during apply.

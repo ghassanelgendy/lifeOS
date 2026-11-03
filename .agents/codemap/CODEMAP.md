@@ -4,8 +4,8 @@
 > Companions: [`graph.json`](./graph.json) (full node/edge graph), [`tables.json`](./tables.json) (data index).
 
 **Read this file first.** It is designed so an agent can locate the right 2–5 files
-for a task without grepping the tree. 296 source files,
-119,385 LOC, 982 internal import edges.
+for a task without grepping the tree. 286 source files,
+116,621 LOC, 936 internal import edges.
 
 ## 0. How to use this map
 
@@ -103,27 +103,26 @@ iOS-build risk**; families with `.pake` silently diverge from web.
 
 | Route | Component | Primary hooks | Tables touched |
 |---|---|---|---|
-| `/analytics` | `Analytics` | useAnalytics, useAuth, useHabits, usePoints | custom_rewards, habit_logs, habits, points_transactions, prayer_habits, prayer_logs … (+2) |
+| `/analytics` | `Analytics` | useAnalytics, useAuth, useHabits, usePoints | custom_rewards, habit_logs, habits, points_transactions, prayer_habits, prayer_logs … (+1) |
 | `/azkar` | `Azkar` | useAuth, useAzkar, useSleep | azkar_daily_progress, azkar_favorites, habit_logs, habits, sleep_stages |
 | `/calendar` | `Calendar` | useAuth, useCalendar, useIcalSubscriptions, usePoints, useTaskCalendarFeed … (+1) | calendar_events, calendar_task_links, habits, notes, points_transactions, tags … (+4) |
-| `/chat` | `Chat` | useAuth, useCalendar, useFinance, useHabits, useHealthData … (+6) | calendar_events, habit_logs, habits, inbody_scans, note_folders, notes … (+14) |
-| `/dashboard` | `Dashboard` | useAuth, useCalendar, useHabits, useIcalSubscriptions, usePoints … (+1) | calendar_events, habit_logs, habits, notes, points_transactions, prayer_habits … (+6) |
+| `/chat` | `Chat` | useAuth, useCalendar, useFinance, useHabits, useHealthData … (+6) | calendar_events, habit_logs, habits, inbody_scans, note_folders, notes … (+13) |
+| `/dashboard` | `Dashboard` | useAuth, useCalendar, useHabits, useIcalSubscriptions, usePoints … (+1) | calendar_events, habit_logs, habits, notes, points_transactions, prayer_habits … (+5) |
 | `/finance` | `Finance` | useAuth, useFinance, useInvestments, useUserBanks | investment_accounts, investment_transactions, transaction_rules, transactions, user_banks |
 | `/focus` | `Focus` | useAuth, usePoints, useTasks | habits, notes, points_transactions, tags, task_lists, tasks |
-| `/habits` | `Habits` | useAuth, useAzkar, useHabits, usePoints, useSleep | azkar_daily_progress, azkar_favorites, custom_rewards, habit_logs, habits, points_transactions … (+5) |
+| `/habits` | `Habits` | useAuth, useAzkar, useHabits, usePoints, useSleep | azkar_daily_progress, azkar_favorites, custom_rewards, habit_logs, habits, points_transactions … (+4) |
 | `/health` | `Health` | useAuth, useHealthData | inbody_scans |
 | — *(not mounted directly)* | `Landing` | — | — |
 | `/login` | `Login` | useAuth | — |
 | `/notes` | `Notes` | useAuth, useNotes, usePoints, useTasks | habit_logs, habits, note_folders, notes, points_transactions, prayer_logs … (+3) |
 | `/points` | `Points` | useAuth, usePoints | custom_rewards, points_transactions, tasks |
-| `/qadaa` | `Qadaa` | — | — |
-| `/quran` | `Quran` | useAuth, useCalendar, useHabits, useIcalSubscriptions, useNotes … (+3) | calendar_events, habit_logs, habits, note_folders, notes, points_transactions … (+9) |
+| `/quran` | `Quran` | useAuth, useCalendar, useHabits, useIcalSubscriptions, useNotes … (+3) | calendar_events, habit_logs, habits, note_folders, notes, points_transactions … (+8) |
 | `/screentime` | `Screentime` | useAuth, useScreentime | screentime_daily_app_stats, screentime_daily_summary, screentime_daily_website_stats |
-| `/settings` | `Settings` | useAuth, useHabits, usePoints, usePrayerHabits, usePrayerTimes … (+2) | habit_logs, habits, notes, points_transactions, prayer_habits, prayer_logs … (+6) |
+| `/settings` | `Settings` | useAuth, useHabits, usePoints, usePrayerHabits, usePrayerTimes … (+2) | habit_logs, habits, notes, points_transactions, prayer_habits, prayer_logs … (+5) |
 | `/signup` | `Signup` | useAuth | — |
 | `/sleep` | `Sleep` | useAuth, useSleep | sleep_stages |
-| `/tasks` | `Tasks` | useAuth, useCalendar, useHabits, useIcalSubscriptions, useNativeInteraction … (+3) | calendar_events, habit_logs, habits, notes, points_transactions, prayer_habits … (+7) |
-| `/weekly-planner` | `WeeklyPlanner` | useAuth, useCalendar, useHabits, useIcalSubscriptions, useNotes … (+4) | calendar_events, habit_logs, habits, note_folders, notes, points_transactions … (+11) |
+| `/tasks` | `Tasks` | useAuth, useCalendar, useHabits, useIcalSubscriptions, useNativeInteraction … (+3) | calendar_events, habit_logs, habits, notes, points_transactions, prayer_habits … (+6) |
+| `/weekly-planner` | `WeeklyPlanner` | useAuth, useCalendar, useHabits, useIcalSubscriptions, useNotes … (+4) | calendar_events, habit_logs, habits, note_folders, notes, points_transactions … (+10) |
 | `/wiki` `/wiki/:pageTitle` | `Wiki` | useAuth | — |
 
 > Hook/table columns are computed transitively (depth ≤ 2) from import edges, so they
@@ -144,9 +143,9 @@ iOS-build risk**; families with `.pake` silently diverge from web.
 
 | Table | Modules |
 |---|---|
-| `tasks` | 20 — components/dashboard/DashboardQuickView.ios.tsx, components/dashboard/DashboardQuickView.web.tsx, hooks/useCalendar.ts, hooks/usePoints.ts … (+16) |
-| `habit_logs` | 14 — components/planner/HabitSleepMatrix.tsx, hooks/useAzkar.ts, hooks/useHabits.ios.ts, hooks/useHabits.web.ts … (+10) |
-| `habits` | 12 — db/seed.ts, hooks/useAzkar.ts, hooks/useHabits.ios.ts, hooks/useHabits.web.ts … (+8) |
+| `tasks` | 19 — components/dashboard/DashboardQuickView.ios.tsx, components/dashboard/DashboardQuickView.web.tsx, hooks/useCalendar.ts, hooks/usePoints.ts … (+15) |
+| `habit_logs` | 12 — hooks/useAzkar.ts, hooks/useHabits.ios.ts, hooks/useHabits.web.ts, hooks/usePrayerHabits.ios.ts … (+8) |
+| `habits` | 11 — db/seed.ts, hooks/useAzkar.ts, hooks/useHabits.ios.ts, hooks/useHabits.web.ts … (+7) |
 | `notes` | 10 — App.ios.tsx, App.web.tsx, hooks/useNotes.ts, hooks/useTasks.ios.ts … (+6) |
 | `prayer_logs` | 9 — App.ios.tsx, components/PrayerBacklog.ios.tsx, components/PrayerBacklog.web.tsx, hooks/useHabits.ios.ts … (+5) |
 | `prayer_habits` | 8 — components/PrayerBacklog.ios.tsx, components/PrayerBacklog.web.tsx, hooks/useHabits.ios.ts, hooks/useHabits.web.ts … (+4) |
@@ -160,20 +159,20 @@ iOS-build risk**; families with `.pake` silently diverge from web.
 | `prayer_notification_settings` | 4 — App.ios.tsx, hooks/usePrayerHabits.ios.ts, hooks/usePrayerHabits.web.ts, supabase/functions/prayer-notifications-dispatch/index.ts |
 | `user_app_settings` | 4 — hooks/useUserAppSettingsSync.ts, supabase/functions/braindump-organizer/index.ts, supabase/functions/process-sms/index.ts, supabase/functions/quick-expense/index.ts |
 | `calendar_task_links` | 3 — routes/Calendar.ios.tsx, routes/Calendar.pake.tsx, routes/Calendar.web.tsx |
-| `qadaa_logs` | 3 — hooks/useHabits.web.ts, hooks/useQadaaTracker.ts, lib/qadaaSync.ts |
+| `screentime_daily_app_stats` | 3 — hooks/useScreentime.ts, supabase/functions/upload-screentime/index.ts, supabase/functions/upload-screentime-chronos/index.ts |
+| `screentime_daily_summary` | 3 — hooks/useScreentime.ts, supabase/functions/upload-screentime/index.ts, supabase/functions/upload-screentime-chronos/index.ts |
+| `screentime_daily_website_stats` | 3 — hooks/useScreentime.ts, supabase/functions/upload-screentime/index.ts, supabase/functions/upload-screentime-chronos/index.ts |
 | `task_calendar_feeds` | 3 — hooks/useTaskCalendarFeed.ts, api/calendar/tasks.ts, supabase/functions/calendar-feed/index.ts |
 | `transaction_rules` | 3 — hooks/useFinance.ts, supabase/functions/process-sms/index.ts, supabase/functions/quick-expense/index.ts |
 | `inbody_scans` | 2 — hooks/useHealthData.ts, supabase/functions/sync-inbody/index.ts |
-| `qadaa_settings` | 2 — hooks/useQadaaTracker.ts, lib/qadaaSync.ts |
 | `quran_khatmah_plans` | 2 — hooks/useQuranCloudSync.ts, supabase/functions/habit-notifications-dispatch/index.ts |
-| `screentime_daily_app_stats` | 2 — hooks/useScreentime.ts, supabase/functions/upload-screentime/index.ts |
-| `screentime_daily_summary` | 2 — hooks/useScreentime.ts, supabase/functions/upload-screentime/index.ts |
-| `screentime_daily_website_stats` | 2 — hooks/useScreentime.ts, supabase/functions/upload-screentime/index.ts |
 | `sleep_stages` | 2 — hooks/useSleep.ts, supabase/functions/upload-sleep/index.ts |
 | `azkar_daily_progress` | 1 — hooks/useAzkar.ts |
 | `azkar_favorites` | 1 — hooks/useAzkar.ts |
 | `budgets` | 1 — supabase/functions/process-sms/index.ts |
 | `custom_rewards` | 1 — hooks/usePoints.ts |
+| `investment_accounts` | 1 — hooks/useInvestments.ts |
+| `investment_transactions` | 1 — hooks/useInvestments.ts |
 
 Full index (every table + every consumer): `tables.json`.
 
@@ -198,6 +197,7 @@ Full index (every table + every consumer): `tables.json`.
 | `sync-inbody` | ✓ | — (cron/webhook only) |
 | `sync-reminders` | ✓ | — (cron/webhook only) |
 | `upload-screentime` | ✓ | — (cron/webhook only) |
+| `upload-screentime-chronos` | ✓ | — (cron/webhook only) |
 | `upload-sleep` | ✓ | routes/Settings.ios.tsx, routes/Sleep.ios.tsx |
 
 ## 6. Change-risk hubs
@@ -206,26 +206,26 @@ Most-imported modules — editing these has the widest blast radius.
 
 | Module | Imported by | Kind | LOC |
 |---|---|---|---|
-| `src/lib/utils.ts` | 96 | lib | 55 |
-| `src/types/schema.ts` | 65 | types | 520 |
+| `src/lib/utils.ts` | 94 | lib | 55 |
+| `src/types/schema.ts` | 60 | types | 474 |
 | `src/stores/useUIStore.ts` | 52 | store | 678 |
-| `src/hooks/useAuth.ts` | 47 | hook | 14 |
-| `src/lib/supabase.ts` | 47 | lib | 41 |
-| `src/components/ui/index.ts` | 37 | ui-primitive | 6 |
-| `src/hooks/useTasks.ts` | 24 | hook | 2 |
-| `src/hooks/useHabits.ts` | 20 | hook | 2 |
+| `src/hooks/useAuth.ts` | 44 | hook | 14 |
+| `src/lib/supabase.ts` | 44 | lib | 41 |
+| `src/components/ui/index.ts` | 35 | ui-primitive | 6 |
+| `src/hooks/useTasks.ts` | 23 | hook | 2 |
+| `src/hooks/useHabits.ts` | 19 | hook | 2 |
 | `src/lib/ai.ts` | 19 | lib | 455 |
 | `src/lib/offlineSync.ts` | 19 | lib | 170 |
-| `src/db/indexedDb.ts` | 18 | local-db | 634 |
+| `src/db/indexedDb.ts` | 18 | local-db | 626 |
 | `src/hooks/useCalendar.ts` | 18 | hook | 272 |
-| `src/lib/nativeBridge.ts` | 18 | lib | 960 |
+| `src/lib/nativeBridge.ts` | 15 | lib | 960 |
 | `src/hooks/usePoints.ts` | 14 | hook | 450 |
 | `lib/quran-memorizer/src/services/quranData.ts` | 13 | workspace-pkg | 735 |
-| `src/hooks/useSleep.ts` | 12 | hook | 195 |
 | `lib/quran-memorizer/src/types/quran.ts` | 12 | workspace-pkg | 142 |
+| `src/hooks/useSleep.ts` | 11 | hook | 195 |
 | `src/hooks/useAzkar.ts` | 10 | hook | 509 |
 | `src/lib/prayerStatus.ts` | 10 | lib | 10 |
-| `src/hooks/usePrayerTimes.ts` | 9 | hook | 96 |
+| `src/lib/analytics-utils.ts` | 9 | lib | 148 |
 
 ## 7. Hooks inventory
 
@@ -251,7 +251,6 @@ Most-imported modules — editing these has the widest blast radius.
 | `usePrayerHabits` | web/ios | PrayerTrackerItem, usePrayerNotificationSettings, usePrayerTracker, useSetPrayerStatusAtDate |
 | `usePrayerTimes` | single | PrayerTimeData, usePrayerTimes |
 | `usePushNotifications` | web/ios/pake | usePushNotifications |
-| `useQadaaTracker` | single | LUNAR_DAYS_PER_YEAR, MADHAB_MINIMUMS, QadaaCalculationParams, QadaaPrayerKey, SOLAR_DAYS_PER_YEAR … (+3) |
 | `useQuranCloudSync` | single | useQuranCloudSync |
 | `useReport` | single | DayMetrics, Outlier, ReportData, TopApp, TopCategory … (+4) |
 | `useScreentime` | single | useScreentimeAppStats, useScreentimeDailySummaries, useScreentimeMetrics, useScreentimeWebsiteStats, useTodayScreentime |
@@ -312,13 +311,13 @@ dynamically/string-referenced — verify before deleting.
 
 ## 10. Counts
 
-- component: 80
-- route: 43
-- hook: 39
-- lib: 32
+- component: 75
+- route: 42
+- hook: 38
+- lib: 30
 - workspace-pkg: 22
-- edge-fn: 20
-- test: 16
+- edge-fn: 21
+- test: 14
 - ui-primitive: 10
 - extension: 7
 - app-entry: 6

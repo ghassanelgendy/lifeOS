@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,7 +12,6 @@ import {
   Calendar as CalendarIcon,
   Grid,
   Sparkles,
-  Table,
   Loader2,
   GripVertical,
   Clock,
@@ -23,9 +22,6 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { useEffectiveTheme } from '../lib/theme';
-import { triggerHaptics } from '../lib/nativeBridge';
-import { SmartTaskTracker } from '../components/planner/SmartTaskTracker';
-import { HabitSleepMatrix } from '../components/planner/HabitSleepMatrix';
 import { useSleepStages, groupSegmentsByNight, useSleepMetrics } from '../hooks/useSleep';
 import { useScreentimeAppStats } from '../hooks/useScreentime';
 import { askAI } from '../lib/ai';
@@ -141,34 +137,7 @@ export default function WeeklyPlanner() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const effectiveTheme = useEffectiveTheme();
-
-  const viewQuery = searchParams.get('view');
-  const [plannerViewMode, setPlannerViewMode] = useState<'smart_tracker' | 'habit_matrix' | 'classic'>(() => {
-    if (viewQuery === 'smart_tracker' || viewQuery === 'habit_matrix' || viewQuery === 'classic') {
-      return viewQuery;
-    }
-    return (localStorage.getItem('lifeos_planner_mode') as 'smart_tracker' | 'habit_matrix' | 'classic') || 'smart_tracker';
-  });
-
-  const handleViewModeChange = (mode: 'smart_tracker' | 'habit_matrix' | 'classic') => {
-    setPlannerViewMode(mode);
-    try {
-      localStorage.setItem('lifeos_planner_mode', mode);
-    } catch {
-      // ignore storage errors
-    }
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        next.set('view', mode);
-        return next;
-      },
-      { replace: true }
-    );
-    void triggerHaptics('light');
-  };
 
   // 1. Calculate default week start (Sunday)
   const getDefaultWeekStart = () => {
@@ -637,221 +606,106 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
       {/* Top Banner Control - Desktop-only */}
       <div className="hidden md:flex flex-row items-center justify-between bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl gap-4">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-violet-500/10 rounded-xl text-violet-500 dark:text-violet-400 border border-violet-500/20">
-            {plannerViewMode === 'smart_tracker' ? (
-              <Sparkles className="w-5 h-5" />
-            ) : plannerViewMode === 'habit_matrix' ? (
-              <Table className="w-5 h-5" />
-            ) : (
-              <Grid className="w-5 h-5" />
-            )}
+          <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500 dark:text-blue-400 border border-blue-500/20">
+            <Grid className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground leading-tight">
-              {plannerViewMode === 'smart_tracker'
-                ? 'متتبع المهام الذكي'
-                : plannerViewMode === 'habit_matrix'
-                ? 'مصفوفة العادات والنوم'
-                : 'Weekly Planner'}
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              {plannerViewMode === 'smart_tracker'
-                ? 'لوحة أسبوعية أفقية تفاعلية مع مؤشرات إنجاز دائرية ومعدل المهام'
-                : plannerViewMode === 'habit_matrix'
-                ? 'مصفوفة شهرية ملونة للعادات اليومية ومقارنتها بساعات وجودة النوم'
-                : 'Sustainable daily systems over rigid annual goals'}
-            </p>
+            <h1 className="text-xl font-bold text-foreground leading-tight">Weekly Planner</h1>
+            <p className="text-xs text-muted-foreground">Sustainable daily systems over rigid annual goals</p>
           </div>
         </div>
 
-        {/* View Switcher Pills */}
-        <div className="flex items-center gap-1 bg-secondary/80 p-1 rounded-xl border border-border">
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('smart_tracker')}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-              plannerViewMode === 'smart_tracker'
-                ? "bg-violet-600 text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>متتبع المهام الذكي</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('habit_matrix')}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-              plannerViewMode === 'habit_matrix'
-                ? "bg-cyan-600 text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-          >
-            <Table className="w-3.5 h-3.5" />
-            <span>مصفوفة العادات والنوم</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('classic')}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
-              plannerViewMode === 'classic'
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-            )}
-          >
-            <Grid className="w-3.5 h-3.5" />
-            <span>الشبكة الكلاسيكية</span>
-          </button>
-        </div>
-
-        {plannerViewMode === 'classic' && (
-          <div className="flex items-center gap-3">
-            {/* Week Selector */}
-            <div className="flex items-center gap-1 bg-secondary p-1 rounded-xl border border-border">
-              <Button
-                onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
-                className="p-2 hover:bg-muted text-foreground bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <div className="px-3 select-none flex items-center justify-center min-w-[70px]">
-                <span className="text-sm font-black text-foreground">Week {weekNumber}</span>
-              </div>
-              <Button
-                onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
-                className="p-2 hover:bg-muted text-foreground bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+        <div className="flex items-center gap-3">
+          {/* Week Selector */}
+          <div className="flex items-center gap-1 bg-secondary p-1 rounded-xl border border-border">
+            <Button
+              onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
+              className="p-2 hover:bg-muted text-foreground bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="px-3 select-none flex items-center justify-center min-w-[70px]">
+              <span className="text-sm font-black text-foreground">Week {weekNumber}</span>
             </div>
-
-            {/* Weekly Load Badge Card */}
-            <div className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-xl border border-border h-10">
-              <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider font-sans">Weekly Load:</span>
-              <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap leading-none", loadRating.color)}>
-                {loadRating.text}
-              </span>
-            </div>
-
-            {/* Icon-only Date picker selector */}
-            <div className="relative bg-secondary hover:bg-muted border border-border rounded-xl h-10 w-10 flex items-center justify-center cursor-pointer transition-colors">
-              <CalendarIcon className="w-4 h-4 text-muted-foreground" />
-              <input
-                type="date"
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
-                style={{ WebkitAppearance: 'none' }}
-                value={sundayDateStr}
-                onChange={(e) => {
-                  if (e.target.value) {
-                    setWeekStart(startOfWeek(parseISO(e.target.value), { weekStartsOn: 0 }));
-                  }
-                }}
-              />
-            </div>
+            <Button
+              onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
+              className="p-2 hover:bg-muted text-foreground bg-transparent shadow-none border-none h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </Button>
           </div>
-        )}
+
+          {/* Weekly Load Badge Card */}
+          <div className="flex items-center gap-2 bg-secondary px-3 py-2 rounded-xl border border-border h-10">
+            <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider font-sans">Weekly Load:</span>
+            <span className={cn("text-[10px] font-bold px-2.5 py-1 rounded-full border whitespace-nowrap leading-none", loadRating.color)}>
+              {loadRating.text}
+            </span>
+          </div>
+
+          {/* Icon-only Date picker selector */}
+          <div className="relative bg-secondary hover:bg-muted border border-border rounded-xl h-10 w-10 flex items-center justify-center cursor-pointer transition-colors">
+            <CalendarIcon className="w-4 h-4 text-muted-foreground" />
+            <input
+              type="date"
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+              style={{ WebkitAppearance: 'none' }}
+              value={sundayDateStr}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setWeekStart(startOfWeek(parseISO(e.target.value), { weekStartsOn: 0 }));
+                }
+              }}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Top Banner Control - iOS / Mobile Native Viewport */}
-      <div className="flex md:hidden flex-col gap-2">
-        <div className="flex items-center justify-between bg-card/90 border border-border rounded-xl p-1 gap-1">
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('smart_tracker')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all",
-              plannerViewMode === 'smart_tracker'
-                ? "bg-violet-600 text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+      <div className="flex md:hidden items-center justify-between bg-card/90 border border-border rounded-xl p-2 gap-2 h-11">
+        {/* Centered Week picker that opens native input wheel on tap */}
+        <div className="flex items-center gap-0.5">
+          <Button
+            onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
+            className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0 cursor-pointer"
           >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>المهام الذكية</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('habit_matrix')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all",
-              plannerViewMode === 'habit_matrix'
-                ? "bg-cyan-600 text-white shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+
+          <div className="relative flex items-center gap-1 hover:bg-secondary px-2.5 py-1.5 rounded-lg active:scale-98 transition-transform select-none cursor-pointer">
+            <span className="text-xs font-semibold text-foreground">Wk {weekNumber}</span>
+            <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
+            <input
+              type="date"
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
+              style={{ WebkitAppearance: 'none' }}
+              value={sundayDateStr}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setWeekStart(startOfWeek(parseISO(e.target.value), { weekStartsOn: 0 }));
+                }
+              }}
+            />
+          </div>
+
+          <Button
+            onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
+            className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0 cursor-pointer"
           >
-            <Table className="w-3.5 h-3.5" />
-            <span>مصفوفة العادات</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => handleViewModeChange('classic')}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold transition-all",
-              plannerViewMode === 'classic'
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Grid className="w-3.5 h-3.5" />
-            <span>الكلاسيكي</span>
-          </button>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
         </div>
 
-        {plannerViewMode === 'classic' && (
-          <div className="flex items-center justify-between bg-card/90 border border-border rounded-xl p-2 gap-2 h-11">
-            {/* Centered Week picker that opens native input wheel on tap */}
-            <div className="flex items-center gap-0.5">
-              <Button
-                onClick={() => setWeekStart((prev) => subWeeks(prev, 1))}
-                className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0 cursor-pointer"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-
-              <div className="relative flex items-center gap-1 hover:bg-secondary px-2.5 py-1.5 rounded-lg active:scale-98 transition-transform select-none cursor-pointer">
-                <span className="text-xs font-semibold text-foreground">Wk {weekNumber}</span>
-                <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                <input
-                  type="date"
-                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full text-base"
-                  style={{ WebkitAppearance: 'none' }}
-                  value={sundayDateStr}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      setWeekStart(startOfWeek(parseISO(e.target.value), { weekStartsOn: 0 }));
-                    }
-                  }}
-                />
-              </div>
-
-              <Button
-                onClick={() => setWeekStart((prev) => addWeeks(prev, 1))}
-                className="p-1 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground bg-transparent shadow-none border-none h-8 w-8 flex items-center justify-center shrink-0 cursor-pointer"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-
-            {/* Weekly Load indicator */}
-            <div className="flex items-center justify-end flex-1 min-w-0 pr-1">
-              <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border leading-none shrink-0 w-fit whitespace-nowrap", loadRating.color)}>
-                {loadRating.text}
-              </span>
-            </div>
-          </div>
-        )}
+        {/* Weekly Load indicator */}
+        <div className="flex items-center justify-end flex-1 min-w-0 pr-1">
+          <span className={cn("text-xs font-bold px-2.5 py-1 rounded-full border leading-none shrink-0 w-fit whitespace-nowrap", loadRating.color)}>
+            {loadRating.text}
+          </span>
+        </div>
       </div>
 
-      {plannerViewMode === 'smart_tracker' ? (
-        <SmartTaskTracker initialDate={weekStart} />
-      ) : plannerViewMode === 'habit_matrix' ? (
-        <HabitSleepMatrix />
-      ) : (
-        <>
-          {/* Main 2x4 Planner Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      {/* Main 2x4 Planner Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Days of the Week (First 7 slots) */}
         {weekDays.map((day, idx) => {
           // Dynamic daily habits matching date (excluding detox habits)
@@ -1144,9 +998,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
           </div>
         </div>
       )}
-    </>
-  )}
-</div>
+    </div>
   );
 }
 

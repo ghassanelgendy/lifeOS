@@ -354,10 +354,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/ui/Modal.tsx](#src-components-ui-modal-tsx)
 - [src/components/ui/index.ts](#src-components-ui-index-ts)
 
-### src/components/planner
-- [src/components/planner/SmartTaskTracker.tsx](#src-components-planner-smarttasktracker-tsx)
-- [src/components/planner/HabitSleepMatrix.tsx](#src-components-planner-habitsleepmatrix-tsx)
-
 ### src/components/wiki
 - [src/components/wiki/WikiGraphView.tsx](#src-components-wiki-wikigraphview-tsx)
 - [src/components/wiki/WikiMarkdown.tsx](#src-components-wiki-wikimarkdown-tsx)
@@ -3772,31 +3768,6 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Functions & Classes:** None (configuration or re-export module)
 
 **Lines:** 6
-
----
-
-<a name="src-components-planner-smarttasktracker-tsx"></a>
-### src/components/planner/SmartTaskTracker.tsx
-
-**File Purpose:** Interactive 7-Day Panoramic Smart Task Tracker recreated from the Nasiqli Productivity design system. Renders horizontal day columns with animated SVG circular radial completion rings, top KPI metrics cards, 7-day mini progress chart, customizable week starting day, and bottom day completion breakdown.
-
-**Functions & Classes:**
-- `CircularProgressRing` (React Component)
-- `SmartTaskTracker` (React Component)
-
-**Lines:** 602
-
----
-
-<a name="src-components-planner-habitsleepmatrix-tsx"></a>
-### src/components/planner/HabitSleepMatrix.tsx
-
-**File Purpose:** 30/31-Day Rainbow Monthly Habit & Sleep Matrix Tracker. Features a multi-week colored matrix table connecting active daily habits to completion checkboxes, individual habit progress bars & rates, weekly progress cards, and daily sleep duration and sleep quality (1-10) correlation rows with monthly statistical averages.
-
-**Functions & Classes:**
-- `HabitSleepMatrix` (React Component)
-
-**Lines:** 524
 
 ---
 

@@ -1,26 +1,26 @@
 {
- "generatedAt": "2026-11-03T03:24:55.929Z",
+ "generatedAt": "2026-10-11T02:49:03.775Z",
  "generator": "scripts/build-codemap.mjs",
  "stats": {
-  "files": 296,
-  "loc": 119385,
-  "edges": 982,
+  "files": 286,
+  "loc": 116621,
+  "edges": 936,
   "byKind": {
    "app-entry": 6,
-   "test": 16,
-   "component": 80,
+   "test": 14,
+   "component": 75,
    "ui-primitive": 10,
    "context": 1,
    "static-data": 1,
    "local-db": 3,
-   "hook": 39,
-   "lib": 32,
-   "route": 43,
+   "hook": 38,
+   "lib": 30,
+   "route": 42,
    "store": 4,
    "types": 3,
    "vercel-fn": 4,
    "vercel-cron": 5,
-   "edge-fn": 20,
+   "edge-fn": 21,
    "extension": 7,
    "workspace-pkg": 22
   }
@@ -30,7 +30,7 @@
    "id": "src/App.ios.tsx",
    "kind": "app-entry",
    "platform": "ios",
-   "loc": 614,
+   "loc": 612,
    "exports": [],
    "default": "App",
    "tables": [
@@ -83,7 +83,6 @@
     "src/routes/Login.tsx",
     "src/routes/Notes.tsx",
     "src/routes/Points.tsx",
-    "src/routes/Qadaa.tsx",
     "src/routes/Quran.tsx",
     "src/routes/Screentime.tsx",
     "src/routes/Settings.tsx",
@@ -137,7 +136,7 @@
    "id": "src/App.web.tsx",
    "kind": "app-entry",
    "platform": "web",
-   "loc": 487,
+   "loc": 483,
    "exports": [],
    "default": "App",
    "tables": [
@@ -153,7 +152,6 @@
     "src/components/AppShell.tsx",
     "src/components/ErrorBoundary.tsx",
     "src/components/FaviconSync.tsx",
-    "src/components/GoogleAnalyticsTracker.tsx",
     "src/components/LoadingScreen.tsx",
     "src/contexts/AuthContext.tsx",
     "src/db/seed.ts",
@@ -182,7 +180,6 @@
     "src/routes/Login.tsx",
     "src/routes/Notes.tsx",
     "src/routes/Points.tsx",
-    "src/routes/Qadaa.tsx",
     "src/routes/Quran.tsx",
     "src/routes/Screentime.tsx",
     "src/routes/Settings.tsx",
@@ -371,7 +368,7 @@
    "id": "src/components/AppJoyrideTour.tsx",
    "kind": "component",
    "platform": null,
-   "loc": 431,
+   "loc": 406,
    "exports": [
     "AppJoyrideTour"
    ],
@@ -490,7 +487,7 @@
    "id": "src/components/AppShell.web.tsx",
    "kind": "component",
    "platform": "web",
-   "loc": 860,
+   "loc": 818,
    "exports": [
     "AppShell"
    ],
@@ -608,7 +605,7 @@
    "id": "src/components/BrainDumpModal.tsx",
    "kind": "component",
    "platform": null,
-   "loc": 1574,
+   "loc": 1572,
    "exports": [
     "BrainDumpModal"
    ],
@@ -644,7 +641,7 @@
    "id": "src/components/CommandPalette.tsx",
    "kind": "component",
    "platform": null,
-   "loc": 282,
+   "loc": 274,
    "exports": [
     "CommandPalette"
    ],
@@ -715,7 +712,7 @@
    "id": "src/components/CompactPrayerHabit.web.tsx",
    "kind": "component",
    "platform": "web",
-   "loc": 298,
+   "loc": 156,
    "exports": [
     "CompactPrayerHabit"
    ],
@@ -729,7 +726,6 @@
    "imports": [
     "src/hooks/usePrayerHabits.ts",
     "src/hooks/usePrayerTimes.ts",
-    "src/hooks/useQadaaTracker.ts",
     "src/lib/prayerStatus.ts",
     "src/lib/utils.ts",
     "src/types/schema.ts"
@@ -852,7 +848,7 @@
    "id": "src/components/FinanceHeroCard.ios.tsx",
    "kind": "component",
    "platform": "ios",
-   "loc": 113,
+   "loc": 122,
    "exports": [
     "FinanceHeroCard"
    ],
@@ -914,7 +910,7 @@
    "id": "src/components/FinanceHeroCard.web.tsx",
    "kind": "component",
    "platform": "web",
-   "loc": 107,
+   "loc": 123,
    "exports": [
     "FinanceHeroCard"
    ],
@@ -982,29 +978,6 @@
     "src/components/AppShell.ios.tsx",
     "src/components/AppShell.pake.tsx",
     "src/components/AppShell.web.tsx"
-   ]
-  },
-  {
-   "id": "src/components/GoogleAnalyticsTracker.tsx",
-   "kind": "component",
-   "platform": null,
-   "loc": 32,
-   "exports": [
-    "GoogleAnalyticsTracker"
-   ],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/hooks/useAuth.ts",
-    "src/lib/gtag.ts"
-   ],
-   "importedBy": [
-    "src/App.web.tsx"
    ]
   },
   {
@@ -1216,7 +1189,7 @@
    "id": "src/components/PrayerBacklog.web.tsx",
    "kind": "component",
    "platform": "web",
-   "loc": 339,
+   "loc": 330,
    "exports": [
     "PrayerBacklog"
    ],
@@ -1326,56 +1299,6 @@
    ],
    "importedBy": [
     "src/components/PullToRefresh.tsx"
-   ]
-  },
-  {
-   "id": "src/components/QadaaSetupModal.tsx",
-   "kind": "component",
-   "platform": null,
-   "loc": 485,
-   "exports": [
-    "QadaaSetupModal"
-   ],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/components/ui/index.ts",
-    "src/hooks/useQadaaTracker.ts",
-    "src/types/schema.ts"
-   ],
-   "importedBy": [
-    "src/components/QadaaWidget.tsx"
-   ]
-  },
-  {
-   "id": "src/components/QadaaWidget.tsx",
-   "kind": "component",
-   "platform": null,
-   "loc": 353,
-   "exports": [
-    "QadaaWidget"
-   ],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/components/QadaaSetupModal.tsx",
-    "src/components/ui/index.ts",
-    "src/hooks/useQadaaTracker.ts"
-   ],
-   "importedBy": [
-    "src/routes/Habits.ios.tsx",
-    "src/routes/Habits.web.tsx",
-    "src/routes/Qadaa.tsx"
    ]
   },
   {
@@ -1664,7 +1587,7 @@
    "id": "src/components/analytics/AnalyticsHealthWealth.tsx",
    "kind": "component",
    "platform": null,
-   "loc": 400,
+   "loc": 148,
    "exports": [
     "AnalyticsHealthWealth"
    ],
@@ -1735,7 +1658,7 @@
    "id": "src/components/analytics/AnalyticsReport.tsx",
    "kind": "component",
    "platform": null,
-   "loc": 837,
+   "loc": 838,
    "exports": [
     "AnalyticsReport"
    ],
@@ -1870,7 +1793,6 @@
     "src/lib/nativeBridge.ts"
    ],
    "importedBy": [
-    "src/routes/Tasks.ios.tsx",
     "src/routes/Tasks.web.tsx",
     "src/routes/Wiki.tsx"
    ]
@@ -2053,7 +1975,7 @@
    "id": "src/components/dashboard/HadithWidget.tsx",
    "kind": "component",
    "platform": null,
-   "loc": 168,
+   "loc": 178,
    "exports": [
     "HadithWidget"
    ],
@@ -2077,7 +1999,7 @@
    "id": "src/components/navItems.ts",
    "kind": "component",
    "platform": null,
-   "loc": 50,
+   "loc": 48,
    "exports": [
     "NAV_ITEMS",
     "NavItem"
@@ -2096,64 +2018,6 @@
     "src/components/AppShell.web.tsx",
     "src/routes/Settings.ios.tsx",
     "src/routes/Settings.web.tsx"
-   ]
-  },
-  {
-   "id": "src/components/planner/HabitSleepMatrix.tsx",
-   "kind": "component",
-   "platform": null,
-   "loc": 538,
-   "exports": [
-    "HabitSleepMatrix"
-   ],
-   "default": null,
-   "tables": [
-    "habit_logs"
-   ],
-   "rpcs": [],
-   "queryKeys": [
-    "habit-matrix-logs"
-   ],
-   "invokesEdgeFns": [],
-   "usesReactQuery": true,
-   "isZustand": false,
-   "imports": [
-    "src/hooks/useAuth.ts",
-    "src/hooks/useHabits.ts",
-    "src/hooks/useSleep.ts",
-    "src/lib/nativeBridge.ts",
-    "src/lib/supabase.ts",
-    "src/lib/utils.ts",
-    "src/types/schema.ts"
-   ],
-   "importedBy": [
-    "src/routes/WeeklyPlanner.tsx"
-   ]
-  },
-  {
-   "id": "src/components/planner/SmartTaskTracker.tsx",
-   "kind": "component",
-   "platform": null,
-   "loc": 603,
-   "exports": [
-    "SmartTaskTracker",
-    "SmartTaskTrackerProps"
-   ],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/hooks/useTasks.ts",
-    "src/lib/nativeBridge.ts",
-    "src/lib/utils.ts",
-    "src/types/schema.ts"
-   ],
-   "importedBy": [
-    "src/routes/WeeklyPlanner.tsx"
    ]
   },
   {
@@ -2424,8 +2288,6 @@
     "src/components/BrainDumpGraphView.tsx",
     "src/components/BrainDumpModal.tsx",
     "src/components/KeyboardShortcutsModal.tsx",
-    "src/components/QadaaSetupModal.tsx",
-    "src/components/QadaaWidget.tsx",
     "src/components/QuranOfflineDownloader.tsx",
     "src/components/TaskDetailsContent.ios.tsx",
     "src/components/TaskDetailsContent.web.tsx",
@@ -2626,7 +2488,7 @@
    "id": "src/db/indexedDb.ts",
    "kind": "local-db",
    "platform": null,
-   "loc": 634,
+   "loc": 626,
    "exports": [
     "IdbAzkarDailyRecord",
     "IdbQueueEntry",
@@ -2813,12 +2675,10 @@
     "src/components/AppShell.ios.tsx",
     "src/components/AppShell.pake.tsx",
     "src/components/AppShell.web.tsx",
-    "src/components/GoogleAnalyticsTracker.tsx",
     "src/components/PrayerBacklog.ios.tsx",
     "src/components/PrayerBacklog.web.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
     "src/components/dashboard/DashboardQuickView.web.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
     "src/contexts/AuthContext.test.tsx",
     "src/hooks/useAnalytics.ts",
     "src/hooks/useAzkar.ts",
@@ -2834,7 +2694,6 @@
     "src/hooks/usePoints.ts",
     "src/hooks/usePrayerHabits.ios.ts",
     "src/hooks/usePrayerHabits.web.ts",
-    "src/hooks/useQadaaTracker.ts",
     "src/hooks/useQuranCloudSync.ts",
     "src/hooks/useReport.ts",
     "src/hooks/useScreentime.ts",
@@ -3063,7 +2922,7 @@
    "id": "src/hooks/useFinance.ts",
    "kind": "hook",
    "platform": null,
-   "loc": 372,
+   "loc": 369,
    "exports": [
     "getBreakdownFromTransactions",
     "useCategoryBreakdown",
@@ -3087,7 +2946,6 @@
    "imports": [
     "src/db/indexedDb.ts",
     "src/hooks/useAuth.ts",
-    "src/lib/gtag.ts",
     "src/lib/offlineSync.ts",
     "src/lib/supabase.ts",
     "src/lib/utils.ts",
@@ -3188,7 +3046,6 @@
     "src/components/BrainDumpModal.tsx",
     "src/components/HabitStatsModal.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
     "src/hooks/useDashboardUpcomingItems.ts",
     "src/hooks/usePakeLocalNotifications.ts",
     "src/routes/Analytics.tsx",
@@ -3209,7 +3066,7 @@
    "id": "src/hooks/useHabits.web.ts",
    "kind": "hook",
    "platform": "web",
-   "loc": 1078,
+   "loc": 1053,
    "exports": [
     "HabitInsight",
     "formatHourLabel",
@@ -3242,17 +3099,14 @@
     "habits",
     "points_transactions",
     "prayer_habits",
-    "prayer_logs",
-    "qadaa_logs"
+    "prayer_logs"
    ],
    "rpcs": [],
    "queryKeys": [
     "habit-averages",
     "points-transactions",
     "prayer-habits",
-    "prayer-logs",
-    "qadaa-recent-logs",
-    "qadaa-totals"
+    "prayer-logs"
    ],
    "invokesEdgeFns": [],
    "usesReactQuery": true,
@@ -3262,7 +3116,6 @@
     "src/db/indexedDb.ts",
     "src/hooks/useAuth.ts",
     "src/hooks/usePoints.ts",
-    "src/lib/gtag.ts",
     "src/lib/offlineSync.ts",
     "src/lib/prayerStatus.ts",
     "src/lib/supabase.ts",
@@ -3662,7 +3515,7 @@
    "id": "src/hooks/usePrayerHabits.web.ts",
    "kind": "hook",
    "platform": "web",
-   "loc": 894,
+   "loc": 868,
    "exports": [
     "PrayerTrackerItem",
     "usePrayerNotificationSettings",
@@ -3683,9 +3536,7 @@
     "habit-logs",
     "habits",
     "points-transactions",
-    "prayer-logs",
-    "qadaa-settings",
-    "qadaa-totals"
+    "prayer-logs"
    ],
    "invokesEdgeFns": [],
    "usesReactQuery": true,
@@ -3697,7 +3548,6 @@
     "src/hooks/usePrayerTimes.ts",
     "src/lib/offlineSync.ts",
     "src/lib/prayerStatus.ts",
-    "src/lib/qadaaSync.ts",
     "src/lib/supabase.ts",
     "src/types/schema.ts"
    ],
@@ -3733,8 +3583,7 @@
     "src/components/dashboard/DashboardQuickView.web.tsx",
     "src/hooks/useDashboardUpcomingItems.ts",
     "src/hooks/usePrayerHabits.ios.ts",
-    "src/hooks/usePrayerHabits.web.ts",
-    "src/hooks/useQadaaTracker.ts"
+    "src/hooks/usePrayerHabits.web.ts"
    ]
   },
   {
@@ -3827,71 +3676,6 @@
    ],
    "importedBy": [
     "src/hooks/usePushNotifications.ts"
-   ]
-  },
-  {
-   "id": "src/hooks/useQadaaTracker.test.ts",
-   "kind": "test",
-   "platform": null,
-   "loc": 75,
-   "exports": [],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/hooks/useQadaaTracker.ts"
-   ],
-   "importedBy": []
-  },
-  {
-   "id": "src/hooks/useQadaaTracker.ts",
-   "kind": "hook",
-   "platform": null,
-   "loc": 580,
-   "exports": [
-    "LUNAR_DAYS_PER_YEAR",
-    "MADHAB_MINIMUMS",
-    "QadaaCalculationParams",
-    "QadaaPrayerKey",
-    "SOLAR_DAYS_PER_YEAR",
-    "calculateQadaaBaseline",
-    "formatDurationFromDays",
-    "useQadaaTracker"
-   ],
-   "default": null,
-   "tables": [
-    "qadaa_logs",
-    "qadaa_settings"
-   ],
-   "rpcs": [],
-   "queryKeys": [
-    "habit-logs",
-    "habits",
-    "qadaa-recent-logs",
-    "qadaa-settings",
-    "qadaa-totals",
-    "tasks"
-   ],
-   "invokesEdgeFns": [],
-   "usesReactQuery": true,
-   "isZustand": false,
-   "imports": [
-    "src/hooks/useAuth.ts",
-    "src/hooks/usePrayerTimes.ts",
-    "src/lib/qadaaSync.ts",
-    "src/lib/supabase.ts",
-    "src/types/schema.ts"
-   ],
-   "importedBy": [
-    "src/components/CompactPrayerHabit.web.tsx",
-    "src/components/QadaaSetupModal.tsx",
-    "src/components/QadaaWidget.tsx",
-    "src/hooks/useQadaaTracker.test.ts",
-    "src/lib/qadaaSync.ts"
    ]
   },
   {
@@ -4059,7 +3843,6 @@
     "src/components/BrainDumpModal.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
     "src/components/dashboard/DashboardQuickView.web.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
     "src/hooks/useAzkar.ts",
     "src/routes/Chat.tsx",
     "src/routes/Sleep.ios.tsx",
@@ -4208,7 +3991,6 @@
     "src/components/FocusSessionManager.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
     "src/components/dashboard/DashboardQuickView.web.tsx",
-    "src/components/planner/SmartTaskTracker.tsx",
     "src/hooks/useDashboardUpcomingItems.ts",
     "src/hooks/usePakeLocalNotifications.ts",
     "src/routes/Calendar.ios.tsx",
@@ -4231,7 +4013,7 @@
    "id": "src/hooks/useTasks.web.ts",
    "kind": "hook",
    "platform": "web",
-   "loc": 1349,
+   "loc": 1315,
    "exports": [
     "syncTaskCompletionToLinkedNote",
     "useBatchDeleteTasks",
@@ -4271,10 +4053,7 @@
    ],
    "rpcs": [],
    "queryKeys": [
-    "habit-logs",
-    "points-transactions",
-    "qadaa-recent-logs",
-    "qadaa-totals"
+    "points-transactions"
    ],
    "invokesEdgeFns": [],
    "usesReactQuery": true,
@@ -4283,9 +4062,7 @@
     "src/db/indexedDb.ts",
     "src/hooks/useAuth.ts",
     "src/hooks/usePoints.ts",
-    "src/lib/gtag.ts",
     "src/lib/offlineSync.ts",
-    "src/lib/qadaaSync.ts",
     "src/lib/supabase.ts",
     "src/types/schema.ts"
    ],
@@ -4298,7 +4075,7 @@
    "id": "src/hooks/useUserAppSettingsSync.ts",
    "kind": "hook",
    "platform": null,
-   "loc": 122,
+   "loc": 117,
    "exports": [
     "useUserAppSettingsSync"
    ],
@@ -4604,41 +4381,6 @@
    ]
   },
   {
-   "id": "src/lib/gtag.ts",
-   "kind": "lib",
-   "platform": null,
-   "loc": 114,
-   "exports": [
-    "GA_MEASUREMENT_ID",
-    "gtag",
-    "setUserId",
-    "trackEvent",
-    "trackFocusSession",
-    "trackHabitLogged",
-    "trackNoteCreated",
-    "trackPageView",
-    "trackPrayerLogged",
-    "trackTaskCompleted",
-    "trackTaskCreated",
-    "trackTransactionLogged"
-   ],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [],
-   "importedBy": [
-    "src/components/GoogleAnalyticsTracker.tsx",
-    "src/hooks/useFinance.ts",
-    "src/hooks/useHabits.web.ts",
-    "src/hooks/useTasks.web.ts",
-    "src/lib/qadaaSync.ts"
-   ]
-  },
-  {
    "id": "src/lib/icalSubscribe.ts",
    "kind": "lib",
    "platform": null,
@@ -4767,15 +4509,12 @@
     "src/components/collaboration/ShareModal.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
     "src/components/dashboard/HadithWidget.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
-    "src/components/planner/SmartTaskTracker.tsx",
     "src/hooks/useHabits.ios.ts",
     "src/hooks/useTasks.ios.ts",
     "src/routes/Dashboard.tsx",
     "src/routes/Notes.ios.tsx",
     "src/routes/Settings.ios.tsx",
-    "src/routes/Tasks.ios.tsx",
-    "src/routes/WeeklyPlanner.tsx"
+    "src/routes/Tasks.ios.tsx"
    ]
   },
   {
@@ -4947,69 +4686,6 @@
    ]
   },
   {
-   "id": "src/lib/qadaaSync.test.ts",
-   "kind": "test",
-   "platform": null,
-   "loc": 52,
-   "exports": [],
-   "default": null,
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/lib/qadaaSync.ts"
-   ],
-   "importedBy": []
-  },
-  {
-   "id": "src/lib/qadaaSync.ts",
-   "kind": "lib",
-   "platform": null,
-   "loc": 381,
-   "exports": [
-    "ARABIC_PRAYER_NAMES",
-    "DEFAULT_QADAA_DUE_TIMES",
-    "PRAYER_KEY_MAP",
-    "PushQadaaTaskOptions",
-    "QADAA_HABIT_TITLE",
-    "calculateQadaaTaskDueTime",
-    "detectQadaaPrayerFromTaskTitle",
-    "ensureQadaaHabit",
-    "pushQadaaTasksForToday",
-    "syncQadaaFromTaskToggle",
-    "syncQadaaHabitProgress",
-    "syncQadaaTargetOnMissedPrayer"
-   ],
-   "default": null,
-   "tables": [
-    "habit_logs",
-    "habits",
-    "qadaa_logs",
-    "qadaa_settings",
-    "tasks"
-   ],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/hooks/useQadaaTracker.ts",
-    "src/lib/gtag.ts",
-    "src/lib/supabase.ts",
-    "src/types/schema.ts"
-   ],
-   "importedBy": [
-    "src/hooks/usePrayerHabits.web.ts",
-    "src/hooks/useQadaaTracker.ts",
-    "src/hooks/useTasks.web.ts",
-    "src/lib/qadaaSync.test.ts"
-   ]
-  },
-  {
    "id": "src/lib/queryClient.ts",
    "kind": "lib",
    "platform": null,
@@ -5155,7 +4831,6 @@
     "src/components/PrayerBacklog.web.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
     "src/components/dashboard/DashboardQuickView.web.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
     "src/contexts/AuthContext.tsx",
     "src/db/seed.ts",
     "src/hooks/useAnalytics.ts",
@@ -5173,7 +4848,6 @@
     "src/hooks/usePrayerHabits.web.ts",
     "src/hooks/usePushNotifications.ios.ts",
     "src/hooks/usePushNotifications.web.ts",
-    "src/hooks/useQadaaTracker.ts",
     "src/hooks/useQuranCloudSync.ts",
     "src/hooks/useReport.ts",
     "src/hooks/useScreentime.ts",
@@ -5184,7 +4858,6 @@
     "src/hooks/useUserAppSettingsSync.ts",
     "src/hooks/useUserBanks.ts",
     "src/lib/offlineSync.ts",
-    "src/lib/qadaaSync.ts",
     "src/routes/Analytics.tsx",
     "src/routes/Calendar.ios.tsx",
     "src/routes/Calendar.pake.tsx",
@@ -5312,7 +4985,7 @@
    "id": "src/lib/userAppSettings.ts",
    "kind": "lib",
    "platform": null,
-   "loc": 202,
+   "loc": 200,
    "exports": [
     "parsePersistedUiFromRemote"
    ],
@@ -5419,8 +5092,6 @@
     "src/components/dashboard/DashboardQuickView.web.tsx",
     "src/components/dashboard/DashboardStrategic.tsx",
     "src/components/dashboard/HadithWidget.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
-    "src/components/planner/SmartTaskTracker.tsx",
     "src/components/ui/Button.ios.tsx",
     "src/components/ui/Button.web.tsx",
     "src/components/ui/ConfirmSheet.tsx",
@@ -5606,7 +5277,7 @@
    "id": "src/routes/Analytics.tsx",
    "kind": "route",
    "platform": null,
-   "loc": 816,
+   "loc": 814,
    "exports": [],
    "default": "Analytics",
    "tables": [
@@ -5697,7 +5368,7 @@
    "id": "src/routes/Azkar.web.tsx",
    "kind": "route",
    "platform": "web",
-   "loc": 455,
+   "loc": 456,
    "exports": [],
    "default": "AzkarRoute",
    "tables": [],
@@ -6043,7 +5714,7 @@
    "id": "src/routes/Habits.ios.tsx",
    "kind": "route",
    "platform": "ios",
-   "loc": 1574,
+   "loc": 1536,
    "exports": [],
    "default": "Habits",
    "tables": [
@@ -6062,7 +5733,6 @@
     "src/components/CompactPrayerHabit.tsx",
     "src/components/HabitStatsModal.tsx",
     "src/components/PrayerBacklog.tsx",
-    "src/components/QadaaWidget.tsx",
     "src/components/ui/index.ts",
     "src/hooks/useAzkar.ts",
     "src/hooks/useHabits.ts",
@@ -6101,7 +5771,7 @@
    "id": "src/routes/Habits.web.tsx",
    "kind": "route",
    "platform": "web",
-   "loc": 1634,
+   "loc": 1601,
    "exports": [],
    "default": "Habits",
    "tables": [
@@ -6120,7 +5790,6 @@
     "src/components/CompactPrayerHabit.tsx",
     "src/components/HabitStatsModal.tsx",
     "src/components/PrayerBacklog.tsx",
-    "src/components/QadaaWidget.tsx",
     "src/components/ui/index.ts",
     "src/hooks/useAzkar.ts",
     "src/hooks/useHabits.ts",
@@ -6299,29 +5968,6 @@
    "imports": [
     "src/hooks/usePoints.ts",
     "src/lib/utils.ts"
-   ],
-   "importedBy": [
-    "src/App.ios.tsx",
-    "src/App.web.tsx"
-   ]
-  },
-  {
-   "id": "src/routes/Qadaa.tsx",
-   "kind": "route",
-   "platform": null,
-   "loc": 54,
-   "exports": [
-    "Qadaa"
-   ],
-   "default": "Qadaa",
-   "tables": [],
-   "rpcs": [],
-   "queryKeys": [],
-   "invokesEdgeFns": [],
-   "usesReactQuery": false,
-   "isZustand": false,
-   "imports": [
-    "src/components/QadaaWidget.tsx"
    ],
    "importedBy": [
     "src/App.ios.tsx",
@@ -6633,7 +6279,7 @@
    "id": "src/routes/Tasks.ios.tsx",
    "kind": "route",
    "platform": "ios",
-   "loc": 4881,
+   "loc": 4789,
    "exports": [],
    "default": "Tasks",
    "tables": [
@@ -6649,7 +6295,6 @@
    "imports": [
     "src/components/TaskDetailsContent.tsx",
     "src/components/TaskSimilarityMergeModal.tsx",
-    "src/components/collaboration/ShareModal.tsx",
     "src/components/ui/MarqueeTitle.tsx",
     "src/components/ui/index.ts",
     "src/hooks/useCalendar.ts",
@@ -6674,7 +6319,7 @@
    "id": "src/routes/Tasks.pake.tsx",
    "kind": "route",
    "platform": "pake",
-   "loc": 2807,
+   "loc": 2808,
    "exports": [],
    "default": "Tasks",
    "tables": [
@@ -6728,7 +6373,7 @@
    "id": "src/routes/Tasks.web.tsx",
    "kind": "route",
    "platform": "web",
-   "loc": 4625,
+   "loc": 4627,
    "exports": [],
    "default": "Tasks",
    "tables": [
@@ -6770,7 +6415,7 @@
    "id": "src/routes/WeeklyPlanner.tsx",
    "kind": "route",
    "platform": null,
-   "loc": 1716,
+   "loc": 1568,
    "exports": [],
    "default": "WeeklyPlanner",
    "tables": [
@@ -6786,8 +6431,6 @@
    "isZustand": false,
    "imports": [
     "lib/quran-memorizer/src/services/quranData.ts",
-    "src/components/planner/HabitSleepMatrix.tsx",
-    "src/components/planner/SmartTaskTracker.tsx",
     "src/components/ui/index.ts",
     "src/hooks/useAuth.ts",
     "src/hooks/useCalendar.ts",
@@ -6797,7 +6440,6 @@
     "src/hooks/useSleep.ts",
     "src/hooks/useTasks.ts",
     "src/lib/ai.ts",
-    "src/lib/nativeBridge.ts",
     "src/lib/supabase.ts",
     "src/lib/theme.ts",
     "src/lib/utils.ts",
@@ -7066,7 +6708,7 @@
    "id": "src/types/schema.ts",
    "kind": "types",
    "platform": null,
-   "loc": 520,
+   "loc": 474,
    "exports": [
     "AppSettings",
     "BrainDumpAnalysis",
@@ -7094,10 +6736,6 @@
     "PrayerName",
     "PrayerNotificationSetting",
     "PrayerStatus",
-    "QadaaCalculationBasis",
-    "QadaaLog",
-    "QadaaMadhab",
-    "QadaaSettings",
     "RecurrencePattern",
     "ScreentimeAppStat",
     "ScreentimeDailySummary",
@@ -7135,15 +6773,12 @@
     "src/components/HabitStatsModal.tsx",
     "src/components/PrayerBacklog.ios.tsx",
     "src/components/PrayerBacklog.web.tsx",
-    "src/components/QadaaSetupModal.tsx",
     "src/components/TaskDetailsContent.ios.tsx",
     "src/components/TaskDetailsContent.web.tsx",
     "src/components/TaskSimilarityMergeModal.tsx",
     "src/components/analytics/AnalyticsPoints.tsx",
     "src/components/dashboard/DashboardQuickView.ios.tsx",
     "src/components/dashboard/DashboardQuickView.web.tsx",
-    "src/components/planner/HabitSleepMatrix.tsx",
-    "src/components/planner/SmartTaskTracker.tsx",
     "src/db/database.ts",
     "src/hooks/useCalendar.ts",
     "src/hooks/useDashboardUpcomingItems.test.ts",
@@ -7159,7 +6794,6 @@
     "src/hooks/usePoints.ts",
     "src/hooks/usePrayerHabits.ios.ts",
     "src/hooks/usePrayerHabits.web.ts",
-    "src/hooks/useQadaaTracker.ts",
     "src/hooks/useScreentime.ts",
     "src/hooks/useSleep.ts",
     "src/hooks/useTasks.ios.ts",
@@ -7169,7 +6803,6 @@
     "src/lib/calendarExport.ts",
     "src/lib/listIdFromTagIds.ts",
     "src/lib/prayerStatus.ts",
-    "src/lib/qadaaSync.ts",
     "src/lib/smartTaskScheduler.ts",
     "src/lib/taskSimilarityAnalyzer.ts",
     "src/lib/weeklyCoachScheduler.ts",
@@ -7368,7 +7001,7 @@
    "id": "api/proxy.ts",
    "kind": "vercel-fn",
    "platform": null,
-   "loc": 143,
+   "loc": 137,
    "exports": [],
    "default": "async",
    "tables": [],
@@ -7755,6 +7388,26 @@
    "importedBy": []
   },
   {
+   "id": "supabase/functions/upload-screentime-chronos/index.ts",
+   "kind": "edge-fn",
+   "platform": null,
+   "loc": 1423,
+   "exports": [],
+   "default": null,
+   "tables": [
+    "screentime_daily_app_stats",
+    "screentime_daily_summary",
+    "screentime_daily_website_stats"
+   ],
+   "rpcs": [],
+   "queryKeys": [],
+   "invokesEdgeFns": [],
+   "usesReactQuery": false,
+   "isZustand": false,
+   "imports": [],
+   "importedBy": []
+  },
+  {
    "id": "supabase/functions/upload-sleep/index.ts",
    "kind": "edge-fn",
    "platform": null,
@@ -7967,7 +7620,7 @@
    "id": "lib/api-spec/orval.config.ts",
    "kind": "workspace-pkg",
    "platform": null,
-   "loc": 77,
+   "loc": 73,
    "exports": [],
    "default": "defineConfig",
    "tables": [],
@@ -8644,23 +8297,23 @@
  "topExternalDeps": [
   {
    "pkg": "react",
-   "count": 141
+   "count": 133
   },
   {
    "pkg": "lucide-react",
-   "count": 96
+   "count": 91
   },
   {
    "pkg": "date-fns",
-   "count": 63
+   "count": 55
   },
   {
    "pkg": "@tanstack/react-query",
-   "count": 41
+   "count": 39
   },
   {
    "pkg": "react-router-dom",
-   "count": 34
+   "count": 33
   },
   {
    "pkg": "@capacitor/core",
@@ -8668,15 +8321,15 @@
   },
   {
    "pkg": "npm:@supabase",
-   "count": 17
-  },
-  {
-   "pkg": "vitest",
-   "count": 16
+   "count": 18
   },
   {
    "pkg": "recharts",
-   "count": 16
+   "count": 15
+  },
+  {
+   "pkg": "vitest",
+   "count": 14
   },
   {
    "pkg": "framer-motion",
