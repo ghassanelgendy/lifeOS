@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-10-11T02:49:03.775Z",
+ "generatedAt": "2026-11-03T03:24:55.929Z",
  "note": "Supabase tables/RPCs referenced via .from()/.rpc(), and edge functions, with their consumers.",
  "tables": [
   {
@@ -46,12 +46,14 @@
   {
    "table": "habit_logs",
    "readWrite": [
+    "src/components/planner/HabitSleepMatrix.tsx",
     "src/hooks/useAzkar.ts",
     "src/hooks/useHabits.ios.ts",
     "src/hooks/useHabits.web.ts",
     "src/hooks/usePrayerHabits.ios.ts",
     "src/hooks/usePrayerHabits.web.ts",
     "src/lib/nativeBridge.ts",
+    "src/lib/qadaaSync.ts",
     "src/routes/Analytics.tsx",
     "src/routes/Habits.ios.tsx",
     "src/routes/Habits.web.tsx",
@@ -72,6 +74,7 @@
     "src/hooks/useTasks.ios.ts",
     "src/hooks/useTasks.web.ts",
     "src/lib/nativeBridge.ts",
+    "src/lib/qadaaSync.ts",
     "supabase/functions/calendar-feed/index.ts",
     "supabase/functions/habit-notifications-dispatch/index.ts"
    ]
@@ -182,6 +185,21 @@
    ]
   },
   {
+   "table": "qadaa_logs",
+   "readWrite": [
+    "src/hooks/useHabits.web.ts",
+    "src/hooks/useQadaaTracker.ts",
+    "src/lib/qadaaSync.ts"
+   ]
+  },
+  {
+   "table": "qadaa_settings",
+   "readWrite": [
+    "src/hooks/useQadaaTracker.ts",
+    "src/lib/qadaaSync.ts"
+   ]
+  },
+  {
    "table": "quran_hifdh_records",
    "readWrite": [
     "src/hooks/useQuranCloudSync.ts"
@@ -198,24 +216,21 @@
    "table": "screentime_daily_app_stats",
    "readWrite": [
     "src/hooks/useScreentime.ts",
-    "supabase/functions/upload-screentime/index.ts",
-    "supabase/functions/upload-screentime-chronos/index.ts"
+    "supabase/functions/upload-screentime/index.ts"
    ]
   },
   {
    "table": "screentime_daily_summary",
    "readWrite": [
     "src/hooks/useScreentime.ts",
-    "supabase/functions/upload-screentime/index.ts",
-    "supabase/functions/upload-screentime-chronos/index.ts"
+    "supabase/functions/upload-screentime/index.ts"
    ]
   },
   {
    "table": "screentime_daily_website_stats",
    "readWrite": [
     "src/hooks/useScreentime.ts",
-    "supabase/functions/upload-screentime/index.ts",
-    "supabase/functions/upload-screentime-chronos/index.ts"
+    "supabase/functions/upload-screentime/index.ts"
    ]
   },
   {
@@ -266,6 +281,7 @@
     "src/hooks/useTasks.ios.ts",
     "src/hooks/useTasks.web.ts",
     "src/lib/nativeBridge.ts",
+    "src/lib/qadaaSync.ts",
     "src/routes/Calendar.ios.tsx",
     "src/routes/Calendar.pake.tsx",
     "src/routes/Calendar.web.tsx",
@@ -454,13 +470,6 @@
    "name": "upload-screentime",
    "defines": [
     "supabase/functions/upload-screentime/index.ts"
-   ],
-   "calledBy": []
-  },
-  {
-   "name": "upload-screentime-chronos",
-   "defines": [
-    "supabase/functions/upload-screentime-chronos/index.ts"
    ],
    "calledBy": []
   },
