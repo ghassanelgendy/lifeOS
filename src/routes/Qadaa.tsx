@@ -2,11 +2,13 @@ import React from 'react';
 import { QadaaWidget } from '../components/QadaaWidget';
 import { Compass, Info } from 'lucide-react';
 
+const IOS = import.meta.env.MODE === 'ios';
+
 export const Qadaa: React.FC = () => {
   return (
-    <div className="container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6">
+    <div className={IOS ? "space-y-5" : "container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6"}>
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/50">
+      <div className={IOS ? "hidden" : "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/50"}>
         <div className="flex items-center gap-3">
           <div className="p-3 bg-primary/10 text-primary rounded-2xl">
             <Compass className="w-6 h-6" />
@@ -26,7 +28,7 @@ export const Qadaa: React.FC = () => {
       <QadaaWidget />
 
       {/* Fiqh Guidance & Principles Card */}
-      <div className="p-5 bg-card text-card-foreground border border-border/70 rounded-2xl space-y-3">
+      <div className={IOS ? "p-4 bg-card text-card-foreground rounded-[20px] space-y-3" : "p-5 bg-card text-card-foreground border border-border/70 rounded-2xl space-y-3"}>
         <div className="flex items-center gap-2 font-bold text-sm text-primary">
           <Info className="w-4 h-4" />
           <span>إرشادات وضوابط فقهية في قضاء الفوائت (Fiqh Principles)</span>

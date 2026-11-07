@@ -701,3 +701,46 @@ html.light {
 .ios-sheet :is([class~="bg-card"], [class*="bg-card/"], [class*="bg-muted/"], [class*="bg-secondary/"], .liquid-glass-card) {
   background-color: var(--color-sheet-card);
 }
+
+/* Chart tooltips: readable in both themes (recharts sets black/series colors inline) */
+.recharts-default-tooltip {
+  background-color: var(--color-popover) !important;
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+.recharts-default-tooltip .recharts-tooltip-label,
+.recharts-default-tooltip .recharts-tooltip-item,
+.recharts-default-tooltip .recharts-tooltip-item-name,
+.recharts-default-tooltip .recharts-tooltip-item-value,
+.recharts-default-tooltip .recharts-tooltip-item-separator,
+.recharts-default-tooltip .recharts-tooltip-item-unit {
+  color: var(--color-foreground) !important;
+}
+
+/* Odd item in a 2-column grid spans both columns */
+.grid-cols-2 > :last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* AI chat input: no inner box, ring or tint around the text field; bar matches the tab bar */
+.chat-blend-surface textarea,
+.chat-blend-surface input {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  outline: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}
+footer.chat-blend-surface {
+  background-color: rgba(255, 255, 255, 0.45) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  -webkit-backdrop-filter: blur(25px) saturate(200%);
+  backdrop-filter: blur(25px) saturate(200%);
+}
+html.dark footer.chat-blend-surface {
+  background-color: rgba(20, 20, 22, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}

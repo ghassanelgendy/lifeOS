@@ -332,8 +332,8 @@ export async function syncAllLocalNotifications(
           const isReadHabit = titleIsRead || (!titleIsMem && !titleIsRead && habit.habit_type === 'quran_reading');
           const isQuranHabit = isMulk || isKahf || isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
 
-          let notifTitle = isAr ? `تذكير بالعادات: ${habit.title}` : 'Habit Reminder';
-          let notifBody = isAr ? `يلا عشان دة وقت: ${habit.title}` : `Time to focus on: ${habit.title}`;
+          let notifTitle = isAr ? `تذكير بالعادات ${habit.title}` : 'Habit Reminder';
+          let notifBody = isAr ? `يلا عشان دة وقت ${habit.title}` : `Time to focus on ${habit.title}`;
           let notifExtra: Record<string, any> = { habitId: habit.id, date: dateString };
 
           if (isMulk) {
@@ -424,8 +424,8 @@ export async function syncAllLocalNotifications(
             const wird = getCurrentWirdInfo();
             notifTitle = isAr ? `موعد ${event.title}` : `${event.title}`;
             notifBody = isAr
-              ? `حان موعد الجلسة والتسميع — موضع الحفظ: صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
-              : `${event.title} is starting — Memorization: Page ${wird.memorization.page} (${wird.memorization.surahName})`;
+              ? `حان موعد الجلسة والتسميع — موضع الحفظ صفحة ${wird.memorization.page} (سورة ${wird.memorization.surahName})`
+              : `${event.title} is starting, memorization page ${wird.memorization.page} (${wird.memorization.surahName})`;
             notifExtra = {
               ...notifExtra,
               quranPage: wird.memorization.page,

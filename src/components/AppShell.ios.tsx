@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
 import { PullToRefresh } from './PullToRefresh';
-import { OfflineBanner } from './OfflineBanner';
+import { useSyncStatus } from '../hooks/useSyncStatus';
 import { FocusSessionManager } from './FocusSessionManager';
 import { FocusPiPWindow } from './FocusPiPWindow';
 import { BrainDumpModal } from './BrainDumpModal';
@@ -40,6 +40,7 @@ export function AppShell() {
   } = useUIStore();
   const { user } = useAuth();
   const location = useLocation();
+  const { online, queueLength } = useSyncStatus();
   const navigate = useNavigate();
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [showTabBar, setShowTabBar] = useState(true);
@@ -198,6 +199,8 @@ export function AppShell() {
     const item = NAV_ITEMS.find(
       (n) => n.href !== '/' && (location.pathname === n.href || location.pathname.startsWith(n.href + '/'))
     );
+    if (!item && location.pathname.startsWith('/qadaa')) return 'Qadaa';
+    if (!item && location.pathname.startsWith('/weekly-planner')) return 'Weekly planner';
     return item ? item.label : 'lifeOS';
   }, [location.pathname]);
 
@@ -382,8 +385,8 @@ export function AppShell() {
 
       const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
 
-      // Lock vertical scrolling only if touch is horizontal swipe to the right
-      if (isHorizontalSwipe && deltaX > 8) {
+      // Once the gesture is clearly horizontal, lock out vertical movement completely
+      if (isHorizontalSwipe && Math.abs(deltaX) > 6 && Math.abs(deltaX) > Math.abs(deltaY) * 1.2) {
         if (e.cancelable) {
           e.preventDefault();
         }
@@ -665,15 +668,33 @@ export function AppShell() {
           </motion.span>
 
           <div className="absolute right-3 flex items-center gap-1.5">
-            <button
-              data-tour="mobile-brain-dump"
-              onClick={() => setIsBrainDumpOpen(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary active:opacity-60 transition-opacity touch-manipulation text-primary"
-              aria-label="Brain Dump"
-              title="Cognitive Brain Dump"
-            >
-              <Brain size={18} />
-            </button>
+            {online ? (
+              <button
+                data-tour="mobile-brain-dump"
+                onClick={() => setIsBrainDumpOpen(true)}
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary active:opacity-60 transition-opacity touch-manipulation text-primary"
+                aria-label="Brain Dump"
+                title="Cognitive Brain Dump"
+              >
+                <Brain size={18} />
+              </button>
+            ) : (
+              <button
+                data-tour="mobile-brain-dump"
+                onClick={() =>
+                  window.alert(
+                    queueLength > 0
+                      ? `You're offline. ${queueLength} change${queueLength === 1 ? '' : 's'} will sync when you're back online.`
+                      : "You're offline. Changes will sync when you're back online."
+                  )
+                }
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary active:opacity-60 transition-opacity touch-manipulation text-orange-500 text-[17px] font-bold leading-none"
+                aria-label="You're offline"
+                title="You're offline"
+              >
+                !
+              </button>
+            )}
             {showHeaderPlusButton && (
               <button
                 onClick={handleHeaderPlusClick}
@@ -686,7 +707,6 @@ export function AppShell() {
           </div>
         </header>
 
-        <OfflineBanner />
 
         {/* Only this content area scrolls; header/sidebar/bottom bar are fixed */}
         <div

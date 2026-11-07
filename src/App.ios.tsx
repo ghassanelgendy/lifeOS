@@ -52,8 +52,10 @@ import Qadaa from './routes/Qadaa';
 import { useDailyPointsSync } from './hooks/usePoints';
 import './App.css';
 import { installIosToast } from './lib/iosToast';
+import { installAxisLock } from './lib/axisLock';
 
 installIosToast();
+installAxisLock();
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,

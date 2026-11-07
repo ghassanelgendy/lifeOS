@@ -23,6 +23,7 @@ import {
   HelpCircle,
   BookOpen,
   ChevronRight,
+  ChevronLeft,
   Copy,
   Zap,
   ExternalLink,
@@ -260,6 +261,8 @@ export default function SettingsPage() {
   const effectiveTheme = useEffectiveTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState<string>('account');
+  // Phone: null shows the Settings index, an id shows only that section
+  const [mobileSection, setMobileSection] = useState<string | null>(null);
 
   // Track active section as user scrolls
   useEffect(() => {
@@ -520,7 +523,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 w-full max-w-6xl mx-auto pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-5">
+      <div className="hidden lg:flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-5">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-0.5">Manage preferences, customize appearance, and configure integrations</p>
@@ -547,9 +550,109 @@ export default function SettingsPage() {
         </Button>
       </div>
 
+      <style>{`@media (max-width: 1023px) { [data-settings-pane] > * { display: none !important; } ${
+        mobileSection ? `[data-settings-pane] > #settings-${mobileSection} { display: block !important; }` : ''
+      } }`}</style>
+
+      {/* Phone: iOS Settings index / section detail */}
+      <div className="lg:hidden">
+        {mobileSection ? (
+          <div className="flex items-center gap-1 -ml-2">
+            <button
+              type="button"
+              onClick={() => setMobileSection(null)}
+              className="flex items-center gap-0.5 min-h-[44px] pl-1 pr-3 text-[17px] text-primary active:opacity-60"
+              aria-label="Back to Settings"
+            >
+              <ChevronLeft size={24} />
+              Settings
+            </button>
+            <h2 className="flex-1 text-center text-[17px] font-semibold pr-16 truncate">
+              {SETTINGS_NAV.find((i) => i.id === mobileSection)?.label}
+            </h2>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+              <input
+                type="search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search"
+                className="w-full h-10 pl-9 pr-3 rounded-[10px] bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+            </div>
+
+            {user && !searchQuery.trim() && (
+              <button
+                type="button"
+                onClick={() => setMobileSection('account')}
+                className="w-full flex items-center gap-3 rounded-[20px] bg-card p-4 text-left active:bg-secondary/60"
+              >
+                <UserBlobatar identifier={user.email || user.id} size={52} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[17px] font-semibold truncate">{user.email}</p>
+                  <p className="text-[13px] text-muted-foreground">Account</p>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+              </button>
+            )}
+
+            {(searchQuery.trim() ? [null] : categories).map((cat) => {
+              const items = cat ? SETTINGS_NAV.filter((i) => i.category === cat && i.id !== 'account') : filteredNavItems;
+              if (items.length === 0) return cat ? null : (
+                <p key="none" className="px-4 text-[15px] text-muted-foreground">No matching settings</p>
+              );
+              const tile: Record<string, string> = { General: '#8e8e93', Personalization: '#0a84ff', Modules: '#34c759', System: '#636366' };
+              return (
+                <div key={cat ?? 'results'} className="rounded-[20px] bg-card overflow-hidden divide-y divide-border">
+                  {items.map(({ id, label, icon: Icon, category }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => {
+                        setMobileSection(id);
+                        document.querySelector('[data-lifeos-scroll-root]')?.scrollTo({ top: 0 });
+                      }}
+                      className="w-full flex items-center gap-3 px-4 min-h-[52px] text-left active:bg-secondary/60"
+                    >
+                      <span
+                        className="size-8 rounded-lg flex items-center justify-center shrink-0 text-white"
+                        style={{ backgroundColor: tile[category] }}
+                      >
+                        <Icon size={18} />
+                      </span>
+                      <span className="flex-1 text-[17px] truncate">{label}</span>
+                      <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+
+            {!searchQuery.trim() && (
+              <div className="rounded-[20px] bg-card overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => {
+                    useUIStore.getState().restartTour();
+                    navigate('/dashboard');
+                  }}
+                  className="w-full flex items-center gap-3 px-4 min-h-[52px] text-left text-[17px] text-primary active:bg-secondary/60"
+                >
+                  <RotateCcw size={18} />
+                  Interactive tour
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start">
         {/* Sticky Desktop & Mobile Settings Navigation */}
-        <aside className="lg:w-64 shrink-0 lg:sticky lg:top-4 z-20 space-y-3">
+        <aside className="hidden lg:block lg:w-64 shrink-0 lg:sticky lg:top-4 z-20 space-y-3">
           {/* Quick Search Field */}
           <div className="relative">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -645,7 +748,7 @@ export default function SettingsPage() {
           </nav>
         </aside>
 
-        <div className="flex-1 min-w-0 space-y-10">
+        <div data-settings-pane className="flex-1 min-w-0 space-y-10">
           {/* Account */}
           <section id="settings-account" className="scroll-mt-20">
             <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Account</h2>

@@ -114,9 +114,9 @@ function Row({
         )}
       >
         <Icon size={20} className="text-muted-foreground shrink-0" aria-hidden />
-        <span className="text-sm font-medium text-foreground flex-1 min-w-0">{label}</span>
+        <span className="text-[17px] text-foreground flex-1 min-w-0">{label}</span>
         {value != null && (
-          <span className="text-sm font-medium text-primary truncate max-w-[50%] text-right">{value}</span>
+          <span className="text-[17px] text-muted-foreground truncate max-w-[50%] text-right">{value}</span>
         )}
         {right != null && <div className="shrink-0">{right}</div>}
       </div>
@@ -129,7 +129,7 @@ function Row({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-6 mb-2 first:mt-0">
+    <p className="px-4 text-[13px] font-semibold text-muted-foreground mt-6 mb-2 first:mt-0">
       {children}
     </p>
   );
@@ -137,7 +137,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-xl border border-black/5 dark:border-border bg-secondary dark:bg-black/25 backdrop-blur-md overflow-hidden', className)}>
+    <div className={cn('rounded-[20px] bg-card overflow-hidden', className)}>
       {children}
     </div>
   );
@@ -495,8 +495,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           aria-expanded={openPicker === 'repeat'}
         >
           <Repeat size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">Repeat</span>
-          <span className="text-sm font-medium text-primary">{recurrenceLabel}</span>
+          <span className="text-[17px] text-foreground flex-1">Repeat</span>
+          <span className="text-[17px] text-muted-foreground">{recurrenceLabel}</span>
           <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
         </button>
         {openPicker === 'repeat' && (
@@ -548,8 +548,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           aria-expanded={openPicker === 'repeatEnd'}
         >
           <Repeat1 size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">End Repeat</span>
-          <span className="text-sm font-medium text-primary">{recurrenceEndLabel}</span>
+          <span className="text-[17px] text-foreground flex-1">End Repeat</span>
+          <span className="text-[17px] text-muted-foreground">{recurrenceEndLabel}</span>
           <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
         </button>
         {openPicker === 'repeatEnd' && (
@@ -612,87 +612,59 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
             <Divider />
             <div className="flex items-center gap-3 min-h-[52px] px-4 py-3">
               <span className="w-5 shrink-0" aria-hidden />
-              <span className="text-sm font-medium text-foreground flex-1">End Date</span>
-              <span className="text-sm font-medium text-primary">
+              <span className="text-[17px] text-foreground flex-1">End Date</span>
+              <span className="text-[17px] text-muted-foreground">
                 {form.recurrence_end ? format(parseISO(form.recurrence_end), 'MMM d, yyyy') : '—'}
               </span>
             </div>
           </>
         )}
         <Divider />
-        {/* Standalone Reminders Enabled toggle — prominently visible */}
-        <div className="flex items-center min-h-[52px] px-4 py-3">
-          <Bell size={20} className={cn('shrink-0 mr-3', form.reminders_enabled ? 'text-primary' : 'text-muted-foreground')} aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">Reminders</span>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={!!form.reminders_enabled}
-            aria-label="Toggle reminders"
-            className={cn(
-              'w-12 h-7 rounded-full transition-colors relative shrink-0',
-              form.reminders_enabled ? 'bg-primary' : 'bg-muted'
-            )}
-            onClick={() => {
-              setForm((prev) => {
-                const nextRemindersEnabled = !prev.reminders_enabled;
-                return {
-                  ...prev,
-                  reminders_enabled: nextRemindersEnabled,
-                  early_reminder_minutes: nextRemindersEnabled ? (prev.early_reminder_minutes ?? 0) : null,
-                };
-              });
-            }}
-          >
-            <span
+        <Row
+          icon={Bell}
+          label="Reminders"
+          right={
+            <button
+              type="button"
+              role="switch"
+              aria-checked={!!form.reminders_enabled}
+              aria-label="Toggle reminders"
               className={cn(
-                'absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all duration-200',
-                form.reminders_enabled ? 'left-6' : 'left-1'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                form.reminders_enabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
-            />
-          </button>
-        </div>
-        <div className="flex items-center min-h-[52px] px-4 py-3 hover:bg-secondary/10 transition-colors">
-          <button
-            type="button"
-            onClick={() => setOpenPicker(openPicker === 'earlyReminder' ? null : 'earlyReminder')}
-            className="flex items-center gap-3 flex-1 text-left min-w-0"
-            aria-expanded={openPicker === 'earlyReminder'}
-          >
-            <Bell size={20} className="text-muted-foreground shrink-0" aria-hidden />
-            <span className="text-sm font-medium text-foreground flex-1 truncate">Early Reminder</span>
-            <span className="text-sm font-medium text-primary shrink-0 mr-1">{earlyReminderLabel}</span>
-            <ChevronRight size={18} className="text-muted-foreground shrink-0 mr-2" aria-hidden />
-          </button>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={!!form.reminders_enabled}
-            aria-label="Toggle reminders"
-            title="Toggle Reminders"
-            className={cn(
-              'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
-              form.reminders_enabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
-            )}
-            onClick={() => {
-              setForm((prev) => {
-                const nextRemindersEnabled = !prev.reminders_enabled;
-                return {
-                  ...prev,
-                  reminders_enabled: nextRemindersEnabled,
-                  early_reminder_minutes: nextRemindersEnabled ? (prev.early_reminder_minutes ?? 0) : null,
-                };
-              });
-            }}
-          >
-            <span
-              className={cn(
-                'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
-                form.reminders_enabled ? 'left-[22px]' : 'left-[2px]'
-              )}
-            />
-          </button>
-        </div>
+              onClick={() => {
+                setForm((prev) => {
+                  const nextRemindersEnabled = !prev.reminders_enabled;
+                  return {
+                    ...prev,
+                    reminders_enabled: nextRemindersEnabled,
+                    early_reminder_minutes: nextRemindersEnabled ? (prev.early_reminder_minutes ?? 0) : null,
+                  };
+                });
+              }}
+            >
+              <span
+                className={cn(
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  form.reminders_enabled ? 'left-[22px]' : 'left-[2px]'
+                )}
+              />
+            </button>
+          }
+        />
+        <Divider />
+        <button
+          type="button"
+          onClick={() => setOpenPicker(openPicker === 'earlyReminder' ? null : 'earlyReminder')}
+          className="w-full flex items-center gap-3 min-h-[52px] px-4 py-3 text-left active:bg-secondary/40 transition-colors"
+          aria-expanded={openPicker === 'earlyReminder'}
+        >
+          <Bell size={20} className="text-muted-foreground shrink-0" aria-hidden />
+          <span className="text-[17px] text-foreground flex-1 min-w-0 truncate">Early reminder</span>
+          <span className="text-[17px] text-muted-foreground shrink-0">{earlyReminderLabel}</span>
+          <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
+        </button>
         {openPicker === 'earlyReminder' && (
           <div className="px-4 pb-3 pt-1 border-t border-border flex flex-col gap-1">
             <button
@@ -742,8 +714,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           aria-expanded={openPicker === 'list'}
         >
           <ListTodo size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">List</span>
-          <span className="text-sm font-medium text-primary truncate">{listName ?? 'None'}</span>
+          <span className="text-[17px] text-foreground flex-1">List</span>
+          <span className="text-[17px] text-muted-foreground truncate">{listName ?? 'None'}</span>
           <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
         </button>
         {openPicker === 'list' && (
@@ -788,8 +760,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           aria-expanded={openPicker === 'tags'}
         >
           <TagIcon size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">Tags</span>
-          <span className="text-sm font-medium text-primary">
+          <span className="text-[17px] text-foreground flex-1">Tags</span>
+          <span className="text-[17px] text-muted-foreground">
             {tagCount === 0 ? 'None' : tagCount === 1 ? '1 Selected' : `${tagCount} Selected`}
           </span>
           <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />
@@ -840,8 +812,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           aria-expanded={isSubtasksExpanded}
         >
           <ListChecks size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">Subtasks</span>
-          <span className="text-sm font-medium text-primary">
+          <span className="text-[17px] text-foreground flex-1">Subtasks</span>
+          <span className="text-[17px] text-muted-foreground">
             {subtasks.length > 0 ? `${subtasks.filter(s => s.is_completed).length}/${subtasks.length}` : '0'}
           </span>
           <ChevronRight
@@ -1023,8 +995,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           aria-expanded={openPicker === 'priority'}
         >
           <AlertCircle size={20} className="text-muted-foreground shrink-0" aria-hidden />
-          <span className="text-sm font-medium text-foreground flex-1">Priority</span>
-          <span className="text-sm font-medium text-primary">
+          <span className="text-[17px] text-foreground flex-1">Priority</span>
+          <span className="text-[17px] text-muted-foreground">
             {form.priority ? PRIORITY_LABELS[form.priority] : 'None'}
           </span>
           <ChevronRight size={18} className="text-muted-foreground shrink-0" aria-hidden />

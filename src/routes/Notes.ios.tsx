@@ -544,15 +544,16 @@ export default function NotesIOS() {
               )}
             </div>
 
-            {/* Floating Action Button */}
-            <div className="fixed bottom-[calc(96px+env(safe-area-inset-bottom))] right-5 z-[60] flex items-center gap-2">
+            {/* Floating Action Button (same style as the Dashboard quick-add) */}
+            <div className="fixed bottom-[calc(100px+env(safe-area-inset-bottom))] right-5 z-[60]">
               <button
                 type="button"
                 onClick={startNewNote}
-                className="w-13 h-13 rounded-full bg-primary text-primary-foreground  flex items-center justify-center active:scale-90 transition-transform touch-manipulation cursor-pointer border border-border"
+                className="w-14 h-14 rounded-full flex items-center justify-center active:scale-95 transition-all cursor-pointer touch-manipulation bg-[#F9F9F9]/45 dark:bg-[#141416]/65 backdrop-blur-2xl border border-white/40 dark:border-white/10 text-primary"
+                style={{ boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.3)' }}
                 aria-label="New Note"
               >
-                <Pencil size={22} />
+                <Pencil size={26} />
               </button>
             </div>
           </motion.div>

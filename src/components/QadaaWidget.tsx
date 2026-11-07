@@ -78,6 +78,157 @@ export const QadaaWidget: React.FC = () => {
     }
   };
 
+  // iOS: grouped native layout (web keeps the card below)
+  if (import.meta.env.MODE === 'ios') {
+    const pct = Math.min(100, Math.max(0, remaining.completionPct));
+    const rowCls = 'flex items-center justify-between gap-3 px-4 min-h-[48px] py-2.5';
+    const actionCls = 'w-full flex items-center justify-between gap-3 px-4 min-h-[50px] text-[17px] text-primary text-start active:bg-secondary/40 disabled:opacity-50';
+    return (
+      <div className="space-y-5">
+        <div className="rounded-[20px] bg-card p-4 space-y-3">
+          <div className="flex items-end justify-between">
+            <div>
+              <div className="text-[13px] text-muted-foreground">المتبقي</div>
+              <div className="text-[34px] font-bold tabular-nums leading-tight">{remaining.total.toLocaleString()}</div>
+            </div>
+            <div className="text-end">
+              <div className="text-[13px] text-muted-foreground">المقضي</div>
+              <div className="text-[22px] font-semibold tabular-nums">{totals.total.toLocaleString()}</div>
+            </div>
+          </div>
+          <div className="w-full bg-secondary h-1.5 rounded-full overflow-hidden">
+            <div className="bg-primary h-full rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+          </div>
+          <div className="text-[13px] text-muted-foreground">
+            {remaining.completionPct}% · مذهب {settings.madhab.toUpperCase()} · سن {settings.takleef_age}
+          </div>
+        </div>
+
+        <section>
+          <h3 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">الجدول الزمني</h3>
+          <div className="rounded-[20px] bg-card divide-y divide-border">
+            <div className={rowCls}>
+              <span className="text-[17px]">الهدف اليومي</span>
+              <span className="text-[17px] text-muted-foreground tabular-nums">{velocityAndForecast.dailyTarget} / يوم</span>
+            </div>
+            <div className={rowCls}>
+              <span className="text-[17px]">المدة المخططة</span>
+              <span className="text-[17px] text-muted-foreground">{velocityAndForecast.targetDuration.formatted}</span>
+            </div>
+            <div className={rowCls}>
+              <span className="text-[17px]">الإتمام المخطط</span>
+              <span className="text-[17px] text-muted-foreground tabular-nums">{format(velocityAndForecast.targetFinishDate, 'dd MMM yyyy')}</span>
+            </div>
+            <div className={rowCls}>
+              <span className="text-[17px]">السرعة (7 أيام)</span>
+              <span className="text-[17px] text-muted-foreground tabular-nums">{velocityAndForecast.rolling7DayVelocity} / يوم</span>
+            </div>
+            <div className={rowCls}>
+              <span className="text-[17px]">الإنهاء المتوقع</span>
+              <span className="text-[17px] text-muted-foreground text-end">
+                {velocityAndForecast.actualDuration.formatted}
+                {velocityAndForecast.isAhead && (
+                  <span className="block text-[13px] text-green-600 dark:text-green-400">متقدم بـ {Math.abs(velocityAndForecast.daysDelta)} يوم</span>
+                )}
+                {velocityAndForecast.isBehind && velocityAndForecast.rolling7DayVelocity > 0 && (
+                  <span className="block text-[13px] text-orange-600 dark:text-orange-400">متأخر بـ {Math.abs(velocityAndForecast.daysDelta)} يوم</span>
+                )}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h3 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">تسجيل اليوم</h3>
+          <div className="rounded-[20px] bg-card divide-y divide-border">
+            <div className={rowCls}>
+              <span className="text-[17px]">يوم كامل (الخمس صلوات)</span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => batchFullDay(-1)}
+                  aria-label="تراجع عن يوم كامل"
+                  className="size-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => batchFullDay(1)}
+                  className="h-10 px-4 rounded-full bg-primary text-primary-foreground text-[15px] font-semibold flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  1
+                </button>
+              </div>
+            </div>
+            {activePrayers.map((prayer) => {
+              const rem = remaining[prayer.key as keyof typeof remaining] as number;
+              const doneToday = (todayLog as any)[`${prayer.key}_count`] || 0;
+              return (
+                <div key={prayer.key} className="flex items-center gap-2 px-4 py-2.5 min-h-[60px]">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[17px] font-semibold">{prayer.nameAr}</div>
+                    <div className="text-[13px] text-muted-foreground tabular-nums">
+                      المتبقي {rem.toLocaleString()} · اليوم +{doneToday}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => decrementPrayer(prayer.key, 1)}
+                    disabled={doneToday <= 0}
+                    aria-label={`تراجع ${prayer.nameAr}`}
+                    className="size-10 rounded-full bg-secondary text-muted-foreground flex items-center justify-center disabled:opacity-30"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => incrementPrayer(prayer.key, 5)}
+                    aria-label={`إضافة 5 ${prayer.nameAr}`}
+                    className="h-10 px-3 rounded-full bg-secondary text-[15px] font-semibold flex items-center justify-center"
+                  >
+                    +5
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => incrementPrayer(prayer.key, 1)}
+                    aria-label={`إضافة 1 ${prayer.nameAr}`}
+                    className="size-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        <div className="rounded-[20px] bg-card divide-y divide-border overflow-hidden">
+          <button type="button" className={actionCls} onClick={handlePushTasks} disabled={isPushingTasks}>
+            <span>{taskPushFeedback ?? 'دفع كمهام لليوم'}</span>
+            <ListTodo className="w-5 h-5" />
+          </button>
+          <button type="button" className={actionCls} onClick={handleSyncHabit} disabled={isSyncingHabit}>
+            <span>{habitSyncFeedback ?? 'مزامنة العادة'}</span>
+            <BookmarkCheck className="w-5 h-5" />
+          </button>
+          <button type="button" className={actionCls} onClick={() => setSetupModalOpen(true)}>
+            <span>ضبط الخطة</span>
+            <Settings className="w-5 h-5" />
+          </button>
+        </div>
+
+        <QadaaSetupModal
+          open={setupModalOpen}
+          onOpenChange={setSetupModalOpen}
+          currentSettings={settings}
+          onSave={saveSettings}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="bg-card text-card-foreground border border-border/70 rounded-2xl p-5 shadow-sm space-y-5">
       {/* Header */}

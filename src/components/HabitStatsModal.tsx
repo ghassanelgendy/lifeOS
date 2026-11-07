@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -132,6 +132,29 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
     };
   }, [habit, logs, currentStreak]);
 
+  const [dragY, setDragY] = useState(0);
+  const dragStartY = useRef<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const onSheetTouchStart = (e: React.TouchEvent) => {
+    if (window.innerWidth >= 640) return;
+    const atTop = (scrollRef.current?.scrollTop ?? 0) <= 0;
+    const fromHandle = (e.target as HTMLElement).closest('[data-sheet-handle]');
+    dragStartY.current = atTop || fromHandle ? e.touches[0].clientY : null;
+  };
+  const onSheetTouchMove = (e: React.TouchEvent) => {
+    if (dragStartY.current == null) return;
+    const delta = e.touches[0].clientY - dragStartY.current;
+    if (delta > 0) setDragY(delta);
+    else if (dragY !== 0) setDragY(0);
+  };
+  const onSheetTouchEnd = () => {
+    const shouldClose = dragY > 110;
+    dragStartY.current = null;
+    setDragY(0);
+    if (shouldClose) onClose();
+  };
+
   if (!isOpen || !habit || !stats) return null;
 
   return createPortal(
@@ -143,8 +166,16 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
       <div
         className="ios-sheet relative w-full max-w-lg text-card-foreground rounded-t-[28px] sm:rounded-[28px] overflow-hidden flex flex-col max-h-[92dvh] pb-[env(safe-area-inset-bottom)]"
         onClick={e => e.stopPropagation()}
+        onTouchStart={onSheetTouchStart}
+        onTouchMove={onSheetTouchMove}
+        onTouchEnd={onSheetTouchEnd}
+        onTouchCancel={onSheetTouchEnd}
+        style={{
+          transform: dragY > 0 ? `translateY(${dragY}px)` : undefined,
+          transition: dragY > 0 ? 'none' : 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
+        }}
       >
-        <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-muted-foreground/40 sm:hidden" />
+        <div data-sheet-handle className="py-2.5 sm:hidden"><div className="mx-auto h-1 w-9 rounded-full bg-muted-foreground/40" /></div>
         {/* Header */}
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -191,7 +222,7 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="px-4 pt-4 pb-2 overflow-y-auto space-y-5">
+        <div ref={scrollRef} className="px-4 pt-4 pb-2 overflow-y-auto space-y-5 overscroll-contain">
           {/* Streaks */}
           <div className="rounded-[20px] bg-card grid grid-cols-3 divide-x divide-border">
             <div className="px-3 py-4 text-center">
