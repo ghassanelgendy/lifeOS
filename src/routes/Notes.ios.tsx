@@ -333,8 +333,8 @@ export default function NotesIOS() {
                       setBrainDumpModalTab('all');
                       setIsBrainDumpModalOpen(true);
                     }}
-                    className="p-2 rounded-full bg-secondary text-muted-foreground active:scale-95 transition-all shadow-sm"
-                    title="All Brain Dump Tasks"
+                    className="p-2 rounded-full bg-secondary text-muted-foreground active:scale-95 transition-all"
+                    title="All Brain Dump Tasks" aria-label="All Brain Dump Tasks"
                   >
                     <ListTodo size={15} />
                   </button>
@@ -344,7 +344,7 @@ export default function NotesIOS() {
                       setBrainDumpModalTab('capture');
                       setIsBrainDumpModalOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                    className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all"
                     title="Cognitive Brain Dump"
                   >
                     <Brain size={15} />
@@ -375,7 +375,7 @@ export default function NotesIOS() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium shrink-0 transition-all active:scale-95 border",
                     activeFolderFilter === ALL_NOTES
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm font-semibold"
+                      ? "bg-primary text-primary-foreground border-primary font-semibold"
                       : "bg-card text-muted-foreground border-border hover:bg-secondary"
                   )}
                 >
@@ -390,7 +390,7 @@ export default function NotesIOS() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium shrink-0 transition-all active:scale-95 flex items-center gap-1 border",
                     activeFolderFilter === PINNED_NOTES
-                      ? "bg-amber-500 text-white border-amber-500 shadow-sm font-semibold"
+                      ? "bg-amber-500 text-white border-amber-500 font-semibold"
                       : "bg-card text-muted-foreground border-border hover:bg-secondary"
                   )}
                 >
@@ -405,7 +405,7 @@ export default function NotesIOS() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium shrink-0 transition-all active:scale-95 flex items-center gap-1 border",
                     activeFolderFilter === BRAIN_DUMP_NOTES
-                      ? "bg-primary text-white border-primary shadow-sm font-semibold"
+                      ? "bg-primary text-white border-primary font-semibold"
                       : "bg-card text-muted-foreground border-border hover:bg-secondary"
                   )}
                 >
@@ -422,7 +422,7 @@ export default function NotesIOS() {
                     className={cn(
                       "px-3 py-1.5 rounded-full text-xs font-medium shrink-0 transition-all active:scale-95 border",
                       activeFolderFilter === f.id
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm font-semibold"
+                        ? "bg-primary text-primary-foreground border-primary font-semibold"
                         : "bg-card text-muted-foreground border-border hover:bg-secondary"
                     )}
                   >
@@ -461,7 +461,7 @@ export default function NotesIOS() {
                       <div className="px-2 text-[10px] font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1">
                         <Pin size={11} className="text-amber-500 fill-amber-500" /> Pinned Notes
                       </div>
-                      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden divide-y divide-border">
+                      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                         {pinnedNotes.map((note) => (
                           <div
                             key={note.id}
@@ -507,7 +507,7 @@ export default function NotesIOS() {
                           Notes
                         </div>
                       )}
-                      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden divide-y divide-border">
+                      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
                         {unpinnedNotes.map((note) => (
                           <div
                             key={note.id}

@@ -123,10 +123,12 @@ export default function Focus() {
           <h1 className="text-3xl font-bold tracking-tight">Focus</h1>
           <p className="text-muted-foreground">Pick a task, run a timer, and automatically log focus time.</p>
         </div>
-        <Button variant="outline" onClick={togglePiP}>
-          <PictureInPicture2 size={16} />
-          {pipOpen ? 'Hide PiP' : 'Show PiP'}
-        </Button>
+        {import.meta.env.MODE !== 'ios' && (
+          <Button variant="outline" onClick={togglePiP}>
+            <PictureInPicture2 size={16} />
+            {pipOpen ? 'Hide PiP' : 'Show PiP'}
+          </Button>
+        )}
       </div>
 
       <section className="rounded-xl border border-border bg-card p-5">

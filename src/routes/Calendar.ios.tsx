@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, ChevronLeft, ChevronRight, Clock, MapPin, Edit2, Trash2, Repeat, CheckSquare, CalendarPlus, Copy, Link2, RefreshCw, X, Circle } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Clock, MapPin, Edit2, Trash2, Repeat, CheckSquare, CalendarPlus, Copy, Link2, RefreshCw, X, Circle, Check } from 'lucide-react';
 import { format, addDays, startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfWeek, endOfDay, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, addWeeks, subWeeks, parseISO } from 'date-fns';
 import { cn } from '../lib/utils';
 import { useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent, useExpandedCalendarEvents, useCalendarEvents, useIcalSubscriptionEvents } from '../hooks/useCalendar';
@@ -758,57 +758,59 @@ export default function CalendarPage() {
 
       {/* Calendar Navigation */}
       <div className="space-y-3">
-        {/* iOS-style Segmented View Controls */}
-        <div className="flex p-1 rounded-xl bg-black/10 dark:bg-foreground/5 border border-border gap-1 w-full sm:w-fit">
+        {/* View switch + task toggle */}
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 sm:flex-none p-0.5 rounded-[10px] bg-secondary gap-0.5">
+            {(['month', 'day'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                aria-pressed={view === v}
+                className={cn(
+                  "flex-1 sm:flex-none sm:px-6 min-h-[36px] rounded-[8px] text-[13px] font-semibold transition-colors whitespace-nowrap select-none",
+                  view === v
+                    ? "bg-card dark:bg-white/20 text-foreground"
+                    : "text-muted-foreground"
+                )}
+              >
+                {v === 'month' ? 'Month' : 'Day'}
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={goToToday}
+            className="inline-flex items-center px-3.5 min-h-[36px] rounded-full text-[13px] font-semibold bg-secondary text-primary select-none"
+          >
+            Today
+          </button>
           <button
             type="button"
             onClick={() => setShowTasksInCalendar(!showTasksInCalendar)}
-            className={cn(
-              "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98",
-              showTasksInCalendar
-                ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+            aria-pressed={showTasksInCalendar}
             title="Toggle task chips on calendar"
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3.5 min-h-[36px] rounded-full text-[13px] font-semibold transition-colors select-none",
+              showTasksInCalendar ? "bg-primary/15 text-primary" : "bg-secondary text-muted-foreground"
+            )}
           >
+            {showTasksInCalendar && <Check size={14} />}
             Tasks
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('month')}
-            className={cn(
-              "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98",
-              view === 'month'
-                ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Month
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('day')}
-            className={cn(
-              "flex-1 sm:flex-none px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98",
-              view === 'day'
-                ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            Day
           </button>
         </div>
 
-        {/* Date Selector Banner Control */}
-        <div className="flex items-center justify-between bg-black/10 dark:bg-foreground/5 border border-border rounded-xl p-1.5">
+        {/* Date row */}
+        <div className="flex items-center justify-between">
           <button
             type="button"
             onClick={goToPrevious}
-            className="p-1.5 rounded-lg hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Previous"
+            className="size-11 -ml-2 flex items-center justify-center rounded-full text-primary active:opacity-60"
           >
-            <ChevronLeft size={18} />
+            <ChevronLeft size={22} />
           </button>
-          <h2 className="text-sm sm:text-base font-semibold text-center select-none">
+          <h2 className="text-[17px] font-semibold text-center select-none">
             {view === 'day'
               ? format(currentDate, 'EEE, MMM d, yyyy')
               : view === 'week'
@@ -818,9 +820,10 @@ export default function CalendarPage() {
           <button
             type="button"
             onClick={goToNext}
-            className="p-1.5 rounded-lg hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Next"
+            className="size-11 -mr-2 flex items-center justify-center rounded-full text-primary active:opacity-60"
           >
-            <ChevronRight size={18} />
+            <ChevronRight size={22} />
           </button>
         </div>
       </div>
@@ -857,7 +860,7 @@ export default function CalendarPage() {
                 <div className="relative min-h-[1440px]">
                   {Array.from({ length: 24 }).map((_, hour) => (
                     <div key={hour} className="absolute left-0 right-0 border-t border-border" style={{ top: `${hour * 60}px` }}>
-                      <span className="absolute -top-2 left-2 bg-transparent text-[10px] text-muted-foreground px-1 backdrop-blur-md">
+                      <span className="absolute -top-2 left-2 bg-transparent text-[11px] text-muted-foreground px-1">
                         {format(new Date(2026, 0, 1, hour, 0), 'h a')}
                       </span>
                     </div>
@@ -886,7 +889,7 @@ export default function CalendarPage() {
                           if (item.type === 'task' && item.task) handleOpenTaskModal(item.task);
                           if (item.type === 'event' && item.event && !item.isIcal) void handleOpenModal(item.event);
                         }}
-                        className="absolute left-14 right-2 rounded-md border px-2 py-1 text-left text-xs shadow-sm"
+                        className="absolute left-14 right-2 rounded-md border px-2 py-1 text-left text-xs"
                         style={{ top: `${top}px`, height: `${height}px`, borderColor: `${item.color}80`, backgroundColor: `${item.color}22`, color: item.color }}
                       >
                         <div className="flex items-center gap-1">
@@ -911,7 +914,7 @@ export default function CalendarPage() {
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 border-b border-border">
               {WEEKDAYS.map((day) => (
-                <div key={day} className="p-2 text-center text-xs font-semibold text-muted-foreground uppercase">
+                <div key={day} className="py-2 text-center text-[11px] font-semibold text-muted-foreground">
                   {day}
                 </div>
               ))}
@@ -925,29 +928,38 @@ export default function CalendarPage() {
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isSelected = selectedDate && isSameDay(day, selectedDate);
                 const totalItems = dayEvents.length + dayTasks.length;
+                const dotColors = [
+                  ...dayEvents.map((e) => e.color ?? ('type' in e && e.type ? EVENT_TYPE_COLORS[e.type as EventType] : '#64748b')),
+                  ...dayTasks.map(() => '#eab308'),
+                ].slice(0, 3);
 
                 return (
                   <div
                     key={index}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "p-1 border-b border-r border-border cursor-pointer transition-colors",
-                      view === 'week' ? "min-h-[200px]" : "min-h-[100px]",
-                      !isCurrentMonth && "bg-black/15 dark:bg-foreground/2 opacity-40",
-                      isSelected && "bg-black/20 dark:bg-foreground/10 shadow-inner",
-                      "hover:bg-black/5 dark:hover:bg-foreground/5"
+                      "p-1 sm:border-b sm:border-r sm:border-border cursor-pointer transition-colors active:bg-secondary",
+                      view === 'week' ? "min-h-[200px]" : "min-h-[56px] sm:min-h-[100px]",
+                      !isCurrentMonth && "sm:bg-foreground/5",
+                      isSelected && "sm:bg-foreground/10"
                     )}
                   >
                     <div className="flex items-center justify-center mb-1">
                       <span className={cn(
-                        "w-7 h-7 flex items-center justify-center rounded-full text-sm",
-                        isToday(day) && "bg-primary text-primary-foreground font-bold",
+                        "size-8 flex items-center justify-center rounded-full text-[17px] sm:text-sm",
+                        isSelected && !isToday(day) && "bg-secondary font-semibold",
+                        isToday(day) && "bg-primary text-primary-foreground font-semibold",
                         !isCurrentMonth && "text-muted-foreground"
                       )}>
                         {format(day, 'd')}
                       </span>
                     </div>
-                    <div className="space-y-0.5 overflow-hidden">
+                    <div className="sm:hidden flex justify-center gap-1 h-1.5">
+                      {dotColors.map((c, i) => (
+                        <span key={i} className="size-1.5 rounded-full" style={{ backgroundColor: c }} />
+                      ))}
+                    </div>
+                    <div className="hidden sm:block space-y-0.5 overflow-hidden">
                       {/* Events */}
                       {dayEvents.slice(0, 2).map((event) => {
                         const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
@@ -961,7 +973,7 @@ export default function CalendarPage() {
                               if (!isIcal) void handleOpenModal(event as ExtendedCalendarEvent);
                             }}
                             className={cn(
-                              "text-[10px] px-1 py-0.5 rounded truncate hover:opacity-80",
+                              "text-[11px] px-1 py-0.5 rounded truncate active:opacity-60",
                               !isIcal && "cursor-pointer"
                             )}
                             style={{ backgroundColor: `${color}30`, color }}
@@ -980,14 +992,14 @@ export default function CalendarPage() {
                             e.stopPropagation();
                             handleOpenTaskModal(task);
                           }}
-                          className="text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 cursor-pointer hover:opacity-80"
+                          className="text-[11px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 cursor-pointer active:opacity-60"
                         >
                           <CheckSquare size={8} className="text-yellow-500/80" />
                           {task.title}
                         </div>
                       ))}
                       {totalItems > 3 && (
-                        <div className="text-[10px] text-muted-foreground text-center">
+                        <div className="text-[11px] text-muted-foreground text-center">
                           +{totalItems - 3} more
                         </div>
                       )}
@@ -1008,16 +1020,16 @@ export default function CalendarPage() {
             </h3>
 
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="w-full mb-4 border-border hover:bg-foreground/5"
+              className="w-full mb-2 min-h-[44px] text-primary text-[17px] justify-start"
               onClick={() => void handleOpenModal(undefined, activeDay)}
             >
               <Plus size={14} />
               Add Event
             </Button>
 
-            <div className="space-y-3">
+            <div className="divide-y divide-border">
               {selectedDayEvents.length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No events scheduled
@@ -1031,7 +1043,7 @@ export default function CalendarPage() {
                   return (
                   <div
                     key={event.id}
-                    className="p-3 rounded-xl border border-border bg-black/10 dark:bg-foreground/5 hover:bg-black/15 dark:hover:bg-foreground/10 transition-colors"
+                    className="py-3 active:bg-secondary/60 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1083,56 +1095,57 @@ export default function CalendarPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-1">
-                        {!linkedTask?.is_completed && (
-                          <label
-                            className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none"
-                            title={linkedTask ? 'Remove from Tasks' : 'Add to Tasks'}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={!!linkedTask}
-                              onChange={(e) => {
-                                if (e.target.checked) {
-                                  void addEventToTasks(event as ExtendedCalendarEvent);
-                                  return;
-                                }
-                                void removeEventFromTasks(event as ExtendedCalendarEvent);
-                              }}
-                              className="rounded border-border bg-black/20"
-                            />
-                            Task
-                          </label>
-                        )}
-                      {!isIcal && (
+                                              {!isIcal && (
                         <>
                           <button
                             onClick={() => void handleOpenModal(event as ExtendedCalendarEvent)}
-                            className="p-1 rounded hover:bg-foreground/5 transition-colors text-muted-foreground hover:text-foreground"
+                            aria-label="Edit event"
+                            className="size-10 flex items-center justify-center rounded-full active:bg-secondary transition-colors text-muted-foreground"
                           >
-                            <Edit2 size={12} />
+                            <Edit2 size={16} />
                           </button>
                           <button
                             onClick={() => handleDelete(event as ExtendedCalendarEvent)}
-                            className="p-1 rounded hover:bg-destructive/20 text-destructive transition-colors"
+                            aria-label="Delete event"
+                            className="size-10 -mr-2 flex items-center justify-center rounded-full active:bg-destructive/10 text-destructive transition-colors"
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={16} />
                           </button>
                         </>
                       )}
                         </div>
                     </div>
+                    {!linkedTask?.is_completed && (
+                      <label
+                        className="mt-2 flex items-center justify-between min-h-[44px] text-[15px] cursor-pointer select-none"
+                        title={linkedTask ? 'Remove from Tasks' : 'Add to Tasks'}
+                      >
+                        <span>Show in Tasks</span>
+                        <input
+                          type="checkbox"
+                          checked={!!linkedTask}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              void addEventToTasks(event as ExtendedCalendarEvent);
+                              return;
+                            }
+                            void removeEventFromTasks(event as ExtendedCalendarEvent);
+                          }}
+                        />
+                      </label>
+                    )}
                   </div>
                   );
                 })
               )}
             </div>
             {selectedDayTasks.length > 0 && (
-              <div className="space-y-3 mt-4">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tasks</h4>
+              <div className="mt-4 divide-y divide-border">
+                <h4 className="text-[13px] font-semibold text-muted-foreground pb-2">Tasks</h4>
                 {selectedDayTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-3 rounded-xl border border-border bg-black/10 dark:bg-foreground/5 hover:bg-black/15 dark:hover:bg-foreground/10 transition-colors"
+                    className="py-3 active:bg-secondary/60 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
@@ -1152,10 +1165,10 @@ export default function CalendarPage() {
                       <button
                         type="button"
                         onClick={() => handleOpenTaskModal(task)}
-                        className="p-1 rounded hover:bg-foreground/5 transition-colors text-muted-foreground hover:text-foreground"
-                        title="Edit task"
+                        className="size-10 -mr-2 flex items-center justify-center rounded-full active:bg-secondary transition-colors text-muted-foreground"
+                        title="Edit task" aria-label="Edit task"
                       >
-                        <Edit2 size={12} />
+                        <Edit2 size={16} />
                       </button>
                     </div>
                   </div>

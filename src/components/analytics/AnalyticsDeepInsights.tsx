@@ -33,7 +33,7 @@ export function AnalyticsDeepInsights({
       
       {/* --- Cross-domain Section --- */}
       <section>
-        <div className="mb-4 flex items-center justify-between gap-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-purple-500/10 text-purple-500 rounded-xl">
               <Activity size={20} />

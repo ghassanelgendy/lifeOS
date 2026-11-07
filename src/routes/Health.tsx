@@ -222,7 +222,33 @@ export default function Health() {
         <div className="p-4 border-b border-border">
           <h2 className="text-lg font-semibold">Scan History</h2>
         </div>
-        <div className="overflow-x-auto">
+        <ul className="sm:hidden divide-y divide-border">
+          {scans.map((scan) => (
+            <li key={scan.id} className="flex items-center gap-2 pl-4 pr-1 py-3">
+              <button
+                type="button"
+                onClick={() => handleOpenModal(scan)}
+                className="min-w-0 flex-1 text-left"
+              >
+                <p className="text-[17px] font-medium">{format(new Date(scan.date), 'MMM d, yyyy')}</p>
+                <p className={cn("text-[13px] text-muted-foreground tabular-nums", privacyMode && "blur-sm")}>
+                  {scan.weight} kg · SMM {scan.skeletal_muscle_mass} kg · PBF {scan.body_fat_percent}%
+                </p>
+                <p className={cn("text-[13px] text-muted-foreground tabular-nums", privacyMode && "blur-sm")}>
+                  Visceral {scan.visceral_fat_level} · BMR {scan.bmr_kcal}
+                </p>
+              </button>
+              <button
+                onClick={() => handleDelete(scan.id)}
+                aria-label="Delete scan"
+                className="size-11 flex items-center justify-center rounded-full text-destructive active:opacity-60"
+              >
+                <Trash2 size={18} />
+              </button>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase tracking-wider">
               <tr>
@@ -274,12 +300,14 @@ export default function Health() {
                       <div className="flex justify-end gap-1">
                         <button
                           onClick={() => handleOpenModal(scan)}
+                          aria-label="Edit scan"
                           className="p-1.5 rounded hover:bg-secondary transition-colors"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(scan.id)}
+                          aria-label="Delete scan"
                           className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
                         >
                           <Trash2 size={14} />

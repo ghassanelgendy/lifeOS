@@ -88,11 +88,11 @@ export function DashboardStrategic() {
                   <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} width={32} className="text-muted-foreground" />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
+                      backgroundColor: 'var(--color-card)',
+                      border: '1px solid var(--color-border)',
                       borderRadius: '8px',
                     }}
-                    labelStyle={{ color: 'hsl(var(--foreground))' }}
+                    labelStyle={{ color: 'var(--color-foreground)' }}
                   />
                   <Line type="monotone" dataKey="adherence" stroke="#22c55e" strokeWidth={2} dot={false} name="%" />
                 </LineChart>

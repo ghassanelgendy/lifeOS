@@ -574,7 +574,10 @@ export default function SettingsPage() {
           {/* Navigation Items (Categorized on desktop, horizontal chip on mobile) */}
           <nav
             aria-label="Settings sections"
-            className="flex lg:flex-col gap-1 overflow-x-auto pb-2 lg:pb-0 p-1 lg:p-2 rounded-xl bg-card/60 border border-border/60 backdrop-blur-xs lg:max-h-[calc(100vh-10rem)] lg:overflow-y-auto"
+            className={cn(
+              searchQuery.trim() ? "flex flex-col" : "hidden lg:flex",
+              "lg:flex-col gap-1 p-1 lg:p-2 rounded-xl bg-card/60 lg:max-h-[calc(100vh-10rem)] overflow-y-auto"
+            )}
           >
             {searchQuery.trim() ? (
               // Search Filtered flat list
@@ -1060,8 +1063,8 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Platform UI Override */}
-              <div className="pt-4 border-t border-border">
+              {/* Platform UI Override (desktop wrapper only, hidden on iOS) */}
+              <div className="hidden pt-4 border-t border-border">
                 <p className="font-medium mb-1">Platform UI Theme</p>
                 <p className="text-sm text-muted-foreground mb-3">
                   Force the layout and styling to resemble either a web application or a native desktop app, or let it detect automatically.
@@ -1225,7 +1228,7 @@ export default function SettingsPage() {
                           onClick={() => movePageWidget(selectedWidgetPage, id, 'up')}
                           disabled={index === 0}
                           className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                          title="Move up"
+                          title="Move up" aria-label="Move up"
                         >
                           <ChevronUp size={18} />
                         </button>
@@ -1234,7 +1237,7 @@ export default function SettingsPage() {
                           onClick={() => movePageWidget(selectedWidgetPage, id, 'down')}
                           disabled={index === currentLen - 1}
                           className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                          title="Move down"
+                          title="Move down" aria-label="Move down"
                         >
                           <ChevronDown size={18} />
                         </button>
@@ -1245,8 +1248,8 @@ export default function SettingsPage() {
               </div>
             </section>
 
-            {/* Desktop Navigation */}
-            <section >
+            {/* Desktop Navigation (hidden on iOS) */}
+            <section className="hidden">
               <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Desktop Sidebar</h2>
               <div className="liquid-glass-card">
               <div className="p-4 space-y-4">
@@ -1290,7 +1293,7 @@ export default function SettingsPage() {
                             onClick={() => moveDesktopNavItem(item.href, 'up')}
                             disabled={index === 0}
                             className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                            title="Move up"
+                            title="Move up" aria-label="Move up"
                           >
                             <ChevronUp size={18} />
                           </button>
@@ -1299,7 +1302,7 @@ export default function SettingsPage() {
                             onClick={() => moveDesktopNavItem(item.href, 'down')}
                             disabled={index === desktopNavSettingItems.length - 1}
                             className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                            title="Move down"
+                            title="Move down" aria-label="Move down"
                           >
                             <ChevronDown size={18} />
                           </button>

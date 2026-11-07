@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Wand2, Sparkles, Loader2, Search, X, CheckSquare, FolderInput, Users } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, CalendarClock, Sparkles, Loader2, Search, X, CheckSquare, FolderInput, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNativeInteraction } from '../hooks/useNativeInteraction';
 import { triggerHaptics } from '../lib/nativeBridge';
@@ -28,9 +28,9 @@ import type { Task, Tag, TaskList, CreateInput, TaskPriority, TaskRecurrence, Ta
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; icon: typeof Flag; label: string }> = {
   high: { color: 'text-red-500', icon: Flag, label: 'High' },
-  medium: { color: 'text-muted-foreground/60', icon: Flag, label: 'Medium' },
-  low: { color: 'text-muted-foreground/40', icon: Flag, label: 'Low' },
-  none: { color: 'text-muted-foreground/20', icon: Flag, label: 'None' },
+  medium: { color: 'text-orange-500', icon: Flag, label: 'Medium' },
+  low: { color: 'text-muted-foreground', icon: Flag, label: 'Low' },
+  none: { color: 'text-muted-foreground/50', icon: Flag, label: 'None' },
 };
 
 const RECURRENCE_OPTIONS: { value: TaskRecurrence; label: string }[] = [
@@ -148,12 +148,12 @@ interface SmartListConfig {
 
 // Define the order and properties of smart lists
 const SMART_LISTS: SmartListConfig[] = [
-  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: Task[], overdueTasks: Task[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-blue-500/20 text-blue-500" },
+  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: Task[], overdueTasks: Task[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-primary/15 text-primary" },
   { id: 'week', label: 'This Week', icon: CalendarIcon, viewType: 'week', getCount: (weekTasks: Task[]) => weekTasks.length, colorClass: "bg-primary/20 text-primary" },
   { id: 'upcoming', label: 'Upcoming', icon: CalendarDays, viewType: 'upcoming', getCount: (upcomingTasks: Task[]) => upcomingTasks.length, colorClass: "bg-secondary text-foreground" },
   { id: 'all', label: 'All Tasks', icon: ListTodo, viewType: 'all', getCount: (allTasks: Task[]) => allTasks.filter(t => !t.is_completed).length, colorClass: "bg-secondary text-foreground" },
   { id: 'completed', label: 'Completed', icon: CheckCircle2, viewType: 'completed', getCount: (allTasks: Task[]) => allTasks.filter((task) => task.is_completed && !(task.is_wont_do ?? ((task.description || '').includes(WONT_DO_MARKER)))).length, colorClass: "bg-secondary text-foreground" },
-  { id: 'wontdo', label: "Won't Do", icon: CircleSlash2, viewType: 'wontdo', getCount: (allTasks: Task[]) => allTasks.filter((task) => task.is_completed && (task.is_wont_do ?? ((task.description || '').includes(WONT_DO_MARKER)))).length, colorClass: "bg-zinc-500/20 text-zinc-300" },
+  { id: 'wontdo', label: "Won't Do", icon: CircleSlash2, viewType: 'wontdo', getCount: (allTasks: Task[]) => allTasks.filter((task) => task.is_completed && (task.is_wont_do ?? ((task.description || '').includes(WONT_DO_MARKER)))).length, colorClass: "bg-secondary text-foreground" },
 ];
 const SMART_LIST_IDS = new Set(SMART_LISTS.map((l) => l.id));
 const WONT_DO_MARKER = '[WONT_DO]';
@@ -2441,7 +2441,7 @@ export default function Tasks() {
       today.setHours(0, 0, 0, 0);
 
       if (isToday(dueDate)) {
-        return { text: 'Today', className: 'text-blue-500' };
+        return { text: 'Today', className: 'text-primary' };
       }
       if (isPast(dueDate) && !task.is_completed) {
         return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
@@ -2468,7 +2468,7 @@ export default function Tasks() {
       {/* Sidebar - Fixed overlay on mobile; rendered cleanly above bottom bar */}
       <aside
         className={cn(
-          "flex flex-col border-r border-border bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 backdrop-blur-xl transition-all duration-300 shrink-0",
+          "flex flex-col border-r border-border bg-background/85 backdrop-blur-[30px] transition-all duration-300 motion-reduce:transition-none shrink-0",
           "fixed md:relative inset-y-0 left-0 z-[280] md:z-auto md:min-h-0",
           "h-[100dvh] md:h-full md:min-h-full",
           "overflow-hidden",
@@ -2477,20 +2477,20 @@ export default function Tasks() {
         )}
       >
         <div className="p-4 space-y-0.5 shrink-0">
-          <span className="block px-4 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Smart Lists</span>
+          <span className="block px-4 mb-2 text-[13px] text-muted-foreground">Smart lists</span>
           {/* Smart Lists - text-base on mobile so not small/cut */}
           {SMART_LISTS.map((list) => (
             <button
               key={list.id}
               onClick={() => { setActiveView(list.viewType as ViewType); setActiveListId(null); setActiveTagId(null); }}
               className={cn(
-                "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-base md:text-sm font-medium transition-colors",
-                activeView === list.viewType ? list.colorClass : "hover:bg-secondary text-muted-foreground"
+                "w-full flex items-center gap-3 px-4 min-h-[48px] rounded-xl text-[17px] font-medium transition-colors active:bg-secondary",
+                activeView === list.viewType ? list.colorClass : "text-muted-foreground"
               )}
             >
               <list.icon size={22} className="shrink-0 md:w-[18px] md:h-[18px]" />
               <span className="flex-1 min-w-0 text-left">{list.label}</span>
-              <span className="text-sm md:text-xs shrink-0">
+              <span className="text-[15px] tabular-nums shrink-0">
                 {list.id === 'today' && list.getCount(todayTasks, overdueTasks)}
                 {list.id === 'week' && list.getCount(weekTasks)}
                 {list.id === 'upcoming' && list.getCount(upcomingTasks)}
@@ -2506,7 +2506,7 @@ export default function Tasks() {
 
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lists</span>
+            <span className="text-[13px] text-muted-foreground">Lists</span>
             <button
               onClick={() => {
                 setEditingListId(null);
@@ -2783,7 +2783,7 @@ export default function Tasks() {
 
           {/* Search toggle */}
           {isSearchOpen ? (
-            <div className="flex items-center gap-1.5 rounded-full border border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 backdrop-blur-md shadow-sm pl-3 pr-1.5 h-9 w-[120px] sm:w-[200px] shrink-0 transition-all">
+            <div className="flex items-center gap-1.5 rounded-full bg-secondary pl-3 pr-1.5 h-9 w-[120px] sm:w-[200px] shrink-0 transition-all">
               <Search size={14} className="text-muted-foreground shrink-0" />
               <input
                 ref={searchInputRef}
@@ -2805,7 +2805,7 @@ export default function Tasks() {
                   setSearchQuery('');
                   setIsSearchOpen(false);
                 }}
-                className="p-1 rounded-full hover:bg-foreground/20 dark:hover:bg-foreground/10 text-muted-foreground shrink-0"
+                className="p-1 rounded-full hover:bg-secondary dark:hover:bg-foreground/10 text-muted-foreground shrink-0"
                 aria-label="Close search"
                 title="Close search"
               >
@@ -2819,7 +2819,7 @@ export default function Tasks() {
                 setIsSearchOpen(true);
                 requestAnimationFrame(() => searchInputRef.current?.focus());
               }}
-              className="h-9 w-9 rounded-full border border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 backdrop-blur-md shadow-sm hover:bg-foreground/25 dark:hover:bg-foreground/10 transition-all flex items-center justify-center active:scale-90 shrink-0"
+              className="h-9 w-9 rounded-full bg-secondary transition-opacity flex items-center justify-center active:scale-90 shrink-0"
               title="Search tasks"
               aria-label="Search tasks"
             >
@@ -2832,10 +2832,10 @@ export default function Tasks() {
             type="button"
             onClick={() => handleOpenSmartSchedule(selectedTasks.length > 0 ? 'selected' : 'unscheduled')}
             className={cn(
-              "h-9 px-2.5 rounded-full border backdrop-blur-md shadow-sm transition-all flex items-center gap-1.5 text-xs font-medium shrink-0 active:scale-90",
+              "h-9 px-2.5 rounded-full border transition-opacity flex items-center gap-1.5 text-[13px] font-medium shrink-0",
               selectedTasks.length > 0 || unscheduledTasks.length > 0
                 ? "border-primary/25 bg-primary/10 hover:bg-primary/20 text-primary"
-                : "border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 hover:bg-foreground/25 dark:hover:bg-foreground/10 text-muted-foreground"
+                : "border-border dark:border-border bg-secondary dark:bg-foreground/5 hover:bg-secondary dark:hover:bg-foreground/10 text-muted-foreground"
             )}
             title={
               selectedTasks.length > 0
@@ -2846,7 +2846,7 @@ export default function Tasks() {
             }
             aria-label="Smart schedule or reorganize tasks"
           >
-            <Wand2 size={14} />
+            <CalendarClock size={16} />
             <span className="hidden sm:inline">{selectedTasks.length > 0 ? "Reorganize" : "Schedule"}</span>
             {(selectedTasks.length > 0 || unscheduledTasks.length > 0) && (
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground font-bold">
@@ -2864,7 +2864,7 @@ export default function Tasks() {
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.95, x: 10 }}
                   transition={{ type: 'spring', duration: 0.25, stiffness: 450, damping: 28 }}
-                  className="absolute right-full mr-2 text-xs text-muted-foreground bg-secondary/80 dark:bg-[#1c1c1e]/85 backdrop-blur-md border border-border dark:border-border px-2.5 py-1 rounded-lg whitespace-nowrap z-10 shadow-sm pointer-events-none"
+                  className="absolute right-full mr-2 text-xs text-muted-foreground bg-secondary/80 dark:bg-[#1c1c1e]/85 border border-border px-2.5 py-1 rounded-lg whitespace-nowrap z-10 pointer-events-none"
                 >
                   {sortFeedback}
                 </motion.span>
@@ -2873,7 +2873,7 @@ export default function Tasks() {
             <button
               type="button"
               onClick={cycleSortMode}
-              className="h-9 w-9 rounded-full border border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 backdrop-blur-md shadow-sm hover:bg-foreground/25 dark:hover:bg-foreground/10 transition-all flex items-center justify-center active:scale-90"
+              className="h-9 w-9 rounded-full bg-secondary transition-opacity flex items-center justify-center active:scale-90"
               title={`Sort: ${currentSortOption.label} (press S to cycle)`}
               aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
             >
@@ -2896,7 +2896,7 @@ export default function Tasks() {
               "h-9 px-2.5 rounded-full border transition-all flex items-center gap-1.5 text-xs font-medium shrink-0 active:scale-90",
               isSelectionMode
                 ? "border-primary bg-primary text-white"
-                : "border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 hover:bg-foreground/25 dark:hover:bg-foreground/10 text-muted-foreground"
+                : "border-border dark:border-border bg-secondary dark:bg-foreground/5 hover:bg-secondary dark:hover:bg-foreground/10 text-muted-foreground"
             )}
             title={isSelectionMode ? "Cancel selection" : "Select tasks"}
             aria-label="Select tasks"
@@ -2906,7 +2906,7 @@ export default function Tasks() {
           </button>
           <button
             onClick={handleOpenNewTaskSheet}
-            className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all md:flex hidden items-center justify-center shrink-0"
+            className="h-9 w-9 rounded-full bg-primary/15 text-primary transition-opacity md:flex hidden items-center justify-center shrink-0"
             aria-label="Add task"
             type="button"
           >
@@ -2953,7 +2953,7 @@ export default function Tasks() {
                   type="button"
                   disabled={selectedTaskIds.size === 0 || isBatchProcessing}
                   onClick={handleBatchComplete}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-green-500/15 text-green-600 dark:text-green-400 hover:bg-green-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-secondary text-foreground disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   <CheckCircle2 size={13} />
                   <span>Done</span>
@@ -2962,7 +2962,7 @@ export default function Tasks() {
                   type="button"
                   disabled={selectedTaskIds.size === 0 || isBatchProcessing}
                   onClick={handleBatchWontDo}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-zinc-500/15 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-secondary text-foreground disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   <CircleSlash2 size={13} />
                   <span>Won't do</span>
@@ -2971,16 +2971,16 @@ export default function Tasks() {
                   type="button"
                   disabled={selectedTaskIds.size === 0 || isBatchProcessing}
                   onClick={() => handleOpenSmartSchedule('selected')}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-secondary text-foreground disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
-                  <Wand2 size={13} />
+                  <CalendarClock size={14} />
                   <span>Reorganize</span>
                 </button>
                 <button
                   type="button"
                   disabled={selectedTaskIds.size === 0 || isBatchProcessing}
                   onClick={() => setIsBatchMoveOpen(true)}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-blue-500/15 text-blue-600 dark:text-blue-400 hover:bg-blue-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-secondary text-foreground disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   <FolderInput size={13} />
                   <span>Move</span>
@@ -2989,7 +2989,7 @@ export default function Tasks() {
                   type="button"
                   disabled={selectedTaskIds.size === 0 || isBatchProcessing}
                   onClick={() => setIsBatchTagOpen(true)}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-primary/15 text-primary hover:bg-primary/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-secondary text-foreground disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   <TagIcon size={13} />
                   <span>Tag</span>
@@ -2998,7 +2998,7 @@ export default function Tasks() {
                   type="button"
                   disabled={selectedTaskIds.size === 0 || isBatchProcessing}
                   onClick={() => setIsBatchDeleteConfirmOpen(true)}
-                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-red-500/15 text-red-600 dark:text-red-400 hover:bg-red-500/25 disabled:opacity-40 transition-colors flex items-center gap-1"
+                  className="px-2.5 py-1 text-xs font-medium rounded-lg bg-secondary text-foreground disabled:opacity-40 transition-colors flex items-center gap-1"
                 >
                   <Trash2 size={13} />
                   <span>Delete</span>
@@ -3079,7 +3079,7 @@ export default function Tasks() {
                         "p-1.5 text-xs hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground shrink-0",
                         isParsing && "text-red-500 animate-pulse"
                       )}
-                      title="Voice Dictate Task"
+                      title="Voice Dictate Task" aria-label="Voice Dictate Task"
                     >
                       <Mic className="w-4 h-4" />
                     </button>
@@ -3169,7 +3169,7 @@ Return ONLY raw JSON.`;
                         className="p-1 text-xs hover:bg-secondary rounded transition-colors text-muted-foreground hover:text-foreground shrink-0 font-medium flex items-center gap-0.5"
                         title="Parse with Egyptian Arabic Dialect AI"
                       >
-                        <span>🇪🇬</span>
+                        <span>عربي</span>
                       </button>
                     </>
                   )}
@@ -3328,7 +3328,7 @@ Return ONLY raw JSON.`;
                     <CalendarDays size={14} /> Next Week
                   </button>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <input
                     type="date"
                     value={newTaskDate}
@@ -3499,7 +3499,7 @@ Return ONLY raw JSON.`;
                         "p-1.5 rounded transition-colors flex items-center gap-1",
                         newTaskTagIds.length > 0 ? "text-primary bg-secondary" : "text-muted-foreground hover:bg-secondary"
                       )}
-                      title="Tags"
+                      title="Tags" aria-label="Tags"
                     >
                       <TagIcon size={16} />
                       {newTaskTagIds.length > 0 && <span className="text-[10px] font-bold">{newTaskTagIds.length}</span>}
@@ -3579,7 +3579,7 @@ Return ONLY raw JSON.`;
 
           {/* Tasks - Apple Inset Grouped List style */}
           {mainTasksToRender.length > 0 && (
-            <div className="liquid-glass-card overflow-hidden shadow-sm">
+            <div className="liquid-glass-card overflow-hidden">
               <motion.div layout className="flex flex-col bg-transparent">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {mainTasksToRender.map((task, index) => {
@@ -3666,7 +3666,7 @@ Return ONLY raw JSON.`;
                 <span>Completed ({completedTasksToRender.length})</span>
               </button>
               {showCompleted && (
-                <div className="liquid-glass-card overflow-hidden shadow-sm">
+                <div className="liquid-glass-card overflow-hidden">
                   <motion.div layout className="flex flex-col bg-transparent opacity-60">
                     <AnimatePresence mode="popLayout" initial={false}>
                       {completedTasksToRender.slice(0, 10).map((task, index) => {
@@ -3740,7 +3740,7 @@ Return ONLY raw JSON.`;
                 <span>Won't do ({wontDoTasksToRender.length})</span>
               </button>
               {showWontDo && (
-                <div className="liquid-glass-card overflow-hidden shadow-sm">
+                <div className="liquid-glass-card overflow-hidden">
                   <motion.div layout className="flex flex-col bg-transparent opacity-70">
                     <AnimatePresence mode="popLayout" initial={false}>
                       {wontDoTasksToRender.slice(0, 20).map((task, index) => {
@@ -4112,7 +4112,7 @@ Return ONLY raw JSON.`;
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/70 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Wand2 size={16} className="text-primary" />
+                <CalendarClock size={18} className="text-primary" />
                 <span className="text-xs font-semibold">
                   {smartScheduleMode === 'selected'
                     ? `${selectedTasks.length} Selected Task${selectedTasks.length === 1 ? '' : 's'}`
@@ -4227,7 +4227,7 @@ Return ONLY raw JSON.`;
               {isSmartScheduling ? (
                 <Loader2 size={14} className="animate-spin" />
               ) : (
-                <Sparkles size={14} className="text-primary" />
+                <CalendarClock size={16} />
               )}
               {isSmartScheduling
                 ? (smartScheduleMode === 'unscheduled' ? "Scheduling..." : "Reorganizing...")
@@ -4264,7 +4264,7 @@ Return ONLY raw JSON.`;
                 className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
               >
                 {/* Task Preview Card (Glassmorphism) */}
-                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-border dark:border-border backdrop-blur-2xl rounded-2xl p-4  text-left space-y-3">
+                <div className="w-full bg-card rounded-2xl p-4  text-left space-y-3">
                   <div className="flex items-start gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
@@ -4325,7 +4325,7 @@ Return ONLY raw JSON.`;
 
                 {/* Options Menu (iOS styled rounded stack) */}
                 <div className="relative w-full z-10 mt-3">
-                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-border dark:border-border backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden  text-left">
+                  <div className="w-full bg-card rounded-2xl divide-y divide-border overflow-hidden  text-left">
                     {/* Complete / Reopen Action */}
                     <button
                       type="button"
@@ -4484,13 +4484,13 @@ Return ONLY raw JSON.`;
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-border dark:border-border "
+                        className="absolute inset-0 bg-card z-20 flex flex-col rounded-2xl divide-y divide-border overflow-hidden border border-border "
                       >
                         <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-secondary/30 flex justify-between items-center">
                           <span>Subtasks</span>
                           <span className="text-[9px] font-medium lowercase">Release to toggle</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto divide-y divide-black/5 dark:divide-white/10 no-scrollbar">
+                        <div className="flex-1 overflow-y-auto divide-y divide-border no-scrollbar">
                           {contextMenuTask.subtasks?.map((subtask) => (
                             <button
                               key={subtask.id}

@@ -419,7 +419,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
               navigate('/tasks', { state: { editTaskId: taskId } });
             }}
             className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-all flex items-center justify-center cursor-pointer"
-            title="Edit Task"
+            title="Edit Task" aria-label="Edit Task"
           >
             <Edit2 size={16} />
           </button>
@@ -602,7 +602,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
             <button
               onClick={() => setIsEditingEvent(true)}
               className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-all flex items-center justify-center cursor-pointer"
-              title="Edit Event"
+              title="Edit Event" aria-label="Edit Event"
             >
               <Edit2 size={16} />
             </button>

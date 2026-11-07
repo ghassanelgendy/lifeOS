@@ -73,7 +73,7 @@ function CustomJoyrideTooltip({
               closeProps?.onClick?.(e);
             }}
             className="p-1 rounded-lg text-muted-foreground/70 hover:text-foreground hover:bg-black/5 dark:hover:bg-white/5 transition-colors shrink-0 -mr-1 -mt-1"
-            title="Close Guide"
+            title="Close Guide" aria-label="Close Guide"
           >
             <X className="size-4" />
           </button>

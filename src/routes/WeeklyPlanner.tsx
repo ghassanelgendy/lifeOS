@@ -371,14 +371,8 @@ export default function WeeklyPlanner() {
   };
 
   // Drag and Drop: handling dropping tasks/events onto Day Cards
-  const handleDropOnDay = (targetDateStr: string, e: React.DragEvent) => {
-    e.preventDefault();
-    setActiveDropDay(null);
+  const moveItem = (data: any, targetDateStr: string) => {
     try {
-      const rawData = e.dataTransfer.getData('application/lifeos-item');
-      if (!rawData) return;
-      const data = JSON.parse(rawData);
-
       if (data.type === 'task' && data.id) {
         if (data.originalDate !== targetDateStr) {
           updateTask.mutate({
@@ -406,9 +400,27 @@ export default function WeeklyPlanner() {
         }
       }
     } catch (err) {
+      console.error('Move error:', err);
+    }
+  };
+
+  const handleDropOnDay = (targetDateStr: string, e: React.DragEvent) => {
+    e.preventDefault();
+    setActiveDropDay(null);
+    try {
+      const rawData = e.dataTransfer.getData('application/lifeos-item');
+      if (!rawData) return;
+      moveItem(JSON.parse(rawData), targetDateStr);
+    } catch (err) {
       console.error('Drop error:', err);
     }
   };
+
+  // Touch-friendly alternative to drag-and-drop
+  const dayOptions = weekDays.map((d) => ({
+    dateStr: d.dateStr,
+    label: format(new Date(`${d.dateStr}T00:00:00`), 'EEE, MMM d'),
+  }));
 
   const generateWellbeingInsights = async () => {
     try {
@@ -729,7 +741,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
               }}
               onDrop={(e) => handleDropOnDay(day.dateStr, e)}
               className={cn(
-                "bg-card/90 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-xs dark:shadow-md flex flex-col justify-between h-[510px] transition-all duration-200",
+                "bg-card/90 backdrop-blur-xl border rounded-2xl overflow-hidden shadow-xs dark:shadow-md flex flex-col justify-between min-h-[510px] md:h-[510px] transition-all duration-200",
                 isDropTarget
                   ? "border-primary ring-2 ring-primary/40 bg-primary/5 scale-[1.01]"
                   : "border-border"
@@ -754,6 +766,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                   tasks={tasks}
                   toggleTask={toggleTask}
                   deleteTask={deleteTask}
+                  dayOptions={dayOptions}
+                  onMove={moveItem}
                   onRedirect={() => navigate('/tasks', { state: { triggerAdd: true, dueDate: day.dateStr } })}
                 />
 
@@ -762,6 +776,8 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                   dateStr={day.dateStr}
                   events={events}
                   deleteEvent={deleteEvent}
+                  dayOptions={dayOptions}
+                  onMove={moveItem}
                   onRedirect={() => navigate('/calendar', { state: { triggerAdd: true, date: day.dateStr } })}
                 />
 
@@ -950,7 +966,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                         <button
                           onClick={() => handleRemoveCandidate(idx)}
                           className="text-muted-foreground hover:text-red-500 p-1 transition-colors cursor-pointer"
-                          title="Exclude this item"
+                          title="Exclude this item" aria-label="Exclude this item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -1012,12 +1028,16 @@ function MustDoList({
   tasks,
   toggleTask,
   deleteTask,
+  dayOptions,
+  onMove,
   onRedirect,
 }: {
   dateStr: string;
   tasks: Task[];
   toggleTask: any;
   deleteTask: any;
+  dayOptions: { dateStr: string; label: string }[];
+  onMove: (data: any, targetDateStr: string) => void;
   onRedirect: () => void;
 }) {
   const dayTasks = useMemo(() => {
@@ -1066,7 +1086,7 @@ function MustDoList({
         <button
           onClick={onRedirect}
           className="text-muted-foreground hover:text-primary p-0.5"
-          title="Add Task"
+          title="Add Task" aria-label="Add Task"
         >
           <Plus className="w-3.5 h-3.5" />
         </button>
@@ -1093,9 +1113,20 @@ function MustDoList({
                 }}
                 className="flex items-center justify-between group gap-1 cursor-grab active:cursor-grabbing hover:bg-accent/60 dark:hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
               >
-                <div className="text-muted-foreground/50 group-hover:text-muted-foreground cursor-grab shrink-0">
-                  <GripVertical className="w-2.5 h-2.5" />
-                </div>
+                <label className="relative shrink-0 size-6 flex items-center justify-center text-muted-foreground/60">
+                  <GripVertical className="w-3 h-3" />
+                  <select
+                    aria-label="Move to another day"
+                    value=""
+                    onChange={(e) => { if (e.target.value) onMove({ type: 'task', id: task.id, originalDate: dateStr, title: task.title }, e.target.value); }}
+                    className="absolute inset-0 opacity-0 w-full h-full"
+                  >
+                    <option value="">Move to…</option>
+                    {dayOptions.filter((o) => o.dateStr !== dateStr).map((o) => (
+                      <option key={o.dateStr} value={o.dateStr}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   onClick={() => toggleTask.mutate({ id: task.id, is_completed: !task.is_completed })}
                   className="flex items-center gap-1.5 text-xs text-left flex-1 min-w-0"
@@ -1146,11 +1177,15 @@ function AppointmentsList({
   dateStr,
   events,
   deleteEvent,
+  dayOptions,
+  onMove,
   onRedirect,
 }: {
   dateStr: string;
   events: any[];
   deleteEvent: any;
+  dayOptions: { dateStr: string; label: string }[];
+  onMove: (data: any, targetDateStr: string) => void;
   onRedirect: () => void;
 }) {
   const [showAllPopover, setShowAllPopover] = useState(false);
@@ -1214,7 +1249,7 @@ function AppointmentsList({
           <button
             onClick={onRedirect}
             className="text-muted-foreground hover:text-primary p-0.5"
-            title="Schedule Event"
+            title="Schedule Event" aria-label="Schedule Event"
           >
             <Plus className="w-3.5 h-3.5" />
           </button>
@@ -1245,9 +1280,20 @@ function AppointmentsList({
                 }}
                 className="flex items-center justify-between group gap-1 text-xs text-muted-foreground dark:text-zinc-350 animate-fade-in cursor-grab active:cursor-grabbing hover:bg-accent/60 dark:hover:bg-zinc-800/40 p-0.5 rounded transition-colors"
               >
-                <div className="text-muted-foreground/50 group-hover:text-muted-foreground cursor-grab shrink-0">
-                  <GripVertical className="w-2.5 h-2.5" />
-                </div>
+                <label className="relative shrink-0 size-6 flex items-center justify-center text-muted-foreground/60">
+                  <GripVertical className="w-3 h-3" />
+                  <select
+                    aria-label="Move to another day"
+                    value=""
+                    onChange={(e) => { if (e.target.value) onMove({ type: 'event', id: event.originalId || event.id, originalDate: dateStr, title: event.title, startTime: event.start_time, endTime: event.end_time || event.start_time }, e.target.value); }}
+                    className="absolute inset-0 opacity-0 w-full h-full"
+                  >
+                    <option value="">Move to…</option>
+                    {dayOptions.filter((o) => o.dateStr !== dateStr).map((o) => (
+                      <option key={o.dateStr} value={o.dateStr}>{o.label}</option>
+                    ))}
+                  </select>
+                </label>
                 <div className="flex items-center gap-1.5 min-w-0 flex-1">
                   <span className="text-[9px] bg-blue-500/10 text-blue-600 dark:text-blue-400 px-1 py-0.5 rounded font-semibold shrink-0">
                     {timeStr}
@@ -1487,7 +1533,7 @@ function SelfCareCard({
   };
 
   return (
-    <div className="bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-xs dark:shadow-md flex flex-col h-[510px]">
+    <div className="bg-card/90 backdrop-blur-xl border border-border rounded-2xl overflow-hidden shadow-xs dark:shadow-md flex flex-col min-h-[510px] md:h-[510px]">
       <div className="bg-muted/40 px-4 py-2.5 border-b border-border flex items-center gap-2">
         <Heart className="w-4 h-4 text-rose-500" />
         <h3 className="font-semibold text-foreground text-sm">Self Care</h3>

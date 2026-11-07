@@ -135,7 +135,7 @@ export function ShareModal({
                     type="button"
                     onClick={() => handleRemoveCollaborator(email)}
                     className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                    title="Remove collaborator"
+                    title="Remove collaborator" aria-label="Remove collaborator"
                   >
                     <X className="size-3.5" />
                   </button>

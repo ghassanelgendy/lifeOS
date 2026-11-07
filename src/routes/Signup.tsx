@@ -80,8 +80,8 @@ export default function Signup() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-        <div className="w-full max-w-md text-center space-y-6">
+      <div className="h-dvh overflow-y-auto flex flex-col items-center px-6 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-background">
+        <div className="w-full max-w-md text-center space-y-6 my-auto">
           <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
             <Mail className="text-primary" size={28} />
           </div>
@@ -115,8 +115,8 @@ export default function Signup() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md space-y-8">
+    <div className="h-dvh overflow-y-auto flex flex-col items-center px-6 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-background">
+      <div className="w-full max-w-md space-y-8 my-auto">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Create account</h1>
           <p className="text-muted-foreground mt-1 text-sm">

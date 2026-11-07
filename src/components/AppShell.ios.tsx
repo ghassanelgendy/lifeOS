@@ -365,6 +365,12 @@ export function AppShell() {
 
     const onTouchStart = (e: TouchEvent) => {
       const t = e.touches[0];
+      // Let horizontal scrollers (chips, carousels) scroll instead of opening the drawer
+      const target = e.target as HTMLElement | null;
+      if (target?.closest?.('[class*="overflow-x-auto"], [class*="overflow-x-scroll"]')) {
+        touchStart.current = null;
+        return;
+      }
       touchStart.current = { x: t.clientX, y: t.clientY };
     };
 
@@ -698,9 +704,11 @@ export function AppShell() {
                   "flex flex-col w-full flex-1",
                   location.pathname === '/chat' || location.pathname === '/notes' || location.pathname === '/azkar'
                     ? "h-full min-h-0 overflow-hidden p-0"
+                    : isOnQuran
+                    ? "min-h-full overflow-x-hidden px-1.5 pt-4 pb-[calc(112px+env(safe-area-inset-bottom))]"
                     : (isOnTasks
                         ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
-                        : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(76px+env(safe-area-inset-bottom))] md:pb-6")
+                        : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(100px+env(safe-area-inset-bottom))] md:pb-6")
                 )}
                 style={{
                   backfaceVisibility: 'hidden',
@@ -816,7 +824,7 @@ export function AppShell() {
         {/* Wrap Toast Notification */}
         {activeToast && (
           <div className="fixed bottom-[calc(100px+env(safe-area-inset-bottom))] md:bottom-6 right-4 left-4 md:left-auto md:w-96 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-300">
-            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-xl p-4  flex gap-3.5 items-start">
+            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 p-4  flex gap-3.5 items-start">
               <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0 relative">
                 <Sparkles size={20} />
               </div>
@@ -835,7 +843,7 @@ export function AppShell() {
                       navigate('/analytics');
                       setActiveToast(null);
                     }}
-                    className="px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg shadow-sm cursor-pointer"
+                    className="px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg cursor-pointer"
                   >
                     View Wrapped
                   </button>

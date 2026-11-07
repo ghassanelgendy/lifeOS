@@ -638,7 +638,7 @@ import { useQueryClient } from '@tanstack/react-query';
             <button
               type="button"
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="liquid-glass-card flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all select-none border-0 shadow-sm transform-gpu active:scale-98 cursor-pointer"
+              className="liquid-glass-card flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all select-none border-0 transform-gpu active:scale-98 cursor-pointer"
             >
               <Calendar className="text-primary relative z-10" size={16} />
               <span className="relative z-10">
@@ -679,7 +679,7 @@ import { useQueryClient } from '@tanstack/react-query';
                 transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
                 className="w-full max-w-xs overflow-hidden"
               >
-                <div className="liquid-glass-card mt-2 divide-y divide-black/[0.04] dark:divide-white/[0.04] border-0">
+                <div className="liquid-glass-card mt-2 divide-y divide-border border-0">
                   {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p, index) => {
                     const isSelected = period === p;
                     const label = p === 'today'
@@ -968,7 +968,7 @@ import { useQueryClient } from '@tanstack/react-query';
               <p className="text-sm text-muted-foreground mb-2">Minutes per day (iOS, Windows & Linux)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                   <XAxis dataKey="dateLabel" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip
@@ -1043,7 +1043,7 @@ import { useQueryClient } from '@tanstack/react-query';
                       <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                   <XAxis dataKey="dateLabel" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip
@@ -1131,7 +1131,7 @@ import { useQueryClient } from '@tanstack/react-query';
               <p className="text-sm text-muted-foreground mb-4">Average hours per day of week (iOS vs Windows vs Linux)</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={weeklyPattern}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                   <XAxis dataKey="day" tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip 
@@ -1163,7 +1163,7 @@ import { useQueryClient } from '@tanstack/react-query';
               <p className="text-sm text-muted-foreground mb-4">Estimated based on activity timestamps</p>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={peakHoursData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.06)" />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                   <XAxis dataKey="label" interval={2} tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <YAxis tickLine={false} axisLine={false} tick={{ fill: 'var(--color-muted-foreground)', fontSize: 11 }} />
                   <Tooltip 

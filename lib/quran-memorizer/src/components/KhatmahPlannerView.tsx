@@ -908,7 +908,7 @@ export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
                         <button
                           onClick={() => handleDeleteHalqahNote(note.id)}
                           className="text-muted-foreground hover:text-rose-500 p-1 transition-colors"
-                          title="حذف الملاحظة"
+                          title="حذف الملاحظة" aria-label="حذف الملاحظة"
                         >
                           <Trash2 className="size-3.5" />
                         </button>

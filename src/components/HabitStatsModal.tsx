@@ -137,13 +137,14 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-4 bg-black/40 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-card text-card-foreground rounded-2xl shadow-2xl border border-border overflow-hidden flex flex-col max-h-[90vh]"
+        className="relative w-full max-w-lg bg-card text-card-foreground rounded-t-[28px] sm:rounded-[28px] overflow-hidden flex flex-col max-h-[92dvh] pb-[env(safe-area-inset-bottom)]"
         onClick={e => e.stopPropagation()}
       >
+        <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-muted-foreground/40 sm:hidden" />
         {/* Header */}
         <div className="p-5 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
@@ -154,7 +155,7 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
                 color: habit.color || '#6366f1',
               }}
             >
-              {habit.icon || '✨'}
+              {habit.icon || habit.title.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <h2 className="text-lg font-bold text-foreground truncate">
@@ -174,13 +175,14 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
                   onEdit(habit);
                 }}
                 className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors"
-                title="Edit Habit"
+                title="Edit Habit" aria-label="Edit Habit"
               >
                 <Edit2 className="w-4 h-4" />
               </button>
             )}
             <button
               onClick={onClose}
+              aria-label="Close"
               className="p-2 text-muted-foreground hover:text-foreground rounded-lg hover:bg-secondary transition-colors"
             >
               <X className="w-5 h-5" />

@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { format, isToday, parseISO, subDays, addHours } from 'date-fns';
 import { Flame, Monitor, Moon, Sparkles, CheckCircle2, Clock, CircleSlash2, Trash2, Edit2, Check, Coins, ChevronDown, ChevronRight, Mic, BookOpen, Copy } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../../lib/quran-memorizer';
@@ -153,6 +153,7 @@ function DueTodayRow({
   subtasks?: Array<{ id: string; title?: string; is_completed: boolean }>;
   onToggleSubtask?: (id: string) => void;
 }) {
+  const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = useState(false);
   const [titleCopied, setTitleCopied] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
@@ -298,7 +299,7 @@ function DueTodayRow({
                         strokeDasharray: '94.25',
                         strokeDashoffset: `${94.25 - (94.25 * percentage) / 100}`,
                         stroke: 'var(--primary)',
-                        filter: percentage > 0 ? 'drop-shadow(0 0 3px var(--primary))' : 'none',
+                        filter: 'none',
                       }}
                       strokeWidth="2"
                       strokeLinecap="round"
@@ -362,7 +363,7 @@ function DueTodayRow({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
-                    window.location.href = '/azkar';
+                    navigate('/azkar');
                   }}
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
                   title={`فتح ${azkarCategory} في قسم الأذكار`}
@@ -387,7 +388,7 @@ function DueTodayRow({
                         tab: 'reader',
                       }
                     }));
-                    window.location.href = `/quran?page=${quranTarget.page}&surah=${quranTarget.surahId}&ayah=${quranTarget.ayahNumber || 1}&mode=reading&tab=reader`;
+                    navigate(`/quran?page=${quranTarget.page}&surah=${quranTarget.surahId}&ayah=${quranTarget.ayahNumber || 1}&mode=reading&tab=reader`);
                   }}
                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
                   title={`فتح ${quranTarget.surahName} في المصحف`}
@@ -442,7 +443,7 @@ function DueTodayRow({
                 onRescue();
               }}
               className={cn(
-                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm ml-2",
+                "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center ml-2",
                 balance >= rescueCost
                   ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
                   : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
@@ -2057,7 +2058,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                     >
                       <div
                         className={cn(
-                          'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                          'h-full w-full rounded-[1px] ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
                           marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
                           !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
                           !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
@@ -2082,7 +2083,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               ))}
 
               <span
-                className="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full bg-foreground shadow-[0_0_8px_rgba(var(--foreground))] animate-pulse"
+                className="pointer-events-none absolute inset-y-0 w-[3px] -translate-x-1/2 rounded-full bg-foreground"
                 style={{ left: screenChart.nowPct }}
                 aria-hidden
               />

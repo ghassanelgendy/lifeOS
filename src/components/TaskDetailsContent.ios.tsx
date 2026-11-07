@@ -137,7 +137,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function Card({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('rounded-xl border border-black/5 dark:border-border bg-foreground/40 dark:bg-black/25 backdrop-blur-md overflow-hidden', className)}>
+    <div className={cn('rounded-xl border border-black/5 dark:border-border bg-secondary dark:bg-black/25 backdrop-blur-md overflow-hidden', className)}>
       {children}
     </div>
   );
@@ -330,7 +330,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
             value={form.description ?? ''}
             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
             rows={3}
-            className="w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[80px]"
+            className="w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none min-h-[80px]"
             aria-label="Notes"
           />
           <div className="relative">
@@ -340,7 +340,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               placeholder="Add link"
               value={form.url ?? ''}
               onChange={(e) => setForm((prev) => ({ ...prev, url: e.target.value }))}
-              className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full pl-10 pr-3 py-2.5 rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               aria-label="Link"
             />
           </div>
@@ -361,8 +361,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={dateEnabled}
               aria-label="Toggle date"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                dateEnabled ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                dateEnabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() => {
                 setForm((prev) => ({
@@ -374,8 +374,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  dateEnabled ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  dateEnabled ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>
@@ -389,7 +389,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                 type="date"
                 value={form.due_date ?? ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, due_date: e.target.value }))}
-                className="w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Date"
               />
             </div>
@@ -407,8 +407,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={timeEnabled}
               aria-label="Toggle time"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                timeEnabled ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                timeEnabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() => {
                 setForm((prev) => {
@@ -425,8 +425,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  timeEnabled ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  timeEnabled ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>
@@ -451,7 +451,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                   reminders_enabled: e.target.value ? true : prev.reminders_enabled,
                   early_reminder_minutes: e.target.value ? (prev.early_reminder_minutes ?? 0) : prev.early_reminder_minutes
                 }))}
-                className="w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Time"
               />
             </div>
@@ -468,15 +468,15 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={!!form.is_urgent}
               aria-label="Mark as urgent"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                form.is_urgent ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                form.is_urgent ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() => setForm((prev) => ({ ...prev, is_urgent: !prev.is_urgent }))}
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  form.is_urgent ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  form.is_urgent ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>
@@ -534,7 +534,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                   min={1}
                   value={form.recurrence_interval ?? 1}
                   onChange={(e) => setForm((prev) => ({ ...prev, recurrence_interval: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -582,7 +582,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                   type="date"
                   value={form.recurrence_end ?? ''}
                   onChange={(e) => setForm((prev) => ({ ...prev, recurrence_end: e.target.value }))}
-                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -594,7 +594,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                   min={1}
                   value={form.recurrence_count ?? 1}
                   onChange={(e) => setForm((prev) => ({ ...prev, recurrence_count: Math.max(1, Number(e.target.value) || 1) }))}
-                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm"
                 />
               </div>
             )}
@@ -671,8 +671,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
             aria-label="Toggle reminders"
             title="Toggle Reminders"
             className={cn(
-              'w-11 h-6 rounded-full transition-colors relative shrink-0',
-              form.reminders_enabled ? 'bg-primary' : 'bg-muted'
+              'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+              form.reminders_enabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
             )}
             onClick={() => {
               setForm((prev) => {
@@ -687,8 +687,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           >
             <span
               className={cn(
-                'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                form.reminders_enabled ? 'left-6' : 'left-1'
+                'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                form.reminders_enabled ? 'left-[22px]' : 'left-[2px]'
               )}
             />
           </button>
@@ -942,7 +942,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                   placeholder="Add subtask..."
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                  className="flex-1 rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="flex-1 rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-1.5 text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
                 <Button
                   type="submit"
@@ -972,15 +972,15 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={!!form.ios_reminders_enabled}
               aria-label="Sync to iOS Reminders"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                form.ios_reminders_enabled ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                form.ios_reminders_enabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() => setForm((prev) => ({ ...prev, ios_reminders_enabled: !prev.ios_reminders_enabled }))}
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  form.ios_reminders_enabled ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  form.ios_reminders_enabled ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>
@@ -1001,15 +1001,15 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={!!form.is_flagged}
               aria-label="Flag task"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                form.is_flagged ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                form.is_flagged ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() => setForm((prev) => ({ ...prev, is_flagged: !prev.is_flagged }))}
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  form.is_flagged ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  form.is_flagged ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>
@@ -1066,8 +1066,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={!!form.location_enabled}
               aria-label="Toggle location"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                form.location_enabled ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                form.location_enabled ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() =>
                 setForm((prev) => ({
@@ -1079,8 +1079,8 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  form.location_enabled ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  form.location_enabled ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>
@@ -1095,7 +1095,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                 placeholder="Search or add location"
                 value={form.location ?? ''}
                 onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))}
-                className="w-full rounded-lg border border-black/5 dark:border-border bg-foreground/35 dark:bg-black/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-lg border border-black/5 dark:border-border bg-secondary dark:bg-black/20 px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Location"
               />
             </div>
@@ -1112,15 +1112,15 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
               aria-checked={!!form.when_messaging}
               aria-label="When Messaging"
               className={cn(
-                'w-11 h-6 rounded-full transition-colors relative',
-                form.when_messaging ? 'bg-primary' : 'bg-muted'
+                'w-[51px] h-[31px] rounded-full transition-colors relative shrink-0',
+                form.when_messaging ? 'bg-[#34c759]' : 'bg-[rgba(120,120,128,0.32)]'
               )}
               onClick={() => setForm((prev) => ({ ...prev, when_messaging: !prev.when_messaging }))}
             >
               <span
                 className={cn(
-                  'absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200',
-                  form.when_messaging ? 'left-6' : 'left-1'
+                  'absolute top-[2px] size-[27px] bg-white rounded-full shadow-sm transition-all duration-200',
+                  form.when_messaging ? 'left-[22px]' : 'left-[2px]'
                 )}
               />
             </button>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Coins, Plus, Trash2, Gift, History, Sparkles, Award, AlertTriangle, ChevronRight, TrendingUp } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { ConfirmSheet } from '../components/ui/ConfirmSheet';
 import { usePointsBalance, usePointsTransactions, useCustomRewards, useCreateCustomReward, useDeleteCustomReward, useRedeemReward } from '../hooks/usePoints';
 
 export default function Points() {
@@ -12,6 +13,7 @@ export default function Points() {
   const createReward = useCreateCustomReward();
   const deleteReward = useDeleteCustomReward();
   const redeemReward = useRedeemReward();
+  const [rewardToDelete, setRewardToDelete] = useState<string | null>(null);
 
   // New reward state
   const [newTitle, setNewTitle] = useState('');
@@ -87,7 +89,7 @@ export default function Points() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6">
+    <div className="mx-auto max-w-5xl space-y-6 py-2 sm:px-6 sm:py-6">
       {/* Alert Notifications */}
       {errorMsg && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive animate-in fade-in slide-in-from-top-4 duration-300">
@@ -254,9 +256,9 @@ export default function Points() {
                         </div>
                       </div>
                       <button
-                        onClick={() => handleDeleteReward(reward.id)}
+                        onClick={() => setRewardToDelete(reward.id)}
                         className="rounded-lg p-1.5 hover:bg-destructive/10 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Delete reward"
+                        title="Delete reward" aria-label="Delete reward"
                       >
                         <Trash2 className="size-3.5" />
                       </button>
@@ -325,7 +327,19 @@ export default function Points() {
         </div>
       </div>
 
-
+      <ConfirmSheet
+        isOpen={rewardToDelete !== null}
+        title="Delete reward?"
+        message="This reward will be removed. Points you already spent are not refunded."
+        confirmLabel="Delete"
+        confirmVariant="destructive"
+        isLoading={deleteReward.isPending}
+        onCancel={() => setRewardToDelete(null)}
+        onConfirm={async () => {
+          if (rewardToDelete) await handleDeleteReward(rewardToDelete);
+          setRewardToDelete(null);
+        }}
+      />
     </div>
   );
 }

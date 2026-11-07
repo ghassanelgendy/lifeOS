@@ -110,8 +110,8 @@ export default function Chat({ isModal: _isModal = false, initialPrompt = '', on
       // fallback
     }
 
-    // Default 4 initial threads so user has at least 4 threads history
     const nowIso = new Date().toISOString();
+    // One empty conversation: no fabricated history
     return [
       {
         id: `thread-${Date.now()}-1`,
@@ -119,66 +119,6 @@ export default function Chat({ isModal: _isModal = false, initialPrompt = '', on
         createdAt: nowIso,
         updatedAt: nowIso,
         messages: [DEFAULT_WELCOME_MSG],
-      },
-      {
-        id: `thread-${Date.now()}-2`,
-        title: 'Daily Planning',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 86400000).toISOString(),
-        messages: [
-          {
-            id: 'm1',
-            role: 'user',
-            content: 'Help me plan my priorities for the week.',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-          },
-          {
-            id: 'm2',
-            role: 'assistant',
-            content: 'Focus on high priority tasks first, and reserve 2 hours for deep work each morning.',
-            timestamp: new Date(Date.now() - 86400000).toISOString(),
-          },
-        ],
-      },
-      {
-        id: `thread-${Date.now()}-3`,
-        title: 'Health & Habit Audit',
-        createdAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 2 * 86400000).toISOString(),
-        messages: [
-          {
-            id: 'm3',
-            role: 'user',
-            content: 'How has my sleep and habit consistency been lately?',
-            timestamp: new Date(Date.now() - 2 * 86400000).toISOString(),
-          },
-          {
-            id: 'm4',
-            role: 'assistant',
-            content: 'Your habit adherence is consistent at 82%, and your average sleep duration is 7.2 hours.',
-            timestamp: new Date(Date.now() - 2 * 86400000).toISOString(),
-          },
-        ],
-      },
-      {
-        id: `thread-${Date.now()}-4`,
-        title: 'Financial Review',
-        createdAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-        updatedAt: new Date(Date.now() - 3 * 86400000).toISOString(),
-        messages: [
-          {
-            id: 'm5',
-            role: 'user',
-            content: 'Summarize my recent expenses.',
-            timestamp: new Date(Date.now() - 3 * 86400000).toISOString(),
-          },
-          {
-            id: 'm6',
-            role: 'assistant',
-            content: 'Your largest expenses this week were food & dining and monthly utilities.',
-            timestamp: new Date(Date.now() - 3 * 86400000).toISOString(),
-          },
-        ],
       },
     ];
   });
@@ -817,7 +757,7 @@ ${knowledgeContext}`;
             type="button"
             onClick={() => setSidebarOpen((prev) => !prev)}
             className="p-2 rounded-lg hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-            title="Toggle Sidebar & Chat History"
+            title="Toggle Sidebar & Chat History" aria-label="Toggle Sidebar & Chat History"
           >
             <PanelLeft size={18} />
           </button>
@@ -909,8 +849,9 @@ ${knowledgeContext}`;
                 >
                   {/* Bubble */}
                   <div
+                    dir="auto"
                     className={cn(
-                      'text-sm leading-relaxed max-w-full sm:max-w-[90%]',
+                      'text-sm leading-relaxed max-w-full sm:max-w-[90%] break-words overflow-x-auto',
                       isUser
                         ? 'bg-primary text-primary-foreground rounded-2xl rounded-tr-none px-4 py-3 shadow-sm'
                         : 'text-foreground prose prose-zinc dark:prose-invert max-w-none'
@@ -1004,7 +945,7 @@ ${knowledgeContext}`;
                         type="button"
                         onClick={() => handleCopyText(msg.id, msg.content)}
                         className="p-1 rounded hover:bg-secondary/60 transition-colors flex items-center gap-1 min-h-[32px]"
-                        title="Copy message"
+                        title="Copy message" aria-label="Copy message"
                       >
                         {copiedId === msg.id ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
                         <span className="text-[10px]">{copiedId === msg.id ? 'Copied' : 'Copy'}</span>
@@ -1053,7 +994,7 @@ ${knowledgeContext}`;
           type="button"
           onClick={() => setSidebarOpen((prev) => !prev)}
           className="h-10 w-10 rounded-full bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground flex items-center justify-center transition-all shrink-0 active:scale-95 border border-border/40"
-          title="Chat History & Knowledge Sources"
+          title="Chat History & Knowledge Sources" aria-label="Chat History & Knowledge Sources"
         >
           <Brain size={18} className="text-purple-500 animate-pulse" />
         </button>
@@ -1090,7 +1031,7 @@ ${knowledgeContext}`;
               ? "bg-rose-500 text-white animate-pulse border-rose-600"
               : "bg-secondary/70 hover:bg-secondary text-muted-foreground hover:text-foreground"
           )}
-          title="Voice Dictation"
+          title="Voice Dictation" aria-label="Voice Dictation"
         >
           <Mic size={18} />
         </button>
@@ -1111,7 +1052,7 @@ ${knowledgeContext}`;
             }
           }}
           className="h-10 w-10 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-30 shadow-md flex items-center justify-center transition-all shrink-0 active:scale-95 cursor-pointer z-40"
-          title="Send message"
+          title="Send message" aria-label="Send message"
         >
           <Send size={16} className="translate-x-0.5" />
         </button>
@@ -1127,7 +1068,7 @@ ${knowledgeContext}`;
           />
 
           {/* Drawer content */}
-          <aside className="relative z-10 w-80 max-w-[85vw] bg-card border-r border-border h-full flex flex-col p-4 space-y-6 shadow-2xl animate-in slide-in-from-left duration-300 overflow-y-auto">
+          <aside className="relative z-10 w-80 max-w-[85vw] bg-card border-r border-border h-full flex flex-col px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] space-y-6 animate-in slide-in-from-left duration-300 overflow-y-auto">
             
             <div className="flex items-center justify-between border-b border-border/60 pb-3">
               <div className="flex items-center gap-2 text-sm font-bold">
@@ -1191,7 +1132,7 @@ ${knowledgeContext}`;
                           type="button"
                           onClick={(e) => handleDeleteThread(t.id, e)}
                           className="opacity-0 group-hover:opacity-100 p-1 hover:text-destructive transition-opacity"
-                          title="Delete thread"
+                          title="Delete thread" aria-label="Delete thread"
                         >
                           <Trash2 size={12} />
                         </button>

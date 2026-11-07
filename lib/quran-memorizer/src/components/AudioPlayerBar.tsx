@@ -129,15 +129,17 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
         className={`fixed z-[10000] font-arabic-title text-right
           /* Smooth recede on scroll-down matching the dashboard bottom tab bar (shrink, don't fly away) */
           transition-all duration-500 ease-[cubic-bezier(0.25,1,0.3,1)] will-change-transform
-          /* iOS Mobile: Crisp Compact Floating Pill matching iOS bottom tab bar */
-          bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[90%] max-w-[390px] h-[52px]
-          rounded-full px-3 flex items-center justify-between
-          border border-border/80 shadow-md
+          /* iOS Mobile: same floating glass pill as the bottom tab bar */
+          bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[440px] h-[68px]
+          rounded-[34px] px-2 flex items-center justify-between
+          border border-black/10 dark:border-white/[0.08]
+          bg-white/45 dark:bg-[rgba(20,20,22,0.6)]
+          shadow-[0_10px_35px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]
           ${isBarHidden || forceSmall
-            ? 'scale-[0.78] translate-y-[10px] opacity-55 bg-card/80 backdrop-blur-md'
-            : 'scale-100 translate-y-0 opacity-100 bg-card/95 backdrop-blur-2xl'}
+            ? 'scale-75 translate-y-[12px] opacity-55 backdrop-blur-[15px] backdrop-saturate-150'
+            : 'scale-100 translate-y-0 opacity-100 backdrop-blur-[25px] backdrop-saturate-200'}
           /* Desktop / MD+: Perfectly docked and aligned with the sidebar line */
-          md:bottom-0 md:translate-x-0 md:translate-y-0 md:scale-100 md:opacity-100 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border md:bg-card/95 md:backdrop-blur-xl md:px-6 md:py-2
+          md:bottom-0 md:translate-x-0 md:translate-y-0 md:scale-100 md:opacity-100 md:right-0 md:w-auto md:max-w-none md:h-14 md:rounded-none md:border-t md:border-x-0 md:border-b-0 md:border-border md:bg-card/95 md:dark:bg-card/95 md:shadow-md md:backdrop-blur-2xl md:bg-card/95 md:backdrop-blur-xl md:px-6 md:py-2
           ${isSidebarCollapsed ? 'md:left-16' : 'md:left-64'}
         `}
       >
@@ -174,12 +176,12 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
               </span>
               <span className="text-foreground font-bold shrink-0">آية {currentAyahIndex}</span>
               {repeatSettings.verseRepeats > 1 && (
-                <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold bg-emerald-500/15 px-1 py-0.2 rounded-md shrink-0">
+                <span className="hidden md:inline text-[9px] text-emerald-600 dark:text-emerald-400 font-mono font-bold bg-emerald-500/15 px-1 py-0.2 rounded-md shrink-0">
                   {currentVerseRepeat}/{repeatSettings.verseRepeats}
                 </span>
               )}
               {isPlaying && isDelaying && (
-                <span className="animate-pulse text-amber-600 dark:text-amber-400 text-[9px] font-bold shrink-0">
+                <span className="hidden md:inline animate-pulse text-amber-600 dark:text-amber-400 text-[9px] font-bold shrink-0">
                   سكوت...
                 </span>
               )}
@@ -190,36 +192,36 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
           <div dir="rtl" className="flex items-center gap-0.5 md:gap-2 shrink-0">
             <button
               onClick={onPrev}
-              className="p-1.5 rounded-full hover:bg-secondary text-foreground active:scale-90 transition-all cursor-pointer"
-              title="الآية السابقة"
+              className="size-10 md:size-auto md:p-1.5 flex items-center justify-center rounded-full hover:bg-secondary text-foreground active:scale-90 transition-all cursor-pointer"
+              title="الآية السابقة" aria-label="الآية السابقة"
             >
               <SkipForward className="size-3.5 shrink-0" />
             </button>
 
             <button
               onClick={onTogglePlayPause}
-              className={`p-2 md:p-2.5 rounded-full font-bold text-white shadow-md active:scale-90 transition-all cursor-pointer ${
+              className={`size-11 md:size-auto flex items-center justify-center md:p-2.5 rounded-full font-bold text-white active:scale-90 transition-all cursor-pointer ${
                 isPlaying
                   ? 'bg-amber-500 hover:bg-amber-600'
                   : 'bg-emerald-600 hover:bg-emerald-500'
               }`}
               title={isPlaying ? 'إيقاف مؤقت' : 'تشغيل التكرار'}
             >
-              {isPlaying ? <Pause className="size-3.5" /> : <Play className="size-3.5 fill-current ml-0.5" />}
+              {isPlaying ? <Pause className="size-4" /> : <Play className="size-4 fill-current ml-0.5" />}
             </button>
 
             <button
               onClick={onNext}
-              className="p-1.5 rounded-full hover:bg-secondary text-foreground active:scale-90 transition-all cursor-pointer"
-              title="الآية التالية"
+              className="size-10 md:size-auto md:p-1.5 flex items-center justify-center rounded-full hover:bg-secondary text-foreground active:scale-90 transition-all cursor-pointer"
+              title="الآية التالية" aria-label="الآية التالية"
             >
               <SkipBack className="size-3.5 shrink-0" />
             </button>
 
             <button
               onClick={onStop}
-              className="p-1 rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground active:scale-90 transition-all cursor-pointer"
-              title="إيقاف"
+              className="size-10 md:size-auto md:p-1 flex items-center justify-center rounded-full hover:bg-secondary text-muted-foreground hover:text-foreground active:scale-90 transition-all cursor-pointer"
+              title="إيقاف" aria-label="إيقاف"
             >
               <Square className="size-3" />
             </button>

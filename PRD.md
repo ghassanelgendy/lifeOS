@@ -1048,3 +1048,6 @@ Based on `CODEBASE_DOCUMENTATION.md` analysis:
 ---
 
 *End of Product Requirements Document*
+
+### iOS look and feel
+The iOS app follows Apple Human Interface Guidelines: system colors, a single corner-radius scale, solid grouped cards, labelled floating tab bar, 44pt touch targets, switches for on/off settings, and toast messages instead of native alerts.

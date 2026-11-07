@@ -234,7 +234,7 @@ export function AnalyticsHealthWealth({
 
           {/* Dual-Axis Timeline Chart */}
           <div className="rounded-xl border border-border bg-card p-5 overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <p className="font-semibold text-sm">Sleep Hours (Line) vs. Daily Expense (Bar)</p>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">

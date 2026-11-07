@@ -119,7 +119,7 @@ export function ConfirmSheet({
           'w-full max-w-lg mx-auto flex flex-col min-h-0 sm:relative sm:max-w-md',
           'rounded-t-[24px] sm:rounded-2xl',
           isIOS
-            ? 'liquid-glass-card border-white/20 dark:border-white/10 overflow-hidden isolate'
+            ? 'bg-card rounded-t-[28px] sm:rounded-[28px] overflow-hidden isolate'
             : 'border border-border bg-card shadow-2xl overflow-hidden isolate'
         )}
         style={{
@@ -147,7 +147,7 @@ export function ConfirmSheet({
         <header
           className={cn(
             "sticky top-0 z-10 flex items-center justify-between min-h-[56px] px-4 shrink-0 border-b",
-            isIOS ? "bg-transparent border-black/5 dark:border-white/10" : "bg-card border-border"
+            isIOS ? "bg-transparent border-border" : "bg-card border-border"
           )}
           onTouchStart={(e) => {
             if (window.innerWidth >= 640) return;
@@ -183,14 +183,37 @@ export function ConfirmSheet({
           >
             <X size={22} />
           </button>
-          <h2 id="confirm-sheet-title" className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12">
+          <h2 id="confirm-sheet-title" className={cn("font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12", isIOS ? "text-[17px]" : "text-lg")}>
             {title}
           </h2>
           <div className="min-w-[44px]" />
         </header>
 
         <div className="p-4 space-y-4">
-          <p className="text-sm text-muted-foreground">{message}</p>
+          <p className={cn(isIOS ? "text-[15px] text-center" : "text-sm", "text-muted-foreground")}>{message}</p>
+          {isIOS ? (
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={isLoading}
+                className={cn(
+                  "w-full min-h-[50px] rounded-2xl bg-secondary text-[17px] font-semibold disabled:opacity-50",
+                  confirmVariant === 'destructive' ? "text-destructive" : "text-primary"
+                )}
+              >
+                {confirmLabel}
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isLoading}
+                className="w-full min-h-[50px] rounded-2xl bg-secondary text-[17px] font-semibold text-primary disabled:opacity-50"
+              >
+                {cancelLabel}
+              </button>
+            </div>
+          ) : (
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={onCancel} disabled={isLoading}>
               {cancelLabel}
@@ -199,6 +222,7 @@ export function ConfirmSheet({
               {confirmLabel}
             </Button>
           </div>
+          )}
         </div>
       </div>
     </div>

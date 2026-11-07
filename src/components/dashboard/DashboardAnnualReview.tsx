@@ -180,8 +180,8 @@ export function DashboardAnnualReview() {
                 <YAxis domain={[0, 100]} width={36} tick={{ fontSize: 10 }} />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: 'hsl(var(--card))',
-                    border: '1px solid hsl(var(--border))',
+                    backgroundColor: 'var(--color-card)',
+                    border: '1px solid var(--color-border)',
                     borderRadius: '8px',
                   }}
                 />

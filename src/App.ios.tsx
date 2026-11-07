@@ -51,6 +51,9 @@ import Azkar from './routes/Azkar';
 import Qadaa from './routes/Qadaa';
 import { useDailyPointsSync } from './hooks/usePoints';
 import './App.css';
+import { installIosToast } from './lib/iosToast';
+
+installIosToast();
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,

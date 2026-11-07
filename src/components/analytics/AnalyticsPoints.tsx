@@ -231,7 +231,26 @@ export function AnalyticsPoints({
               No transactions recorded in this period.
             </div>
           ) : (
-            <table className="w-full text-left border-collapse text-sm">
+            <>
+            <ul className="sm:hidden divide-y divide-border">
+              {rangeTransactions.slice(0, 15).map((tx) => (
+                <li key={tx.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-medium truncate">{tx.description}</p>
+                    <p className="text-[13px] text-muted-foreground">
+                      {format(new Date(tx.created_at), 'MMM d, h:mm a')} · {tx.reference_type === 'habit_rescue' ? 'Rescue' : tx.amount < 0 ? 'Spent' : 'Earned'}
+                    </p>
+                  </div>
+                  <span className={cn(
+                    "text-[17px] font-semibold tabular-nums shrink-0",
+                    tx.amount > 0 ? "text-emerald-500" : "text-rose-500"
+                  )}>
+                    {tx.amount > 0 ? '+' : ''}{tx.amount}p
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <table className="hidden sm:table w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="border-b border-border bg-secondary/20 font-sans">
                   <th className="p-4 font-semibold">Date</th>
@@ -269,6 +288,7 @@ export function AnalyticsPoints({
                 ))}
               </tbody>
             </table>
+            </>
           )}
         </div>
       </section>

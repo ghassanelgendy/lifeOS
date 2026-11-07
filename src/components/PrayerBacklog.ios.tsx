@@ -218,11 +218,12 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
       <div className="overflow-x-auto mt-4 flex-1 min-h-0">
         <div className="min-w-full h-full flex flex-col">
           {/* Header row with prayer names */}
-          <div className="grid grid-cols-6 gap-2 mb-2">
-            <div className="text-xs font-medium text-muted-foreground p-2">Date</div>
+          <div className="grid grid-cols-[3.25rem_repeat(5,minmax(0,1fr))] sm:grid-cols-6 gap-1 sm:gap-2 mb-2">
+            <div className="text-xs font-medium text-muted-foreground py-2">Date</div>
             {PRAYER_NAMES.map((name) => (
-              <div key={name} className="text-xs font-medium text-muted-foreground text-center p-2">
-                {name}
+              <div key={name} className="text-xs font-medium text-muted-foreground text-center py-2">
+                <span className="sm:hidden">{name.slice(0, 3)}</span>
+                <span className="hidden sm:inline">{name}</span>
               </div>
             ))}
           </div>
@@ -241,7 +242,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                 <div
                   key={dayStr}
                   className={cn(
-                    "grid grid-cols-6 gap-2 py-2.5 px-2",
+                    "grid grid-cols-[3.25rem_repeat(5,minmax(0,1fr))] sm:grid-cols-6 gap-1 sm:gap-2 py-2.5 px-0 sm:px-2",
                     isToday(day)
                       ? "bg-primary/10 border border-primary/25 rounded-xl"
                       : "border-b border-border last:border-b-0",
@@ -249,7 +250,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                   )}
                 >
                   <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-muted-foreground" />
+                    <Calendar size={14} className="text-muted-foreground hidden sm:block" />
                     <div>
                       <div className="text-sm font-medium">{format(day, 'EEE')}</div>
                       {view !== 'weekly' && (
@@ -290,6 +291,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                           type="button"
                           disabled={!canToggleStatus}
                           title={canToggleStatus ? `Set ${nextStatus}` : undefined}
+                          aria-label={`${prayerName} ${format(day, 'EEE MMM d')}: ${status}${canToggleStatus ? `, tap to set ${nextStatus}` : ''}`}
                           onClick={() => {
                             if (!link) return;
                             setPrayerStatusAtDate({
@@ -300,7 +302,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                             });
                           }}
                           className={cn(
-                            "rounded p-0.5 transition-colors",
+                            "size-10 sm:size-auto sm:p-0.5 flex items-center justify-center rounded-full transition-colors",
                             canToggleStatus ? hoverClass : "cursor-default"
                           )}
                         >

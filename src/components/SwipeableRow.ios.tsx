@@ -138,7 +138,7 @@ export function SwipeableRow({
             ? offset > 0
               ? "bg-secondary"
               : "bg-transparent"
-            : "bg-card border border-border rounded-xl shadow-sm"
+            : "bg-card border border-border rounded-xl"
         )}
         style={{ transform: `translateX(-${offset}px)` }}
       >

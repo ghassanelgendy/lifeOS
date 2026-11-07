@@ -542,7 +542,7 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
                                   ? 'text-emerald-500'
                                   : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                               )}
-                              title="Copy title"
+                              title="Copy title" aria-label="Copy title"
                             >
                               {copiedTaskId === task.id ? <Check size={13} /> : <Copy size={13} />}
                             </button>

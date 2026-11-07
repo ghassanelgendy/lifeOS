@@ -971,7 +971,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
                       ? "bg-rose-500 text-white border-rose-600 animate-pulse"
                       : "bg-secondary text-muted-foreground hover:text-foreground border-border"
                   )}
-                  title="Toggle Voice Dictation"
+                  title="Toggle Voice Dictation" aria-label="Toggle Voice Dictation"
                 >
                   {isListening ? <MicOff size={16} /> : <Mic size={16} />}
                 </button>

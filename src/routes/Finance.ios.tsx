@@ -964,7 +964,7 @@ Return ONLY raw JSON object.`;
             className={cn(
               'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98',
               activeTab === tab
-                ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]'
+                ? 'bg-white dark:bg-[#2c2c2e] text-foreground scale-[1.01]'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -1013,8 +1013,8 @@ Return ONLY raw JSON object.`;
                 setBankDropdownOpen(!bankDropdownOpen);
                 setQnbDropdownOpen(false);
               }}
-              className="liquid-glass-card flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all select-none border-0 shadow-sm transform-gpu active:scale-98 cursor-pointer min-h-8"
-              title="All banks combined"
+              className="liquid-glass-card flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all select-none border-0 transform-gpu active:scale-98 cursor-pointer min-h-8"
+              title="All banks combined" aria-label="All banks combined"
             >
               <Wallet className="size-3.5 text-primary relative z-10 shrink-0 opacity-80" aria-hidden />
               <span className="relative z-10 whitespace-nowrap truncate max-w-[100px]">
@@ -1030,8 +1030,8 @@ Return ONLY raw JSON object.`;
                   setQnbDropdownOpen(!qnbDropdownOpen);
                   setBankDropdownOpen(false);
                 }}
-                className="liquid-glass-card flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all select-none border-0 shadow-sm transform-gpu active:scale-98 cursor-pointer min-h-8"
-                title="Debit: 0050/**7893 · Credit: ****1473"
+                className="liquid-glass-card flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-all select-none border-0 transform-gpu active:scale-98 cursor-pointer min-h-8"
+                title="Debit: 0050/**7893 · Credit: ****1473" aria-label="Debit: 0050/**7893 · Credit: ****1473"
               >
                 <span className="relative z-10 whitespace-nowrap">
                   {selectedQNBAccount === 'all' ? 'All cards' : selectedQNBAccount === 'debit' ? 'Debit' : 'Credit'}
@@ -1050,7 +1050,7 @@ Return ONLY raw JSON object.`;
                 transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
                 className="w-full max-w-[192px] overflow-hidden"
               >
-                <div className="liquid-glass-card mt-2 divide-y divide-black/[0.04] dark:divide-white/[0.04] border-0">
+                <div className="liquid-glass-card mt-2 divide-y divide-border border-0">
                   <button
                     type="button"
                     onClick={() => {
@@ -1108,7 +1108,7 @@ Return ONLY raw JSON object.`;
                 transition={{ type: 'spring', duration: 0.3, bounce: 0.1 }}
                 className="w-full max-w-[128px] overflow-hidden"
               >
-                <div className="liquid-glass-card mt-2 divide-y divide-black/[0.04] dark:divide-white/[0.04] border-0">
+                <div className="liquid-glass-card mt-2 divide-y divide-border border-0">
                   {([
                     { value: 'all', label: 'All cards' },
                     { value: 'debit', label: 'Debit' },
@@ -1169,7 +1169,7 @@ Return ONLY raw JSON object.`;
                   className={cn(
                     'flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap select-none transform-gpu active:scale-98',
                     graphType === type
-                      ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]'
+                      ? 'bg-white dark:bg-[#2c2c2e] text-foreground scale-[1.01]'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -1246,7 +1246,7 @@ Return ONLY raw JSON object.`;
                         <stop offset="100%" stopColor="rgb(239, 68, 68)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
                     <XAxis
                       dataKey="label"
                       tick={{ fontSize: 11, fill: 'var(--color-muted-foreground)' }}
@@ -1412,7 +1412,7 @@ Return ONLY raw JSON object.`;
                   className={cn(
                     'px-2.5 py-1 rounded-md text-xs font-semibold transition-all whitespace-nowrap',
                     dateFilterMode === mode
-                      ? 'bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm'
+                      ? 'bg-white dark:bg-[#2c2c2e] text-foreground'
                       : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
@@ -1512,14 +1512,14 @@ Return ONLY raw JSON object.`;
                         <button
                           onClick={() => handleOpenModal(transaction)}
                           className="icon-touch p-1.5 rounded hover:bg-secondary transition-colors"
-                          title="Edit"
+                          title="Edit" aria-label="Edit"
                         >
                           <Edit2 size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(transaction.id)}
                           className="icon-touch p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors"
-                          title="Delete"
+                          title="Delete" aria-label="Delete"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -1532,7 +1532,7 @@ Return ONLY raw JSON object.`;
           </table>
         </div>
         {/* Mobile Card View */}
-        <div className="md:hidden divide-y divide-white/[0.04]">
+        <div className="md:hidden divide-y divide-border">
           {displayedTransactions.length === 0 && (
             <p className="text-center text-muted-foreground text-sm py-10">No transactions</p>
           )}
@@ -1584,17 +1584,17 @@ Return ONLY raw JSON object.`;
                 <div className="flex flex-col gap-1 ml-1">
                   <button
                     onClick={() => handleOpenModal(transaction)}
-                    className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
-                    title="Edit"
+                    className="size-9 flex items-center justify-center rounded-full active:bg-secondary text-muted-foreground transition-colors"
+                    title="Edit" aria-label="Edit"
                   >
-                    <Edit2 size={13} />
+                    <Edit2 size={16} />
                   </button>
                   <button
                     onClick={() => handleDelete(transaction.id)}
-                    className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    title="Delete"
+                    className="size-9 flex items-center justify-center rounded-full active:bg-destructive/10 text-muted-foreground transition-colors"
+                    title="Delete" aria-label="Delete"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={16} />
                   </button>
                 </div>
               </div>
@@ -2036,7 +2036,7 @@ Return ONLY raw JSON object.`;
                   <h2 className="font-semibold text-sm">Investment Transactions</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Your investment platforms — separate from your main finances</p>
                 </div>
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-border">
                   {filteredInvestmentTransactions.length === 0 ? (
                     <div className="p-8 text-center text-muted-foreground text-sm">No investment transactions yet.</div>
                   ) : (
@@ -2080,11 +2080,11 @@ Return ONLY raw JSON object.`;
                             )}>
                               {tx.type === 'income' ? '+' : '-'}{formatCurrency(tx.amount)}
                             </span>
-                            <button onClick={() => handleOpenInvestmentModal(tx)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Edit">
-                              <Edit2 size={13} />
+                            <button onClick={() => handleOpenInvestmentModal(tx)} className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors" title="Edit" aria-label="Edit">
+                              <Edit2 size={16} />
                             </button>
-                            <button onClick={() => handleDeleteInvestment(tx.id)} className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Delete">
-                              <Trash2 size={13} />
+                            <button onClick={() => handleDeleteInvestment(tx.id)} className="p-1.5 rounded hover:bg-destructive/20 text-destructive transition-colors" title="Delete" aria-label="Delete">
+                              <Trash2 size={16} />
                             </button>
                           </div>
                         </div>

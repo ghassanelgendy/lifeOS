@@ -75,8 +75,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background select-text">
-      <div className="w-full max-w-md space-y-6 select-text">
+    <div className="h-dvh overflow-y-auto flex flex-col items-center px-6 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-background select-text">
+      <div className="w-full max-w-md space-y-6 select-text my-auto">
         <div className="text-center">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Sign in</h1>
           <p className="text-muted-foreground mt-1 text-sm">Sign in to your LifeOS account</p>
@@ -179,7 +179,7 @@ export default function Login() {
                   type="button"
                   onClick={() => handleCopy('ghesso@best.com', 'email')}
                   className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-secondary cursor-pointer transition-colors active:scale-90"
-                  title="Copy Email"
+                  title="Copy Email" aria-label="Copy Email"
                 >
                   {copiedField === 'email' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
                 </button>
@@ -192,7 +192,7 @@ export default function Login() {
                   type="button"
                   onClick={() => handleCopy('123', 'password')}
                   className="p-1 text-muted-foreground hover:text-foreground rounded hover:bg-secondary cursor-pointer transition-colors active:scale-90"
-                  title="Copy Password"
+                  title="Copy Password" aria-label="Copy Password"
                 >
                   {copiedField === 'password' ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
                 </button>

@@ -369,7 +369,7 @@ export default function Sleep() {
                 <div className="h-44 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={bars} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
                       <XAxis
                         dataKey="day"
                         tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.45)' }}
@@ -386,20 +386,20 @@ export default function Sleep() {
                       <Tooltip 
                         cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 6 }}
                         formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
-                        itemStyle={{ color: 'hsl(var(--foreground))' }}
-                        labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                        itemStyle={{ color: 'var(--color-foreground)' }}
+                        labelStyle={{ color: 'var(--color-muted-foreground)' }}
                         contentStyle={{
                           backgroundColor: 'rgba(30, 30, 30, 0.75)',
                           backdropFilter: 'blur(12px)',
                           border: '1px solid rgba(255, 255, 255, 0.1)',
                           borderRadius: '12px',
-                          color: 'hsl(var(--foreground))',
+                          color: 'var(--color-foreground)',
                           boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)'
                         }}
                       />
                       <ReferenceLine 
                         y={thirtyDayAvg} 
-                        stroke="rgba(255,255,255,0.25)" 
+                        stroke="var(--color-border)" 
                         strokeDasharray="3 3" 
                       />
                       <Bar
@@ -448,7 +448,7 @@ export default function Sleep() {
                 <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-border">
                   {Object.entries(STAGE_COLORS).map(([name, color]) => (
                     <div key={name} className="flex items-center gap-1.5 text-xs font-medium">
-                      <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: color }} />
+                      <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
                       <span className="text-foreground">{name}</span>
                     </div>
                   ))}
@@ -510,7 +510,7 @@ export default function Sleep() {
                       onClick={() => setSessionLimit(7)}
                       className={cn(
                         "text-xs px-3 py-1 rounded-lg font-semibold transition-all select-none transform-gpu active:scale-98",
-                        sessionLimit === 7 ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]" : "text-muted-foreground hover:text-foreground"
+                        sessionLimit === 7 ? "bg-white dark:bg-[#2c2c2e] text-foreground scale-[1.01]" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       7d
@@ -520,7 +520,7 @@ export default function Sleep() {
                       onClick={() => setSessionLimit(30)}
                       className={cn(
                         "text-xs px-3 py-1 rounded-lg font-semibold transition-all select-none transform-gpu active:scale-98",
-                        sessionLimit === 30 ? "bg-white dark:bg-[#2c2c2e] text-foreground shadow-sm scale-[1.01]" : "text-muted-foreground hover:text-foreground"
+                        sessionLimit === 30 ? "bg-white dark:bg-[#2c2c2e] text-foreground scale-[1.01]" : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       30d
@@ -619,7 +619,7 @@ export default function Sleep() {
               <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border">
                 {Object.entries(STAGE_COLORS).map(([name, color]) => (
                   <div key={name} className="flex items-center gap-2 text-xs font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: color }} />
+                    <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
                     <span className="text-foreground">{name}</span>
                   </div>
                 ))}

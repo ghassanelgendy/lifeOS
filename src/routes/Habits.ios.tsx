@@ -557,7 +557,7 @@ export default function Habits() {
         </div>
         <button
           onClick={() => handleOpenModal()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md shadow-sm active:scale-90 hover:bg-primary/20 transition-all"
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md active:scale-90 hover:bg-primary/20 transition-all"
           aria-label="New Habit"
         >
           <Plus size={20} className="text-primary" />
@@ -708,7 +708,7 @@ export default function Habits() {
                               type="button"
                               onClick={() => setSelectedHabitForStats(habit)}
                               className="font-medium truncate text-left hover:text-primary active:opacity-70 transition-colors"
-                              title="View habit stats"
+                              title="View habit stats" aria-label="View habit stats"
                             >
                               {habit.title}
                             </button>
@@ -896,7 +896,7 @@ export default function Habits() {
                                     type="button"
                                     onClick={() => setSelectedHabitForStats(habit)}
                                     className="font-medium truncate text-left hover:text-primary active:opacity-70 transition-colors block"
-                                    title="View habit stats"
+                                    title="View habit stats" aria-label="View habit stats"
                                   >
                                     {habit.title}
                                   </button>
@@ -1133,7 +1133,7 @@ export default function Habits() {
                                         handleOpenModal(habit);
                                       }}
                                       className="p-1 rounded hover:bg-secondary transition-colors"
-                                      title="Edit habit"
+                                      title="Edit habit" aria-label="Edit habit"
                                     >
                                       <Edit2 size={12} />
                                     </button>

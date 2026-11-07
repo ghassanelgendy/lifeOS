@@ -1087,7 +1087,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
             type="button"
             onClick={() => setShowToolsSheet(true)}
             className="h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-secondary/60 hover:bg-secondary text-muted-foreground hover:text-foreground border border-border flex items-center justify-center cursor-pointer transition-all active:scale-95"
-            title="خيارات وإعدادات القراءة والتكرار"
+            title="خيارات وإعدادات القراءة والتكرار" aria-label="خيارات وإعدادات القراءة والتكرار"
           >
             <Settings2 className="size-3.5" />
           </button>
@@ -1582,7 +1582,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
                         onDoubleClick={() => setIsFullscreen(true)}
-                        className="px-2.5 py-3 sm:px-5 sm:py-6 rounded-2xl sm:rounded-3xl border border-border bg-card/95 backdrop-blur-xl shadow-lg relative space-y-3 transition-all touch-pan-y"
+                        className="px-5 py-5 sm:px-6 sm:py-6 rounded-[20px] bg-card relative space-y-3 transition-all touch-pan-y"
                       >
                         {/* Breadcrumb + Swipe Hint Bar */}
                         <div className="pb-2 mb-1 flex items-center justify-between text-[11px] text-muted-foreground font-arabic-title font-bold border-b border-border/40">
@@ -1913,7 +1913,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               type="button"
                               onClick={() => updateFontSizeScale(-0.1)}
                               className="h-7 w-7 rounded-lg hover:bg-secondary flex items-center justify-center font-bold text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="تصغير الخط (-)"
+                              title="تصغير الخط (-)" aria-label="تصغير الخط (-)"
                             >
                               <ZoomOut className="size-3.5" />
                             </button>
@@ -1924,7 +1924,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                               type="button"
                               onClick={() => updateFontSizeScale(0.1)}
                               className="h-7 w-7 rounded-lg hover:bg-secondary flex items-center justify-center font-bold text-muted-foreground hover:text-foreground cursor-pointer"
-                              title="تكبير الخط (+)"
+                              title="تكبير الخط (+)" aria-label="تكبير الخط (+)"
                             >
                               <ZoomIn className="size-3.5" />
                             </button>
@@ -1978,7 +1978,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
                         onTouchEnd={handleTouchEnd}
-                        className="flex-1 w-full max-w-4xl mx-auto px-2 sm:px-8 pt-[max(env(safe-area-inset-top),16px)] pb-[max(env(safe-area-inset-bottom,20px),88px)] flex flex-col justify-between my-auto space-y-6 touch-pan-y"
+                        className="flex-1 w-full max-w-4xl mx-auto px-1.5 sm:px-8 pt-[max(env(safe-area-inset-top),16px)] pb-[calc(108px+env(safe-area-inset-bottom))] flex flex-col justify-between my-auto space-y-6 touch-pan-y"
                       >
                         {pagesToRender.map(([pageNum, pageAyahs]) => {
                           const firstSurahOnPage = pageAyahs.length > 0
@@ -1988,7 +1988,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                           return (
                             <div
                               key={`fs-${pageNum}`}
-                              className="w-full flex-1 flex flex-col justify-between rounded-3xl border border-border/80 bg-card/60 backdrop-blur-md p-3 sm:p-8 md:p-10 shadow-2xl space-y-4 sm:space-y-6"
+                              className="w-full flex-1 flex flex-col justify-between rounded-[20px] bg-card/60 px-5 py-5 sm:p-8 md:p-10 space-y-4 sm:space-y-6"
                             >
                               {/* Fullscreen Mushaf Text (Dynamically scaled & pinchable) */}
                               <div
@@ -2249,13 +2249,15 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                         dir="rtl"
                         className={`fixed z-50 sm:hidden font-arabic-title text-foreground
                           transition-all duration-500 ease-[cubic-bezier(0.25,1,0.3,1)] will-change-transform
-                          bottom-[calc(14px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2
-                          w-[90%] max-w-[380px] h-[50px] rounded-full px-2.5 flex items-center justify-between
-                          border border-white/30 dark:border-white/10
+                          bottom-[calc(16px+env(safe-area-inset-bottom))] left-1/2 -translate-x-1/2
+                          w-[calc(100%-24px)] max-w-[440px] h-[68px] rounded-[34px] px-2 flex items-center justify-between
+                          border border-black/10 dark:border-white/[0.08]
+                          bg-white/45 dark:bg-[rgba(20,20,22,0.6)]
+                          shadow-[0_10px_35px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_30px_rgba(0,0,0,0.35)]
                           ${
                             isFsBarShrunk
-                              ? 'scale-[0.78] translate-y-[8px] opacity-55 bg-white/45 dark:bg-[#141416]/55 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.15)]'
-                              : 'scale-100 translate-y-0 opacity-100 bg-white/75 dark:bg-[#141416]/85 backdrop-blur-2xl shadow-[0_8px_30px_rgba(0,0,0,0.25)]'
+                              ? 'scale-75 translate-y-[12px] opacity-55 backdrop-blur-[15px] backdrop-saturate-150'
+                              : 'scale-100 translate-y-0 opacity-100 backdrop-blur-[25px] backdrop-saturate-200'
                           }`}
                       >
                         {/* 1. Page Navigation & Picker */}
@@ -2264,16 +2266,16 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             type="button"
                             onClick={() => activePage > 1 && handlePageChange(activePage - 1)}
                             disabled={activePage <= 1}
-                            className="size-7 rounded-full bg-secondary/80 disabled:opacity-30 flex items-center justify-center cursor-pointer active:scale-90 transition-all border border-border shrink-0"
-                            title="الصفحة السابقة"
+                            className="size-9 rounded-full bg-secondary/80 disabled:opacity-30 flex items-center justify-center cursor-pointer active:scale-90 transition-all border border-border shrink-0"
+                            title="الصفحة السابقة" aria-label="الصفحة السابقة"
                           >
-                            <ChevronRight className="size-3.5" />
+                            <ChevronRight className="size-4" />
                           </button>
 
                           <button
                             type="button"
                             onClick={() => setShowSurahPicker(true)}
-                            className="px-2 py-1 rounded-xl bg-secondary/80 flex items-center gap-0.5 text-[11px] font-bold border border-border cursor-pointer active:scale-95 text-amber-600 dark:text-amber-400 shrink-0"
+                            className="px-2.5 min-h-9 rounded-full bg-secondary/80 flex items-center gap-1 text-[13px] font-bold border border-border cursor-pointer active:scale-95 text-amber-600 dark:text-amber-400 shrink-0"
                             title="فهرس السور والصفحات"
                           >
                             <span className="font-mono">ص {activePage}</span>
@@ -2284,10 +2286,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             type="button"
                             onClick={() => activePage < 604 && handlePageChange(activePage + 1)}
                             disabled={activePage >= 604}
-                            className="size-7 rounded-full bg-secondary/80 disabled:opacity-30 flex items-center justify-center cursor-pointer active:scale-90 transition-all border border-border shrink-0"
-                            title="الصفحة التالية"
+                            className="size-9 rounded-full bg-secondary/80 disabled:opacity-30 flex items-center justify-center cursor-pointer active:scale-90 transition-all border border-border shrink-0"
+                            title="الصفحة التالية" aria-label="الصفحة التالية"
                           >
-                            <ChevronLeft className="size-3.5" />
+                            <ChevronLeft className="size-4" />
                           </button>
                         </div>
 
@@ -2297,10 +2299,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             <button
                               type="button"
                               onClick={onPrevAyah}
-                              className="size-7 rounded-full bg-secondary/80 flex items-center justify-center cursor-pointer active:scale-90 text-muted-foreground hover:text-foreground border border-border shrink-0"
-                              title="الآية السابقة"
+                              className="size-9 rounded-full bg-secondary/80 flex items-center justify-center cursor-pointer active:scale-90 text-muted-foreground hover:text-foreground border border-border shrink-0"
+                              title="الآية السابقة" aria-label="الآية السابقة"
                             >
-                              <SkipForward className="size-3" />
+                              <SkipForward className="size-4" />
                             </button>
                           )}
 
@@ -2308,10 +2310,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             <button
                               type="button"
                               onClick={onTogglePlayPause}
-                              className="size-8 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer active:scale-90 shadow-md transition-all shrink-0"
+                              className="size-10 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer active:scale-90 shadow-md transition-all shrink-0"
                               title={isAudioPlaying ? 'إيقاف مؤقت' : 'تشغيل التلاوة'}
                             >
-                              {isAudioPlaying ? <Pause className="size-3.5 fill-white" /> : <Play className="size-3.5 fill-white translate-x-[-1px]" />}
+                              {isAudioPlaying ? <Pause className="size-4 fill-white" /> : <Play className="size-4 fill-white translate-x-[-1px]" />}
                             </button>
                           )}
 
@@ -2319,20 +2321,20 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                             <button
                               type="button"
                               onClick={onNextAyah}
-                              className="size-7 rounded-full bg-secondary/80 flex items-center justify-center cursor-pointer active:scale-90 text-muted-foreground hover:text-foreground border border-border shrink-0"
-                              title="الآية التالية"
+                              className="size-9 rounded-full bg-secondary/80 flex items-center justify-center cursor-pointer active:scale-90 text-muted-foreground hover:text-foreground border border-border shrink-0"
+                              title="الآية التالية" aria-label="الآية التالية"
                             >
-                              <SkipBack className="size-3" />
+                              <SkipBack className="size-4" />
                             </button>
                           )}
 
                           <button
                             type="button"
                             onClick={() => setShowToolsSheet(true)}
-                            className="size-7 rounded-full bg-secondary/80 flex items-center justify-center cursor-pointer active:scale-90 text-muted-foreground hover:text-foreground border border-border shrink-0"
-                            title="إعدادات الصوت والتكرار"
+                            className="size-9 rounded-full bg-secondary/80 flex items-center justify-center cursor-pointer active:scale-90 text-muted-foreground hover:text-foreground border border-border shrink-0"
+                            title="إعدادات الصوت والتكرار" aria-label="إعدادات الصوت والتكرار"
                           >
-                            <SlidersHorizontal className="size-3 text-emerald-400" />
+                            <SlidersHorizontal className="size-4 text-emerald-400" />
                           </button>
                         </div>
 
@@ -2341,10 +2343,10 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
                           <button
                             type="button"
                             onClick={() => setIsFullscreen(false)}
-                            className="size-7 rounded-full bg-rose-600/90 hover:bg-rose-600 text-white flex items-center justify-center cursor-pointer active:scale-90 transition-all shadow-md shrink-0"
-                            title="خروج من ملء الشاشة"
+                            className="size-9 rounded-full bg-rose-600/90 hover:bg-rose-600 text-white flex items-center justify-center cursor-pointer active:scale-90 transition-all shadow-md shrink-0"
+                            title="خروج من ملء الشاشة" aria-label="خروج من ملء الشاشة"
                           >
-                            <Minimize2 className="size-3" />
+                            <Minimize2 className="size-4" />
                           </button>
                         </div>
                       </div>

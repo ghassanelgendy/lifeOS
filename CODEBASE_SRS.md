@@ -1487,3 +1487,14 @@ The system manages the following core entities (as defined in `src/types/schema.
 ---
 
 *End of Software Requirements Specification*
+
+### iOS UI conventions (Capacitor build)
+
+The iOS build (`pnpm build:ios`) is styled to feel native and is driven mostly from `src/index.ios.css`, which only applies in `mode=ios`, so shared screens are restyled without touching the web or desktop builds.
+
+- **Colors:** Apple system color tokens (`systemBackground`, `secondarySystemBackground`, `separator`, `systemBlue`, `systemRed`). Accent themes tint only controls (`primary`, `accent`, `ring`), not surfaces. `dark:` utilities follow the in-app theme (`html.dark`).
+- **Shape:** one radius scale (8 chips, 12 controls, 20 cards, 28 sheets). `.liquid-glass-card` is a solid grouped surface; glass is reserved for the tab bar, headers and sheets. Bordered boxes nested in cards render as plain inset fills.
+- **Touch:** controls under 44pt get an invisible tap-area extension on coarse pointers (not between tightly packed controls); every button has a pressed state; hover-only controls stay visible; inputs are 16px; checkboxes render as iOS switches.
+- **Text:** `font-black/extrabold` render as 700, sub-11px text renders as 11px, uppercase and wide tracking render as normal case, light-mode pastel text colors are darkened.
+- **System UI:** `window.alert` is replaced by a bottom toast (`src/lib/iosToast.ts`); `LiquidTabBar` shows labels; the Quran player pill matches the tab bar.
+- **Accessibility:** reduced motion and reduced transparency are honored globally.

@@ -199,7 +199,7 @@ export default function AzkarRoute() {
                 className={cn(
                   'shrink-0 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-medium transition-all active:scale-95',
                   isSel
-                    ? 'border-primary bg-primary font-semibold text-primary-foreground shadow-sm'
+                    ? 'border-primary bg-primary font-semibold text-primary-foreground'
                     : 'border-border/60 bg-card text-muted-foreground'
                 )}
               >
