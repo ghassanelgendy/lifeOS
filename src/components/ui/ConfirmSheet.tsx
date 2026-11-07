@@ -119,7 +119,7 @@ export function ConfirmSheet({
           'w-full max-w-lg mx-auto flex flex-col min-h-0 sm:relative sm:max-w-md',
           'rounded-t-[24px] sm:rounded-2xl',
           isIOS
-            ? 'bg-card rounded-t-[28px] sm:rounded-[28px] overflow-hidden isolate'
+            ? 'ios-sheet rounded-t-[28px] sm:rounded-[28px] overflow-hidden isolate'
             : 'border border-border bg-card shadow-2xl overflow-hidden isolate'
         )}
         style={{
@@ -198,7 +198,7 @@ export function ConfirmSheet({
                 onClick={onConfirm}
                 disabled={isLoading}
                 className={cn(
-                  "w-full min-h-[50px] rounded-2xl bg-secondary text-[17px] font-semibold disabled:opacity-50",
+                  "w-full min-h-[50px] rounded-2xl bg-card text-[17px] font-semibold disabled:opacity-50",
                   confirmVariant === 'destructive' ? "text-destructive" : "text-primary"
                 )}
               >
@@ -208,7 +208,7 @@ export function ConfirmSheet({
                 type="button"
                 onClick={onCancel}
                 disabled={isLoading}
-                className="w-full min-h-[50px] rounded-2xl bg-secondary text-[17px] font-semibold text-primary disabled:opacity-50"
+                className="w-full min-h-[50px] rounded-2xl bg-card text-[17px] font-semibold text-primary disabled:opacity-50"
               >
                 {cancelLabel}
               </button>

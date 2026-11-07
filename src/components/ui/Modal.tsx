@@ -173,7 +173,7 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
         className={cn(
           'w-full max-w-lg mx-auto flex flex-col min-h-0 overflow-hidden isolate sm:relative sm:bottom-auto sm:max-h-[85vh]',
           isIOS
-            ? 'rounded-t-[28px] sm:rounded-[28px] bg-background'
+            ? 'rounded-t-[28px] sm:rounded-[28px] ios-sheet'
             : 'shadow-2xl rounded-t-[24px] sm:rounded-2xl bg-card border border-border',
           className
         )}

@@ -166,9 +166,9 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
 
             {/* Elastic content container that slides down and springs back */}
             <div 
-                className={cn("relative origin-top will-change-transform", isFixedLayout ? "h-full" : "min-h-full")}
+                className={cn("relative origin-top", pullDistance > 0 && "will-change-transform", isFixedLayout ? "h-full" : "min-h-full")}
                 style={{
-                    transform: `translateY(${pullDistance}px)`,
+                    transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : 'none',
                     transition: startY === null ? 'transform 0.45s cubic-bezier(0.25, 1, 0.3, 1.18)' : 'none'
                 }}
             >

@@ -685,3 +685,19 @@ html.light .text-pink-500 { color: #5148c8; }
   [class*="bg-card/"] { background-color: var(--color-card) !important; }
   [class*="bg-popover/"] { background-color: var(--color-popover) !important; }
 }
+
+/* ---- iOS sheets: elevated gray surface with lighter cards (never the black page color) ---- */
+:root {
+  --color-sheet: #1c1c1e;
+  --color-sheet-card: #2c2c2e;
+}
+html.light {
+  --color-sheet: #f2f2f7;
+  --color-sheet-card: #ffffff;
+}
+.ios-sheet {
+  background-color: var(--color-sheet);
+}
+.ios-sheet :is([class~="bg-card"], [class*="bg-card/"], [class*="bg-muted/"], [class*="bg-secondary/"], .liquid-glass-card) {
+  background-color: var(--color-sheet-card);
+}

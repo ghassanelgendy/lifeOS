@@ -1,12 +1,11 @@
 import React, { useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   Flame,
   Trophy,
   CheckCircle2,
-  Calendar,
   Clock,
-  TrendingUp,
   Zap,
   Edit2
 } from 'lucide-react';
@@ -135,13 +134,14 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
 
   if (!isOpen || !habit || !stats) return null;
 
-  return (
+  return createPortal(
     <div
+      data-lifeos-modal
       className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-4 bg-black/40 animate-fade-in"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg bg-card text-card-foreground rounded-t-[28px] sm:rounded-[28px] overflow-hidden flex flex-col max-h-[92dvh] pb-[env(safe-area-inset-bottom)]"
+        className="ios-sheet relative w-full max-w-lg text-card-foreground rounded-t-[28px] sm:rounded-[28px] overflow-hidden flex flex-col max-h-[92dvh] pb-[env(safe-area-inset-bottom)]"
         onClick={e => e.stopPropagation()}
       >
         <div className="mx-auto mt-2 h-1 w-9 rounded-full bg-muted-foreground/40 sm:hidden" />
@@ -191,166 +191,121 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-5 overflow-y-auto space-y-6">
-          {/* Top Metric Cards */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center text-muted-foreground mb-1">
-                <Flame className="w-4 h-4 text-amber-500" />
-              </div>
-              <div className="text-2xl font-bold tabular-nums text-foreground">
-                {stats.currentStreak}
-              </div>
-              <div className="text-[11px] font-medium text-muted-foreground mt-0.5">
-                Current Streak
+        <div className="px-4 pt-4 pb-2 overflow-y-auto space-y-5">
+          {/* Streaks */}
+          <div className="rounded-[20px] bg-card grid grid-cols-3 divide-x divide-border">
+            <div className="px-3 py-4 text-center">
+              <div className="text-[28px] font-bold tabular-nums leading-none">{stats.currentStreak}</div>
+              <div className="text-[13px] text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-orange-500" />
+                Streak
               </div>
             </div>
-
-            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center text-muted-foreground mb-1">
-                <Trophy className="w-4 h-4 text-primary" />
-              </div>
-              <div className="text-2xl font-bold tabular-nums text-foreground">
-                {stats.bestStreak}
-              </div>
-              <div className="text-[11px] font-medium text-muted-foreground mt-0.5">
-                Best Streak
+            <div className="px-3 py-4 text-center">
+              <div className="text-[28px] font-bold tabular-nums leading-none">{stats.bestStreak}</div>
+              <div className="text-[13px] text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
+                <Trophy className="w-3.5 h-3.5 text-primary" />
+                Best
               </div>
             </div>
-
-            <div className="bg-muted/20 border border-border/70 rounded-xl p-3 text-center">
-              <div className="flex items-center justify-center text-muted-foreground mb-1">
-                <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+            <div className="px-3 py-4 text-center">
+              <div className="text-[28px] font-bold tabular-nums leading-none">
+                {isLoading ? '…' : stats.totalCompletions}
               </div>
-              <div className="text-2xl font-bold tabular-nums text-foreground">
-                {isLoading ? '...' : stats.totalCompletions}
-              </div>
-              <div className="text-[11px] font-medium text-muted-foreground mt-0.5">
-                Total Check-ins
+              <div className="text-[13px] text-muted-foreground mt-1.5 flex items-center justify-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                Check-ins
               </div>
             </div>
           </div>
 
-          {/* Adherence Rate Gauges */}
-          <div className="bg-secondary/40 border border-border/80 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <TrendingUp className="w-4 h-4 text-primary" />
-              <span>Completion Rate</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center p-2 rounded-lg bg-card border border-border">
-                <span className="text-xs text-muted-foreground block mb-1">Last 7 Days</span>
-                <span className={`text-lg font-bold ${stats.rate7 >= 70 ? 'text-emerald-500' : stats.rate7 >= 40 ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                  {stats.rate7}%
-                </span>
-                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${stats.rate7}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-center p-2 rounded-lg bg-card border border-border">
-                <span className="text-xs text-muted-foreground block mb-1">Last 30 Days</span>
-                <span className={`text-lg font-bold ${stats.rate30 >= 70 ? 'text-emerald-500' : stats.rate30 >= 40 ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                  {stats.rate30}%
-                </span>
-                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${stats.rate30}%` }}
-                  />
-                </div>
-              </div>
-
-              <div className="text-center p-2 rounded-lg bg-card border border-border">
-                <span className="text-xs text-muted-foreground block mb-1">Last 90 Days</span>
-                <span className={`text-lg font-bold ${stats.rate90 >= 70 ? 'text-emerald-500' : stats.rate90 >= 40 ? 'text-amber-500' : 'text-muted-foreground'}`}>
-                  {stats.rate90}%
-                </span>
-                <div className="w-full bg-muted h-1.5 rounded-full mt-2 overflow-hidden">
-                  <div
-                    className="h-full bg-primary rounded-full transition-all"
-                    style={{ width: `${stats.rate90}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 30-Day Activity Heatmap Grid */}
-          <div className="bg-secondary/40 border border-border/80 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Calendar className="w-4 h-4 text-primary" />
-                <span>Last 30 Days Activity</span>
-              </div>
-              <span className="text-xs text-muted-foreground">
-                {stats.past30Chronological.filter(d => d.isCompleted).length} / 30 days
-              </span>
-            </div>
-
-            <div className="grid grid-cols-10 gap-1.5">
-              {stats.past30Chronological.map((day, idx) => (
-                <div
-                  key={idx}
-                  title={`${day.dateStr}: ${day.isCompleted ? 'Completed' : 'Missed'}`}
-                  className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium transition-all ${
-                    day.isCompleted
-                      ? 'bg-emerald-500 text-white font-bold shadow-xs'
-                      : 'bg-muted text-muted-foreground border border-border/40'
-                  } ${day.isToday ? 'ring-2 ring-primary' : ''}`}
-                >
-                  {format(day.date, 'd')}
+          {/* Completion rate */}
+          <section>
+            <h3 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Completion rate</h3>
+            <div className="rounded-[20px] bg-card divide-y divide-border">
+              {([
+                ['Last 7 days', stats.rate7],
+                ['Last 30 days', stats.rate30],
+                ['Last 90 days', stats.rate90],
+              ] as const).map(([label, rate]) => (
+                <div key={label} className="px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[17px]">{label}</span>
+                    <span className={`text-[17px] font-semibold tabular-nums ${rate >= 70 ? 'text-green-600 dark:text-green-400' : rate >= 40 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                      {rate}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-secondary h-1.5 rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${rate}%` }} />
+                  </div>
                 </div>
               ))}
             </div>
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground mt-2">
-              <span>30 days ago</span>
-              <span>Today</span>
-            </div>
-          </div>
+          </section>
 
-          {/* Insights / Details */}
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="p-3 bg-secondary/30 rounded-xl border border-border/70">
-              <span className="text-muted-foreground block mb-1">Strongest Day</span>
-              <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-500" />
+          {/* Last 30 days */}
+          <section>
+            <div className="flex items-center justify-between px-4 pb-2">
+              <h3 className="text-[13px] font-semibold text-muted-foreground">Last 30 days</h3>
+              <span className="text-[13px] text-muted-foreground tabular-nums">
+                {stats.past30Chronological.filter(d => d.isCompleted).length} / 30
+              </span>
+            </div>
+            <div className="rounded-[20px] bg-card p-4">
+              <div className="grid grid-cols-10 gap-1.5">
+                {stats.past30Chronological.map((day, idx) => (
+                  <div
+                    key={idx}
+                    title={`${day.dateStr}: ${day.isCompleted ? 'Completed' : 'Missed'}`}
+                    className={`aspect-square rounded-md flex items-center justify-center text-[11px] font-medium ${
+                      day.isCompleted
+                        ? 'bg-green-500 text-white font-semibold'
+                        : 'bg-secondary text-muted-foreground'
+                    } ${day.isToday ? 'ring-2 ring-primary' : ''}`}
+                  >
+                    {format(day.date, 'd')}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* Details */}
+          <div className="rounded-[20px] bg-card divide-y divide-border">
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-[17px]">Strongest day</span>
+              <span className="text-[17px] text-muted-foreground flex items-center gap-1.5">
+                <Zap className="w-4 h-4 text-orange-500" />
                 {stats.bestDay}
               </span>
             </div>
-
-            <div className="p-3 bg-secondary/30 rounded-xl border border-border/70">
-              <span className="text-muted-foreground block mb-1">Created Date</span>
-              <span className="font-semibold text-foreground text-sm flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5 text-blue-500" />
+            <div className="flex items-center justify-between px-4 py-3">
+              <span className="text-[17px]">Created</span>
+              <span className="text-[17px] text-muted-foreground flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
                 {habit.created_at ? format(new Date(habit.created_at), 'MMM d, yyyy') : 'N/A'}
               </span>
             </div>
           </div>
 
           {habit.description && (
-            <div className="text-xs text-muted-foreground bg-secondary/20 p-3 rounded-lg border border-border/50">
-              <span className="font-medium text-foreground block mb-1">Note:</span>
+            <p className="px-4 text-[15px] text-muted-foreground whitespace-pre-line break-words">
               {habit.description}
-            </div>
+            </p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-border flex justify-end bg-card">
+        <div className="px-4 pt-2 pb-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold rounded-xl bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border transition-colors cursor-pointer"
+            className="w-full min-h-[50px] rounded-2xl bg-card text-[17px] font-semibold text-primary active:opacity-60"
           >
-            Close
+            Done
           </button>
         </div>
       </div>
-    </div>
-
+    </div>,
+    document.body
   );
 };

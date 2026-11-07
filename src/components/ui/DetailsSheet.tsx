@@ -219,7 +219,7 @@ export function DetailsSheet({
           !isIOS && 'shadow-2xl',
           'fixed inset-x-0 bottom-0 sm:relative sm:inset-auto sm:max-w-xl sm:max-h-[85vh] sm:rounded-2xl',
           isIOS
-            ? 'bg-background rounded-t-[28px] sm:rounded-[28px]'
+            ? 'ios-sheet rounded-t-[28px] sm:rounded-[28px]'
             : 'rounded-t-[24px] sm:rounded-2xl border border-border bg-card'
         )}
         style={{
