@@ -52,10 +52,17 @@ import Qadaa from './routes/Qadaa';
 import { useDailyPointsSync } from './hooks/usePoints';
 import './App.css';
 import { installIosToast } from './lib/iosToast';
-import { installAxisLock } from './lib/axisLock';
+import { installAxisLock, installHorizontalStripTagging } from './lib/axisLock';
 
 installIosToast();
 installAxisLock();
+if (typeof document !== 'undefined') {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', installHorizontalStripTagging, { once: true });
+  } else {
+    installHorizontalStripTagging();
+  }
+}
 
 const persister = createSyncStoragePersister({
   storage: typeof window !== 'undefined' ? window.localStorage : undefined,

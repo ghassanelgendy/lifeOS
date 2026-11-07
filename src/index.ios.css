@@ -744,3 +744,9 @@ html.dark footer.chat-blend-surface {
   background-color: rgba(20, 20, 22, 0.6) !important;
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* Short horizontal strips only pan sideways (tagged at runtime by installHorizontalStripTagging) */
+[data-hscroll] {
+  touch-action: pan-x;
+  overscroll-behavior-x: contain;
+}

@@ -72,3 +72,35 @@ export function installAxisLock() {
   document.addEventListener('touchend', release, { passive: true, capture: true });
   document.addEventListener('touchcancel', release, { passive: true, capture: true });
 }
+
+/**
+ * Short horizontal strips (chips, tab rows, week pickers) are tagged `data-hscroll`;
+ * CSS gives them `touch-action: pan-x`, so a gesture that starts on them can only pan
+ * sideways and never nudges the page up or down. Tall carousels are left alone.
+ */
+export function installHorizontalStripTagging() {
+  if (typeof document === 'undefined') return;
+
+  const tag = () => {
+    document.querySelectorAll<HTMLElement>('[class*="overflow-x-"]').forEach((el) => {
+      const cs = getComputedStyle(el);
+      const horizontal = (cs.overflowX === 'auto' || cs.overflowX === 'scroll') && el.scrollWidth > el.clientWidth + 1;
+      const isShort = el.clientHeight > 0 && el.clientHeight <= 160;
+      if (horizontal && isShort) {
+        if (!el.hasAttribute('data-hscroll')) el.setAttribute('data-hscroll', '');
+      } else if (el.hasAttribute('data-hscroll')) {
+        el.removeAttribute('data-hscroll');
+      }
+    });
+  };
+
+  let timer: number | undefined;
+  const schedule = () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(tag, 250);
+  };
+
+  new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+  window.addEventListener('resize', schedule);
+  schedule();
+}
