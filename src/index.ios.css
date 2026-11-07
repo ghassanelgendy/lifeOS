@@ -67,7 +67,13 @@ body.light {
   --color-gray-800: #27272a;
   --color-gray-900: #18181b;
   --color-gray-950: #09090b;
-  --radius-xl: 0.75rem;
+  /* One radius scale: chips 8, controls 12, cards 20 */
+  --radius-sm: 8px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+  --radius-2xl: 20px;
+  --radius-3xl: 20px;
   --radius-ios-squircle: 28px;
   --radius-ios-squircle-sm: 14px;
   --radius-ios-squircle-lg: 38px;
@@ -467,4 +473,44 @@ div[data-joyride="overlay"] {
   [role="button"] {
     transition: opacity 0.12s ease-out;
   }
+}
+
+/* ---- Cards: one radius, one level ---- */
+/* Top-level cards are 20px; anything card-like nested inside a card is 12px (concentric) */
+:is(.rounded-xl, .rounded-2xl, .rounded-3xl):is([class~="bg-card"], [class*="bg-card/"]) {
+  border-radius: 20px;
+}
+:is(.liquid-glass-card, [class~="bg-card"], [class*="bg-card/"]) :is(.rounded-xl, .rounded-2xl, .rounded-3xl) {
+  border-radius: 12px;
+}
+/* iOS cards have no outline; nested boxes are plain inset fills, not bordered cards */
+:is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl).border:is(
+  [class~="bg-card"], [class*="bg-card/"],
+  [class~="bg-secondary"], [class*="bg-secondary/"],
+  [class~="bg-muted"], [class*="bg-muted/"]
+):not(input, textarea, select, button, [class*="border-primary"], [class*="border-destructive"]) {
+  border-color: transparent;
+}
+.liquid-glass-card :is(.rounded-lg, .rounded-xl, .rounded-2xl, .rounded-3xl).border:not(
+  input, textarea, select, button,
+  [class*="border-primary"], [class*="border-destructive"], [class*="border-red"],
+  [class*="border-green"], [class*="border-emerald"], [class*="border-amber"], [class*="border-orange"]
+) {
+  border-color: transparent;
+}
+
+/* Controls revealed only on hover (delete, edit) are unreachable on touch: keep them visible */
+@media (hover: none) {
+  .opacity-0[class*="group-hover:opacity"] {
+    opacity: 0.7;
+  }
+}
+
+/* Small headers read as sentence case on iOS, not tracked-out capitals */
+.uppercase {
+  text-transform: none;
+}
+.tracking-wider,
+.tracking-widest {
+  letter-spacing: normal;
 }

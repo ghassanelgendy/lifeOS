@@ -832,8 +832,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
           <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <RefreshCw className="text-purple-500" size={20} />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <RefreshCw className="text-primary" size={20} />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Switches</p>
@@ -877,8 +877,8 @@ import { useQueryClient } from '@tanstack/react-query';
 
           <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 rounded-lg bg-purple-500/10">
-                <TrendingUp className="text-purple-500" size={20} />
+              <div className="p-2 rounded-lg bg-primary/10">
+                <TrendingUp className="text-primary" size={20} />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Top app</p>

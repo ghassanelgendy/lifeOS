@@ -344,7 +344,7 @@ export default function NotesIOS() {
                       setBrainDumpModalTab('capture');
                       setIsBrainDumpModalOpen(true);
                     }}
-                    className="px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
+                    className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary font-semibold text-xs flex items-center gap-1.5 active:scale-95 transition-all shadow-sm"
                     title="Cognitive Brain Dump"
                   >
                     <Brain size={15} />
@@ -405,7 +405,7 @@ export default function NotesIOS() {
                   className={cn(
                     "px-3 py-1.5 rounded-full text-xs font-medium shrink-0 transition-all active:scale-95 flex items-center gap-1 border",
                     activeFolderFilter === BRAIN_DUMP_NOTES
-                      ? "bg-purple-600 text-white border-purple-600 shadow-sm font-semibold"
+                      ? "bg-primary text-white border-primary shadow-sm font-semibold"
                       : "bg-card text-muted-foreground border-border hover:bg-secondary"
                   )}
                 >
@@ -518,7 +518,7 @@ export default function NotesIOS() {
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
-                                {note.is_brain_dump && <Brain size={13} className="text-purple-500 shrink-0" />}
+                                {note.is_brain_dump && <Brain size={13} className="text-primary shrink-0" />}
                                 <h3 className="text-xs font-semibold text-foreground truncate">
                                   {noteTitle(note.title, note.body, note.is_brain_dump, note.note_date)}
                                 </h3>
@@ -664,7 +664,7 @@ export default function NotesIOS() {
                 </button>
 
                 {draftIsBrainDump && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-600 dark:text-purple-400 font-semibold text-xs">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary font-semibold text-xs">
                     <Brain size={12} /> Brain Dump
                   </span>
                 )}

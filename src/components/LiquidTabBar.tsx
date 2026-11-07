@@ -103,8 +103,30 @@ export default function LiquidTabBar({
           position: relative;
           z-index: 2;
           cursor: pointer;
-          color: #8e8e93;
+          color: var(--color-muted-foreground);
+          gap: 3px;
           transition: color 0.2s ease;
+        }
+
+        .tab-item-btn .tab-label {
+          font-size: 10px;
+          line-height: 12px;
+          font-weight: 500;
+          position: relative;
+          z-index: 3;
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        @media (prefers-reduced-transparency: reduce) {
+          .liquid-tab-bar-container,
+          .liquid-tab-bar-container.shrunk {
+            background: var(--color-card);
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+          }
         }
 
         .tab-item-btn.active {
@@ -134,6 +156,8 @@ export default function LiquidTabBar({
               className={cn("tab-item-btn", isActive && "active")}
               onClick={(e) => handleTabClick(tab.href, e)}
               type="button"
+              aria-label={tab.label}
+              aria-current={isActive ? 'page' : undefined}
             >
               {/* Framer Motion Liquid Active indicator */}
               {isActive && (
@@ -157,11 +181,11 @@ export default function LiquidTabBar({
                 <Icon size={22} strokeWidth={isActive ? 2.4 : 2} />
                 {showDot && (
                   <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                   </span>
                 )}
               </motion.div>
+              <span className="tab-label">{tab.label}</span>
             </button>
           );
         })}

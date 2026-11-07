@@ -70,7 +70,7 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
     return brainDumpNotes.map((note, index) => {
       const total = brainDumpNotes.length;
       const angle = (index / Math.max(1, total)) * 2 * Math.PI;
-      const distance = 80 + (index % 3) * 50;
+      const distance = 60 + (index % 3) * 40;
       
       const x = centerX + Math.cos(angle) * distance;
       const y = centerY + Math.sin(angle) * distance;
@@ -289,7 +289,13 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
       {/* GRAPH VIEW CANVAS */}
       {viewMode === 'graph' ? (
         <div className="relative w-full h-[360px] rounded-xl border border-border bg-card/60 backdrop-blur-md overflow-hidden flex items-center justify-center p-4">
-          <svg className="absolute inset-0 w-full h-full pointer-events-none">
+          <svg
+            className="absolute pointer-events-none"
+            style={{ left: 16, top: 16, width: 'calc(100% - 32px)', height: 'calc(100% - 32px)' }}
+            viewBox="0 0 600 340"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+          >
             {graphNodes.map((node, i) => (
               <g key={node.id}>
                 {graphNodes.slice(i + 1).map((otherNode) => (
@@ -303,6 +309,7 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
                     strokeOpacity={0.12}
                     strokeWidth={1.5}
                     strokeDasharray="4 4"
+                    vectorEffect="non-scaling-stroke"
                   />
                 ))}
               </g>
@@ -331,8 +338,10 @@ export function BrainDumpGraphView({ onSelectNote, className }: BrainDumpGraphVi
                     }}
                     style={{
                       position: 'absolute',
-                      left: `${(node.x / 600) * 90}%`,
-                      top: `${(node.y / 340) * 80}%`,
+                      left: `${(node.x / 600) * 100}%`,
+                      top: `${(node.y / 340) * 100}%`,
+                      x: '-50%',
+                      y: '-50%',
                     }}
                     className={cn(
                       "cursor-pointer rounded-full flex flex-col items-center justify-center p-2 transition-all shadow-md text-center border group",

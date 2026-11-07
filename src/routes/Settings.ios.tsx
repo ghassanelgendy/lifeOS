@@ -644,10 +644,9 @@ export default function SettingsPage() {
 
         <div className="flex-1 min-w-0 space-y-10">
           {/* Account */}
-          <section id="settings-account" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">Account</h2>
-            </div>
+          <section id="settings-account" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Account</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <UserBlobatar identifier={user?.email || user?.id} size={48} />
@@ -661,7 +660,8 @@ export default function SettingsPage() {
                 Sign out
               </Button>
             </div>
-          </section>
+                      </div>
+</section>
 
           {/* Apple Shortcuts & Siri Integrations */}
           <section id="settings-shortcuts" className="liquid-glass-card overflow-hidden scroll-mt-20">
@@ -975,10 +975,9 @@ export default function SettingsPage() {
           </Modal>
 
           {/* Appearance */}
-          <section id="settings-appearance" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">Appearance</h2>
-            </div>
+          <section id="settings-appearance" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Appearance</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               {/* Theme Toggle */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -1079,7 +1078,8 @@ export default function SettingsPage() {
                 </select>
               </div>
             </div>
-          </section>
+                      </div>
+</section>
 
           <div id="settings-defaults" className="space-y-10 scroll-mt-20">
             {/* Default Pages */}
@@ -1246,10 +1246,9 @@ export default function SettingsPage() {
             </section>
 
             {/* Desktop Navigation */}
-            <section className="liquid-glass-card overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <h2 className="font-semibold">Desktop Sidebar</h2>
-              </div>
+            <section >
+              <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Desktop Sidebar</h2>
+              <div className="liquid-glass-card">
               <div className="p-4 space-y-4">
                 <div>
                   <p className="font-medium">Sidebar Items</p>
@@ -1310,13 +1309,13 @@ export default function SettingsPage() {
                   })}
                 </div>
               </div>
-            </section>
+                          </div>
+</section>
 
             {/* Mobile Navigation */}
-            <section className="liquid-glass-card overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <h2 className="font-semibold">Mobile Navigation</h2>
-              </div>
+            <section >
+              <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Mobile Navigation</h2>
+              <div className="liquid-glass-card">
               <div className="p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <Smartphone size={20} />
@@ -1358,13 +1357,13 @@ export default function SettingsPage() {
                   {mobileNavItems.filter(item => item !== '/settings').length}/5 items selected
                 </p>
               </div>
-            </section>
+                          </div>
+</section>
 
             {/* Pinned Sidebar Shortcuts */}
-            <section className="liquid-glass-card overflow-hidden">
-              <div className="p-4 border-b border-border">
-                <h2 className="font-semibold">Sidebar Layout</h2>
-              </div>
+            <section >
+              <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Sidebar Layout</h2>
+              <div className="liquid-glass-card">
               <div className="p-4 space-y-4">
                 <div className="flex items-center gap-3">
                   <Smartphone size={20} />
@@ -1441,17 +1440,17 @@ export default function SettingsPage() {
                   </>
                 )}
               </div>
-            </section>
+                          </div>
+</section>
           </div>
 
           {/* AI Integration & Model Fallbacks Section */}
           <AISettingsSection isIOS={true} />
 
           {/* Task reminders (push notifications) */}
-          <section id="settings-notifications" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">Notifications</h2>
-            </div>
+          <section id="settings-notifications" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Notifications</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -1549,7 +1548,8 @@ export default function SettingsPage() {
                 </p>
               )}
             </div>
-          </section>
+                      </div>
+</section>
 
           {/* Prayer times location + prayer reminders (kept together — both configure the same feature) */}
           <section id="settings-prayer" className="liquid-glass-card overflow-hidden scroll-mt-20">
@@ -1836,10 +1836,9 @@ export default function SettingsPage() {
           </section>
 
           {/* Privacy */}
-          <section id="settings-privacy" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">Privacy & analytics</h2>
-            </div>
+          <section id="settings-privacy" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Privacy & analytics</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               <SettingsRow
                 icon={<Shield size={20} className="text-muted-foreground" />}
@@ -1865,13 +1864,13 @@ export default function SettingsPage() {
                 control={<ToggleSwitch checked={showWrappedReport} onChange={() => setShowWrappedReport(!showWrappedReport)} label="Wrapped report" />}
               />
             </div>
-          </section>
+                      </div>
+</section>
 
           {/* Data Management */}
-          <section id="settings-data" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">Data Management</h2>
-            </div>
+          <section id="settings-data" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Data Management</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               {/* Quran Offline Storage Downloader */}
               <QuranOfflineDownloader />
@@ -1950,7 +1949,8 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </div>
-          </section>
+                      </div>
+</section>
           {/* System Logs */}
           <section id="settings-logs" className="liquid-glass-card overflow-hidden scroll-mt-20">
             <div className="p-4 border-b border-border flex items-center justify-between">
@@ -2018,10 +2018,9 @@ export default function SettingsPage() {
           </section>
 
           {/* Help & Docs */}
-          <section id="settings-help" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">Help & Documentation</h2>
-            </div>
+          <section id="settings-help" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Help & Documentation</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
@@ -2077,13 +2076,13 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </section>
+                      </div>
+</section>
 
           {/* About */}
-          <section id="settings-about" className="liquid-glass-card overflow-hidden scroll-mt-20">
-            <div className="p-4 border-b border-border">
-              <h2 className="font-semibold">About</h2>
-            </div>
+          <section id="settings-about" className="scroll-mt-20">
+            <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">About</h2>
+            <div className="liquid-glass-card">
             <div className="p-4 space-y-4">
               <div className="flex items-center gap-3">
                 <Info size={20} />
@@ -2114,7 +2113,8 @@ export default function SettingsPage() {
                 </Button>
               </div>
             </div>
-          </section>
+                      </div>
+</section>
         </div>
       </div>
 
