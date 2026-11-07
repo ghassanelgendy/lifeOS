@@ -2468,7 +2468,7 @@ export default function Tasks() {
       {/* Sidebar - Fixed overlay on mobile; rendered cleanly above bottom bar */}
       <aside
         className={cn(
-          "flex flex-col border-r border-white/10 bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 backdrop-blur-xl transition-all duration-300 shrink-0",
+          "flex flex-col border-r border-border bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 backdrop-blur-xl transition-all duration-300 shrink-0",
           "fixed md:relative inset-y-0 left-0 z-[280] md:z-auto md:min-h-0",
           "h-[100dvh] md:h-full md:min-h-full",
           "overflow-hidden",
@@ -2783,7 +2783,7 @@ export default function Tasks() {
 
           {/* Search toggle */}
           {isSearchOpen ? (
-            <div className="flex items-center gap-1.5 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm pl-3 pr-1.5 h-9 w-[120px] sm:w-[200px] shrink-0 transition-all">
+            <div className="flex items-center gap-1.5 rounded-full border border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 backdrop-blur-md shadow-sm pl-3 pr-1.5 h-9 w-[120px] sm:w-[200px] shrink-0 transition-all">
               <Search size={14} className="text-muted-foreground shrink-0" />
               <input
                 ref={searchInputRef}
@@ -2805,7 +2805,7 @@ export default function Tasks() {
                   setSearchQuery('');
                   setIsSearchOpen(false);
                 }}
-                className="p-1 rounded-full hover:bg-white/20 dark:hover:bg-white/10 text-muted-foreground shrink-0"
+                className="p-1 rounded-full hover:bg-foreground/20 dark:hover:bg-foreground/10 text-muted-foreground shrink-0"
                 aria-label="Close search"
                 title="Close search"
               >
@@ -2819,7 +2819,7 @@ export default function Tasks() {
                 setIsSearchOpen(true);
                 requestAnimationFrame(() => searchInputRef.current?.focus());
               }}
-              className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90 shrink-0"
+              className="h-9 w-9 rounded-full border border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 backdrop-blur-md shadow-sm hover:bg-foreground/25 dark:hover:bg-foreground/10 transition-all flex items-center justify-center active:scale-90 shrink-0"
               title="Search tasks"
               aria-label="Search tasks"
             >
@@ -2835,7 +2835,7 @@ export default function Tasks() {
               "h-9 px-2.5 rounded-full border backdrop-blur-md shadow-sm transition-all flex items-center gap-1.5 text-xs font-medium shrink-0 active:scale-90",
               selectedTasks.length > 0 || unscheduledTasks.length > 0
                 ? "border-primary/25 bg-primary/10 hover:bg-primary/20 text-primary"
-                : "border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 hover:bg-white/25 dark:hover:bg-white/10 text-muted-foreground"
+                : "border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 hover:bg-foreground/25 dark:hover:bg-foreground/10 text-muted-foreground"
             )}
             title={
               selectedTasks.length > 0
@@ -2864,7 +2864,7 @@ export default function Tasks() {
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.95, x: 10 }}
                   transition={{ type: 'spring', duration: 0.25, stiffness: 450, damping: 28 }}
-                  className="absolute right-full mr-2 text-xs text-muted-foreground bg-secondary/80 dark:bg-[#1c1c1e]/85 backdrop-blur-md border border-border dark:border-white/10 px-2.5 py-1 rounded-lg whitespace-nowrap z-10 shadow-sm pointer-events-none"
+                  className="absolute right-full mr-2 text-xs text-muted-foreground bg-secondary/80 dark:bg-[#1c1c1e]/85 backdrop-blur-md border border-border dark:border-border px-2.5 py-1 rounded-lg whitespace-nowrap z-10 shadow-sm pointer-events-none"
                 >
                   {sortFeedback}
                 </motion.span>
@@ -2873,7 +2873,7 @@ export default function Tasks() {
             <button
               type="button"
               onClick={cycleSortMode}
-              className="h-9 w-9 rounded-full border border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 backdrop-blur-md shadow-sm hover:bg-white/25 dark:hover:bg-white/10 transition-all flex items-center justify-center active:scale-90"
+              className="h-9 w-9 rounded-full border border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 backdrop-blur-md shadow-sm hover:bg-foreground/25 dark:hover:bg-foreground/10 transition-all flex items-center justify-center active:scale-90"
               title={`Sort: ${currentSortOption.label} (press S to cycle)`}
               aria-label={`Cycle sort mode. Current: ${currentSortOption.label}`}
             >
@@ -2896,7 +2896,7 @@ export default function Tasks() {
               "h-9 px-2.5 rounded-full border transition-all flex items-center gap-1.5 text-xs font-medium shrink-0 active:scale-90",
               isSelectionMode
                 ? "border-primary bg-primary text-white"
-                : "border-white/20 dark:border-white/10 bg-white/15 dark:bg-white/5 hover:bg-white/25 dark:hover:bg-white/10 text-muted-foreground"
+                : "border-border dark:border-border bg-foreground/15 dark:bg-foreground/5 hover:bg-foreground/25 dark:hover:bg-foreground/10 text-muted-foreground"
             )}
             title={isSelectionMode ? "Cancel selection" : "Select tasks"}
             aria-label="Select tasks"
@@ -3120,8 +3120,9 @@ Return ONLY raw JSON.`;
                         }}
                         className="p-1 text-xs hover:bg-secondary rounded transition-colors text-muted-foreground hover:text-foreground shrink-0"
                         title="Parse with Bynara AI (Standard)"
+                        aria-label="Parse with AI"
                       >
-                        ✨
+                        <Sparkles size={16} />
                       </button>
                       <button
                         type="button"
@@ -3644,7 +3645,7 @@ Return ONLY raw JSON.`;
                     setIsAddingTask(true);
                     requestAnimationFrame(() => quickAddRef.current?.focus());
                   }}
-                  className="flex items-center gap-2.5 px-4 py-4 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors w-full active:bg-white/5 select-none text-left"
+                  className="flex items-center gap-2.5 px-4 py-4 text-[14px] font-semibold text-primary hover:text-primary/80 transition-colors w-full active:bg-foreground/5 select-none text-left"
                 >
                   <Plus size={16} />
                   <span>New Task</span>
@@ -4263,7 +4264,7 @@ Return ONLY raw JSON.`;
                 className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
               >
                 {/* Task Preview Card (Glassmorphism) */}
-                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-border dark:border-border backdrop-blur-2xl rounded-2xl p-4  text-left space-y-3">
                   <div className="flex items-start gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
@@ -4290,7 +4291,7 @@ Return ONLY raw JSON.`;
 
                   {/* Priority, Recurrence & Due Date badge */}
                   {(contextMenuTask.due_date || contextMenuTask.priority !== 'none' || contextMenuTask.recurrence !== 'none') && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-black/5 dark:border-white/5">
+                    <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-black/5 dark:border-border">
                       {contextMenuTask.priority !== 'none' && (
                         <span className={cn(
                           "text-[10px] px-2 py-0.5 rounded-full font-medium inline-flex items-center gap-1",
@@ -4324,7 +4325,7 @@ Return ONLY raw JSON.`;
 
                 {/* Options Menu (iOS styled rounded stack) */}
                 <div className="relative w-full z-10 mt-3">
-                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-left">
+                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-border dark:border-border backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden  text-left">
                     {/* Complete / Reopen Action */}
                     <button
                       type="button"
@@ -4335,8 +4336,8 @@ Return ONLY raw JSON.`;
                         setContextMenuTask(null);
                       }}
                       className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                        hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-foreground/15"
                       )}
                     >
                       <span>{contextMenuTask.is_completed ? 'Mark Uncompleted' : 'Mark Completed'}</span>
@@ -4354,8 +4355,8 @@ Return ONLY raw JSON.`;
                           setContextMenuTask(null);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Postpone 1 Hour</span>
@@ -4373,8 +4374,8 @@ Return ONLY raw JSON.`;
                           setShowSubmenu(true);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'subtasks-trigger' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'subtasks-trigger' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span className="flex items-center gap-1.5">
@@ -4403,8 +4404,8 @@ Return ONLY raw JSON.`;
                           }, 150);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'voice' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'voice' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Voice Dictate Task</span>
@@ -4425,8 +4426,8 @@ Return ONLY raw JSON.`;
                           }, 150);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Edit Details...</span>
@@ -4445,8 +4446,8 @@ Return ONLY raw JSON.`;
                           setContextMenuTask(null);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Won't Do</span>
@@ -4483,7 +4484,7 @@ Return ONLY raw JSON.`;
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-border dark:border-border "
                       >
                         <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-secondary/30 flex justify-between items-center">
                           <span>Subtasks</span>
@@ -4502,8 +4503,8 @@ Return ONLY raw JSON.`;
                                 setShowSubmenu(false);
                               }}
                               className={cn(
-                                "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground transition-colors",
-                                hoveredMenuAction === `subtask-${subtask.id}` && "bg-black/10 dark:bg-white/15"
+                                "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground transition-colors",
+                                hoveredMenuAction === `subtask-${subtask.id}` && "bg-black/10 dark:bg-foreground/15"
                               )}
                             >
                               <span className={cn(subtask.is_completed && "line-through text-muted-foreground")}>
@@ -4666,8 +4667,8 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
   return (
     <div
       className={cn(
-        "task-item group flex flex-col px-4 bg-transparent active:bg-white/5 transition-all duration-150 ease-out cursor-pointer select-none",
-        !isLast && "border-b border-white/10",
+        "task-item group flex flex-col px-4 bg-transparent active:bg-foreground/5 transition-all duration-150 ease-out cursor-pointer select-none",
+        !isLast && "border-b border-border",
         task?.is_completed && "opacity-45"
       )}
     >

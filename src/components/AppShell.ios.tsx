@@ -424,7 +424,7 @@ export function AppShell() {
         <aside
           className={cn(
             "md:hidden fixed z-[280] w-[min(20rem,85vw)] min-w-[16rem] flex flex-col transition-transform duration-250 ease-out will-change-transform transform-gpu rounded-[24px]",
-            "bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl",
+            "bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-border dark:border-border ",
             isMobileSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+24px)]"
           )}
           style={{ 
@@ -482,7 +482,6 @@ export function AppShell() {
                     <item.icon size={19} className="shrink-0" />
                     {showDot && (
                       <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                       </span>
                     )}
@@ -502,12 +501,11 @@ export function AppShell() {
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Sparkles size={19} className="shrink-0 text-primary animate-pulse" />
+                <Sparkles size={19} className="shrink-0 text-primary" />
                 <span className="min-w-0 break-words font-semibold">
                   {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
                 </span>
                 <span className="absolute top-2.5 right-3 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                 </span>
               </NavLink>
@@ -535,11 +533,11 @@ export function AppShell() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-white/10 bg-[#f9f9f9]/40 dark:bg-[#1c1c1e]/60 backdrop-blur-xl transition-all duration-300 ease-in-out",
+          "hidden md:flex flex-col border-r border-border bg-[#f9f9f9]/40 dark:bg-[#1c1c1e]/60 backdrop-blur-xl transition-all duration-300 ease-in-out",
           isSidebarCollapsed ? "w-16" : "w-64"
         )}
       >
-        <div className="flex h-14 items-center justify-between px-4 border-b border-white/10">
+        <div className="flex h-14 items-center justify-between px-4 border-b border-border">
           {!isSidebarCollapsed && <span className="text-xl font-bold tracking-tight">LifeOS</span>}
           <button
             onClick={toggleSidebar}
@@ -568,7 +566,6 @@ export function AppShell() {
                   <item.icon size={20} />
                   {showDot && (
                     <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
                     </span>
                   )}
@@ -579,7 +576,7 @@ export function AppShell() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/10">
+        <div className="p-4 border-t border-border">
           {showWrappedTakeover ? (
             <NavLink
               to="/analytics"
@@ -589,14 +586,13 @@ export function AppShell() {
                 isSidebarCollapsed && "justify-center px-2"
               )}
             >
-              <Sparkles size={28} className="shrink-0 text-primary animate-pulse" />
+              <Sparkles size={28} className="shrink-0 text-primary" />
               {!isSidebarCollapsed && (
                 <span className="font-semibold text-primary">
                   {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
                 </span>
               )}
               <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
               </span>
             </NavLink>
@@ -657,7 +653,7 @@ export function AppShell() {
             initial={{ opacity: 0, y: -2 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: "easeOut" }}
-            className="font-bold text-base tracking-tight select-none font-sans"
+            className="font-semibold text-[17px] select-none font-sans"
           >
             {getActiveTitle()}
           </motion.span>
@@ -666,7 +662,7 @@ export function AppShell() {
             <button
               data-tour="mobile-brain-dump"
               onClick={() => setIsBrainDumpOpen(true)}
-              className="w-9 h-9 flex items-center justify-center rounded-full bg-purple-500/10 border border-purple-500/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-purple-500/20 transition-all touch-manipulation text-purple-600 dark:text-purple-400"
+              className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary active:opacity-60 transition-opacity touch-manipulation text-primary"
               aria-label="Brain Dump"
               title="Cognitive Brain Dump"
             >
@@ -675,7 +671,7 @@ export function AppShell() {
             {showHeaderPlusButton && (
               <button
                 onClick={handleHeaderPlusClick}
-                className="w-9 h-9 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md shadow-sm active:scale-90 active:bg-primary/20 transition-all touch-manipulation"
+                className="w-9 h-9 flex items-center justify-center rounded-full bg-secondary active:opacity-60 transition-opacity touch-manipulation"
                 aria-label="Add"
               >
                 <Plus size={20} className="text-primary" />
@@ -734,25 +730,25 @@ export function AppShell() {
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                className="fixed bottom-0 left-0 right-0 z-50 bg-popover border-t border-border rounded-t-2xl p-4 space-y-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]"
+                className="fixed bottom-0 left-0 right-0 z-50 bg-background/90 backdrop-blur-xl rounded-t-[28px] p-4 space-y-3 pb-[calc(1rem+env(safe-area-inset-bottom))]"
               >
-                <div className="w-12 h-1 bg-muted-foreground/30 rounded-full mx-auto mb-2" />
-                <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground text-center mb-3">
+                <div className="w-9 h-1 bg-muted-foreground/40 rounded-full mx-auto mb-3" />
+                <h4 className="text-[13px] font-semibold text-muted-foreground text-center mb-3">
                   Quick Create
                 </h4>
-                
+                <div className="rounded-2xl bg-card overflow-hidden">
                 <button
                   type="button"
                   onClick={() => {
                     setShowQuickPlusMenu(false);
                     setIsBrainDumpOpen(true);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 font-semibold text-sm border border-purple-500/20 active:scale-98 transition-transform"
+                  className="w-full flex items-center gap-3 px-4 min-h-[44px] text-[17px] text-foreground active:bg-foreground/10 transition-colors text-left"
                 >
-                  <Brain size={20} className="animate-pulse" />
+                  <Brain size={22} className="text-primary" />
                   <span>Cognitive Brain Dump</span>
                 </button>
-
+                <div className="h-px bg-border ml-14" />
                 <button
                   type="button"
                   onClick={() => {
@@ -760,12 +756,12 @@ export function AppShell() {
                     navigate('/tasks?quickadd=true');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-task')), 100);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                  className="w-full flex items-center gap-3 px-4 min-h-[44px] text-[17px] text-foreground active:bg-foreground/10 transition-colors text-left"
                 >
-                  <Plus size={20} className="text-primary" />
+                  <Plus size={22} className="text-primary" />
                   <span>New Task</span>
                 </button>
-
+                <div className="h-px bg-border ml-14" />
                 <button
                   type="button"
                   onClick={() => {
@@ -773,12 +769,12 @@ export function AppShell() {
                     navigate('/habits');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-habit')), 100);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                  className="w-full flex items-center gap-3 px-4 min-h-[44px] text-[17px] text-foreground active:bg-foreground/10 transition-colors text-left"
                 >
-                  <Flame size={20} className="text-orange-500" />
+                  <Flame size={22} className="text-orange-500" />
                   <span>Log Habit</span>
                 </button>
-
+                <div className="h-px bg-border ml-14" />
                 <button
                   type="button"
                   onClick={() => {
@@ -786,12 +782,12 @@ export function AppShell() {
                     navigate('/finance');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-finance')), 100);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                  className="w-full flex items-center gap-3 px-4 min-h-[44px] text-[17px] text-foreground active:bg-foreground/10 transition-colors text-left"
                 >
-                  <Wallet size={20} className="text-emerald-500" />
+                  <Wallet size={22} className="text-emerald-500" />
                   <span>Add Transaction</span>
                 </button>
-
+                <div className="h-px bg-border ml-14" />
                 <button
                   type="button"
                   onClick={() => {
@@ -799,16 +795,16 @@ export function AppShell() {
                     navigate('/calendar');
                     setTimeout(() => window.dispatchEvent(new CustomEvent('app-trigger-add-calendar')), 100);
                   }}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl bg-secondary hover:bg-secondary/80 text-foreground font-medium text-sm border border-border active:scale-98 transition-transform"
+                  className="w-full flex items-center gap-3 px-4 min-h-[44px] text-[17px] text-foreground active:bg-foreground/10 transition-colors text-left"
                 >
-                  <Calendar size={20} className="text-blue-500" />
+                  <Calendar size={22} className="text-blue-500" />
                   <span>New Event</span>
                 </button>
-
+                </div>
                 <button
                   type="button"
                   onClick={() => setShowQuickPlusMenu(false)}
-                  className="w-full py-2 text-xs text-muted-foreground font-semibold"
+                  className="w-full min-h-[50px] rounded-2xl bg-card text-[17px] font-semibold text-primary active:bg-foreground/10 transition-colors"
                 >
                   Cancel
                 </button>
@@ -820,10 +816,9 @@ export function AppShell() {
         {/* Wrap Toast Notification */}
         {activeToast && (
           <div className="fixed bottom-[calc(100px+env(safe-area-inset-bottom))] md:bottom-6 right-4 left-4 md:left-auto md:w-96 z-[100] animate-in fade-in slide-in-from-bottom-5 duration-300">
-            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-xl p-4 shadow-2xl flex gap-3.5 items-start">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/5 to-transparent pointer-events-none" />
+            <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card/90 backdrop-blur-xl p-4  flex gap-3.5 items-start">
               <div className="p-2.5 rounded-xl bg-primary/10 text-primary shrink-0 relative">
-                <Sparkles size={20} className="animate-pulse" />
+                <Sparkles size={20} />
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="font-semibold text-sm text-foreground">

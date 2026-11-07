@@ -70,7 +70,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
 
       {/* Income / Expenses columns */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="bg-black/15 dark:bg-white/5 rounded-2xl p-3 border border-white/5">
+        <div className="bg-black/15 dark:bg-foreground/5 rounded-2xl p-3 border border-border">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
             <span className="text-[11px] text-muted-foreground">Income</span>
@@ -79,7 +79,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
             {formatCurrency(income)}
           </p>
         </div>
-        <div className="bg-black/15 dark:bg-white/5 rounded-2xl p-3 border border-white/5">
+        <div className="bg-black/15 dark:bg-foreground/5 rounded-2xl p-3 border border-border">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-1.5 h-1.5 rounded-full bg-red-400" />
             <span className="text-[11px] text-muted-foreground">Expenses</span>
@@ -92,12 +92,12 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
 
       {/* Progress bar */}
       <div className="space-y-1.5">
-        <div className="h-2 rounded-full bg-white/5 overflow-hidden border border-white/5">
+        <div className="h-2 rounded-full bg-foreground/5 overflow-hidden border border-border">
           <div
             className="h-full rounded-full"
             style={{
               width: `${Math.min(Math.max(incomeRatio, 0), 100)}%`,
-              background: 'linear-gradient(90deg, #22c55e, #16a34a)',
+              background: '#30d158',
               transition: 'width 0.6s ease',
             }}
           />

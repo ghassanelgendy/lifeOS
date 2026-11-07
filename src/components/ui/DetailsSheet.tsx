@@ -199,7 +199,7 @@ export function DetailsSheet({
       className={cn(
         'fixed inset-0 z-[110] font-sans text-foreground transition-opacity duration-200',
         'flex flex-col justify-end sm:justify-center sm:items-center sm:p-4',
-        isIOS ? 'bg-black/30 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
+        isIOS ? 'bg-black/40' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{
@@ -215,17 +215,18 @@ export function DetailsSheet({
       {/* Sheet panel: bottom slide sheet on mobile, centered modal dialog on desktop (sm:) */}
       <div
         className={cn(
-          'w-full max-w-lg mx-auto flex flex-col min-h-0 overflow-hidden isolate shadow-2xl transition-all',
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 overflow-hidden isolate transition-all',
+          !isIOS && 'shadow-2xl',
           'fixed inset-x-0 bottom-0 sm:relative sm:inset-auto sm:max-w-xl sm:max-h-[85vh] sm:rounded-2xl',
           isIOS
-            ? 'liquid-glass-card rounded-t-[24px] sm:rounded-2xl border-white/20 dark:border-white/10'
+            ? 'bg-background rounded-t-[28px] sm:rounded-[28px]'
             : 'rounded-t-[24px] sm:rounded-2xl border border-border bg-card'
         )}
         style={{
           // On mobile, pin to bottom and respect keyboard / safe-area; on desktop, relative modal
           bottom: 'var(--keyboard-height, 0px)',
           maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingBottom: isIOS ? 0 : 'env(safe-area-inset-bottom)',
           willChange: 'transform, opacity',
           transform: (typeof window !== 'undefined' && window.innerWidth >= 640)
             ? (sheetVisible ? 'none' : 'scale(0.96)')
@@ -284,7 +285,7 @@ export function DetailsSheet({
             onClick={onClose}
             className={cn(
               "sm:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg transition-colors touch-manipulation -ml-1 active:scale-95",
-              isIOS ? "text-muted-foreground hover:text-foreground hover:bg-white/10" : "hover:bg-secondary text-foreground"
+              isIOS ? "text-muted-foreground active:opacity-60" : "hover:bg-secondary text-foreground"
             )}
             aria-label="Close"
           >
@@ -295,7 +296,7 @@ export function DetailsSheet({
               flex flow on desktop, matching standard dialog conventions. */}
           <h1
             id="details-sheet-title"
-            className="text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12 sm:static sm:left-auto sm:translate-x-0 sm:px-0 sm:min-w-0"
+            className="text-[17px] sm:text-lg font-semibold text-foreground truncate absolute left-1/2 -translate-x-1/2 px-12 sm:static sm:left-auto sm:translate-x-0 sm:px-0 sm:min-w-0"
           >
             {title}
           </h1>
@@ -308,7 +309,7 @@ export function DetailsSheet({
             className={cn(
               "sm:hidden min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg disabled:opacity-50 disabled:pointer-events-none transition-colors touch-manipulation active:scale-95",
               isIOS
-                ? "bg-white/10 hover:bg-white/20 text-primary border border-white/10"
+                ? "text-primary active:opacity-60"
                 : "bg-primary text-primary-foreground hover:bg-primary/90"
             )}
             aria-label="Save"

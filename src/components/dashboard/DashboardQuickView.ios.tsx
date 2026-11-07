@@ -2131,7 +2131,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     transition={{ type: "spring", stiffness: 450, damping: 35 }}
-                    className="border-b border-white/10 last:border-b-0"
+                    className="border-b border-border last:border-b-0"
                   >
                     {item.element}
                   </motion.li>
@@ -2170,7 +2170,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 transition={{ type: 'spring', stiffness: 380, damping: 30 }}
                 className="relative z-10 w-full max-w-[290px] flex flex-col items-center select-none touch-none"
               >
-                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl p-4 shadow-2xl text-left space-y-3">
+                <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-border dark:border-border backdrop-blur-2xl rounded-2xl p-4  text-left space-y-3">
                   <div className="flex items-start gap-3">
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5",
@@ -2198,7 +2198,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
                 {/* Options Menu (iOS styled rounded stack) */}
                 <div className="relative w-full z-10 mt-3">
-                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-white/20 dark:border-white/10 backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden shadow-2xl text-left">
+                  <div className="w-full bg-[#f9f9f9]/85 dark:bg-[#1c1c1e]/85 border border-border dark:border-border backdrop-blur-2xl rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden  text-left">
                     {/* Complete / Reopen Action */}
                     <button
                       type="button"
@@ -2208,8 +2208,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         setContextMenuEntry(null);
                       }}
                       className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-white/15"
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                        hoveredMenuAction === 'toggle' && "bg-black/10 dark:bg-foreground/15"
                       )}
                     >
                       <span>{contextMenuDetails.isCompleted ? 'Mark Uncompleted' : 'Mark Completed'}</span>
@@ -2226,8 +2226,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           setContextMenuEntry(null);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'postpone' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Postpone 1 Hour</span>
@@ -2250,8 +2250,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                             setShowSubmenu(true);
                           }}
                           className={cn(
-                            "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                            hoveredMenuAction === 'subtasks-trigger' && "bg-black/10 dark:bg-white/15"
+                            "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                            hoveredMenuAction === 'subtasks-trigger' && "bg-black/10 dark:bg-foreground/15"
                           )}
                         >
                           <span className="flex items-center gap-1.5">
@@ -2284,8 +2284,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           }, 150);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'voice' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'voice' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Voice Dictate AI Task</span>
@@ -2303,8 +2303,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           setContextMenuEntry(null);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'edit' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>{contextMenuDetails.isHabit ? 'View Insights...' : 'View Details...'}</span>
@@ -2321,8 +2321,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         setContextMenuEntry(null);
                       }}
                       className={cn(
-                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                        hoveredMenuAction === 'copy-title' && "bg-black/10 dark:bg-white/15"
+                        "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                        hoveredMenuAction === 'copy-title' && "bg-black/10 dark:bg-foreground/15"
                       )}
                     >
                       <span>Copy Title</span>
@@ -2339,8 +2339,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                           setContextMenuEntry(null);
                         }}
                         className={cn(
-                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground active:bg-black/10 dark:active:bg-white/10 transition-colors",
-                          hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-white/15"
+                          "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground active:bg-black/10 dark:active:bg-foreground/10 transition-colors",
+                          hoveredMenuAction === 'wontdo' && "bg-black/10 dark:bg-foreground/15"
                         )}
                       >
                         <span>Won't Do</span>
@@ -2376,7 +2376,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: 20 }}
                         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-white/20 dark:border-white/10 shadow-2xl"
+                        className="absolute inset-0 bg-[#f9f9f9] dark:bg-[#1c1c1e] z-20 flex flex-col rounded-2xl divide-y divide-black/5 dark:divide-white/10 overflow-hidden border border-border dark:border-border "
                       >
                         <div className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/60 bg-secondary/30 flex justify-between items-center">
                           <span>Subtasks</span>
@@ -2399,8 +2399,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                                   setShowSubmenu(false);
                                 }}
                                 className={cn(
-                                  "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-white/5 text-foreground transition-colors",
-                                  hoveredMenuAction === `subtask-${subtask.id}` && "bg-black/10 dark:bg-white/15"
+                                  "w-full flex items-center justify-between px-4 py-3.5 text-sm font-medium hover:bg-black/5 dark:hover:bg-foreground/5 text-foreground transition-colors",
+                                  hoveredMenuAction === `subtask-${subtask.id}` && "bg-black/10 dark:bg-foreground/15"
                                 )}
                               >
                                 <span className={cn(subtask.is_completed && "line-through text-muted-foreground")}>

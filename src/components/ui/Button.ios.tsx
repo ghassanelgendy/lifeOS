@@ -21,7 +21,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             'bg-destructive text-destructive-foreground hover:bg-destructive/90': variant === 'destructive',
             'hover:bg-secondary hover:text-secondary-foreground': variant === 'ghost',
             'border border-border bg-transparent hover:bg-secondary': variant === 'outline',
-            'bg-secondary/45 dark:bg-white/5 backdrop-blur-md border border-border/40 dark:border-white/10 text-foreground hover:bg-secondary/70 dark:hover:bg-white/10 shadow-sm': variant === 'glass',
+            'bg-secondary/45 dark:bg-foreground/5 backdrop-blur-md border border-border/40 dark:border-border text-foreground hover:bg-secondary/70 dark:hover:bg-foreground/10 shadow-sm': variant === 'glass',
             // Sizes – touch-friendly min 44px on mobile (via min-h)
             'min-h-[44px] h-8 px-3 text-xs md:min-h-0': size === 'sm',
             'min-h-[44px] h-10 px-4 text-sm md:min-h-0': size === 'md',

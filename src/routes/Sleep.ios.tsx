@@ -234,7 +234,7 @@ export default function Sleep() {
           </div>
           <Button
             size="sm"
-            className="gap-2 bg-indigo-600 hover:bg-indigo-500 text-white mx-auto shadow-lg shadow-indigo-600/20"
+            className="gap-2 bg-indigo-500 active:opacity-80 text-white mx-auto"
             onClick={() => setShowSyncModal(true)}
           >
             <Zap size={15} />
@@ -302,7 +302,7 @@ export default function Sleep() {
                   </div>
 
                   {/* Stage Metrics Grid */}
-                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-white/5">
+                  <div className="grid grid-cols-4 gap-2 pt-2 border-t border-border">
                     <div className="text-left">
                       <div className="flex items-center gap-1 text-[11px] text-muted-foreground font-medium">
                         <span className="w-2 h-2 rounded-full" style={{ background: STAGE_COLORS.Deep }} />
@@ -413,7 +413,7 @@ export default function Sleep() {
                 </div>
                 
                 {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake && (
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+                  <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
                     <span className="text-muted-foreground">Typical Window</span>
                     <span className="font-semibold text-foreground">
                       {format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – {format(weeklyAvgWindow.avgWake, 'h:mm a')}
@@ -428,7 +428,7 @@ export default function Sleep() {
             return (
               <div key="timeline" className="liquid-glass-card p-5 rounded-2xl animate-in fade-in duration-300">
                 <h2 className="text-sm font-semibold mb-3">Sleep Stages Timeline</h2>
-                <div className="h-14 rounded-xl overflow-hidden flex bg-black/20 dark:bg-white/5 ring-1 ring-inset ring-white/5">
+                <div className="h-14 rounded-xl overflow-hidden flex bg-black/20 dark:bg-foreground/5 ring-1 ring-inset ring-white/5">
                   {active.segments.map((seg, idx) => (
                     <div
                       key={`${seg.started_at}-${idx}`}
@@ -445,7 +445,7 @@ export default function Sleep() {
                   <span>{format(active.bedtime, 'h:mm a')}</span>
                   <span>{format(active.waketime, 'h:mm a')}</span>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-white/5">
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-4 pt-3 border-t border-border">
                   {Object.entries(STAGE_COLORS).map(([name, color]) => (
                     <div key={name} className="flex items-center gap-1.5 text-xs font-medium">
                       <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: color }} />
@@ -504,7 +504,7 @@ export default function Sleep() {
               <div key="sessions" className="liquid-glass-card p-5 md:p-6 animate-in fade-in duration-300">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold">Recent Sessions</h2>
-                  <div className="flex bg-black/10 dark:bg-white/5 border border-white/5 rounded-xl p-0.5">
+                  <div className="flex bg-black/10 dark:bg-foreground/5 border border-border rounded-xl p-0.5">
                     <button
                       type="button"
                       onClick={() => setSessionLimit(7)}
@@ -534,7 +534,7 @@ export default function Sleep() {
                       key={s.key}
                       onClick={() => setSelectedSession(s)}
                       className={cn(
-                        "w-full text-left rounded-xl border border-white/5 bg-black/10 dark:bg-white/5 p-4 transition-all hover:bg-black/20 dark:hover:bg-white/10",
+                        "w-full text-left rounded-xl border border-border bg-black/10 dark:bg-foreground/5 p-4 transition-all hover:bg-black/20 dark:hover:bg-foreground/10",
                         s.key === active?.key && "ring-1 ring-inset ring-primary/45 bg-primary/10 border-transparent"
                       )}
                     >
@@ -584,7 +584,7 @@ export default function Sleep() {
                   </p>
                 </div>
                 
-                <div className="flex items-center gap-4 pt-4 border-t border-white/5">
+                <div className="flex items-center gap-4 pt-4 border-t border-border">
                   <div className="flex-1">
                     <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Efficiency</p>
                     <p className="text-lg font-bold">{pct(selectedSession.sleepMinutes, selectedSession.totalMinutes)}%</p>
@@ -599,7 +599,7 @@ export default function Sleep() {
 
             <div className="liquid-glass-card p-5 md:p-6">
               <h2 className="text-lg font-semibold mb-6">Sleep Stages Timeline</h2>
-              <div className="h-20 rounded-xl overflow-hidden flex bg-black/15 dark:bg-white/5 ring-1 ring-inset ring-white/5">
+              <div className="h-20 rounded-xl overflow-hidden flex bg-black/15 dark:bg-foreground/5 ring-1 ring-inset ring-white/5">
                 {selectedSession.segments.map((seg, idx) => (
                   <div
                     key={`${seg.started_at}-${idx}`}
@@ -616,10 +616,10 @@ export default function Sleep() {
                 <span>{format(selectedSession.bedtime, 'h:mm a')}</span>
                 <span>{format(selectedSession.waketime, 'h:mm a')}</span>
               </div>
-              <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-white/5">
+              <div className="flex flex-wrap items-center gap-4 mt-6 pt-4 border-t border-border">
                 {Object.entries(STAGE_COLORS).map(([name, color]) => (
                   <div key={name} className="flex items-center gap-2 text-xs font-semibold">
-                    <span className="w-2.5 h-2.5 rounded-full shadow-sm animate-pulse" style={{ background: color }} />
+                    <span className="w-2.5 h-2.5 rounded-full shadow-sm" style={{ background: color }} />
                     <span className="text-foreground">{name}</span>
                   </div>
                 ))}

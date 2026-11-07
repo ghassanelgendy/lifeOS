@@ -955,7 +955,7 @@ Return ONLY raw JSON object.`;
       </div>
 
       {/* Tabs - iOS Segmented Control Track */}
-      <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 gap-1">
+      <div className="flex p-1 rounded-xl bg-black/10 dark:bg-foreground/5 border border-border gap-1">
         {(['transactions', 'banks', 'investments'] as const).map((tab) => (
           <button
             key={tab}
@@ -1062,7 +1062,7 @@ Return ONLY raw JSON object.`;
                       "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
                       selectedBank === '' 
                         ? "text-primary bg-primary/5" 
-                        : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                        : "text-foreground hover:bg-black/5 dark:hover:bg-foreground/5",
                       bankOptions.length > 0 && "border-b border-black/[0.04] dark:border-white/[0.04]"
                     )}
                   >
@@ -1085,7 +1085,7 @@ Return ONLY raw JSON object.`;
                           "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
                           isSelected 
                             ? "text-primary bg-primary/5" 
-                            : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                            : "text-foreground hover:bg-black/5 dark:hover:bg-foreground/5",
                           index !== bankOptions.length - 1 && "border-b border-black/[0.04] dark:border-white/[0.04]"
                         )}
                       >
@@ -1127,7 +1127,7 @@ Return ONLY raw JSON object.`;
                           "w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
                           isSelected 
                             ? "text-primary bg-primary/5" 
-                            : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                            : "text-foreground hover:bg-black/5 dark:hover:bg-foreground/5",
                           index !== 2 && "border-b border-black/[0.04] dark:border-white/[0.04]"
                         )}
                       >
@@ -1158,7 +1158,7 @@ Return ONLY raw JSON object.`;
         {/* Chart card with iOS-style graph type selector */}
         <div className="liquid-glass-card p-5 overflow-hidden">
           {/* iOS-style segmented control */}
-          <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 gap-1 mb-4">
+          <div className="flex p-1 rounded-xl bg-black/10 dark:bg-foreground/5 border border-border gap-1 mb-4">
             {(['category', 'overtime', 'accounts'] as const).map((type) => {
               if (type === 'accounts' && selectedBank !== '') return null;
               return (
@@ -1348,7 +1348,7 @@ Return ONLY raw JSON object.`;
                     </span>
                   </div>
                   {/* Glass Progress Bar */}
-                  <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden relative border border-white/5">
+                  <div className="h-2 w-full rounded-full bg-foreground/5 overflow-hidden relative border border-border">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
@@ -1401,9 +1401,9 @@ Return ONLY raw JSON object.`;
           </div>
         </div>
         {viewAllTransactions && (
-          <div className="px-4 pb-3 border-b border-white/5 flex flex-wrap items-center gap-2">
+          <div className="px-4 pb-3 border-b border-border flex flex-wrap items-center gap-2">
             <span className="text-xs text-muted-foreground">Filter:</span>
-            <div className="flex p-0.5 rounded-lg bg-black/10 dark:bg-white/5 border border-white/5 gap-0.5">
+            <div className="flex p-0.5 rounded-lg bg-black/10 dark:bg-foreground/5 border border-border gap-0.5">
               {(['all', 'month', 'day'] as const).map((mode) => (
                 <button
                   key={mode}
@@ -1425,7 +1425,7 @@ Return ONLY raw JSON object.`;
                 type="month"
                 value={filterMonth}
                 onChange={(e) => setFilterMonth(e.target.value)}
-                className="bg-black/15 dark:bg-white/5 border border-white/5 rounded-lg px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none cursor-pointer"
+                className="bg-black/15 dark:bg-foreground/5 border border-border rounded-lg px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none cursor-pointer"
               />
             )}
             {dateFilterMode === 'day' && (
@@ -1433,7 +1433,7 @@ Return ONLY raw JSON object.`;
                 type="date"
                 value={filterDay}
                 onChange={(e) => setFilterDay(e.target.value)}
-                className="bg-black/15 dark:bg-white/5 border border-white/5 rounded-lg px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none cursor-pointer"
+                className="bg-black/15 dark:bg-foreground/5 border border-border rounded-lg px-2.5 py-1 text-xs font-medium text-foreground focus:outline-none cursor-pointer"
               />
             )}
             <Input
@@ -1441,7 +1441,7 @@ Return ONLY raw JSON object.`;
               placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full sm:w-auto sm:min-w-[180px] bg-black/15 dark:bg-white/5 border-white/5 text-xs h-7 min-h-7"
+              className="w-full sm:w-auto sm:min-w-[180px] bg-black/15 dark:bg-foreground/5 border-border text-xs h-7 min-h-7"
             />
             <span className="text-xs text-muted-foreground">
               {displayedTransactions.length} tx
@@ -1869,7 +1869,7 @@ Return ONLY raw JSON object.`;
             {bankOptions.map((bankName) => {
               const stats = perBankStats[bankName] ?? { cashIn: 0, cashOut: 0, cashflow: 0 };
               return (
-                <div key={bankName} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3.5 px-4 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5">
+                <div key={bankName} className="flex flex-col sm:flex-row sm:items-center gap-3 py-3.5 px-4 rounded-xl bg-black/10 dark:bg-foreground/5 border border-border">
                   <span className="font-semibold text-sm shrink-0 w-24">{bankName}</span>
                   <div className="flex flex-wrap gap-4 sm:ml-auto">
                     <div>
@@ -1927,8 +1927,8 @@ Return ONLY raw JSON object.`;
                   type="button"
                   onClick={() => setIsPlatformManagerOpen((v) => !v)}
                   className={cn(
-                    "h-8 px-2 rounded-lg border border-white/10 flex items-center gap-1 text-xs font-medium transition-colors shrink-0",
-                    isPlatformManagerOpen ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                    "h-8 px-2 rounded-lg border border-border flex items-center gap-1 text-xs font-medium transition-colors shrink-0",
+                    isPlatformManagerOpen ? "bg-foreground/10 text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-foreground/5"
                   )}
                   aria-pressed={isPlatformManagerOpen}
                   title="Manage investment platforms"
@@ -1965,7 +1965,7 @@ Return ONLY raw JSON object.`;
                   ) : (
                     <div className="space-y-2">
                       {investmentAccounts.map((account) => (
-                        <div key={account.id} className="flex items-center justify-between rounded-lg border border-white/10 p-2.5 gap-2">
+                        <div key={account.id} className="flex items-center justify-between rounded-lg border border-border p-2.5 gap-2">
                           {editingPlatformId === account.id ? (
                             <>
                               <Input
@@ -2032,7 +2032,7 @@ Return ONLY raw JSON object.`;
                 </div>
               </div>
               <div className="liquid-glass-card overflow-hidden">
-                <div className="p-4 border-b border-white/5">
+                <div className="p-4 border-b border-border">
                   <h2 className="font-semibold text-sm">Investment Transactions</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">Your investment platforms — separate from your main finances</p>
                 </div>
@@ -2046,7 +2046,7 @@ Return ONLY raw JSON object.`;
                         ? INCOME_CATEGORIES.find((c) => c.value === tx.category)?.label
                         : EXPENSE_CATEGORIES.find((c) => c.value === tx.category)?.label;
                       return (
-                        <div key={tx.id} className="p-4 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                        <div key={tx.id} className="p-4 flex items-center gap-3 hover:bg-black/5 dark:hover:bg-foreground/5 transition-colors">
                           <div className={cn(
                             "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0",
                             tx.type === 'income' ? "bg-green-500/10" : "bg-red-500/10"
@@ -2062,7 +2062,7 @@ Return ONLY raw JSON object.`;
                                   tx.transaction_type === 'Profit' && "bg-green-500/15 text-green-500",
                                   tx.transaction_type === 'Loss' && "bg-red-500/15 text-red-500",
                                   tx.transaction_type === 'Correction' && "bg-amber-500/15 text-amber-500",
-                                  (tx.transaction_type === 'Deposit' || tx.transaction_type === 'Withdrawal') && "bg-white/10 text-muted-foreground"
+                                  (tx.transaction_type === 'Deposit' || tx.transaction_type === 'Withdrawal') && "bg-foreground/10 text-muted-foreground"
                                 )}>
                                   {tx.transaction_type}
                                 </span>

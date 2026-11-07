@@ -398,7 +398,7 @@ export default function Habits() {
 
   const getStreakNode = (streak: number, size = 14) => {
     if (streak === 0) return <Flame size={size} className="text-muted-foreground opacity-50" />;
-    if (streak >= 14) return <Flame size={size} className="text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.8)] animate-pulse" />;
+    if (streak >= 14) return <Flame size={size} className="text-red-500" />;
     if (streak >= 7) return <Flame size={size} className="text-orange-500 drop-shadow-[0_0_2px_rgba(249,115,22,0.5)]" />;
     return <Flame size={size} className="text-amber-500" />;
   };
@@ -613,7 +613,7 @@ export default function Habits() {
       {/* Prayer + Prayer Backlog + Qadaa — collapsible; default state from Settings */}
       <div {...getDesktopSectionProps('prayer')}>
       <div className="liquid-glass-card overflow-hidden">
-        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-secondary/20 border-b border-white/10 flex-wrap">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 bg-secondary/20 border-b border-border flex-wrap">
           <button
             type="button"
             onClick={() => setPrayerSectionExpanded((v) => !v)}
@@ -628,7 +628,7 @@ export default function Habits() {
           </button>
 
           {prayerSectionExpanded && (
-            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-white/10 text-xs font-medium">
+            <div className="flex items-center bg-muted/60 p-1 rounded-xl border border-border text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setPrayerViewTab('daily')}
@@ -700,7 +700,7 @@ export default function Habits() {
                     return (
                       <div
                         key={habit.id}
-                        className={cn("py-3 flex flex-col gap-2 bg-transparent", !isLast && "border-b border-white/10")}
+                        className={cn("py-3 flex flex-col gap-2 bg-transparent", !isLast && "border-b border-border")}
                       >
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <div className="flex items-center gap-2 min-w-0 flex-wrap">
@@ -852,7 +852,7 @@ export default function Habits() {
                         key={day.toISOString()}
                         className={cn(
                           "p-2 text-center min-w-[60px]",
-                          isToday(day) && "bg-white/5 rounded-t-lg"
+                          isToday(day) && "bg-foreground/5 rounded-t-lg"
                         )}
                       >
                         <div className="text-xs text-muted-foreground">{format(day, 'EEE')}</div>
@@ -887,8 +887,8 @@ export default function Habits() {
                         const detoxConfig = getDetoxConfig(habit);
                         const detoxTarget = detoxConfig ? computeDetoxTarget(detoxConfig, habit.created_at) : null;
                         return (
-                          <tr key={habit.id} className="group hover:bg-white/5 transition-colors">
-                            <td className="p-3 border-b border-white/10 relative">
+                          <tr key={habit.id} className="group hover:bg-foreground/5 transition-colors">
+                            <td className="p-3 border-b border-border relative">
                               <div className="absolute left-0 top-2 bottom-2 w-1 rounded-full" style={{ backgroundColor: habit.color }} />
                               <div className="flex items-center gap-3 pl-2">
                                 <div className="min-w-0">
@@ -950,8 +950,8 @@ export default function Habits() {
                                  <td
                                    key={day.toISOString()}
                                    className={cn(
-                                     "p-2 text-center border-b border-white/10",
-                                     isToday(day) && "bg-white/5"
+                                     "p-2 text-center border-b border-border",
+                                     isToday(day) && "bg-foreground/5"
                                    )}
                                  >
                                    <button
@@ -991,7 +991,7 @@ export default function Habits() {
                                  </td>
                                );
                              })}
-                            <td className="p-2 text-center border-b border-white/10">
+                            <td className="p-2 text-center border-b border-border">
                               <div className="flex flex-col items-center justify-center gap-1 font-bold">
                                 {stats.streak === 0 && !isDetox && (rescuableStreaks[habit.id] ?? 0) > 0 ? (
                                   <>
@@ -1066,19 +1066,19 @@ export default function Habits() {
                             <div
                               key={habit.id}
                               onClick={() => handleToggleHabit(habit)}
-                              className="flex items-center gap-4 px-4 bg-transparent active:bg-white/5 cursor-pointer transition-colors select-none"
+                              className="flex items-center gap-4 px-4 bg-transparent active:bg-foreground/5 cursor-pointer transition-colors select-none"
                             >
                               <div
                                 className={cn(
                                   "w-10 h-10 rounded-full flex items-center justify-center transition-all flex-shrink-0 mt-0.5",
                                   isDetox
                                     ? "border-2 border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-500"
-                                    : "border border-white/20 bg-background/50 hover:border-primary/50"
+                                    : "border border-border bg-background/50 hover:border-primary/50"
                                 )}
                               >
                                 <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/35" />
                               </div>
-                              <div className={cn("flex-1 min-w-0 py-4 flex items-center justify-between gap-4", !isLast && "border-b border-white/10")}>
+                              <div className={cn("flex-1 min-w-0 py-4 flex items-center justify-between gap-4", !isLast && "border-b border-border")}>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h3
@@ -1210,7 +1210,7 @@ export default function Habits() {
                             <div
                               key={habit.id}
                               onClick={() => handleToggleHabit(habit)}
-                              className="flex items-center gap-4 px-4 bg-transparent active:bg-white/5 cursor-pointer transition-colors select-none"
+                              className="flex items-center gap-4 px-4 bg-transparent active:bg-foreground/5 cursor-pointer transition-colors select-none"
                             >
                               <div
                                 className={cn(
@@ -1220,7 +1220,7 @@ export default function Habits() {
                               >
                                 <Check size={20} />
                               </div>
-                              <div className={cn("flex-1 min-w-0 py-4 flex items-center justify-between gap-4", !isLast && "border-b border-white/10")}>
+                              <div className={cn("flex-1 min-w-0 py-4 flex items-center justify-between gap-4", !isLast && "border-b border-border")}>
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-center gap-2 flex-wrap">
                                     <h3 className={cn(

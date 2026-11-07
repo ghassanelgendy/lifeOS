@@ -709,7 +709,7 @@ import { useQueryClient } from '@tanstack/react-query';
                           "w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium transition-colors text-left relative z-10 cursor-pointer bg-transparent border-0",
                           isSelected 
                             ? "text-primary bg-primary/5" 
-                            : "text-foreground hover:bg-black/5 dark:hover:bg-white/5",
+                            : "text-foreground hover:bg-black/5 dark:hover:bg-foreground/5",
                           index !== 6 && "border-b border-black/[0.04] dark:border-white/[0.04]"
                         )}
                       >
@@ -732,7 +732,7 @@ import { useQueryClient } from '@tanstack/react-query';
               <span className="text-sm font-semibold">Custom Range</span>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 bg-black/15 dark:bg-white/5 rounded-lg px-3 py-1.5 border border-white/5 shadow-inner">
+              <div className="flex items-center gap-2 bg-black/15 dark:bg-foreground/5 rounded-lg px-3 py-1.5 border border-border shadow-inner">
                 <label htmlFor="screentime-custom-start" className="text-xs text-muted-foreground">Start</label>
                 <input
                   id="screentime-custom-start"
@@ -744,7 +744,7 @@ import { useQueryClient } from '@tanstack/react-query';
                 />
               </div>
               <span className="text-muted-foreground text-sm" aria-hidden>–</span>
-              <div className="flex items-center gap-2 bg-black/15 dark:bg-white/5 rounded-lg px-3 py-1.5 border border-white/5 shadow-inner">
+              <div className="flex items-center gap-2 bg-black/15 dark:bg-foreground/5 rounded-lg px-3 py-1.5 border border-border shadow-inner">
                 <label htmlFor="screentime-custom-end" className="text-xs text-muted-foreground">End</label>
                 <input
                   id="screentime-custom-end"
@@ -1089,7 +1089,7 @@ import { useQueryClient } from '@tanstack/react-query';
                       </span>
                     </div>
                     {/* Glass Progress Bar */}
-                    <div className="h-2 w-full rounded-full bg-white/5 overflow-hidden relative border border-white/5">
+                    <div className="h-2 w-full rounded-full bg-foreground/5 overflow-hidden relative border border-border">
                       {/* Windows Segment */}
                       <div 
                         className="h-full bg-primary absolute left-0 top-0 transition-all duration-500 rounded-l-full"
@@ -1199,7 +1199,7 @@ import { useQueryClient } from '@tanstack/react-query';
         {/* Apps (with source/platform) — See more shows all */}
         {allAppsSorted.length > 0 && (
           <div className="liquid-glass-card overflow-hidden">
-            <div className="p-6 border-b border-white/10 space-y-4 bg-transparent">
+            <div className="p-6 border-b border-border space-y-4 bg-transparent">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h2 className="text-lg font-semibold">Apps</h2>
@@ -1264,13 +1264,13 @@ import { useQueryClient } from '@tanstack/react-query';
               {appsToShow.length > 0 ? appsToShow.map((app, idx) => {
                 const isLast = idx === appsToShow.length - 1;
                 return (
-                  <div key={idx} className="flex items-center gap-3.5 px-4 bg-transparent hover:bg-white/5 active:bg-white/5 transition-all select-none">
+                  <div key={idx} className="flex items-center gap-3.5 px-4 bg-transparent hover:bg-foreground/5 active:bg-foreground/5 transition-all select-none">
                     <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 my-3.5">
                       <Monitor size={18} className="text-primary" />
                     </div>
                     <div className={cn(
                       "flex-1 flex items-center justify-between min-w-0 py-3.5",
-                      !isLast && "border-b border-white/10"
+                      !isLast && "border-b border-border"
                     )}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -1306,7 +1306,7 @@ import { useQueryClient } from '@tanstack/react-query';
         {/* Top Websites (with source/platform) */}
         {topWebsites.length > 0 && (
           <div className="liquid-glass-card overflow-hidden">
-            <div className="p-6 border-b border-white/10 bg-transparent">
+            <div className="p-6 border-b border-border bg-transparent">
               <h2 className="text-lg font-semibold">Top Websites</h2>
               <p className="text-sm text-muted-foreground">Source (iOS, Windows, Linux) shown per site</p>
             </div>
@@ -1314,7 +1314,7 @@ import { useQueryClient } from '@tanstack/react-query';
               {topWebsites.map((site, idx) => {
                 const isLast = idx === topWebsites.length - 1;
                 return (
-                  <div key={idx} className="flex items-center gap-3.5 px-4 bg-transparent hover:bg-white/5 active:bg-white/5 transition-all select-none">
+                  <div key={idx} className="flex items-center gap-3.5 px-4 bg-transparent hover:bg-foreground/5 active:bg-foreground/5 transition-all select-none">
                     {site.favicon_url ? (
                       <img
                         src={site.favicon_url}
@@ -1331,7 +1331,7 @@ import { useQueryClient } from '@tanstack/react-query';
                     )}
                     <div className={cn(
                       "flex-1 flex items-center justify-between min-w-0 py-3.5",
-                      !isLast && "border-b border-white/10"
+                      !isLast && "border-b border-border"
                     )}>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">

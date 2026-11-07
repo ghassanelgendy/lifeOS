@@ -158,7 +158,7 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       data-lifeos-modal
       className={cn(
         'fixed inset-0 z-[110] font-sans text-foreground transition-opacity duration-200 flex flex-col justify-end sm:justify-center sm:items-center sm:p-4',
-        isIOS ? 'bg-black/35 backdrop-blur-md' : 'bg-black/50 backdrop-blur-sm',
+        isIOS ? 'bg-black/40' : 'bg-black/50 backdrop-blur-sm',
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{
@@ -171,18 +171,17 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
       <div
         ref={panelRef}
         className={cn(
-          'w-full max-w-lg mx-auto flex flex-col min-h-0 shadow-2xl overflow-hidden isolate sm:relative sm:bottom-auto sm:max-h-[85vh]',
-          'rounded-t-[24px] sm:rounded-2xl',
+          'w-full max-w-lg mx-auto flex flex-col min-h-0 overflow-hidden isolate sm:relative sm:bottom-auto sm:max-h-[85vh]',
           isIOS
-            ? 'liquid-glass-card border-white/20 dark:border-white/10'
-            : 'bg-card border border-border',
+            ? 'rounded-t-[28px] sm:rounded-[28px] bg-background'
+            : 'shadow-2xl rounded-t-[24px] sm:rounded-2xl bg-card border border-border',
           className
         )}
         style={{
           position: 'relative',
           bottom: 'var(--keyboard-height, 0px)',
           maxHeight: 'calc(92dvh - var(--keyboard-height, 0px))',
-          paddingBottom: 'env(safe-area-inset-bottom)',
+          paddingBottom: isIOS ? 0 : 'env(safe-area-inset-bottom)',
           transform: (typeof window !== 'undefined' && window.innerWidth >= 640)
             ? (sheetVisible ? 'none' : 'scale(0.96)')
             : (dragY > 0
@@ -230,16 +229,17 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
           <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-muted-foreground/40 sm:hidden" />
           <div className={cn(
             'flex items-center justify-between p-4',
-            isIOS ? 'border-b border-black/5 dark:border-white/10 bg-transparent' : 'border-b border-border bg-card'
+            isIOS ? 'border-b border-border bg-transparent' : 'border-b border-border bg-card'
           )}>
-            <h2 className="text-lg font-semibold truncate pr-8">{title}</h2>
+            <h2 className={cn('font-semibold truncate pr-8', isIOS ? 'text-[17px]' : 'text-lg')}>{title}</h2>
             <button
               onClick={onClose}
+              aria-label="Close"
               className={cn(
-                'p-1 rounded-full transition-all touch-manipulation absolute right-3 top-3 active:scale-95',
+                'rounded-full transition-all touch-manipulation absolute active:scale-95',
                 isIOS
-                  ? 'text-muted-foreground hover:text-foreground hover:bg-white/10'
-                  : 'hover:bg-secondary text-foreground'
+                  ? 'right-1 top-1 size-11 flex items-center justify-center text-muted-foreground active:opacity-60'
+                  : 'p-1 right-3 top-3 hover:bg-secondary text-foreground'
               )}
             >
               <X size={20} />

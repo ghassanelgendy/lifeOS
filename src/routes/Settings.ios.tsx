@@ -841,7 +841,7 @@ export default function SettingsPage() {
               {shortcutModal.type === 'sms' ? (
                 <>
                   <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                    <p className="font-semibold text-emerald-400">⚡ Autonomous iOS Personal Automation</p>
+                    <p className="font-semibold text-emerald-400">Autonomous iOS Personal Automation</p>
                     <p className="text-muted-foreground leading-relaxed">
                       Whenever your bank (CIB, NBE, QNB, Vodafone Cash, etc.) texts you an expense or transfer, iOS automatically forwards it to LifeOS AI to parse and record without opening the app!
                     </p>
@@ -878,7 +878,7 @@ export default function SettingsPage() {
               ) : shortcutModal.type === 'sleep' ? (
                 <>
                   <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
-                    <p className="font-semibold text-indigo-400">🛌 Apple Watch & Health Sleep Sync</p>
+                    <p className="font-semibold text-indigo-400">Apple Watch & Health Sleep Sync</p>
                     <p className="text-muted-foreground leading-relaxed">
                       Every morning upon wake-up or alarm turn-off, your Apple Watch sleep stages (Core, Deep, REM) sync straight to LifeOS.
                     </p>
@@ -1051,7 +1051,7 @@ export default function SettingsPage() {
                         )}
                       >
                         <span
-                          className="w-8 h-8 rounded-full shrink-0 border-2 border-white/20 shadow-inner"
+                          className="w-8 h-8 rounded-full shrink-0 border-2 border-border shadow-inner"
                           style={{ backgroundColor: swatchColor }}
                         />
                         <span className="text-xs font-medium">{ACCENT_THEME_LABELS[accent as AccentTheme]}</span>
@@ -1532,8 +1532,8 @@ export default function SettingsPage() {
                     variant="outline"
                     onClick={() =>
                       sendTestNotification()
-                        .then(() => setLocalNotifStatus('✅ Check in 5 sec!'))
-                        .catch((e) => setLocalNotifStatus(`❌ ${e?.message ?? 'Failed'}`))
+                        .then(() => setLocalNotifStatus('Check in 5 sec'))
+                        .catch((e) => setLocalNotifStatus(`Failed: ${e?.message ?? 'unknown error'}`))
                     }
                   >
                     Test
@@ -1543,7 +1543,7 @@ export default function SettingsPage() {
               {localNotifStatus && (
                 <p className={cn(
                   'text-sm px-3 py-2 rounded-lg',
-                  localNotifStatus.startsWith('❌') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+                  localNotifStatus.startsWith('Failed') ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
                 )}>
                   {localNotifStatus}
                 </p>

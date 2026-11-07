@@ -759,7 +759,7 @@ export default function CalendarPage() {
       {/* Calendar Navigation */}
       <div className="space-y-3">
         {/* iOS-style Segmented View Controls */}
-        <div className="flex p-1 rounded-xl bg-black/10 dark:bg-white/5 border border-white/5 gap-1 w-full sm:w-fit">
+        <div className="flex p-1 rounded-xl bg-black/10 dark:bg-foreground/5 border border-border gap-1 w-full sm:w-fit">
           <button
             type="button"
             onClick={() => setShowTasksInCalendar(!showTasksInCalendar)}
@@ -800,11 +800,11 @@ export default function CalendarPage() {
         </div>
 
         {/* Date Selector Banner Control */}
-        <div className="flex items-center justify-between bg-black/10 dark:bg-white/5 border border-white/5 rounded-xl p-1.5">
+        <div className="flex items-center justify-between bg-black/10 dark:bg-foreground/5 border border-border rounded-xl p-1.5">
           <button
             type="button"
             onClick={goToPrevious}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1.5 rounded-lg hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronLeft size={18} />
           </button>
@@ -818,7 +818,7 @@ export default function CalendarPage() {
           <button
             type="button"
             onClick={goToNext}
-            className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-foreground transition-colors"
+            className="p-1.5 rounded-lg hover:bg-foreground/5 text-muted-foreground hover:text-foreground transition-colors"
           >
             <ChevronRight size={18} />
           </button>
@@ -831,7 +831,7 @@ export default function CalendarPage() {
           {view === 'day' ? (
             <div className="liquid-glass-card p-4">
               {dayAllDayEvents.length > 0 && (
-                <div className="mb-4 rounded-xl border border-white/5 bg-black/10 dark:bg-white/5 p-3">
+                <div className="mb-4 rounded-xl border border-border bg-black/10 dark:bg-foreground/5 p-3">
                   <p className="text-xs font-medium text-muted-foreground uppercase mb-2">All Day</p>
                   <div className="space-y-1.5">
                     {dayAllDayEvents.map((event) => {
@@ -853,10 +853,10 @@ export default function CalendarPage() {
                   </div>
                 </div>
               )}
-              <div className="relative h-[72vh] overflow-y-auto rounded-xl border border-white/5 bg-black/5 dark:bg-white/2">
+              <div className="relative h-[72vh] overflow-y-auto rounded-xl border border-border bg-black/5 dark:bg-foreground/2">
                 <div className="relative min-h-[1440px]">
                   {Array.from({ length: 24 }).map((_, hour) => (
-                    <div key={hour} className="absolute left-0 right-0 border-t border-white/5" style={{ top: `${hour * 60}px` }}>
+                    <div key={hour} className="absolute left-0 right-0 border-t border-border" style={{ top: `${hour * 60}px` }}>
                       <span className="absolute -top-2 left-2 bg-transparent text-[10px] text-muted-foreground px-1 backdrop-blur-md">
                         {format(new Date(2026, 0, 1, hour, 0), 'h a')}
                       </span>
@@ -909,7 +909,7 @@ export default function CalendarPage() {
           ) : (
           <div className="liquid-glass-card overflow-hidden">
             {/* Weekday Headers */}
-            <div className="grid grid-cols-7 border-b border-white/5">
+            <div className="grid grid-cols-7 border-b border-border">
               {WEEKDAYS.map((day) => (
                 <div key={day} className="p-2 text-center text-xs font-semibold text-muted-foreground uppercase">
                   {day}
@@ -931,11 +931,11 @@ export default function CalendarPage() {
                     key={index}
                     onClick={() => setSelectedDate(day)}
                     className={cn(
-                      "p-1 border-b border-r border-white/5 cursor-pointer transition-colors",
+                      "p-1 border-b border-r border-border cursor-pointer transition-colors",
                       view === 'week' ? "min-h-[200px]" : "min-h-[100px]",
-                      !isCurrentMonth && "bg-black/15 dark:bg-white/2 opacity-40",
-                      isSelected && "bg-black/20 dark:bg-white/10 shadow-inner",
-                      "hover:bg-black/5 dark:hover:bg-white/5"
+                      !isCurrentMonth && "bg-black/15 dark:bg-foreground/2 opacity-40",
+                      isSelected && "bg-black/20 dark:bg-foreground/10 shadow-inner",
+                      "hover:bg-black/5 dark:hover:bg-foreground/5"
                     )}
                   >
                     <div className="flex items-center justify-center mb-1">
@@ -966,7 +966,7 @@ export default function CalendarPage() {
                             )}
                             style={{ backgroundColor: `${color}30`, color }}
                           >
-                            {'type' in event && event.type === 'Shift' && '🔶 '}
+                            {'type' in event && event.type === 'Shift' && 'Shift · '}
                             {isIcalTask ? <CheckSquare size={8} className="inline mr-0.5 text-yellow-500" /> : isIcal && <Link2 size={8} className="inline mr-0.5 opacity-70" />}
                             {event.title}
                           </div>
@@ -1010,7 +1010,7 @@ export default function CalendarPage() {
             <Button
               variant="outline"
               size="sm"
-              className="w-full mb-4 border-white/10 hover:bg-white/5"
+              className="w-full mb-4 border-border hover:bg-foreground/5"
               onClick={() => void handleOpenModal(undefined, activeDay)}
             >
               <Plus size={14} />
@@ -1031,7 +1031,7 @@ export default function CalendarPage() {
                   return (
                   <div
                     key={event.id}
-                    className="p-3 rounded-xl border border-white/5 bg-black/10 dark:bg-white/5 hover:bg-black/15 dark:hover:bg-white/10 transition-colors"
+                    className="p-3 rounded-xl border border-border bg-black/10 dark:bg-foreground/5 hover:bg-black/15 dark:hover:bg-foreground/10 transition-colors"
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
@@ -1098,7 +1098,7 @@ export default function CalendarPage() {
                                 }
                                 void removeEventFromTasks(event as ExtendedCalendarEvent);
                               }}
-                              className="rounded border-white/10 bg-black/20"
+                              className="rounded border-border bg-black/20"
                             />
                             Task
                           </label>
@@ -1107,7 +1107,7 @@ export default function CalendarPage() {
                         <>
                           <button
                             onClick={() => void handleOpenModal(event as ExtendedCalendarEvent)}
-                            className="p-1 rounded hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
+                            className="p-1 rounded hover:bg-foreground/5 transition-colors text-muted-foreground hover:text-foreground"
                           >
                             <Edit2 size={12} />
                           </button>
@@ -1132,7 +1132,7 @@ export default function CalendarPage() {
                 {selectedDayTasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-3 rounded-xl border border-white/5 bg-black/10 dark:bg-white/5 hover:bg-black/15 dark:hover:bg-white/10 transition-colors"
+                    className="p-3 rounded-xl border border-border bg-black/10 dark:bg-foreground/5 hover:bg-black/15 dark:hover:bg-foreground/10 transition-colors"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
@@ -1152,7 +1152,7 @@ export default function CalendarPage() {
                       <button
                         type="button"
                         onClick={() => handleOpenTaskModal(task)}
-                        className="p-1 rounded hover:bg-white/5 transition-colors text-muted-foreground hover:text-foreground"
+                        className="p-1 rounded hover:bg-foreground/5 transition-colors text-muted-foreground hover:text-foreground"
                         title="Edit task"
                       >
                         <Edit2 size={12} />
@@ -1164,7 +1164,7 @@ export default function CalendarPage() {
             )}
 
             {/* LifeOS Calendar Feed */}
-            <div className="mt-6 pt-4 border-t border-white/5">
+            <div className="mt-6 pt-4 border-t border-border">
               <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1 uppercase tracking-wider">
                 <CalendarPlus size={12} />
                 LifeOS Calendar Feed
@@ -1182,7 +1182,7 @@ export default function CalendarPage() {
                     <input
                       type="checkbox"
                       id="feed-include-completed"
-                      className="rounded border-white/10 bg-black/20 text-primary focus:ring-primary h-3.5 w-3.5"
+                      className="rounded border-border bg-black/20 text-primary focus:ring-primary h-3.5 w-3.5"
                       checked={taskCalendarFeed?.include_completed ?? false}
                       disabled={updateTaskCalendarFeed.isPending || isTaskCalendarFeedLoading}
                       onChange={(e) => {
@@ -1197,10 +1197,10 @@ export default function CalendarPage() {
                   <div className="space-y-3">
                     {[
                       { type: undefined, name: 'All-in-One Feed', color: '#a855f7', label: 'Everything', desc: 'Combined tasks, habits, prayers, and events' },
-                      { type: 'prayers', name: 'Prayers Feed', color: '#9ca3af', label: '🕌 Prayers', desc: 'Prayer timings' },
-                      { type: 'tasks', name: 'Tasks Feed', color: '#eab308', label: '📝 Tasks', desc: 'Your due tasks' },
+                      { type: 'prayers', name: 'Prayers Feed', color: '#9ca3af', label: 'Prayers', desc: 'Prayer timings' },
+                      { type: 'tasks', name: 'Tasks Feed', color: '#eab308', label: 'Tasks', desc: 'Your due tasks' },
                       { type: 'habits', name: 'Habits Feed', color: '#a855f7', label: '⏳ Habits', desc: 'Active habits (excluding prayers & detox)' },
-                      { type: 'events', name: 'Events Feed', color: '#3b82f6', label: '📅 Events', desc: 'Calendar events' },
+                      { type: 'events', name: 'Events Feed', color: '#3b82f6', label: 'Events', desc: 'Calendar events' },
                     ].map((cfg) => {
                       const feedUrl = getCategorizedFeedUrl(cfg.type);
                       const webcalUrl = getCategorizedWebcalUrl(cfg.type);
@@ -1208,7 +1208,7 @@ export default function CalendarPage() {
                       const isCopied = copiedFeedType === (cfg.type || 'all');
 
                       return (
-                        <div key={cfg.type || 'all'} className="p-3.5 rounded-xl border border-white/5 bg-black/10 dark:bg-white/5 space-y-2">
+                        <div key={cfg.type || 'all'} className="p-3.5 rounded-xl border border-border bg-black/10 dark:bg-foreground/5 space-y-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
@@ -1221,7 +1221,7 @@ export default function CalendarPage() {
                             type="text"
                             value={isTaskCalendarFeedLoading ? 'Preparing link...' : feedUrl}
                             readOnly
-                            className="w-full rounded-lg border border-white/5 bg-black/20 dark:bg-white/5 px-2.5 py-1.5 text-[10px] text-muted-foreground select-all focus:outline-none"
+                            className="w-full rounded-lg border border-border bg-black/20 dark:bg-foreground/5 px-2.5 py-1.5 text-[10px] text-muted-foreground select-all focus:outline-none"
                           />
 
                           <div className="flex items-center gap-1.5 pt-1">
@@ -1229,7 +1229,7 @@ export default function CalendarPage() {
                               type="button"
                               variant="secondary"
                               size="sm"
-                              className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0 border-white/10"
+                              className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0 border-border"
                               onClick={() => void handleCopyFeed(cfg.type)}
                               disabled={!feedUrl}
                             >
@@ -1239,7 +1239,7 @@ export default function CalendarPage() {
                             {feedUrl && (
                               <a
                                 href={webcalUrl}
-                                className="inline-flex items-center justify-center gap-1 font-medium rounded border border-white/10 bg-transparent hover:bg-white/5 h-7 px-2 text-[10px] min-h-[30px] md:min-h-0"
+                                className="inline-flex items-center justify-center gap-1 font-medium rounded border border-border bg-transparent hover:bg-foreground/5 h-7 px-2 text-[10px] min-h-[30px] md:min-h-0"
                                 title="Subscribe directly in Apple Calendar / iOS Calendar"
                               >
                                 <CalendarPlus size={10} className="mr-1" />
@@ -1250,7 +1250,7 @@ export default function CalendarPage() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0 border-white/10"
+                                className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0 border-border"
                                 onClick={() => handleShowTaskCalendarFeed(cfg.type, cfg.name, cfg.color)}
                                 disabled={!feedUrl || isVisible}
                               >
@@ -1285,7 +1285,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Subscribed iCal calendars */}
-            <div className="mt-6 pt-4 border-t border-white/5">
+            <div className="mt-6 pt-4 border-t border-border">
               <h4 className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1 uppercase tracking-wider">
                 <Link2 size={12} />
                 iCal link
@@ -1299,7 +1299,7 @@ export default function CalendarPage() {
                   value={newIcalName}
                   onChange={(e) => setNewIcalName(e.target.value)}
                   placeholder="Calendar name (optional)"
-                  className="w-full rounded-lg border border-white/5 bg-black/25 dark:bg-white/5 px-2.5 py-1.5 text-xs text-foreground focus:outline-none"
+                  className="w-full rounded-lg border border-border bg-black/25 dark:bg-foreground/5 px-2.5 py-1.5 text-xs text-foreground focus:outline-none"
                 />
                 <div className="flex gap-2">
                   <input
@@ -1308,17 +1308,17 @@ export default function CalendarPage() {
                     onChange={(e) => setNewIcalUrl(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleAddIcalUrl()}
                     placeholder="https:// or webcal://..."
-                    className="flex-1 min-w-0 rounded-lg border border-white/5 bg-black/25 dark:bg-white/5 px-2.5 py-1.5 text-xs text-foreground focus:outline-none"
+                    className="flex-1 min-w-0 rounded-lg border border-border bg-black/25 dark:bg-foreground/5 px-2.5 py-1.5 text-xs text-foreground focus:outline-none"
                   />
                   <div className="flex items-center gap-2">
                     <input
                       type="color"
                       value={newIcalColor}
                       onChange={(e) => setNewIcalColor(e.target.value)}
-                      className="w-8 h-8 rounded-lg border border-white/5 cursor-pointer bg-transparent"
+                      className="w-8 h-8 rounded-lg border border-border cursor-pointer bg-transparent"
                       title="Color for this calendar"
                     />
-                    <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()} className="border-white/10">
+                    <Button variant="secondary" size="sm" onClick={handleAddIcalUrl} disabled={!newIcalUrl.trim()} className="border-border">
                       Add
                     </Button>
                   </div>
@@ -1332,14 +1332,14 @@ export default function CalendarPage() {
                         type="color"
                         value={sub.color}
                         onChange={(e) => setIcalColor(sub.url, e.target.value)}
-                        className="w-5 h-5 rounded-md border border-white/5 cursor-pointer bg-transparent shrink-0"
+                        className="w-5 h-5 rounded-md border border-border cursor-pointer bg-transparent shrink-0"
                         title="Change color"
                       />
                       <input
                         type="text"
                         value={sub.name}
                         onChange={(e) => setIcalName(sub.url, e.target.value)}
-                        className="w-28 sm:w-36 rounded-lg border border-white/5 bg-black/20 dark:bg-white/5 px-2 py-1 text-xs text-foreground focus:outline-none"
+                        className="w-28 sm:w-36 rounded-lg border border-border bg-black/20 dark:bg-foreground/5 px-2 py-1 text-xs text-foreground focus:outline-none"
                         title="Calendar name"
                       />
                       <span className="flex-1 truncate text-muted-foreground text-[10px] pl-1" title={sub.url}>
@@ -1361,7 +1361,7 @@ export default function CalendarPage() {
             </div>
 
             {/* Legend */}
-            <div className="mt-6 pt-4 border-t border-white/5">
+            <div className="mt-6 pt-4 border-t border-border">
               <h4 className="text-xs font-medium text-muted-foreground mb-2">Legend</h4>
               <div className="grid grid-cols-2 gap-2">
                 <div className="flex items-center gap-2">

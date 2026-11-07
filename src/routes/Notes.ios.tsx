@@ -549,7 +549,7 @@ export default function NotesIOS() {
               <button
                 type="button"
                 onClick={startNewNote}
-                className="w-13 h-13 rounded-full bg-primary text-primary-foreground shadow-2xl flex items-center justify-center active:scale-90 transition-transform touch-manipulation cursor-pointer border border-white/20"
+                className="w-13 h-13 rounded-full bg-primary text-primary-foreground  flex items-center justify-center active:scale-90 transition-transform touch-manipulation cursor-pointer border border-border"
                 aria-label="New Note"
               >
                 <Pencil size={22} />

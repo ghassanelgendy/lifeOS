@@ -244,7 +244,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                     "grid grid-cols-6 gap-2 py-2.5 px-2",
                     isToday(day)
                       ? "bg-primary/10 border border-primary/25 rounded-xl"
-                      : "border-b border-white/10 last:border-b-0",
+                      : "border-b border-border last:border-b-0",
                     isPast && !isToday(day) && "opacity-60"
                   )}
                 >
