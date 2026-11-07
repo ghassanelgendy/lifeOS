@@ -426,8 +426,8 @@ Deno.serve(async (req: Request) => {
 
           const isAr = /[\u0600-\u06FF]/.test(candidate.habit.title);
           let titleText = isAr 
-            ? `يلا عشان دة وقت: ${candidate.habit.title}` 
-            : `Time to focus on: ${candidate.habit.title}`;
+            ? `يلا عشان دة وقت ${candidate.habit.title}` 
+            : `Time to focus on ${candidate.habit.title}`;
           let bodyText = isAr 
             ? `حان وقت القيام بعادة "${candidate.habit.title}"` 
             : `Time for your habit "${candidate.habit.title}"`;
