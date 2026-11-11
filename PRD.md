@@ -108,7 +108,7 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 ### 5.1 Command Center (Dashboard)
 **Purpose:** Bird's-eye view of the user's life. The landing page after login.
 
-- **Quick View Mode:** Today's timeline (tasks due, habits scheduled, events, prayer times) with countdowns and quick actions
+- **Quick View Mode:** Today's timeline (tasks due, habits scheduled, events, prayer times) with countdowns and quick actions. Supports an anchored right-click context menu on desktop portaled directly to document body to accurately open on the entry clicked (for tasks, habits, events, prayers, completed items) with actions for Open/Insights, toggle completion, copy title, wont-do, and delete.
 - **Strategic Mode:** Long-term view with configurable horizon (30/90/180 days), goal progress, and upcoming milestones
 - **Annual Review Mode:** Year-in-review with reflections, trends, and note-taking per year
 - **Widgets:** Daily Hadith (comprehensive collection of 365+ authentic hadiths guaranteeing a unique hadith every single day with zero repetition across the entire year, full diacritics, Cairo typography, category badges, copy, shuffle avoiding recent items, English translation, and polished high-contrast light and dark appearance), Prayer (next prayer countdown), Stats (daily summary), Overdue (urgent tasks), Events (upcoming calendar), Quick Stats (tasks/habits/screentime/finance mini-cards), Habits (today's habit checklist)

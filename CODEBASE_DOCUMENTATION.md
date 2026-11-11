@@ -3573,7 +3573,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-components-dashboard-dashboardquickview-web-tsx"></a>
 ### src/components/dashboard/DashboardQuickView.web.tsx
 
-**File Purpose:** Dashboard widget/component. Displays aggregated life metrics and quick-view data panels.
+**File Purpose:** Dashboard widget/component. Displays aggregated life metrics, timeline items, and quick-view data panels. Features a viewport-portaled right-click context menu anchored directly to timeline entries with boundary-aware clamping and multi-kind actions (task, habit, event, prayer).
 
 **Functions & Classes:**
 - `formatDurationMinutes` (Function)

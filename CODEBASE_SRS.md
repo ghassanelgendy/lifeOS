@@ -190,6 +190,9 @@ The Dashboard shall prominently display overdue tasks with count badges.
 #### FR-DASH-015: Prayer Widget
 The Dashboard shall display current/next prayer times with countdown and quick-status actions.
 
+#### FR-DASH-016: Entry Right-Click Context Menu
+Right-clicking any timeline entry on the dashboard (overdue tasks, today tasks, habits, calendar events, prayers, completed tasks) shall open an anchored, viewport-portaled context menu positioned directly at the right-clicked entry coordinates, supporting actions such as Open details/insights, toggle complete, copy title, wont-do, and delete.
+
 ---
 
 ### 3.3 Task Management

@@ -1,6 +1,7 @@
-import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy, BookOpen } from 'lucide-react';
@@ -465,9 +466,10 @@ const ACCENT_DOT: Record<DueKind, string> = {
 type ContextMenuState = {
   x: number;
   y: number;
-  task: Task;
+  entry: any;
+  kind: DueKind;
   isDone: boolean;
-  isWontDo: boolean;
+  isWontDo?: boolean;
 } | null;
 
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
@@ -485,7 +487,29 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     }, 700);
   };
 
-  // Close context menu on outside click or Escape
+  // Keep context menu strictly within viewport boundaries when rendered in portal
+  useLayoutEffect(() => {
+    if (!contextMenu || !contextMenuRef.current) return;
+    const el = contextMenuRef.current;
+    const rect = el.getBoundingClientRect();
+    const padding = 12;
+    let adjustedX = contextMenu.x;
+    let adjustedY = contextMenu.y;
+
+    if (contextMenu.x + rect.width > window.innerWidth - padding) {
+      adjustedX = Math.max(padding, window.innerWidth - rect.width - padding);
+    }
+    if (contextMenu.y + rect.height > window.innerHeight - padding) {
+      adjustedY = Math.max(padding, window.innerHeight - rect.height - padding);
+    }
+
+    if (adjustedX !== contextMenu.x || adjustedY !== contextMenu.y) {
+      el.style.left = `${adjustedX}px`;
+      el.style.top = `${adjustedY}px`;
+    }
+  }, [contextMenu]);
+
+  // Close context menu on outside click, Escape, or scroll
   useEffect(() => {
     if (!contextMenu) return;
     const handleClick = (e: MouseEvent) => {
@@ -493,16 +517,62 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         setContextMenu(null);
       }
     };
+    const handleScroll = (e: Event) => {
+      if (contextMenuRef.current && contextMenuRef.current.contains(e.target as Node)) {
+        return;
+      }
+      setContextMenu(null);
+    };
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setContextMenu(null);
     };
     document.addEventListener('mousedown', handleClick);
     document.addEventListener('keydown', handleKey);
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
     return () => {
       document.removeEventListener('mousedown', handleClick);
       document.removeEventListener('keydown', handleKey);
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
     };
   }, [contextMenu]);
+
+  const handleOpenContextMenu = useCallback((
+    e: React.MouseEvent,
+    entry: any,
+    kind: DueKind,
+    isDone: boolean,
+    isWontDo = false
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    let clientX = e.clientX;
+    let clientY = e.clientY;
+
+    if (clientX === 0 && clientY === 0 && e.currentTarget) {
+      const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      clientX = rect.left + Math.min(40, rect.width / 2);
+      clientY = rect.top + Math.min(24, rect.height / 2);
+    }
+
+    const padding = 12;
+    const approxMenuWidth = 200;
+    const approxMenuHeight = 220;
+
+    const x = Math.max(padding, Math.min(clientX, window.innerWidth - approxMenuWidth - padding));
+    const y = Math.max(padding, Math.min(clientY, window.innerHeight - approxMenuHeight - padding));
+
+    setContextMenu({
+      x,
+      y,
+      entry,
+      kind,
+      isDone,
+      isWontDo,
+    });
+  }, []);
 
 
   const today = useMemo(() => new Date(), []);
@@ -664,6 +734,59 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     (habitId: string) => todayLogs.some((l) => l.habit_id === habitId && l.date === todayStr && l.completed),
     [todayLogs, todayStr]
   );
+
+  const handleToggleCalendarItem = useCallback(async (item: any, isDone: boolean) => {
+    if (togglingEventsRef.current[item.id]) return;
+    togglingEventsRef.current[item.id] = true;
+    setTimeout(() => {
+      delete togglingEventsRef.current[item.id];
+    }, 800);
+
+    const nextCompleted = !isDone;
+    const evId = item.originalId || item.id.replace('event-', '');
+    const parsedStart = item.start_time ? parseISO(item.start_time) : new Date();
+
+    // Toggle calendar event in database
+    if (item.type !== 'ical') {
+      void toggleCalendarEvent.mutate({ id: evId, isCompleted: nextCompleted });
+    }
+
+    // Also sync any linked task if exists
+    const evKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
+    const evDate = format(parsedStart, 'yyyy-MM-dd');
+    let currentLinked =
+      completedTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
+      todayTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
+      overdueTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate);
+
+    if (!currentLinked && user?.id && item.type === 'ical') {
+      const { data: existingTasks } = await supabase
+        .from('tasks')
+        .select('id, is_completed')
+        .eq('user_id', user.id)
+        .eq('calendar_source_key', evKey)
+        .limit(1);
+      if (existingTasks && existingTasks.length > 0) {
+        currentLinked = existingTasks[0] as any;
+      }
+    }
+
+    if (currentLinked) {
+      await toggleTask.mutateAsync(currentLinked.id);
+    } else if (item.type === 'ical') {
+      await createTask.mutateAsync({
+        title: item.title,
+        is_completed: nextCompleted,
+        priority: 'none',
+        due_date: evDate,
+        due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
+        calendar_source_key: evKey,
+        calendar_event_id: null,
+        tag_ids: [],
+        recurrence: 'none',
+      });
+    }
+  }, [completedTasks, todayTasks, overdueTasks, user?.id, toggleCalendarEvent, toggleTask, createTask]);
 
   const completedTodayPrayers = useMemo(
     () => prayerTracker.filter((p) => isPrayerStatusComplete(p.status)).length,
@@ -1002,6 +1125,16 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               prayedAt: lastPrayerTrackerItem?.prayedAt,
               scheduledAt: lastPrayerSlot.time.toISOString(),
             })}
+            onContextMenu={(e) => handleOpenContextMenu(e, {
+              id: `prayer-${lastPrayerSlot.name}`,
+              title: `${lastPrayerSlot.name} prayer`,
+              label: `${lastPrayerSlot.name} prayer`,
+              kind: 'prayer',
+              done: lastPrayerDone,
+              prayerName: lastPrayerSlot.name,
+              prayedAt: lastPrayerTrackerItem?.prayedAt,
+              scheduledAt: lastPrayerSlot.time.toISOString(),
+            }, 'prayer', lastPrayerDone)}
           />
         </li>
       ),
@@ -1034,10 +1167,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete overdue task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setContextMenu({ x: e.clientX, y: e.clientY, task: t, isDone: false, isWontDo: false });
-            }}
+            onContextMenu={(e) => handleOpenContextMenu(e, { ...t, kind: 'task' }, 'task', false, false)}
             onRescue={() => rescueTask.mutate(t)}
             balance={pointsBalance}
             rescueCost={pointsConfig.taskRescueCost}
@@ -1075,10 +1205,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setContextMenu({ x: e.clientX, y: e.clientY, task: t, isDone: false, isWontDo: false });
-            }}
+            onContextMenu={(e) => handleOpenContextMenu(e, { ...t, kind: 'task' }, 'task', false, false)}
             subtasks={t.subtasks}
             onToggleSubtask={(subtaskId) => toggleTask.mutate(subtaskId)}
           />
@@ -1145,6 +1272,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             color={h.color}
             onToggle={() => logHabit.mutate({ habitId: h.id, date: todayStr, completed: !done })}
             onClick={() => onSelectEntry({ ...h, kind: 'habit', entityId: h.id })}
+            onContextMenu={(e) => handleOpenContextMenu(e, { ...h, kind: 'habit', entityId: h.id }, 'habit', done)}
           />
         </li>
       ),
@@ -1244,59 +1372,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 : isHabit && item.entityId
                   ? () => logHabit.mutate({ habitId: item.entityId!, date: format(parsedStart, 'yyyy-MM-dd'), completed: true })
                   : isEvent
-                    ? async () => {
-                        if (togglingEventsRef.current[item.id]) return;
-                        togglingEventsRef.current[item.id] = true;
-                        setTimeout(() => {
-                          delete togglingEventsRef.current[item.id];
-                        }, 800);
-
-                        const nextCompleted = !isDone;
-                        const evId = item.originalId || item.id.replace('event-', '');
-
-                        // Toggle calendar event in database
-                        if (item.type !== 'ical') {
-                          void toggleCalendarEvent.mutate({ id: evId, isCompleted: nextCompleted });
-                        }
-
-                        // Also sync any linked task if exists
-                        const evKey = item.type === 'ical' ? `ical:${item.id.replace('event-', '')}` : `event:${item.id.replace('event-', '')}`;
-                        const evDate = format(parsedStart, 'yyyy-MM-dd');
-                        let currentLinked =
-                          completedTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
-                          todayTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate) ||
-                          overdueTasks.find(t => (t.calendar_source_key === evKey || t.calendar_event_id === evId) && t.due_date === evDate);
-
-                        if (!currentLinked && user?.id && item.type === 'ical') {
-                          const { data: existingTasks } = await supabase
-                            .from('tasks')
-                            .select('id, is_completed')
-                            .eq('user_id', user.id)
-                            .eq('calendar_source_key', evKey)
-                            .limit(1);
-                          if (existingTasks && existingTasks.length > 0) {
-                            currentLinked = existingTasks[0] as any;
-                          }
-                        }
-
-                        if (currentLinked) {
-                          await toggleTask.mutateAsync(currentLinked.id);
-                        } else if (item.type === 'ical') {
-                          await createTask.mutateAsync({
-                            title: item.title,
-                            is_completed: nextCompleted,
-                            priority: 'none',
-                            due_date: evDate,
-                            due_time: item.allDay ? undefined : format(parsedStart, 'HH:mm'),
-                            calendar_source_key: evKey,
-                            calendar_event_id: null,
-                            tag_ids: [],
-                            recurrence: 'none',
-                          });
-                        }
-                      }
+                    ? () => handleToggleCalendarItem(item, isDone)
                     : undefined
             }
+            onContextMenu={(e) => handleOpenContextMenu(e, item, item.kind as DueKind, isDone, !!(item as any).is_wont_do)}
           />
         </li>
       ),
@@ -1332,10 +1411,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             label={`Complete task ${t.title}`}
             onToggle={() => toggleTask.mutate(t.id)}
             onClick={() => onSelectEntry({ ...t, kind: 'task' })}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              setContextMenu({ x: e.clientX, y: e.clientY, task: t, isDone: true, isWontDo: !!(t.is_wont_do) });
-            }}
+            onContextMenu={(e) => handleOpenContextMenu(e, { ...t, kind: 'task' }, 'task', true, !!t.is_wont_do)}
           />
         </li>
       ),
@@ -1771,60 +1847,132 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     </div>
 
     {/* Right-click context menu */}
-    {contextMenu && (
+    {contextMenu && typeof document !== 'undefined' && createPortal(
       <div
         ref={contextMenuRef}
-        className="fixed z-[9999] min-w-[180px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-xl overflow-hidden"
+        role="menu"
+        aria-orientation="vertical"
+        className="fixed z-[9999] min-w-[190px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-150"
         style={{
-          top: Math.min(contextMenu.y, window.innerHeight - 200),
-          left: Math.min(contextMenu.x, window.innerWidth - 200),
+          top: `${contextMenu.y}px`,
+          left: `${contextMenu.x}px`,
         }}
       >
-        <div className="py-1">
-          <button
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-foreground hover:bg-accent/60 transition-colors text-left"
-            onClick={() => { onSelectEntry({ ...contextMenu.task, kind: 'task' }); setContextMenu(null); }}
-          >
-            <MoreVertical className="size-3.5 text-muted-foreground shrink-0" />
-            Open
-          </button>
-          <button
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-foreground hover:bg-accent/60 transition-colors text-left"
-            onClick={() => { toggleTask.mutate(contextMenu.task.id); setContextMenu(null); }}
-          >
-            <CheckCircle2 className="size-3.5 text-primary shrink-0" />
-            {contextMenu.isDone ? 'Mark incomplete' : 'Complete'}
-          </button>
-          {!contextMenu.isDone && !contextMenu.isWontDo && (
+        <div className="flex flex-col">
+          {Boolean(contextMenu.entry?.title || contextMenu.entry?.name || contextMenu.entry?.label) && (
+            <div className="px-3.5 py-1.5 border-b border-border/40 select-none max-w-[240px]">
+              <p className="text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider truncate">
+                {contextMenu.kind === 'habit' ? 'Habit' : contextMenu.kind === 'prayer' ? 'Prayer' : contextMenu.kind === 'event' ? 'Event' : 'Task'}
+              </p>
+              <p className="text-xs font-medium text-foreground truncate mt-0.5">
+                {contextMenu.entry.title || contextMenu.entry.name || contextMenu.entry.label}
+              </p>
+            </div>
+          )}
+
+          <div className="py-1">
             <button
-              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:bg-accent/60 transition-colors text-left"
+              type="button"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-foreground hover:bg-accent/60 transition-colors text-left"
               onClick={() => {
-                updateTask.mutate({
-                  id: contextMenu.task.id,
-                  data: { is_completed: true, is_wont_do: true, completed_at: new Date().toISOString() },
-                });
+                onSelectEntry(contextMenu.entry);
                 setContextMenu(null);
               }}
             >
-              <X className="size-3.5 shrink-0" />
-              Not going to do
+              <MoreVertical className="size-3.5 text-muted-foreground shrink-0" />
+              {contextMenu.kind === 'habit' ? 'View insights' : 'Open details'}
             </button>
-          )}
-          <div className="h-px bg-border/40 my-1" />
-          <button
-            className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors text-left"
-            onClick={() => {
-              if (window.confirm(`Delete "${contextMenu.task.title}"?`)) {
-                deleteTask.mutate(contextMenu.task.id);
-              }
-              setContextMenu(null);
-            }}
-          >
-            <Trash2 className="size-3.5 shrink-0" />
-            Delete
-          </button>
+
+            <button
+              type="button"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-foreground hover:bg-accent/60 transition-colors text-left"
+              onClick={() => {
+                const { entry, kind, isDone } = contextMenu;
+                if (kind === 'task') {
+                  const taskId = entry.id || entry.entityId;
+                  if (taskId) toggleTask.mutate(taskId);
+                } else if (kind === 'habit') {
+                  const habitId = entry.entityId || entry.id;
+                  if (habitId) logHabit.mutate({ habitId, date: todayStr, completed: !isDone });
+                } else if (kind === 'prayer') {
+                  if (lastPrayerTrackerItem) {
+                    togglePrayerStatus(lastPrayerTrackerItem, 'Prayed');
+                  }
+                } else if (kind === 'event') {
+                  void handleToggleCalendarItem(entry, isDone);
+                }
+                setContextMenu(null);
+              }}
+            >
+              <CheckCircle2 className="size-3.5 text-primary shrink-0" />
+              {contextMenu.isDone
+                ? 'Mark incomplete'
+                : contextMenu.kind === 'habit'
+                  ? 'Log habit'
+                  : contextMenu.kind === 'prayer'
+                    ? 'Mark prayed'
+                    : 'Complete'}
+            </button>
+
+            <button
+              type="button"
+              className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors text-left"
+              onClick={() => {
+                const title = contextMenu.entry?.title || contextMenu.entry?.name || contextMenu.entry?.label || '';
+                if (title && navigator.clipboard) {
+                  void navigator.clipboard.writeText(title);
+                }
+                setContextMenu(null);
+              }}
+            >
+              <Copy className="size-3.5 shrink-0" />
+              Copy title
+            </button>
+
+            {contextMenu.kind === 'task' && !contextMenu.isDone && !contextMenu.isWontDo && (
+              <button
+                type="button"
+                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors text-left"
+                onClick={() => {
+                  const taskId = contextMenu.entry.id || contextMenu.entry.entityId;
+                  if (taskId) {
+                    updateTask.mutate({
+                      id: taskId,
+                      data: { is_completed: true, is_wont_do: true, completed_at: new Date().toISOString() },
+                    });
+                  }
+                  setContextMenu(null);
+                }}
+              >
+                <X className="size-3.5 shrink-0" />
+                Not going to do
+              </button>
+            )}
+
+            {contextMenu.kind === 'task' && (
+              <>
+                <div className="h-px bg-border/40 my-1" />
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors text-left"
+                  onClick={() => {
+                    const taskId = contextMenu.entry.id || contextMenu.entry.entityId;
+                    const taskTitle = contextMenu.entry.title || 'Task';
+                    if (taskId && window.confirm(`Delete "${taskTitle}"?`)) {
+                      deleteTask.mutate(taskId);
+                    }
+                    setContextMenu(null);
+                  }}
+                >
+                  <Trash2 className="size-3.5 shrink-0" />
+                  Delete
+                </button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      </div>,
+      document.body
     )}
     </>
   );
