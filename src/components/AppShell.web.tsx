@@ -1,6 +1,6 @@
 import { Menu, X, Sparkles, Brain } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { cn } from '../lib/utils';
+import { cn } from './ui/cn';
 import { NavLink, Outlet, useMatch, useLocation, useNavigate } from 'react-router-dom';
 import { CommandPalette } from './CommandPalette';
 import { useUIStore } from '../stores/useUIStore';
@@ -17,6 +17,7 @@ import { checkWrapStatus } from '../lib/wrapHelpers';
 import { AppJoyrideTour } from './AppJoyrideTour';
 import { useAuth } from '../hooks/useAuth';
 import { UserBlobatar } from './ui/UserBlobatar';
+import { IconButton } from './ui/IconButton';
 
 function MobileNavLink({
   item,
@@ -109,6 +110,17 @@ export function AppShell() {
   const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [chatModalPrompt, setChatModalPrompt] = useState('');
+
+  // First visit on a wide screen: show labels. The store default (collapsed) is
+  // shared with pake, so this is a one-time web-only override; the user's later
+  // toggle is persisted by the store as before.
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('lifeos-web-sidebar-init')) return;
+      localStorage.setItem('lifeos-web-sidebar-init', '1');
+      if (window.innerWidth >= 1280) useUIStore.setState({ isSidebarCollapsed: false });
+    } catch { /* storage unavailable: keep store default */ }
+  }, []);
 
   useEffect(() => {
     const handleOpenBrainDump = (e: Event) => {
@@ -503,7 +515,7 @@ export function AppShell() {
               >
                 <Sparkles size={19} className="shrink-0 text-primary animate-pulse" />
                 <span className="min-w-0 break-words font-semibold">
-                  {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
+                  {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly wrap' : 'Weekly wrap'}
                 </span>
                 <span className="absolute top-2.5 right-3 flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -534,26 +546,21 @@ export function AppShell() {
       {/* Desktop Sidebar */}
       <aside
         className={cn(
-          "hidden md:flex flex-col border-r border-border/40 bg-card/60 backdrop-blur-xl transition-all duration-300 ease-in-out select-none overflow-hidden",
+          "hidden md:flex flex-col border-r border-separator bg-raised transition-[width] duration-200 ease-in-out select-none overflow-hidden motion-reduce:transition-none",
           isSidebarCollapsed ? "w-16" : "w-64"
         )}
       >
         <div className="flex h-14 items-center justify-between px-4">
           {!isSidebarCollapsed && (
-            <span className="text-sm font-semibold tracking-wide text-muted-foreground uppercase pl-2">
-              LifeOS
-            </span>
+            <span className="text-title font-semibold text-ink ps-2">LifeOS</span>
           )}
-          <button
+          <IconButton
             onClick={toggleSidebar}
-            className={cn(
-              "p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition-colors text-muted-foreground hover:text-foreground",
-              isSidebarCollapsed && "mx-auto"
-            )}
-            title={isSidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            label={isSidebarCollapsed ? "Expand navigation" : "Collapse navigation"}
+            className={cn(isSidebarCollapsed && "mx-auto")}
           >
-            <Menu size={16} />
-          </button>
+            <Menu size={18} />
+          </IconButton>
         </div>
 
         <div className="px-2 pb-2">
@@ -561,18 +568,20 @@ export function AppShell() {
             data-tour="brain-dump"
             type="button"
             onClick={() => setIsBrainDumpOpen(true)}
+            data-ds
             className={cn(
-              "w-full flex items-center gap-2.5 rounded-md px-3 py-2 text-xs font-semibold transition-all duration-150 border",
-              "border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/20 active:scale-98 shadow-sm",
-              isSidebarCollapsed && "justify-center px-0 w-10 h-9 mx-auto"
+              "ds-t w-full flex items-center gap-3 rounded-control px-3 min-h-10 text-label font-medium",
+              "bg-sunken text-ink hover:bg-hover",
+              isSidebarCollapsed && "justify-center px-0 w-10 mx-auto"
             )}
-            title="Cognitive Brain Dump (Alt+B)"
+            title="Brain dump (Alt+B)"
+            aria-label={isSidebarCollapsed ? "Brain dump" : undefined}
           >
-            <Brain size={16} className="shrink-0 text-purple-500 animate-pulse" />
+            <Brain size={18} className="shrink-0 text-ink-2" />
             {!isSidebarCollapsed && (
               <div className="flex items-center justify-between w-full min-w-0">
-                <span className="truncate">Brain Dump</span>
-                <kbd className="px-1 py-0.5 text-[9px] bg-purple-500/20 rounded font-mono">Alt+B</kbd>
+                <span className="truncate">Brain dump</span>
+                <kbd className="text-caption text-ink-3">Alt+B</kbd>
               </div>
             )}
           </button>
@@ -587,28 +596,23 @@ export function AppShell() {
                 key={item.href}
                 to={item.href}
                 end={item.href === '/'}
+                data-ds
+                title={isSidebarCollapsed ? item.label : undefined}
+                aria-label={isSidebarCollapsed ? item.label : undefined}
                 className={({ isActive }) => cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-normal transition-all duration-150 relative",
-                  "hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground",
-                  isActive 
-                    ? "bg-black/[0.04] dark:bg-white/[0.06] text-foreground font-medium" 
-                    : "text-muted-foreground",
-                  isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
+                  "ds-t flex items-center gap-3 rounded-control px-3 min-h-10 text-label relative",
+                  isActive
+                    ? "bg-hover text-ink font-medium"
+                    : "text-ink-2 hover:bg-hover hover:text-ink",
+                  isSidebarCollapsed && "justify-center px-0 w-10 mx-auto"
                 )}
               >
                 {({ isActive }) => (
                   <>
-                    {/* Fluent UI active indicator */}
-                    {isActive && (
-                      <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
-                    )}
                     <div className="relative flex items-center justify-center shrink-0">
-                      <item.icon size={16} strokeWidth={isActive ? 2.2 : 1.8} />
+                      <item.icon size={18} strokeWidth={isActive ? 2.2 : 1.8} />
                       {showDot && (
-                        <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                        </span>
+                        <span className="absolute -top-0.5 -end-0.5 h-2 w-2 rounded-pill bg-accent-ds" aria-hidden="true" />
                       )}
                     </div>
                     {!isSidebarCollapsed && <span>{item.label}</span>}
@@ -623,27 +627,22 @@ export function AppShell() {
           {showWrappedTakeover ? (
             <NavLink
               to="/analytics"
+              data-ds
+              title={isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly wrap' : 'Weekly wrap'}
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-[4px] px-3 py-2 text-xs font-medium border transition-all duration-100 relative",
-                "border-primary/20 dark:border-primary/30 bg-primary/[0.06] dark:bg-primary/[0.1] text-primary hover:bg-primary/[0.1] dark:hover:bg-primary/[0.15] shadow-[0_1px_2px_rgba(0,0,0,0.05)]",
-                isActive ? "bg-primary/[0.15] dark:bg-primary/[0.2] border-primary/45" : "",
-                isSidebarCollapsed && "justify-center px-0 w-12 h-9 mx-auto"
+                "ds-t flex items-center gap-3 w-full rounded-control px-3 min-h-10 text-label font-medium relative",
+                isActive ? "bg-hover text-ink" : "text-ink hover:bg-hover",
+                isSidebarCollapsed && "justify-center px-0 w-10 mx-auto"
               )}
             >
-              {({ isActive }) => (
+              {() => (
                 <>
-                  {isActive && (
-                    <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
-                  )}
                   <div className="relative flex items-center justify-center shrink-0">
-                    <Sparkles size={16} className="shrink-0 text-primary animate-pulse" />
-                    <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                    </span>
+                    <Sparkles size={18} className="shrink-0 text-ink-2" />
+                    <span className="absolute -top-0.5 -end-0.5 h-2 w-2 rounded-pill bg-accent-ds" aria-hidden="true" />
                   </div>
                   {!isSidebarCollapsed && (
-                    <span className="font-semibold text-primary">
+                    <span>
                       {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly Wrap' : 'Weekly Wrap'}
                     </span>
                   )}
@@ -654,34 +653,30 @@ export function AppShell() {
             <NavLink
               data-tour="settings-nav"
               to="/settings"
+              data-ds
+              aria-label={isSidebarCollapsed ? 'Settings' : undefined}
               className={({ isActive }) => cn(
-                "flex items-center gap-3 w-full rounded-md px-2.5 py-1.5 text-[13px] font-normal transition-all duration-150 relative group",
-                "hover:bg-black/5 dark:hover:bg-white/5 hover:text-foreground",
-                isActive 
-                  ? "bg-black/[0.04] dark:bg-white/[0.06] text-foreground font-medium" 
-                  : "text-muted-foreground",
-                isSidebarCollapsed && "justify-center px-0 w-12 h-10 mx-auto"
+                "ds-t flex items-center gap-3 w-full rounded-control px-3 min-h-11 text-label relative",
+                isActive ? "bg-hover text-ink font-medium" : "text-ink-2 hover:bg-hover hover:text-ink",
+                isSidebarCollapsed && "justify-center px-0 w-10 mx-auto"
               )}
-              title={user?.email || 'User Settings'}
+              title={user?.email || 'Settings'}
             >
-              {({ isActive }) => (
+              {() => (
                 <>
-                  {isActive && (
-                    <div className="absolute left-0 top-[20%] bottom-[20%] w-[3px] rounded-full bg-primary" />
-                  )}
                   <UserBlobatar
                     identifier={user?.email || user?.id}
                     size={24}
                     unbordered
-                    className="shrink-0 transition-transform group-hover:scale-110 drop-shadow-xs"
+                    className="shrink-0"
                   />
                   {!isSidebarCollapsed && (
                     <div className="flex flex-col min-w-0 leading-tight">
-                      <span className="font-medium text-xs text-foreground truncate">
+                      <span className="font-medium text-label text-ink truncate">
                         {user?.email ? user.email.split('@')[0] : 'Settings'}
                       </span>
-                      <span className="text-[10px] text-muted-foreground truncate">
-                        Preferences
+                      <span className="text-caption text-ink-3 truncate">
+                        Settings
                       </span>
                     </div>
                   )}

@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
 import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus, ListTodo } from 'lucide-react';
 import { Button, ConfirmSheet } from '../components/ui';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
 import { useCreateNote, useCreateNoteFolder, useDeleteNote, useDeleteNoteFolder, useNoteFolders, useNotes, useTogglePinNote, useUpdateNote, useUpdateNoteFolder } from '../hooks/useNotes';
@@ -495,7 +495,7 @@ export default function NotesWeb() {
           </div>
 
           <div className="flex-1 overflow-y-auto p-2 space-y-1 text-xs">
-            <div className="px-2 py-1 font-semibold text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="px-2 py-1 font-semibold text-caption text-muted-foreground">
               Smart Filters
             </div>
             <button
@@ -509,7 +509,7 @@ export default function NotesWeb() {
               <span className="flex items-center gap-2">
                 <FileText size={15} /> All Notes
               </span>
-              <span className="text-[11px] opacity-70">({notes.length})</span>
+              <span className="text-caption text-ink-3">({notes.length})</span>
             </button>
             <button
               type="button"
@@ -522,7 +522,7 @@ export default function NotesWeb() {
               <span className="flex items-center gap-2">
                 <Pin size={15} className="text-amber-500" /> Pinned
               </span>
-              <span className="text-[11px] opacity-70">({counts.pinned})</span>
+              <span className="text-caption text-ink-3">({counts.pinned})</span>
             </button>
             <button
               type="button"
@@ -535,7 +535,7 @@ export default function NotesWeb() {
               <span className="flex items-center gap-2">
                 <Brain size={15} className="text-purple-500" /> Brain Dumps
               </span>
-              <span className="text-[11px] opacity-70">({counts.brainDump})</span>
+              <span className="text-caption text-ink-3">({counts.brainDump})</span>
             </button>
             <button
               type="button"
@@ -548,10 +548,10 @@ export default function NotesWeb() {
               <span className="flex items-center gap-2">
                 <Folder size={15} /> Uncategorized
               </span>
-              <span className="text-[11px] opacity-70">({counts.noFolder})</span>
+              <span className="text-caption text-ink-3">({counts.noFolder})</span>
             </button>
 
-            <div className="pt-3 px-2 py-1 flex items-center justify-between font-semibold text-[10px] uppercase tracking-wider text-muted-foreground">
+            <div className="pt-3 px-2 py-1 flex items-center justify-between font-semibold text-caption text-muted-foreground">
               <span>Folders</span>
             </div>
 
@@ -591,7 +591,7 @@ export default function NotesWeb() {
                         <Folder size={15} className="shrink-0" />
                         <span className="truncate">{folder.name}</span>
                       </span>
-                      <span className="text-[11px] opacity-70">({count})</span>
+                      <span className="text-caption text-ink-3">({count})</span>
                     </button>
                   )}
 
@@ -639,6 +639,8 @@ export default function NotesWeb() {
                   size="sm"
                   onClick={() => void handleCreateFolder()}
                   disabled={!newFolderName.trim()}
+                  aria-label="Create folder"
+                  title="Create folder"
                   className="h-8 text-xs"
                 >
                   <FolderPlus size={14} />
@@ -701,7 +703,7 @@ export default function NotesWeb() {
               <p className="p-4 text-xs text-destructive">Could not load notes.</p>
             ) : filteredNotes.length === 0 ? (
               <div className="p-8 text-center space-y-2">
-                <FileText size={32} className="mx-auto text-muted-foreground/40" />
+                <FileText size={32} className="mx-auto text-ink-3" />
                 <p className="text-xs text-muted-foreground">No notes found.</p>
                 <Button size="sm" variant="outline" onClick={() => startNewNote(activeFolderFilter)} className="text-xs">
                   Create Note
@@ -752,11 +754,11 @@ export default function NotesWeb() {
                       </div>
                     </div>
 
-                    <p className="mt-1 text-[11px] text-muted-foreground line-clamp-2 leading-relaxed whitespace-pre-wrap">
+                    <p className="mt-1 text-caption text-muted-foreground line-clamp-2 leading-relaxed whitespace-pre-wrap">
                       {cleanMarkdownPreview(note.body)}
                     </p>
 
-                    <div className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground">
+                    <div className="mt-2 flex items-center justify-between text-caption text-muted-foreground">
                       <span>{formatNoteDate(note.updated_at || note.note_date)}</span>
                       {note.folder_id && (
                         <span className="px-1.5 py-0.5 rounded bg-background border border-border">
@@ -816,6 +818,7 @@ export default function NotesWeb() {
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-secondary/50 border border-border/60 text-xs font-medium hover:bg-secondary transition-colors">
                 <Folder size={13} className="text-primary shrink-0" />
                 <select
+                  aria-label="Folder"
                   value={draftFolderId}
                   onChange={(e) => setDraftFolderId(e.target.value)}
                   className="bg-transparent border-none outline-none text-xs font-medium text-foreground cursor-pointer pr-1"
@@ -841,7 +844,7 @@ export default function NotesWeb() {
               </label>
 
               {/* Word & Char Counts */}
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground ml-auto">
+              <div className="flex items-center gap-1.5 text-caption text-muted-foreground ml-auto">
                 <span>{wordCount} words</span>
                 <span>•</span>
                 <span>{charCount} chars</span>
@@ -865,7 +868,7 @@ export default function NotesWeb() {
                 value={draftBody}
                 onChange={(e) => setDraftBody(e.target.value)}
                 placeholder="Start typing your note or paste research in markdown..."
-                className="flex-1 w-full h-full min-h-[16rem] bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-muted-foreground/40 outline-none border-none resize-none font-sans p-0"
+                className="flex-1 w-full h-full min-h-[16rem] bg-transparent text-sm sm:text-base leading-relaxed text-foreground placeholder:text-ink-3 outline-none border-none resize-none font-sans p-0"
               />
             ) : (
               <div

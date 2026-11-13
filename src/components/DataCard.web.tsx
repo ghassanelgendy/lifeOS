@@ -1,6 +1,6 @@
 import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from './ui/cn';
 import { useMemo } from 'react';
 import { useUIStore } from '../stores/useUIStore';
 
@@ -27,7 +27,7 @@ export function DataCard({ title, value, trend, data, unit, invertTrend = false 
     <div className="relative flex flex-col justify-between overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm transition-all hover:border-zinc-700">
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</h3>
+          <h3 className="text-xs font-medium text-muted-foreground">{title}</h3>
           <div className={cn("mt-2 text-2xl font-bold tabular-nums", privacyMode && "blur-sm")}>
             {value}
             {unit && <span className="text-sm text-muted-foreground ml-1">{unit}</span>}

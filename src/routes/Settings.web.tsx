@@ -44,7 +44,7 @@ import {
   Lock,
 } from 'lucide-react';
 import packageJson from '../../package.json';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import {
   useUIStore,
   DASHBOARD_MODES,
@@ -591,7 +591,7 @@ export default function SettingsPage() {
                 if (itemsInCat.length === 0) return null;
                 return (
                   <div key={cat} className="space-y-0.5 mb-2.5 last:mb-0">
-                    <div className="hidden lg:block px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">
+                    <div className="hidden lg:block px-3 py-1 text-caption font-bold text-ink-3">
                       {cat}
                     </div>
                     {itemsInCat.map(({ id, label, icon: Icon }) => {
@@ -660,7 +660,7 @@ export default function SettingsPage() {
         <div className="p-4 space-y-4">
           <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">Your Account User ID</span>
+              <span className="text-caption font-semibold text-amber-800 dark:text-amber-300">Your account user ID</span>
               <button
                 type="button"
                 onClick={() => {
@@ -669,7 +669,7 @@ export default function SettingsPage() {
                     alert('User ID copied to clipboard!');
                   }
                 }}
-                className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium"
+                className="flex items-center gap-1 text-caption text-amber-800 hover:text-amber-950 dark:text-amber-400 dark:hover:text-amber-300 transition-colors font-medium"
               >
                 <Copy size={13} /> Copy ID
               </button>
@@ -721,7 +721,7 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <p className="text-[11px] text-muted-foreground leading-relaxed flex items-center gap-1.5">
+          <p className="text-caption text-muted-foreground leading-relaxed flex items-center gap-1.5">
             <Lightbulb size={13} className="text-amber-400 shrink-0" />
             <span><strong>Native Integration:</strong> Works natively with zero external automation tools, no manual webhook URLs, and no JSON editing required.</span>
           </p>
@@ -822,6 +822,7 @@ export default function SettingsPage() {
               Force the layout and styling to resemble either a web application or a native desktop app, or let it detect automatically.
             </p>
             <select
+              aria-label="Platform UI theme"
               value={platformUIOverride}
               onChange={(e) => setPlatformUIOverride(e.target.value as 'auto' | 'web' | 'pake' | 'linux')}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
@@ -863,6 +864,7 @@ export default function SettingsPage() {
             <p className="font-medium mb-2">Default tab</p>
             <p className="text-sm text-muted-foreground mb-2">Opening the app will show this page first</p>
             <select
+              aria-label="Default tab"
               value={defaultTab}
               onChange={(e) => setDefaultTab(e.target.value)}
               className="w-full px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
@@ -881,6 +883,7 @@ export default function SettingsPage() {
             <p className="font-medium mb-2">Default Tasks view</p>
             <p className="text-sm text-muted-foreground mb-2">When opening Tasks, show this view by default (works on mobile too)</p>
             <select
+              aria-label="Default tasks view"
               value={(defaultTaskView ?? defaultTaskListId) ?? ''}
               onChange={(e) => {
                 const v = e.target.value || null;
@@ -947,6 +950,7 @@ export default function SettingsPage() {
         <div className="p-4 space-y-2">
           <div className="flex items-center justify-between pb-2">
             <select
+              aria-label="Layout page"
               value={selectedWidgetPage}
               onChange={(e) => setSelectedWidgetPage(e.target.value as LayoutWidgetPage)}
               className="px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
@@ -1386,64 +1390,68 @@ export default function SettingsPage() {
         <div className="p-4 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
                 Sleep Target (hours)
               </label>
               <Input
                 type="number"
                 min={1}
                 max={24}
+                aria-label="Sleep target (hours)"
                 value={targetDraft.sleep}
                 onChange={(e) => setTargetDraft((d) => ({ ...d, sleep: Number(e.target.value) || 0 }))}
               />
               {reportAutopilotEnabled && (
-                <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                <span className="text-caption text-yellow-500 font-medium block mt-1">
                   Current active: {reportSleepTargetCurrent}h
                 </span>
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
                 Screen Time Limit (hours)
               </label>
               <Input
                 type="number"
                 min={1}
                 max={24}
+                aria-label="Screen time limit (hours)"
                 value={targetDraft.screen}
                 onChange={(e) => setTargetDraft((d) => ({ ...d, screen: Number(e.target.value) || 0 }))}
               />
               {reportAutopilotEnabled && (
-                <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                <span className="text-caption text-yellow-500 font-medium block mt-1">
                   Current active: {reportScreenTargetCurrent}h
                 </span>
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
                 Habits Target (%)
               </label>
               <Input
                 type="number"
                 min={1}
                 max={100}
+                aria-label="Habits target (percent)"
                 value={targetDraft.habits}
                 onChange={(e) => setTargetDraft((d) => ({ ...d, habits: Number(e.target.value) || 0 }))}
               />
               {reportAutopilotEnabled && (
-                <span className="text-[10px] text-yellow-500 font-medium block mt-1">
+                <span className="text-caption text-yellow-500 font-medium block mt-1">
                   Current active: {reportHabitsTargetCurrent}%
                 </span>
               )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">
                 Daily Tasks Target
               </label>
               <Input
                 type="number"
                 min={1}
                 max={100}
+                aria-label="Daily tasks target"
                 value={targetDraft.tasks}
                 onChange={(e) => setTargetDraft((d) => ({ ...d, tasks: Number(e.target.value) || 0 }))}
               />
@@ -1471,8 +1479,8 @@ export default function SettingsPage() {
           <div className="pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-primary uppercase tracking-wider">Target Autopilot</span>
-                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold uppercase">Smart Adjust</span>
+                <span className="text-xs font-semibold text-primary">Target Autopilot</span>
+                <span className="text-caption bg-primary/10 text-primary px-1.5 py-0.5 rounded font-bold">Smart Adjust</span>
               </div>
               <p className="text-xs text-muted-foreground mt-1 max-w-xl">
                 When enabled, sleep, screen time, and habit targets will automatically adapt every Saturday to match your actual routine (adjusting halfway between your current target and actual performance) to keep goals realistic and progressive.
@@ -1699,7 +1707,7 @@ export default function SettingsPage() {
             </Button>
           </div>
           <div className="pt-4 border-t border-border/50">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Popular Articles</p>
+            <p className="text-xs font-semibold text-muted-foreground mb-2">Popular Articles</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <Link to="/wiki/vision-strategy" className="text-xs text-primary hover:underline flex items-center gap-1">
                 <ChevronRight size={12} /> Vision, Principles & Roadmap

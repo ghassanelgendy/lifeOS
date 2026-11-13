@@ -5,7 +5,7 @@ import { Button } from './ui';
 import type { Task } from '../types/schema';
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn } from './ui/cn';
 import type { TaskList, Tag, TaskPriority, TaskRecurrence, TaskRecurrenceEndType, MediaAttachment } from '../types/schema';
 import { AttachmentManager } from './AttachmentManager';
 import { formatTime12h } from '../lib/utils';
@@ -129,7 +129,7 @@ function Row({
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-6 mb-2 first:mt-0">
+    <p className="text-xs font-medium text-muted-foreground mt-6 mb-2 first:mt-0">
       {children}
     </p>
   );

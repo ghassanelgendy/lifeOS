@@ -109,6 +109,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 **Purpose:** Bird's-eye view of the user's life. The landing page after login.
 
 - **Quick View Mode:** Today's timeline (tasks due, habits scheduled, events, prayer times) with countdowns and quick actions. Supports an anchored right-click context menu on desktop portaled directly to document body to accurately open on the entry clicked (for tasks, habits, events, prayers, completed items) with actions for Open/Insights, toggle completion, copy title, wont-do, and delete.
+- **Quick View Top Row (PC Web):** On desktop the row under the Hadith/Azkar banners is a 12-column grid: Day progress, a single "Today's targets" card, and "This week". The targets card shows Tasks, Habits & Prayers, Sleep and Screen time once each (value, progress bar against its target, status in text and color) and links to each module; it replaces the earlier pair of an icon-tile card and a separate targets card that repeated the same four numbers. Cards, the Due today panel, marker tooltips and the task context menu all use the web design tokens (no blur, gradients or entrance fades).
+- **Public Landing Page (Web):** Signed-out visitors at `/` get a dark, single-accent page built from live lifeOS UI: a 3D dashboard frame that flattens as the page scrolls and leans toward the pointer, a pinned "A day in lifeOS" section where scrolling turns a five-sided 3D prism through Tasks, Focus, Habits, Finance and Sleep, an interactive XP sandbox, a 12-module explorer, the wiki knowledge graph, and download links for the browser extension and desktop app. All motion is disabled under reduced-motion settings.
 - **Strategic Mode:** Long-term view with configurable horizon (30/90/180 days), goal progress, and upcoming milestones
 - **Annual Review Mode:** Year-in-review with reflections, trends, and note-taking per year
 - **Widgets:** Daily Hadith (comprehensive collection of 365+ authentic hadiths guaranteeing a unique hadith every single day with zero repetition across the entire year, full diacritics, Cairo typography, category badges, copy, shuffle avoiding recent items, English translation, and polished high-contrast light and dark appearance), Prayer (next prayer countdown), Stats (daily summary), Overdue (urgent tasks), Events (upcoming calendar), Quick Stats (tasks/habits/screentime/finance mini-cards), Habits (today's habit checklist)
@@ -639,6 +641,17 @@ Vite Custom Plugin:
 - Global Ctrl/Cmd + Enter to submit any form
 - Picture-in-Picture focus timer window
 - System tray integration (hide on close)
+
+
+### 9.6 Web Design System (web build)
+- **Single source of truth:** `src/styles/tokens.web.css`, imported only by `src/index.web.css` (iOS and pake stylesheets are unaffected). Tokens use new names (`ds-*`, `text-caption`, `rounded-control`) so adoption is opt-in per component.
+- **Semantic colors:** surface, raised, sunken, separator, hover, three text levels (`ink`, `ink-2`, `ink-3`), one accent, and status colors (`success`, `warning`, `danger`). Text levels and status colors meet 4.5:1 on page and raised surfaces in both themes.
+- **Type scale:** caption 12px (the minimum; no 9-11px text), label 14, body 16, title 18, heading 24, display 32. Section labels use sentence case, not uppercase tracked micro-labels.
+- **Radius:** `rounded-control` (10px) for buttons, inputs and rows; `rounded-card` (14px) for cards; `rounded-pill` for chips and switches.
+- **Elevation and motion:** a border plus at most one soft shadow; no gradients, glows or colored shadows. State changes 120ms, entrances 200ms; all motion is disabled under `prefers-reduced-motion`.
+- **Primitives** (`src/components/ui/`): `Button`, `IconButton` (label required), `Switch`, `Segmented` (arrow-key navigation), `Card` / `SectionTitle` / `ListRow`, `EmptyState`, `Skeleton` / `SkeletonRows`, and `Toast` with `toast.undoable()`. Web components use `ui/cn.ts`, a class merger that knows the custom scale.
+- **Desktop shell:** the sidebar is expanded with labels on first visit at 1280px and wider, and the user's collapse choice persists. Collapsed icons show their name on hover. Brain dump and Wrap entries use neutral styling with a static dot instead of pulsing indicators.
+- **Calendar:** feed subscription links live in a collapsed "Calendar feeds" section of the day panel.
 
 ---
 

@@ -343,6 +343,12 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/dashboard/DashboardStrategic.tsx](#src-components-dashboard-dashboardstrategic-tsx)
 - [src/components/dashboard/HadithWidget.tsx](#src-components-dashboard-hadithwidget-tsx)
 
+### src/components/landing
+- [src/components/landing/DayPrism.tsx](#src-components-landing-dayprism-tsx)
+- [src/components/landing/HeroFrame.tsx](#src-components-landing-heroframe-tsx)
+- [src/components/landing/mocks.tsx](#src-components-landing-mocks-tsx)
+- [src/components/landing/landing.css](#src-components-landing-landing-css)
+
 ### src/components/ui
 - [src/components/ui/Button.ios.tsx](#src-components-ui-button-ios-tsx)
 - [src/components/ui/Button.tsx](#src-components-ui-button-tsx)
@@ -3628,6 +3634,70 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-landing-dayprism-tsx"></a>
+### src/components/landing/DayPrism.tsx
+
+**File Purpose:** The landing page's pinned "A day in lifeOS" section. While the section is pinned, scroll progress turns a five-sided CSS 3D prism whose faces are live module fragments (Tasks, Focus, Habits, Finance, Sleep); the chapter list beside it follows the scroll and each chapter can be clicked to scroll to its face. Under `prefers-reduced-motion` nothing is pinned or rotated and the chapters render as a plain grid.
+
+**Functions & Classes:**
+- `DayPrism` (React Component)
+- `Face` (React Component)
+- `ChapterHead` (React Component)
+- `useFaceSize` (Hook)
+
+**Function Details:**
+- **`DayPrism`** — Takes the landing scroll container ref and a heading node; drives rotation from `useScroll({ container, target })`.
+- **`Face`** — One prism face; dims as it turns away from the viewer.
+- **`ChapterHead`** — Time, module name and title of a chapter.
+- **`useFaceSize`** — Face width/height fitted to the viewport.
+
+**Lines:** 195
+
+---
+
+<a name="src-components-landing-heroframe-tsx"></a>
+### src/components/landing/HeroFrame.tsx
+
+**File Purpose:** The landing hero's app frame: the dashboard drawn as live HTML in a CSS 3D scene. It starts tipped back and lies flat over the first ~520px of scroll, leans a few degrees toward the mouse pointer, and carries two floating tiles on their own depth. Static under `prefers-reduced-motion`.
+
+**Functions & Classes:**
+- `HeroFrame` (React Component)
+
+**Function Details:**
+- **`HeroFrame`** — Takes the landing scroll container ref.
+
+**Lines:** 136
+
+---
+
+<a name="src-components-landing-mocks-tsx"></a>
+### src/components/landing/mocks.tsx
+
+**File Purpose:** Live UI fragments used by the landing page (demo data, no screenshots, no network calls): task inbox, a working Pomodoro ring, habit heat grid, finance bars and a sleep chart. They only use the `--lp-*` variables from `landing.css`.
+
+**Functions & Classes:**
+- `TasksMock` (React Component)
+- `FocusMock` (React Component)
+- `HabitsMock` (React Component)
+- `FinanceMock` (React Component)
+- `SleepMock` (React Component)
+
+**Function Details:**
+- **`FocusMock`** — Counts down once per second while running; its button pauses and resumes.
+
+**Lines:** 205
+
+---
+
+<a name="src-components-landing-landing-css"></a>
+### src/components/landing/landing.css
+
+**File Purpose:** Landing-only styles. The landing is always dark, so `.lp` carries its own copy of the dark design tokens as `--lp-*` instead of following `html.light`. Also holds the button hover/press step, the focus ring and the hero dot grid, all disabled under `prefers-reduced-motion`.
+
+**Lines:** 48
+
+---
+
 <a name="src-components-navitems-ts"></a>
 ### src/components/navItems.ts
 
@@ -6341,33 +6411,26 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-landing-tsx"></a>
 ### src/routes/Landing.tsx
 
-**File Purpose:** Page-level route component for the Landing.tsx module. Renders the main view when navigating to this section.
+**File Purpose:** Public landing page shown at `/` to signed-out visitors. Sections, top to bottom: sticky header with scrollspy nav and a scroll progress line, hero with the 3D app frame (`HeroFrame`), stats, the pinned scroll-driven prism (`DayPrism`), the interactive XP sandbox, the 12-module explorer, the wiki knowledge graph, and the closing call to action with the extension and desktop downloads. The root element is the page's scroll container and is passed to the scroll-driven sections.
 
 **Functions & Classes:**
-- `GoogleIcon` (React Component)
-- `Counter` (React Component)
-- `RotatingWord` (React Component)
-- `FeatureCard` (React Component)
 - `Landing` (React Component)
-- `GoogleIcon` (Function)
-- `Counter` (Function)
-- `RotatingWord` (Function)
-- `FeatureCard` (Function)
-- `Landing` (Function)
+- `Sandbox` (React Component)
+- `Modules` (React Component)
+- `RotatingWord` (React Component)
+- `Counter` (React Component)
+- `SectionHead` (React Component)
+- `Eyebrow` (React Component)
+- `GoogleIcon` (React Component)
 
 **Function Details:**
-- **`GoogleIcon`** — React component rendering UI for GoogleIcon.
-- **`Counter`** — React component rendering UI for Counter.
-- **`RotatingWord`** — React component rendering UI for RotatingWord.
-- **`FeatureCard`** — React component rendering UI for FeatureCard.
-- **`Landing`** — React component rendering UI for Landing.
-- **`GoogleIcon`** — Utility function for google icon.
-- **`Counter`** — Utility function for counter.
-- **`RotatingWord`** — Utility function for rotating word.
-- **`FeatureCard`** — Utility function for feature card.
-- **`Landing`** — Utility function for landing.
+- **`Landing`** — Page component; owns the scroll container, header state and scrollspy.
+- **`Sandbox`** — Tick tasks and log habits; the XP score is derived from what is ticked.
+- **`Modules`** — 12 module buttons with a detail panel for the selected module.
+- **`RotatingWord`** — Cycles the hero's accent word; static under reduced motion.
+- **`Counter`** — Counts a stat up when it scrolls into view.
 
-**Lines:** 533
+**Lines:** 545
 
 ---
 
@@ -7656,3 +7719,10 @@ The iOS build (`pnpm build:ios`) is styled to feel native and is driven mostly f
 - **Text:** `font-black/extrabold` render as 700, sub-11px text renders as 11px, uppercase and wide tracking render as normal case, light-mode pastel text colors are darkened.
 - **System UI:** `window.alert` is replaced by a bottom toast (`src/lib/iosToast.ts`); `LiquidTabBar` shows labels; the Quran player pill matches the tab bar.
 - **Accessibility:** reduced motion and reduced transparency are honored globally.
+
+### Web design system (`src/styles/tokens.web.css`, `src/components/ui/`)
+Web-only foundations added during the web refurbish. `src/index.web.css` imports `tokens.web.css` and defines the class-based `dark` variant. Tokens: `bg-surface|raised|sunken`, `border-separator`, `text-ink|ink-2|ink-3`, `text-success|warning|danger`, type scale `text-caption|label|body|title|heading|display`, radii `rounded-control|card|pill`, shadows `shadow-ds|overlay`, helper classes `ds-t` (state transition), `ds-enter`, `ds-skeleton`, and `data-ds` (focus ring).
+
+Primitives: `Button.web.tsx` (same API, token-based), `IconButton` (required `label`), `Switch`, `Segmented`, `Card` (`Card`, `SectionTitle`, `ListRow`), `EmptyState`, `Skeleton`, `Toast` (`toast.show`, `toast.error`, `toast.undoable`; mount `<Toaster />` once). `ui/cn.ts` extends tailwind-merge with the custom scale: web files that use the custom classes must import `cn` from there (the `lib/utils` `cn` treats `text-label` as a color and drops other text colors). `Toaster` is not yet mounted in `AppShell.web.tsx`.
+
+Web-only files restyled: `AppShell.web.tsx` (desktop sidebar), `DashboardQuickView.web.tsx`, and the Habits, Tasks, Sleep, Settings, Calendar, Notes, Finance, Screentime and Azkar `.web` routes plus `CompactPrayerHabit`, `FinanceHeroCard`, `PrayerBacklog`, `DataCard`, `TaskDetailsContent` and `AppFooter` web variants. Pake falls back to these files when it has no `.pake` variant.

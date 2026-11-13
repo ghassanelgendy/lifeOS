@@ -12,7 +12,7 @@ import {
   Sun,
   X,
 } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import {
   useAllAzkar,
   useAzkarCategories,
@@ -202,7 +202,7 @@ export default function AzkarRoute() {
                     onClick={() => setFontSize(sz)}
                     aria-pressed={fontSize === sz}
                     className={cn(
-                      'rounded-lg border px-2.5 py-1 font-mono font-medium uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                      'rounded-lg border px-2.5 py-1 font-mono font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                       fontSize === sz
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border text-muted-foreground hover:text-foreground'
@@ -353,11 +353,11 @@ export default function AzkarRoute() {
                         : 'border-border bg-card text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
                     )}
                   >
-                    {isContext && <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-400" />}
+                    {isContext && <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400" />}
                     <span lang="ar" dir="rtl">{cat.name}</span>
                     <span
                       className={cn(
-                        'rounded-full px-1.5 py-0.5 font-mono text-[10px]',
+                        'rounded-full px-1.5 py-0.5 font-mono text-caption',
                         isSelected
                           ? 'bg-primary-foreground/20 text-primary-foreground'
                           : 'bg-secondary text-muted-foreground'
@@ -418,7 +418,7 @@ export default function AzkarRoute() {
         {/* Azkar List Cards */}
         {displayedAzkar.length === 0 ? (
           <div className="space-y-3 rounded-2xl border border-dashed border-border bg-card/40 py-16 text-center" dir="rtl">
-            <BookOpen size={36} className="mx-auto text-muted-foreground/60" />
+            <BookOpen size={36} className="mx-auto text-ink-3" />
             <p className="text-sm font-medium text-muted-foreground" lang="ar">
               {showFavoritesOnly ? 'لم تقم بحفظ أي أذكار في المفضلة بعد.' : 'لا توجد أذكار تطابق هذا البحث.'}
             </p>

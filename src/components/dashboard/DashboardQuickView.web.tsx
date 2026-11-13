@@ -4,10 +4,10 @@ import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
-import { Flame, Monitor, Moon, Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy, BookOpen } from 'lucide-react';
+import { Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy, BookOpen } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../../lib/quran-memorizer';
 import { getAzkarHabitCategory } from '../../hooks/useAzkar';
-import { cn } from '../../lib/utils';
+import { cn } from '../ui/cn';
 import { useCompletedTasks, useOverdueTasks, useTodayTasks, useToggleTask, useCreateTask } from '../../hooks/useTasks';
 import { useUpdateTask, useDeleteTask } from '../../hooks/useTasks.web';
 import { useWeeklyAdherence, useLogHabit, useHabitInsights } from '../../hooks/useHabits.web';
@@ -56,7 +56,7 @@ function isoToDayMinutes(value?: string | null): number | null {
 
 /** Inline nav pills (Due today header, What’s next, metric cards, sleep). */
 const QV_LINK_PILL =
-  'inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50';
+  'ds-t inline-flex items-center gap-1 rounded-control border border-separator px-2.5 py-1 text-caption font-medium text-ink-2 hover:text-ink hover:bg-hover';
 const QV_LINK_ARROW = 'size-3 shrink-0';
 
 type TimeSegment = { start: number; end: number }; // 0 to 1440
@@ -181,7 +181,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
           ? kind === 'prayer'
             ? 'opacity-60 border-slate-500/15 bg-slate-500/[0.04]'
             : 'opacity-60 border-primary/15 bg-primary/[0.04]'
-          : 'border-border/60 bg-card hover:border-border hover:bg-card/80 shadow-sm hover:shadow-md',
+          : 'border-transparent bg-sunken hover:bg-hover',
       )}
       onContextMenu={onContextMenu}
     >
@@ -240,7 +240,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                         strokeDasharray: '131.95',
                         strokeDashoffset: `${131.95 - (131.95 * percentage) / 100}`,
                         stroke: 'var(--primary)',
-                        filter: percentage > 0 ? 'drop-shadow(0 0 4px var(--primary))' : 'none',
+                        
                       }}
                       strokeWidth="2"
                       strokeLinecap="round"
@@ -291,23 +291,25 @@ const ACCENT_DOT: Record<DueKind, string> = {
             )}
             aria-hidden
           >
-            <div className="size-4 text-muted-foreground/50" />
+            <div className="size-4 text-ink-3" />
           </div>
         )}
 
         <div className="min-w-0 flex-1 pt-0.5 flex justify-between items-start">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-1.5 gap-y-1">
-              <span
-                className={cn(
-                  'inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest',
-                  !color && kind === 'prayer' && 'bg-slate-500/12 text-slate-500 dark:text-slate-400',
-                  !color && kind === 'task' && 'bg-amber-500/12 text-amber-600 dark:text-amber-400',
-                  !color && kind === 'habit' && 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
-                  !color && kind === 'event' && 'bg-indigo-500/12 text-indigo-500 dark:text-indigo-400',
-                )}
-                style={color ? { backgroundColor: `${color}20`, color: color } : undefined}
-              >
+              <span className="inline-flex items-center gap-1.5 text-caption font-medium text-ink-2">
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    'size-1.5 rounded-pill',
+                    !color && kind === 'prayer' && 'bg-slate-500',
+                    !color && kind === 'task' && 'bg-amber-500',
+                    !color && kind === 'habit' && 'bg-emerald-500',
+                    !color && kind === 'event' && 'bg-indigo-500',
+                  )}
+                  style={color ? { backgroundColor: color } : undefined}
+                />
                 {kindLabel}
               </span>
               {azkarCategory && (
@@ -317,7 +319,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                     e.stopPropagation();
                     window.location.href = '/azkar';
                   }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                  className="ds-t inline-flex items-center gap-1 px-2 py-1 rounded-control text-caption font-medium bg-sunken text-ink hover:bg-hover shrink-0 cursor-pointer"
                   title={`فتح ${azkarCategory} في قسم الأذكار`}
                 >
                   <Sparkles size={10} />
@@ -342,7 +344,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                     }));
                     window.location.href = `/quran?page=${quranTarget.page}&surah=${quranTarget.surahId}&ayah=${quranTarget.ayahNumber || 1}&mode=reading&tab=reader`;
                   }}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                  className="ds-t inline-flex items-center gap-1 px-2 py-1 rounded-control text-caption font-medium bg-sunken text-ink hover:bg-hover shrink-0 cursor-pointer"
                   title={`فتح ${quranTarget.surahName} في المصحف`}
                 >
                   <BookOpen size={10} />
@@ -350,7 +352,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                 </button>
               )}
               {done && (
-                <span className={cn("text-[10px] font-medium uppercase tracking-wide", kind === 'prayer' ? "text-slate-500 dark:text-slate-400" : "text-primary")}>Done</span>
+                <span className={cn("text-caption font-medium", kind === 'prayer' ? "text-slate-500 dark:text-slate-400" : "text-primary")}>Done</span>
               )}
               {hasSubtasks && (
                 <button
@@ -359,7 +361,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                     e.stopPropagation();
                     setIsExpanded(!isExpanded);
                   }}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
+                  className="ds-t text-caption px-2 py-1 rounded-control bg-sunken text-ink font-medium hover:bg-hover flex items-center gap-1 cursor-pointer"
                 >
                   <span>{completedCount}/{totalCount} ({percentage}%)</span>
                   {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -375,7 +377,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                 )}
               />
             </div>
-            {subtitle ? <p className="mt-0.5 text-[11px] text-muted-foreground/70 tabular-nums font-medium">{subtitle}</p> : null}
+            {subtitle ? <p className="mt-0.5 text-caption text-ink-3 tabular-nums font-medium">{subtitle}</p> : null}
           </div>
 
           <div className="flex items-center gap-1 shrink-0 ml-1">
@@ -392,7 +394,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                 "p-1 rounded transition-all",
                 copied
                   ? "text-green-500"
-                  : "text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-muted-foreground"
+                  : "text-ink-3 opacity-0 group-hover:opacity-100 hover:text-muted-foreground"
               )}
               title="Copy title"
             >
@@ -408,9 +410,9 @@ const ACCENT_DOT: Record<DueKind, string> = {
                   onRescue();
                 }}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs font-bold transition-all shrink-0 self-center shadow-sm",
+                  "ds-t inline-flex items-center gap-1 rounded-control border px-3 min-h-8 text-label font-medium shrink-0 self-center",
                   balance >= rescueCost
-                    ? "bg-amber-500/10 border-amber-500/20 text-amber-500 hover:bg-amber-500 hover:text-white active:scale-95"
+                    ? "border-separator text-ink hover:bg-hover"
                     : "bg-secondary border-border text-muted-foreground cursor-not-allowed opacity-60"
                 )}
                 title={balance >= rescueCost ? "Rescue this task to today" : `Need ${rescueCost} points to rescue`}
@@ -1462,19 +1464,64 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     sleepTimeStr = ` · ${Math.round(remaining / 60)}h until sleep`;
   }
 
+  // Today's four numbers, each measured against its target. One source for the
+  // "Today's targets" card (the old icon tiles repeated the same figures).
+  const tone = (good: boolean, ok: boolean, hasValue = true): 'good' | 'ok' | 'bad' | 'neutral' =>
+    !hasValue ? 'neutral' : good ? 'good' : ok ? 'ok' : 'bad';
+  const TONE_TEXT = { good: 'text-success', ok: 'text-warning', bad: 'text-danger', neutral: 'text-ink-3' } as const;
+  const TONE_BAR = { good: 'bg-success', ok: 'bg-warning', bad: 'bg-danger', neutral: 'bg-separator' } as const;
+
+  const tasksDoneToday = completedTasks.filter(t => !t.is_wont_do && t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === todayStr && !t.calendar_source_key && !t.calendar_event_id).length;
+  const tasksAllDue = tasksDoneToday + tasksDueTodayOnly.length;
+  const tasksPct = tasksAllDue > 0 ? Math.round((tasksDoneToday / tasksAllDue) * 100) : 100;
+  const habitsPct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 100;
+  const sleepHours = lastNightSleep ? lastNightSleep / 60 : 0;
+  const SLEEP_TARGET_H = 7.5;
+  const screenHours = todayScreentime.totalMinutes > 0 ? todayScreentime.totalMinutes / 60 : 0;
+  const SCREEN_TARGET_H = 4;
+
+  const todayStats = [
+    {
+      key: 'tasks', to: '/tasks', label: 'Tasks', tour: undefined as string | undefined, private: false,
+      value: String(dueTodayBundleCount), unit: 'left',
+      detail: `${tasksDoneToday}/${tasksAllDue} done`,
+      pct: tasksPct, tone: tone(tasksPct >= 80, tasksPct >= 40),
+    },
+    {
+      key: 'habits', to: '/habits', label: 'Habits & Prayers', tour: 'metric-habits', private: false,
+      value: String(todayHabitCompleted), unit: `/${todayHabitTotal}`,
+      detail: `${habitsPct}%`,
+      pct: Math.min(100, habitsPct), tone: tone(habitsPct >= 80, habitsPct >= 50),
+    },
+    {
+      key: 'sleep', to: '/sleep', label: 'Sleep', tour: undefined as string | undefined, private: true,
+      value: sleepHours > 0 ? sleepHours.toFixed(1) : '—', unit: sleepHours > 0 ? 'h' : '',
+      detail: `target ${SLEEP_TARGET_H}h`,
+      pct: sleepHours > 0 ? Math.round(Math.min(100, (sleepHours / SLEEP_TARGET_H) * 100)) : 0,
+      tone: tone(sleepHours >= 7, sleepHours >= 5.5, sleepHours > 0),
+    },
+    {
+      key: 'screen', to: '/screentime', label: 'Screen time', tour: 'metric-screentime', private: true,
+      value: screenHours > 0 ? screenHours.toFixed(1) : '—', unit: screenHours > 0 ? 'h' : '',
+      detail: `limit ${SCREEN_TARGET_H}h`,
+      pct: screenHours > 0 ? Math.round(Math.min(100, (screenHours / SCREEN_TARGET_H) * 100)) : 0,
+      tone: tone(screenHours > 0 && screenHours <= SCREEN_TARGET_H, screenHours <= SCREEN_TARGET_H * 1.4, screenHours > 0),
+    },
+  ];
+
   return (
     <>
     <div className="flex flex-col gap-4 sm:gap-5 w-full">
       {/* Today Header & Points Balance */}
       <div className="flex items-center justify-between">
-        <h2 id="qv-today-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
+        <h2 id="qv-today-heading" className="text-caption font-bold text-ink-3">
           Today
         </h2>
         <Link 
           to="/points" 
-          className="flex items-center gap-1.5 text-xs font-semibold text-amber-500 hover:text-amber-400 transition-colors"
+          className="flex items-center gap-1.5 text-label font-semibold text-warning hover:text-ink transition-colors"
         >
-          <Coins className="size-3.5 text-amber-400" />
+          <Coins className="size-3.5 text-warning" />
           <span className={cn(privacyMode && 'blur-sm')}>
             {pointsBalance} pts
           </span>
@@ -1483,52 +1530,51 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
       {/* Daily Spiritual Banners: Hadith & Azkar — shares the same grid template as the
           Day progress / metrics row below so both rows line up to the same total width. */}
-      <div data-tour="spiritual-banners" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
-        <div className="lg:col-span-2 flex flex-col">
+      <div data-tour="spiritual-banners" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+        <div className="flex flex-col">
           <HadithWidget className="h-full" />
         </div>
-        <div className="lg:col-span-2 flex flex-col">
+        <div className="flex flex-col">
           <AzkarDashboardWidget className="h-full" />
         </div>
       </div>
 
 
-      {/* Top Row Grid: Custom column ratios on PC/Desktop, 2 columns on tablet, stacked on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr] gap-4 sm:gap-5 items-stretch">
+      {/* Top row: 12 columns on desktop (day 5, targets 4, week 3), 2 columns on tablet, stacked on mobile */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         {/* Col 1: Day Progress (First thing) */}
-        <section data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="rounded-xl border border-border/50 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <p id="qv-day-progress-heading" className="text-[11px] text-muted-foreground/60 font-bold uppercase tracking-widest flex items-center gap-1.5">
-              <Sparkles className="size-3 text-primary/70 shrink-0" />
+        <section data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col justify-between md:col-span-2 lg:col-span-5">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
+            <p id="qv-day-progress-heading" className="text-label text-ink-2 font-semibold whitespace-nowrap">
               Day progress
             </p>
-            <div className="flex items-center gap-x-2 gap-y-1 text-[9px] font-semibold text-muted-foreground/50 uppercase tracking-widest flex-wrap justify-end">
+            <div className="flex items-center gap-x-2 gap-y-1 text-caption font-semibold text-ink-3 flex-wrap justify-end">
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-indigo-500" /> Sleep</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-violet-500" /> Phone</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-emerald-500" /> Web</span>
             </div>
           </div>
-          <div className="flex items-baseline gap-3 mb-4 flex-wrap">
-            <div className="flex items-baseline gap-1">
-              <p className={cn('text-xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+          <div className="flex items-baseline gap-x-5 gap-y-1 mb-4 flex-wrap">
+            <div className="flex items-baseline gap-1 whitespace-nowrap">
+              <p className={cn('text-xl font-semibold tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {Math.round(screenChart.accounted / 60)}h
               </p>
-              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">tracked</p>
+              <p className="text-caption font-semibold text-ink-3">tracked</p>
             </div>
-            <span className="text-muted-foreground/20 font-light">|</span>
-            <div className="flex items-baseline gap-1">
-              <p className={cn('text-xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
+            
+            <div className="flex items-baseline gap-1 whitespace-nowrap">
+              <p className={cn('text-xl font-semibold tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {Math.round(Math.max(0, screenChart.elapsed - screenChart.sleep) / 60)}h
               </p>
-              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">awake</p>
+              <p className="text-caption font-semibold text-ink-3">awake</p>
             </div>
-            <span className="text-muted-foreground/20 font-light">|</span>
-            <div className="flex items-baseline gap-1">
-              <p className={cn('text-xl font-black tabular-nums tracking-tight text-muted-foreground/70', privacyMode && 'blur-sm')}>
+            
+            <div className="flex items-baseline gap-1 whitespace-nowrap">
+              <p className={cn('text-xl font-semibold tabular-nums tracking-tight text-ink-3', privacyMode && 'blur-sm')}>
                 {Math.round(Math.max(0, screenChart.elapsed - screenChart.accounted) / 60)}h
               </p>
-              <p className="text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider">free</p>
+              <p className="text-caption font-semibold text-ink-3">free</p>
             </div>
           </div>
 
@@ -1576,10 +1622,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                       "pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 transition-opacity duration-300",
                       activeTooltip === marker.id ? "opacity-100" : "opacity-0 sm:group-hover:opacity-100"
                     )}>
-                      <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1.5 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
+                      <div className="relative flex flex-col items-center justify-center rounded-control border border-separator bg-raised px-2.5 py-1.5 text-caption text-ink shadow-overlay whitespace-nowrap">
                         <span className="font-semibold">{marker.name}</span>
-                        <span className="text-[10px] text-muted-foreground/80 font-medium tracking-wide uppercase mt-0.5">{marker.timeStr}</span>
-                        <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95 backdrop-blur-sm" />
+                        <span className="text-caption text-ink-3 font-medium mt-0.5">{marker.timeStr}</span>
+                        <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-separator bg-raised" />
                       </div>
                     </div>
                   </div>
@@ -1588,21 +1634,21 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             ))}
 
             <span
-              className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-foreground/80 shadow-[0_0_6px_2px_rgba(255,255,255,0.15)] animate-pulse"
+              className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-foreground/80"
               style={{ left: screenChart.nowPct }}
               aria-hidden
             />
 
             {/* Time Indicators */}
             <div className="pointer-events-none absolute -bottom-5 left-0 right-0 h-4">
-              <span className="absolute left-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
-              <span className="absolute left-[25%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">6am</span>
-              <span className="absolute left-[50%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12pm</span>
-              <span className="absolute left-[75%] -translate-x-1/2 text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">6pm</span>
-              <span className="absolute right-[0%] text-[9px] font-bold text-muted-foreground/40 uppercase tracking-wider">12am</span>
+              <span className="absolute left-[0%] text-caption font-bold text-ink-3">12am</span>
+              <span className="absolute left-[25%] -translate-x-1/2 text-caption font-bold text-ink-3">6am</span>
+              <span className="absolute left-[50%] -translate-x-1/2 text-caption font-bold text-ink-3">12pm</span>
+              <span className="absolute left-[75%] -translate-x-1/2 text-caption font-bold text-ink-3">6pm</span>
+              <span className="absolute right-[0%] text-caption font-bold text-ink-3">12am</span>
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-between gap-2 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-widest">
+          <div className="mt-6 flex items-center justify-between gap-2 text-caption font-semibold text-ink-3">
             <span>24h clock</span>
             <span className={cn('tabular-nums font-bold text-foreground/60', privacyMode && 'blur-sm')}>
               {habitAdherencePct}% adherence{sleepTimeStr}
@@ -1610,74 +1656,64 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           </div>
         </section>
 
-        {/* Col 2: 4 metrics/icons */}
-        <div data-tour="metric-cards" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in zoom-in-95 fade-in duration-500 fill-mode-both delay-100 flex flex-col justify-center min-h-[180px] lg:min-h-0">
-          <div className="grid grid-cols-2 gap-3 flex-1 items-center">
-            {/* Remaining Tasks */}
-            <Link to="/" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
-              <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10">
-                <CheckCircle2 className="size-4 text-primary shrink-0" />
-              </div>
-              <p className="text-2xl font-black tabular-nums tracking-tight text-primary leading-none mt-1">{dueTodayBundleCount}</p>
-              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Remaining</p>
-            </Link>
-            {/* Habits */}
-            <Link to="/habits" data-tour="metric-habits" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
-              <div className="flex items-center justify-center size-8 rounded-lg bg-orange-500/10">
-                <Flame className="size-4 text-orange-500 shrink-0" />
-              </div>
-              <p className="text-2xl font-black tabular-nums tracking-tight leading-none mt-1">
-                {todayHabitCompleted}
-                <span className="text-muted-foreground/50 text-xs font-normal">/{todayHabitTotal}</span>
-              </p>
-              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Habits</p>
-            </Link>
-            {/* Screen */}
-            <Link to="/screentime" data-tour="metric-screentime" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
-              <div className="flex items-center justify-center size-8 rounded-lg bg-sky-500/10">
-                <Monitor className="size-4 text-sky-500 shrink-0" />
-              </div>
-              <p className={cn('text-2xl font-black tabular-nums tracking-tight leading-none mt-1', privacyMode && 'blur-sm')}>
-                {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
-              </p>
-              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Screen</p>
-            </Link>
-            {/* Sleep */}
-            <Link to="/sleep" className="flex flex-col items-center justify-center gap-1 p-2 rounded-xl hover:bg-muted/40 transition-colors text-center">
-              <div className="flex items-center justify-center size-8 rounded-lg bg-indigo-500/10">
-                <Moon className="size-4 text-indigo-400 shrink-0" />
-              </div>
-              <p className={cn('text-2xl font-black tabular-nums tracking-tight leading-none mt-1', privacyMode && 'blur-sm')}>
-                {lastNightSleep && lastNightSleep > 0 ? `${Math.round(lastNightSleep / 60)}h` : '—'}
-              </p>
-              <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider">Sleep</p>
-            </Link>
+        {/* Today's targets: one block per number, each against its target */}
+        <section data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-4">
+          <p id="qv-targets-heading" className="text-label font-semibold text-ink-2 mb-3">
+            Today's targets
+          </p>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 flex-1 content-between">
+            {todayStats.map((stat) => (
+              <Link
+                key={stat.key}
+                to={stat.to}
+                data-tour={stat.tour}
+                data-ds
+                className="ds-t flex flex-col gap-2 rounded-control p-2.5 -mx-1 hover:bg-hover"
+              >
+                <span className="text-caption font-medium text-ink-3">{stat.label}</span>
+                <span className={cn('flex items-baseline gap-1 leading-none', stat.private && privacyMode && 'blur-sm')}>
+                  <span className="text-heading font-semibold tabular-nums tracking-tight text-ink">{stat.value}</span>
+                  {stat.unit && <span className="text-label font-medium text-ink-3">{stat.unit}</span>}
+                </span>
+                <span className="h-1.5 w-full rounded-pill bg-sunken" aria-hidden>
+                  <span
+                    className={cn('block h-full rounded-pill transition-[width] duration-500', TONE_BAR[stat.tone], stat.private && privacyMode && 'blur-sm')}
+                    style={{ width: `${stat.pct}%` }}
+                  />
+                </span>
+                <span className={cn('text-caption font-semibold tabular-nums', TONE_TEXT[stat.tone], stat.private && privacyMode && 'blur-sm')}>
+                  {stat.detail}
+                </span>
+              </Link>
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* Col 3: Weekly Habit Performance Chart */}
-        <section data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in fade-in duration-700 fill-mode-both flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-4">
-            <p id="qv-weekly-adherence-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest">
-              This week
-            </p>
+        {/* This week: habit adherence per day */}
+        <section data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-3">
+          <p id="qv-weekly-adherence-heading" className="text-label font-semibold text-ink-2">
+            This week
+          </p>
+          <p className="mt-3 flex items-baseline gap-1.5 leading-none">
             <span className={cn(
-              'text-xs font-bold tabular-nums',
-              weekAdherence >= 80 ? 'text-emerald-400' : weekAdherence >= 50 ? 'text-amber-400' : 'text-rose-400'
+              'text-heading font-semibold tabular-nums tracking-tight',
+              weekAdherence >= 80 ? 'text-success' : weekAdherence >= 50 ? 'text-warning' : 'text-danger'
             )}>
-              {weekAdherence}% avg
+              {weekAdherence}%
             </span>
-          </div>
-          {/* Pixel-based bar chart — height computed from adherence %, max 44px bar area */}
-          <div className="flex gap-1.5 items-end mt-auto" style={{ height: '52px' }}>
+            <span className="text-caption font-medium text-ink-3">average adherence</span>
+          </p>
+          <div className="mt-4 flex flex-1 items-stretch gap-1.5 min-h-[72px]">
             {dailyAdherence.map((day, i) => {
               if (!day) {
                 const d = new Date();
                 d.setDate(d.getDate() - (dailyAdherence.length - 1 - i));
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center justify-end gap-1">
-                    <div className="w-full rounded-sm bg-muted-foreground/10" style={{ height: '3px' }} />
-                    <span className="text-[9px] font-semibold text-muted-foreground/25 uppercase tracking-wide">
+                  <div key={i} className="flex-1 flex flex-col gap-1.5">
+                    <div className="flex-1 flex items-end">
+                      <div className="w-full h-[3px] rounded-sm bg-separator" />
+                    </div>
+                    <span className="text-center text-caption font-medium text-ink-3">
                       {format(d, 'EEE')[0]}
                     </span>
                   </div>
@@ -1685,16 +1721,17 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               }
               const pct = day.adherence;
               const isToday = day.date === todayStr;
-              const color = pct >= 80 ? 'bg-emerald-500' : pct >= 50 ? 'bg-amber-500' : 'bg-rose-500';
-              const barPx = Math.max(3, Math.round((pct / 100) * 40));
+              const color = pct >= 80 ? 'bg-success' : pct >= 50 ? 'bg-warning' : 'bg-danger';
               return (
-                <div key={day.date} className="flex-1 flex flex-col items-center justify-end gap-1">
-                  <div
-                    className={cn('w-full rounded-sm transition-all duration-700', color, isToday && 'opacity-100 ring-1 ring-white/20')}
-                    style={{ height: `${barPx}px` }}
-                    title={`${pct}%`}
-                  />
-                  <span className={cn('text-[9px] font-bold uppercase tracking-wide', isToday ? 'text-foreground/80' : 'text-muted-foreground/40')}>
+                <div key={day.date} className="flex-1 flex flex-col gap-1.5">
+                  <div className="flex-1 flex items-end">
+                    <div
+                      className={cn('w-full min-h-[3px] rounded-sm transition-[height] duration-500', color, !isToday && 'opacity-70')}
+                      style={{ height: `${pct}%` }}
+                      title={`${pct}%`}
+                    />
+                  </div>
+                  <span className={cn('text-center text-caption', isToday ? 'font-bold text-ink' : 'font-medium text-ink-3')}>
                     {format(parseISO(day.date), 'EEE')[0]}
                   </span>
                 </div>
@@ -1702,124 +1739,16 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             })}
           </div>
         </section>
-
-        {/* Col 4: Today's Performance vs Targets */}
-        <section aria-labelledby="qv-targets-heading" className="rounded-xl border border-border/50 bg-card p-4 shadow-sm hover:shadow-md transition-shadow animate-in fade-in duration-700 fill-mode-both flex flex-col justify-between">
-          <p id="qv-targets-heading" className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest mb-3">
-            Today's targets
-          </p>
-          <div className="space-y-3 flex-1 flex flex-col justify-center">
-            {/* Tasks */}
-            {(() => {
-              const done = completedTasks.filter(t => !t.is_wont_do && t.completed_at && format(new Date(t.completed_at), 'yyyy-MM-dd') === todayStr && !t.calendar_source_key && !t.calendar_event_id).length;
-              const allDue = done + tasksDueTodayOnly.length;
-              const pct = allDue > 0 ? Math.round((done / allDue) * 100) : 100;
-              const good = pct >= 80;
-              const ok = pct >= 40;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-medium text-foreground/70">Tasks</span>
-                    <span className={cn('text-[10px] font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
-                      {done}/{allDue}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Habits */}
-            {(() => {
-              const pct = todayHabitTotal > 0 ? Math.round((todayHabitCompleted / todayHabitTotal) * 100) : 100;
-              const good = pct >= 80;
-              const ok = pct >= 50;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-medium text-foreground/70">Habits & Prayers</span>
-                    <span className={cn('text-[10px] font-bold tabular-nums', good ? 'text-emerald-400' : ok ? 'text-amber-400' : 'text-rose-400')}>
-                      {todayHabitCompleted}/{todayHabitTotal}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : 'bg-rose-500')}
-                      style={{ width: `${Math.min(100, pct)}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Sleep */}
-            {(() => {
-              const sleepH = lastNightSleep ? lastNightSleep / 60 : 0;
-              const targetH = 7.5;
-              const pct = sleepH > 0 ? Math.round(Math.min(100, (sleepH / targetH) * 100)) : 0;
-              const good = sleepH >= 7;
-              const ok = sleepH >= 5.5;
-              const label = sleepH > 0 ? `${sleepH.toFixed(1)}h/${targetH}h` : `—/${targetH}h`;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-medium text-foreground/70">Sleep</span>
-                    <span className={cn('text-[10px] font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : sleepH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
-                      {label}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : sleepH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Screen Time */}
-            {(() => {
-              const screenH = todayScreentime.totalMinutes > 0 ? todayScreentime.totalMinutes / 60 : 0;
-              const targetH = 4;
-              const usagePct = screenH > 0 ? Math.round(Math.min(100, (screenH / targetH) * 100)) : 0;
-              const good = screenH > 0 && screenH <= targetH;
-              const ok = screenH <= targetH * 1.4;
-              const label = screenH > 0 ? `${screenH.toFixed(1)}h/≤${targetH}h` : `—/≤${targetH}h`;
-              return (
-                <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-[10px] font-medium text-foreground/70">Screen time</span>
-                    <span className={cn('text-[10px] font-bold tabular-nums', privacyMode && 'blur-sm', good ? 'text-emerald-400' : ok ? 'text-amber-400' : screenH > 0 ? 'text-rose-400' : 'text-muted-foreground/50')}>
-                      {label}
-                    </span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted-foreground/10">
-                    <div
-                      className={cn('h-full rounded-full transition-all duration-700', privacyMode && 'blur-sm', good ? 'bg-emerald-500' : ok ? 'bg-amber-500' : screenH > 0 ? 'bg-rose-500' : 'bg-muted-foreground/20')}
-                      style={{ width: `${usagePct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </section>
       </div>
 
       {/* Row 2: Due Today Entries (3 Columns on Desktop) */}
       <section
         data-tour="due-today"
-        className="rounded-2xl border border-border/60 bg-card/50 backdrop-blur-sm overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both w-full"
+        className="rounded-card border border-separator bg-raised overflow-hidden shadow-ds w-full"
         aria-labelledby="qv-due-today-heading"
       >
-        <div className="border-b border-border/40 bg-muted/20 px-4 py-3 sm:px-5 sm:py-4 flex items-center justify-between gap-2">
-          <h2 id="qv-due-today-heading" className="font-semibold text-sm sm:text-base tracking-tight text-foreground/90">
+        <div className="border-b border-separator px-4 py-3 sm:px-5 flex items-center justify-between gap-2">
+          <h2 id="qv-due-today-heading" className="text-title font-semibold tracking-tight text-ink">
             Due today
           </h2>
           <div className="flex flex-wrap items-center gap-2 shrink-0">
@@ -1836,7 +1765,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
         <div className="p-3 sm:p-4">
           {!hasDueTodayContent ? (
-            <p className="text-sm text-muted-foreground text-center py-8">Nothing due today. Enjoy the calm.</p>
+            <p className="text-label text-ink-3 text-center py-8">Nothing due today. Enjoy the calm.</p>
           ) : (
             <ul ref={parent} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-2.5">
               {timelineItems.map((item) => item.element)}
@@ -1852,7 +1781,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         ref={contextMenuRef}
         role="menu"
         aria-orientation="vertical"
-        className="fixed z-[9999] min-w-[190px] rounded-xl border border-border/60 bg-popover/95 backdrop-blur-md shadow-2xl overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-150"
+        className="fixed z-[9999] min-w-[190px] rounded-card border border-separator bg-raised shadow-overlay overflow-hidden py-1"
         style={{
           top: `${contextMenu.y}px`,
           left: `${contextMenu.x}px`,

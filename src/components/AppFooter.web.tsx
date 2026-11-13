@@ -1,4 +1,5 @@
-import { cn, formatTime12h } from '../lib/utils';
+import { formatTime12h } from '../lib/utils';
+import { cn } from './ui/cn';
 import { useSyncStatus } from '../hooks/useSyncStatus';
 
 export function AppFooter() {
@@ -38,7 +39,7 @@ export function AppFooter() {
         >
           GitHub repo
         </a>
-        <div className="flex items-center gap-1 text-[11px]">
+        <div className="flex items-center gap-1 text-caption">
           <span
             className={cn(
               'w-2 h-2 rounded-full',

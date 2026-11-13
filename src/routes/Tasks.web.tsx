@@ -5,7 +5,8 @@ import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
-import { cn, formatTime12h } from '../lib/utils';
+import { formatTime12h } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI, extractJSON } from '../lib/ai';
 import { useTasks, useTaskLists, useTags, useTodayTasks, useUpcomingTasks, useWeekTasks, useCompletedTasks, useOverdueTasks, useCreateTask, useUpdateTask, useToggleTask, useDeleteTask, useBatchDeleteTasks, useCreateTaskList, useUpdateTaskList, useDeleteTaskList, useCreateTag, useUpdateTag, useDeleteTag, useConvertTaskToHabit, useTaskWithSubtasks, useCreateSubtask } from '../hooks/useTasks';
@@ -147,7 +148,7 @@ interface SmartListConfig {
 
 // Define the order and properties of smart lists
 const SMART_LISTS: SmartListConfig[] = [
-  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: Task[], overdueTasks: Task[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-blue-500/20 text-blue-500" },
+  { id: 'today', label: 'Today', icon: Star, viewType: 'today', getCount: (todayTasks: Task[], overdueTasks: Task[]) => todayTasks.length + overdueTasks.length, colorClass: "bg-blue-500/20 text-blue-700 dark:text-blue-400" },
   { id: 'week', label: 'This Week', icon: CalendarIcon, viewType: 'week', getCount: (weekTasks: Task[]) => weekTasks.length, colorClass: "bg-purple-500/20 text-purple-500" },
   { id: 'upcoming', label: 'Upcoming', icon: CalendarDays, viewType: 'upcoming', getCount: (upcomingTasks: Task[]) => upcomingTasks.length, colorClass: "bg-secondary text-foreground" },
   { id: 'all', label: 'All Tasks', icon: ListTodo, viewType: 'all', getCount: (allTasks: Task[]) => allTasks.filter(t => !t.is_completed).length, colorClass: "bg-secondary text-foreground" },
@@ -2129,7 +2130,7 @@ export default function Tasks() {
       today.setHours(0, 0, 0, 0);
 
       if (isToday(dueDate)) {
-        return { text: 'Today', className: 'text-blue-500' };
+        return { text: 'Today', className: 'text-blue-600 dark:text-blue-400' };
       }
       if (isPast(dueDate) && !task.is_completed) {
         return { text: format(dueDate, 'MMM d'), className: 'text-red-500' };
@@ -2165,7 +2166,7 @@ export default function Tasks() {
         )}
       >
         <div className="p-4 space-y-0.5 shrink-0">
-          <span className="block px-4 mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">Smart Lists</span>
+          <span className="block px-4 mb-2 text-xs font-medium text-muted-foreground">Smart Lists</span>
           {/* Smart Lists - text-base on mobile so not small/cut */}
           {SMART_LISTS.map((list) => (
             <button
@@ -2194,7 +2195,7 @@ export default function Tasks() {
 
         <div className="flex-1 min-h-0 overflow-y-auto px-4 pt-2 pb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Lists</span>
+            <span className="text-xs font-medium text-muted-foreground">Lists</span>
             <button
               onClick={() => {
                 setEditingListId(null);
@@ -2300,7 +2301,7 @@ export default function Tasks() {
           </div>
 
           <div className="flex items-center justify-between mt-4 mb-2">
-            <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Tags</span>
+            <span className="text-xs font-medium text-muted-foreground">Tags</span>
             <button
               onClick={() => {
                 setEditingTagId(null);
@@ -2542,7 +2543,7 @@ export default function Tasks() {
               <Wand2 size={14} />
               <span className="hidden sm:inline">{selectedTasks.length > 0 ? "Reorganize" : "Schedule"}</span>
               {(selectedTasks.length > 0 || unscheduledTasks.length > 0) && (
-                <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground font-bold">
+                <span className="text-caption px-1.5 py-0.2 rounded-full bg-primary text-primary-foreground font-bold">
                   {selectedTasks.length > 0 ? selectedTasks.length : unscheduledTasks.length}
                 </span>
               )}
@@ -2752,7 +2753,7 @@ export default function Tasks() {
                       }}
                       className={cn(
                         "p-1.5 text-xs hover:bg-secondary rounded-lg transition-colors text-muted-foreground hover:text-foreground shrink-0",
-                        isParsing && "text-red-500 animate-pulse"
+                        isParsing && "text-red-500"
                       )}
                       title="Voice Dictate Task"
                     >
@@ -3007,7 +3008,7 @@ Return ONLY raw JSON.`;
                   </button>
                 </div>
                 {suggestedTimeLabel && (
-                  <p className="text-[11px] text-muted-foreground -mt-1">
+                  <p className="text-caption text-muted-foreground -mt-1">
                     Suggested: {suggestedTimeLabel} — change the date/time below if this doesn't work.
                   </p>
                 )}
@@ -3189,7 +3190,7 @@ Return ONLY raw JSON.`;
                       title="Tags"
                     >
                       <TagIcon size={16} />
-                      {newTaskTagIds.length > 0 && <span className="text-[10px] font-bold">{newTaskTagIds.length}</span>}
+                      {newTaskTagIds.length > 0 && <span className="text-caption font-bold">{newTaskTagIds.length}</span>}
                     </button>
 
                     {isTagSelectorOpen && (
@@ -3678,7 +3679,7 @@ Return ONLY raw JSON.`;
         }
       >
         <div className="space-y-4">
-          <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-[11px]">
+          <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-caption">
             {selectedTasks.length > 0 && (
               <button
                 type="button"
@@ -3734,7 +3735,7 @@ Return ONLY raw JSON.`;
                     : `${unscheduledTasks.length} Unscheduled Task${unscheduledTasks.length === 1 ? '' : 's'}`}
                 </span>
               </div>
-              <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-[11px]">
+              <div className="flex items-center gap-1 bg-secondary/60 p-0.5 rounded-lg text-caption">
                 <button
                   type="button"
                   onClick={() => {
@@ -3763,7 +3764,7 @@ Return ONLY raw JSON.`;
                 </button>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-caption text-muted-foreground leading-relaxed">
               {smartScheduleMode === 'selected'
                 ? "Re-spreads selected tasks evenly across the selected horizon into awake time slots, avoiding other tasks and calendar events."
                 : smartScheduleMode === 'reorganize'
@@ -3794,7 +3795,7 @@ Return ONLY raw JSON.`;
             </div>
           ) : (
             <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
-              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
+              <span className="text-caption font-bold text-muted-foreground block">
                 Proposed Schedule Distribution ({smartSchedulePlan.length})
               </span>
               {smartSchedulePlan.map((planItem, idx) => (
@@ -3804,16 +3805,16 @@ Return ONLY raw JSON.`;
                 >
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-foreground truncate">{planItem.task.title}</p>
-                    <div className="flex items-center gap-2 mt-0.5 text-muted-foreground text-[11px]">
+                    <div className="flex items-center gap-2 mt-0.5 text-muted-foreground text-caption">
                       <span className="inline-flex items-center gap-1 text-primary">
                         <CalendarIcon size={12} /> {planItem.label}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded text-[10px]">
+                      <span className="inline-flex items-center gap-1 text-muted-foreground/80 bg-secondary/80 px-1.5 py-0.5 rounded text-caption">
                         <Clock size={10} /> {planItem.durationMinutes >= 60 ? `${planItem.durationMinutes / 60}h` : `${planItem.durationMinutes}m`}
                       </span>
                     </div>
                   </div>
-                  <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-500 font-medium shrink-0">
+                  <span className="px-2 py-0.5 rounded text-caption bg-emerald-500/10 text-emerald-500 font-medium shrink-0">
                     Conflict-free
                   </span>
                 </div>
@@ -4047,7 +4048,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
               <Repeat size={14} className="text-muted-foreground" />
             )}
             {isWontDo && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
+              <span className="text-caption px-1.5 py-0.5 rounded bg-zinc-500/20 text-zinc-400">Won't do</span>
             )}
             {hasSubtasks && (
               <button
@@ -4056,7 +4057,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
                   e.stopPropagation();
                   setIsExpanded(!isExpanded);
                 }}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
+                className="text-caption px-1.5 py-0.5 rounded bg-primary/10 text-primary font-semibold shrink-0 hover:bg-primary/20 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <span>{completedCount}/{totalCount} ({percentage}%)</span>
                 {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
@@ -4103,7 +4104,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete, onWontDo, formatDueD
                 const titleStr = `Created ${format(d, 'yyyy-MM-dd HH:mm')}`;
                 return (
                   <span
-                    className="text-[11px] text-muted-foreground/80 flex items-center gap-1 shrink-0 ml-auto"
+                    className="text-caption text-muted-foreground/80 flex items-center gap-1 shrink-0 ml-auto"
                     title={titleStr}
                   >
                     <Clock size={11} className="opacity-70" />
@@ -4445,7 +4446,7 @@ function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEd
                       {(dueInfo.text || taskTags.length > 0) && (
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           {dueInfo.text && (
-                            <span className={cn("text-[11px] flex items-center gap-1 shrink-0", dueInfo.className)}>
+                            <span className={cn("text-caption flex items-center gap-1 shrink-0", dueInfo.className)}>
                               <CalendarIcon size={10} />
                               {dueInfo.text}
                             </span>
@@ -4453,7 +4454,7 @@ function TaskKanbanBoard({ tasks, taskLists, tags, formatDueDate, onToggle, onEd
                           {taskTags.slice(0, 2).map((tag) => (
                             <span
                               key={tag.id}
-                              className="text-[11px] px-1.5 py-0.5 rounded shrink-0"
+                              className="text-caption px-1.5 py-0.5 rounded shrink-0"
                               style={{ backgroundColor: `${tag.color}20`, color: tag.color }}
                             >
                               {tag.name}
@@ -4562,7 +4563,7 @@ function TaskGanttChart({ tasks, taskLists, onEdit }: TaskGanttChartProps) {
                 key={dayStrs[i]}
                 style={{ width: dayColWidth }}
                 className={cn(
-                  "shrink-0 px-1 py-2 text-center text-[11px] border-l border-border/30",
+                  "shrink-0 px-1 py-2 text-center text-caption border-l border-border/30",
                   dayStrs[i] === todayStr && "bg-primary/10 text-primary font-semibold"
                 )}
               >
@@ -4599,7 +4600,7 @@ function TaskGanttChart({ tasks, taskLists, onEdit }: TaskGanttChartProps) {
                             onClick={() => onEdit(t)}
                             title={t.title}
                             className={cn(
-                              "block w-full mb-1 truncate text-left text-[10px] px-1.5 py-1 rounded transition-colors",
+                              "block w-full mb-1 truncate text-left text-caption px-1.5 py-1 rounded transition-colors",
                               "bg-primary/15 text-primary hover:bg-primary/25",
                               t.priority !== 'none' && priorityConfig?.color
                             )}

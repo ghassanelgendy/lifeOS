@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle, TrendingDown, TrendingUp } from 'lucide-react';
-import { cn, formatCurrency } from '../lib/utils';
+import { formatCurrency } from '../lib/utils';
+import { cn } from './ui/cn';
 
 interface FinanceHeroCardProps {
   income: number;
@@ -20,7 +21,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <span
           className={cn(
-            'inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-md border',
+            'inline-flex items-center gap-1.5 text-caption font-semibold px-2.5 py-1 rounded-md border',
             isOverspending
               ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
               : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
@@ -43,7 +44,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
 
       {/* Primary Balance */}
       <div>
-        <p className="text-[11px] font-semibold tracking-wider text-muted-foreground uppercase mb-1">
+        <p className="text-caption font-semibold text-muted-foreground mb-1">
           Net Balance
         </p>
         <p
@@ -68,7 +69,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
         <div className="bg-muted/20 border border-border/60 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Income</span>
+            <span className="text-caption font-medium text-muted-foreground">Income</span>
           </div>
           <p className={cn('text-base font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
             {formatCurrency(income)}
@@ -78,7 +79,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
         <div className="bg-muted/20 border border-border/60 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-1">
             <div className="w-2 h-2 rounded-full bg-rose-500" />
-            <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Expenses</span>
+            <span className="text-caption font-medium text-muted-foreground">Expenses</span>
           </div>
           <p className={cn('text-base font-bold tabular-nums text-foreground', privacyMode && 'blur-sm')}>
             {formatCurrency(expenses)}
@@ -96,7 +97,7 @@ export function FinanceHeroCard({ income, expenses, balance, openingBalance, pri
             }}
           />
         </div>
-        <div className="flex justify-between text-[11px] text-muted-foreground font-medium tabular-nums">
+        <div className="flex justify-between text-caption text-muted-foreground font-medium tabular-nums">
           <span>{Math.round(incomeRatio)}% in</span>
           <span>{Math.round(100 - incomeRatio)}% out</span>
         </div>

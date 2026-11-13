@@ -30,7 +30,7 @@ import {
   isYesterday,
   subDays,
 } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import {
   useHabits,
   useCreateHabit,
@@ -445,7 +445,7 @@ export default function Habits() {
 
   const getStreakNode = (streak: number, size = 14) => {
     if (streak === 0) return <Flame size={size} className="text-muted-foreground opacity-50" />;
-    if (streak >= 14) return <Flame size={size} className="text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.8)] animate-pulse" />;
+    if (streak >= 14) return <Flame size={size} className="text-red-500 drop-shadow-[0_0_4px_rgba(239,68,68,0.8)]" />;
     if (streak >= 7) return <Flame size={size} className="text-orange-500 drop-shadow-[0_0_2px_rgba(249,115,22,0.5)]" />;
     return <Flame size={size} className="text-amber-500" />;
   };
@@ -633,7 +633,7 @@ export default function Habits() {
           <p className="text-xs text-muted-foreground">adherence</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center gap-2 text-amber-500">
+          <div className="flex items-center gap-2 text-warning">
             <Flame size={18} />
             <span className="text-sm">Best Streak</span>
           </div>
@@ -736,7 +736,7 @@ export default function Habits() {
                 <div key={id} className="space-y-3">
                   <div className="flex items-center gap-2 px-1">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-                    {isDetox && <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detox</span>}
+                    {isDetox && <span className="text-caption font-bold text-muted-foreground">Detox</span>}
                   </div>
                   {groupHabits.map((habit: Habit) => {
                     const stats = getHabitStats(habit);
@@ -768,7 +768,7 @@ export default function Habits() {
                                       e.stopPropagation();
                                       handleOpenAzkarTarget(azkarCat);
                                     }}
-                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                                    className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
                                     title={`فتح ${azkarCat} في قسم الأذكار`}
                                   >
                                     <Sparkles size={10} />
@@ -785,7 +785,7 @@ export default function Habits() {
                                     e.stopPropagation();
                                     handleOpenQuranTarget(quranTarget);
                                   }}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-caption font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95"
                                   title={`فتح ${quranTarget.surahName} في المصحف`}
                                 >
                                   <BookOpen size={10} />
@@ -813,13 +813,13 @@ export default function Habits() {
                             </span>
                           </div>
                         </div>
-                        <div className="text-[11px] text-muted-foreground mb-2">
+                        <div className="text-caption text-muted-foreground mb-2">
                           {detoxConfig
                             ? `Detox ${detoxConfig.mode} · ${stats.soberDays}d sober / target ${detoxTarget}d`
                             : `${habit.frequency} · weight ${getHabitAdherenceWeight(habit)}`}
                         </div>
                         {insight && (
-                          <div className="mb-2 grid grid-cols-3 gap-1 text-[10px] text-muted-foreground">
+                          <div className="mb-2 grid grid-cols-3 gap-1 text-caption text-muted-foreground">
                             <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.adherencePct}% 90d</span>
                             <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.usualTimeLabel}</span>
                             <span className="rounded-md bg-secondary/50 px-2 py-1">{insight.bestDayLabel}</span>
@@ -837,7 +837,7 @@ export default function Habits() {
                             return (
                               <div key={day.toISOString()} className="flex flex-col items-center flex-shrink-0 min-w-[2.25rem]">
                                 <span className={cn(
-                                  "text-[10px] text-muted-foreground",
+                                  "text-caption text-muted-foreground",
                                   isToday(day) && "text-primary font-medium"
                                 )}>
                                   {format(day, 'EEE')}
@@ -875,9 +875,9 @@ export default function Habits() {
                                   {isCompleted ? (
                                     <Check size={14} />
                                   ) : isPastMissed ? (
-                                    <span className="text-[10px] text-amber-500 font-bold">R</span>
+                                    <span className="text-caption text-amber-500 font-bold">R</span>
                                   ) : !isScheduled || day > today ? (
-                                    <span className="text-[10px] text-muted-foreground">-</span>
+                                    <span className="text-caption text-muted-foreground">-</span>
                                   ) : null}
                                 </button>
                               </div>
@@ -927,7 +927,7 @@ export default function Habits() {
                         <React.Fragment key={id}>
                           {isDetox && (
                             <tr className="bg-transparent h-6">
-                              <td colSpan={weekDays.length + 2} className="px-2 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-none">
+                              <td colSpan={weekDays.length + 2} className="px-2 pt-4 pb-1 text-caption font-bold text-muted-foreground border-none">
                                 Detox ({groupHabits.length})
                               </td>
                             </tr>
@@ -965,7 +965,7 @@ export default function Habits() {
                                     )}
                                   </div>
                                   {insight && (
-                                    <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-muted-foreground">
+                                    <div className="mt-1 flex flex-wrap gap-1 text-caption text-muted-foreground">
                                       <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.adherencePct}% 90d</span>
                                       <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.usualTimeLabel}</span>
                                       <span className="rounded bg-secondary/50 px-1.5 py-0.5">{insight.bestDayLabel}</span>
@@ -1058,7 +1058,7 @@ export default function Habits() {
                                       type="button"
                                       onClick={() => handleRescueStreak(habit, rescuableStreaks[habit.id])}
                                       className={cn(
-                                        "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95",
+                                        "text-caption px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95",
                                         pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)
                                           ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
@@ -1102,13 +1102,13 @@ export default function Habits() {
               {/* Pending Habits */}
               {groupAndSortHabits(scheduledTodayHabits.filter(h => !isHabitCompletedForDay(h.id, today))).length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 uppercase tracking-wider">Pending</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1">Pending</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3" ref={pendingListRef}>
                     {groupAndSortHabits(scheduledTodayHabits.filter(h => !isHabitCompletedForDay(h.id, today))).map(({ id, color: _color, isDetox, habits: groupHabits }) => (
                       <React.Fragment key={id}>
                         {isDetox && (
                           <div className="col-span-full mt-2 mb-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detox</span>
+                            <span className="text-caption font-bold text-muted-foreground">Detox</span>
                           </div>
                         )}
                         {groupHabits.map((habit: Habit) => {
@@ -1158,7 +1158,7 @@ export default function Habits() {
                                             e.stopPropagation();
                                             handleOpenAzkarTarget(azkarCat);
                                           }}
-                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
                                           title={`فتح ${azkarCat} في قسم الأذكار`}
                                         >
                                           <Sparkles size={11} />
@@ -1175,7 +1175,7 @@ export default function Habits() {
                                           e.stopPropagation();
                                           handleOpenQuranTarget(quranTarget);
                                         }}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
                                         title={`فتح ${quranTarget.surahName} في المصحف`}
                                       >
                                         <BookOpen size={11} />
@@ -1202,7 +1202,7 @@ export default function Habits() {
                                         handleRescueStreak(habit, rescuableStreaks[habit.id]);
                                       }}
                                       className={cn(
-                                        "text-[10px] px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95 ml-2",
+                                        "text-caption px-1.5 py-0.5 rounded font-semibold transition-all shrink-0 active:scale-95 ml-2",
                                         pointsBalance >= getHabitRescueCost(rescuableStreaks[habit.id] ?? 0)
                                           ? "bg-amber-500/20 text-amber-400 hover:bg-amber-500/30"
                                           : "bg-zinc-800 text-zinc-500 cursor-not-allowed opacity-50"
@@ -1221,7 +1221,7 @@ export default function Habits() {
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                   {detoxConfig && (
-                                    <span className="text-[11px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
+                                    <span className="text-caption px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-500">
                                       Detox {detoxConfig.mode}: {stats.soberDays}d sober / target {detoxTarget}d
                                     </span>
                                   )}
@@ -1248,13 +1248,13 @@ export default function Habits() {
               {/* Completed Habits */}
               {groupAndSortHabits(scheduledTodayHabits.filter(h => isHabitCompletedForDay(h.id, today))).length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 mt-6 uppercase tracking-wider">Completed</h3>
+                  <h3 className="text-xs font-semibold text-muted-foreground mb-3 px-1 mt-6">Completed</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 opacity-60" ref={completedListRef}>
                     {groupAndSortHabits(scheduledTodayHabits.filter(h => isHabitCompletedForDay(h.id, today))).map(({ id, color: _color, isDetox, habits: groupHabits }) => (
                       <React.Fragment key={id}>
                         {isDetox && (
                           <div className="col-span-full mt-2 mb-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Detox</span>
+                            <span className="text-caption font-bold text-muted-foreground">Detox</span>
                           </div>
                         )}
                         {groupHabits.map((habit: Habit) => {
@@ -1298,7 +1298,7 @@ export default function Habits() {
                                             e.stopPropagation();
                                             handleOpenAzkarTarget(azkarCat);
                                           }}
-                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
                                           title={`فتح ${azkarCat} في قسم الأذكار`}
                                         >
                                           <Sparkles size={11} />
@@ -1315,7 +1315,7 @@ export default function Habits() {
                                           e.stopPropagation();
                                           handleOpenQuranTarget(quranTarget);
                                         }}
-                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-caption font-semibold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/25 transition-all shrink-0 cursor-pointer active:scale-95 ml-1"
                                         title={`فتح ${quranTarget.surahName} في المصحف`}
                                       >
                                         <BookOpen size={11} />

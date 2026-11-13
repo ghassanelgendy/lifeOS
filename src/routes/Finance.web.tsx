@@ -42,7 +42,8 @@ import {
   CartesianGrid
 } from 'recharts';
 import { format, subMonths, addMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
-import { cn, formatCurrency, formatTime12h } from '../lib/utils';
+import { formatCurrency, formatTime12h } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import {
   useTransactions,
   useCreateTransaction,
@@ -997,7 +998,7 @@ Return ONLY raw JSON object.`;
             className={cn(
               'w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-colors',
               isCurrentMonth
-                ? 'text-muted-foreground/30 cursor-default'
+                ? 'text-ink-3 cursor-default'
                 : 'bg-secondary hover:bg-secondary/80 text-muted-foreground hover:text-foreground'
             )}
           >
@@ -1310,7 +1311,7 @@ Return ONLY raw JSON object.`;
         {/* Desktop Table View */}
         <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-secondary/50 text-muted-foreground text-xs uppercase tracking-wider">
+            <thead className="bg-secondary/50 text-muted-foreground text-xs">
               <tr>
                 <th className="px-4 py-3 text-left font-medium">Date</th>
                 <th className="px-4 py-3 text-right font-medium">Amount</th>
@@ -1417,7 +1418,7 @@ Return ONLY raw JSON object.`;
                 {/* Title + category */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-foreground truncate">{title}</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-caption text-muted-foreground mt-0.5">
                     {categoryLabel}
                     {transaction.is_recurring && ' · Recurring'}
                   </p>
@@ -1434,7 +1435,7 @@ Return ONLY raw JSON object.`;
                   >
                     {transaction.type === 'income' ? '+' : '−'}{formatCurrency(transaction.amount)}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                  <p className="text-caption text-muted-foreground mt-0.5">
                     {format(new Date(transaction.date), 'MMM d')}
                   </p>
                 </div>
@@ -1920,7 +1921,7 @@ Return ONLY raw JSON object.`;
                               <span className="font-medium truncate">{tx.description || catLabel}</span>
                               {tx.transaction_type && (
                                 <span className={cn(
-                                  "shrink-0 text-[10px] px-1.5 py-0.5 rounded-full font-medium",
+                                  "shrink-0 text-caption px-1.5 py-0.5 rounded-full font-medium",
                                   tx.transaction_type === 'Profit' && "bg-green-500/15 text-green-500",
                                   tx.transaction_type === 'Loss' && "bg-red-500/15 text-red-500",
                                   tx.transaction_type === 'Correction' && "bg-amber-500/15 text-amber-500",

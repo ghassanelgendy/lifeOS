@@ -16,7 +16,7 @@ import {
   Check,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn } from './ui/cn';
 import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
 import { usePrayerTracker } from '../hooks/usePrayerHabits';
@@ -135,7 +135,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
           <div className="flex items-center gap-2.5 shrink-0">
             <div className="text-right">
               <div className="text-base font-bold tabular-nums text-foreground">{percentage}%</div>
-              <div className="text-[11px] text-muted-foreground">الإنجاز</div>
+              <div className="text-caption text-muted-foreground">الإنجاز</div>
             </div>
             {isExpanded ? (
               <ChevronUp size={18} className="text-muted-foreground" />
@@ -177,7 +177,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                         {item.status === 'Missed' && <XCircle size={13} className="text-rose-500 shrink-0" />}
                         {item.status === 'Skipped' && <Minus size={13} className="text-slate-400 shrink-0" />}
                       </p>
-                      <span className="text-[11px] text-muted-foreground tabular-nums block">
+                      <span className="text-caption text-muted-foreground tabular-nums block">
                         {prayerTime ? format(prayerTime, 'h:mm a') : '--:--'}
                       </span>
                     </div>
@@ -198,7 +198,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                               togglePrayerStatus(item, status);
                             }}
                             className={cn(
-                              'text-[10px] sm:text-[11px] font-medium px-1.5 sm:px-2 py-1 rounded-md transition-all cursor-pointer',
+                              'text-caption sm:text-caption font-medium px-1.5 sm:px-2 py-1 rounded-md transition-all cursor-pointer',
                               isActive
                                 ? meta.className
                                 : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
@@ -220,17 +220,17 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                         }}
                         title={`تسجيل قضاء ${item.prayerName} اليوم`}
                         className={cn(
-                          'text-[11px] sm:text-xs font-semibold px-2 py-1 rounded-lg transition-all border flex items-center gap-1 shrink-0 cursor-pointer',
+                          'text-caption sm:text-xs font-semibold px-2 py-1 rounded-lg transition-all border flex items-center gap-1 shrink-0 cursor-pointer',
                           doneQadaaToday > 0
                             ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                             : 'bg-secondary/40 hover:bg-secondary border-border/60 text-muted-foreground hover:text-foreground'
                         )}
                       >
-                        <span className="text-[10px] sm:text-[11px]">قضاء</span>
+                        <span className="text-caption sm:text-caption">قضاء</span>
                         {doneQadaaToday > 0 ? (
-                          <span className="text-[10px] font-bold tabular-nums">+{doneQadaaToday}</span>
+                          <span className="text-caption font-bold tabular-nums">+{doneQadaaToday}</span>
                         ) : (
-                          <span className="text-[10px] opacity-60">+1</span>
+                          <span className="text-caption opacity-60">+1</span>
                         )}
                       </button>
                     )}
@@ -254,7 +254,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                 />
               </div>
               {remaining && remaining.completionPct > 0 && (
-                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
+                <span className="hidden sm:inline-block px-1.5 py-0.5 rounded-full text-caption font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 tabular-nums">
                   {remaining.completionPct}% مكتمل
                 </span>
               )}
@@ -264,7 +264,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
               <button
                 type="button"
                 onClick={() => batchFullDay(1)}
-                className="px-2 py-1 rounded-md text-[11px] font-semibold bg-secondary/50 hover:bg-secondary text-foreground border border-border/60 transition cursor-pointer"
+                className="px-2 py-1 rounded-md text-caption font-semibold bg-secondary/50 hover:bg-secondary text-foreground border border-border/60 transition cursor-pointer"
                 title="تسجيل 1 صلاة قضاء لكل فريضة اليوم"
               >
                 +1 يوم كامل
@@ -273,7 +273,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
                 type="button"
                 onClick={handlePushTasks}
                 disabled={isPushingTasks}
-                className="px-2 py-1 rounded-md text-[11px] font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition disabled:opacity-50 flex items-center gap-1 cursor-pointer"
+                className="px-2 py-1 rounded-md text-caption font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition disabled:opacity-50 flex items-center gap-1 cursor-pointer"
                 title="دفع صلوات القضاء المتبقية كمهام لليوم في قائمة المهام"
               >
                 {pushStatusMessage ? (

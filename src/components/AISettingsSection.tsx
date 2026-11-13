@@ -128,6 +128,7 @@ export function AISettingsSection({ isIOS = false }: AISettingsSectionProps) {
           )}
           <input
             type="checkbox"
+            aria-label="Enable AI features"
             checked={aiEnabled}
             onChange={(e) => {
               setAiEnabled(e.target.checked);

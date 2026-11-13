@@ -4,7 +4,7 @@ import { format, parseISO, subDays } from 'date-fns';
 import { Moon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
 import { useUIStore } from '../stores/useUIStore';
@@ -253,7 +253,7 @@ export default function Sleep() {
           <div className="lg:col-span-7 rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
                   <Moon size={15} className="text-primary" />
                   <span>Last Night's Session</span>
                 </div>
@@ -281,7 +281,7 @@ export default function Sleep() {
                 <div className="w-28 h-28 relative shrink-0 self-center sm:self-auto">
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
                     <p className="text-base font-bold text-foreground">{pct(active.sleepMinutes, active.totalMinutes)}%</p>
-                    <p className="text-[9px] text-muted-foreground uppercase tracking-widest">Score</p>
+                    <p className="text-caption text-muted-foreground">Score</p>
                   </div>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -349,7 +349,7 @@ export default function Sleep() {
                     <span>Deep Sleep</span>
                   </div>
                   <p className="text-sm font-bold text-foreground mt-1">{formatDuration(active.deepMinutes)}</p>
-                  <p className="text-[11px] text-muted-foreground">{pct(active.deepMinutes, active.sleepMinutes)}% of sleep</p>
+                  <p className="text-caption text-muted-foreground">{pct(active.deepMinutes, active.sleepMinutes)}% of sleep</p>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/50">
@@ -358,7 +358,7 @@ export default function Sleep() {
                     <span>Core / Light</span>
                   </div>
                   <p className="text-sm font-bold text-foreground mt-1">{formatDuration(active.coreMinutes)}</p>
-                  <p className="text-[11px] text-muted-foreground">{pct(active.coreMinutes, active.sleepMinutes)}% of sleep</p>
+                  <p className="text-caption text-muted-foreground">{pct(active.coreMinutes, active.sleepMinutes)}% of sleep</p>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/50">
@@ -367,7 +367,7 @@ export default function Sleep() {
                     <span>REM Sleep</span>
                   </div>
                   <p className="text-sm font-bold text-foreground mt-1">{formatDuration(active.remMinutes)}</p>
-                  <p className="text-[11px] text-muted-foreground">{pct(active.remMinutes, active.sleepMinutes)}% of sleep</p>
+                  <p className="text-caption text-muted-foreground">{pct(active.remMinutes, active.sleepMinutes)}% of sleep</p>
                 </div>
 
                 <div className="p-2.5 rounded-xl bg-secondary/40 border border-border/50">
@@ -376,7 +376,7 @@ export default function Sleep() {
                     <span>Time Awake</span>
                   </div>
                   <p className="text-sm font-bold text-foreground mt-1">{formatDuration(active.awakeMinutes)}</p>
-                  <p className="text-[11px] text-muted-foreground">{active.wakeCount} interruptions</p>
+                  <p className="text-caption text-muted-foreground">{active.wakeCount} interruptions</p>
                 </div>
               </div>
             </div>
@@ -386,7 +386,7 @@ export default function Sleep() {
           <div className="lg:col-span-5 rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm">
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">7-Day Rolling Averages</h2>
+                <h2 className="text-xs font-bold text-muted-foreground">7-Day Rolling Averages</h2>
                 <span className="text-xs text-muted-foreground">Target: 7h 30m</span>
               </div>
 
@@ -396,7 +396,7 @@ export default function Sleep() {
                   <p className={cn("text-xl font-extrabold text-foreground mt-0.5", privacyMode && "blur-sm")}>
                     {formatDuration(avgSleepMinutes)}
                   </p>
-                  <p className="text-[10px] text-emerald-500 mt-1 font-medium">7-day continuous baseline</p>
+                  <p className="text-caption text-emerald-500 mt-1 font-medium">7-day continuous baseline</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
@@ -404,7 +404,7 @@ export default function Sleep() {
                   <p className="text-xl font-extrabold text-foreground mt-0.5">
                     {weeklyMetrics.continuity} <span className="text-xs font-normal text-muted-foreground">pts</span>
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1 font-medium">Deep stage stability</p>
+                  <p className="text-caption text-muted-foreground mt-1 font-medium">Deep stage stability</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
@@ -412,7 +412,7 @@ export default function Sleep() {
                   <p className="text-xl font-extrabold text-foreground mt-0.5">
                     {weeklyMetrics.deepPct}%
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Normal: 15–25%</p>
+                  <p className="text-caption text-muted-foreground mt-1">Normal: 15–25%</p>
                 </div>
 
                 <div className="p-3 rounded-xl bg-secondary/40 border border-border/50">
@@ -420,7 +420,7 @@ export default function Sleep() {
                   <p className="text-xl font-extrabold text-foreground mt-0.5">
                     {weeklyMetrics.remPct}%
                   </p>
-                  <p className="text-[10px] text-muted-foreground mt-1">Normal: 20–25%</p>
+                  <p className="text-caption text-muted-foreground mt-1">Normal: 20–25%</p>
                 </div>
               </div>
             </div>
@@ -477,7 +477,7 @@ export default function Sleep() {
                   <p className="text-xs text-muted-foreground mt-0.5">Daily hours slept over past 30 sessions</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">30-Day Avg</p>
+                  <p className="text-caption text-muted-foreground">30-Day Avg</p>
                   <p className={cn("text-xl font-bold text-foreground", privacyMode && "blur-sm")}>
                     {monthly.length > 0
                       ? formatDuration(Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length)))
@@ -594,13 +594,13 @@ export default function Sleep() {
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-xs text-foreground">{format(parseISO(s.date), 'EEE, MMM d')}</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                        <p className="text-caption text-muted-foreground mt-0.5">
                           {format(s.bedtime, 'h:mm a')} → {format(s.waketime, 'h:mm a')}
                         </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs font-bold text-foreground">{formatDuration(s.sleepMinutes)}</p>
-                        <p className="text-[10px] text-muted-foreground">Eff: {pct(s.sleepMinutes, s.totalMinutes)}%</p>
+                        <p className="text-caption text-muted-foreground">Eff: {pct(s.sleepMinutes, s.totalMinutes)}%</p>
                       </div>
                     </div>
                   </button>
@@ -624,9 +624,9 @@ export default function Sleep() {
                 <div>
                   <div className="flex items-center gap-2 text-muted-foreground mb-2">
                     <Moon size={20} className="text-primary" />
-                    <h2 className="text-sm font-semibold uppercase tracking-wider">Duration</h2>
+                    <h2 className="text-sm font-semibold">Duration</h2>
                   </div>
-                  <p className={cn("text-5xl font-black text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
+                  <p className={cn("text-5xl font-semibold text-foreground tracking-tighter leading-none", privacyMode && "blur-md")}>
                     {formatDuration(selectedSession.sleepMinutes)}
                   </p>
                   <p className="text-sm text-muted-foreground mt-3 font-medium">
@@ -636,11 +636,11 @@ export default function Sleep() {
                 
                 <div className="flex items-center gap-4 pt-4 border-t border-border/50">
                   <div className="flex-1">
-                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Efficiency</p>
+                    <p className="text-xs text-muted-foreground mb-1">Efficiency</p>
                     <p className="text-lg font-bold">{pct(selectedSession.sleepMinutes, selectedSession.totalMinutes)}%</p>
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs text-muted-foreground mb-1 uppercase tracking-wider">Wakes</p>
+                    <p className="text-xs text-muted-foreground mb-1">Wakes</p>
                     <p className="text-lg font-bold">{selectedSession.wakeCount}</p>
                   </div>
                 </div>

@@ -143,6 +143,12 @@ The system shall redirect authenticated users to the Dashboard route (`/dashboar
 #### FR-DASH-002: Dashboard Layout Modes
 The system shall support three dashboard modes: **Quick View**, **Strategic**, and **Annual Review**, with the ability to cycle between them.
 
+#### FR-DASH-002A: Quick View Top Row (PC Web)
+On desktop widths the Quick View shall lay out Day progress, Today's targets and This week on a 12-column grid (5/4/3). Today's targets shall present Tasks, Habits & Prayers, Sleep and Screen time exactly once each, with the value, a progress bar against its target, and a status expressed in both text and color, and each shall link to its module. Sleep and Screen time values shall be blurred in privacy mode. The onboarding tour targets `[data-tour="metric-cards"]`, `[data-tour="metric-habits"]`, `[data-tour="metric-screentime"]` and `[data-tour="weekly-habits"]` shall remain present.
+
+#### FR-LAND-001: Public Landing Page
+The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
+
 #### FR-DASH-003: Widget System
 The Dashboard shall display customizable widgets including: Daily Hadith, Prayer, Stats, Overdue Tasks, Events, Quick Stats, and Habits.
 
@@ -1381,6 +1387,15 @@ All interactive elements shall be fully operable via keyboard alone.
 
 #### NFR-ACC-005: Screen Reader Labels
 All icon buttons and non-text controls shall have descriptive `aria-label` attributes.
+
+#### NFR-ACC-006: Web Build Automated Checks
+The web build shall have zero axe-core WCAG 2.0/2.1 A and AA violations on the dashboard, tasks, habits, calendar, notes, settings, screen time, finance and azkar routes in both light and dark themes, with one known exception: `meta-viewport` (pinch zoom is disabled in the shared `index.html`).
+
+#### NFR-ACC-007: Class-Based Dark Variant
+`src/index.web.css` shall define `@custom-variant dark (&:where(.dark, .dark *));` so `dark:` utilities follow the app theme (`html.dark`) and not the OS color scheme. The iOS stylesheet and `index.css` define the same variant.
+
+#### NFR-ACC-008: Minimum Text Size
+Web UI text shall be at least 12px (`text-caption`). Secondary text colors shall use `ink-2` / `ink-3` (or the light-theme `muted-foreground`, 5.5:1 on the secondary surface) so they meet NFR-ACC-003.
 
 ---
 

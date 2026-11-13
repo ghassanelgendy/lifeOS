@@ -16,8 +16,7 @@ import {
   Link2,
   RefreshCw,
   X,
-  Circle
-} from 'lucide-react';
+  Circle, ChevronDown } from 'lucide-react';
 import {
   format,
   addDays,
@@ -37,7 +36,8 @@ import {
   subWeeks,
   parseISO
 } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
+import { IconButton } from '../components/ui/IconButton';
 import {
   useCreateCalendarEvent,
   useUpdateCalendarEvent,
@@ -823,12 +823,9 @@ export default function CalendarPage() {
           </button>
         </div>
         <div className="flex items-center justify-between gap-2">
-          <button
-            onClick={goToPrevious}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
+          <IconButton onClick={goToPrevious} label="Previous">
             <ChevronLeft size={20} />
-          </button>
+          </IconButton>
           <h2 className="text-base sm:text-xl font-semibold text-center">
             {view === 'day'
               ? format(currentDate, 'EEE, MMM d, yyyy')
@@ -836,12 +833,9 @@ export default function CalendarPage() {
               ? `${format(calendarStart, 'MMM d')} - ${format(calendarEnd, 'MMM d, yyyy')}`
               : format(currentDate, 'MMMM yyyy')}
           </h2>
-          <button
-            onClick={goToNext}
-            className="p-2 rounded-lg hover:bg-secondary transition-colors"
-          >
+          <IconButton onClick={goToNext} label="Next">
             <ChevronRight size={20} />
-          </button>
+          </IconButton>
         </div>
       </div>
 
@@ -852,7 +846,7 @@ export default function CalendarPage() {
             <div className="rounded-xl border border-border bg-card p-3 md:p-4 flex-1 flex flex-col min-h-0">
               {dayAllDayEvents.length > 0 && (
                 <div className="mb-4 rounded-lg border border-border bg-secondary/20 p-3">
-                  <p className="text-xs font-medium text-muted-foreground uppercase mb-2">All Day</p>
+                  <p className="text-xs font-medium text-muted-foreground mb-2">All Day</p>
                   <div className="space-y-1.5">
                     {dayAllDayEvents.map((event) => {
                       const color = event.color ?? ('type' in event && event.type ? EVENT_TYPE_COLORS[event.type as EventType] : '#64748b');
@@ -877,7 +871,7 @@ export default function CalendarPage() {
                 <div className="relative min-h-[1440px]">
                   {Array.from({ length: 24 }).map((_, hour) => (
                     <div key={hour} className="absolute left-0 right-0 border-t border-border/60" style={{ top: `${hour * 60}px` }}>
-                      <span className="absolute -top-2 left-2 bg-card px-1 text-[10px] text-muted-foreground">
+                      <span className="absolute -top-2 left-2 bg-card px-1 text-caption text-muted-foreground">
                         {format(new Date(2026, 0, 1, hour, 0), 'h a')}
                       </span>
                     </div>
@@ -887,7 +881,7 @@ export default function CalendarPage() {
                       className="absolute left-14 right-2 z-20 border-t border-red-500"
                       style={{ top: `${currentMinute}px` }}
                     >
-                      <span className="absolute -top-2 -left-12 text-[10px] text-red-500">Now</span>
+                      <span className="absolute -top-2 -left-12 text-caption text-red-500">Now</span>
                     </div>
                   )}
                   {dayTimedItems.map((item) => {
@@ -917,7 +911,7 @@ export default function CalendarPage() {
                           )}
                           <span className="font-medium truncate">{item.title}</span>
                         </div>
-                        <div className="text-[10px] opacity-80 mt-0.5">
+                        <div className="text-caption opacity-80 mt-0.5">
                           {format(renderStart, 'h:mm a')} - {format(renderEnd, 'h:mm a')}
                         </div>
                       </button>
@@ -931,7 +925,7 @@ export default function CalendarPage() {
             {/* Weekday Headers */}
             <div className="grid grid-cols-7 border-b border-border shrink-0">
               {WEEKDAYS.map((day) => (
-                <div key={day} className="p-2 text-center text-xs font-medium text-muted-foreground uppercase">
+                <div key={day} className="p-2 text-center text-xs font-medium text-muted-foreground">
                   {day}
                 </div>
               ))}
@@ -981,7 +975,7 @@ export default function CalendarPage() {
                               if (!isIcal) void handleOpenModal(event as ExtendedCalendarEvent);
                             }}
                             className={cn(
-                              "text-[10px] px-1 py-0.5 rounded truncate hover:opacity-80",
+                              "text-caption px-1 py-0.5 rounded truncate hover:opacity-80",
                               !isIcal && "cursor-pointer"
                             )}
                             style={{ backgroundColor: `${color}30`, color }}
@@ -1000,14 +994,14 @@ export default function CalendarPage() {
                             e.stopPropagation();
                             handleOpenTaskModal(task);
                           }}
-                          className="text-[10px] px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 cursor-pointer hover:opacity-80"
+                          className="text-caption px-1 py-0.5 rounded truncate flex items-center gap-0.5 bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 cursor-pointer hover:opacity-80"
                         >
                           <CheckSquare size={8} className="text-yellow-500/80" />
                           {task.title}
                         </div>
                       ))}
                       {totalItems > 3 && (
-                        <div className="text-[10px] text-muted-foreground text-center">
+                        <div className="text-caption text-muted-foreground text-center">
                           +{totalItems - 3} more
                         </div>
                       )}
@@ -1107,7 +1101,7 @@ export default function CalendarPage() {
                       <div className="flex items-center gap-1">
                         {!linkedTask?.is_completed && (
                           <label
-                            className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer select-none"
+                            className="flex items-center gap-1.5 text-caption text-muted-foreground cursor-pointer select-none"
                             title={linkedTask ? 'Remove from Tasks' : 'Add to Tasks'}
                           >
                             <input
@@ -1150,7 +1144,7 @@ export default function CalendarPage() {
             </div>
             {selectedDayTasks.length > 0 && (
               <div className="space-y-3 mt-4">
-                <h4 className="text-xs font-medium text-muted-foreground uppercase">Tasks</h4>
+                <h4 className="text-xs font-medium text-muted-foreground">Tasks</h4>
                 {selectedDayTasks.map((task) => (
                   <div
                     key={task.id}
@@ -1186,11 +1180,12 @@ export default function CalendarPage() {
             )}
 
             {/* LifeOS Calendar Feed */}
-            <div className="mt-6 pt-4 border-t border-border">
-              <h4 className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                <CalendarPlus size={12} />
-                LifeOS Calendar Feed
-              </h4>
+            <details className="group mt-6 pt-4 border-t border-separator">
+              <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 text-label font-medium text-ink-2 hover:text-ink">
+                <CalendarPlus size={16} />
+                <span className="flex-1">Calendar feeds</span>
+                <ChevronDown size={16} className="transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+              </summary>
               <p className="text-xs text-muted-foreground mb-2">
                 Subscribe from Apple Calendar (iOS/macOS), Google Calendar, or Outlook. This feed dynamically includes your tasks (with due dates), active habits, and calendar events. Edits you make in LifeOS sync automatically.
               </p>
@@ -1219,10 +1214,10 @@ export default function CalendarPage() {
                   <div className="space-y-3">
                     {[
                       { type: undefined, name: 'All-in-One Feed', color: '#a855f7', label: 'Everything', desc: 'Combined tasks, habits, prayers, and events' },
-                      { type: 'prayers', name: 'Prayers Feed', color: '#9ca3af', label: '🕌 Prayers', desc: 'Prayer timings' },
-                      { type: 'tasks', name: 'Tasks Feed', color: '#eab308', label: '📝 Tasks', desc: 'Your due tasks' },
-                      { type: 'habits', name: 'Habits Feed', color: '#a855f7', label: '⏳ Habits', desc: 'Active habits (excluding prayers & detox)' },
-                      { type: 'events', name: 'Events Feed', color: '#3b82f6', label: '📅 Events', desc: 'Calendar events' },
+                      { type: 'prayers', name: 'Prayers Feed', color: '#9ca3af', label: 'Prayers', desc: 'Prayer timings' },
+                      { type: 'tasks', name: 'Tasks Feed', color: '#eab308', label: 'Tasks', desc: 'Your due tasks' },
+                      { type: 'habits', name: 'Habits Feed', color: '#a855f7', label: 'Habits', desc: 'Active habits (excluding prayers & detox)' },
+                      { type: 'events', name: 'Events Feed', color: '#3b82f6', label: 'Events', desc: 'Calendar events' },
                     ].map((cfg) => {
                       const feedUrl = getCategorizedFeedUrl(cfg.type);
                       const webcalUrl = getCategorizedWebcalUrl(cfg.type);
@@ -1236,14 +1231,14 @@ export default function CalendarPage() {
                               <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cfg.color }} />
                               <span className="text-xs font-semibold">{cfg.label}</span>
                             </div>
-                            <span className="text-[10px] text-muted-foreground">{cfg.desc}</span>
+                            <span className="text-caption text-muted-foreground">{cfg.desc}</span>
                           </div>
                           
                           <input
                             type="text"
                             value={isTaskCalendarFeedLoading ? 'Preparing link...' : feedUrl}
                             readOnly
-                            className="w-full rounded border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground select-all"
+                            className="w-full rounded border border-border bg-background px-2 py-1 text-caption text-muted-foreground select-all"
                           />
 
                           <div className="flex items-center gap-1.5 pt-1">
@@ -1251,7 +1246,7 @@ export default function CalendarPage() {
                               type="button"
                               variant="secondary"
                               size="sm"
-                              className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0"
+                              className="min-h-[30px] h-7 px-2 text-caption md:min-h-0"
                               onClick={() => void handleCopyFeed(cfg.type)}
                               disabled={!feedUrl}
                             >
@@ -1261,7 +1256,7 @@ export default function CalendarPage() {
                             {feedUrl && (
                               <a
                                 href={webcalUrl}
-                                className="inline-flex items-center justify-center gap-1 font-medium rounded border border-border bg-transparent hover:bg-secondary h-7 px-2 text-[10px] min-h-[30px] md:min-h-0"
+                                className="inline-flex items-center justify-center gap-1 font-medium rounded border border-border bg-transparent hover:bg-secondary h-7 px-2 text-caption min-h-[30px] md:min-h-0"
                                 title="Subscribe directly in Apple Calendar / iOS Calendar"
                               >
                                 <CalendarPlus size={10} className="mr-1" />
@@ -1272,7 +1267,7 @@ export default function CalendarPage() {
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0"
+                                className="min-h-[30px] h-7 px-2 text-caption md:min-h-0"
                                 onClick={() => handleShowTaskCalendarFeed(cfg.type, cfg.name, cfg.color)}
                                 disabled={!feedUrl || isVisible}
                               >
@@ -1290,7 +1285,7 @@ export default function CalendarPage() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        className="min-h-[30px] h-7 px-2 text-[10px] md:min-h-0 text-muted-foreground hover:text-foreground"
+                        className="min-h-[30px] h-7 px-2 text-caption md:min-h-0 text-muted-foreground hover:text-foreground"
                         onClick={handleResetTaskCalendarFeed}
                         disabled={resetTaskCalendarFeedToken.isPending || !taskCalendarFeedUrl}
                         title="Create a new subscription link and disable the old one"
@@ -1298,13 +1293,13 @@ export default function CalendarPage() {
                         <RefreshCw size={12} className="mr-1" />
                         Reset All Feeds
                       </Button>
-                      <span className="text-[10px] text-muted-foreground italic">
+                      <span className="text-caption text-muted-foreground italic">
                         Tip: Add 4 feeds to iOS to set custom colors
                       </span>
                     </div>
                   </div>
               )}
-            </div>
+            </details>
 
             {/* Subscribed iCal calendars */}
             <div className="mt-6 pt-4 border-t border-border">

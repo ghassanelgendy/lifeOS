@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Calendar, CheckCircle2, ChevronLeft, ChevronRight, Clock3, XCircle } from 'lucide-react';
 import { addMonths, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval, isToday } from 'date-fns';
-import { cn } from '../lib/utils';
+import { cn } from './ui/cn';
 import { useSetPrayerStatusAtDate } from '../hooks/usePrayerHabits';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
@@ -201,21 +201,21 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
       {/* Stats Strip */}
       <div className="grid grid-cols-3 gap-3 mt-3.5 p-3 rounded-xl border border-border/60 bg-muted/20">
         <div>
-          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Prayed</div>
+          <div className="text-caption font-medium text-muted-foreground">Prayed</div>
           <div className="text-xl font-bold text-foreground tabular-nums mt-0.5 flex items-center gap-1.5">
             <span>{stats.prayed}</span>
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
           </div>
         </div>
         <div>
-          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Late</div>
+          <div className="text-caption font-medium text-muted-foreground">Late</div>
           <div className="text-xl font-bold text-foreground tabular-nums mt-0.5 flex items-center gap-1.5">
             <span>{stats.late}</span>
             <span className="w-2 h-2 rounded-full bg-amber-500" />
           </div>
         </div>
         <div>
-          <div className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">Missed</div>
+          <div className="text-caption font-medium text-muted-foreground">Missed</div>
           <div className="text-xl font-bold text-foreground tabular-nums mt-0.5 flex items-center gap-1.5">
             <span>{stats.missed}</span>
             <span className="w-2 h-2 rounded-full bg-rose-500" />

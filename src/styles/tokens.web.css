@@ -1,0 +1,123 @@
+/*
+ * lifeOS web design tokens. Single source of truth for the web build.
+ * Imported only from src/index.web.css, so iOS and pake are unaffected.
+ *
+ * Rules
+ *  - New names only (ds-*, text-caption, rounded-control...). Nothing here
+ *    overrides a default Tailwind or existing --color-* value, so adopting a
+ *    token is opt-in per component.
+ *  - Text on page and raised surfaces passes 4.5:1 in both themes
+ *    (checked: ink-3 5.5:1 light, 7.1:1 dark; accent 4.6:1 light, 8.0:1 dark).
+ *  - Minimum text size is 12px (text-caption). Do not use 9-11px.
+ *  - Two radii for UI (control, card) plus pill. No others.
+ *  - No gradients, glows, or colored shadows. Elevation is a border plus at
+ *    most one soft shadow.
+ *  - Motion: 120ms for state changes, 200ms for entrances. All of it is
+ *    disabled under prefers-reduced-motion.
+ */
+
+:root {
+  /* Surfaces: page, raised (cards, sheets), sunken (inputs, tracks) */
+  --ds-surface: #0c0c0e;
+  --ds-raised: #161618;
+  --ds-sunken: #1e1e21;
+  --ds-separator: #2a2a2e;
+  --ds-hover: rgb(255 255 255 / 0.06);
+
+  /* Text levels */
+  --ds-ink: #f4f4f5;
+  --ds-ink-2: #b8b8c0;
+  --ds-ink-3: #9b9ba4;
+
+  /* One accent, plus status colors used for meaning only */
+  --ds-accent: #5aa9ff;
+  --ds-on-accent: #04101f;
+  --ds-danger: #ff6b6b;
+  --ds-success: #4cc38a;
+  --ds-warning: #f0b429;
+
+  --ds-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --ds-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
+  --ds-focus: 0 0 0 2px var(--ds-surface), 0 0 0 4px var(--ds-accent);
+}
+
+html.light {
+  --ds-surface: #f5f5f6;
+  --ds-raised: #ffffff;
+  --ds-sunken: #ececee;
+  --ds-separator: #dcdce0;
+  --ds-hover: rgb(0 0 0 / 0.05);
+
+  --ds-ink: #18181b;
+  --ds-ink-2: #4f4f57;
+  --ds-ink-3: #62626b;
+
+  --ds-accent: #0a6cde;
+  --ds-on-accent: #ffffff;
+  --ds-danger: #c92a2a;
+  --ds-success: #1c7c4f;
+  --ds-warning: #8a5a00;
+
+  --ds-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  --ds-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.14);
+}
+
+@theme inline {
+  /* Colors: bg-surface, bg-raised, bg-sunken, text-ink, text-ink-2, border-separator ... */
+  --color-surface: var(--ds-surface);
+  --color-raised: var(--ds-raised);
+  --color-sunken: var(--ds-sunken);
+  --color-separator: var(--ds-separator);
+  --color-hover: var(--ds-hover);
+  --color-ink: var(--ds-ink);
+  --color-ink-2: var(--ds-ink-2);
+  --color-ink-3: var(--ds-ink-3);
+  --color-accent-ds: var(--ds-accent);
+  --color-on-accent: var(--ds-on-accent);
+  --color-danger: var(--ds-danger);
+  --color-success: var(--ds-success);
+  --color-warning: var(--ds-warning);
+
+  /* Type scale (Cairo). text-caption is the floor. */
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-label: 0.875rem;
+  --text-label--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-title: 1.125rem;
+  --text-title--line-height: 1.625rem;
+  --text-heading: 1.5rem;
+  --text-heading--line-height: 2rem;
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+
+  /* Radius: rounded-control (buttons, inputs, rows), rounded-card, rounded-pill */
+  --radius-control: 0.625rem;
+  --radius-card: 0.875rem;
+  --radius-pill: 999px;
+
+  /* Elevation: shadow-ds (cards), shadow-overlay (menus, sheets, toasts) */
+  --shadow-ds: var(--ds-shadow);
+  --shadow-overlay: var(--ds-shadow-overlay);
+}
+
+/* Spacing: use Tailwind's 4px scale. Preferred steps: 1, 2, 3, 4, 6, 8, 12. */
+
+/* Focus: one visible ring everywhere, keyboard only. */
+.ds-focus:focus-visible,
+[data-ds]:focus-visible {
+  outline: none;
+  box-shadow: var(--ds-focus);
+}
+
+/* Motion */
+.ds-t { transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease, opacity 120ms ease; }
+@keyframes ds-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.ds-enter { animation: ds-in 200ms ease-out both; }
+@keyframes ds-pulse { 50% { opacity: 0.55; } }
+.ds-skeleton { background: var(--ds-separator); border-radius: var(--radius-control); animation: ds-pulse 1.4s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ds-t, .ds-enter, .ds-skeleton { transition: none; animation: none; }
+}

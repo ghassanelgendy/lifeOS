@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
-import { cn } from '../lib/utils';
+import { cn } from '../components/ui/cn';
 import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
@@ -705,7 +705,7 @@ import { useUIStore } from '../stores/useUIStore';
 
         {/* Tiny indicator: which devices pushed and when (date + time, 12h AM/PM) */}
         {(deviceLastPush.windowsLast || deviceLastPush.iosLast || deviceLastPush.linuxLast) && (
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-caption text-muted-foreground">
             {deviceLastPush.windowsLast && (
               <span title="Windows last synced at this time">
                 <span className="font-medium text-foreground/80">Windows</span>
