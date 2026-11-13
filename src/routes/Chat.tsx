@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Marked } from 'marked';
 import { Capacitor } from '@capacitor/core';
 import { Sparkles, Send, Brain, Check, Calendar, CheckSquare, Wallet, Activity, FileText, Moon, Settings, AlertCircle, Trash2, Plus, PanelLeft, Copy, RotateCw, X, MessageSquare, Mic } from 'lucide-react';
-import { Button, Spinner } from '../components/ui';
+import { AddButton, Button, Spinner } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
@@ -766,14 +766,7 @@ ${knowledgeContext}`;
           </span>
         </div>
 
-        <button
-          type="button"
-          onClick={handleNewChat}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/60 hover:bg-secondary/60 text-xs font-semibold transition-colors min-h-[40px]"
-        >
-          <Plus size={14} />
-          <span>New Chat</span>
-        </button>
+        <AddButton onClick={handleNewChat} label="New chat" />
       </header>
 
       {/* MAIN CONVERSATION AREA - CENTERED MAX-W-3XL */}

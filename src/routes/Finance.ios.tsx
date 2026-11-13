@@ -70,7 +70,7 @@ import {
 } from '../hooks/useInvestments';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../stores/useUIStore';
-import { DetailsSheet, Button, Input, Select, ConfirmSheet, SectionLoader, Spinner } from '../components/ui';
+import { AddButton, DetailsSheet, Button, Input, Select, ConfirmSheet, SectionLoader, Spinner } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
@@ -927,9 +927,7 @@ Return ONLY raw JSON object.`;
           <p className="text-muted-foreground">Track income, expenses, and budgets</p>
         </div>
         {activeTab === 'transactions' && (
-          <Button onClick={() => handleOpenModal()} className="p-2" aria-label="Add transaction">
-            <Plus size={22} />
-          </Button>
+          <AddButton onClick={() => handleOpenModal()} label="Add transaction" />
         )}
         {activeTab === 'investments' && (
           <div className="flex items-center gap-2">
@@ -942,9 +940,7 @@ Return ONLY raw JSON object.`;
             >
               Correction
             </Button>
-            <Button onClick={() => handleOpenInvestmentModal()} className="p-2" aria-label="Add investment transaction">
-              <Plus size={22} />
-            </Button>
+            <AddButton onClick={() => handleOpenInvestmentModal()} label="Add investment transaction" />
           </div>
         )}
       </div>
@@ -1949,9 +1945,11 @@ Return ONLY raw JSON object.`;
                       placeholder="e.g. Thndr, Fawry, Beltone…"
                       className="flex-1"
                     />
-                    <Button size="sm" onClick={handleAddPlatform} disabled={addInvestmentAccount.isPending || !newPlatformName.trim()}>
-                      <Plus size={16} className="mr-1" /> Add
-                    </Button>
+                    <AddButton
+                      onClick={handleAddPlatform}
+                      disabled={addInvestmentAccount.isPending || !newPlatformName.trim()}
+                      label="Add investment platform"
+                    />
                   </div>
                   {investmentAccounts.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No platforms yet. Add one above.</p>

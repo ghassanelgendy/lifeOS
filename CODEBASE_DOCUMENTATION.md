@@ -356,6 +356,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/landing/landing.css](#src-components-landing-landing-css)
 
 ### src/components/ui
+- [src/components/ui/AddButton.tsx](#src-components-ui-addbutton-tsx)
 - [src/components/ui/Button.ios.tsx](#src-components-ui-button-ios-tsx)
 - [src/components/ui/Button.tsx](#src-components-ui-button-tsx)
 - [src/components/ui/Button.web.tsx](#src-components-ui-button-web-tsx)
@@ -3916,6 +3917,18 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`Modal`** — Utility function for modal.
 
 **Lines:** 267
+
+---
+
+<a name="src-components-ui-addbutton-tsx"></a>
+### src/components/ui/AddButton.tsx
+
+**File Purpose:** Canonical icon-only `+` primary add button wrapping `Button` (`size="icon"`) with consistent sizing, stroke weight, accessible `aria-label`, and `title` tooltip across module headers and inline creation inputs (excluding the Dashboard FAB).
+
+**Functions & Classes:**
+- `AddButton` (Function)
+
+**Lines:** 27
 
 ---
 

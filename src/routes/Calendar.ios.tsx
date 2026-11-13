@@ -5,7 +5,7 @@ import { Plus, ChevronLeft, ChevronRight, Clock, MapPin, Edit2, Trash2, Repeat, 
 import { format, addDays, startOfMonth, endOfMonth, startOfWeek, startOfDay, endOfWeek, endOfDay, eachDayOfInterval, isSameMonth, isSameDay, isToday, addMonths, subMonths, addWeeks, subWeeks, parseISO } from 'date-fns';
 import { cn } from '../lib/utils';
 import { useCreateCalendarEvent, useUpdateCalendarEvent, useDeleteCalendarEvent, useExpandedCalendarEvents, useCalendarEvents, useIcalSubscriptionEvents } from '../hooks/useCalendar';
-import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
+import { AddButton, Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, Task, TaskPriority } from '../types/schema';
 import { useCreateTask, useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
@@ -750,9 +750,7 @@ export default function CalendarPage() {
             <CalendarPlus size={18} />
             Add to Calendar
           </Button>
-          <Button size="icon" onClick={() => void handleOpenModal()} aria-label="Add Event">
-            <Plus size={18} />
-          </Button>
+          <AddButton onClick={() => void handleOpenModal()} label="Add event" />
         </div>
       </div>
 

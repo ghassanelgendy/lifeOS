@@ -16,7 +16,7 @@ import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
 import { distributeTasksAcrossAwakeSlots, estimateTaskDuration, findConflictFreeSlotOnDate, type SmartTimeSlot } from '../lib/smartTaskScheduler';
-import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet, Spinner } from '../components/ui';
+import { AddButton, Modal, DetailsSheet, Button, Input, Select, ConfirmSheet, Spinner } from '../components/ui';
 import { ShareModal } from '../components/collaboration/ShareModal';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
 import { analyzeTaskSimilarityWithAI, type TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
@@ -2904,14 +2904,7 @@ export default function Tasks() {
             <CheckSquare size={15} />
             <span className="hidden sm:inline">{isSelectionMode ? "Done" : "Select"}</span>
           </button>
-          <button
-            onClick={handleOpenNewTaskSheet}
-            className="h-9 w-9 rounded-full bg-primary/15 text-primary transition-opacity md:flex hidden items-center justify-center shrink-0"
-            aria-label="Add task"
-            type="button"
-          >
-            <Plus size={18} className="text-primary" />
-          </button>
+          <AddButton onClick={handleOpenNewTaskSheet} label="Add task" className="hidden md:inline-flex" />
         </header>
 
         {/* Task List - swipe L/R at top to change view (Today/Week/Upcoming) on mobile */}
@@ -3569,9 +3562,7 @@ Return ONLY raw JSON.`;
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" size="sm" disabled={!newTaskTitle.trim()} className="p-2" aria-label="Add task">
-                    <Plus size={18} />
-                  </Button>
+                  <AddButton type="submit" disabled={!newTaskTitle.trim()} label="Add task" />
                 </div>
               </div>
             </form>
@@ -4631,6 +4622,7 @@ interface TaskItemProps {
 }
 
 function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo: _onWontDo, formatDueDate, isLast, onToggleSubtask, isSelectionMode, isSelected, onSelect }: TaskItemProps) {
+  const showCreatedTime = useUIStore((s) => s.showTaskCreatedTime);
   const [isExpanded, setIsExpanded] = useState(false);
   const { triggerLightTap, triggerSuccessTap } = useNativeInteraction();
   const isHabit = isHabitTaskId(task?.id);
@@ -4814,7 +4806,7 @@ function TaskItem({ task, tags, onToggle, onEdit, onDelete: _onDelete, onWontDo:
                 {tag.name}
               </span>
             ))}
-            {task?.created_at && !isHabit && (() => {
+            {showCreatedTime && task?.created_at && !isHabit && (() => {
               try {
                 const d = new Date(task.created_at);
                 if (isNaN(d.getTime())) return null;

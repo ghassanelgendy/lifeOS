@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, TrendingUp, TrendingDown, Minus, Edit2, Trash2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Edit2, Trash2 } from 'lucide-react';
 import {
   LineChart,
   Line,
@@ -19,7 +19,7 @@ import {
   useUpdateInBodyScan,
   useDeleteInBodyScan
 } from '../hooks/useHealthData';
-import { Modal, Button, Input, ConfirmSheet, SectionLoader } from '../components/ui';
+import { Modal, Button, AddButton, Input, ConfirmSheet, SectionLoader } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
 import type { InBodyScan, CreateInput } from '../types/schema';
 
@@ -119,14 +119,7 @@ export default function Health() {
           <h1 className="text-3xl font-bold tracking-tight">Health & Bio-Metrics</h1>
           <p className="text-muted-foreground">Track your body composition with InBody scans</p>
         </div>
-        <button
-          type="button"
-          onClick={() => handleOpenModal()}
-          className="h-9 w-9 rounded-full border border-primary/25 bg-primary/10 backdrop-blur-md shadow-sm hover:bg-primary/20 active:scale-90 transition-all flex items-center justify-center shrink-0"
-          aria-label="Add scan"
-        >
-          <Plus size={18} className="text-primary" />
-        </button>
+        <AddButton onClick={() => handleOpenModal()} label="Add InBody scan" />
       </div>
 
       {/* Metrics Cards */}

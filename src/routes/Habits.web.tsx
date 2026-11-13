@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus,
   Flame,
   Check,
   Edit2,
@@ -46,7 +45,7 @@ import {
   getHabitRescueCost,
 } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
-import { DetailsSheet, Button, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
+import { AddButton, DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import { QadaaWidget } from '../components/QadaaWidget';
@@ -598,9 +597,7 @@ export default function Habits() {
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
           <p className="text-muted-foreground">Build good habits and detox bad ones</p>
         </div>
-        <Button size="icon" onClick={() => handleOpenModal()} aria-label="New Habit">
-          <Plus size={18} />
-        </Button>
+        <AddButton onClick={() => handleOpenModal()} label="New habit" />
       </div>
 
       <div {...getDesktopSectionProps('stats')}>

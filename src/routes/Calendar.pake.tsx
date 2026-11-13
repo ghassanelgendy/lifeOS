@@ -742,9 +742,7 @@ export default function CalendarPage() {
             >
               Add to Calendar
             </FluentButton>
-            <FluentButton icon={<Plus size={16} />} onClick={() => void handleOpenModal()} size="small" appearance="primary" aria-label="Add Event">
-              Add Event
-            </FluentButton>
+            <FluentButton icon={<Plus size={18} />} onClick={() => void handleOpenModal()} size="medium" appearance="primary" aria-label="Add Event" title="Add Event" />
           </div>
         </div>
 

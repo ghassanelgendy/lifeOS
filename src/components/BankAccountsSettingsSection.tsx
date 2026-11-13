@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Landmark, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
-import { Button, Input, ConfirmSheet, Spinner } from './ui';
+import { Landmark, Pencil, Trash2, Check, X } from 'lucide-react';
+import { AddButton, Button, Input, ConfirmSheet, Spinner } from './ui';
 import {
   useUserBanks,
   useEnsureDefaultBanks,
@@ -74,9 +74,11 @@ export function BankAccountsSettingsSection() {
             placeholder="e.g. Cash, QNB, SAIB…"
             className="flex-1"
           />
-          <Button size="sm" onClick={handleAdd} disabled={addBank.isPending || !newName.trim()}>
-            <Plus size={16} className="mr-1" /> Add
-          </Button>
+          <AddButton
+            onClick={handleAdd}
+            disabled={addBank.isPending || !newName.trim()}
+            label="Add bank account"
+          />
         </div>
 
         {isLoading ? (

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { Coins, Plus, Trash2, Gift, History, Sparkles, Award, AlertTriangle, ChevronRight, TrendingUp } from 'lucide-react';
+import { Coins, Trash2, Gift, History, Sparkles, Award, AlertTriangle, ChevronRight, TrendingUp } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { AddButton } from '../components/ui';
 import { ConfirmSheet } from '../components/ui/ConfirmSheet';
 import { usePointsBalance, usePointsTransactions, useCustomRewards, useCreateCustomReward, useDeleteCustomReward, useRedeemReward } from '../hooks/usePoints';
 
@@ -175,13 +176,10 @@ export default function Points() {
               <Gift className="size-5 text-amber-400" />
               Rewards Store
             </h2>
-            <button
+            <AddButton
               onClick={() => setIsAddingReward(!isAddingReward)}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary px-2.5 py-1.5 text-xs font-bold text-primary-foreground hover:opacity-95 active:scale-95 transition-all shadow-sm"
-            >
-              <Plus className="size-3.5" />
-              Add Reward
-            </button>
+              label={isAddingReward ? 'Close add reward form' : 'Add reward'}
+            />
           </div>
 
           {/* Add Reward Form */}

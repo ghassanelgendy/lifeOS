@@ -787,9 +787,7 @@ export default function Finance() {
             <p className="text-muted-foreground">Track income, expenses, and budgets</p>
           </div>
           {activeTab === 'transactions' && (
-            <FluentButton icon={<Plus size={18} />} onClick={() => handleOpenModal()} size="medium" appearance="primary" aria-label="Add transaction">
-              Add
-            </FluentButton>
+            <FluentButton icon={<Plus size={18} />} onClick={() => handleOpenModal()} size="medium" appearance="primary" aria-label="Add transaction" title="Add transaction" />
           )}
           {activeTab === 'investments' && (
             <div className="flex items-center gap-2">
@@ -801,9 +799,7 @@ export default function Finance() {
               >
                 Correction
               </FluentButton>
-              <FluentButton icon={<Plus size={18} />} onClick={() => handleOpenInvestmentModal()} size="medium" appearance="primary" aria-label="Add investment transaction">
-                Add Investment
-              </FluentButton>
+              <FluentButton icon={<Plus size={18} />} onClick={() => handleOpenInvestmentModal()} size="medium" appearance="primary" aria-label="Add investment transaction" title="Add investment transaction" />
             </div>
           )}
         </div>

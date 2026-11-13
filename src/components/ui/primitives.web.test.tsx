@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { useState } from 'react';
 import { IconButton } from './IconButton';
+import { AddButton } from './AddButton';
 import { Switch } from './Switch';
 import { Segmented } from './Segmented';
 import { ListRow } from './Card';
@@ -12,6 +13,15 @@ describe('IconButton', () => {
   it('exposes its label as the accessible name', () => {
     render(<IconButton label="Add task"><span /></IconButton>);
     expect(screen.getByRole('button', { name: 'Add task' })).toBeTruthy();
+  });
+});
+
+describe('AddButton', () => {
+  it('renders an icon-only + button with accessible name and tooltip', () => {
+    render(<AddButton label="New note" />);
+    const btn = screen.getByRole('button', { name: 'New note' });
+    expect(btn.getAttribute('title')).toBe('New note');
+    expect(btn.textContent).toBe('');
   });
 });
 

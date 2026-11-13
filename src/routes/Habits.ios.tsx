@@ -2,14 +2,14 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, Flame, Check, Edit2, Trash2, Calendar, TrendingUp, Clock, ListTodo, Bell, BellOff, ChevronDown, ChevronRight, BookOpen, Sparkles } from 'lucide-react';
+import { Flame, Check, Edit2, Trash2, Calendar, TrendingUp, Clock, ListTodo, Bell, BellOff, ChevronDown, ChevronRight, BookOpen, Sparkles } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../lib/quran-memorizer';
 import { getAzkarHabitCategory } from '../hooks/useAzkar';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isYesterday, subDays } from 'date-fns';
 import { cn } from '../lib/utils';
 import { useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit, useLogHabit, useWeeklyAdherence, useHabitStreaks, useHabitInsights, getHabitAdherenceWeight, isHabitScheduledForDate, useHabitRescuableStreaks, getHabitRescueCost } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
-import { DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
+import { AddButton, DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import { QadaaWidget } from '../components/QadaaWidget';
@@ -551,13 +551,7 @@ export default function Habits() {
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
           <p className="text-muted-foreground">Build good habits and detox bad ones</p>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary/10 border border-primary/25 backdrop-blur-md active:scale-90 hover:bg-primary/20 transition-all"
-          aria-label="New Habit"
-        >
-          <Plus size={20} className="text-primary" />
-        </button>
+        <AddButton onClick={() => handleOpenModal()} label="New habit" />
       </div>
 
       <div {...getDesktopSectionProps('stats')}>

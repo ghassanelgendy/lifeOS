@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
-import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus, ListTodo } from 'lucide-react';
-import { Button, ConfirmSheet, PageHeader, SectionLoader } from '../components/ui';
+import { Eye, FileText, Folder, Pencil, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus, ListTodo } from 'lucide-react';
+import { AddButton, Button, ConfirmSheet, PageHeader, SectionLoader } from '../components/ui';
 import { cn } from '../components/ui/cn';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
@@ -463,10 +463,7 @@ export default function NotesWeb() {
             <Brain size={16} />
             Cognitive Brain Dump
           </Button>
-          <Button type="button" onClick={() => startNewNote(activeFolderFilter)} className="gap-2 text-xs h-9">
-            <Plus size={16} />
-            New Note
-          </Button>
+          <AddButton onClick={() => startNewNote(activeFolderFilter)} label="New note" />
         </div>
       </div>
 

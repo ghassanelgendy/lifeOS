@@ -5,3 +5,4 @@ export { Input, Select, TextArea } from './Input';
 export { ConfirmSheet } from './ConfirmSheet';
 export { Spinner, SectionLoader } from './Spinner';
 export { PageHeader } from './PageHeader';
+export { AddButton } from './AddButton';

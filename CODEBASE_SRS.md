@@ -1361,8 +1361,8 @@ iOS builds shall feel native with liquid glass effects, haptic feedback, keyboar
 #### NFR-USE-008: Feedback on Actions
 All user actions (task completion, habit log, transaction save) shall provide immediate visual and haptic feedback.
 
-#### NFR-USE-009: Unified Section Geometry, Module Titles & Transitions
-Primary application routes shall share consistent container framing (`w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12`), unified plain headers via `PageHeader` (`src/components/ui/PageHeader.tsx`, matching Finance's `text-3xl font-bold tracking-tight` title without icon boxes, divider bars, or nav-card wrappers), equal-height dashboard summary rows (`h-full` + `items-stretch`), rounded `Xh Ym` progress/chart tooltips, `--color-*` chart token legibility across themes, balanced Analytics Overview KPI grids (`Net Cash Flow` pairing with `Total Income`), and uniform section transitions (`.section-slide-in` at `200ms cubic-bezier(0.22, 1, 0.36, 1)` with subtle vertical entrance and `prefers-reduced-motion` support).
+#### NFR-USE-009: Unified Section Geometry, Module Titles, Add Actions & Transitions
+Primary application routes shall share consistent container framing (`w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12`), unified plain headers via `PageHeader` (`src/components/ui/PageHeader.tsx`, matching Finance's `text-3xl font-bold tracking-tight` title without icon boxes, divider bars, or nav-card wrappers), unified icon-only `+` primary add buttons via `AddButton` (`src/components/ui/AddButton.tsx`, excluding the Dashboard Quick Add FAB), equal-height dashboard summary rows (`h-full` + `items-stretch`), rounded `Xh Ym` progress/chart tooltips, `--color-*` chart token legibility across themes, balanced Analytics Overview KPI grids (`Net Cash Flow` pairing with `Total Income`), and uniform section transitions (`.section-slide-in` at `200ms cubic-bezier(0.22, 1, 0.36, 1)` with subtle vertical entrance and `prefers-reduced-motion` support).
 
 ### 4.6 Maintainability
 

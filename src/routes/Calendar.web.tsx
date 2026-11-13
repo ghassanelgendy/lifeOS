@@ -46,7 +46,7 @@ import {
   useCalendarEvents,
   useIcalSubscriptionEvents,
 } from '../hooks/useCalendar';
-import { Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
+import { AddButton, Modal, Button, Input, Select, TextArea, ConfirmSheet } from '../components/ui';
 import type { CalendarEvent, CreateInput, EventType, Task, TaskPriority } from '../types/schema';
 import { useCreateTask, useTasks, useUpdateTask, useDeleteTask } from '../hooks/useTasks';
 import { useIcalSubscriptions } from '../hooks/useIcalSubscriptions';
@@ -784,9 +784,7 @@ export default function CalendarPage() {
             <CalendarPlus size={18} />
             Add to Calendar
           </Button>
-          <Button size="icon" onClick={() => void handleOpenModal()} aria-label="Add Event">
-            <Plus size={18} />
-          </Button>
+          <AddButton onClick={() => void handleOpenModal()} label="Add event" />
         </div>
       </div>
 
