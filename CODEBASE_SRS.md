@@ -146,6 +146,9 @@ The system shall support three dashboard modes: **Quick View**, **Strategic**, a
 #### FR-DASH-002A: Quick View Top Row (PC Web)
 On desktop widths the Quick View shall lay out Day progress, Today's targets and This week on a 12-column grid (5/4/3). Today's targets shall present Tasks, Habits & Prayers, Sleep and Screen time exactly once each, with the value, a progress bar against its target, and a status expressed in both text and color, and each shall link to its module. Sleep and Screen time values shall be blurred in privacy mode. The onboarding tour targets `[data-tour="metric-cards"]`, `[data-tour="metric-habits"]`, `[data-tour="metric-screentime"]` and `[data-tour="weekly-habits"]` shall remain present.
 
+#### FR-DASH-002B: Quick View Motion (PC Web)
+The web Quick View shall animate card entrance (once per load, staggered), numeric values (count to value, roll on change), progress fills, the day bar and the weekly bars, and shall provide pointer-follow hover feedback on cards. Animations shall use transform, opacity or clip-path only (no layout properties), shall not delay interaction, and shall be fully disabled under `prefers-reduced-motion`, leaving every element in its final state. Effect classes live in `src/styles/effects.web.css` and helpers in `src/components/dashboard/dashboardMotion.tsx`.
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 

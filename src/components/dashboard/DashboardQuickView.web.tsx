@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback, useEffect, useRef, useLayoutEffect } fr
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { createPortal } from 'react-dom';
+import { AnimatedNumber, GrowBar, trackSpotlight, useRise } from './dashboardMotion';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy, BookOpen } from 'lucide-react';
@@ -475,6 +476,7 @@ type ContextMenuState = {
 } | null;
 
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
+  const rise = useRise();
   const [parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
@@ -1483,26 +1485,26 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const todayStats = [
     {
       key: 'tasks', to: '/tasks', label: 'Tasks', tour: undefined as string | undefined, private: false,
-      value: String(dueTodayBundleCount), unit: 'left',
+      num: dueTodayBundleCount as number | null, decimals: 0, unit: 'left',
       detail: `${tasksDoneToday}/${tasksAllDue} done`,
       pct: tasksPct, tone: tone(tasksPct >= 80, tasksPct >= 40),
     },
     {
       key: 'habits', to: '/habits', label: 'Habits & Prayers', tour: 'metric-habits', private: false,
-      value: String(todayHabitCompleted), unit: `/${todayHabitTotal}`,
+      num: todayHabitCompleted as number | null, decimals: 0, unit: `/${todayHabitTotal}`,
       detail: `${habitsPct}%`,
       pct: Math.min(100, habitsPct), tone: tone(habitsPct >= 80, habitsPct >= 50),
     },
     {
       key: 'sleep', to: '/sleep', label: 'Sleep', tour: undefined as string | undefined, private: true,
-      value: sleepHours > 0 ? sleepHours.toFixed(1) : '—', unit: sleepHours > 0 ? 'h' : '',
+      num: sleepHours > 0 ? sleepHours : null, decimals: 1, unit: sleepHours > 0 ? 'h' : '',
       detail: `target ${SLEEP_TARGET_H}h`,
       pct: sleepHours > 0 ? Math.round(Math.min(100, (sleepHours / SLEEP_TARGET_H) * 100)) : 0,
       tone: tone(sleepHours >= 7, sleepHours >= 5.5, sleepHours > 0),
     },
     {
       key: 'screen', to: '/screentime', label: 'Screen time', tour: 'metric-screentime', private: true,
-      value: screenHours > 0 ? screenHours.toFixed(1) : '—', unit: screenHours > 0 ? 'h' : '',
+      num: screenHours > 0 ? screenHours : null, decimals: 1, unit: screenHours > 0 ? 'h' : '',
       detail: `limit ${SCREEN_TARGET_H}h`,
       pct: screenHours > 0 ? Math.round(Math.min(100, (screenHours / SCREEN_TARGET_H) * 100)) : 0,
       tone: tone(screenHours > 0 && screenHours <= SCREEN_TARGET_H, screenHours <= SCREEN_TARGET_H * 1.4, screenHours > 0),
@@ -1511,7 +1513,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   return (
     <>
-    <div className="flex flex-col gap-4 sm:gap-5 w-full">
+    <div className="flex flex-col gap-4 sm:gap-5 w-full" onPointerMove={trackSpotlight}>
       {/* Today Header & Points Balance */}
       <div className="flex items-center justify-between">
         <h2 id="qv-today-heading" className="text-caption font-bold text-ink-3">
@@ -1523,7 +1525,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         >
           <Coins className="size-3.5 text-warning" />
           <span className={cn(privacyMode && 'blur-sm')}>
-            {pointsBalance} pts
+            <AnimatedNumber value={Number(pointsBalance) || 0} /> pts
           </span>
         </Link>
       </div>
@@ -1531,19 +1533,19 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       {/* Daily Spiritual Banners: Hadith & Azkar — shares the same grid template as the
           Day progress / metrics row below so both rows line up to the same total width. */}
       <div data-tour="spiritual-banners" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
-        <div className="flex flex-col">
+        <motion.div className="flex flex-col" {...rise(0)}>
           <HadithWidget className="h-full" />
-        </div>
-        <div className="flex flex-col">
+        </motion.div>
+        <motion.div className="flex flex-col" {...rise(1)}>
           <AzkarDashboardWidget className="h-full" />
-        </div>
+        </motion.div>
       </div>
 
 
       {/* Top row: 12 columns on desktop (day 5, targets 4, week 3), 2 columns on tablet, stacked on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         {/* Col 1: Day Progress (First thing) */}
-        <section data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col justify-between md:col-span-2 lg:col-span-5">
+        <motion.section {...rise(2)} data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col justify-between md:col-span-2 lg:col-span-5">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
             <p id="qv-day-progress-heading" className="text-label text-ink-2 font-semibold whitespace-nowrap">
               Day progress
@@ -1582,7 +1584,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             className="relative mt-1 h-5 w-full overflow-visible rounded-full bg-muted-foreground/10"
             aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
           >
-            <div className="flex h-full w-full overflow-hidden rounded-full">
+            <div className="fx-wipe flex h-full w-full overflow-hidden rounded-full">
               <div className={cn('bg-indigo-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
               <div className={cn('bg-sky-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC (Apps): ${formatDurationMinutes(screenChart.pc)}`} />
               <div className={cn('bg-violet-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone (Apps): ${formatDurationMinutes(screenChart.phone)}`} />
@@ -1634,7 +1636,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             ))}
 
             <span
-              className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-foreground/80"
+              className="fx-now pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 rounded-full bg-foreground/80 text-ink"
               style={{ left: screenChart.nowPct }}
               aria-hidden
             />
@@ -1654,15 +1656,15 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               {habitAdherencePct}% adherence{sleepTimeStr}
             </span>
           </div>
-        </section>
+        </motion.section>
 
         {/* Today's targets: one block per number, each against its target */}
-        <section data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-4">
+        <motion.section {...rise(3)} data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-4">
           <p id="qv-targets-heading" className="text-label font-semibold text-ink-2 mb-3">
             Today's targets
           </p>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2 flex-1 content-between">
-            {todayStats.map((stat) => (
+            {todayStats.map((stat, statIndex) => (
               <Link
                 key={stat.key}
                 to={stat.to}
@@ -1672,25 +1674,26 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               >
                 <span className="text-caption font-medium text-ink-3">{stat.label}</span>
                 <span className={cn('flex items-baseline gap-1 leading-none', stat.private && privacyMode && 'blur-sm')}>
-                  <span className="text-heading font-semibold tabular-nums tracking-tight text-ink">{stat.value}</span>
+                  <span className="text-heading font-semibold tabular-nums tracking-tight text-ink">
+                    {stat.num === null ? '—' : <AnimatedNumber value={stat.num} decimals={stat.decimals} />}
+                  </span>
                   {stat.unit && <span className="text-label font-medium text-ink-3">{stat.unit}</span>}
                 </span>
-                <span className="h-1.5 w-full rounded-pill bg-sunken" aria-hidden>
-                  <span
-                    className={cn('block h-full rounded-pill transition-[width] duration-500', TONE_BAR[stat.tone], stat.private && privacyMode && 'blur-sm')}
-                    style={{ width: `${stat.pct}%` }}
-                  />
-                </span>
+                <GrowBar
+                  pct={stat.pct}
+                  delay={0.35 + statIndex * 0.08}
+                  className={cn(TONE_BAR[stat.tone], stat.private && privacyMode && 'blur-sm')}
+                />
                 <span className={cn('text-caption font-semibold tabular-nums', TONE_TEXT[stat.tone], stat.private && privacyMode && 'blur-sm')}>
                   {stat.detail}
                 </span>
               </Link>
             ))}
           </div>
-        </section>
+        </motion.section>
 
         {/* This week: habit adherence per day */}
-        <section data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-3">
+        <motion.section {...rise(4)} data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-3">
           <p id="qv-weekly-adherence-heading" className="text-label font-semibold text-ink-2">
             This week
           </p>
@@ -1699,7 +1702,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               'text-heading font-semibold tabular-nums tracking-tight',
               weekAdherence >= 80 ? 'text-success' : weekAdherence >= 50 ? 'text-warning' : 'text-danger'
             )}>
-              {weekAdherence}%
+              <AnimatedNumber value={weekAdherence} />%
             </span>
             <span className="text-caption font-medium text-ink-3">average adherence</span>
           </p>
@@ -1726,8 +1729,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 <div key={day.date} className="flex-1 flex flex-col gap-1.5">
                   <div className="flex-1 flex items-end">
                     <div
-                      className={cn('w-full min-h-[3px] rounded-sm transition-[height] duration-500', color, !isToday && 'opacity-70')}
-                      style={{ height: `${pct}%` }}
+                      className={cn('fx-grow-y w-full min-h-[3px] rounded-sm', color, !isToday && 'opacity-70')}
+                      style={{ height: `${pct}%`, ['--fx-i' as string]: i }}
                       title={`${pct}%`}
                     />
                   </div>
@@ -1738,13 +1741,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               );
             })}
           </div>
-        </section>
+        </motion.section>
       </div>
 
       {/* Row 2: Due Today Entries (3 Columns on Desktop) */}
-      <section
+      <motion.section
+        {...rise(5)}
         data-tour="due-today"
-        className="rounded-card border border-separator bg-raised overflow-hidden shadow-ds w-full"
+        className="fx-rows rounded-card border border-separator bg-raised overflow-hidden shadow-ds w-full"
         aria-labelledby="qv-due-today-heading"
       >
         <div className="border-b border-separator px-4 py-3 sm:px-5 flex items-center justify-between gap-2">
@@ -1772,7 +1776,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             </ul>
           )}
         </div>
-      </section>
+      </motion.section>
     </div>
 
     {/* Right-click context menu */}

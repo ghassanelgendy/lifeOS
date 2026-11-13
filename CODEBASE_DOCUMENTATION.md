@@ -342,6 +342,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/dashboard/DashboardQuickView.web.tsx](#src-components-dashboard-dashboardquickview-web-tsx)
 - [src/components/dashboard/DashboardStrategic.tsx](#src-components-dashboard-dashboardstrategic-tsx)
 - [src/components/dashboard/HadithWidget.tsx](#src-components-dashboard-hadithwidget-tsx)
+- [src/components/dashboard/dashboardMotion.tsx](#src-components-dashboard-dashboardmotion-tsx)
 
 ### src/components/landing
 - [src/components/landing/DayPrism.tsx](#src-components-landing-dayprism-tsx)
@@ -3631,6 +3632,27 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`HadithWidget`** — Utility function for hadith widget.
 
 **Lines:** 178
+
+---
+
+<a name="src-components-dashboard-dashboardmotion-tsx"></a>
+### src/components/dashboard/dashboardMotion.tsx
+
+**File Purpose:** Motion helpers for the web dashboard, transform/opacity only and static under `prefers-reduced-motion`. Paired with the `fx-*` classes in `src/styles/effects.web.css` (card lift and pointer spotlight, day-bar wipe, "now" marker ring, weekly bar growth, due-today row hover and tick pop).
+
+**Functions & Classes:**
+- `useRise` (Hook)
+- `AnimatedNumber` (React Component)
+- `GrowBar` (React Component)
+- `trackSpotlight` (Function)
+
+**Function Details:**
+- **`useRise`** — Returns a function giving a card its staggered entrance props by index.
+- **`AnimatedNumber`** — Counts to its value on mount and rolls when the value changes.
+- **`GrowBar`** — Progress bar whose fill slides in from the left inside a clipping track.
+- **`trackSpotlight`** — Pointer handler that tells the `.fx-card` under the pointer where the pointer is.
+
+**Lines:** 84
 
 ---
 

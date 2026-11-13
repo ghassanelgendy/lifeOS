@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "./styles/tokens.web.css";
+@import "./styles/effects.web.css";
 
 /* Class-based dark mode, same as index.css / index.ios.css. Without this, `dark:` utilities
    follow the OS color scheme instead of the app theme (html.dark). */
