@@ -10,7 +10,7 @@ import { useUserBanks, useEnsureDefaultBanks } from '../hooks/useUserBanks';
 import { useInvestmentAccounts, useInvestmentTransactions, useEnsureDefaultInvestmentAccounts, useCreateInvestmentTransaction, useUpdateInvestmentTransaction, useDeleteInvestmentTransaction, useAddInvestmentAccount, useRenameInvestmentAccount, useRemoveInvestmentAccount, getInvestmentBreakdown, getInvestmentAccountBalance, INVESTMENT_TRANSACTION_TYPES } from '../hooks/useInvestments';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../stores/useUIStore';
-import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
+import { DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
 import { TabList, Tab, Button as FluentButton } from '@fluentui/react-components';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
@@ -775,15 +775,11 @@ export default function Finance() {
   }, [location.state, navigate, location.pathname, activeTab]);
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-      </div>
-    );
+    return <SectionLoader />;
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 font-sans text-foreground">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 font-sans text-foreground">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -1605,9 +1601,7 @@ export default function Finance() {
       {activeTab === 'investments' && (
         <>
           {(invAccountsLoading || invTxLoading) ? (
-            <div className="flex justify-center h-64 items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-            </div>
+            <SectionLoader />
           ) : (
             <>
               <div className="flex items-center justify-end gap-1.5 mb-1 min-w-0">

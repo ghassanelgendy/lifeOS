@@ -124,7 +124,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
   prayer: 'bg-slate-500/70',
   task: 'bg-amber-500/70',
   habit: 'bg-emerald-500/70',
-  event: 'bg-indigo-500/70',
+  event: 'bg-sky-500/70',
 };function DueTodayRow({
   kind,
   title,
@@ -177,7 +177,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
     <div
       className={cn(
         'task-item group flex flex-col rounded-xl border p-3 sm:p-3.5',
-        'transition-all duration-200',
+        'transition-colors duration-200',
         done
           ? kind === 'prayer'
             ? 'opacity-60 border-slate-500/15 bg-slate-500/[0.04]'
@@ -202,19 +202,19 @@ const ACCENT_DOT: Record<DueKind, string> = {
               onToggle();
             }}
             className={cn(
-              'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full transition-all duration-200',
+              'relative mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-full transition-colors duration-200',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
               hasSubtasks && !done
-                ? 'border-0 bg-background/80 shadow-sm'
+                ? 'border-0 bg-background/80'
                 : cn(
                     'border-2',
                     done
                       ? kind === 'prayer'
-                        ? 'border-slate-500 bg-slate-500 text-slate-50 shadow-inner shadow-slate-500/20'
-                        : 'border-primary bg-primary text-primary-foreground shadow-inner shadow-primary/20'
+                        ? 'border-slate-500 bg-slate-500 text-slate-50'
+                        : 'border-primary bg-primary text-primary-foreground'
                       : kind === 'prayer'
-                        ? 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-slate-500/50 hover:bg-accent/40 active:scale-95'
-                        : 'border-muted-foreground/25 bg-background/80 shadow-sm hover:border-primary/50 hover:bg-accent/40 active:scale-95'
+                        ? 'border-muted-foreground/25 bg-background/80 hover:border-slate-500/50 hover:bg-accent/40 active:scale-95'
+                        : 'border-muted-foreground/25 bg-background/80 hover:border-primary/50 hover:bg-accent/40 active:scale-95'
                   ),
               busy && 'pointer-events-none opacity-50',
             )}
@@ -236,7 +236,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                       cy="22"
                       r="21"
                       fill="none"
-                      className="transition-all duration-300"
+                      className="transition-[stroke-dashoffset] duration-300"
                       style={{
                         strokeDasharray: '131.95',
                         strokeDashoffset: `${131.95 - (131.95 * percentage) / 100}`,
@@ -249,7 +249,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                   </svg>
                   <span
                     className={cn(
-                      'absolute size-2.5 rounded-full transition-all duration-300 scale-100 opacity-100',
+                      'absolute size-2.5 rounded-full transition-opacity duration-200 opacity-100',
                       !color && ACCENT_DOT[kind]
                     )}
                     style={color ? { backgroundColor: color } : undefined}
@@ -260,9 +260,9 @@ const ACCENT_DOT: Record<DueKind, string> = {
                 <>
                   <span
                     className={cn(
-                      'absolute size-2.5 rounded-full transition-all duration-300',
+                      'absolute size-2.5 rounded-full transition-[transform,opacity] duration-200',
                       !color && ACCENT_DOT[kind],
-                      done ? 'scale-0 opacity-0' : 'scale-100 opacity-100'
+                      done ? 'scale-95 opacity-0' : 'scale-100 opacity-100'
                     )}
                     style={color ? { backgroundColor: color } : undefined}
                     aria-hidden
@@ -307,7 +307,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                     !color && kind === 'prayer' && 'bg-slate-500',
                     !color && kind === 'task' && 'bg-amber-500',
                     !color && kind === 'habit' && 'bg-emerald-500',
-                    !color && kind === 'event' && 'bg-indigo-500',
+                    !color && kind === 'event' && 'bg-sky-500',
                   )}
                   style={color ? { backgroundColor: color } : undefined}
                 />
@@ -392,7 +392,7 @@ const ACCENT_DOT: Record<DueKind, string> = {
                 });
               }}
               className={cn(
-                "p-1 rounded transition-all",
+                "p-1 rounded transition-colors",
                 copied
                   ? "text-green-500"
                   : "text-ink-3 opacity-0 group-hover:opacity-100 hover:text-muted-foreground"
@@ -964,7 +964,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         id: `task-${task.id}`,
         minutes,
         kind: isCalendarEvent ? 'event' : 'task',
-        color: isCalendarEvent ? '#6366f1' : undefined,
+        color: isCalendarEvent ? '#0ea5e9' : undefined,
         name: task.title,
         timeStr: formatMinutesAsTime(minutes),
         isCompleted: true
@@ -994,7 +994,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             id: item.id,
             minutes,
             kind: 'event',
-            color: item.color || '#6366f1',
+            color: item.color || '#0ea5e9',
             name: item.title,
             timeStr: formatMinutesAsTime(minutes),
             isCompleted: true
@@ -1516,9 +1516,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     <div className="flex flex-col gap-4 sm:gap-5 w-full">
       {/* Today Header & Points Balance */}
       <div className="flex items-center justify-between">
-        <h2 id="qv-today-heading" className="text-caption font-bold text-ink-3">
+        <h1 id="qv-today-heading" className="text-heading font-semibold tracking-tight text-ink">
           Today
-        </h2>
+        </h1>
         <Link 
           to="/points" 
           className="flex items-center gap-1.5 text-label font-semibold text-warning hover:text-ink transition-colors"
@@ -1530,7 +1530,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </Link>
       </div>
 
-      {/* Daily Spiritual Banners: Hadith & Azkar — shares the same grid template as the
+      {/* Daily Spiritual Banners: Hadith & Azkar: shares the same grid template as the
           Day progress / metrics row below so both rows line up to the same total width. */}
       <div data-tour="spiritual-banners" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
         <motion.div className="flex flex-col" {...rise(0)}>
@@ -1543,17 +1543,17 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
 
       {/* Top row: 12 columns on desktop (day 5, targets 4, week 3), 2 columns on tablet, stacked on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch lg:items-start">
         {/* Col 1: Day Progress (First thing) */}
-        <motion.section {...rise(2)} data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col justify-between md:col-span-2 lg:col-span-5">
+        <motion.section {...rise(2)} data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col justify-between md:col-span-2 lg:col-span-5">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
-            <p id="qv-day-progress-heading" className="text-label text-ink-2 font-semibold whitespace-nowrap">
+            <h2 id="qv-day-progress-heading" className="text-label text-ink-2 font-semibold whitespace-nowrap">
               Day progress
-            </p>
+            </h2>
             <div className="flex items-center gap-x-2 gap-y-1 text-caption font-semibold text-ink-3 flex-wrap justify-end">
-              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-indigo-500" /> Sleep</span>
+              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-slate-500" /> Sleep</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
-              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-violet-500" /> Phone</span>
+              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-amber-500" /> Phone</span>
               <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-emerald-500" /> Web</span>
             </div>
           </div>
@@ -1585,15 +1585,15 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
           >
             <div className="fx-wipe flex h-full w-full overflow-hidden rounded-full">
-              <div className={cn('bg-indigo-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
-              <div className={cn('bg-sky-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC (Apps): ${formatDurationMinutes(screenChart.pc)}`} />
-              <div className={cn('bg-violet-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone (Apps): ${formatDurationMinutes(screenChart.phone)}`} />
-              <div className={cn('bg-emerald-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.webPct }} title={`Web Browsing: ${formatDurationMinutes(screenChart.web)}`} />
+              <div className={cn('bg-slate-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
+              <div className={cn('bg-sky-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC (Apps): ${formatDurationMinutes(screenChart.pc)}`} />
+              <div className={cn('bg-amber-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone (Apps): ${formatDurationMinutes(screenChart.phone)}`} />
+              <div className={cn('bg-emerald-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.webPct }} title={`Web Browsing: ${formatDurationMinutes(screenChart.web)}`} />
               {screenChart.other > 0 && (
-                <div className={cn('bg-amber-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
+                <div className={cn('bg-orange-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
               )}
               {screenChart.overlap > 0 && (
-                <div className={cn('bg-red-500/90 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
+                <div className={cn('bg-red-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
               )}
             </div>
 
@@ -1611,7 +1611,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                   >
                     <div
                       className={cn(
-                        'h-full w-full rounded-[1px] shadow-sm ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
+                        'h-full w-full rounded-[1px] ring-[0.5px] ring-background transition-transform group-hover:scale-x-150',
                         marker.isCompleted ? 'opacity-90' : 'opacity-40 border-dashed',
                         !marker.color && marker.kind === 'prayer' && 'bg-slate-50',
                         !marker.color && marker.kind === 'habit' && 'bg-emerald-50',
@@ -1659,10 +1659,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </motion.section>
 
         {/* Today's targets: one block per number, each against its target */}
-        <motion.section {...rise(3)} data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-4">
-          <p id="qv-targets-heading" className="text-label font-semibold text-ink-2 mb-3">
+        <motion.section {...rise(3)} data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col lg:col-span-4">
+          <h2 id="qv-targets-heading" className="text-label font-semibold text-ink-2 mb-3">
             Today's targets
-          </p>
+          </h2>
           <div className="grid grid-cols-2 gap-x-3 gap-y-2 flex-1 content-between">
             {todayStats.map((stat, statIndex) => (
               <Link
@@ -1675,7 +1675,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                 <span className="text-caption font-medium text-ink-3">{stat.label}</span>
                 <span className={cn('flex items-baseline gap-1 leading-none', stat.private && privacyMode && 'blur-sm')}>
                   <span className="text-heading font-semibold tabular-nums tracking-tight text-ink">
-                    {stat.num === null ? '—' : <AnimatedNumber value={stat.num} decimals={stat.decimals} />}
+                    {stat.num === null ? '-' : <AnimatedNumber value={stat.num} decimals={stat.decimals} />}
                   </span>
                   {stat.unit && <span className="text-label font-medium text-ink-3">{stat.unit}</span>}
                 </span>
@@ -1693,10 +1693,10 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </motion.section>
 
         {/* This week: habit adherence per day */}
-        <motion.section {...rise(4)} data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 shadow-ds flex flex-col lg:col-span-3">
-          <p id="qv-weekly-adherence-heading" className="text-label font-semibold text-ink-2">
+        <motion.section {...rise(4)} data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col lg:col-span-3">
+          <h2 id="qv-weekly-adherence-heading" className="text-label font-semibold text-ink-2">
             This week
-          </p>
+          </h2>
           <p className="mt-3 flex items-baseline gap-1.5 leading-none">
             <span className={cn(
               'text-heading font-semibold tabular-nums tracking-tight',
@@ -1706,14 +1706,14 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             </span>
             <span className="text-caption font-medium text-ink-3">average adherence</span>
           </p>
-          <div className="mt-4 flex flex-1 items-stretch gap-1.5 min-h-[72px]">
+          <div className="mt-4 flex items-stretch gap-1.5 h-[88px]">
             {dailyAdherence.map((day, i) => {
               if (!day) {
                 const d = new Date();
                 d.setDate(d.getDate() - (dailyAdherence.length - 1 - i));
                 return (
                   <div key={i} className="flex-1 flex flex-col gap-1.5">
-                    <div className="flex-1 flex items-end">
+                    <div className="flex-1 flex items-end rounded-sm bg-sunken/70 overflow-hidden">
                       <div className="w-full h-[3px] rounded-sm bg-separator" />
                     </div>
                     <span className="text-center text-caption font-medium text-ink-3">
@@ -1727,7 +1727,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               const color = pct >= 80 ? 'bg-success' : pct >= 50 ? 'bg-warning' : 'bg-danger';
               return (
                 <div key={day.date} className="flex-1 flex flex-col gap-1.5">
-                  <div className="flex-1 flex items-end">
+                  <div className="flex-1 flex items-end rounded-sm bg-sunken/70 overflow-hidden">
                     <div
                       className={cn('fx-grow-y w-full min-h-[3px] rounded-sm', color, !isToday && 'opacity-70')}
                       style={{ height: `${pct}%`, ['--fx-i' as string]: i }}
@@ -1748,7 +1748,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       <motion.section
         {...rise(5)}
         data-tour="due-today"
-        className="fx-rows rounded-card border border-separator bg-raised overflow-hidden shadow-ds w-full"
+        className="fx-rows rounded-card border border-separator bg-raised overflow-hidden w-full"
         aria-labelledby="qv-due-today-heading"
       >
         <div className="border-b border-separator px-4 py-3 sm:px-5 flex items-center justify-between gap-2">
@@ -1794,7 +1794,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         <div className="flex flex-col">
           {Boolean(contextMenu.entry?.title || contextMenu.entry?.name || contextMenu.entry?.label) && (
             <div className="px-3.5 py-1.5 border-b border-border/40 select-none max-w-[240px]">
-              <p className="text-[11px] font-semibold text-muted-foreground/80 uppercase tracking-wider truncate">
+              <p className="text-caption font-semibold text-muted-foreground/80 truncate">
                 {contextMenu.kind === 'habit' ? 'Habit' : contextMenu.kind === 'prayer' ? 'Prayer' : contextMenu.kind === 'event' ? 'Event' : 'Task'}
               </p>
               <p className="text-xs font-medium text-foreground truncate mt-0.5">

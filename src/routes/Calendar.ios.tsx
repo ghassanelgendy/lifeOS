@@ -730,7 +730,7 @@ export default function CalendarPage() {
   }, [handleOpenModal]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header - Desktop only */}
       <div className="hidden md:flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

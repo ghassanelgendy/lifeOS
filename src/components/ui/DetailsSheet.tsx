@@ -34,6 +34,7 @@ export function DetailsSheet({
   stickyHeaderDivider = true,
 }: DetailsSheetProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const pointerDownOnBackdropRef = useRef(false);
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -207,7 +208,15 @@ export function DetailsSheet({
         overscrollBehavior: 'contain',
         paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
       }}
-      onClick={(e) => e.target === overlayRef.current && onClose()}
+      onMouseDown={(e) => {
+        pointerDownOnBackdropRef.current = e.target === overlayRef.current;
+      }}
+      onClick={(e) => {
+        // Require press and release on the backdrop so dragging text selection outside doesn't dismiss the task sheet.
+        const startedOnBackdrop = pointerDownOnBackdropRef.current;
+        pointerDownOnBackdropRef.current = false;
+        if (startedOnBackdrop && e.target === overlayRef.current) onClose();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="details-sheet-title"

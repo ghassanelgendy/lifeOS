@@ -26,6 +26,7 @@ interface ModalProps {
 
 export function Modal({ isOpen, onClose, title, children, className, panelStyle, swipeToClose = true }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const pointerDownOnBackdropRef = useRef(false);
   const panelRef = useRef<HTMLDivElement>(null);
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
@@ -166,7 +167,15 @@ export function Modal({ isOpen, onClose, title, children, className, panelStyle,
         overscrollBehavior: 'contain',
         paddingTop: 'calc(env(safe-area-inset-top) + 8px)',
       }}
-      onClick={(e) => e.target === overlayRef.current && onClose()}
+      onMouseDown={(e) => {
+        pointerDownOnBackdropRef.current = e.target === overlayRef.current;
+      }}
+      onClick={(e) => {
+        // Only close when both press and release happen on the backdrop so text-selection drags don't dismiss the modal.
+        const startedOnBackdrop = pointerDownOnBackdropRef.current;
+        pointerDownOnBackdropRef.current = false;
+        if (startedOnBackdrop && e.target === overlayRef.current) onClose();
+      }}
     >
       <div
         ref={panelRef}

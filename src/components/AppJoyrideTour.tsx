@@ -32,19 +32,16 @@ function CustomJoyrideTooltip({
       className={cn(
         "relative flex flex-col font-sans select-none overflow-hidden",
         "w-[calc(100vw-32px)] sm:w-[350px] max-w-[360px]",
-        "rounded-2xl border border-white/20 dark:border-white/10",
-        "bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl shadow-2xl",
-        "text-zinc-900 dark:text-zinc-100",
+        "rounded-2xl border border-separator",
+        "bg-raised shadow-overlay",
+        "text-foreground",
         "animate-in fade-in zoom-in-95 duration-200"
       )}
-      style={{
-        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08)",
-      }}
     >
       {/* Top micro progress bar */}
       <div className="w-full h-1 bg-zinc-200/50 dark:bg-zinc-800/60 overflow-hidden">
         <div
-          className="h-full bg-primary transition-all duration-300 ease-out"
+          className="h-full bg-primary transition-[width] duration-300 ease-out"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -54,7 +51,7 @@ function CustomJoyrideTooltip({
         <div className="flex items-start justify-between gap-2">
           <div className="space-y-1 min-w-0 pr-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-primary/10 text-primary border border-primary/20">
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sunken text-ink-2 border border-separator">
                 Step {currentStep} of {size}
               </span>
             </div>

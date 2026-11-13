@@ -4,6 +4,7 @@ import { formatCurrency } from '../../lib/utils';
 import { formatMinutes, formatSeconds, aggregateWeekly } from '../../lib/analytics-utils';
 import { Sparkles } from 'lucide-react';
 import { askAI } from '../../lib/ai';
+import { Spinner } from '../ui';
 
 interface AnalyticsOverviewProps {
   rangeDays: number;
@@ -122,7 +123,7 @@ Return ONLY a JSON array of strings, for example:
   const habitsWeekly = aggregateWeekly(daily.habits.data ?? [], (r: any) => Number(r.adherence_pct));
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
 
       {/* KPI summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
@@ -312,7 +313,7 @@ Return ONLY a JSON array of strings, for example:
 
             {loadingInsights && (
               <div className="flex flex-col items-center justify-center py-8 space-y-3">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+                <Spinner size="md" decorative />
                 <p className="text-sm text-muted-foreground">Running Pearson correlations & wellness audit...</p>
               </div>
             )}

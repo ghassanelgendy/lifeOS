@@ -1,4 +1,5 @@
-import { Clock3, Loader2, MapPin, Moon, MoonStar, Sunrise, Sun, Sunset } from 'lucide-react';
+import { Clock3, MapPin, Moon, MoonStar, Sunrise, Sun, Sunset } from 'lucide-react';
+import { Spinner } from './ui/Spinner';
 import { format } from 'date-fns';
 import { cn } from '../lib/utils';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
@@ -21,7 +22,7 @@ export function PrayerTimesWidget() {
   if (!location || times.length === 0) {
     return (
       <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center justify-center text-muted-foreground text-sm min-h-[150px] gap-2">
-        <Loader2 className="animate-spin" size={24} />
+        <Spinner size="md" decorative />
         <span>Loading prayer times...</span>
       </div>
     );

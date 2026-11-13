@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import type { PrayerLog } from '../types/schema';
+import { Spinner } from './ui/Spinner';
 
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
@@ -136,7 +137,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
     return (
       <div className={embedded ? 'bg-transparent p-0 h-full flex flex-col' : 'rounded-xl border border-border/40 bg-card/50 backdrop-blur-lg p-6 h-full flex flex-col shadow-sm'}>
         <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          <Spinner size="lg" />
         </div>
       </div>
     );

@@ -29,6 +29,7 @@ export function ConfirmSheet({
   isLoading = false,
 }: ConfirmSheetProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const pointerDownOnBackdropRef = useRef(false);
   const scrollPositionRef = useRef<number>(0);
   const touchStartYRef = useRef<number | null>(null);
   const [dragY, setDragY] = useState(0);
@@ -109,7 +110,14 @@ export function ConfirmSheet({
         sheetVisible ? 'opacity-100' : 'opacity-0'
       )}
       style={{ height: '100dvh', overscrollBehavior: 'contain' }}
-      onClick={(e) => e.target === overlayRef.current && !isLoading && onCancel()}
+      onMouseDown={(e) => {
+        pointerDownOnBackdropRef.current = e.target === overlayRef.current;
+      }}
+      onClick={(e) => {
+        const startedOnBackdrop = pointerDownOnBackdropRef.current;
+        pointerDownOnBackdropRef.current = false;
+        if (startedOnBackdrop && e.target === overlayRef.current && !isLoading) onCancel();
+      }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="confirm-sheet-title"

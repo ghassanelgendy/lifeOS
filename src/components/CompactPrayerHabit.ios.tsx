@@ -6,6 +6,7 @@ import { isPrayerStatusComplete } from '../lib/prayerStatus';
 import { usePrayerTimes } from '../hooks/usePrayerTimes';
 import { usePrayerTracker } from '../hooks/usePrayerHabits';
 import type { PrayerStatus } from '../types/schema';
+import { Spinner } from './ui/Spinner';
 
 const STATUS_BUTTONS: Record<PrayerStatus, { label: string; className: string }> = {
   Prayed: { label: 'Prayed', className: 'bg-green-500/15 text-green-500 border-green-500/30' },
@@ -49,7 +50,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
     return (
       <div className={embedded ? 'bg-transparent p-4' : 'rounded-xl border border-border bg-card p-4'}>
         <div className="flex items-center justify-center h-16">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-foreground" />
+          <Spinner size="md" />
         </div>
       </div>
     );

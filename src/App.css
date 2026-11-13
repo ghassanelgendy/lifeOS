@@ -210,10 +210,12 @@
    TASTE & UI/UX PRO MAX - Design Refinements & Micro-Interactions
    ========================================================================== */
 
-/* 1. Global Focus-Visible Ring (Accessibility requirement: contrast-text-4.5, keyboard nav) */
-:focus-visible {
-  outline: 2px solid var(--color-ring, hsl(240 4.9% 83.9%)) !important;
-  outline-offset: 2px !important;
+/* 1. Global Focus-Visible Ring (box-shadow respects border-radius, without overriding component focus rings) */
+@layer base {
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-ring, hsl(240 4.9% 83.9%));
+  }
 }
 
 /* 2. Smooth Tactile Button & Interactive Element Press Feedback */

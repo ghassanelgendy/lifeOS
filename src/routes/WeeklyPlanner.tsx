@@ -614,7 +614,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-0 md:p-6 space-y-6">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 space-y-6">
       {/* Top Banner Control - Desktop-only */}
       <div className="hidden md:flex flex-row items-center justify-between bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl gap-4">
         <div className="flex items-center gap-3">

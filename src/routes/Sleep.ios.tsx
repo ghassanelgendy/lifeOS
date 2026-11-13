@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
-import { Button, Modal } from '../components/ui';
+import { Button, Modal, Spinner } from '../components/ui';
 import { useUIStore, PAGE_WIDGET_DEFAULTS } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
@@ -200,7 +200,7 @@ export default function Sleep() {
   }, [weekly]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header - Desktop only */}
       <div className="hidden md:flex items-center justify-between mb-2">
         <div>
@@ -219,9 +219,9 @@ export default function Sleep() {
       </div>
 
       {isLoading ? (
-        <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
-          Loading sleep data...
+        <div className="liquid-glass-card p-8 flex flex-col items-center gap-3 text-center text-muted-foreground rounded-2xl">
+          <Spinner size="lg" decorative />
+          <span>Loading sleep data...</span>
         </div>
       ) : !active ? (
         <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl space-y-4">

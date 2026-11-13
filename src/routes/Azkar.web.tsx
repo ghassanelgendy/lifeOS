@@ -131,10 +131,10 @@ export default function AzkarRoute() {
   }, [displayedAzkar, resetCategory]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 md:pb-10">
+    <div className="min-h-screen bg-background text-foreground pb-28 sm:pb-12">
       {/* Top Header */}
       <div className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 sm:px-6">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <Sun size={20} />
@@ -190,7 +190,7 @@ export default function AzkarRoute() {
         {/* Preferences Drawer */}
         {showPreferences && (
           <div className="border-t border-border bg-card/60 px-4 py-3 backdrop-blur-md sm:px-6">
-            <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 text-xs">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 text-xs">
               {/* Font size */}
               <div className="flex items-center gap-2">
                 <span className="flex items-center gap-1 text-muted-foreground">
@@ -270,7 +270,7 @@ export default function AzkarRoute() {
         )}
       </div>
 
-      <div className="mx-auto max-w-6xl space-y-6 px-4 pt-6 sm:px-6">
+      <div className="mx-auto w-full max-w-7xl space-y-6 px-3 pt-6 sm:px-6">
         {/* Contextual Recommendation Banner */}
         {!searchQuery && !showFavoritesOnly && (
           <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border/70 bg-card p-5 sm:flex-row sm:items-center sm:p-6 shadow-sm">

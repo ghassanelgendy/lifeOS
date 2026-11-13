@@ -317,7 +317,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                   : {}),
               }));
             }}
-            className="w-full bg-transparent text-lg font-bold text-foreground placeholder:text-muted-foreground border-0 outline-none focus:ring-0 min-h-[48px]"
+            className="w-full rounded-lg bg-transparent px-2.5 -mx-2.5 text-lg font-bold text-foreground placeholder:text-muted-foreground border-0 outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60 min-h-[48px] transition-shadow"
             aria-label="Title"
           />
           {parseHints.length > 0 && (

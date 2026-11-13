@@ -147,9 +147,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
   const navigate = useNavigate();
 
   const isIOS = import.meta.env.MODE === 'ios' || (typeof window !== 'undefined' && Capacitor.getPlatform() === 'ios');
-  const cardClassName = isIOS 
-    ? "rounded-xl border border-black/5 dark:border-white/5 bg-white/40 dark:bg-black/25 backdrop-blur-md p-3"
-    : "rounded-xl border border-border bg-card p-3";
+  const cardClassName = "rounded-xl border border-border bg-card p-3";
   const inputClassName = isIOS
     ? "w-full rounded-xl border border-black/5 dark:border-white/10 bg-white/35 dark:bg-black/20 p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
     : "w-full rounded-xl border border-border bg-card p-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50";
@@ -329,7 +327,7 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
     return (
       <div className="space-y-4 py-2 text-foreground font-sans">
         <div className="flex items-center justify-between mb-1">
-          <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Prayer Details</span>
+          <span className="text-xs text-muted-foreground font-semibold">Prayer details</span>
           <span
             className={cn(
               'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border',
@@ -413,12 +411,12 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
     return (
       <div className="space-y-4 py-2 text-foreground font-sans">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Task Details</span>
+          <span className="text-xs text-muted-foreground font-semibold">Task details</span>
           <button
             onClick={() => {
               navigate('/tasks', { state: { editTaskId: taskId } });
             }}
-            className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-all flex items-center justify-center cursor-pointer"
+            className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-colors flex items-center justify-center cursor-pointer"
             title="Edit Task" aria-label="Edit Task"
           >
             <Edit2 size={16} />
@@ -579,13 +577,13 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
           <div className="flex gap-2 justify-end pt-2">
             <button
               onClick={() => setIsEditingEvent(false)}
-              className="px-4 py-2 text-sm font-semibold rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-all cursor-pointer"
+              className="px-4 py-2 text-sm font-semibold rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-colors cursor-pointer"
             >
               Cancel
             </button>
             <button
               onClick={handleSaveEvent}
-              className="px-4 py-2 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-all cursor-pointer"
+              className="px-4 py-2 text-sm font-semibold rounded-xl bg-primary text-primary-foreground hover:opacity-90 transition-opacity cursor-pointer"
             >
               Save
             </button>
@@ -597,11 +595,11 @@ function DashboardEntryDetails({ entry, onUpdateEntry }: { entry: any; onUpdateE
     return (
       <div className="space-y-4 py-2 text-foreground font-sans">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Event Details</span>
+          <span className="text-xs text-muted-foreground font-semibold">Event details</span>
           {entry.type !== 'ical' && (
             <button
               onClick={() => setIsEditingEvent(true)}
-              className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-all flex items-center justify-center cursor-pointer"
+              className="p-2 rounded-xl bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary border border-border/50 hover:border-border transition-colors flex items-center justify-center cursor-pointer"
               title="Edit Event" aria-label="Edit Event"
             >
               <Edit2 size={16} />
@@ -989,7 +987,7 @@ export default function Dashboard() {
           title: event.title,
           start_time: event.start_time,
           end_time: event.end_time,
-          color: event.color ?? '#6366f1',
+          color: event.color ?? '#0ea5e9',
           kind: 'event',
           location: event.location || undefined,
           description: event.description || undefined,
@@ -1005,7 +1003,7 @@ export default function Dashboard() {
   const label = dashboardMode === 'quick_view' ? '' : DASHBOARD_MODE_LABELS[dashboardMode];
 
   return (
-    <div className="space-y-3 sm:space-y-4 overflow-x-hidden w-full max-w-7xl mx-auto">
+    <div className="space-y-4 sm:space-y-5 overflow-x-hidden w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {label && (
         <header className="rounded-lg border border-transparent px-1 py-1 -mx-1" aria-live="polite">
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{label}</h1>
@@ -1035,23 +1033,22 @@ export default function Dashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[999999] bg-black/60 backdrop-blur-md flex flex-col items-center justify-end p-4 pb-[calc(170px+env(safe-area-inset-bottom))] font-sans"
-              onClick={() => setIsListening(false)}
+              className="fixed inset-0 z-[999999] bg-black/60 flex flex-col items-center justify-end p-4 pb-[calc(170px+env(safe-area-inset-bottom))] font-sans"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setIsListening(false);
+              }}
             >
               <motion.div
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                initial={{ opacity: 0, y: 24, scale: 0.96 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 30, scale: 0.95 }}
-                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                exit={{ opacity: 0, y: 24, scale: 0.96 }}
+                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative flex flex-col items-center p-6 rounded-3xl bg-[#1C1C1E]/95 border border-white/10 max-w-sm w-full shadow-2xl text-center space-y-5 text-white"
+                className="relative flex flex-col items-center p-6 rounded-3xl bg-[#1C1C1E]/95 border border-white/10 max-w-sm w-full shadow-overlay text-center space-y-5 text-white"
               >
                 <div className="relative">
-                  {/* Pulsing ripples */}
-                  <div className="absolute inset-0 rounded-full bg-red-500/30 animate-ping" />
-                  <div className="absolute -inset-3 rounded-full bg-red-500/20 animate-pulse" />
-                  <div className="relative z-10 w-16 h-16 rounded-full bg-red-500 flex items-center justify-center shadow-lg shadow-red-500/50">
-                    <Mic size={30} className="text-white animate-bounce" />
+                  <div className="relative z-10 w-16 h-16 rounded-full bg-red-500/90 border border-red-400/40 flex items-center justify-center">
+                    <Mic size={30} className="text-white" />
                   </div>
                 </div>
                 
@@ -1063,7 +1060,7 @@ export default function Dashboard() {
                 <button
                   type="button"
                   onClick={() => setIsListening(false)}
-                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-xs font-semibold transition-all border border-white/5 cursor-pointer text-zinc-200"
+                  className="w-full py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 active:bg-zinc-600 text-xs font-semibold transition-colors border border-white/5 cursor-pointer text-zinc-200"
                 >
                   Cancel
                 </button>
@@ -1078,11 +1075,11 @@ export default function Dashboard() {
       {createPortal(
         <div 
           data-fab-container 
-          className="fixed z-[99] transition-all duration-[300ms] ease-[cubic-bezier(0.16,1,0.3,1)] transform-gpu"
+          className="fixed z-[99] transition-[transform,opacity] duration-200 ease-out transform-gpu"
           style={{
             bottom: 'calc(78px + env(safe-area-inset-bottom))',
             right: '20px',
-            transform: showFab ? 'scale(1)' : 'scale(0)',
+            transform: showFab ? 'scale(1)' : 'scale(0.95)',
             opacity: showFab ? 1 : 0,
             pointerEvents: showFab ? 'auto' : 'none',
           }}
@@ -1093,14 +1090,14 @@ export default function Dashboard() {
               {isMenuOpen && (
                 <motion.div
                   ref={menuRef}
-                  initial={{ opacity: 0, scale: 0.85, y: 15 }}
+                  initial={{ opacity: 0, scale: 0.95, y: 12 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.85, y: 15 }}
-                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute bottom-full mb-3 right-0 w-44 rounded-2xl bg-[#F9F9F9]/85 dark:bg-[#1C1C1E]/85 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl overflow-hidden p-1 flex flex-col gap-0.5 origin-bottom-right"
+                  exit={{ opacity: 0, scale: 0.95, y: 12 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                  className="absolute bottom-full mb-3 right-0 w-44 rounded-2xl bg-raised border border-separator shadow-overlay overflow-hidden p-1 flex flex-col gap-0.5 origin-bottom-right"
                 >
-                  <div className="px-3 py-1.5 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider border-b border-border/40 select-none">
-                    Quick Create
+                  <div className="px-3 py-1.5 text-caption font-semibold text-muted-foreground border-b border-border/40 select-none">
+                    Quick create
                   </div>
                   {FAB_ITEMS.map((item, idx) => {
                     const Icon = item.icon;
@@ -1147,13 +1144,10 @@ export default function Dashboard() {
                 }
               }}
               className={cn(
-                "w-14 h-14 rounded-full flex items-center justify-center active:scale-95 hover:brightness-105 transition-all cursor-pointer transform-gpu duration-350",
-                "bg-[#F9F9F9]/45 dark:bg-[#141416]/65 backdrop-blur-2xl border border-white/40 dark:border-white/10 text-primary",
+                "w-14 h-14 rounded-full flex items-center justify-center active:scale-95 hover:brightness-105 transition-[transform,filter] cursor-pointer transform-gpu duration-200",
+                "bg-raised border border-separator text-primary shadow-overlay",
                 isMenuOpen ? "rotate-45" : "rotate-0"
               )}
-              style={{
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.3)',
-              }}
               aria-label="Quick Add"
               aria-expanded={isMenuOpen}
             >

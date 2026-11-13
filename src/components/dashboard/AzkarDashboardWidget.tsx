@@ -52,7 +52,7 @@ export function AzkarDashboardWidget({ className }: AzkarDashboardWidgetProps = 
       lang="ar"
       data-ds
       className={cn(
-        'fx-card group flex h-full items-center gap-5 rounded-card border border-separator bg-raised p-5 shadow-ds select-none',
+        'fx-card group flex h-full items-center gap-5 rounded-card border border-separator bg-raised p-5 select-none',
         className
       )}
     >

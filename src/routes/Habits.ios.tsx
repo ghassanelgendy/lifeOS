@@ -9,7 +9,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isYesterday
 import { cn } from '../lib/utils';
 import { useHabits, useCreateHabit, useUpdateHabit, useDeleteHabit, useLogHabit, useWeeklyAdherence, useHabitStreaks, useHabitInsights, getHabitAdherenceWeight, isHabitScheduledForDate, useHabitRescuableStreaks, getHabitRescueCost } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
-import { DetailsSheet, Input, Select, ConfirmSheet } from '../components/ui';
+import { DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import { QadaaWidget } from '../components/QadaaWidget';
@@ -540,15 +540,11 @@ export default function Habits() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-      </div>
-    );
+    return <SectionLoader />;
   }
 
   return (
-    <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header - Desktop only (mobile header is handled by AppShell) */}
       <div className="hidden md:flex items-center justify-between">
         <div>

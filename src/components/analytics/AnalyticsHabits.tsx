@@ -72,7 +72,7 @@ export function AnalyticsHabits({
   });
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6">
       {analyticsShowTips && (
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Habits Formula</p>

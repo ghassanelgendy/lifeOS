@@ -32,7 +32,7 @@ export function AppFooter() {
       }}
     >
       <div className="flex items-center gap-1.5">
-        <Text size={100} className="text-muted-foreground">Made with ❤️ by Ghassan</Text>
+        <Text size={100} className="text-muted-foreground">Crafted by Ghassan</Text>
       </div>
       <div className="flex items-center gap-3">
         <Text size={100}>

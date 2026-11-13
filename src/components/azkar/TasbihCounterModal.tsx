@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, RotateCcw, Volume2, VolumeX, Smartphone } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAzkarStore } from '../../stores/useAzkarStore';
@@ -78,6 +78,8 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleTap, onClose]);
 
+  const pointerDownOnBackdropRef = useRef(false);
+
   if (!isOpen) return null;
 
   const progressPercent = tasbihTarget > 0 ? Math.min(100, (tasbihCount / tasbihTarget) * 100) : 0;
@@ -87,8 +89,13 @@ export function TasbihCounterModal({ isOpen, onClose }: { isOpen: boolean; onClo
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-200"
+      onMouseDown={(e) => {
+        pointerDownOnBackdropRef.current = e.target === e.currentTarget;
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
+        const startedOnBackdrop = pointerDownOnBackdropRef.current;
+        pointerDownOnBackdropRef.current = false;
+        if (startedOnBackdrop && e.target === e.currentTarget) onClose();
       }}
       role="dialog"
       aria-modal="true"

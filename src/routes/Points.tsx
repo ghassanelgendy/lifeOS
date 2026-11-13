@@ -89,7 +89,7 @@ export default function Points() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 py-2 sm:px-6 sm:py-6">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Alert Notifications */}
       {errorMsg && (
         <div className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive animate-in fade-in slide-in-from-top-4 duration-300">

@@ -14,6 +14,7 @@ import { useUIStore } from '../../stores/useUIStore';
 import { useWeeklyReport, useMonthlyReport, type ReportData } from '../../hooks/useReport';
 import { checkWrapStatus } from '../../lib/wrapHelpers';
 import { AnimatedCounter } from './AnimatedCounter';
+import { SectionLoader } from '../ui';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -273,12 +274,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
   const setOffset = mode === 'weekly' ? setWeekOffset : setMonthOffset;
 
   if (data.isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-        <p className="text-sm text-muted-foreground">Preparing your {mode} wrap…</p>
-      </div>
-    );
+    return <SectionLoader label={`Preparing your ${mode} wrap…`} />;
   }
 
   const sparkData = data.days.map((d, i) => ({

@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from 'react';
 import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
-import { Monitor, Globe, TrendingUp, TrendingDown, Clock, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Monitor, Globe, TrendingUp, TrendingDown, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
 import { cn } from '../components/ui/cn';
 import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
+import { SectionLoader } from '../components/ui';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -613,7 +614,7 @@ import { useUIStore } from '../stores/useUIStore';
     }
 
     return (
-      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
         {/* Header */}
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Screen Time</h1>
@@ -1325,10 +1326,7 @@ import { useUIStore } from '../stores/useUIStore';
         )}
 
         {isLoading && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Clock className="mx-auto mb-2 opacity-50 animate-spin" size={24} />
-            <p>Loading screentime data...</p>
-          </div>
+          <SectionLoader label="Loading screentime data..." />
         )}
 
         {!isLoading && topApps.length === 0 && topWebsites.length === 0 && (

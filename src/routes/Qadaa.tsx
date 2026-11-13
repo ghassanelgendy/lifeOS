@@ -6,7 +6,7 @@ const IOS = import.meta.env.MODE === 'ios';
 
 export const Qadaa: React.FC = () => {
   return (
-    <div className={IOS ? "space-y-5" : "container max-w-5xl mx-auto px-4 py-6 md:py-8 space-y-6"}>
+    <div className={IOS ? "space-y-5 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12" : "w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 space-y-6"}>
       {/* Top Banner */}
       <div className={IOS ? "hidden" : "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/50"}>
         <div className="flex items-center gap-3">

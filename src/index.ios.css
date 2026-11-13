@@ -263,19 +263,19 @@ html.light[data-accent="amber"] {
   animation: modal-sheet-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Parallax-style section transition (slide between tabs) */
+/* Unified smooth section transition across routes */
 @keyframes section-slide-in {
   from {
-    transform: translateX(var(--section-dx, 0));
-    opacity: 0.85;
+    opacity: 0;
+    transform: translateY(6px);
   }
   to {
-    transform: translateX(0);
     opacity: 1;
+    transform: translateY(0);
   }
 }
 .section-slide-in {
-  animation: section-slide-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: section-slide-in 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 @layer utilities {

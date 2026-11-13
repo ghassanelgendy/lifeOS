@@ -28,6 +28,7 @@ import { AnalyticsDeepInsights } from '../components/analytics/AnalyticsDeepInsi
 import { DayDetailsModal } from '../components/analytics/DayDetailsModal';
 import { AnalyticsReport } from '../components/analytics/AnalyticsReport';
 import { checkWrapStatus } from '../lib/wrapHelpers';
+import { SectionLoader } from '../components/ui';
 
 type RelationshipPoint = { x: number; y: number; date: string };
 type Relationship = {
@@ -565,11 +566,7 @@ export default function Analytics() {
     top.topMerchants.isLoading;
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-      </div>
-    );
+    return <SectionLoader />;
   }
 
   const rangeLabel = rangeDays === 7 ? '7D' : rangeDays === 30 ? '30D' : '90D';
@@ -636,7 +633,7 @@ export default function Analytics() {
 
   if (showWrap) {
     return (
-      <div className="w-full max-w-7xl mx-auto pb-20 space-y-6 overflow-x-hidden">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 space-y-6 overflow-x-hidden">
         <DayDetailsModal
           isOpen={!!selectedDay}
           onClose={closeDayDetails}
@@ -656,7 +653,7 @@ export default function Analytics() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto pb-20 space-y-6 overflow-x-hidden">
+    <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 space-y-6 overflow-x-hidden">
       <DayDetailsModal
         isOpen={!!selectedDay}
         onClose={closeDayDetails}

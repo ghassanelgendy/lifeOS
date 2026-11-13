@@ -7,6 +7,7 @@ import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../components/ui/cn';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
+import { Spinner } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
@@ -199,7 +200,7 @@ export default function Sleep() {
   }, [weekly]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-20 max-w-7xl mx-auto">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div>
@@ -237,9 +238,9 @@ export default function Sleep() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-3" />
-          Loading sleep metrics...
+        <div className="rounded-2xl border border-border bg-card p-12 flex flex-col items-center gap-3 text-center text-muted-foreground">
+          <Spinner size="lg" decorative />
+          <span>Loading sleep metrics...</span>
         </div>
       ) : !active ? (
         <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">

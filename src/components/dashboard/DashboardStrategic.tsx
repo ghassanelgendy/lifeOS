@@ -47,7 +47,7 @@ export function DashboardStrategic() {
   }, [tasks.data]);
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <p className="text-xs text-muted-foreground sm:max-w-md">Medium-term execution: projects and habit trends.</p>
         <div className="flex rounded-lg border border-border p-1 bg-muted/30 w-fit" role="group" aria-label="Trend range">
@@ -59,7 +59,7 @@ export function DashboardStrategic() {
               className={cn(
                 'px-3 py-1.5 text-sm rounded-md transition-colors',
                 strategicHorizonDays === opt.value
-                  ? 'bg-background shadow-sm font-medium'
+                  ? 'bg-background border border-border font-medium'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -94,7 +94,7 @@ export function DashboardStrategic() {
                     }}
                     labelStyle={{ color: 'var(--color-foreground)' }}
                   />
-                  <Line type="monotone" dataKey="adherence" stroke="#22c55e" strokeWidth={2} dot={false} name="%" />
+                  <Line type="monotone" dataKey="adherence" stroke="var(--ds-success)" strokeWidth={2} dot={false} name="%" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -106,7 +106,7 @@ export function DashboardStrategic() {
 
         <section className="rounded-xl border border-border bg-card p-4">
           <h2 className="font-semibold mb-2">Task adherence</h2>
-          <p className="text-3xl font-bold tabular-nums">{taskTotals.adherence != null ? `${taskTotals.adherence}%` : '—'}</p>
+          <p className="text-3xl font-bold tabular-nums">{taskTotals.adherence != null ? `${taskTotals.adherence}%` : '-'}</p>
           <p className="text-xs text-muted-foreground mt-1">
             Due done {taskTotals.dueCompleted}/{taskTotals.due} · total completed {taskTotals.completed} ({taskTotals.days} days with data)
           </p>

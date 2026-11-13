@@ -55,24 +55,21 @@ function MobileNavLink({
       end={item.href === '/'}
       onClick={handleClick}
       className={({ isActive: active }) => cn(
-        "flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-95 transition-all duration-150 relative select-none touch-manipulation",
+        "flex flex-col items-center justify-center flex-1 h-full py-1 active:scale-95 transition-colors duration-150 relative select-none touch-manipulation",
         active ? "text-primary font-semibold" : "text-muted-foreground hover:text-foreground"
       )}
     >
       <div className={cn(
-        "relative flex items-center justify-center px-3.5 py-1 rounded-full transition-all duration-200",
+        "relative flex items-center justify-center px-3.5 py-1 rounded-full transition-colors duration-200",
         isActive ? "bg-primary/10 text-primary" : "text-muted-foreground"
       )}>
         <Icon size={20} strokeWidth={isActive ? 2.4 : 1.9} />
         {showDot && (
-          <span className="absolute top-1 right-2 flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-          </span>
+          <span className="absolute top-1 right-2 inline-flex rounded-full h-2 w-2 bg-rose-500" />
         )}
       </div>
       <span className={cn(
-        "text-[10px] mt-0.5 tracking-tight transition-colors",
+        "text-[11px] mt-0.5 tracking-tight transition-colors",
         isActive ? "text-foreground font-semibold" : "text-muted-foreground"
       )}>
         {item.label}
@@ -267,15 +264,8 @@ export function AppShell() {
     [desktopNavigation, pinnedNavItems]
   );
 
-  const currentIndex = mobileNavigationMapped.findIndex(
-    (item) => item.href === '/' ? location.pathname === '/' : location.pathname === item.href || location.pathname.startsWith(item.href + '/')
-  );
   const isOnTasks = location.pathname === '/tasks';
   const isOnNotes = location.pathname === '/notes';
-
-  const prevPathRef = useRef<string>(location.pathname);
-  const prevIndexRef = useRef<number>(currentIndex);
-  const [slideDirection, setSlideDirection] = useState<number>(0);
 
   const [activeToast, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
 
@@ -374,15 +364,6 @@ export function AppShell() {
     setLastNotifiedWeeklyWrap,
     setLastNotifiedMonthlyWrap
   ]);
-
-  useEffect(() => {
-    if (prevPathRef.current === location.pathname) return;
-    const prevIndex = prevIndexRef.current;
-    const dir = prevIndex >= 0 ? Math.sign(currentIndex - prevIndex) : 0;
-    prevPathRef.current = location.pathname;
-    prevIndexRef.current = currentIndex;
-    setSlideDirection(dir);
-  }, [location.pathname, currentIndex]);
 
   const isOnQuran = location.pathname.startsWith('/quran');
 
@@ -492,10 +473,7 @@ export function AppShell() {
                   <div className="relative">
                     <item.icon size={19} className="shrink-0" />
                     {showDot && (
-                      <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                      </span>
+                      <span className="absolute -top-1 -right-1 inline-flex rounded-full h-2 w-2 bg-rose-500" />
                     )}
                   </div>
                   <span className="min-w-0 break-words">{item.label}</span>
@@ -513,14 +491,11 @@ export function AppShell() {
                 )}
                 onClick={() => setMobileSidebarOpen(false)}
               >
-                <Sparkles size={19} className="shrink-0 text-primary animate-pulse" />
+                <Sparkles size={19} className="shrink-0 text-primary" />
                 <span className="min-w-0 break-words font-semibold">
                   {isMonthlyWrapDay && !isWeeklyWrapDay ? 'Monthly wrap' : 'Weekly wrap'}
                 </span>
-                <span className="absolute top-2.5 right-3 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
-                </span>
+                <span className="absolute top-2.5 right-3 inline-flex rounded-full h-2 w-2 bg-rose-500" />
               </NavLink>
             ) : (
               <NavLink
@@ -536,7 +511,7 @@ export function AppShell() {
                   <span className="min-w-0 truncate font-medium text-foreground text-sm">
                     {user?.email ? user.email.split('@')[0] : 'Settings'}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">Settings & Profile</span>
+                  <span className="text-[11px] text-muted-foreground">Settings & Profile</span>
                 </div>
               </NavLink>
             )}
@@ -689,16 +664,16 @@ export function AppShell() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-full overflow-hidden">
-        {/* Mobile Header — safe area top for iOS standalone (notch/status bar) */}
+        {/* Mobile Header: safe area top for iOS standalone (notch/status bar) */}
         <header
-          className="md:hidden flex h-14 items-center justify-between border-b border-border/70 px-3.5 bg-background/95 backdrop-blur-xl shrink-0 z-30"
+          className="md:hidden flex h-14 items-center justify-between border-b border-border/70 px-3.5 bg-background shrink-0 z-30"
           style={{ paddingTop: 'env(safe-area-inset-top)', minHeight: 'calc(3.5rem + env(safe-area-inset-top))' }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               data-tour="mobile-menu"
               onClick={() => setMobileSidebarOpen(true)}
-              className="p-2 -ml-1 hover:bg-secondary/80 rounded-xl active:scale-95 transition-all touch-manipulation text-foreground cursor-pointer"
+              className="p-2 -ml-1 hover:bg-secondary/80 rounded-xl active:scale-95 transition-colors touch-manipulation text-foreground cursor-pointer"
               aria-label="Open menu"
             >
               <Menu size={22} />
@@ -708,7 +683,7 @@ export function AppShell() {
                 {currentNavLabel}
               </span>
               {currentNavLabel !== 'LifeOS' && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground uppercase tracking-wider hidden sm:inline-block">
+                <span className="text-caption px-1.5 py-0.5 rounded bg-muted text-muted-foreground hidden sm:inline-block">
                   LifeOS
                 </span>
               )}
@@ -718,14 +693,14 @@ export function AppShell() {
             <button
               data-tour="mobile-brain-dump"
               onClick={() => setIsBrainDumpOpen(true)}
-              className="p-2 text-purple-600 dark:text-purple-400 bg-purple-500/10 hover:bg-purple-500/20 rounded-xl active:scale-95 transition-all touch-manipulation flex items-center justify-center cursor-pointer"
+              className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/80 rounded-xl active:scale-95 transition-colors touch-manipulation flex items-center justify-center cursor-pointer"
               title="Cognitive Brain Dump (Alt+B)"
             >
               <Brain size={19} />
             </button>
             <NavLink
               to="/settings"
-              className="p-1 rounded-full active:scale-95 transition-all touch-manipulation cursor-pointer flex items-center justify-center"
+              className="p-1 rounded-full active:scale-95 transition-transform touch-manipulation cursor-pointer flex items-center justify-center"
               title="Settings & Profile"
             >
               <UserBlobatar identifier={user?.email || user?.id} size={28} />
@@ -755,16 +730,11 @@ export function AppShell() {
                     // (per spec, an axis can't stay `visible` while the other isn't), which
                     // silently makes THIS div a scroll container/containing block for any
                     // `position: sticky` descendant (like the Settings page's jump-nav) even
-                    // though it never actually scrolls — breaking sticky against the real
+                    // though it never actually scrolls, keeping sticky against the real
                     // scroll root two levels up (PullToRefresh's `data-lifeos-scroll-root`).
                     // overflow-y-visible keeps only the X axis clipped.
                     : "min-h-full overflow-x-hidden overflow-y-visible p-3.5 sm:p-4 md:p-6 pb-[calc(84px+env(safe-area-inset-bottom))] md:pb-6")
             )}
-            style={
-              {
-                '--section-dx': slideDirection === 1 ? '25%' : slideDirection === -1 ? '-25%' : '0',
-              } as React.CSSProperties
-            }
           >
             <Outlet />
           </div>
@@ -798,7 +768,7 @@ export function AppShell() {
                       navigate('/analytics');
                       setActiveToast(null);
                     }}
-                    className="px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg shadow-sm cursor-pointer"
+                    className="px-3.5 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-lg cursor-pointer"
                   >
                     View Wrapped
                   </button>

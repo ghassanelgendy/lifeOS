@@ -28,7 +28,7 @@ export function AppFooter() {
       )}
     >
       <div className="flex items-center gap-1.5">
-        <span>Made with ❤️ by Ghassan</span>
+        <span>Crafted by Ghassan</span>
       </div>
       <div className="flex items-center gap-3">
         <a

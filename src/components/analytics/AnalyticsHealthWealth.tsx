@@ -128,7 +128,7 @@ export function AnalyticsHealthWealth({
   }, [dailySleep, dailyFinance]);
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-8">
       {/* --- Health (Sleep) Section --- */}
       <section>
         <div className="mb-4 flex items-center gap-2">

@@ -784,7 +784,7 @@ export default function NotesWeb() {
                   value={draftTitle}
                   onChange={(e) => setDraftTitle(e.target.value)}
                   placeholder="Untitled Note..."
-                  className="w-full text-base sm:text-lg font-bold bg-transparent border-none focus:outline-none focus:ring-0 px-0 h-auto text-foreground placeholder:text-muted-foreground"
+                  className="w-full rounded-lg text-base sm:text-lg font-bold bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0 px-0 h-auto text-foreground placeholder:text-muted-foreground"
                 />
               </div>
               <div className="flex items-center gap-1.5 shrink-0">

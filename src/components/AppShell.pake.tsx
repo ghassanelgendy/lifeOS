@@ -137,10 +137,6 @@ export function AppShell() {
   const isOnTasks = location.pathname === '/tasks';
   const isOnNotes = location.pathname === '/notes';
 
-  const prevPathRef = useRef<string>(location.pathname);
-  const prevIndexRef = useRef<number>(currentIndex);
-  const [slideDirection, setSlideDirection] = useState<number>(0);
-
   const [, setActiveToast] = useState<'weekly' | 'monthly' | null>(null);
 
   useEffect(() => {
@@ -191,15 +187,6 @@ export function AppShell() {
     setLastNotifiedWeeklyWrap,
     setLastNotifiedMonthlyWrap
   ]);
-
-  useEffect(() => {
-    if (prevPathRef.current === location.pathname) return;
-    const prevIndex = prevIndexRef.current;
-    const dir = prevIndex >= 0 ? Math.sign(currentIndex - prevIndex) : 0;
-    prevPathRef.current = location.pathname;
-    prevIndexRef.current = currentIndex;
-    setSlideDirection(dir);
-  }, [location.pathname, currentIndex]);
 
   const isOnQuran = location.pathname.startsWith('/quran');
 
@@ -478,11 +465,6 @@ export function AppShell() {
                         ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
                         : "min-h-full overflow-x-hidden overflow-y-visible p-4 md:p-6 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-6")
                 )}
-                style={
-                  {
-                    '--section-dx': slideDirection === 1 ? '25%' : slideDirection === -1 ? '-25%' : '0',
-                  } as React.CSSProperties
-                }
               >
                 <Outlet />
               </div>

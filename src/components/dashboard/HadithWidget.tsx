@@ -50,8 +50,8 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
   const words = useMemo(() => currentHadith.text.split(/\s+/).filter(Boolean), [currentHadith.text]);
 
   const cardStyle = isIOS
-    ? 'rounded-2xl border border-border/80 dark:border-white/10 bg-card/90 dark:bg-black/40 backdrop-blur-xl p-4 shadow-sm'
-    : 'rounded-card border border-separator bg-raised p-5 shadow-ds';
+    ? 'rounded-2xl border border-border/80 dark:border-white/10 bg-card p-4'
+    : 'rounded-card border border-separator bg-raised p-5';
 
   return (
     <div className={cn(cardStyle, 'group flex h-full flex-col justify-between', className)}>

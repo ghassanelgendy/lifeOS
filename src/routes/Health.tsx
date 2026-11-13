@@ -19,7 +19,7 @@ import {
   useUpdateInBodyScan,
   useDeleteInBodyScan
 } from '../hooks/useHealthData';
-import { Modal, Button, Input, ConfirmSheet } from '../components/ui';
+import { Modal, Button, Input, ConfirmSheet, SectionLoader } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
 import type { InBodyScan, CreateInput } from '../types/schema';
 
@@ -108,15 +108,11 @@ export default function Health() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-foreground" />
-      </div>
-    );
+    return <SectionLoader />;
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

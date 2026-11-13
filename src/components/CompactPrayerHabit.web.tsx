@@ -22,6 +22,7 @@ import { usePrayerTimes } from '../hooks/usePrayerTimes';
 import { usePrayerTracker } from '../hooks/usePrayerHabits';
 import { useQadaaTracker, type QadaaPrayerKey } from '../hooks/useQadaaTracker';
 import type { PrayerStatus } from '../types/schema';
+import { Spinner } from './ui/Spinner';
 
 const STATUS_BUTTONS: Record<PrayerStatus, { label: string; className: string }> = {
   Prayed: { label: 'Prayed', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
@@ -103,7 +104,7 @@ export function CompactPrayerHabit({ embedded = false }: CompactPrayerHabitProps
     return (
       <div className={embedded ? 'bg-transparent p-0' : 'rounded-2xl border border-border/70 bg-card p-4 shadow-sm'}>
         <div className="flex items-center justify-center h-16">
-          <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary border-t-transparent" />
+          <Spinner size="sm" />
         </div>
       </div>
     );

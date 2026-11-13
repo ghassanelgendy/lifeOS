@@ -112,10 +112,10 @@ export function DashboardAnnualReview() {
   const yearOptions = [calendarYear, calendarYear - 1, calendarYear - 2];
 
   return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <p className="text-xs text-muted-foreground sm:max-w-md">
-          Annual review — year in data, strategic goals, and reflection.
+          Annual review: year in data, strategic goals, and reflection.
         </p>
         <div className="flex items-center gap-2">
           <label htmlFor="annual-year" className="text-sm text-muted-foreground">
@@ -140,30 +140,30 @@ export function DashboardAnnualReview() {
 
       <section className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg habit %</p>
+          <p className="text-xs font-medium text-muted-foreground">Avg habit %</p>
           <p className="text-2xl font-bold tabular-nums mt-1">
-            {ytdTotals.avgHabit != null ? `${ytdTotals.avgHabit}%` : '—'}
+            {ytdTotals.avgHabit != null ? `${ytdTotals.avgHabit}%` : '-'}
           </p>
           <p className="text-xs text-muted-foreground mt-1">{ytdTotals.daysHabit} days logged</p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Avg sleep</p>
+          <p className="text-xs font-medium text-muted-foreground">Avg sleep</p>
           <p className="text-2xl font-bold tabular-nums mt-1">
-            {ytdTotals.avgSleep != null ? `${Math.floor(ytdTotals.avgSleep / 60)}h ${ytdTotals.avgSleep % 60}m` : '—'}
+            {ytdTotals.avgSleep != null ? `${Math.floor(ytdTotals.avgSleep / 60)}h ${ytdTotals.avgSleep % 60}m` : '-'}
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Task adherence</p>
+          <p className="text-xs font-medium text-muted-foreground">Task adherence</p>
           <p className="text-2xl font-bold tabular-nums mt-1">
-            {ytdTotals.avgTaskAdherence != null ? `${ytdTotals.avgTaskAdherence}%` : '—'}
+            {ytdTotals.avgTaskAdherence != null ? `${ytdTotals.avgTaskAdherence}%` : '-'}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {ytdTotals.dueTasksDone}/{ytdTotals.dueTasks} due · {ytdTotals.tasksDone} done
           </p>
         </div>
         <div className="rounded-xl border border-border bg-card p-4">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">Screen (approx h)</p>
-          <p className="text-2xl font-bold tabular-nums mt-1">{ytdTotals.screenHours || '—'}</p>
+          <p className="text-xs font-medium text-muted-foreground">Screen (approx h)</p>
+          <p className="text-2xl font-bold tabular-nums mt-1">{ytdTotals.screenHours || '-'}</p>
         </div>
       </section>
 
@@ -185,7 +185,7 @@ export function DashboardAnnualReview() {
                     borderRadius: '8px',
                   }}
                 />
-                <Bar dataKey="adherence" fill="#6366f1" radius={[4, 4, 0, 0]} name="Avg %" />
+                <Bar dataKey="adherence" fill="var(--ds-accent)" radius={[4, 4, 0, 0]} name="Avg %" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -194,7 +194,7 @@ export function DashboardAnnualReview() {
 
       <section className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-center gap-2 mb-2">
-          <BookOpen className="text-violet-500" size={18} />
+          <BookOpen className="text-primary" size={18} />
           <h2 className="font-semibold">Reflection</h2>
         </div>
         <p className="text-xs text-muted-foreground mb-3">
