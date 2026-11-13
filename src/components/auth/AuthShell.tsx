@@ -106,7 +106,7 @@ export function GoogleBlock({ onClick, busy, disabled }: { onClick: () => void; 
       </Button>
       <div className="my-5 flex items-center gap-3" aria-hidden>
         <div className="flex-1 border-t border-border" />
-        <span className="text-xs text-muted-foreground">{t.auth.or}</span>
+        <span className="text-[13px] text-muted-foreground">{t.auth.or}</span>
         <div className="flex-1 border-t border-border" />
       </div>
     </>

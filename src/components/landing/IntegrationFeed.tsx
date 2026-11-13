@@ -78,13 +78,13 @@ export function IntegrationFeed() {
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[14px] font-medium text-[var(--lp-ink)]">{e.text}</span>
-                    <span className="flex items-center gap-1.5 text-[12px] text-[var(--lp-ink-3)]">
+                    <span className="flex items-center gap-1.5 text-[13px] text-[var(--lp-ink-3)]">
                       {c.sources[i].title}
                       <ArrowRight size={12} className="lp-flip shrink-0" />
                       <span className="font-semibold text-[var(--lp-ink-2)]">{e.to}</span>
                     </span>
                   </span>
-                  <span className="shrink-0 text-[12px] tabular-nums text-[var(--lp-ink-3)]">{stamp(k * 23 + 4)}</span>
+                  <span className="shrink-0 text-[13px] tabular-nums text-[var(--lp-ink-3)]">{stamp(k * 23 + 4)}</span>
                 </motion.li>
               );
             })}

@@ -167,6 +167,9 @@ The sign-up page shall request an email and a single password with a show/hide c
 #### FR-AUTH-UI-003: Signed-in Display Name
 Wherever the app greets or labels the signed-in user, it shall use the provider-supplied profile name (`full_name`, `name` or `display_name` in the user metadata) and fall back to the email local part only when none exists (`getDisplayName` in `src/lib/utils.ts`).
 
+#### FR-UI-FOCUS-001: Field Focus Shape
+Text inputs, textareas and selects shall show a focus indicator that follows their own border radius; fields without a border of their own shall transfer the indicator to their rounded parent (`src/index.web.css`).
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 

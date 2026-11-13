@@ -62,7 +62,7 @@ function RotatingWord({ words }: { words: string[] }) {
 
   const word = words[index % words.length];
   return (
-    <span className="relative inline-flex overflow-hidden pb-[0.12em] align-bottom text-[var(--lp-accent)]" style={{ minWidth: '6.2ch' }}>
+    <span className="relative inline-flex overflow-hidden pb-[0.16em] pt-[0.12em] align-bottom text-[var(--lp-accent)]" style={{ minWidth: '6.2ch' }}>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={word}
@@ -119,7 +119,7 @@ function Sandbox({ c }: { c: Copy['sandbox'] }) {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-[14px] font-semibold text-[var(--lp-ink-2)]">{c.tasks}</h3>
-            <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{c.taskItems.length - doneTasks.length} {c.active}</span>
+            <span className="text-[13px] tabular-nums text-[var(--lp-ink-3)]">{c.taskItems.length - doneTasks.length} {c.active}</span>
           </div>
           <ul className="space-y-2.5">
             {c.taskItems.map((text, i) => {
@@ -138,7 +138,7 @@ function Sandbox({ c }: { c: Copy['sandbox'] }) {
                       </span>
                       <span className={cn('truncate text-[15px] font-medium', done ? 'text-[var(--lp-ink-3)] line-through' : 'text-[var(--lp-ink)]')}>{text}</span>
                     </span>
-                    <span className={cn('shrink-0 text-[12px] font-semibold tabular-nums', done ? 'text-[var(--lp-ok)]' : 'text-[var(--lp-ink-3)]')} dir={done ? undefined : 'ltr'}>
+                    <span className={cn('shrink-0 text-[13px] font-semibold tabular-nums', done ? 'text-[var(--lp-ok)]' : 'text-[var(--lp-ink-3)]')} dir={done ? undefined : 'ltr'}>
                       {done ? c.done : `+${TASK_POINTS[i]} XP`}
                     </span>
                   </button>
@@ -151,7 +151,7 @@ function Sandbox({ c }: { c: Copy['sandbox'] }) {
         <div>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-[14px] font-semibold text-[var(--lp-ink-2)]">{c.habits}</h3>
-            <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{doneHabits.length}/{c.habitItems.length} {c.tracked}</span>
+            <span className="text-[13px] tabular-nums text-[var(--lp-ink-3)]">{doneHabits.length}/{c.habitItems.length} {c.tracked}</span>
           </div>
           <ul className="space-y-2.5">
             {c.habitItems.map((name, i) => {
@@ -165,7 +165,7 @@ function Sandbox({ c }: { c: Copy['sandbox'] }) {
                     className={cn(row, done ? 'border-[var(--lp-warn)]' : 'border-[var(--lp-line)] hover:border-[var(--lp-ink-3)]')}
                   >
                     <span className="min-w-0 truncate text-[15px] font-medium text-[var(--lp-ink)]">{name}</span>
-                    <span className={cn('flex shrink-0 items-center gap-1 text-[12px] font-semibold tabular-nums', done ? 'text-[var(--lp-warn)]' : 'text-[var(--lp-ink-3)]')}>
+                    <span className={cn('flex shrink-0 items-center gap-1 text-[13px] font-semibold tabular-nums', done ? 'text-[var(--lp-warn)]' : 'text-[var(--lp-ink-3)]')}>
                       <Flame size={13} />
                       {HABIT_STREAKS[i] + (done ? 1 : 0)} {c.days}
                     </span>
@@ -296,10 +296,10 @@ export default function Landing() {
           <div className="relative mx-auto max-w-6xl">
             <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-12">
               <h1 className={cn('font-bold tracking-[-0.03em]', lang === 'ar' ? 'text-[42px] leading-[1.3] sm:text-[60px] lg:text-[68px]' : 'text-[46px] leading-[1.02] sm:text-[68px] lg:text-[80px]')}>
-                <span className="block overflow-hidden pb-[0.08em]">
+                <span className="-mt-[0.12em] block overflow-hidden pb-[0.14em] pt-[0.12em]">
                   <motion.span className="block" {...riseLine(0)}>{t.hero.stay} <RotatingWord words={t.hero.words} /></motion.span>
                 </span>
-                <span className="block overflow-hidden pb-[0.12em]">
+                <span className="-mt-[0.12em] block overflow-hidden pb-[0.16em] pt-[0.12em]">
                   <motion.span className="block text-[var(--lp-ink-3)]" {...riseLine(1)}>{t.hero.line2}</motion.span>
                 </span>
               </h1>
@@ -336,7 +336,7 @@ export default function Landing() {
               return (
                 <li key={title}>
                   <Icon size={20} className="text-[var(--lp-accent)]" />
-                  <h3 className="mt-3 text-[17px] font-bold tracking-tight text-[var(--lp-ink)]">{title}</h3>
+                  <h2 className="mt-3 text-[17px] font-bold tracking-tight text-[var(--lp-ink)]">{title}</h2>
                   <p className="mt-1.5 text-[15px] leading-relaxed text-[var(--lp-ink-2)]">{body}</p>
                 </li>
               );

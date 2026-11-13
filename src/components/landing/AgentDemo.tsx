@@ -29,7 +29,7 @@ export function AgentDemo() {
           <LogoMark size={18} className="text-[var(--lp-accent)]" />
           {t.assistant.name}
         </span>
-        <span className="rounded-full border border-[var(--lp-line)] px-2.5 py-0.5 text-[12px] text-[var(--lp-ink-3)]">{t.assistant.demo}</span>
+        <span className="rounded-full border border-[var(--lp-line)] px-2.5 py-0.5 text-[13px] text-[var(--lp-ink-3)]">{t.assistant.demo}</span>
       </div>
 
       <div className="flex min-h-[340px] flex-col gap-3 p-5" aria-live="polite">
@@ -55,7 +55,7 @@ export function AgentDemo() {
                     className={cn('flex items-center justify-between gap-3 rounded-[12px] border px-4 py-2.5', done ? 'border-[var(--lp-ok)]' : 'border-[var(--lp-line)]')}
                   >
                     <span className="min-w-0">
-                      <span className="block text-[12px] font-semibold text-[var(--lp-ink-3)]">{a.verb}</span>
+                      <span className="block text-[13px] font-semibold text-[var(--lp-ink-3)]">{a.verb}</span>
                       <span className="block truncate text-[14px] font-medium text-[var(--lp-ink)]">{a.detail}</span>
                     </span>
                     <button

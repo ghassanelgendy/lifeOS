@@ -69,7 +69,7 @@ export default function Signup() {
           <ol className="mt-6 space-y-3">
             {c.steps.map((step, i) => (
               <li key={step} className="flex gap-3 text-sm leading-relaxed text-muted-foreground">
-                <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border text-xs font-semibold tabular-nums text-foreground">{i + 1}</span>
+                <span className="flex size-6 shrink-0 items-center justify-center rounded-full border border-border text-[13px] font-semibold tabular-nums text-foreground">{i + 1}</span>
                 {step}
               </li>
             ))}
