@@ -52,7 +52,8 @@ export function HeroFrame({ scroller }: { scroller: RefObject<HTMLDivElement | n
   const onLeave = () => { px.set(0); py.set(0); };
 
   return (
-    <div ref={zone} onPointerMove={onMove} onPointerLeave={onLeave} className="relative" style={{ perspective: 1800 }}>
+    // The frame shows the app as it is (English, left-to-right), whatever the page language.
+    <div ref={zone} dir="ltr" onPointerMove={onMove} onPointerLeave={onLeave} className="relative" style={{ perspective: 1800 }}>
       <motion.div
         className="relative"
         style={reduce ? undefined : { rotateX, rotateY: leanY, scale, transformStyle: 'preserve-3d', transformOrigin: '50% 0%' }}

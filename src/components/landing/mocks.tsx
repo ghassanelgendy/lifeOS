@@ -205,11 +205,11 @@ export function SleepMock() {
 }
 
 const PRAYERS = [
-  { name: 'Fajr', time: '05:02', status: 'On time' },
-  { name: 'Dhuhr', time: '11:44', status: 'On time' },
-  { name: 'Asr', time: '14:41', status: 'Late' },
-  { name: 'Maghrib', time: '17:03', status: 'Next' },
-  { name: 'Isha', time: '18:25', status: '' },
+  { name: 'Fajr', time: '5:02 AM', status: 'On time' },
+  { name: 'Dhuhr', time: '11:44 AM', status: 'On time' },
+  { name: 'Asr', time: '2:41 PM', status: 'Late' },
+  { name: 'Maghrib', time: '5:03 PM', status: 'Next' },
+  { name: 'Isha', time: '6:25 PM', status: '' },
 ] as const;
 
 const PRAYER_TONE: Record<string, string> = {
@@ -235,7 +235,7 @@ export function PrayerStrip() {
             <span className="truncate text-[12px] font-semibold tracking-tight text-[var(--lp-ink)] sm:text-[13px] sm:tracking-normal">{p.name}</span>
             {(p.status === 'On time' || p.status === 'Late') && <Check size={13} strokeWidth={3} className="hidden shrink-0 sm:block" style={{ color: PRAYER_TONE[p.status] }} />}
           </span>
-          <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{p.time}</span>
+          <span className="truncate text-[12px] tabular-nums text-[var(--lp-ink-3)]">{p.time}</span>
         </li>
       ))}
     </ul>
@@ -256,7 +256,7 @@ export function PrayerMock() {
             <span className="size-2 shrink-0 rounded-full" style={{ background: PRAYER_TONE[p.status] }} />
             <span className="flex-1 text-[14px] font-medium text-[var(--lp-ink)]">{p.name}</span>
             <span className="text-[12px] font-medium" style={{ color: PRAYER_TONE[p.status] }}>{p.status}</span>
-            <span className="w-11 text-right text-[12px] tabular-nums text-[var(--lp-ink-3)]">{p.time}</span>
+            <span className="w-16 text-right text-[12px] tabular-nums text-[var(--lp-ink-3)]">{p.time}</span>
           </li>
         ))}
       </ul>

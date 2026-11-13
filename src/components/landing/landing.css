@@ -128,13 +128,13 @@ a:hover > .lp-navword::after, .lp-navword.is-current::after { transform: scaleX(
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
 }
 
-/* Integration hub: dashes travel along each line toward the centre. */
-.lp-flow {
-  stroke-dasharray: 3 11;
-  animation: lp-flow 1.6s linear infinite;
-}
-.lp-paused .lp-flow { animation-play-state: paused; }
-@keyframes lp-flow { to { stroke-dashoffset: -28; } }
+/* Arabic letters join, so tightened tracking is never applied to Arabic text. */
+.lp[lang='ar'] *, .lang-ar * { letter-spacing: 0 !important; }
+
+/* Right-to-left: underlines draw from the right, and the key's arrow cell steps the other way. */
+[dir='rtl'] .lp-link::after, [dir='rtl'] .lp-navword::after { transform-origin: right; }
+[dir='rtl'] .lp-key:hover .lp-key-cell { transform: translateX(-2px); }
+[dir='rtl'] .lp-flip { transform: scaleX(-1); }
 
 @media (prefers-reduced-motion: reduce) {
   .lp-key, .lp-key-cell, .lp-link::after, .lp-navword::after, .lp-btn { transition: none; }
@@ -143,5 +143,4 @@ a:hover > .lp-navword::after, .lp-navword.is-current::after { transform: scaleX(
   .lp-key:hover .lp-key-cell { transform: none; }
   .lp-btn:active { transform: none; }
   .lp-link::after { transform: scaleX(1); opacity: 0.4; }
-  .lp-flow { animation: none; }
 }

@@ -155,6 +155,15 @@ The web design tokens shall resolve their surface, text and accent colors from t
 #### FR-LAND-002: Landing Content and Interaction
 The landing page shall present, without invented figures or testimonials: trust facts drawn from the product (row-level security, offline use, privacy mode, public source), use cases including prayer and qadaa tracking, khatmah planning and bank SMS automation, an assistant demonstration in which proposed actions run only after the visitor presses Execute, and an integration hub listing the data sources that feed lifeOS. Continuously moving diagrams shall offer a pause control. In the wiki knowledge graph, dragging a node shall move it without opening it; only a press and release in place shall navigate.
 
+#### FR-AUTH-UI-001: Sign-in Page Layout
+The sign-in page shall offer email/password sign-in, Google sign-in, one-press entry to the public demo account, and offline entry without an account. All actions shall be disabled while any sign-in is in progress, with the progress shown on the action that was pressed. The password field shall have a labelled show/hide control. Errors shall be announced (`role="alert"`) next to the form together with the email-verification hint. Every control shall be at least 44px tall, and the page shall respect safe-area insets and reduced-motion settings.
+
+#### FR-I18N-001: Arabic and English on Public Pages
+The landing, sign-in and sign-up pages shall be available in English and Arabic. The choice shall persist on the device (`lifeos.publicLang`) and default to Arabic when the browser language is Arabic. In Arabic the pages shall render right-to-left, apply no letter-spacing to Arabic text, keep email and password inputs left-to-right, and keep product UI fragments in English and left-to-right. Times shown on these pages shall use a 12-hour clock in both languages.
+
+#### FR-AUTH-UI-002: Sign-up Page
+The sign-up page shall request an email and a single password with a show/hide control, show the minimum-length rule as it is met, validate on submit with the reason shown next to the form, and on success present the registered address and the confirmation steps with a link to sign in.
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 

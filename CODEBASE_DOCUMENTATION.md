@@ -349,7 +349,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/landing/HeroFrame.tsx](#src-components-landing-heroframe-tsx)
 - [src/components/landing/mocks.tsx](#src-components-landing-mocks-tsx)
 - [src/components/landing/AgentDemo.tsx](#src-components-landing-agentdemo-tsx)
-- [src/components/landing/IntegrationHub.tsx](#src-components-landing-integrationhub-tsx)
+- [src/components/landing/IntegrationFeed.tsx](#src-components-landing-integrationfeed-tsx)
+- [src/components/landing/i18n.ts](#src-components-landing-i18n-ts)
+- [src/components/auth/AuthShell.tsx](#src-components-auth-authshell-tsx)
 - [src/components/landing/Logo.tsx](#src-components-landing-logo-tsx)
 - [src/components/landing/landing.css](#src-components-landing-landing-css)
 
@@ -3724,13 +3726,43 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
-<a name="src-components-landing-integrationhub-tsx"></a>
-### src/components/landing/IntegrationHub.tsx
+<a name="src-components-landing-integrationfeed-tsx"></a>
+### src/components/landing/IntegrationFeed.tsx
 
-**File Purpose:** The landing page's "Everything in one place" section: lifeOS in the centre, nine sources around it (bank SMS, calendar feeds, iOS Shortcuts, browser extension, screen time, sleep data, InBody, prayer times, AI providers) joined by lines with travelling dashes and a pause control, a shared detail panel, and the 12 modules underneath.
+**File Purpose:** The landing page's "Everything in one place" section: a feed of items that arrived on their own (one new line every few seconds, with a pause control, still under reduced motion), the nine sources that feed lifeOS with one line each, and the 12 modules.
 
 **Functions & Classes:**
-- `IntegrationHub` (React Component)
+- `IntegrationFeed` (React Component)
+
+---
+
+<a name="src-components-landing-i18n-ts"></a>
+### src/components/landing/i18n.ts
+
+**File Purpose:** English and Arabic copy for the public pages (landing, sign in, sign up) and the store that remembers the visitor's language.
+
+**Functions & Classes:**
+- `usePublicLang` (Hook)
+- `formatClock` (Function)
+
+**Function Details:**
+- **`usePublicLang`** — Returns the copy (`t`), language, direction and a `toggle`.
+- **`formatClock`** — 12-hour time and today's Hijri date in the given language.
+
+---
+
+<a name="src-components-auth-authshell-tsx"></a>
+### src/components/auth/AuthShell.tsx
+
+**File Purpose:** Shared layout and form parts for the sign-in and sign-up pages on every platform: logo, language switch, form column, desktop brand panel, Google block, email field, password field with show/hide, and submit button.
+
+**Functions & Classes:**
+- `AuthShell` (React Component)
+- `GoogleBlock` (React Component)
+- `EmailField` (React Component)
+- `PasswordField` (React Component)
+- `SubmitButton` (React Component)
+- `useEnter` (Hook)
 
 ---
 
@@ -6492,21 +6524,14 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 <a name="src-routes-login-tsx"></a>
 ### src/routes/Login.tsx
 
-**File Purpose:** Page-level route component for the Login.tsx module. Renders the main view when navigating to this section.
+**File Purpose:** Sign-in page shared by web, desktop and iOS. A single form column (email and password, Google, demo account, offline entry, link to sign up) with a desktop-only brand panel. Uses theme classes only, so it follows dark/light and works on every platform build.
 
 **Functions & Classes:**
-- `GoogleIcon` (React Component)
 - `Login` (React Component)
-- `GoogleIcon` (Function)
-- `Login` (Function)
+- `GoogleIcon` (React Component)
 
 **Function Details:**
-- **`GoogleIcon`** — React component rendering UI for GoogleIcon.
-- **`Login`** — React component rendering UI for Login.
-- **`GoogleIcon`** — Utility function for google icon.
-- **`Login`** — Utility function for login.
-
-**Lines:** 252
+- **`Login`** — Owns the form state and a single `busy` flag (`password`, `google` or `demo`) that disables every action while one sign-in runs.
 
 ---
 
