@@ -1,0 +1,48 @@
+/*
+ * Landing page only. The landing is always dark, so it carries its own copy
+ * of the dark design tokens (src/styles/tokens.web.css) under --lp-* instead
+ * of following html.light.
+ */
+.lp {
+  --lp-bg: #0c0c0e;
+  --lp-raised: #161618;
+  --lp-sunken: #1e1e21;
+  --lp-line: #2a2a2e;
+  --lp-hover: rgb(255 255 255 / 0.05);
+  --lp-ink: #f4f4f5;
+  --lp-ink-2: #b8b8c0;
+  --lp-ink-3: #9b9ba4;
+  --lp-accent: #5aa9ff;
+  --lp-on-accent: #04101f;
+  --lp-ok: #4cc38a;
+  --lp-warn: #f0b429;
+  --lp-danger: #ff6b6b;
+  color-scheme: dark;
+}
+
+.lp ::selection { background: color-mix(in srgb, var(--lp-accent) 35%, transparent); }
+
+.lp :focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 2px;
+}
+
+/* Buttons step up on hover and press on click. */
+.lp-btn {
+  transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+.lp-btn:hover { transform: translateY(-1px); }
+.lp-btn:active { transform: translateY(0) scale(0.98); }
+
+/* Faint dot grid behind the hero, fading out toward the bottom. */
+.lp-dots {
+  background-image: radial-gradient(rgb(255 255 255 / 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-btn { transition: none; }
+  .lp-btn:hover, .lp-btn:active { transform: none; }
+}

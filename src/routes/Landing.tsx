@@ -1,30 +1,61 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion, useInView, useMotionValue, useSpring, animate } from 'framer-motion';
-import { cn } from '../lib/utils';
 import {
-  CheckSquare, BookOpen, Calendar, Monitor,
-  Moon, BarChart3, Wallet, FileText, Flame, Layout, Dumbbell,
-  ArrowRight, Coins, Focus as FocusIcon, Download, Puzzle
+  AnimatePresence, animate, motion, useInView, useMotionValueEvent, useReducedMotion, useScroll,
+} from 'framer-motion';
+import {
+  ArrowRight, BarChart3, BookOpen, Calendar, Check, CheckSquare, Coins, Download, Dumbbell,
+  FileText, Flame, Focus as FocusIcon, Layout, Monitor, Moon, Puzzle, Wallet,
 } from 'lucide-react';
+import { cn } from '../lib/utils';
 import WikiGraphView from '../components/wiki/WikiGraphView';
+import { HeroFrame } from '../components/landing/HeroFrame';
+import { DayPrism } from '../components/landing/DayPrism';
+import '../components/landing/landing.css';
 
 type Feature = {
   icon: typeof CheckSquare;
   title: string;
   description: string;
-  color: string;
   details: string[];
 };
 
-type PanelState = {
-  title: string;
-  description: string;
-  details: string[];
-  color: string;
-  icon: typeof CheckSquare;
-  isHero: boolean;
-};
+const FEATURES: Feature[] = [
+  { icon: CheckSquare, title: 'Tasks', description: 'Smart task management with priorities, due dates, subtasks, and recurrence.', details: ['Priorities and due dates', 'Subtasks and recurrence', 'Quick capture to inbox'] },
+  { icon: FocusIcon, title: 'Focus', description: 'Pomodoro timer to protect deep work time and track productive sessions.', details: ['Pomodoro sessions', 'Distraction-free mode', 'Session streaks'] },
+  { icon: Flame, title: 'Habits', description: 'Build streaks, track daily habits, and watch consistency compound.', details: ['Daily streak tracking', 'Completion history', 'Habit consistency score'] },
+  { icon: Calendar, title: 'Calendar', description: 'Week and month view with events, tasks, and upcoming deadlines at a glance.', details: ['Week and month views', 'Event scheduling', 'Deadline visibility'] },
+  { icon: Layout, title: 'Planner', description: 'Plan your week on a structured time-block grid to stay on top of everything.', details: ['Time-block planning', 'Drag-style layout', 'Weekly structure overview'] },
+  { icon: FileText, title: 'Notes', description: 'Capture ideas, meeting notes, and thoughts in rich Markdown notes.', details: ['Markdown notes', 'Quick idea capture', 'Organized notebooks'] },
+  { icon: Wallet, title: 'Finance', description: 'Track income, expenses, and budgets so your money goes where you want.', details: ['Income and expense tracking', 'Budget overview', 'Cashflow snapshots'] },
+  { icon: Moon, title: 'Sleep', description: 'Log sleep sessions and review quality trends to protect your recovery.', details: ['Log sleep sessions', 'Analyze quality trends', 'Track recovery insights'] },
+  { icon: Dumbbell, title: 'Bio-Metrics', description: 'Log workouts, body composition, and physical activity all in one place.', details: ['Workouts and movement', 'Body measurements', 'Daily health logs'] },
+  { icon: Coins, title: 'Points & Rewards', description: 'Gamify your execution by earning coins for completed tasks and habits.', details: ['Completion rewards', 'Daily point milestones', 'Gamification store'] },
+  { icon: Monitor, title: 'Screen Time', description: 'Monitor daily screen usage and set healthy limits to reclaim focus.', details: ['Usage tracking', 'Healthy limits', 'Focus recovery'] },
+  { icon: BarChart3, title: 'Analytics', description: "Bird's-eye view of your productivity, habits, and growth over time.", details: ['Productivity trends', 'Habit growth charts', 'Whole-life overview'] },
+];
+
+const STATS = [
+  { value: 12, suffix: '', label: 'Built-in modules' },
+  { value: 100, suffix: '%', label: 'Free to use' },
+  { value: 1, suffix: '', label: 'Dashboard for everything' },
+];
+
+const WORDS = ['organised', 'focused', 'consistent', 'in control'];
+
+const NAV = [
+  { id: 'day', label: 'A day in lifeOS' },
+  { id: 'try', label: 'Try it' },
+  { id: 'modules', label: 'Modules' },
+  { id: 'wiki', label: 'Wiki' },
+];
+
+const EXTENSION_URL = 'https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS-extension.zip';
+const DESKTOP_URL = 'https://github.com/ghassanelgendy/lifeOS/releases/latest';
+
+const btnPrimary = 'lp-btn inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] bg-[var(--lp-ink)] px-5 text-[15px] font-semibold text-[var(--lp-bg)] hover:bg-white';
+const btnSecondary = 'lp-btn inline-flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-[10px] border border-[var(--lp-line)] bg-[var(--lp-raised)] px-5 text-[15px] font-semibold text-[var(--lp-ink)] hover:border-[var(--lp-ink-3)]';
+const card = 'rounded-[18px] border border-[var(--lp-line)] bg-[var(--lp-raised)]';
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -37,493 +68,475 @@ function GoogleIcon({ className }: { className?: string }) {
   );
 }
 
-function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true });
-  const count = useMotionValue(0);
-  const rounded = useSpring(count, { stiffness: 60, damping: 20 });
-
-  useEffect(() => {
-    if (!inView) return;
-    const controls = animate(count, to, { duration: 1.8, ease: 'easeOut' });
-    return controls.stop;
-  }, [inView, count, to]);
-
-  useEffect(() => {
-    return rounded.on('change', (v) => {
-      if (ref.current) ref.current.textContent = `${Math.round(v)}${suffix}`;
-    });
-  }, [rounded, suffix]);
-
-  return <span ref={ref}>0{suffix}</span>;
-}
-
-const FEATURES: Feature[] = [
-  { icon: CheckSquare, title: 'Tasks', description: 'Smart task management with priorities, due dates, subtasks, and recurrence.', color: 'from-blue-500/20 to-blue-600/5', details: ['Priorities and due dates', 'Subtasks and recurrence', 'Quick capture to inbox'] },
-  { icon: FocusIcon, title: 'Focus', description: 'Pomodoro timer to protect deep work time and track productive sessions.', color: 'from-orange-500/20 to-orange-600/5', details: ['Pomodoro sessions', 'Distraction-free mode', 'Session streaks'] },
-  { icon: Flame, title: 'Habits', description: 'Build streaks, track daily habits, and watch consistency compound.', color: 'from-red-500/20 to-red-600/5', details: ['Daily streak tracking', 'Completion history', 'Habit consistency score'] },
-  { icon: Calendar, title: 'Calendar', description: 'Week and month view with events, tasks, and upcoming deadlines at a glance.', color: 'from-violet-500/20 to-violet-600/5', details: ['Week and month views', 'Event scheduling', 'Deadline visibility'] },
-  { icon: Layout, title: 'Planner', description: 'Plan your week on a structured time-block grid to stay on top of everything.', color: 'from-purple-500/20 to-purple-600/5', details: ['Time-block planning', 'Drag-style layout', 'Weekly structure overview'] },
-  { icon: FileText, title: 'Notes', description: 'Capture ideas, meeting notes, and thoughts in rich Markdown notes.', color: 'from-yellow-500/20 to-yellow-600/5', details: ['Markdown notes', 'Quick idea capture', 'Organized notebooks'] },
-  { icon: Wallet, title: 'Finance', description: 'Track income, expenses, and budgets so your money goes where you want.', color: 'from-green-500/20 to-green-600/5', details: ['Income and expense tracking', 'Budget overview', 'Cashflow snapshots'] },
-  { icon: Moon, title: 'Sleep', description: 'Log sleep sessions and review quality trends to protect your recovery.', color: 'from-indigo-500/20 to-indigo-600/5', details: ['Log sleep sessions', 'Analyze quality trends', 'Track recovery insights'] },
-  { icon: Dumbbell, title: 'Bio-Metrics', description: 'Log workouts, body composition, and physical activity all in one place.', color: 'from-pink-500/20 to-pink-600/5', details: ['Workouts and movement', 'Body measurements', 'Daily health logs'] },
-  { icon: Coins, title: 'Points & Rewards', description: 'Gamify your execution by earning coins for completed tasks and habits.', color: 'from-amber-500/20 to-amber-600/5', details: ['Completion rewards', 'Daily point milestones', 'Gamification store'] },
-  { icon: Monitor, title: 'Screen Time', description: 'Monitor daily screen usage and set healthy limits to reclaim focus.', color: 'from-teal-500/20 to-teal-600/5', details: ['Usage tracking', 'Healthy limits', 'Focus recovery'] },
-  { icon: BarChart3, title: 'Analytics', description: "Bird's-eye view of your productivity, habits, and growth over time.", color: 'from-emerald-500/20 to-emerald-600/5', details: ['Productivity trends', 'Habit growth charts', 'Whole-life overview'] },
-];
-
-const STATS = [
-  { value: 12, suffix: '', label: 'Built-in modules' },
-  { value: 100, suffix: '%', label: 'Free to use' },
-  { value: 1, suffix: '', label: 'Dashboard for everything' },
-];
-
-const WORDS = ['organised', 'focused', 'consistent', 'in control'];
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.08, duration: 0.55, ease: [0.25, 0.46, 0.45, 0.94] } }),
-};
-
-const cardVariant = {
-  hidden: { opacity: 0, y: 32, scale: 0.97 },
-  show: (i: number) => ({
-    opacity: 1, y: 0, scale: 1,
-    transition: { delay: i * 0.06, duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] },
-  }),
-};
-
-function RotatingWord() {
-  const [index, setIndex] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setIndex((i) => (i + 1) % WORDS.length), 2200);
-    return () => clearInterval(id);
-  }, []);
+/** Mono label with an accent bar, used above every section heading. */
+function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span className="relative inline-block overflow-hidden align-bottom min-w-[8.5ch] sm:min-w-[9.5ch] -ml-5 sm:-ml-5.5">
-      <motion.span
-        key={index}
-        initial={{ y: '110%', opacity: 0 }}
-        animate={{ y: '0%', opacity: 1 }}
-        exit={{ y: '-110%', opacity: 0 }}
-        transition={{ duration: 0.42, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary/80 to-primary/60 whitespace-nowrap"
-      >
-        {WORDS[index]}
-      </motion.span>
+    <span className="inline-flex items-center border-l-2 border-[var(--lp-accent)] bg-[var(--lp-raised)] px-3 py-1.5 font-mono text-[12px] uppercase tracking-[0.12em] text-[var(--lp-ink-2)]">
+      {children}
     </span>
   );
 }
 
-function FeatureCard({ feature, index, active, onSelect }: { feature: Feature; index: number; active: boolean; onSelect: () => void }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-60px' });
-  const Icon = feature.icon;
+function SectionHead({ eyebrow, title, body, center = false }: { eyebrow: string; title: string; body?: string; center?: boolean }) {
+  return (
+    <div className={cn(center && 'mx-auto flex max-w-2xl flex-col items-center text-center')}>
+      <Eyebrow>{eyebrow}</Eyebrow>
+      <h2 className="mt-5 text-[34px] font-bold leading-[1.08] tracking-[-0.02em] text-[var(--lp-ink)] sm:text-[44px]">{title}</h2>
+      {body && <p className={cn('mt-4 text-[17px] leading-relaxed text-[var(--lp-ink-2)]', !center && 'max-w-[52ch]')}>{body}</p>}
+    </div>
+  );
+}
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    ref.current.style.setProperty('--mouse-x', `${x}px`);
-    ref.current.style.setProperty('--mouse-y', `${y}px`);
-  };
+function Counter({ to, suffix = '' }: { to: number; suffix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const inView = useInView(ref, { once: true });
+  const reduce = useReducedMotion();
+
+  useEffect(() => {
+    if (!inView || !ref.current) return;
+    const node = ref.current;
+    if (reduce) { node.textContent = `${to}${suffix}`; return; }
+    const controls = animate(0, to, {
+      duration: 1.4, ease: 'easeOut',
+      onUpdate: (v) => { node.textContent = `${Math.round(v)}${suffix}`; },
+    });
+    return () => controls.stop();
+  }, [inView, reduce, to, suffix]);
+
+  return <span ref={ref} className="tabular-nums">0{suffix}</span>;
+}
+
+function RotatingWord() {
+  const reduce = useReducedMotion();
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (reduce) return;
+    const id = window.setInterval(() => setIndex((i) => (i + 1) % WORDS.length), 2200);
+    return () => window.clearInterval(id);
+  }, [reduce]);
 
   return (
-    <motion.div
-      ref={ref}
-      variants={cardVariant}
-      custom={index % 6}
-      initial="hidden"
-      animate={inView ? 'show' : 'hidden'}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      onClick={onSelect}
-      onMouseMove={handleMouseMove}
-      className={cn(
-        'group relative rounded-2xl border bg-white/[0.03] p-5 overflow-hidden cursor-pointer text-left transition-all',
-        active ? 'border-white/20 ring-1 ring-white/20 bg-white/[0.06]' : 'border-white/[0.06]',
-      )}
-    >
-      <div 
-        className="pointer-events-none absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0"
-        style={{
-          background: `radial-gradient(120px circle at var(--mouse-x, 0px) var(--mouse-y, 0px), rgba(255,255,255,0.06), transparent 80%)`,
-        }}
-      />
-      <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0`} />
-      <div className="relative flex gap-4 z-10">
-        <div className="shrink-0 w-10 h-10 rounded-xl bg-white/[0.06] group-hover:bg-white/[0.10] transition-colors flex items-center justify-center">
-          <Icon size={18} className="text-white/70 group-hover:text-white transition-colors" />
-        </div>
+    <span className="relative inline-flex overflow-hidden align-bottom text-[var(--lp-accent)]" style={{ minWidth: '6.2ch' }}>
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={index}
+          initial={{ y: '100%', opacity: 0 }}
+          animate={{ y: '0%', opacity: 1 }}
+          exit={{ y: '-100%', opacity: 0 }}
+          transition={{ duration: 0.4, ease: [0.2, 0.7, 0.2, 1] }}
+          className="inline-block whitespace-nowrap"
+        >
+          {WORDS[index]}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
+const SANDBOX_TASKS = [
+  { id: 1, text: 'Ship v1.0 of lifeOS', points: 20 },
+  { id: 2, text: 'Log daily sleep analysis', points: 10 },
+  { id: 3, text: 'Complete 10m focus sprint', points: 15 },
+];
+const SANDBOX_HABITS = [
+  { id: 1, name: '8h Sleep Rest', streak: 5 },
+  { id: 2, name: 'Read 5 Pages', streak: 12 },
+  { id: 3, name: 'Morning Reflection', streak: 2 },
+];
+const BASE_XP = 120;
+const HABIT_XP = 15;
+
+/** The interactive sandbox: tick tasks and log habits, and the XP score follows. */
+function Sandbox() {
+  const [doneTasks, setDoneTasks] = useState<number[]>([]);
+  const [doneHabits, setDoneHabits] = useState<number[]>([]);
+
+  const xp = BASE_XP
+    + SANDBOX_TASKS.filter((t) => doneTasks.includes(t.id)).reduce((sum, t) => sum + t.points, 0)
+    + doneHabits.length * HABIT_XP;
+
+  const toggle = (list: number[], id: number) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]);
+
+  return (
+    <div className={cn(card, 'p-5 sm:p-7')}>
+      <div className="mb-6 flex items-center justify-between gap-4 border-b border-[var(--lp-line)] pb-5">
+        <span className="font-mono text-[12px] uppercase tracking-[0.12em] text-[var(--lp-ink-3)]">Interactive Sandbox</span>
+        <span className="flex items-center gap-2 rounded-full border border-[var(--lp-line)] bg-[var(--lp-sunken)] px-3.5 py-1.5 text-[14px] font-bold text-[var(--lp-warn)]" aria-live="polite">
+          <Coins size={15} />
+          <motion.span key={xp} initial={{ y: -8, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.2 }} className="tabular-nums">
+            {xp} XP
+          </motion.span>
+        </span>
+      </div>
+
+      <div className="grid gap-8 md:grid-cols-2">
         <div>
-          <p className="font-semibold text-sm text-white/90">{feature.title}</p>
-          <p className="text-white/45 text-sm mt-0.5 leading-snug group-hover:text-white/60 transition-colors">{feature.description}</p>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[14px] font-semibold text-[var(--lp-ink-2)]">Inbox Tasks</h3>
+            <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{SANDBOX_TASKS.length - doneTasks.length} active</span>
+          </div>
+          <ul className="space-y-2.5">
+            {SANDBOX_TASKS.map((task) => {
+              const done = doneTasks.includes(task.id);
+              return (
+                <li key={task.id}>
+                  <button
+                    type="button"
+                    aria-pressed={done}
+                    onClick={() => setDoneTasks((l) => toggle(l, task.id))}
+                    className={cn(
+                      'lp-btn flex min-h-[52px] w-full items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left',
+                      done ? 'border-[var(--lp-ok)] bg-[var(--lp-sunken)]' : 'border-[var(--lp-line)] bg-[var(--lp-sunken)] hover:border-[var(--lp-ink-3)]',
+                    )}
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
+                      <span className={cn('flex size-5 shrink-0 items-center justify-center rounded-[6px] border', done ? 'border-transparent bg-[var(--lp-ok)] text-[var(--lp-bg)]' : 'border-[var(--lp-ink-3)]')}>
+                        {done && <Check size={13} strokeWidth={3} />}
+                      </span>
+                      <span className={cn('truncate text-[15px] font-medium', done ? 'text-[var(--lp-ink-3)] line-through' : 'text-[var(--lp-ink)]')}>{task.text}</span>
+                    </span>
+                    <span className={cn('shrink-0 text-[12px] font-semibold tabular-nums', done ? 'text-[var(--lp-ok)]' : 'text-[var(--lp-ink-3)]')}>
+                      {done ? 'Done!' : `+${task.points} XP`}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+
+        <div>
+          <div className="mb-3 flex items-center justify-between">
+            <h3 className="text-[14px] font-semibold text-[var(--lp-ink-2)]">Daily Habits</h3>
+            <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{doneHabits.length}/{SANDBOX_HABITS.length} tracked</span>
+          </div>
+          <ul className="space-y-2.5">
+            {SANDBOX_HABITS.map((habit) => {
+              const done = doneHabits.includes(habit.id);
+              return (
+                <li key={habit.id}>
+                  <button
+                    type="button"
+                    aria-pressed={done}
+                    onClick={() => setDoneHabits((l) => toggle(l, habit.id))}
+                    className={cn(
+                      'lp-btn flex min-h-[52px] w-full items-center justify-between gap-3 rounded-[10px] border px-4 py-3 text-left',
+                      done ? 'border-[var(--lp-warn)] bg-[var(--lp-sunken)]' : 'border-[var(--lp-line)] bg-[var(--lp-sunken)] hover:border-[var(--lp-ink-3)]',
+                    )}
+                  >
+                    <span className="min-w-0 truncate text-[15px] font-medium text-[var(--lp-ink)]">{habit.name}</span>
+                    <span className="flex shrink-0 items-center gap-3">
+                      <span className={cn('flex items-center gap-1 text-[12px] font-semibold tabular-nums', done ? 'text-[var(--lp-warn)]' : 'text-[var(--lp-ink-3)]')}>
+                        <Flame size={13} />
+                        {habit.streak + (done ? 1 : 0)} days
+                      </span>
+                      <span className={cn('rounded-[6px] border px-2 py-0.5 text-[12px] font-bold uppercase', done ? 'border-transparent text-[var(--lp-warn)]' : 'border-[var(--lp-line)] text-[var(--lp-ink-2)]')}>
+                        {done ? 'Logged' : 'Log'}
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
       </div>
-    </motion.div>
+    </div>
+  );
+}
+
+function Modules() {
+  const [active, setActive] = useState(0);
+  const current = FEATURES[active];
+  const Icon = current.icon;
+
+  return (
+    <div className="mt-12 grid gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)]">
+      <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {FEATURES.map((f, i) => {
+          const FIcon = f.icon;
+          const on = i === active;
+          return (
+            <li key={f.title}>
+              <button
+                type="button"
+                aria-pressed={on}
+                onClick={() => setActive(i)}
+                onMouseEnter={() => setActive(i)}
+                onFocus={() => setActive(i)}
+                className={cn(
+                  'lp-btn flex h-full min-h-[104px] w-full flex-col justify-between gap-4 rounded-[14px] border p-4 text-left',
+                  on ? 'border-[var(--lp-accent)] bg-[var(--lp-sunken)]' : 'border-[var(--lp-line)] bg-[var(--lp-raised)] hover:border-[var(--lp-ink-3)]',
+                )}
+              >
+                <FIcon size={20} className={on ? 'text-[var(--lp-accent)]' : 'text-[var(--lp-ink-3)]'} />
+                <span className="text-[15px] font-semibold text-[var(--lp-ink)]">{f.title}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+
+      <div className={cn(card, 'relative overflow-hidden p-6 sm:p-7 lg:min-h-[340px]')} aria-live="polite">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={current.title}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+          >
+            <span className="flex size-12 items-center justify-center rounded-[14px] bg-[var(--lp-sunken)] text-[var(--lp-accent)]">
+              <Icon size={22} />
+            </span>
+            <h3 className="mt-5 text-[26px] font-bold leading-tight tracking-tight text-[var(--lp-ink)]">{current.title}</h3>
+            <p className="mt-2 text-[16px] leading-relaxed text-[var(--lp-ink-2)]">{current.description}</p>
+            <ul className="mt-6 space-y-3">
+              {current.details.map((d) => (
+                <li key={d} className="flex items-center gap-3 text-[15px] text-[var(--lp-ink)]">
+                  <Check size={16} className="shrink-0 text-[var(--lp-accent)]" />
+                  {d}
+                </li>
+              ))}
+            </ul>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
   );
 }
 
 export default function Landing() {
   const navigate = useNavigate();
-  const statsRef = useRef(null);
-  const statsInView = useInView(statsRef, { once: true });
-  const [activeFeature, setActiveFeature] = useState<Feature | null>(null);
+  const scroller = useRef<HTMLDivElement>(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [spy, setSpy] = useState('');
 
-  // Mock Dashboard Sandbox State
-  const [coins, setCoins] = useState(120);
-  const [mockTasks, setMockTasks] = useState([
-    { id: 1, text: 'Ship v1.0 of lifeOS', points: 20, done: false },
-    { id: 2, text: 'Log daily sleep analysis', points: 10, done: false },
-    { id: 3, text: 'Complete 10m focus sprint', points: 15, done: false },
-  ]);
-  const [mockHabits, setMockHabits] = useState([
-    { id: 1, name: '8h Sleep Rest', streak: 5, done: false },
-    { id: 2, name: 'Read 5 Pages', streak: 12, done: false },
-    { id: 3, name: 'Morning Reflection', streak: 2, done: false },
-  ]);
+  const { scrollY, scrollYProgress } = useScroll({ container: scroller });
+  useMotionValueEvent(scrollY, 'change', (v) => setScrolled(v > 8));
 
-  const toggleMockTask = (id: number) => {
-    setMockTasks((prev) =>
-      prev.map((t) => {
-        if (t.id === id) {
-          const newDone = !t.done;
-          setCoins((c) => c + (newDone ? t.points : -t.points));
-          return { ...t, done: newDone };
+  // Scrollspy: the nav item of the section crossing the middle of the screen.
+  useEffect(() => {
+    const root = scroller.current;
+    if (!root) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setSpy(e.target.id);
+          else setSpy((cur) => (cur === e.target.id ? '' : cur));
         }
-        return t;
-      })
+      },
+      { root, rootMargin: '-45% 0px -50% 0px' },
     );
-  };
+    NAV.forEach(({ id }) => {
+      const el = root.querySelector(`#${id}`);
+      if (el) io.observe(el);
+    });
+    return () => io.disconnect();
+  }, []);
 
-  const completeMockHabit = (id: number) => {
-    setMockHabits((prev) =>
-      prev.map((h) => {
-        if (h.id === id && !h.done) {
-          setCoins((c) => c + 15);
-          return { ...h, done: true, streak: h.streak + 1 };
-        }
-        return h;
-      })
-    );
+  const jump = (id: string) => (e: React.MouseEvent) => {
+    e.preventDefault();
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    scroller.current?.querySelector(`#${id}`)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
   };
-
-  const panelState: PanelState = activeFeature
-    ? {
-      title: activeFeature.title,
-      description: activeFeature.description,
-      details: activeFeature.details,
-      color: activeFeature.color,
-      icon: activeFeature.icon,
-      isHero: false,
-    }
-    : {
-      title: 'Interactive module preview',
-      description: 'Click any module to reveal its feature set, details, and how it fits into your lifeOS dashboard.',
-      details: ['Choose a module from the grid', 'See its key capabilities', 'Switch instantly between modules'],
-      color: 'from-white/15 to-white/5',
-      icon: Layout,
-      isHero: true,
-    };
 
   return (
-    <div className="h-screen bg-[#08080c] text-white flex flex-col overflow-x-hidden overflow-y-auto selection:bg-primary/30">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <motion.div animate={{ x: [0, 30, 0], y: [0, -20, 0] }} transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }} className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full bg-primary/10 blur-[120px]" />
-        <motion.div animate={{ x: [0, -25, 0], y: [0, 30, 0] }} transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut', delay: 4 }} className="absolute top-1/3 -right-60 w-[600px] h-[600px] rounded-full bg-violet-500/8 blur-[120px]" />
-        <motion.div animate={{ x: [0, 20, 0], y: [0, -15, 0] }} transition={{ duration: 26, repeat: Infinity, ease: 'easeInOut', delay: 8 }} className="absolute -bottom-40 left-1/3 w-[500px] h-[500px] rounded-full bg-blue-500/8 blur-[100px]" />
-      </div>
+    <div ref={scroller} className="lp relative h-[100dvh] overflow-y-auto overflow-x-hidden bg-[var(--lp-bg)] text-[var(--lp-ink)]">
+      <a href="#main" onClick={jump('main')} className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-[10px] focus:bg-[var(--lp-ink)] focus:px-4 focus:py-2 focus:text-[var(--lp-bg)]">
+        Skip to content
+      </a>
 
-      <header className="sticky top-0 z-20 border-b border-white/[0.06] bg-[#08080c]/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <span className="font-bold text-lg tracking-tight">lifeOS</span>
+      <header
+        className={cn(
+          'sticky top-0 z-40 border-b transition-[background-color,border-color] duration-300',
+          scrolled ? 'border-[var(--lp-line)] bg-[rgb(12_12_14/0.82)] backdrop-blur-xl' : 'border-transparent bg-transparent',
+        )}
+      >
+        <div className="px-5 sm:px-8"><div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-6">
+          <Link to="/" className="flex shrink-0 items-center gap-2.5">
+            <img src="/icon-main.png" alt="" width={28} height={28} className="size-7 rounded-[7px]" />
+            <span className="text-[19px] font-bold tracking-tight">lifeOS</span>
           </Link>
-          <div className="flex items-center gap-6">
-            <Link to="/wiki" className="text-sm text-white/60 hover:text-white transition-colors">Docs & Wiki</Link>
-            <div className="flex items-center gap-2">
-              <Link to="/login" className="px-4 py-1.5 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors">Sign in</Link>
-              <Link to="/signup" className="px-4 py-1.5 rounded-lg text-sm bg-white text-black font-medium hover:bg-white/90 transition-colors">Get started</Link>
-            </div>
+
+          <nav aria-label="Sections" className="hidden items-center gap-1 lg:flex">
+            {NAV.map(({ id, label }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                onClick={jump(id)}
+                aria-current={spy === id ? 'true' : undefined}
+                className={cn(
+                  'rounded-[10px] px-3 py-2 text-[14px] font-medium transition-colors duration-150',
+                  spy === id ? 'bg-[var(--lp-raised)] text-[var(--lp-ink)]' : 'text-[var(--lp-ink-3)] hover:text-[var(--lp-ink)]',
+                )}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <Link to="/login" className="lp-btn hidden h-11 items-center rounded-[10px] px-4 text-[14px] font-medium text-[var(--lp-ink-2)] hover:text-[var(--lp-ink)] sm:inline-flex">Sign in</Link>
+            <Link to="/signup" className="lp-btn inline-flex h-11 items-center rounded-[10px] bg-[var(--lp-ink)] px-4 text-[14px] font-semibold text-[var(--lp-bg)] hover:bg-white">Get started</Link>
           </div>
-        </div>
+        </div></div>
+        <motion.div aria-hidden className="absolute inset-x-0 bottom-[-1px] h-px origin-left bg-[var(--lp-accent)]" style={{ scaleX: scrollYProgress }} />
       </header>
 
-      <main className="relative flex-1 overflow-y-auto">
-        <section className="max-w-6xl mx-auto px-6 pt-24 pb-20 text-center">
-          <motion.div variants={fadeUp} custom={0} initial="hidden" animate="show" className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-xs text-white/50 mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary/80 animate-pulse inline-block" />
-            Your personal operating system
-          </motion.div>
-
-          <motion.h1 variants={fadeUp} custom={1} initial="hidden" animate="show" className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.07] mb-6">
-            Stay <RotatingWord />
-            <br />
-            <span className="text-white/30">every single day.</span>
-          </motion.h1>
-
-          <motion.p variants={fadeUp} custom={2} initial="hidden" animate="show" className="text-white/45 text-lg max-w-lg mx-auto mb-10 leading-relaxed">
-            Tasks, habits, focus, finance, sleep, notes, and more ΓÇö all connected in one personal dashboard.
-          </motion.p>
-
-          <motion.div variants={fadeUp} custom={3} initial="hidden" animate="show" className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link to="/signup" className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all">
-              Create free account
-              <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
-            </Link>
-            <Link to="/login" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl border border-white/10 bg-white/[0.08] text-sm text-white hover:bg-white/[0.12] hover:text-white active:scale-95 transition-all">
-              <GoogleIcon className="w-4 h-4" />
-              Continue with Google
-            </Link>
-          </motion.div>
-
-          <motion.div variants={fadeUp} custom={4} initial="hidden" animate="show" className="mt-4 flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="https://github.com/ghassanelgendy/lifeOS/releases/latest/download/lifeOS-extension.zip"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs text-white/70 hover:bg-white/[0.10] hover:text-white active:scale-95 transition-all"
+      <main id="main">
+        {/* Hero */}
+        <section className="relative px-5 pb-24 pt-14 sm:px-8 sm:pt-20">
+          <div aria-hidden className="lp-dots pointer-events-none absolute inset-x-0 top-[-64px] h-[620px]" />
+          <div className="relative mx-auto max-w-6xl">
+            <motion.div
+              initial={{ opacity: 0, y: 18 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, ease: [0.2, 0.7, 0.2, 1] }}
+              className="grid items-end gap-8 lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] lg:gap-12"
             >
-              <Puzzle size={15} className="text-primary" />
-              Download Browser Extension
-              <Download size={14} className="opacity-70" />
-            </a>
-            <a
-              href="https://github.com/ghassanelgendy/lifeOS/releases/latest"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-white/10 bg-white/[0.05] text-xs text-white/70 hover:bg-white/[0.10] hover:text-white active:scale-95 transition-all"
-            >
-              <Download size={15} className="opacity-70" />
-              Get the Desktop App
-            </a>
-          </motion.div>
-
-          <motion.p variants={fadeUp} custom={5} initial="hidden" animate="show" className="text-xs text-white/25 mt-5">
-            Already have an account?{' '}
-            <Link to="/login" className="text-white/45 underline underline-offset-2 hover:text-white/70 transition-colors">Sign in</Link>
-          </motion.p>
-        </section>
-
-        <section ref={statsRef} className="border-y border-white/[0.05] bg-white/[0.02]">
-          <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-3 divide-x divide-white/[0.06]">
-            {STATS.map(({ value, suffix, label }) => (
-              <div key={label} className="text-center px-4">
-                <p className="text-3xl sm:text-4xl font-bold text-white">
-                  {statsInView ? <Counter to={value} suffix={suffix} /> : `0${suffix}`}
+              <div>
+                <Eyebrow>Your personal operating system</Eyebrow>
+                <h1 className="mt-6 text-[46px] font-bold leading-[1.02] tracking-[-0.03em] sm:text-[68px] lg:text-[80px]">
+                  Stay <RotatingWord />
+                  <br />
+                  <span className="text-[var(--lp-ink-3)]">every single day.</span>
+                </h1>
+              </div>
+              <div className="lg:pb-3">
+                <p className="max-w-[44ch] text-[18px] leading-relaxed text-[var(--lp-ink-2)]">
+                  Tasks, habits, focus, finance, sleep, notes, and more, all connected in one personal dashboard.
                 </p>
-                <p className="text-xs text-white/35 mt-1.5">{label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Live Interactive Mockup Dashboard Section */}
-        <section className="max-w-4xl mx-auto px-6 py-14">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Try it yourself</h2>
-            <p className="text-white/40 text-sm max-w-md mx-auto">Click tasks and habits in this interactive mockup to see how lifeOS gamifies your day-to-day execution.</p>
-          </div>
-
-          <div className="rounded-3xl border border-white/[0.08] bg-white/[0.03] p-6 sm:p-8 backdrop-blur-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-[80px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-48 h-48 bg-violet-500/10 rounded-full blur-[80px] pointer-events-none" />
-
-            <div className="flex items-center justify-between pb-6 border-b border-white/[0.06] mb-6">
-              <div className="flex items-center gap-2">
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="font-semibold text-white/80 text-sm">Interactive Sandbox</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-white/40">Score:</span>
-                <motion.div 
-                  key={coins}
-                  initial={{ scale: 0.9 }}
-                  animate={{ scale: 1 }}
-                  className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold text-sm"
-                >
-                  <Coins size={14} className="text-amber-500 shrink-0 animate-bounce" />
-                  <span>{coins} XP</span>
-                </motion.div>
-              </div>
-            </div>
-
-            <div className="grid gap-8 md:grid-cols-2">
-              
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">Inbox Tasks</h4>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-white/60">{mockTasks.filter(t => !t.done).length} active</span>
-                </div>
-                <div className="space-y-2.5">
-                  {mockTasks.map((task) => (
-                    <div 
-                      key={task.id}
-                      onClick={() => toggleMockTask(task.id)}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-xl border transition-all cursor-pointer select-none",
-                        task.done 
-                          ? "bg-emerald-500/5 border-emerald-500/30 text-white/45" 
-                          : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/15 text-white/80"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-5 h-5 rounded-md border flex items-center justify-center transition-colors shrink-0",
-                          task.done ? "bg-emerald-500 border-emerald-400 text-black" : "border-white/30"
-                        )}>
-                          {task.done && <CheckSquare size={13} className="stroke-[3]" />}
-                        </div>
-                        <span className={cn("text-sm font-medium", task.done && "line-through")}>{task.text}</span>
-                      </div>
-                      <span className={cn(
-                        "text-xs font-semibold px-2 py-0.5 rounded-full shrink-0",
-                        task.done ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-white/40"
-                      )}>
-                        {task.done ? "Done!" : `+${task.points} XP`}
-                      </span>
-                    </div>
-                  ))}
+                <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                  <Link to="/signup" className={cn(btnPrimary, 'group')}>
+                    Create free account
+                    <ArrowRight size={16} className="transition-transform duration-150 group-hover:translate-x-0.5" />
+                  </Link>
+                  <Link to="/login" className={btnSecondary}>
+                    <GoogleIcon className="size-4" />
+                    Continue with Google
+                  </Link>
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-white/50 uppercase tracking-wider">Daily Habits</h4>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-white/10 text-white/60">{mockHabits.filter(h => h.done).length}/3 tracked</span>
-                </div>
-                <div className="space-y-2.5">
-                  {mockHabits.map((habit) => (
-                    <div 
-                      key={habit.id}
-                      onClick={() => completeMockHabit(habit.id)}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-xl border transition-all select-none",
-                        habit.done 
-                          ? "bg-amber-500/5 border-amber-500/30 text-white/50 cursor-default" 
-                          : "bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05] hover:border-white/15 text-white/80 cursor-pointer"
-                      )}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={cn(
-                          "w-5 h-5 rounded-full border flex items-center justify-center transition-colors shrink-0",
-                          habit.done ? "bg-amber-500 border-amber-400 text-black" : "border-white/30"
-                        )}>
-                          {habit.done && <Flame size={12} className="fill-current text-black animate-pulse" />}
-                        </div>
-                        <span className="text-sm font-medium">{habit.name}</span>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <div className={cn(
-                          "flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full",
-                          habit.done ? "bg-amber-500/10 text-amber-400" : "bg-white/5 text-white/40"
-                        )}>
-                          <Flame size={12} className={cn(habit.done ? "text-amber-500 fill-amber-500" : "text-white/30")} />
-                          <span>{habit.streak} days</span>
-                        </div>
-                        {!habit.done && (
-                          <span className="text-[10px] uppercase font-bold text-amber-500 bg-amber-500/5 border border-amber-500/20 px-2 py-0.5 rounded-md hover:bg-amber-500/25 shrink-0">
-                            Log
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        <section className="max-w-6xl mx-auto px-6 py-24">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.5 }} className="text-center mb-14">
-            <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Everything in one place</h2>
-            <p className="text-white/40 text-base max-w-md mx-auto">12 modules that cover every corner of your life, all talking to each other.</p>
-          </motion.div>
-
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {FEATURES.map((feature, i) => (
-                <FeatureCard
-                  key={feature.title}
-                  feature={feature}
-                  index={i}
-                  active={activeFeature?.title === feature.title}
-                  onSelect={() => setActiveFeature(feature)}
-                />
-              ))}
-            </div>
+            </motion.div>
 
             <motion.div
-              key={panelState.title}
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-3xl border border-white/[0.08] bg-white/[0.04] p-6 sm:p-7"
+              transition={{ duration: 0.8, delay: 0.15, ease: [0.2, 0.7, 0.2, 1] }}
+              className="mt-12 sm:mt-16"
             >
-              <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br ${panelState.color} mb-4`}>
-                <panelState.icon size={22} className="text-white/90" />
-              </div>
-              <h3 className="text-2xl font-bold tracking-tight">{panelState.title}</h3>
-              <p className="mt-2 text-white/50 leading-relaxed">{panelState.description}</p>
-              <ul className="mt-5 space-y-3">
-                {panelState.details.map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-sm text-white/70">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/50" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-6 rounded-2xl border border-white/[0.06] bg-black/20 p-4 text-sm text-white/55">
-                {panelState.isHero ? 'Pick a module to see its features here.' : 'Click another module to switch this panel.'}
-              </div>
+              <HeroFrame scroller={scroller} />
             </motion.div>
           </div>
         </section>
 
-        {/* Public Wiki Section */}
-        <section className="border-t border-white/[0.05] bg-white/[0.01] py-20 text-center">
-          <div className="max-w-4xl mx-auto px-6 space-y-8">
-            <div className="space-y-3">
-              <div className="inline-flex p-3 rounded-2xl bg-white/[0.04] border border-white/10 text-white/80 mb-2">
-                <BookOpen size={28} />
+        {/* Stats */}
+        <section className="border-y border-[var(--lp-line)] bg-[var(--lp-raised)] px-5 sm:px-8">
+          <dl className="mx-auto grid max-w-6xl grid-cols-3 divide-x divide-[var(--lp-line)]">
+            {STATS.map(({ value, suffix, label }) => (
+              <div key={label} className="flex flex-col-reverse px-4 py-10 text-center sm:py-12">
+                <dt className="mt-2 text-[13px] text-[var(--lp-ink-3)] sm:text-[14px]">{label}</dt>
+                <dd className="text-[36px] font-bold leading-none tracking-tight sm:text-[52px]"><Counter to={value} suffix={suffix} /></dd>
               </div>
-              <h2 className="text-3xl font-bold tracking-tight">Explore the lifeOS Wiki</h2>
-              <p className="text-white/45 text-base max-w-lg mx-auto leading-relaxed">
-                Interact with our public knowledge graph. Drag nodes to explore connections, and click any node to read the system specifications and product guidelines.
-              </p>
+            ))}
+          </dl>
+        </section>
+
+        {/* A day in lifeOS: pinned, scroll-driven 3D prism */}
+        <DayPrism
+          scroller={scroller}
+          heading={<SectionHead eyebrow="A day in lifeOS" title="One dashboard, from morning to night" />}
+        />
+
+        {/* Sandbox */}
+        <section id="try" className="scroll-mt-16 px-5 py-24 sm:px-8 sm:py-32">
+          <div className="mx-auto max-w-4xl">
+            <SectionHead
+              center
+              eyebrow="Try it"
+              title="Try it yourself"
+              body="Click tasks and habits in this interactive mockup to see how lifeOS gamifies your day-to-day execution."
+            />
+            <div className="mt-12"><Sandbox /></div>
+          </div>
+        </section>
+
+        {/* Modules */}
+        <section id="modules" className="scroll-mt-16 border-t border-[var(--lp-line)] px-5 py-24 sm:px-8 sm:py-32">
+          <div className="mx-auto max-w-6xl">
+            <SectionHead
+              eyebrow="Modules"
+              title="Everything in one place"
+              body="12 modules that cover every corner of your life, all talking to each other."
+            />
+            <Modules />
+          </div>
+        </section>
+
+        {/* Wiki */}
+        <section id="wiki" className="scroll-mt-16 border-t border-[var(--lp-line)] px-5 py-24 sm:px-8 sm:py-32">
+          <div className="mx-auto max-w-6xl">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <SectionHead
+                eyebrow="Wiki"
+                title="Explore the lifeOS Wiki"
+                body="Interact with our public knowledge graph. Drag nodes to explore connections, and click any node to read the system specifications and product guidelines."
+              />
+              <Link to="/wiki" className={cn(btnSecondary, 'shrink-0')}>
+                <BookOpen size={16} />
+                Browse Full Documentation
+              </Link>
             </div>
-            
-            <div className="rounded-3xl border border-white/[0.08] bg-black/40 p-4 shadow-xl overflow-hidden flex justify-center max-w-3xl mx-auto">
-              <WikiGraphView onNavigate={(nodeId) => {
-                if (nodeId.includes('#')) {
+            <div className={cn(card, 'mt-12 flex justify-center overflow-hidden p-4')}>
+              <WikiGraphView
+                onNavigate={(nodeId) => {
                   const [pageTitle] = nodeId.split('#');
                   navigate(`/wiki/${encodeURIComponent(pageTitle)}`);
-                } else {
-                  navigate(`/wiki/${encodeURIComponent(nodeId)}`);
-                }
-              }} />
+                }}
+              />
             </div>
+          </div>
+        </section>
 
+        {/* Close */}
+        <section className="border-t border-[var(--lp-line)] px-5 py-24 sm:px-8 sm:py-32">
+          <div className="mx-auto flex max-w-6xl flex-col items-start gap-10 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <Link to="/wiki" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white text-black text-sm font-semibold hover:bg-white/90 active:scale-95 transition-all shadow-md">
-                Browse Full Documentation
-                <ArrowRight size={15} />
+              <img src="/icon-main.png" alt="" width={56} height={56} className="size-14 rounded-[14px]" />
+              <h2 className="mt-6 text-[40px] font-bold leading-[1.04] tracking-[-0.03em] sm:text-[64px]">
+                Your personal
+                <br />
+                operating system.
+              </h2>
+            </div>
+            <div className="flex w-full flex-col gap-3 sm:w-auto">
+              <Link to="/signup" className={cn(btnPrimary, 'group')}>
+                Create free account
+                <ArrowRight size={16} className="transition-transform duration-150 group-hover:translate-x-0.5" />
               </Link>
+              <a href={EXTENSION_URL} target="_blank" rel="noreferrer" className={btnSecondary}>
+                <Puzzle size={16} />
+                Download Browser Extension
+              </a>
+              <a href={DESKTOP_URL} target="_blank" rel="noreferrer" className={btnSecondary}>
+                <Download size={16} />
+                Get the Desktop App
+              </a>
             </div>
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-white/[0.05] py-6">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/25">
-          <span className="font-semibold text-white/40">lifeOS</span>
-          <div className="flex items-center gap-5">
-            <a href="https://github.com/ghassanelgendy" target="_blank" rel="noreferrer" className="hover:text-white/60 transition-colors">GitHub</a>
-            <a href="https://www.linkedin.com/in/ghassanelgendy/" target="_blank" rel="noreferrer" className="hover:text-white/60 transition-colors">LinkedIn</a>
+      <footer className="border-t border-[var(--lp-line)] px-5 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 py-8 text-[14px] text-[var(--lp-ink-3)] sm:flex-row sm:items-center">
+          <span className="font-semibold text-[var(--lp-ink-2)]">lifeOS</span>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <Link to="/wiki" className="transition-colors duration-150 hover:text-[var(--lp-ink)]">Docs & Wiki</Link>
+            <Link to="/login" className="transition-colors duration-150 hover:text-[var(--lp-ink)]">Sign in</Link>
+            <a href="https://github.com/ghassanelgendy" target="_blank" rel="noreferrer" className="transition-colors duration-150 hover:text-[var(--lp-ink)]">GitHub</a>
+            <a href="https://www.linkedin.com/in/ghassanelgendy/" target="_blank" rel="noreferrer" className="transition-colors duration-150 hover:text-[var(--lp-ink)]">LinkedIn</a>
           </div>
         </div>
       </footer>
