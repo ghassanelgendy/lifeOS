@@ -38,7 +38,7 @@ export const HabitStatsModal: React.FC<HabitStatsModalProps> = ({
     const totalCompletions = completedLogs.length;
 
     // Date sets for quick lookup
-    const completedDateStrings = new Set(
+    const completedDateStrings = new Set<string>(
       completedLogs.map(l => (l.date ? l.date.split('T')[0] : ''))
     );
 

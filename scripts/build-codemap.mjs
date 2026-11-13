@@ -46,7 +46,7 @@ function walk(dir, acc = []) {
     if (e.isDirectory()) {
       if (SKIP_DIR.has(e.name)) continue;
       walk(full, acc);
-    } else if (CODE_EXT.has(path.extname(e.name))) {
+    } else if (CODE_EXT.has(path.extname(e.name)) && !e.name.endsWith('.d.ts')) {
       acc.push(full);
     }
   }

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { Sparkles, Check, Plus, Loader2, Calendar, Clock, ListTodo, Phone, Mail, Code2, Bookmark, CalendarDays, AlertCircle, FileText, Copy } from 'lucide-react';
-import { Button, Input, Modal } from './ui';
+import { Sparkles, Check, Plus, Calendar, Clock, ListTodo, Phone, Mail, Code2, Bookmark, CalendarDays, AlertCircle, FileText, Copy } from 'lucide-react';
+import { Button, Input, Modal, Spinner } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useTaskLists, useTags, useCreateTask, useTasks } from '../hooks/useTasks';
 import { useCalendarEvents, useCreateCalendarEvent } from '../hooks/useCalendar';
@@ -453,7 +453,7 @@ ${customPrompt.trim() ? `### User Custom Instructions:\n${customPrompt.trim()}` 
               className="gap-2 text-xs h-9 bg-primary text-primary-foreground font-semibold"
               title={hasRun ? 'Re-scan the current note content and refresh the extracted tasks below' : undefined}
             >
-              {isProcessing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+              {isProcessing ? <Spinner size="xs" decorative /> : <Sparkles size={14} />}
               <span>{isProcessing ? 'Analyzing Note...' : hasRun ? 'Regenerate Tasks' : 'Run AI Organizer'}</span>
             </Button>
           </div>

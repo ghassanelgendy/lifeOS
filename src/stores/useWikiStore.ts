@@ -27,6 +27,8 @@ interface WikiState {
   toggleGraphView: () => void;
   setSearchQuery: (query: string) => void;
   createPage: (title: string) => void;
+  shareCurrentPage: (email: string) => void;
+  unshareCurrentPage: (email: string) => void;
   getBacklinks: (title: string) => WikiPage[];
 }
 

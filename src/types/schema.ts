@@ -133,8 +133,10 @@ export type RecurrencePattern = 'none' | 'daily' | 'weekly' | 'monthly' | (strin
 
 export interface CalendarEvent {
   id: string;
+  user_id?: string;
   title: string;
   type: EventType;
+  category?: string;
   start_time: string; // ISO-8601
   end_time: string; // ISO-8601
   all_day: boolean;
@@ -268,12 +270,13 @@ export type TaskRecurrenceEndType = 'never' | 'on_date' | 'after_count';
 
 export interface Task {
   id: string;
+  user_id?: string;
   title: string;
-  description?: string;
+  description?: string | null;
   is_completed: boolean;
   is_wont_do?: boolean;
   points_value?: number;
-  completed_at?: string; // ISO-8601
+  completed_at?: string | null; // ISO-8601
   priority: TaskPriority;
   due_date?: string; // ISO-8601
   due_time?: string; // HH:mm format
@@ -294,7 +297,8 @@ export interface Task {
   /** Remind when messaging (contextual) */
   when_messaging?: boolean;
   // Organization
-  list_id?: string; // FK to TaskList
+  list_id?: string | null; // FK to TaskList
+  project_id?: string | null; // Legacy/filter alias for list_id
   tag_ids: string[]; // Array of Tag IDs
   // Recurrence
   recurrence: TaskRecurrence;
@@ -304,9 +308,9 @@ export interface Task {
   recurrence_end_type?: TaskRecurrenceEndType;
   recurrence_count?: number;
   // Subtasks
-  parent_id?: string; // FK to parent Task (for subtasks)
+  parent_id?: string | null; // FK to parent Task (for subtasks)
   subtask_order?: number;
-  subtasks?: Array<{ id: string; is_completed: boolean }>;
+  subtasks?: Array<{ id: string; title?: string; is_completed: boolean }>;
   // Integrations
   calendar_event_id?: string | null;
   calendar_source_key?: string | null;

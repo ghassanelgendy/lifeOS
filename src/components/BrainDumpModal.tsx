@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
-import { Sparkles, Brain, Check, Plus, Loader2, Mic, MicOff, Calendar, Flame, CheckCircle2, Zap, Inbox, PenTool, Clock, ListTodo, Search, ArrowLeft } from 'lucide-react';
-import { Button, Modal } from './ui';
+import { Sparkles, Brain, Check, Plus, Mic, MicOff, Calendar, Flame, CheckCircle2, Zap, Inbox, PenTool, Clock, ListTodo, Search, ArrowLeft } from 'lucide-react';
+import { Button, Modal, Spinner } from './ui';
 import { askAI, extractJSON } from '../lib/ai';
 import { useNotes, useCreateNote, useUpdateNote, useNoteFolders, useCreateNoteFolder } from '../hooks/useNotes';
 import { useTasks, useCreateTask, useCreateTag, useTaskLists, useTags } from '../hooks/useTasks';
@@ -187,6 +187,7 @@ export function BrainDumpModal({ isOpen, onClose, initialText = '', onSavedNote,
         tag_ids: targetTagIds,
         source_note_id: note.id,
         is_completed: false,
+        recurrence: 'none',
       });
 
       // Update task_id in note analysis if available
@@ -648,6 +649,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
             tag_ids: targetTagIds,
             source_note_id: note.id,
             is_completed: false,
+            recurrence: 'none',
           });
           alreadyLinkedTitles.add(normTitle);
         }
@@ -748,6 +750,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
         tag_ids: targetTagIds,
         source_note_id: targetNoteToAnalyze?.id || null,
         is_completed: false,
+        recurrence: 'none',
       });
 
       setAddedTasksMap((prev) => ({ ...prev, [taskIndex]: true }));
@@ -799,6 +802,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
           tag_ids: targetTagIds,
           source_note_id: targetNoteToAnalyze?.id || null,
           is_completed: false,
+          recurrence: 'none',
         });
 
         setAddedTasksMap((prev) => ({ ...prev, [idx]: true }));
@@ -995,7 +999,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
               </Button>
 
               <Button
-                variant="primary"
+                variant="default"
                 size="sm"
                 onClick={handleQuickSave}
                 disabled={!rawText.trim()}
@@ -1088,7 +1092,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
 
                   {selectedNoteIds.size > 0 && (
                     <Button
-                      variant="primary"
+                      variant="default"
                       size="sm"
                       onClick={handleBatchAnalyzeSelected}
                       disabled={isAnalyzing}
@@ -1189,7 +1193,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
           <div className="space-y-4 animate-in fade-in duration-200">
             {isAnalyzing && (
               <div className="p-8 text-center space-y-3 bg-secondary/30 rounded-2xl border border-border">
-                <Loader2 size={28} className="animate-spin text-primary mx-auto" />
+                <Spinner size="lg" decorative className="mx-auto" />
                 <div className="text-xs font-bold text-foreground">
                   AI is analyzing and organizing your thoughts...
                 </div>
@@ -1495,7 +1499,7 @@ Return JSON: {"summary": "...", "clarity_score": 90, "insights": ["..."], "tasks
                 disabled={isSyncingAllTasks || unaddedBrainDumpTasks.length === 0}
                 className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white shrink-0"
               >
-                {isSyncingAllTasks ? <Loader2 size={13} className="animate-spin" /> : <ListTodo size={13} />}
+                {isSyncingAllTasks ? <Spinner size="xs" decorative /> : <ListTodo size={13} />}
                 <span>Sync {unaddedBrainDumpTasks.length} Remaining Task{unaddedBrainDumpTasks.length === 1 ? '' : 's'}</span>
               </Button>
             </div>

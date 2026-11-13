@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Reciter, RepeatSettings } from '../types/quran';
+import type { Reciter, RepeatSettings } from '../types/quran';
 import { getAyahAudioUrl } from '../services/quranApi';
 
 interface UseQuranAudioProps {

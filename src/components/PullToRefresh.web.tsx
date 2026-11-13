@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Spinner } from './ui/Spinner';
 
 interface PullToRefreshProps {
     children: React.ReactNode;
@@ -109,11 +109,15 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                     "bg-card border border-border rounded-full p-2 shadow-sm flex items-center justify-center transition-opacity",
                     pullDistance > 10 ? "opacity-100" : "opacity-0"
                 )}>
-                    <Loader2
-                        size={20}
-                        className={cn("text-primary", isRefreshing && "animate-spin")}
-                        style={{ transform: `rotate(${pullDistance * 2}deg)` }}
-                    />
+                    {isRefreshing ? (
+                        <Spinner size="sm" decorative />
+                    ) : (
+                        <div
+                            aria-hidden="true"
+                            className="size-5 rounded-full border-2 border-primary/20 border-t-primary"
+                            style={{ transform: `rotate(${pullDistance * 2}deg)` }}
+                        />
+                    )}
                 </div>
             </div>
 

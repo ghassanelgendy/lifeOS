@@ -7,7 +7,7 @@ import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../components/ui/cn';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
-import { Spinner } from '../components/ui';
+import { PageHeader, SectionLoader } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
@@ -202,46 +202,35 @@ export default function Sleep() {
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-primary/10 text-primary">
-              <Moon size={22} />
+      <PageHeader
+        title="Sleep"
+        subtitle="Sleep stages, patterns, and longitudinal trends"
+        actions={
+          active ? (
+            <div className="flex items-center gap-3">
+              <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
+                <span className="text-muted-foreground">Typical Window:</span>
+                <span className="font-semibold text-foreground">
+                  {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake
+                    ? `${format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – ${format(weeklyAvgWindow.avgWake, 'h:mm a')}`
+                    : 'N/A'}
+                </span>
+              </div>
+              <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
+                <span className="text-muted-foreground">30d Avg:</span>
+                <span className={cn("font-semibold text-foreground", privacyMode && "blur-sm")}>
+                  {monthly.length > 0
+                    ? formatDuration(Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length)))
+                    : '0h 0m'}
+                </span>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Sleep Dashboard</h1>
-              <p className="text-xs text-muted-foreground">Sleep stages, patterns, and longitudinal trends</p>
-            </div>
-          </div>
-        </div>
-
-        {active && (
-          <div className="flex items-center gap-3">
-            <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
-              <span className="text-muted-foreground">Typical Window:</span>
-              <span className="font-semibold text-foreground">
-                {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake
-                  ? `${format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – ${format(weeklyAvgWindow.avgWake, 'h:mm a')}`
-                  : 'N/A'}
-              </span>
-            </div>
-            <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
-              <span className="text-muted-foreground">30d Avg:</span>
-              <span className={cn("font-semibold text-foreground", privacyMode && "blur-sm")}>
-                {monthly.length > 0
-                  ? formatDuration(Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length)))
-                  : '0h 0m'}
-              </span>
-            </div>
-          </div>
-        )}
-      </div>
+          ) : undefined
+        }
+      />
 
       {isLoading ? (
-        <div className="rounded-2xl border border-border bg-card p-12 flex flex-col items-center gap-3 text-center text-muted-foreground">
-          <Spinner size="lg" decorative />
-          <span>Loading sleep metrics...</span>
-        </div>
+        <SectionLoader label="Loading sleep metrics..." />
       ) : !active ? (
         <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
           <Moon className="mx-auto mb-3 text-primary" size={32} />
@@ -297,13 +286,15 @@ export default function Sleep() {
                         paddingAngle={2}
                       />
                       <Tooltip 
-                        formatter={(v: any) => `${v ?? 0} min`} 
+                        formatter={(v: any) => formatDuration(Number(v) || 0)} 
+                        itemStyle={{ color: 'var(--color-foreground)' }}
+                        labelStyle={{ color: 'var(--color-muted-foreground)' }}
                         contentStyle={{ 
-                          backgroundColor: 'hsl(var(--card))', 
-                          border: '1px solid hsl(var(--border))', 
+                          backgroundColor: 'var(--color-card)', 
+                          border: '1px solid var(--color-border)', 
                           borderRadius: '10px',
                           fontSize: '11px',
-                          color: 'hsl(var(--foreground))'
+                          color: 'var(--color-foreground)'
                         }}
                       />
                     </PieChart>
@@ -503,38 +494,38 @@ export default function Sleep() {
                   <div className="h-56 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={bars} margin={{ top: 10, right: 0, left: -25, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" opacity={0.6} />
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.6} />
                         <XAxis
                           dataKey="day"
-                          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                          stroke="hsl(var(--border))"
+                          tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+                          stroke="var(--color-border)"
                           tickLine={false}
                           axisLine={false}
                           dy={6}
                         />
                         <YAxis
-                          tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                          stroke="hsl(var(--border))"
+                          tick={{ fontSize: 10, fill: 'var(--color-muted-foreground)' }}
+                          stroke="var(--color-border)"
                           tickLine={false}
                           axisLine={false}
                           dx={-5}
                         />
                         <Tooltip
-                          cursor={{ fill: 'hsl(var(--secondary))', opacity: 0.5, radius: 6 }}
-                          formatter={(v: any) => [`${v ?? 0} hours`, 'Sleep Duration']}
-                          itemStyle={{ color: 'hsl(var(--foreground))' }}
-                          labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                          cursor={{ fill: 'var(--color-secondary)', opacity: 0.5, radius: 6 }}
+                          formatter={(v: any) => [formatDuration(Math.round((Number(v) || 0) * 60)), 'Sleep Duration']}
+                          itemStyle={{ color: 'var(--color-foreground)' }}
+                          labelStyle={{ color: 'var(--color-muted-foreground)' }}
                           contentStyle={{
-                            backgroundColor: 'hsl(var(--card))',
-                            border: '1px solid hsl(var(--border))',
+                            backgroundColor: 'var(--color-card)',
+                            border: '1px solid var(--color-border)',
                             borderRadius: '12px',
-                            color: 'hsl(var(--foreground))',
+                            color: 'var(--color-foreground)',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                           }}
                         />
                         <ReferenceLine
                           y={thirtyDayAvg}
-                          stroke="hsl(var(--primary))"
+                          stroke="var(--color-primary)"
                           strokeDasharray="4 4"
                           opacity={0.8}
                         />

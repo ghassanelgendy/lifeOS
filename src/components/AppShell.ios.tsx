@@ -1,6 +1,6 @@
 import { Menu, X, Sparkles, Plus, Brain, Wallet, Calendar, Flame } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
-import { cn } from '../lib/utils';
+import { cn, getDisplayName } from '../lib/utils';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CommandPalette } from './CommandPalette';
@@ -530,7 +530,7 @@ export function AppShell() {
                 <UserBlobatar identifier={user?.email || user?.id} size={24} />
                 <div className="flex flex-col min-w-0 leading-tight">
                   <span className="min-w-0 truncate font-medium text-foreground">
-                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                    {getDisplayName(user, 'Settings')}
                   </span>
                   <span className="text-[10px] text-muted-foreground">Settings & Profile</span>
                 </div>
@@ -625,7 +625,7 @@ export function AppShell() {
               {!isSidebarCollapsed && (
                 <div className="flex flex-col min-w-0 leading-tight">
                   <span className="font-medium text-xs text-foreground truncate">
-                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                    {getDisplayName(user, 'Settings')}
                   </span>
                   <span className="text-[10px] text-muted-foreground truncate">
                     Preferences

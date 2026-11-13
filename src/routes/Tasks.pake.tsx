@@ -74,6 +74,7 @@ interface SmartListConfig {
   icon: React.ElementType;
   viewType: ViewType;
   getCount: (...args: any[]) => number; // Flexible argument types
+  color?: string;
   colorClass: string;
 }
 
@@ -750,7 +751,7 @@ export default function Tasks() {
   const completedDisplayTasks = searchedTasks.filter((t) => t.is_completed && !isWontDoTask(t));
   const wontDoDisplayTasks = searchedTasks.filter((t) => t.is_completed && isWontDoTask(t));
 
-  const stripWontDoMarker = (text?: string) => {
+  const stripWontDoMarker = (text?: string | null) => {
     if (!text) return undefined;
     const cleaned = text.replace(WONT_DO_MARKER, '').replace(/\n{3,}/g, '\n\n').trim();
     return cleaned || undefined;
@@ -1505,7 +1506,7 @@ export default function Tasks() {
     if (!task?.due_date) return { text: '', className: '' };
 
     try {
-      const rawDate = typeof task.due_date === 'string' ? task.due_date : (task.due_date instanceof Date ? (task.due_date as Date).toISOString() : '');
+      const rawDate = typeof task.due_date === 'string' ? task.due_date : ((task.due_date as unknown) instanceof Date ? (task.due_date as unknown as Date).toISOString() : '');
       const dueDate = new Date(rawDate.split('T')[0]);
       if (Number.isNaN(dueDate.getTime())) return { text: '', className: '' };
       const today = new Date();
@@ -1779,7 +1780,7 @@ export default function Tasks() {
       {/* Main Content - swipe from left edge to open sidebar on mobile */}
       <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-border">
+        <header className="flex items-center justify-between px-3 sm:px-6 pt-4 pb-2">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowListsSidebar(!showListsSidebar)}
@@ -1787,7 +1788,7 @@ export default function Tasks() {
             >
               <ListTodo size={20} />
             </button>
-            <h1 className="text-2xl font-bold">{getViewTitle()}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{getViewTitle()}</h1>
             {activeView === 'today' && overdueTasks.length > 0 && (
               <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-500 text-xs font-medium">
                 {overdueTasks.length} overdue

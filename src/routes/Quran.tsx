@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { QuranMemorizerMain, type SheikhHalqahNote } from '../../lib/quran-memorizer';
 import { downloadAndCacheFullQuran } from '../../lib/quran-memorizer/src/services/quranApi';
 import { supabase } from '../lib/supabase';
@@ -49,7 +49,7 @@ export function QuranRoute() {
   const handleToggleTask = (taskId: string) => {
     const task = tasks.find((t) => t.id === taskId);
     if (task) {
-      toggleTaskMutation.mutate({ id: taskId, is_completed: !task.is_completed });
+      toggleTaskMutation.mutate(taskId);
     }
   };
 
@@ -75,6 +75,8 @@ export function QuranRoute() {
       due_date: dueDate,
       priority: 'high',
       is_completed: false,
+      tag_ids: [],
+      recurrence: 'none',
     });
   };
 
@@ -121,7 +123,7 @@ ${note.mistakesNote}
     });
   };
 
-  const handleBookmarkAyah = async (surahName: string, surahNumber: number, ayahNumber: number, ayahText: string) => {
+  const handleBookmarkAyah = async (surahName: string, _surahNumber: number, ayahNumber: number, ayahText: string) => {
     let quranFolder = noteFolders.find(
       (f) => f.name.includes('قرآن') || f.name.toLowerCase().includes('quran') || f.name.includes('علامات')
     );

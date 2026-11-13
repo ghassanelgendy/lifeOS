@@ -1,4 +1,4 @@
-import { SurahMeta, Reciter, MutashabihItem, ReadingWirdPlan, KhatmahPlan } from '../types/quran';
+import type { SurahMeta, Reciter, MutashabihItem, ReadingWirdPlan, KhatmahPlan } from '../types/quran';
 
 export const RECITERS: Reciter[] = [
   { id: 'alafasy', name: 'Mishary Rashid Alafasy', subfolder: 'Alafasy_128kbps' },
@@ -520,12 +520,11 @@ export function formatSurahAndAyahSpan(pageNum: number): { surah: SurahMeta; lab
 export function getQuranWirdAndReviewSummary(
   habitTitle: string = '',
   targetDateStr?: string,
-  isCompletedForDate?: boolean
+  _isCompletedForDate?: boolean
 ): QuranWirdSummary | null {
   const kind = classifyQuranHabitTitle(habitTitle);
   if (!kind) return null; // STRICT: Returns null for non-Quran habits (Fajr, Dhuhr, Shower, etc.)
 
-  const isMem = kind === 'memorization';
   const isRead = kind === 'reading';
   const wird = getCurrentWirdInfo();
 

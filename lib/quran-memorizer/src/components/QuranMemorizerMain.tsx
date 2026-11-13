@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BookOpen, Calendar, Layers, Award, Sparkles, Target, X, Clock, Trophy } from 'lucide-react';
-import { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps, KhatmahPlan, ReadingWirdPlan } from '../types/quran';
+import { BookOpen, Calendar, Layers, Award, Sparkles, Target, Clock, Trophy } from 'lucide-react';
+import type { Reciter, RepeatSettings, HifdhRecord, LifeOSIntegrationProps, KhatmahPlan, ReadingWirdPlan } from '../types/quran';
 import { RECITERS, SURAHS, getKhatmaStats, type QuranKhatmaStats } from '../services/quranData';
 import { useQuranAudio } from '../hooks/useQuranAudio';
 import { useQuranMemorizer } from '../hooks/useQuranMemorizer';
@@ -228,28 +228,12 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
 
   const memorizerStore = useQuranMemorizer();
 
-  const currentSurah = SURAHS.find((s) => s.id === selectedSurah) || SURAHS[0];
-
   // Update endAyah when surah changes
   const handleSurahChange = (surahNum: number) => {
     setSelectedSurah(surahNum);
     setStartAyah(1);
     const meta = SURAHS.find((s) => s.id === surahNum);
     setEndAyah(meta ? meta.versesCount : 7);
-  };
-
-  // Quick Preset: Play entire Surah with pause & no repetition
-  const handlePlayFullSurah = (delaySec = 2) => {
-    const meta = SURAHS.find((s) => s.id === selectedSurah) || SURAHS[0];
-    setStartAyah(1);
-    setEndAyah(meta.versesCount);
-    setRepeatSettings((prev) => ({
-      ...prev,
-      verseRepeats: 1,
-      rangeRepeats: 1,
-      delaySeconds: delaySec,
-      autoAdvance: true,
-    }));
   };
 
   // Audio Hook

@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Joyride, STATUS, ACTIONS, EVENTS, type Step, type EventHandler, type EventData, type TooltipRenderProps } from 'react-joyride';
 import { useUIStore } from '../stores/useUIStore';
 import { useEffectiveTheme } from '../lib/theme';
 import { useAuth } from '../hooks/useAuth';
 import { UserBlobatar } from './ui/UserBlobatar';
 import { X, ArrowRight, ArrowLeft, Check } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { cn, getDisplayName } from '../lib/utils';
 
 interface AppJoyrideTourProps {
   run?: boolean;
@@ -161,7 +161,7 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
                 Your lifeOS Assistant
               </p>
               <p className="text-xs text-muted-foreground leading-snug">
-                Your unique deterministic profile avatar, created for {user?.email ? user.email.split('@')[0] : 'you'}.
+                Your unique deterministic profile avatar, created for {getDisplayName(user, 'you')}.
               </p>
             </div>
           </div>
@@ -365,7 +365,7 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       targetWaitTimeout: 0,
       skipScroll: true,
     },
-  ], [userIdentifier, user?.email]);
+  ], [userIdentifier, user]);
 
   const shouldRun = run !== undefined ? run : !hasCompletedTour;
 
@@ -392,23 +392,23 @@ export function AppJoyrideTour({ run }: AppJoyrideTourProps) {
       steps={steps}
       run={shouldRun}
       continuous
-      showProgress
-      showSkipButton
       scrollToFirstStep={false}
-      callback={handleJoyrideCallback}
+      onEvent={handleJoyrideCallback}
       tooltipComponent={CustomJoyrideTooltip}
       floatingOptions={{
-        shift: { padding: 16 },
+        shiftOptions: { padding: 16 },
+      }}
+      options={{
+        showProgress: true,
+        buttons: ['back', 'close', 'primary', 'skip'],
+        arrowColor: 'transparent',
+        backgroundColor: 'transparent',
+        overlayColor: isDarkMode ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.4)',
+        primaryColor: isDarkMode ? '#2563eb' : '#3b82f6',
+        textColor: isDarkMode ? '#f4f4f5' : '#09090b',
+        zIndex: 10000,
       }}
       styles={{
-        options: {
-          arrowColor: 'transparent',
-          backgroundColor: 'transparent',
-          overlayColor: isDarkMode ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.4)',
-          primaryColor: isDarkMode ? '#2563eb' : '#3b82f6',
-          textColor: isDarkMode ? '#f4f4f5' : '#09090b',
-          zIndex: 10000,
-        },
         tooltip: {
           padding: 0,
           backgroundColor: 'transparent',

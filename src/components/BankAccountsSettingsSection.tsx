@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Landmark, Plus, Pencil, Trash2, Check, X } from 'lucide-react';
-import { Button, Input, ConfirmSheet } from './ui';
+import { Button, Input, ConfirmSheet, Spinner } from './ui';
 import {
   useUserBanks,
   useEnsureDefaultBanks,
@@ -80,7 +80,10 @@ export function BankAccountsSettingsSection() {
         </div>
 
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+            <Spinner size="xs" decorative />
+            <span>Loading accounts…</span>
+          </div>
         ) : banks.length === 0 ? (
           <p className="text-sm text-muted-foreground">No accounts yet. Add one above.</p>
         ) : (

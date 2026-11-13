@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, BookOpen, GitGraph, Search, X, Menu, Sun, Moon, ChevronRight, Users } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { WIKI_PAGES, getWikiPage, searchWikiPages, normalizeTitle } from '../lib/wikiData';
+import { WIKI_PAGES, getWikiPage, searchWikiPages, normalizeTitle, type WikiDocPage } from '../lib/wikiData';
 import WikiMarkdown from '../components/wiki/WikiMarkdown';
 import WikiGraphView from '../components/wiki/WikiGraphView';
 import { ShareModal } from '../components/collaboration/ShareModal';
@@ -87,7 +87,7 @@ export default function Wiki() {
 
   /* Sidebar grouped by category */
   const groupedPages = useMemo(() => {
-    const groups: Record<string, typeof WIKI_PAGES> = {};
+    const groups: Record<string, WikiDocPage[]> = {};
     for (const p of WIKI_PAGES) {
       const cat = p.category;
       (groups[cat] ??= []).push(p);
@@ -209,7 +209,7 @@ export default function Wiki() {
       </header>
 
       {/* Main Documentation Container */}
-      <div className="flex-1 flex w-full max-w-7xl mx-auto px-4 md:px-6 gap-8 min-h-0 relative">
+      <div className="flex-1 flex w-full max-w-7xl mx-auto px-3 sm:px-6 gap-8 min-h-0 relative">
         
         {/* Left Sidebar (Desktop Navigation) */}
         <aside className="hidden md:block w-64 shrink-0 py-8 sticky top-16 max-h-[calc(100vh-4rem)] overflow-y-auto pr-2 border-r border-border/30 scrollbar-thin">
@@ -298,9 +298,9 @@ export default function Wiki() {
         <main className="flex-1 min-w-0 py-8">
           {isGraphView ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between pb-4 border-b border-border">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-extrabold tracking-tight">Knowledge Graph</h1>
+                  <h1 className="text-3xl font-bold tracking-tight">Knowledge Graph</h1>
                   <p className="text-muted-foreground text-sm mt-1">Interactive network mapping document links and references</p>
                 </div>
                 <button
@@ -333,7 +333,7 @@ export default function Wiki() {
                     <span>Share Note</span>
                   </button>
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+                <h1 className="text-3xl font-bold tracking-tight">
                   {currentPage.title}
                 </h1>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground pt-1">

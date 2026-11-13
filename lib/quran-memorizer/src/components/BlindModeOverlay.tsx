@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff, CheckCircle2, AlertTriangle, RefreshCw, Award } from 'lucide-react';
-import { RatingGrade } from '../types/quran';
+import type { RatingGrade } from '../types/quran';
 
 interface BlindModeOverlayProps {
   isBlindMode: boolean;

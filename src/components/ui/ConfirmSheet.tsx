@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -15,6 +15,7 @@ interface ConfirmSheetProps {
   onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
+  children?: ReactNode;
 }
 
 export function ConfirmSheet({
@@ -27,6 +28,7 @@ export function ConfirmSheet({
   onConfirm,
   onCancel,
   isLoading = false,
+  children,
 }: ConfirmSheetProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const pointerDownOnBackdropRef = useRef(false);
@@ -199,6 +201,7 @@ export function ConfirmSheet({
 
         <div className="p-4 space-y-4">
           <p className={cn(isIOS ? "text-[15px] text-center" : "text-sm", "text-muted-foreground")}>{message}</p>
+          {children}
           {isIOS ? (
             <div className="space-y-2">
               <button

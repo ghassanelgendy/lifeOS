@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Marked } from 'marked';
 import { Capacitor } from '@capacitor/core';
-import { Sparkles, Send, Brain, Check, Loader2, Calendar, CheckSquare, Wallet, Activity, FileText, Moon, Settings, AlertCircle, Trash2, Plus, PanelLeft, Copy, RotateCw, X, MessageSquare, Mic } from 'lucide-react';
-import { Button } from '../components/ui';
+import { Sparkles, Send, Brain, Check, Calendar, CheckSquare, Wallet, Activity, FileText, Moon, Settings, AlertCircle, Trash2, Plus, PanelLeft, Copy, RotateCw, X, MessageSquare, Mic } from 'lucide-react';
+import { Button, Spinner } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
@@ -61,7 +61,7 @@ interface ChatProps {
   onCloseModal?: () => void;
 }
 
-export default function Chat({ isModal: _isModal = false, initialPrompt = '', onCloseModal: _onCloseModal }: ChatProps = {}) {
+export default function Chat({ isModal: _isModal = false, initialPrompt = '', onCloseModal }: ChatProps = {}) {
   const { aiEnabled, aiApiKey, aiDahlApiKey, aiBynaraApiKey, aiModel, aiActiveModel, aiFallbackEnabled } = useUIStore();
   const hasAiKey = Boolean(
     aiApiKey?.trim() ||
@@ -732,7 +732,7 @@ ${knowledgeContext}`;
             The AI Chat Assistant is powered by your local data, but is currently disabled. Enable AI Integration and set your API Key in Settings to unlock chat insights.
           </p>
           <div className="pt-2">
-            <Link to="/settings">
+            <Link to="/settings" onClick={() => onCloseModal?.()}>
               <Button className="w-full gap-2 min-h-[44px]">
                 <Settings size={16} />
                 Configure AI in Settings
@@ -929,7 +929,7 @@ ${knowledgeContext}`;
                               onClick={() => handleExecuteAction(msg.id, idx)}
                               className={cn('h-8 px-3 text-xs font-semibold gap-1 shrink-0 min-h-[36px]', isExecuted && 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5')}
                             >
-                              {isExecuting ? <Loader2 size={12} className="animate-spin" /> : isExecuted ? <Check size={12} /> : <Plus size={12} />}
+                              {isExecuting ? <Spinner size="xs" decorative /> : isExecuted ? <Check size={12} /> : <Plus size={12} />}
                               {isExecuting ? 'Adding...' : isExecuted ? 'Added' : 'Execute'}
                             </Button>
                           </div>

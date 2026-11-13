@@ -158,9 +158,9 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
   const today = format(new Date(), 'yyyy-MM-dd');
   const isTodayOnly = startDate === endDate && startDate === today;
 
-  return useQuery({
+  return useQuery<ScreentimeAppStat[]>({
     queryKey: [...QUERY_KEY, 'apps', startDate, endDate, user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<ScreentimeAppStat[]> => {
       if (!user?.id) return [];
       try {
         const stats = await fetchAllAppStats(user.id, startDate, endDate);
@@ -168,7 +168,7 @@ export function useScreentimeAppStats(startDate: string, endDate: string) {
         return stats;
       } catch {
         const local = await idbGetScreentimeAppStats();
-        return local.filter((s: ScreentimeAppStat) => s.date >= startDate && s.date <= endDate);
+        return (local as ScreentimeAppStat[]).filter((s) => s.date >= startDate && s.date <= endDate);
       }
     },
     enabled: !!user?.id,
@@ -184,9 +184,9 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
   const today = format(new Date(), 'yyyy-MM-dd');
   const isTodayOnly = startDate === endDate && startDate === today;
 
-  return useQuery({
+  return useQuery<ScreentimeWebsiteStat[]>({
     queryKey: [...QUERY_KEY, 'websites', startDate, endDate, user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<ScreentimeWebsiteStat[]> => {
       if (!user?.id) return [];
       try {
         const stats = await fetchAllWebsiteStats(user.id, startDate, endDate);
@@ -194,7 +194,7 @@ export function useScreentimeWebsiteStats(startDate: string, endDate: string) {
         return stats;
       } catch {
         const local = await idbGetScreentimeWebsiteStats();
-        return local.filter((w: ScreentimeWebsiteStat) => w.date >= startDate && w.date <= endDate);
+        return (local as ScreentimeWebsiteStat[]).filter((w) => w.date >= startDate && w.date <= endDate);
       }
     },
     enabled: !!user?.id,
@@ -210,9 +210,9 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
   const today = format(new Date(), 'yyyy-MM-dd');
   const isTodayOnly = startDate === endDate && startDate === today;
 
-  return useQuery({
+  return useQuery<ScreentimeDailySummary[]>({
     queryKey: [...QUERY_KEY, 'summaries', startDate, endDate, user?.id],
-    queryFn: async () => {
+    queryFn: async (): Promise<ScreentimeDailySummary[]> => {
       if (!user?.id) return [];
       try {
         const sum = await fetchAllDailySummaries(user.id, startDate, endDate);
@@ -220,7 +220,7 @@ export function useScreentimeDailySummaries(startDate: string, endDate: string) 
         return sum;
       } catch {
         const local = await idbGetScreentimeDailySummaries();
-        return local.filter((s: ScreentimeDailySummary) => s.date >= startDate && s.date <= endDate);
+        return (local as ScreentimeDailySummary[]).filter((s) => s.date >= startDate && s.date <= endDate);
       }
     },
     enabled: !!user?.id,

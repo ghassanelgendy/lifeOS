@@ -801,3 +801,19 @@ div[data-joyride="overlay"] {
   opacity: 0 !important;
   pointer-events: none !important;
 }
+
+/* Fields: one focus treatment, shaped like the control it belongs to.
+   A bordered field without its own ring gets an outline that follows its radius.
+   A borderless field sits inside a rounded wrapper, so the wrapper takes the ring
+   instead of the field drawing a square one inside it. */
+:is(input:not([type='checkbox'], [type='radio'], [type='range']), textarea, select):not([class*='ring']):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 0;
+}
+:is(input, textarea, select):is(.border-none, .border-0, .bg-transparent):focus-visible {
+  outline: none;
+}
+:has(> :is(input, textarea, select):is(.border-none, .border-0, .bg-transparent):focus-visible) {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}

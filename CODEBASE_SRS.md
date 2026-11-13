@@ -164,6 +164,9 @@ The landing, sign-in and sign-up pages shall be available in English and Arabic.
 #### FR-AUTH-UI-002: Sign-up Page
 The sign-up page shall request an email and a single password with a show/hide control, show the minimum-length rule as it is met, validate on submit with the reason shown next to the form, and on success present the registered address and the confirmation steps with a link to sign in.
 
+#### FR-AUTH-UI-003: Signed-in Display Name
+Wherever the app greets or labels the signed-in user, it shall use the provider-supplied profile name (`full_name`, `name` or `display_name` in the user metadata) and fall back to the email local part only when none exists (`getDisplayName` in `src/lib/utils.ts`).
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 
@@ -1347,13 +1350,16 @@ All input fields on mobile shall use font-size >= 16px to prevent iOS zoom-on-fo
 The application shall maintain consistent theming across all pages with no FOUC (inline theme script in HTML head). Tailwind CSS v4's `@custom-variant dark (&:where(.dark, .dark *));` shall bind dark styling directly to the document root `<html class="dark">` class rather than OS media queries, ensuring that user theme selections (Light, Dark, System) apply consistently across all modal sheets, sub-views, and standalone widgets (`HabitStatsModal`, `WeeklyPlanner`, `KhatmahPlannerView`, `AudioPlayerBar`, `QuranReaderView`).
 
 #### NFR-USE-006: Loading States
-All async data fetching shall display appropriate loading skeletons or spinners.
+All async data fetching and route loading states shall display unified loading indicators via `Spinner` and `SectionLoader` (`src/components/ui/Spinner.tsx`), including `LoadingScreen` and section/widget loading gates.
 
 #### NFR-USE-007: Native Feel (iOS)
 iOS builds shall feel native with liquid glass effects, haptic feedback, keyboard-aware layout, and safe area handling.
 
 #### NFR-USE-008: Feedback on Actions
 All user actions (task completion, habit log, transaction save) shall provide immediate visual and haptic feedback.
+
+#### NFR-USE-009: Unified Section Geometry, Module Titles & Transitions
+Primary application routes shall share consistent container framing (`w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12`), unified plain headers via `PageHeader` (`src/components/ui/PageHeader.tsx`, matching Finance's `text-3xl font-bold tracking-tight` title without icon boxes, divider bars, or nav-card wrappers), equal-height dashboard summary rows (`h-full` + `items-stretch`), rounded `Xh Ym` progress/chart tooltips, `--color-*` chart token legibility across themes, balanced Analytics Overview KPI grids (`Net Cash Flow` pairing with `Total Income`), and uniform section transitions (`.section-slide-in` at `200ms cubic-bezier(0.22, 1, 0.36, 1)` with subtle vertical entrance and `prefers-reduced-motion` support).
 
 ### 4.6 Maintainability
 
@@ -1395,7 +1401,7 @@ SQLite (browser) and PostgreSQL (server) shall share compatible schema definitio
 All components shall use semantic HTML elements (`<button>`, `<nav>`, `<main>`, `<article>`) with appropriate ARIA roles.
 
 #### NFR-ACC-002: Focus Management
-Modals and sheets shall trap focus, maintain focus order, and return focus on close.
+Modals and sheets shall trap focus, maintain focus order, return focus on close, and verify that backdrop dismissal only triggers when both pointer press and release originate on the backdrop (`Modal`, `DetailsSheet`, `ConfirmSheet`, `TasbihCounterModal`). Global `:focus-visible` styles in `App.css` use radius-following `box-shadow` rings rather than square `outline` strokes so rounded controls and inputs (such as Task title inputs) preserve rounded focus rings.
 
 #### NFR-ACC-003: Color Contrast
 All text shall meet WCAG AA contrast ratios (4.5:1 for normal text, 3:1 for large text) in both light and dark themes.

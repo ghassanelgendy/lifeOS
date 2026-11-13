@@ -1076,7 +1076,7 @@ import { SectionLoader } from '../components/ui';
                       boxShadow: 'none'
                     }}
                     cursor={false}
-                    formatter={(value, name) => [`${typeof value === 'number' ? value.toFixed(1) : 0}h`, platformLabel(String(name ?? ''))]}
+                    formatter={(value, name) => [formatDurationMinutes(Math.round((typeof value === 'number' ? value : 0) * 60)), platformLabel(String(name ?? ''))]}
                     itemStyle={{ color: 'var(--color-foreground)' }}
                     labelStyle={{ color: 'var(--color-muted-foreground)' }}
                   />

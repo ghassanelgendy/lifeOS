@@ -350,8 +350,12 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
       </Section>
 
       {/* ── Section 1: Overview Metrics ─────────────────────────── */}
+      {(() => {
+        const hasPointsCard = new Date(data.periodStart) >= new Date('2026-07-01');
+        const netCashFlow = data.totalIncome - data.totalExpense;
+        return (
       <Section delay={100}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className={cn('grid grid-cols-2 gap-3', hasPointsCard ? 'lg:grid-cols-4' : 'sm:grid-cols-3')}>
           {/* Sleep */}
           <ExpandableCard expandedContent={
             <div className="h-32">
@@ -469,7 +473,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
           </ExpandableCard>
 
           {/* Points */}
-          {new Date(data.periodStart) >= new Date('2026-07-01') && (
+          {hasPointsCard && (
             <ExpandableCard onClick={() => {}}>
               <div className="flex items-center gap-2 mb-2">
                 <Coins size={14} className="text-amber-400" />
@@ -507,8 +511,28 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
             </div>
             <div className="text-xs text-muted-foreground mt-1.5">Received this period</div>
           </ExpandableCard>
+
+          {/* Net Cash Flow (pairs grid cleanly when Points Delta is shown: 8 cards = 4x2 desktop / 2x4 mobile) */}
+          {hasPointsCard && (
+            <ExpandableCard onClick={() => data.days.length > 0 && onOpenDayDetails?.(data.days[data.days.length - 1].date)}>
+              <div className="flex items-center gap-2 mb-2">
+                <Wallet size={14} className={netCashFlow >= 0 ? 'text-emerald-400' : 'text-rose-400'} />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Net Cash Flow</span>
+              </div>
+              <div className={cn('text-xl font-bold tabular-nums', netCashFlow >= 0 ? 'text-emerald-400' : 'text-rose-400', privacyMode && 'blur-sm')}>
+                <AnimatedCounter
+                  value={Math.abs(netCashFlow)}
+                  formatter={formatCurrency}
+                  prefix={netCashFlow >= 0 ? '+' : '-'}
+                />
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5">Income minus spending</div>
+            </ExpandableCard>
+          )}
         </div>
       </Section>
+        );
+      })()}
 
       {/* ── Section 2: Best & Worst Day ─────────────────────────── */}
       {(data.bestDay || data.worstDay) && (

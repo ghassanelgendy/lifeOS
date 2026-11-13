@@ -3,7 +3,7 @@ import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
 import { ChevronLeft, FileText, Folder, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Pencil, FolderPlus, Calendar, ListTodo } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Button, ConfirmSheet, Input } from '../components/ui';
+import { Button, ConfirmSheet, Input, SectionLoader } from '../components/ui';
 import { cn } from '../lib/utils';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
@@ -320,11 +320,10 @@ export default function NotesIOS() {
             <div className="space-y-3 pt-4">
               <div className="flex items-center justify-between px-0">
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-                    <FileText className="text-primary" size={22} />
+                  <h1 className="text-3xl font-bold tracking-tight text-foreground">
                     Notes
                   </h1>
-                  <p className="text-xs text-muted-foreground">Knowledge base & thoughts</p>
+                  <p className="text-muted-foreground mt-0.5">Knowledge base & thoughts</p>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -444,7 +443,7 @@ export default function NotesIOS() {
               {activeFolderFilter === BRAIN_DUMP_NOTES ? (
                 <BrainDumpGraphView onSelectNote={openNoteDetail} />
               ) : isLoading ? (
-                <div className="p-8 text-center text-xs text-muted-foreground">Loading notes...</div>
+                <SectionLoader label="Loading notes..." className="min-h-[160px]" />
               ) : filteredNotes.length === 0 ? (
                 <div className="p-8 text-center space-y-3 rounded-xl border border-border bg-card">
                   <FileText size={32} className="mx-auto text-muted-foreground/40" />

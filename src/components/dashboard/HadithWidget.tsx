@@ -57,7 +57,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
     <div className={cn(cardStyle, 'group flex h-full flex-col justify-between', className)}>
       {/* Header bar */}
       <div className="mb-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-label font-semibold text-ink-2">
             {isDaily ? 'حديث اليوم' : 'حديث شريف'}
           </span>
@@ -75,7 +75,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
               type="button"
               onClick={() => {
                 setShowTranslation((prev) => !prev);
-                void triggerHaptics('selection');
+                void triggerHaptics('light');
               }}
               aria-pressed={showTranslation}
               aria-label={showTranslation ? 'عرض النص العربي' : 'Show English translation'}
@@ -160,7 +160,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
 
           {/* Footer Source */}
           <div className="flex items-center justify-between pt-1" dir="rtl">
-            <span className="inline-flex items-center gap-1.5 text-caption font-medium text-ink-3">
+            <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-3">
               <BookOpen className="size-3.5" />
               {currentHadith.source}
             </span>
@@ -169,7 +169,7 @@ export function HadithWidget({ className, isIOS = false, compact = false }: Hadi
               <button
                 type="button"
                 onClick={() => setCurrentHadith(dailyHadith)}
-                className="ds-t text-caption font-medium text-accent-ds hover:underline"
+                className="ds-t text-[13px] font-medium text-accent-ds hover:underline"
               >
                 العودة لحديث اليوم
               </button>

@@ -364,6 +364,8 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/ui/Input.tsx](#src-components-ui-input-tsx)
 - [src/components/ui/MarqueeTitle.tsx](#src-components-ui-marqueetitle-tsx)
 - [src/components/ui/Modal.tsx](#src-components-ui-modal-tsx)
+- [src/components/ui/PageHeader.tsx](#src-components-ui-pageheader-tsx)
+- [src/components/ui/Spinner.tsx](#src-components-ui-spinner-tsx)
 - [src/components/ui/index.ts](#src-components-ui-index-ts)
 
 ### src/components/wiki
@@ -3917,6 +3919,31 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 ---
 
+<a name="src-components-ui-pageheader-tsx"></a>
+### src/components/ui/PageHeader.tsx
+
+**File Purpose:** UI primitive component providing the canonical Finance-style module page header (`text-3xl font-bold tracking-tight` title, optional `text-muted-foreground` subtitle, and optional right-hand actions slot) used across application sections.
+
+**Functions & Classes:**
+- `PageHeader` (Function)
+
+**Lines:** 20
+
+---
+
+<a name="src-components-ui-spinner-tsx"></a>
+### src/components/ui/Spinner.tsx
+
+**File Purpose:** UI primitive component providing the unified `Spinner` (`xs | sm | md | lg | xl`) and `SectionLoader` loading indicators used across sections, widgets, pull-to-refresh, and `LoadingScreen`.
+
+**Functions & Classes:**
+- `Spinner` (Function)
+- `SectionLoader` (Function)
+
+**Lines:** 71
+
+---
+
 <a name="src-components-ui-index-ts"></a>
 ### src/components/ui/index.ts
 
@@ -3924,7 +3951,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 
 **Functions & Classes:** None (configuration or re-export module)
 
-**Lines:** 6
+**Lines:** 7
 
 ---
 
@@ -6026,6 +6053,7 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - `cn` (Function)
 - `round1` (Function)
 - `formatCurrency` (Function)
+- `getDisplayName` (Function): provider profile name, else the email local part
 - `formatTime12h` (Function)
 - `formatDuration` (Function)
 - `formatDayMonth` (Function)

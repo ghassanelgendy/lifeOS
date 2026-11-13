@@ -28,9 +28,10 @@ import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
 function formatDurationMinutes(minutes: number) {
-  if (minutes <= 0) return '0m';
-  const h = Math.floor(minutes / 60);
-  const min = minutes % 60;
+  const total = Math.round(Math.max(0, minutes));
+  if (total <= 0) return '0m';
+  const h = Math.floor(total / 60);
+  const min = total % 60;
   if (h <= 0) return `${min}m`;
   if (min === 0) return `${h}h`;
   return `${h}h ${min}m`;
@@ -503,6 +504,7 @@ function DueTodayRow({
 export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: any) => void }) {
   const [_parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
 
   const togglingEventsRef = useRef<Record<string, boolean>>({});
 
@@ -866,8 +868,11 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           }
         } else if (isPrayer) {
           const prayerName = entry.id.replace('prayer-', '');
-          void triggerHaptics(entry.done ? 'light' : 'success');
-          togglePrayerStatus(prayerName);
+          const trackerItem = prayerTracker.find((item) => item.prayerName.toLowerCase() === prayerName.toLowerCase());
+          if (trackerItem) {
+            void triggerHaptics(entry.done ? 'light' : 'success');
+            togglePrayerStatus(trackerItem, entry.done ? 'Skipped' : 'Prayed');
+          }
         }
         break;
       case 'postpone':
@@ -970,7 +975,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               void triggerHaptics('light');
             }, 500);
           }
-        } else if (!action.startsWith('subtask-')) {
+        } else if (action && !action.startsWith('subtask-')) {
           if (submenuTimeoutRef.current) {
             window.clearTimeout(submenuTimeoutRef.current);
             submenuTimeoutRef.current = null;
@@ -2030,19 +2035,56 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             <div
               className="relative mt-5 h-4 w-full overflow-visible rounded-full bg-muted-foreground/10"
               aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
+              onMouseLeave={() => setHoveredSegment(null)}
             >
-              <div className="flex h-full w-full overflow-hidden rounded-full">
-                <div className={cn('bg-indigo-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
-                <div className={cn('bg-sky-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC (Apps): ${formatDurationMinutes(screenChart.pc)}`} />
-                <div className={cn('bg-violet-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone (Apps): ${formatDurationMinutes(screenChart.phone)}`} />
-                <div className={cn('bg-emerald-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.webPct }} title={`Web Browsing: ${formatDurationMinutes(screenChart.web)}`} />
-                {screenChart.other > 0 && (
-                  <div className={cn('bg-amber-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
-                )}
-                {screenChart.overlap > 0 && (
-                  <div className={cn('bg-red-500 transition-all duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
-                )}
-              </div>
+              {(() => {
+                const segs = [
+                  { id: 'seg-sleep', label: 'Sleep', mins: screenChart.sleep, cls: 'bg-indigo-500' },
+                  { id: 'seg-pc', label: 'PC (Apps)', mins: screenChart.pc, cls: 'bg-sky-500' },
+                  { id: 'seg-phone', label: 'Phone (Apps)', mins: screenChart.phone, cls: 'bg-violet-500' },
+                  { id: 'seg-web', label: 'Web Browsing', mins: screenChart.web, cls: 'bg-emerald-500' },
+                  ...(screenChart.other > 0 ? [{ id: 'seg-other', label: 'Other', mins: screenChart.other, cls: 'bg-amber-500' }] : []),
+                  ...(screenChart.overlap > 0 ? [{ id: 'seg-overlap', label: 'Simultaneous PC & Phone', mins: screenChart.overlap, cls: 'bg-red-500' }] : []),
+                ];
+                let cursor = 0;
+                const positioned = segs.map((seg) => {
+                  const wPct = Math.max(0, Math.min(100, (seg.mins / (24 * 60)) * 100));
+                  const center = Math.min(92, Math.max(8, cursor + wPct / 2));
+                  cursor += wPct;
+                  return { ...seg, width: `${wPct}%`, center: `${center}%`, text: formatDurationMinutes(seg.mins) };
+                });
+                const activeSeg = positioned.find((s) => s.id === hoveredSegment || s.id === activeTooltip);
+                return (
+                  <>
+                    {activeSeg && (
+                      <div
+                        className="pointer-events-none absolute bottom-full z-50 mb-2 -translate-x-1/2"
+                        style={{ left: activeSeg.center }}
+                      >
+                        <div className="relative flex flex-col items-center justify-center rounded-md border border-border/50 bg-popover/95 backdrop-blur-sm px-2.5 py-1 text-xs text-popover-foreground shadow-lg whitespace-nowrap ring-1 ring-black/5">
+                          <span className="font-semibold">{activeSeg.label}</span>
+                          <span className={cn('text-[11px] font-medium text-muted-foreground tabular-nums', privacyMode && 'blur-sm')}>
+                            {activeSeg.text}
+                          </span>
+                          <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-border/50 bg-popover/95" />
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex h-full w-full overflow-hidden rounded-full">
+                      {positioned.map((seg) => (
+                        <div
+                          key={seg.id}
+                          className={cn(seg.cls, 'h-full transition-all duration-300 cursor-pointer', privacyMode && 'blur-sm')}
+                          style={{ width: seg.width }}
+                          title={`${seg.label}: ${seg.text}`}
+                          onMouseEnter={() => setHoveredSegment(seg.id)}
+                          onClick={() => handleTooltipClick(seg.id)}
+                        />
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
 
               {progressMarkerClusters.map((cluster) => (
                 <div
@@ -2280,6 +2322,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
                                 title: transcript,
                                 is_completed: false,
                                 priority: 'none',
+                                tag_ids: [],
+                                recurrence: 'none',
                               });
                             });
                           }, 150);

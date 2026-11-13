@@ -10,9 +10,7 @@ import {
   Heart,
   Smile,
   Calendar as CalendarIcon,
-  Grid,
   Sparkles,
-  Loader2,
   GripVertical,
   Clock,
   CalendarCheck,
@@ -64,7 +62,7 @@ import {
   scheduleCandidatesIntoNextWeek,
   type CandidateWeeklyTask,
 } from '../lib/weeklyCoachScheduler';
-import { Button } from '../components/ui';
+import { Button, Spinner } from '../components/ui';
 import type { Task, Note, Habit, HabitLog } from '../types/schema';
 
 // Helper: Format Date to YYYY-MM-DD
@@ -334,7 +332,7 @@ export default function WeeklyPlanner() {
             id: item.id,
             data: {
               due_date: item.targetDate,
-              due_time: item.targetTime || null,
+              due_time: item.targetTime || undefined,
             },
             skipInvalidate: true,
           });
@@ -345,8 +343,11 @@ export default function WeeklyPlanner() {
             priority: item.priority as any,
             duration_minutes: item.durationMinutes,
             due_date: item.targetDate,
-            due_time: item.targetTime || null,
+            due_time: item.targetTime || undefined,
             source_note_id: item.sourceNoteId || null,
+            is_completed: false,
+            tag_ids: [],
+            recurrence: 'none',
             skipInvalidate: true,
           });
         }
@@ -443,7 +444,7 @@ export default function WeeklyPlanner() {
         .filter(l => l.completed)
         .map(l => {
           const h = habits.find(hab => hab.id === l.habit_id);
-          return h ? `${h.name} (${l.date})` : '';
+          return h ? `${h.title} (${l.date})` : '';
         })
         .filter(Boolean)
         .join(', ');
@@ -616,15 +617,10 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
   return (
     <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 space-y-6">
       {/* Top Banner Control - Desktop-only */}
-      <div className="hidden md:flex flex-row items-center justify-between bg-card/90 backdrop-blur-xl border border-border p-4 rounded-2xl gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-blue-500/10 rounded-xl text-blue-500 dark:text-blue-400 border border-blue-500/20">
-            <Grid className="w-5 h-5" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground leading-tight">Weekly Planner</h1>
-            <p className="text-xs text-muted-foreground">Sustainable daily systems over rigid annual goals</p>
-          </div>
+      <div className="hidden md:flex flex-row items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Weekly Planner</h1>
+          <p className="text-muted-foreground mt-0.5">Sustainable daily systems over rigid annual goals</p>
         </div>
 
         <div className="flex items-center gap-3">
@@ -848,7 +844,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
               >
                 {isGeneratingCoach ? (
                   <>
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <Spinner size="xs" decorative />
                     Analyzing patterns...
                   </>
                 ) : (
@@ -999,7 +995,7 @@ Provide a brief, encouraging paragraph highlighting any correlations or trends. 
                 >
                   {isApplyingSchedule ? (
                     <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <Spinner size="xs" decorative />
                       Scheduling...
                     </>
                   ) : (

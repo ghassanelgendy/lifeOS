@@ -24,7 +24,7 @@ function loadLastSyncFromStorage() {
 }
 
 export type QueuedOp =
-  | { entity: 'tasks'; op: 'create'; payload: Record<string, unknown> }
+  | { entity: 'tasks'; op: 'create'; id?: string; payload: Record<string, unknown> }
   | { entity: 'tasks'; op: 'update'; id: string; payload: Record<string, unknown> }
   | { entity: 'tasks'; op: 'delete'; id: string }
   | { entity: 'task_lists'; op: 'create'; payload: Record<string, unknown> }

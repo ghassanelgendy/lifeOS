@@ -19,7 +19,6 @@ import {
   User,
   RotateCcw,
   MapPin,
-  Loader2,
   HelpCircle,
   BookOpen,
   ChevronRight,
@@ -63,7 +62,7 @@ import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { useEffectiveTheme } from '../lib/theme';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
-import { Button, ConfirmSheet, Input } from '../components/ui';
+import { Button, ConfirmSheet, Input, Spinner } from '../components/ui';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
@@ -501,7 +500,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground mt-0.5">Manage preferences, customize appearance, and configure integrations</p>
@@ -1258,7 +1257,7 @@ export default function SettingsPage() {
               <Button type="button" onClick={handlePrayerDeviceLocation} disabled={prayerGeoLoading}>
                 {prayerGeoLoading ? (
                   <>
-                    <Loader2 className="animate-spin mr-2 inline" size={16} />
+                    <Spinner size="sm" decorative className="mr-2 inline" />
                     Getting location…
                   </>
                 ) : (
@@ -1280,7 +1279,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-2 text-xs text-muted-foreground min-h-[1rem]">
                 {prayerCityLoading ? (
                   <>
-                    <Loader2 className="animate-spin shrink-0" size={14} />
+                    <Spinner size="xs" decorative />
                     Searching…
                   </>
                 ) : null}
@@ -1320,7 +1319,10 @@ export default function SettingsPage() {
             control={
               push.supported && push.vapidConfigured && push.isEnabled ? (
                 prayerNotif.isLoading ? (
-                  <span className="text-sm text-muted-foreground">Loading...</span>
+                  <span className="inline-flex items-center gap-2 text-sm text-muted-foreground">
+                    <Spinner size="xs" decorative />
+                    <span>Loading...</span>
+                  </span>
                 ) : prayerNotif.prayerHabitsCount === 0 ? (
                   <Link to="/habits">
                     <Button variant="outline">Set up in Habits</Button>

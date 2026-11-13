@@ -14,7 +14,7 @@ import {
   X,
   Gauge,
 } from 'lucide-react';
-import { Reciter, RepeatSettings } from '../types/quran';
+import type { Reciter, RepeatSettings } from '../types/quran';
 import { RECITERS } from '../services/quranData';
 import { useUIStore } from '../../../../src/stores/useUIStore';
 
@@ -73,7 +73,7 @@ export const AudioPlayerBar: React.FC<AudioPlayerBarProps> = ({
   isDelaying,
   currentAyahIndex,
   currentVerseRepeat,
-  currentRangeLoop,
+  currentRangeLoop: _currentRangeLoop,
   playbackRate,
   repeatSettings,
   onChangeRepeatSettings,

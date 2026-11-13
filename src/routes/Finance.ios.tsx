@@ -24,7 +24,6 @@ import {
   ChevronDown,
   Check,
   Sparkles,
-  Loader2,
   Pencil,
   X,
   Settings2,
@@ -71,7 +70,7 @@ import {
 } from '../hooks/useInvestments';
 import { useAuth } from '../hooks/useAuth';
 import { useUIStore } from '../stores/useUIStore';
-import { DetailsSheet, Button, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
+import { DetailsSheet, Button, Input, Select, ConfirmSheet, SectionLoader, Spinner } from '../components/ui';
 import type { Transaction, CreateInput, TransactionCategory, InvestmentTransaction } from '../types/schema';
 
 const EXPENSE_CATEGORIES: { value: TransactionCategory; label: string }[] = [
@@ -1716,7 +1715,7 @@ Return ONLY raw JSON object.`;
                     >
                       {isParsingFinance ? (
                         <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
+                          <Spinner size="xs" decorative />
                           Parsing...
                         </>
                       ) : (

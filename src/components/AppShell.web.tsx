@@ -1,3 +1,4 @@
+import { getDisplayName } from '../lib/utils';
 import { Menu, X, Sparkles, Brain } from 'lucide-react';
 import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from './ui/cn';
@@ -414,10 +415,11 @@ export function AppShell() {
           aria-hidden
         />
         <aside
+          aria-hidden={!isMobileSidebarOpen}
           className={cn(
             "md:hidden fixed z-[280] w-[min(20rem,85vw)] min-w-[16rem] flex flex-col transition-transform duration-250 ease-out will-change-transform transform-gpu rounded-[24px]",
-            "bg-[#F9F9F9]/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-2xl",
-            isMobileSidebarOpen ? "translate-x-0" : "-translate-x-[calc(100%+24px)]"
+            "bg-[#F9F9F9]/90 dark:bg-[#1C1C1E]/90 backdrop-blur-xl border border-white/20 dark:border-white/10",
+            isMobileSidebarOpen ? "translate-x-0 shadow-overlay" : "-translate-x-[calc(100%+24px)] shadow-none pointer-events-none"
           )}
           style={{ 
             top: 'calc(12px + env(safe-area-inset-top))', 
@@ -509,7 +511,7 @@ export function AppShell() {
                 <UserBlobatar identifier={user?.email || user?.id} size={24} />
                 <div className="flex flex-col min-w-0 leading-tight">
                   <span className="min-w-0 truncate font-medium text-foreground text-sm">
-                    {user?.email ? user.email.split('@')[0] : 'Settings'}
+                    {getDisplayName(user, 'Settings')}
                   </span>
                   <span className="text-[11px] text-muted-foreground">Settings & Profile</span>
                 </div>
@@ -648,7 +650,7 @@ export function AppShell() {
                   {!isSidebarCollapsed && (
                     <div className="flex flex-col min-w-0 leading-tight">
                       <span className="font-medium text-label text-ink truncate">
-                        {user?.email ? user.email.split('@')[0] : 'Settings'}
+                        {getDisplayName(user, 'Settings')}
                       </span>
                       <span className="text-caption text-ink-3 truncate">
                         Settings

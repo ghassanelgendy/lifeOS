@@ -96,7 +96,7 @@ async function upsertPrayerLogWithHabitSync(input: {
   }
 
   // Update/insert everything concurrently
-  const promises: Promise<any>[] = [];
+  const promises: PromiseLike<{ error: unknown }>[] = [];
 
   if (existingHabitLog?.id) {
     promises.push(

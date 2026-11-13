@@ -1,4 +1,4 @@
-import { Ayah } from '../types/quran';
+import type { Ayah } from '../types/quran';
 import { idbGetQuranPage, idbSetQuranPage, idbSetQuranPagesBatch } from '../../../../src/db/indexedDb';
 
 // Cache in-memory for fast switching

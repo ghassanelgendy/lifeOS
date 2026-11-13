@@ -281,7 +281,10 @@ export function AnalyticsHealthWealth({
                             Daily Expense: <span className="font-bold tabular-nums">${d.expense}</span>
                           </p>
                           <p className="text-indigo-400">
-                            Sleep Duration: <span className="font-bold tabular-nums">{d.sleepHours} hrs</span> ({d.sleepMinutes} min)
+                            Sleep Duration:{' '}
+                            <span className="font-bold tabular-nums">
+                              {Math.floor((d.sleepMinutes ?? 0) / 60)}h {Math.round((d.sleepMinutes ?? 0) % 60)}m
+                            </span>
                           </p>
                         </div>
                       );

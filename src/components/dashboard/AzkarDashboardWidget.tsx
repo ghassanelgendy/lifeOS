@@ -92,7 +92,7 @@ export function AzkarDashboardWidget({ className }: AzkarDashboardWidgetProps = 
           </span>
         </span>
         <span className="truncate text-label text-ink-2">{contextual.category}</span>
-        <span className={cn('text-caption font-semibold tabular-nums', stats.isDone ? 'text-success' : 'text-ink-3')}>
+        <span className={cn('text-[13px] font-semibold tabular-nums', stats.isDone ? 'text-success' : 'text-ink-3')}>
           {stats.isDone ? 'تم إتمام الورد' : `${stats.completed} من ${stats.total} ذكر`}
         </span>
       </span>

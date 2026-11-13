@@ -81,7 +81,7 @@ export async function initializeNativeApp() {
     addSystemLog('initializeNativeApp: Starting native app initialization', 'info');
     // 1. Hide Keyboard Accessory Bar (prevents the gray 'prev/next/done' bar on iOS)
     try {
-      await Keyboard.setAccessoryBarVisible({ visible: false });
+      await Keyboard.setAccessoryBarVisible({ isVisible: false });
     } catch {
       // Non-fatal: plugin may not be available on all configurations
     }

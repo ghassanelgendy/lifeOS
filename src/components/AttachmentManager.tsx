@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
-import { Image as ImageIcon, X, Loader2, ExternalLink } from 'lucide-react';
+import { Image as ImageIcon, X, ExternalLink } from 'lucide-react';
+import { Spinner } from './ui';
 import type { MediaAttachment } from '../types/schema';
 import { uploadAttachment, validateImageFile } from '../lib/attachments';
 import { cn } from '../lib/utils';
@@ -121,7 +122,7 @@ export function AttachmentManager({
         >
           {isUploading ? (
             <>
-              <Loader2 size={16} className="animate-spin text-primary" />
+              <Spinner size="sm" decorative />
               <span>Attaching image...</span>
             </>
           ) : (

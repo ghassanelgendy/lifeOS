@@ -30,9 +30,10 @@ import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
 function formatDurationMinutes(minutes: number) {
-  if (minutes <= 0) return '0m';
-  const h = Math.floor(minutes / 60);
-  const min = minutes % 60;
+  const total = Math.round(Math.max(0, minutes));
+  if (total <= 0) return '0m';
+  const h = Math.floor(total / 60);
+  const min = total % 60;
   if (h <= 0) return `${min}m`;
   if (min === 0) return `${h}h`;
   return `${h}h ${min}m`;
@@ -479,6 +480,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
   const rise = useRise();
   const [parent] = useAutoAnimate();
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+  const [hoveredSegment, setHoveredSegment] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState>(null);
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
@@ -1486,26 +1488,34 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
     {
       key: 'tasks', to: '/tasks', label: 'Tasks', tour: undefined as string | undefined, private: false,
       num: dueTodayBundleCount as number | null, decimals: 0, unit: 'left',
+      displayText: null as string | null,
       detail: `${tasksDoneToday}/${tasksAllDue} done`,
+      tooltip: `Tasks: ${tasksDoneToday}/${tasksAllDue} done (${tasksPct}%)`,
       pct: tasksPct, tone: tone(tasksPct >= 80, tasksPct >= 40),
     },
     {
       key: 'habits', to: '/habits', label: 'Habits & Prayers', tour: 'metric-habits', private: false,
       num: todayHabitCompleted as number | null, decimals: 0, unit: `/${todayHabitTotal}`,
+      displayText: null as string | null,
       detail: `${habitsPct}%`,
+      tooltip: `Habits & Prayers: ${todayHabitCompleted}/${todayHabitTotal} (${habitsPct}%)`,
       pct: Math.min(100, habitsPct), tone: tone(habitsPct >= 80, habitsPct >= 50),
     },
     {
       key: 'sleep', to: '/sleep', label: 'Sleep', tour: undefined as string | undefined, private: true,
-      num: sleepHours > 0 ? sleepHours : null, decimals: 1, unit: sleepHours > 0 ? 'h' : '',
-      detail: `target ${SLEEP_TARGET_H}h`,
+      num: null as number | null, decimals: 0, unit: '',
+      displayText: lastNightSleep && lastNightSleep > 0 ? formatDurationMinutes(lastNightSleep) : '—',
+      detail: `target ${formatDurationMinutes(Math.round(SLEEP_TARGET_H * 60))}`,
+      tooltip: `Sleep: ${lastNightSleep && lastNightSleep > 0 ? formatDurationMinutes(lastNightSleep) : '0m'} (target ${formatDurationMinutes(Math.round(SLEEP_TARGET_H * 60))})`,
       pct: sleepHours > 0 ? Math.round(Math.min(100, (sleepHours / SLEEP_TARGET_H) * 100)) : 0,
       tone: tone(sleepHours >= 7, sleepHours >= 5.5, sleepHours > 0),
     },
     {
       key: 'screen', to: '/screentime', label: 'Screen time', tour: 'metric-screentime', private: true,
-      num: screenHours > 0 ? screenHours : null, decimals: 1, unit: screenHours > 0 ? 'h' : '',
-      detail: `limit ${SCREEN_TARGET_H}h`,
+      num: null as number | null, decimals: 0, unit: '',
+      displayText: todayScreentime.totalMinutes > 0 ? formatDurationMinutes(todayScreentime.totalMinutes) : '—',
+      detail: `limit ${formatDurationMinutes(SCREEN_TARGET_H * 60)}`,
+      tooltip: `Screen time: ${todayScreentime.totalMinutes > 0 ? formatDurationMinutes(todayScreentime.totalMinutes) : '0m'} (limit ${formatDurationMinutes(SCREEN_TARGET_H * 60)})`,
       pct: screenHours > 0 ? Math.round(Math.min(100, (screenHours / SCREEN_TARGET_H) * 100)) : 0,
       tone: tone(screenHours > 0 && screenHours <= SCREEN_TARGET_H, screenHours <= SCREEN_TARGET_H * 1.4, screenHours > 0),
     },
@@ -1532,7 +1542,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
       {/* Daily Spiritual Banners: Hadith & Azkar: shares the same grid template as the
           Day progress / metrics row below so both rows line up to the same total width. */}
-      <div data-tour="spiritual-banners" className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+      <div data-tour="spiritual-banners" className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 items-stretch">
         <motion.div className="flex flex-col" {...rise(0)}>
           <HadithWidget className="h-full" />
         </motion.div>
@@ -1543,18 +1553,18 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
 
       {/* Top row: 12 columns on desktop (day 5, targets 4, week 3), 2 columns on tablet, stacked on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch lg:items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
         {/* Col 1: Day Progress (First thing) */}
-        <motion.section {...rise(2)} data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col justify-between md:col-span-2 lg:col-span-5">
+        <motion.section {...rise(2)} data-tour="day-progress" aria-labelledby="qv-day-progress-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col justify-between md:col-span-2 lg:col-span-5 h-full">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-3">
             <h2 id="qv-day-progress-heading" className="text-label text-ink-2 font-semibold whitespace-nowrap">
               Day progress
             </h2>
-            <div className="flex items-center gap-x-2 gap-y-1 text-caption font-semibold text-ink-3 flex-wrap justify-end">
-              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-slate-500" /> Sleep</span>
-              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
-              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-amber-500" /> Phone</span>
-              <span className="flex items-center gap-0.5"><span className="size-1.5 rounded-full bg-emerald-500" /> Web</span>
+            <div className="flex items-center gap-x-2.5 gap-y-1 text-[13px] font-semibold text-ink-3 flex-wrap justify-end">
+              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-slate-500" /> Sleep</span>
+              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-sky-500" /> PC</span>
+              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-amber-500" /> Phone</span>
+              <span className="flex items-center gap-1"><span className="size-1.5 rounded-full bg-emerald-500" /> Web</span>
             </div>
           </div>
           <div className="flex items-baseline gap-x-5 gap-y-1 mb-4 flex-wrap">
@@ -1562,40 +1572,77 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <p className={cn('text-xl font-semibold tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {Math.round(screenChart.accounted / 60)}h
               </p>
-              <p className="text-caption font-semibold text-ink-3">tracked</p>
+              <p className="text-[13px] font-semibold text-ink-3">tracked</p>
             </div>
             
             <div className="flex items-baseline gap-1 whitespace-nowrap">
               <p className={cn('text-xl font-semibold tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {Math.round(Math.max(0, screenChart.elapsed - screenChart.sleep) / 60)}h
               </p>
-              <p className="text-caption font-semibold text-ink-3">awake</p>
+              <p className="text-[13px] font-semibold text-ink-3">awake</p>
             </div>
             
             <div className="flex items-baseline gap-1 whitespace-nowrap">
               <p className={cn('text-xl font-semibold tabular-nums tracking-tight text-ink-3', privacyMode && 'blur-sm')}>
                 {Math.round(Math.max(0, screenChart.elapsed - screenChart.accounted) / 60)}h
               </p>
-              <p className="text-caption font-semibold text-ink-3">free</p>
+              <p className="text-[13px] font-semibold text-ink-3">free</p>
             </div>
           </div>
 
           <div
-            className="relative mt-1 h-5 w-full overflow-visible rounded-full bg-muted-foreground/10"
+            className="relative mt-1 h-6 w-full overflow-visible rounded-full bg-muted-foreground/10"
             aria-label={`Tracked ${formatDurationMinutes(screenChart.accounted)} of 24 hours`}
+            onMouseLeave={() => setHoveredSegment(null)}
           >
-            <div className="fx-wipe flex h-full w-full overflow-hidden rounded-full">
-              <div className={cn('bg-slate-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.sleepPct }} title={`Sleep: ${formatDurationMinutes(screenChart.sleep)}`} />
-              <div className={cn('bg-sky-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.pcPct }} title={`PC (Apps): ${formatDurationMinutes(screenChart.pc)}`} />
-              <div className={cn('bg-amber-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.phonePct }} title={`Phone (Apps): ${formatDurationMinutes(screenChart.phone)}`} />
-              <div className={cn('bg-emerald-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.webPct }} title={`Web Browsing: ${formatDurationMinutes(screenChart.web)}`} />
-              {screenChart.other > 0 && (
-                <div className={cn('bg-orange-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.otherPct }} title={`Other: ${formatDurationMinutes(screenChart.other)}`} />
-              )}
-              {screenChart.overlap > 0 && (
-                <div className={cn('bg-red-500/90 transition-[width] duration-500', privacyMode && 'blur-sm')} style={{ width: screenChart.overlapPct }} title={`Simultaneous PC & Phone usage: ${formatDurationMinutes(screenChart.overlap)}`} />
-              )}
-            </div>
+            {(() => {
+              const segs = [
+                { id: 'seg-sleep', label: 'Sleep', mins: screenChart.sleep, cls: 'bg-slate-500/90' },
+                { id: 'seg-pc', label: 'PC (Apps)', mins: screenChart.pc, cls: 'bg-sky-500/90' },
+                { id: 'seg-phone', label: 'Phone (Apps)', mins: screenChart.phone, cls: 'bg-amber-500/90' },
+                { id: 'seg-web', label: 'Web Browsing', mins: screenChart.web, cls: 'bg-emerald-500/90' },
+                ...(screenChart.other > 0 ? [{ id: 'seg-other', label: 'Other', mins: screenChart.other, cls: 'bg-orange-500/90' }] : []),
+                ...(screenChart.overlap > 0 ? [{ id: 'seg-overlap', label: 'Simultaneous PC & Phone', mins: screenChart.overlap, cls: 'bg-red-500/90' }] : []),
+              ];
+              let cursor = 0;
+              const positioned = segs.map((seg) => {
+                const wPct = Math.max(0, Math.min(100, (seg.mins / (24 * 60)) * 100));
+                const center = Math.min(94, Math.max(6, cursor + wPct / 2));
+                cursor += wPct;
+                return { ...seg, width: `${wPct}%`, center: `${center}%`, text: formatDurationMinutes(seg.mins) };
+              });
+              const activeSeg = positioned.find((s) => s.id === hoveredSegment || s.id === activeTooltip);
+              return (
+                <>
+                  {activeSeg && (
+                    <div
+                      className="pointer-events-none absolute bottom-full z-50 mb-2 -translate-x-1/2"
+                      style={{ left: activeSeg.center }}
+                    >
+                      <div className="relative flex flex-col items-center justify-center rounded-control border border-separator bg-raised px-2.5 py-1 text-caption text-ink shadow-overlay whitespace-nowrap">
+                        <span className="font-semibold">{activeSeg.label}</span>
+                        <span className={cn('text-caption font-medium text-ink-2 tabular-nums', privacyMode && 'blur-sm')}>
+                          {activeSeg.text}
+                        </span>
+                        <div className="absolute -bottom-1 left-1/2 h-2 w-2 -translate-x-1/2 rotate-45 border-b border-r border-separator bg-raised" />
+                      </div>
+                    </div>
+                  )}
+                  <div className="fx-wipe flex h-full w-full overflow-hidden rounded-full">
+                    {positioned.map((seg) => (
+                      <div
+                        key={seg.id}
+                        className={cn(seg.cls, 'h-full transition-[width,filter] duration-300 cursor-pointer hover:brightness-110', privacyMode && 'blur-sm')}
+                        style={{ width: seg.width }}
+                        title={`${seg.label}: ${seg.text}`}
+                        onMouseEnter={() => setHoveredSegment(seg.id)}
+                        onClick={() => handleTooltipClick(seg.id)}
+                      />
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
 
             {progressMarkerClusters.map((cluster) => (
               <div
@@ -1650,41 +1697,63 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <span className="absolute right-[0%] text-caption font-bold text-ink-3">12am</span>
             </div>
           </div>
-          <div className="mt-6 flex items-center justify-between gap-2 text-caption font-semibold text-ink-3">
+          <div className="mt-7 flex items-center justify-between gap-2 text-[13px] font-semibold text-ink-3">
             <span>24h clock</span>
             <span className={cn('tabular-nums font-bold text-foreground/60', privacyMode && 'blur-sm')}>
               {habitAdherencePct}% adherence{sleepTimeStr}
             </span>
           </div>
+
+          <div className="mt-auto pt-3 border-t border-separator/60 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+            {[
+              { label: 'Sleep', mins: screenChart.sleep, dot: 'bg-slate-500' },
+              { label: 'PC', mins: screenChart.pc, dot: 'bg-sky-500' },
+              { label: 'Phone', mins: screenChart.phone, dot: 'bg-amber-500' },
+              { label: 'Web', mins: screenChart.web, dot: 'bg-emerald-500' },
+            ].map((item) => (
+              <div key={item.label} className="min-w-0">
+                <div className="flex items-center gap-1.5 text-caption font-medium text-ink-3">
+                  <span className={cn('size-1.5 rounded-full shrink-0', item.dot)} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                <p className={cn('mt-0.5 text-[13px] font-semibold tabular-nums text-ink', privacyMode && 'blur-sm')}>
+                  {formatDurationMinutes(item.mins)}
+                </p>
+              </div>
+            ))}
+          </div>
         </motion.section>
 
         {/* Today's targets: one block per number, each against its target */}
-        <motion.section {...rise(3)} data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col lg:col-span-4">
-          <h2 id="qv-targets-heading" className="text-label font-semibold text-ink-2 mb-3">
+        <motion.section {...rise(3)} data-tour="metric-cards" aria-labelledby="qv-targets-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col lg:col-span-4 h-full">
+          <h2 id="qv-targets-heading" className="text-label font-semibold text-ink-2 mb-2">
             Today's targets
           </h2>
-          <div className="grid grid-cols-2 gap-x-3 gap-y-2 flex-1 content-between">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1 flex-1 content-between">
             {todayStats.map((stat, statIndex) => (
               <Link
                 key={stat.key}
                 to={stat.to}
+                title={stat.tooltip}
                 data-tour={stat.tour}
                 data-ds
-                className="ds-t flex flex-col gap-2 rounded-control p-2.5 -mx-1 hover:bg-hover"
+                className="ds-t flex flex-col gap-1 rounded-control p-1.5 -mx-1 hover:bg-hover"
               >
-                <span className="text-caption font-medium text-ink-3">{stat.label}</span>
+                <span className="text-[13px] font-medium text-ink-3">{stat.label}</span>
                 <span className={cn('flex items-baseline gap-1 leading-none', stat.private && privacyMode && 'blur-sm')}>
                   <span className="text-heading font-semibold tabular-nums tracking-tight text-ink">
-                    {stat.num === null ? '-' : <AnimatedNumber value={stat.num} decimals={stat.decimals} />}
+                    {stat.displayText !== null ? stat.displayText : stat.num === null ? '-' : <AnimatedNumber value={stat.num} decimals={stat.decimals} />}
                   </span>
                   {stat.unit && <span className="text-label font-medium text-ink-3">{stat.unit}</span>}
                 </span>
-                <GrowBar
-                  pct={stat.pct}
-                  delay={0.35 + statIndex * 0.08}
-                  className={cn(TONE_BAR[stat.tone], stat.private && privacyMode && 'blur-sm')}
-                />
-                <span className={cn('text-caption font-semibold tabular-nums', TONE_TEXT[stat.tone], stat.private && privacyMode && 'blur-sm')}>
+                <div className="relative" title={stat.tooltip}>
+                  <GrowBar
+                    pct={stat.pct}
+                    delay={0.35 + statIndex * 0.08}
+                    className={cn(TONE_BAR[stat.tone], stat.private && privacyMode && 'blur-sm')}
+                  />
+                </div>
+                <span className={cn('text-[13px] font-semibold tabular-nums', TONE_TEXT[stat.tone], stat.private && privacyMode && 'blur-sm')}>
                   {stat.detail}
                 </span>
               </Link>
@@ -1693,7 +1762,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
         </motion.section>
 
         {/* This week: habit adherence per day */}
-        <motion.section {...rise(4)} data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col lg:col-span-3">
+        <motion.section {...rise(4)} data-tour="weekly-habits" aria-labelledby="qv-weekly-adherence-heading" className="fx-card rounded-card border border-separator bg-raised p-4 sm:p-5 flex flex-col lg:col-span-3 h-full">
           <h2 id="qv-weekly-adherence-heading" className="text-label font-semibold text-ink-2">
             This week
           </h2>
@@ -1704,9 +1773,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
             )}>
               <AnimatedNumber value={weekAdherence} />%
             </span>
-            <span className="text-caption font-medium text-ink-3">average adherence</span>
+            <span className="text-[13px] font-medium text-ink-3">average adherence</span>
           </p>
-          <div className="mt-4 flex items-stretch gap-1.5 h-[88px]">
+          <div className="mt-4 flex flex-1 items-stretch gap-1.5 min-h-[116px]">
             {dailyAdherence.map((day, i) => {
               if (!day) {
                 const d = new Date();

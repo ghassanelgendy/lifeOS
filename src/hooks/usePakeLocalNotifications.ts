@@ -231,8 +231,9 @@ export function usePakeLocalNotifications() {
             const titleIsRead = !isMulk && !isKahf && /read|تلاوة|قراءة|ورد/i.test(habit.title);
             // Title-based reading/memorization takes precedence over habit_type so a
             // reading-wird habit (e.g. الورد اليومي) is never treated as memorization.
-            const isMemHabit = titleIsMem || (!titleIsRead && !titleIsMem && habit.habit_type === 'quran_memorization');
-            const isReadHabit = titleIsRead || (!titleIsMem && !titleIsRead && habit.habit_type === 'quran_reading');
+            const habitType = habit.habit_type as string | undefined;
+            const isMemHabit = titleIsMem || (!titleIsRead && !titleIsMem && habitType === 'quran_memorization');
+            const isReadHabit = titleIsRead || (!titleIsMem && !titleIsRead && habitType === 'quran_reading');
             const isQuranHabit = isMulk || isKahf || isMemHabit || isReadHabit || /quran|قران|قرآن|قراٰن/i.test(habit.title);
 
             let notifTitle = isAr ? `تذكير بالعادات: ${habit.title}` : 'Habit Reminder';
@@ -310,7 +311,7 @@ export function usePakeLocalNotifications() {
               localStorage.setItem('pake_shown_notifications', JSON.stringify(Array.from(shownNotifsRef.current)));
 
               const isAr = /[\u0600-\u06FF]/.test(event.title);
-              const isQuranEvent = /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran|halqah|حلقة/i.test(event.title) || event.category === 'quran' || event.type === 'quran';
+              const isQuranEvent = /sheikh|حفظ|قران|قرآن|تسميع|تحفيظ|تثبيت|شيخ|tahfez|quran|halqah|حلقة/i.test(event.title) || event.category === 'quran' || (event.type as string) === 'quran';
 
               let notifTitle = isAr ? `موعد ${event.title}` : 'Calendar Event';
               let notifBody = `${event.title} is starting`;

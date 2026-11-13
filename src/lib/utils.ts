@@ -52,3 +52,20 @@ export function formatDayMonth(dateStr?: string | null): string {
   }
   return dateStr;
 }
+
+/**
+ * Name to show for a signed-in user. Prefers the profile name the sign-in
+ * provider supplied (Google sends full_name / name), then falls back to the
+ * part of the email before the @.
+ */
+export function getDisplayName(
+  user?: { email?: string | null; user_metadata?: Record<string, unknown> | null } | null,
+  fallback = ''
+): string {
+  const meta = user?.user_metadata ?? {};
+  for (const key of ['full_name', 'name', 'display_name']) {
+    const value = meta[key];
+    if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return user?.email?.split('@')[0] || fallback;
+}

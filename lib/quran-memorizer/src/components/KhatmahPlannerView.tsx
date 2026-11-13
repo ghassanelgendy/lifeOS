@@ -3,21 +3,18 @@ import { createPortal } from 'react-dom';
 import {
   Target,
   Flame,
-  Calendar,
   Sparkles,
   CheckCircle2,
   Circle,
   Plus,
   Trash2,
   BookOpen,
-  Clock,
   UserCheck,
-  Compass,
   FileText,
   Bookmark,
   X,
 } from 'lucide-react';
-import {
+import type {
   KhatmahPlan,
   KhatmahGoalType,
   KhatmahDirection,
@@ -115,13 +112,13 @@ const calculateSmartAyahRange = (page: number, surah: typeof SURAHS[0]) => {
 };
 
 export const KhatmahPlannerView: React.FC<KhatmahPlannerViewProps> = ({
-  linkedTasks = [],
+  linkedTasks: _linkedTasks = [],
   linkedHabits = [],
   linkedEvents = [],
-  onToggleTask,
+  onToggleTask: _onToggleTask,
   onToggleHabit,
   onUpdateHabitDescription,
-  onCreateTask,
+  onCreateTask: _onCreateTask,
   onCreateHalqahNote,
   onOpenReader,
 }) => {

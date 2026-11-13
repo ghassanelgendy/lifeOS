@@ -1,7 +1,7 @@
-import { Calendar as CalendarIcon, Clock, AlarmClock, Repeat, Repeat1, Bell, ListTodo, Tag as TagIcon, ListChecks, Flag, AlertCircle, MapPin, MessageCircle, ChevronRight, Link as LinkIcon, Trash2, Plus, Sparkles, Loader2 } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, AlarmClock, Repeat, Repeat1, Bell, ListTodo, Tag as TagIcon, ListChecks, Flag, AlertCircle, MapPin, MessageCircle, ChevronRight, Link as LinkIcon, Trash2, Plus, Sparkles } from 'lucide-react';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI, extractJSON } from '../lib/ai';
-import { Button } from './ui';
+import { Button, Spinner } from './ui';
 import type { Task } from '../types/schema';
 import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
@@ -45,7 +45,7 @@ const EARLY_REMINDER_OPTIONS = [
 
 export interface TaskDetailsFormState {
   title?: string;
-  description?: string;
+  description?: string | null;
   url?: string;
   due_date?: string;
   due_time?: string;
@@ -60,7 +60,8 @@ export interface TaskDetailsFormState {
   recurrence_end_type?: TaskRecurrenceEndType;
   recurrence_count?: number;
   list_id?: string | null;
-  project_id?: string;
+  project_id?: string | null;
+  parent_id?: string | null;
   tag_ids?: string[];
   priority?: TaskPriority;
   is_flagged?: boolean;
@@ -70,6 +71,7 @@ export interface TaskDetailsFormState {
   reminders_enabled?: boolean;
   duration_minutes?: number | null;
   ios_reminders_enabled?: boolean;
+  points_value?: number;
   attachments?: MediaAttachment[];
   [key: string]: unknown;
 }
@@ -883,7 +885,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
                 >
                   {isBreakingDown ? (
                     <>
-                      <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                      <Spinner size="xs" decorative className="mr-1" />
                       Analyzing...
                     </>
                   ) : (
@@ -1097,7 +1099,7 @@ Response format: Return ONLY a raw JSON array of strings representing the subtas
           }
           helperText="Remind when you're in a conversation with the selected contact."
         />
-        {form.created_at && (
+        {Boolean(form.created_at) && (
           <>
             <Divider />
             <Row

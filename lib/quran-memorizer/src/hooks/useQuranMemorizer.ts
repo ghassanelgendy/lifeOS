@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { HifdhRecord, RatingGrade, MemorizationStatus } from '../types/quran';
+import type { HifdhRecord, RatingGrade, MemorizationStatus } from '../types/quran';
 
 const LOCAL_STORAGE_KEY = 'quran_memorizer_records_v1';
 

@@ -8,7 +8,7 @@ import { useAuth } from '../hooks/useAuth';
 import { cn } from '../lib/utils';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
-import { Button, Modal, Spinner } from '../components/ui';
+import { Button, Modal, SectionLoader } from '../components/ui';
 import { useUIStore, PAGE_WIDGET_DEFAULTS } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
@@ -219,10 +219,7 @@ export default function Sleep() {
       </div>
 
       {isLoading ? (
-        <div className="liquid-glass-card p-8 flex flex-col items-center gap-3 text-center text-muted-foreground rounded-2xl">
-          <Spinner size="lg" decorative />
-          <span>Loading sleep data...</span>
-        </div>
+        <SectionLoader label="Loading sleep data..." />
       ) : !active ? (
         <div className="liquid-glass-card p-8 text-center text-muted-foreground rounded-2xl space-y-4">
           <Moon className="mx-auto text-primary" size={32} />
@@ -369,32 +366,33 @@ export default function Sleep() {
                 <div className="h-44 [&_path.recharts-bar-rectangle]:hover:!fill-primary [&_path.recharts-bar-rectangle]:hover:!opacity-100">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={bars} margin={{ top: 5, right: 0, left: -25, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" opacity={0.6} />
                       <XAxis
                         dataKey="day"
-                        tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.45)' }}
+                        tick={{ fontSize: 9, fill: 'var(--color-muted-foreground)' }}
+                        stroke="var(--color-border)"
                         tickLine={false}
                         axisLine={false}
                         dy={8}
                       />
                       <YAxis
-                        tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.45)' }}
+                        tick={{ fontSize: 9, fill: 'var(--color-muted-foreground)' }}
+                        stroke="var(--color-border)"
                         tickLine={false}
                         axisLine={false}
                         dx={-5}
                       />
                       <Tooltip 
-                        cursor={{ fill: 'rgba(255,255,255,0.05)', radius: 6 }}
-                        formatter={(v: any) => [`${v ?? 0} h`, 'Sleep']}
+                        cursor={{ fill: 'var(--color-secondary)', opacity: 0.5, radius: 6 }}
+                        formatter={(v: any) => [formatDuration(Math.round((Number(v) || 0) * 60)), 'Sleep']}
                         itemStyle={{ color: 'var(--color-foreground)' }}
                         labelStyle={{ color: 'var(--color-muted-foreground)' }}
                         contentStyle={{
-                          backgroundColor: 'rgba(30, 30, 30, 0.75)',
-                          backdropFilter: 'blur(12px)',
-                          border: '1px solid rgba(255, 255, 255, 0.1)',
+                          backgroundColor: 'var(--color-card)',
+                          border: '1px solid var(--color-border)',
                           borderRadius: '12px',
                           color: 'var(--color-foreground)',
-                          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.3)'
+                          boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)'
                         }}
                       />
                       <ReferenceLine 

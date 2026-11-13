@@ -1,28 +1,19 @@
 import React from 'react';
+import { Info } from 'lucide-react';
 import { QadaaWidget } from '../components/QadaaWidget';
-import { Compass, Info } from 'lucide-react';
+import { PageHeader } from '../components/ui';
 
 const IOS = import.meta.env.MODE === 'ios';
 
 export const Qadaa: React.FC = () => {
   return (
     <div className={IOS ? "space-y-5 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12" : "w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 space-y-6"}>
-      {/* Top Banner */}
-      <div className={IOS ? "hidden" : "flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-border/50"}>
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-            <Compass className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              قضاء الصلوات الفائتة (Qadaa Prayers)
-            </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              متابعة قضاء الفوائت من سن التكليف بحسابات المذاهب الأربعة مع تقدير الجدول الزمني ديناميكياً
-            </p>
-          </div>
-        </div>
-      </div>
+      {!IOS && (
+        <PageHeader
+          title="قضاء الصلوات الفائتة (Qadaa Prayers)"
+          subtitle="متابعة قضاء الفوائت من سن التكليف بحسابات المذاهب الأربعة مع تقدير الجدول الزمني ديناميكياً"
+        />
+      )}
 
       {/* Main Qadaa Widget */}
       <QadaaWidget />

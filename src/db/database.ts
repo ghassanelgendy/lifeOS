@@ -538,7 +538,7 @@ export const taskDB = {
     // Create habit from task
     const habit = habitDB.create({
       title: task.title,
-      description: task.description,
+      description: task.description ?? undefined,
       frequency: task.recurrence === 'daily' ? 'Daily' : 'Weekly',
       target_count: 1,
       adherence_weight: 1,

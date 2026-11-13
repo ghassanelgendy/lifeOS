@@ -1006,7 +1006,7 @@ export default function Dashboard() {
     <div className="space-y-4 sm:space-y-5 overflow-x-hidden w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {label && (
         <header className="rounded-lg border border-transparent px-1 py-1 -mx-1" aria-live="polite">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{label}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{label}</h1>
         </header>
       )}
       <ModeBody mode={dashboardMode} onSelectEntry={setSelectedEntry} />
@@ -1145,7 +1145,7 @@ export default function Dashboard() {
               }}
               className={cn(
                 "w-14 h-14 rounded-full flex items-center justify-center active:scale-95 hover:brightness-105 transition-[transform,filter] cursor-pointer transform-gpu duration-200",
-                "bg-raised border border-separator text-primary shadow-overlay",
+                "bg-raised border border-separator text-primary shadow-[0_2px_8px_rgba(0,0,0,0.06)]", // taste-skill-ignore: floating action button overlay
                 isMenuOpen ? "rotate-45" : "rotate-0"
               )}
               aria-label="Quick Add"

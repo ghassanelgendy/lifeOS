@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { marked } from 'marked';
 import { format, parseISO } from 'date-fns';
 import { Eye, FileText, Folder, Pencil, Plus, Save, Search, Trash2, Sparkles, Pin, Brain, Check, Calendar, Edit2, FolderPlus, ListTodo } from 'lucide-react';
-import { Button, ConfirmSheet } from '../components/ui';
+import { Button, ConfirmSheet, PageHeader, SectionLoader } from '../components/ui';
 import { cn } from '../components/ui/cn';
 import { useUIStore } from '../stores/useUIStore';
 import { askAI } from '../lib/ai';
@@ -415,10 +415,7 @@ export default function NotesWeb() {
         // change (syncTaskCompletionToLinkedNote reads the note fresh from the DB when it
         // runs). Also writing newBody from this component's local draftBody here would race
         // that server-side write with a possibly-stale copy of the body.
-        void toggleTask.mutateAsync({
-          id: matchingTask.id,
-          data: { is_completed: isChecked },
-        });
+        void toggleTask.mutateAsync(matchingTask.id);
       } else if (activeNote) {
         // No linked task for this checklist item — this note is the only source of truth.
         void updateNote.mutateAsync({
@@ -433,19 +430,14 @@ export default function NotesWeb() {
   const charCount = draftBody.length;
 
   return (
-    <div className="flex flex-col h-full min-h-0 space-y-4 pt-3 md:pt-0 px-2 sm:px-4 pb-28 md:pb-0">
+    <div className="flex flex-col h-full min-h-0 space-y-4 w-full max-w-7xl mx-auto px-3 sm:px-6 pt-3 md:pt-0 pb-28 sm:pb-12">
       {/* Desktop Top Header Bar */}
-      <header className="flex flex-wrap items-center justify-between gap-3 shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <FileText className="text-primary" size={24} />
-            Notes & Knowledge Base
-          </h1>
-          <p className="text-xs text-muted-foreground">
-            Organize notes, stream thoughts with AI Cognitive Brain Dump, and link ideas.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 shrink-0">
+        <PageHeader
+          title="Notes & Knowledge Base"
+          subtitle="Organize notes, stream thoughts with AI Cognitive Brain Dump, and link ideas."
+        />
+        <div className="flex items-center gap-2 shrink-0">
           <Button
             type="button"
             variant="outline"
@@ -476,7 +468,7 @@ export default function NotesWeb() {
             New Note
           </Button>
         </div>
-      </header>
+      </div>
 
       {/* 3-Column Desktop Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
@@ -698,7 +690,7 @@ export default function NotesWeb() {
                 <BrainDumpGraphView onSelectNote={(id) => setActiveId(id)} />
               </div>
             ) : isLoading ? (
-              <p className="p-4 text-xs text-muted-foreground">Loading notes...</p>
+              <SectionLoader label="Loading notes..." className="min-h-[160px]" />
             ) : error ? (
               <p className="p-4 text-xs text-destructive">Could not load notes.</p>
             ) : filteredNotes.length === 0 ? (

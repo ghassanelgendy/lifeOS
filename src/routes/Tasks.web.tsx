@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Loader2, Columns3, Search, X, CheckSquare, FolderInput } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Check, Edit2, ChevronRight, ChevronDown, Star, CalendarDays, CheckCircle2, Flag, Tag as TagIcon, Repeat, ListTodo, Trash2, Clock, Sun, ArrowRight, CircleSlash2, ArrowUpDown, Mic, Users, Copy, Wand2, Sparkles, Columns3, Search, X, CheckSquare, FolderInput } from 'lucide-react';
 import { useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 import { format, isToday, isTomorrow, isPast, addDays, addHours, addWeeks, addMonths, addYears } from 'date-fns';
 import { Flame } from 'lucide-react';
@@ -14,7 +14,7 @@ import { useHabits, useTodayHabitLogs, useLogHabit } from '../hooks/useHabits';
 import { useUpdateCalendarEvent, useCalendarEvents } from '../hooks/useCalendar';
 import { useSleepMetrics } from '../hooks/useSleep';
 import { distributeTasksAcrossAwakeSlots, estimateTaskDuration, findConflictFreeSlotOnDate, type SmartTimeSlot } from '../lib/smartTaskScheduler';
-import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet } from '../components/ui';
+import { Modal, DetailsSheet, Button, Input, Select, ConfirmSheet, Spinner } from '../components/ui';
 import { ShareModal } from '../components/collaboration/ShareModal';
 import { TaskSimilarityMergeModal } from '../components/TaskSimilarityMergeModal';
 import { analyzeTaskSimilarityWithAI, type TaskSimilarityMatch } from '../lib/taskSimilarityAnalyzer';
@@ -918,7 +918,7 @@ export default function Tasks() {
   const completedDisplayTasks = searchedTasks.filter((t) => t.is_completed && !isWontDoTask(t));
   const wontDoDisplayTasks = searchedTasks.filter((t) => t.is_completed && isWontDoTask(t));
 
-  const stripWontDoMarker = (text?: string) => {
+  const stripWontDoMarker = (text?: string | null) => {
     if (!text) return undefined;
     const cleaned = text.replace(WONT_DO_MARKER, '').replace(/\n{3,}/g, '\n\n').trim();
     return cleaned || undefined;
@@ -1256,7 +1256,7 @@ export default function Tasks() {
 
   const handleAddDraftAsSubtask = (existingTask: Task, subtaskTitle: string) => {
     createSubtask.mutate({
-      parentTaskId: existingTask.id,
+      parentId: existingTask.id,
       title: subtaskTitle,
     }, {
       onSuccess: () => {
@@ -2123,7 +2123,7 @@ export default function Tasks() {
     if (!task?.due_date) return { text: '', className: '' };
 
     try {
-      const rawDate = typeof task.due_date === 'string' ? task.due_date : (task.due_date instanceof Date ? (task.due_date as Date).toISOString() : '');
+      const rawDate = typeof task.due_date === 'string' ? task.due_date : ((task.due_date as unknown) instanceof Date ? (task.due_date as unknown as Date).toISOString() : '');
       const dueDate = new Date(rawDate.split('T')[0]);
       if (Number.isNaN(dueDate.getTime())) return { text: '', className: '' };
       const today = new Date();
@@ -2251,7 +2251,7 @@ export default function Tasks() {
                   <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: list.color }} />
                   <span className="flex-1 min-w-0 text-left break-words flex items-center gap-1.5">
                     {list.name}
-                    {list.is_shared && <Users size={12} className="text-indigo-400 shrink-0" title="Shared list" />}
+                    {list.is_shared && <span title="Shared list" className="inline-flex shrink-0"><Users size={12} className="text-indigo-400" /></span>}
                   </span>
                   <span className="text-sm md:text-xs shrink-0">{activeListCounts.get(list.id) ?? 0}</span>
                 </button>
@@ -2404,7 +2404,7 @@ export default function Tasks() {
       {/* Main Content - swipe from left edge to open sidebar on mobile */}
       <main ref={mainContentRef} className="flex-1 min-w-0 flex flex-col overflow-hidden pb-[env(safe-area-inset-bottom)]">
         {/* Header */}
-        <header className="flex items-center justify-between p-4 border-b border-border">
+        <header className="flex items-center justify-between px-3 sm:px-6 pt-4 pb-2">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowListsSidebar(!showListsSidebar)}
@@ -2412,7 +2412,7 @@ export default function Tasks() {
             >
               <ListTodo size={20} />
             </button>
-            <h1 className="text-2xl font-bold">{getViewTitle()}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">{getViewTitle()}</h1>
             {activeView === 'list' && activeListId && (() => {
               const currentList = taskLists.find(l => l.id === activeListId);
               if (!currentList) return null;
@@ -3644,7 +3644,7 @@ Return ONLY raw JSON.`;
         }}
         newDraftTask={{
           title: pendingDraftTaskPayload?.title || newTaskTitle,
-          description: pendingDraftTaskPayload?.description,
+          description: pendingDraftTaskPayload?.description ?? undefined,
           due_date: pendingDraftTaskPayload?.due_date,
           due_time: pendingDraftTaskPayload?.due_time,
           priority: pendingDraftTaskPayload?.priority,
@@ -3839,7 +3839,7 @@ Return ONLY raw JSON.`;
               className="gap-1.5"
             >
               {isSmartScheduling ? (
-                <Loader2 size={14} className="animate-spin" />
+                <Spinner size="xs" decorative />
               ) : (
                 <Sparkles size={14} className="text-primary" />
               )}
@@ -4580,7 +4580,7 @@ function TaskGanttChart({ tasks, taskLists, onEdit }: TaskGanttChartProps) {
                 <span className="text-xs font-medium truncate">{row.title}</span>
               </div>
               <div className="flex-1 flex">
-                {days.map((d, i) => (
+                {days.map((_d, i) => (
                   <div
                     key={dayStrs[i]}
                     style={{ width: dayColWidth }}

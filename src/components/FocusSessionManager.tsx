@@ -40,6 +40,7 @@ export function FocusSessionManager() {
       };
       updateTask.mutate(payload, {
         onSuccess: (updated) => {
+          if (!updated) return;
           const next: SelectedTaskInfo = {
             id: updated.id,
             title: updated.title,

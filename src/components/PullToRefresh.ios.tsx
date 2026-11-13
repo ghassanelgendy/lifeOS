@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { Spinner } from './ui/Spinner';
 import { Haptics, ImpactStyle } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
 
@@ -153,15 +153,18 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
                     transition: startY === null ? 'all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)' : 'none'
                 }}
             >
-                <Loader2
-                    size={22}
-                    className={cn(isRefreshing && "animate-spin")}
-                    style={{ 
-                        color: 'var(--color-primary)',
-                        transform: isRefreshing ? undefined : `rotate(${pullDistance * 4.5}deg)`,
-                        transition: isRefreshing ? 'none' : 'transform 0.1s ease-out'
-                    }}
-                />
+                {isRefreshing ? (
+                    <Spinner size="sm" decorative />
+                ) : (
+                    <div
+                        aria-hidden="true"
+                        className="size-[22px] rounded-full border-2 border-primary/20 border-t-primary"
+                        style={{
+                            transform: `rotate(${pullDistance * 4.5}deg)`,
+                            transition: 'transform 0.1s ease-out',
+                        }}
+                    />
+                )}
             </div>
 
             {/* Elastic content container that slides down and springs back */}

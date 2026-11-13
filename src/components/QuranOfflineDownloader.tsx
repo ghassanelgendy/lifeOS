@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { BookOpen, Download, CheckCircle2, Loader2, Sparkles } from "lucide-react";
-import { Button } from "./ui";
+import { useState, useEffect } from "react";
+import { BookOpen, Download, CheckCircle2, Sparkles } from "lucide-react";
+import { Button, Spinner } from "./ui";
 import { downloadAndCacheFullQuran } from "../../lib/quran-memorizer/src/services/quranApi";
 import { idbGetQuranCachedCount } from "../db/indexedDb";
 
@@ -74,7 +74,7 @@ export function QuranOfflineDownloader() {
         </div>
 
         {isChecking ? (
-          <Loader2 className="size-4 animate-spin text-muted-foreground shrink-0 mt-1" />
+          <Spinner size="sm" decorative className="shrink-0 mt-1" />
         ) : isComplete ? (
           <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs font-bold shrink-0 border border-emerald-500/20">
             <CheckCircle2 className="size-3.5" />
@@ -124,7 +124,7 @@ export function QuranOfflineDownloader() {
         >
           {isDownloading ? (
             <>
-              <Loader2 className="size-3.5 animate-spin" />
+              <Spinner size="xs" decorative />
               <span>جاري التحميل والحفظ ({downloadPercent}%)...</span>
             </>
           ) : isComplete ? (

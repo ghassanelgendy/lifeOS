@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, CheckCircle2, Award, Clock, BookOpen, ChevronLeft } from 'lucide-react';
-import { HifdhRecord, RatingGrade } from '../types/quran';
+import type { HifdhRecord, RatingGrade } from '../types/quran';
 import { SURAHS } from '../services/quranData';
 
 interface RevisionSchedulerProps {
@@ -14,7 +14,7 @@ export const RevisionScheduler: React.FC<RevisionSchedulerProps> = ({
   dueReviews,
   allRecords,
   onSelectReview,
-  onGradeReview,
+  onGradeReview: _onGradeReview,
 }) => {
   const [revisionType, setRevisionType] = React.useState<'spaced' | 'cumulative'>('spaced');
   const totalMemorized = allRecords.filter((r) => r.status === 'memorized').length;

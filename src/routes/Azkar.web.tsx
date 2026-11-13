@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import {
   Search,
   Bookmark,
@@ -9,10 +9,10 @@ import {
   Volume2,
   VolumeX,
   Type,
-  Sun,
   X,
 } from 'lucide-react';
 import { cn } from '../components/ui/cn';
+import { PageHeader } from '../components/ui';
 import {
   useAllAzkar,
   useAzkarCategories,
@@ -131,20 +131,12 @@ export default function AzkarRoute() {
   }, [displayedAzkar, resetCategory]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-28 sm:pb-12">
-      {/* Top Header */}
-      <div className="sticky top-0 z-20 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Sun size={20} />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold leading-tight">الأذكار والأدعية</h1>
-            </div>
-          </div>
-
-          {/* Quick Toolbar */}
+    <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12 text-foreground">
+      {/* Header */}
+      <PageHeader
+        title="الأذكار والأدعية"
+        subtitle="Daily remembrance, supplications &amp; Tasbih"
+        actions={
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsTasbihOpen(true)}
@@ -185,92 +177,92 @@ export default function AzkarRoute() {
               <Settings2 size={18} />
             </button>
           </div>
-        </div>
+        }
+      />
 
-        {/* Preferences Drawer */}
-        {showPreferences && (
-          <div className="border-t border-border bg-card/60 px-4 py-3 backdrop-blur-md sm:px-6">
-            <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 text-xs">
-              {/* Font size */}
-              <div className="flex items-center gap-2">
-                <span className="flex items-center gap-1 text-muted-foreground">
-                  <Type size={14} /> حجم الخط:
-                </span>
-                {(['sm', 'base', 'lg', 'xl'] as const).map((sz) => (
-                  <button
-                    key={sz}
-                    onClick={() => setFontSize(sz)}
-                    aria-pressed={fontSize === sz}
-                    className={cn(
-                      'rounded-lg border px-2.5 py-1 font-mono font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      fontSize === sz
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border text-muted-foreground hover:text-foreground'
-                    )}
-                  >
-                    {sz}
-                  </button>
-                ))}
-              </div>
-
-              {/* Toggles */}
-              <div className="flex items-center gap-2">
+      {/* Preferences Drawer */}
+      {showPreferences && (
+        <div className="rounded-xl border border-border bg-card/60 px-4 py-3 backdrop-blur-md sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
+            {/* Font size */}
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1 text-muted-foreground">
+                <Type size={14} /> حجم الخط:
+              </span>
+              {(['sm', 'base', 'lg', 'xl'] as const).map((sz) => (
                 <button
-                  onClick={toggleHaptic}
+                  key={sz}
+                  onClick={() => setFontSize(sz)}
+                  aria-pressed={fontSize === sz}
                   className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    hapticFeedback
-                      ? 'border-primary/40 bg-primary/10 font-medium text-primary'
-                      : 'border-border text-muted-foreground'
+                    'rounded-lg border px-2.5 py-1 font-mono font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                    fontSize === sz
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <Smartphone size={13} />
-                  <span>الاهتزاز</span>
+                  {sz}
                 </button>
+              ))}
+            </div>
 
-                <button
-                  onClick={toggleSound}
-                  className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    soundEnabled
-                      ? 'border-primary/40 bg-primary/10 font-medium text-primary'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
-                  <span>الصوت</span>
-                </button>
+            {/* Toggles */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleHaptic}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  hapticFeedback
+                    ? 'border-primary/40 bg-primary/10 font-medium text-primary'
+                    : 'border-border text-muted-foreground'
+                )}
+              >
+                <Smartphone size={13} />
+                <span>الاهتزاز</span>
+              </button>
 
-                <button
-                  onClick={toggleAutoAdvance}
-                  className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    autoAdvance
-                      ? 'border-primary/40 bg-primary/10 font-medium text-primary'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  <span>التمرير التلقائي عند الإتمام</span>
-                </button>
+              <button
+                onClick={toggleSound}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  soundEnabled
+                    ? 'border-primary/40 bg-primary/10 font-medium text-primary'
+                    : 'border-border text-muted-foreground'
+                )}
+              >
+                {soundEnabled ? <Volume2 size={13} /> : <VolumeX size={13} />}
+                <span>الصوت</span>
+              </button>
 
-                <button
-                  onClick={toggleTashkeel}
-                  className={cn(
-                    'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    showTashkeel
-                      ? 'border-primary/40 bg-primary/10 font-medium text-primary'
-                      : 'border-border text-muted-foreground'
-                  )}
-                >
-                  <span>إظهار التشكيل</span>
-                </button>
-              </div>
+              <button
+                onClick={toggleAutoAdvance}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  autoAdvance
+                    ? 'border-primary/40 bg-primary/10 font-medium text-primary'
+                    : 'border-border text-muted-foreground'
+                )}
+              >
+                <span>التمرير التلقائي عند الإتمام</span>
+              </button>
+
+              <button
+                onClick={toggleTashkeel}
+                className={cn(
+                  'flex items-center gap-1 rounded-lg border px-2.5 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  showTashkeel
+                    ? 'border-primary/40 bg-primary/10 font-medium text-primary'
+                    : 'border-border text-muted-foreground'
+                )}
+              >
+                <span>إظهار التشكيل</span>
+              </button>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
-      <div className="mx-auto w-full max-w-7xl space-y-6 px-3 pt-6 sm:px-6">
+      <div className="space-y-6">
         {/* Contextual Recommendation Banner */}
         {!searchQuery && !showFavoritesOnly && (
           <div className="relative flex flex-col justify-between gap-4 overflow-hidden rounded-2xl border border-border/70 bg-card p-5 sm:flex-row sm:items-center sm:p-6 shadow-sm">

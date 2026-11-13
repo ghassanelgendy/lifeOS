@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   BookOpen,
-  Eye,
   EyeOff,
   Volume2,
   Target,
@@ -17,7 +16,6 @@ import {
   ChevronLeft,
   ChevronDown,
   Sparkles,
-  Compass,
   Settings2,
   X,
   Search,
@@ -30,9 +28,8 @@ import {
   Palette,
   ZoomIn,
   ZoomOut,
-  Columns2,
 } from 'lucide-react';
-import { Ayah, RepeatSettings, RatingGrade, MemorizationStatus } from '../types/quran';
+import type { Ayah, RepeatSettings, RatingGrade, MemorizationStatus } from '../types/quran';
 import { fetchSurahVerses, fetchPageVerses } from '../services/quranApi';
 import { SURAHS, addReadingSeconds } from '../services/quranData';
 import { BlindModeOverlay } from './BlindModeOverlay';
@@ -76,50 +73,6 @@ const TAJWEED_COLORS = {
   yellow:   '#eab308',
   // GREY – إدغام المتجانسين، إدغام بدون غنة، همزة الوصل، اللام الشمسية، ألف التفريق
   grey:     '#9ca3af',
-};
-
-// Detect Tajweed features in a word using Uthmani text patterns.
-// Returns the highest-priority color, or null if no feature detected.
-const getTajweedColor = (word: string): string | null => {
-  // GREEN: نون/ميم مشددتين (غنة), إخفاء (ن ساكنة + حروف إخفاء), إقلاب (ن + ب)
-  // نّ / مّ = nun or mim with shadda
-  if (/[نم]ّ/.test(word)) return TAJWEED_COLORS.green;
-  // إقلاب: ن ساكنة + ب
-  if (/نْ(?=\s*ب)|نً(?=\s*ب)|نٍ(?=\s*ب)/.test(word)) return TAJWEED_COLORS.green;
-  // إخفاء حقيقي: letters of ikhfa after noon sakin/tanwin (approximate detection)
-  if (/[نً][^\s]*[تثجدذزسشصضطظفقك]/.test(word)) return TAJWEED_COLORS.green;
-
-  // CYAN: قلقلة – [قطبجد] with sukun
-  if (/[قطبجد]ْ/.test(word)) return TAJWEED_COLORS.cyan;
-
-  // DARK BLUE: تفخيم الراء – ر (simplified: all raa, refined versions check context)
-  if (/رَ|رُ|رً|رٌ|رَّ|رُّ/.test(word)) return TAJWEED_COLORS.darkBlue;
-
-  // RED: مد واجب متصل (mad letter + همز in same word) or مد لازم (ّ after mad)
-  if (/[اوي]ء|[اوي][ٔأإ]/.test(word)) return TAJWEED_COLORS.red;
-  if (/[اوي]ّ/.test(word)) return TAJWEED_COLORS.red;
-
-  // DARK RED: مد طبيعي – simple mad letters (ا و ي) in regular context
-  if (/[اوي]/.test(word) && !/[اوي]ء|[اوي][ٔأإ]|[اوي]ّ/.test(word)) {
-    // Only color if it's a clear natural madd (preceded by matching short vowel)
-    if (/َا|ُو|ِي/.test(word)) return TAJWEED_COLORS.maroon;
-  }
-
-  // ORANGE: الألف الخنجرية ٰ or مد اللين (واو/ياء ساكنة بعد فتح)
-  if (/ٰ/.test(word)) return TAJWEED_COLORS.orange;
-  if (/َو[ْ]|َي[ْ]/.test(word)) return TAJWEED_COLORS.orange;
-
-  // YELLOW: مد الصلة الصغرى (ه ضمير mim/ha between vowels – hard to detect precisely)
-  // Approximate: ه followed by vowel at word end
-  if (/هِ$|هُ$|هٍ$|هٌ$/.test(word)) return TAJWEED_COLORS.yellow;
-
-  // GREY: همزة الوصل ٱ, لام شمسية (ال + sun letters), إدغام بدون غنة
-  if (/ٱ/.test(word)) return TAJWEED_COLORS.grey;
-  if (/^ٱل[تثدذرزسشصضطظلن]/.test(word)) return TAJWEED_COLORS.grey;
-  // إدغام بدون غنة: ن ساكنة/تنوين + ل أو ر
-  if (/نْ[لر]|[ًٌٍ][لر]/.test(word)) return TAJWEED_COLORS.grey;
-
-  return null;
 };
 
 const canConnectForward = (text: string): boolean => {
@@ -301,9 +254,9 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onMarkMemorized,
   getVerseMastery,
   memorizationPage,
-  memorizationEndPage,
+  memorizationEndPage: _memorizationEndPage,
   readingPage,
-  readingEndPage,
+  readingEndPage: _readingEndPage,
   memorizationMarker,
   readingMarker,
   onSetMemorizationMarker,
@@ -315,7 +268,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
   onTogglePlayPause,
   onNextAyah,
   onPrevAyah,
-  reciterName,
+  reciterName: _reciterName,
   isFullscreen: isFullscreenProp,
   onFullscreenChange,
 }) => {
@@ -336,7 +289,7 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
     } catch {}
   }, [viewMode]);
 
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [showTranslation, setShowTranslation] = useState(false);
   const [showTajweed, setShowTajweed] = useState(() => {
     try {
@@ -422,14 +375,6 @@ export const QuranReaderView: React.FC<QuranReaderViewProps> = ({
       return saved ? Math.max(0.65, Math.min(2.0, Number(saved))) : 1.0;
     } catch {
       return 1.0;
-    }
-  });
-
-  const [dualPageOnDesktop, setDualPageOnDesktop] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('quran_dual_page_v1') === 'true';
-    } catch {
-      return false;
     }
   });
 
