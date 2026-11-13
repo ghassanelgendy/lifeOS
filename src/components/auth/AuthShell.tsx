@@ -182,3 +182,90 @@ export function SubmitButton({ busy, busyLabel, children, disabled }: { busy: bo
     </Button>
   );
 }
+
+export function NameField({ value, onChange, disabled, error }: { value: string; onChange: (v: string) => void; disabled: boolean; error?: string }) {
+  const { t } = usePublicLang();
+  return (
+    <Input
+      label={t.auth.signup.nameLabel}
+      type="text"
+      autoComplete="name"
+      className="h-11"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      required
+      disabled={disabled}
+      error={error}
+      maxLength={60}
+    />
+  );
+}
+
+const EASE = [0.2, 0.8, 0.2, 1] as const;
+const RULE_IDS = ['length', 'case', 'digit', 'unique'] as const;
+
+/**
+ * Live password requirements. Each row's mark fills and its tick draws the moment that
+ * rule is met; the four-segment bar fills one segment per rule met. Transform and
+ * opacity only, 150ms, no overshoot; reduced motion shows the end state at once.
+ */
+export function PasswordChecklist({ checks, id, started }: { checks: Record<(typeof RULE_IDS)[number], boolean>; id: string; started: boolean }) {
+  const { t } = usePublicLang();
+  const c = t.auth.signup;
+  const reduce = useReducedMotion();
+  const score = RULE_IDS.filter((r) => checks[r]).length;
+  const tone = score === 4 ? 'bg-emerald-500' : score >= 2 ? 'bg-amber-500' : 'bg-destructive';
+  return (
+    <div id={id} className="mt-3" aria-live="polite">
+      <div className="flex items-center gap-1.5" aria-hidden>
+        {RULE_IDS.map((r, i) => (
+          <span key={r} className="relative h-1 flex-1 overflow-hidden rounded-full bg-border">
+            <motion.span
+              className={cn('absolute inset-0 origin-left rounded-full rtl:origin-right', tone)}
+              initial={false}
+              animate={{ scaleX: i < score ? 1 : 0 }}
+              transition={{ duration: reduce ? 0 : 0.15, ease: EASE }}
+            />
+          </span>
+        ))}
+      </div>
+      <p className="mt-2 flex items-center justify-between text-[13px] text-muted-foreground">
+        <span>{c.rulesTitle}</span>
+        <span className={cn('font-semibold', score === 4 ? 'text-emerald-500' : 'text-foreground')}>{started ? c.strength[score] : ''}</span>
+      </p>
+      <ul className="mt-2 space-y-1.5">
+        {RULE_IDS.map((r) => {
+          const ok = checks[r] && (r !== 'unique' || started);
+          return (
+            <li key={r} className={cn('flex items-center gap-2 text-sm transition-colors duration-150', ok ? 'text-foreground' : 'text-muted-foreground')}>
+              <span className="relative flex size-[18px] shrink-0 items-center justify-center">
+                <span className="absolute inset-0 rounded-full border border-current opacity-50" />
+                <motion.span
+                  className="absolute inset-0 rounded-full bg-emerald-500"
+                  initial={false}
+                  animate={{ scale: ok ? 1 : 0.4, opacity: ok ? 1 : 0 }}
+                  transition={{ duration: reduce ? 0 : 0.15, ease: EASE }}
+                />
+                <svg viewBox="0 0 16 16" className="relative size-[18px]" aria-hidden>
+                  <motion.path
+                    d="M4.5 8.4l2.4 2.4 4.6-5"
+                    fill="none"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    initial={false}
+                    animate={{ pathLength: ok ? 1 : 0 }}
+                    transition={{ duration: reduce ? 0 : 0.2, delay: ok && !reduce ? 0.05 : 0, ease: EASE }}
+                  />
+                </svg>
+              </span>
+              <span>{c.rules[r]}</span>
+              <span className="sr-only">{ok ? '✓' : ''}</span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

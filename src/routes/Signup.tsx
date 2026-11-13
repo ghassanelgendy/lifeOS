@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Mail } from 'lucide-react';
+import { Mail } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Button } from '../components/ui';
 import { cn } from '../lib/utils';
-import { AuthShell, EmailField, GoogleBlock, PasswordField, SubmitButton, quietLink, useEnter } from '../components/auth/AuthShell';
+import { AuthShell, EmailField, GoogleBlock, NameField, PasswordChecklist, PasswordField, SubmitButton, quietLink, useEnter } from '../components/auth/AuthShell';
 import { usePublicLang } from '../components/landing/i18n';
+import { checkPassword, isPasswordAcceptable } from '../lib/passwordRules';
 
-const MIN_PASSWORD_LENGTH = 6;
 const DEMO_EMAIL = 'ghesso@best.com';
 
 type Busy = 'password' | 'google' | null;
@@ -19,24 +19,29 @@ export default function Signup() {
   const { t } = usePublicLang();
   const c = t.auth.signup;
   const enter = useEnter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
   const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
-  const longEnough = password.length >= MIN_PASSWORD_LENGTH;
+  const checks = checkPassword(password, { email, name });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     // The button stays enabled; pressing it early says what is missing.
-    if (!longEnough) {
+    if (!name.trim()) {
+      setError(c.nameMissing);
+      return;
+    }
+    if (!isPasswordAcceptable(password, { email, name })) {
       setError(c.tooShort);
       return;
     }
     setBusy('password');
-    const { error: err } = await signUp(email.trim(), password);
+    const { error: err } = await signUp(email.trim(), password, name.trim());
     setBusy(null);
     if (err) {
       setError(err.message ?? c.failed);
@@ -91,15 +96,11 @@ export default function Signup() {
         <GoogleBlock onClick={handleGoogleSignIn} busy={busy === 'google'} disabled={locked} />
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+          <NameField value={name} onChange={setName} disabled={locked} />
           <EmailField value={email} onChange={setEmail} disabled={locked} />
           <div>
             <PasswordField value={password} onChange={setPassword} disabled={locked} autoComplete="new-password" describedBy="password-rule" />
-            <p id="password-rule" className={cn('mt-2 flex items-center gap-2 text-sm', longEnough ? 'text-foreground' : 'text-muted-foreground')}>
-              <span className={cn('flex size-4 shrink-0 items-center justify-center rounded-full border', longEnough ? 'border-transparent bg-foreground text-background' : 'border-current')}>
-                {longEnough && <Check size={11} strokeWidth={3.5} />}
-              </span>
-              {c.ruleLength}
-            </p>
+            <PasswordChecklist id="password-rule" checks={checks} started={password.length > 0} />
           </div>
 
           {error && (

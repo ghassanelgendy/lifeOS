@@ -34,3 +34,25 @@ verify_jwt = false
 
 [functions.send-welcome-email]
 verify_jwt = false
+
+# Branded auth emails (Arabic with an English copy). For the hosted project, paste each file into
+# Authentication > Email Templates in the Supabase dashboard; these entries make local dev match.
+[auth.email.template.confirmation]
+subject = "أكّد بريدك | Confirm your lifeOS email"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "إعادة تعيين كلمة المرور | Reset your lifeOS password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "رابط الدخول | Your lifeOS sign-in link"
+content_path = "./supabase/templates/magic_link.html"
+
+[auth.email.template.email_change]
+subject = "تأكيد البريد الجديد | Confirm your new email"
+content_path = "./supabase/templates/email_change.html"
+
+[auth.email.template.invite]
+subject = "دعوة إلى lifeOS | You are invited to lifeOS"
+content_path = "./supabase/templates/invite.html"

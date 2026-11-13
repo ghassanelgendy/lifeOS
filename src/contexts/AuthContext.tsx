@@ -34,7 +34,7 @@ export interface AuthState {
   loading: boolean;
   isOffline: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, name?: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   continueOffline: (email?: string) => void;
@@ -343,7 +343,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async (email: string, password: string, name?: string) => {
     explicitSignOutRef.current = false;
     const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : false;
     if (!onlineNow) {
@@ -352,7 +352,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: name?.trim() ? { data: { full_name: name.trim() } } : undefined,
+      });
       if (error) {
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('fetch') || msg.includes('network') || (error as any).status === 0) {

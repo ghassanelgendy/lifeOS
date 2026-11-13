@@ -162,7 +162,7 @@ The sign-in page shall offer email/password sign-in, Google sign-in, one-press e
 The landing, sign-in and sign-up pages shall be available in English and Arabic. The choice shall persist on the device (`lifeos.publicLang`) and default to Arabic when the browser language is Arabic. In Arabic the pages shall render right-to-left, apply no letter-spacing to Arabic text, keep email and password inputs left-to-right, and keep product UI fragments in English and left-to-right. Times shown on these pages shall use a 12-hour clock in both languages.
 
 #### FR-AUTH-UI-002: Sign-up Page
-The sign-up page shall request an email and a single password with a show/hide control, show the minimum-length rule as it is met, validate on submit with the reason shown next to the form, and on success present the registered address and the confirmation steps with a link to sign in.
+The sign-up page shall request an email and a single password with a show/hide control, show the minimum-length rule as it is met, validate on submit with the reason shown next to the form, and on success present the registered address and the confirmation steps with a link to sign in. The page shall also ask for the user's name and store it as `full_name` in the user metadata, and shall require passwords of 8+ characters with upper and lower case, a digit, and no common password or reuse of the name or email (`src/lib/passwordRules.ts`), showing each rule's progress with a short transform/opacity animation that respects reduced motion.
 
 #### FR-AUTH-UI-003: Signed-in Display Name
 Wherever the app greets or labels the signed-in user, it shall use the provider-supplied profile name (`full_name`, `name` or `display_name` in the user metadata) and fall back to the email local part only when none exists (`getDisplayName` in `src/lib/utils.ts`).
@@ -172,6 +172,9 @@ Text inputs, textareas and selects shall show a focus indicator that follows the
 
 #### FR-AUTH-MAIL-001: Welcome Email
 A Postgres trigger on `auth.users` (insert with a confirmed email, or the update that confirms it) shall call the `send-welcome-email` edge function through `pg_net`, authenticated by the Vault secret `welcome_email_secret`. The function shall send an Arabic RTL email through Resend using the `RESEND_API_KEY` secret and shall never block sign-up on failure.
+
+#### FR-AUTH-MAIL-002: Branded Auth Email Templates
+Supabase Auth emails (confirmation, recovery, magic link, email change, invite) shall use the HTML templates in `supabase/templates/`, written Arabic-first with an English copy, wired for local development in `supabase/config.toml`.
 
 #### FR-TASK-UI-001: Task Created Time
 The task list shall show each task's created time only when `showTaskCreatedTime` is on (default off), a persisted and synced UI setting.
