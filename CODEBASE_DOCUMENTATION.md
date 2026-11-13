@@ -348,6 +348,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - [src/components/landing/DayPrism.tsx](#src-components-landing-dayprism-tsx)
 - [src/components/landing/HeroFrame.tsx](#src-components-landing-heroframe-tsx)
 - [src/components/landing/mocks.tsx](#src-components-landing-mocks-tsx)
+- [src/components/landing/AgentDemo.tsx](#src-components-landing-agentdemo-tsx)
+- [src/components/landing/IntegrationHub.tsx](#src-components-landing-integrationhub-tsx)
+- [src/components/landing/Logo.tsx](#src-components-landing-logo-tsx)
 - [src/components/landing/landing.css](#src-components-landing-landing-css)
 
 ### src/components/ui
@@ -3708,6 +3711,36 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 - **`FocusMock`** — Counts down once per second while running; its button pauses and resumes.
 
 **Lines:** 205
+
+---
+
+<a name="src-components-landing-agentdemo-tsx"></a>
+### src/components/landing/AgentDemo.tsx
+
+**File Purpose:** A scripted miniature of the AI assistant for the landing page: pick a prompt (one is in Arabic), read the reply, and press Execute on the proposed action cards. No network calls.
+
+**Functions & Classes:**
+- `AgentDemo` (React Component)
+
+---
+
+<a name="src-components-landing-integrationhub-tsx"></a>
+### src/components/landing/IntegrationHub.tsx
+
+**File Purpose:** The landing page's "Everything in one place" section: lifeOS in the centre, nine sources around it (bank SMS, calendar feeds, iOS Shortcuts, browser extension, screen time, sleep data, InBody, prayer times, AI providers) joined by lines with travelling dashes and a pause control, a shared detail panel, and the 12 modules underneath.
+
+**Functions & Classes:**
+- `IntegrationHub` (React Component)
+
+---
+
+<a name="src-components-landing-logo-tsx"></a>
+### src/components/landing/Logo.tsx
+
+**File Purpose:** The lifeOS mark redrawn as vectors with four variants (`outline`, `solid`, `tile`, `accent`). The same drawings are exported as SVG files in `public/brand/`.
+
+**Functions & Classes:**
+- `LogoMark` (React Component)
 
 ---
 

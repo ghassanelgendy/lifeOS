@@ -1,19 +1,23 @@
-import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Sparkles, ChevronLeft, CheckCircle2, Clock } from 'lucide-react';
+import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, useReducedMotion } from 'framer-motion';
+import { ChevronLeft, Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import {
   useAllAzkar,
   useTodayAzkarProgress,
   useContextualAzkarCategory,
 } from '../../hooks/useAzkar';
+import { AnimatedNumber } from './dashboardMotion';
 
 interface AzkarDashboardWidgetProps {
   className?: string;
 }
 
+const RING_R = 26;
+
 export function AzkarDashboardWidget({ className }: AzkarDashboardWidgetProps = {}) {
-  const navigate = useNavigate();
+  const reduce = useReducedMotion();
   const allAzkar = useAllAzkar();
   const { progress } = useTodayAzkarProgress();
   const contextual = useContextualAzkarCategory();
@@ -39,62 +43,64 @@ export function AzkarDashboardWidget({ className }: AzkarDashboardWidgetProps = 
     };
   }, [currentCategoryAzkar, progress.counts]);
 
+  const ringColor = stats.isDone ? 'var(--ds-success)' : 'var(--ds-accent)';
+
   return (
-    <div
-      onClick={() => navigate('/azkar')}
+    <Link
+      to="/azkar"
+      dir="rtl"
+      lang="ar"
+      data-ds
       className={cn(
-        'p-5 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-200 cursor-pointer shadow-sm group select-none relative overflow-hidden h-full flex flex-col justify-between',
+        'fx-card group flex h-full items-center gap-5 rounded-card border border-separator bg-raised p-5 shadow-ds select-none',
         className
       )}
     >
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
-            <Sparkles size={16} />
-          </div>
-          <div>
-            <div className="flex items-center gap-1.5">
-              <h3 className="font-semibold text-sm leading-tight text-foreground">الأذكار والورد اليومي</h3>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                {contextual.badge}
-              </span>
-            </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5" lang="ar" dir="rtl">{contextual.category}</p>
-          </div>
-        </div>
+      {/* Progress ring: draws itself to today's completion */}
+      <span className="relative flex size-[72px] shrink-0 items-center justify-center">
+        <svg viewBox="0 0 64 64" className="absolute inset-0 size-full -rotate-90" aria-hidden>
+          <circle cx="32" cy="32" r={RING_R} fill="none" stroke="var(--ds-sunken)" strokeWidth="6" />
+          <motion.circle
+            cx="32" cy="32" r={RING_R} fill="none" stroke={ringColor} strokeWidth="6" strokeLinecap="round"
+            initial={reduce ? false : { pathLength: 0 }}
+            animate={{ pathLength: stats.percent / 100 }}
+            transition={{ duration: 0.9, ease: [0.2, 0.8, 0.2, 1], delay: 0.3 }}
+          />
+        </svg>
+        {stats.isDone ? (
+          <motion.span
+            initial={reduce ? false : { scale: 0.4, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2, ease: [0.2, 0.8, 0.2, 1], delay: 0.5 }}
+            className="text-success"
+          >
+            <Check size={26} strokeWidth={3} />
+          </motion.span>
+        ) : (
+          <span className="text-title font-bold tabular-nums text-ink" dir="ltr">
+            <AnimatedNumber value={stats.percent} />
+            <span className="text-caption font-semibold text-ink-3">%</span>
+          </span>
+        )}
+      </span>
 
-        <div className="flex items-center gap-1 text-xs text-muted-foreground group-hover:text-primary transition-colors">
-          <span>قراءة الأذكار</span>
-          <ChevronLeft size={16} />
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between text-xs text-muted-foreground mt-3 pt-2 border-t border-border/50">
-        <span className="flex items-center gap-1">
-          {stats.isDone ? (
-            <span className="text-emerald-500 font-semibold flex items-center gap-1">
-              <CheckCircle2 size={14} /> تم إتمام الورد
-            </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              <Clock size={13} /> {stats.completed} من {stats.total} ذكر
-            </span>
-          )}
+      <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="text-title font-semibold leading-tight text-ink">الأذكار والورد اليومي</span>
+          <span className="rounded-pill border border-separator px-2 py-0.5 text-caption font-medium text-ink-2">
+            {contextual.badge}
+          </span>
         </span>
+        <span className="truncate text-label text-ink-2">{contextual.category}</span>
+        <span className={cn('text-caption font-semibold tabular-nums', stats.isDone ? 'text-success' : 'text-ink-3')}>
+          {stats.isDone ? 'تم إتمام الورد' : `${stats.completed} من ${stats.total} ذكر`}
+        </span>
+      </span>
 
-        <span className="font-mono font-bold text-foreground text-xs">{stats.percent}%</span>
-      </div>
-
-      {/* Progress Bar */}
-      <div className="w-full h-1.5 bg-secondary rounded-full overflow-hidden mt-2">
-        <div
-          className={cn(
-            'h-full transition-all duration-300 rounded-full',
-            stats.isDone ? 'bg-emerald-500' : 'bg-primary'
-          )}
-          style={{ width: `${stats.percent}%` }}
-        />
-      </div>
-    </div>
+      <span className="ds-t flex shrink-0 items-center gap-1 text-label font-medium text-ink-3 group-hover:text-accent-ds">
+        <span className="hidden sm:inline">قراءة الأذكار</span>
+        <ChevronLeft size={18} className="transition-transform duration-200 group-hover:-translate-x-1 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0" />
+      </span>
+    </Link>
   );
 }

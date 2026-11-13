@@ -6,15 +6,16 @@
 import { useRef, type RefObject } from 'react';
 import { motion, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion';
 import {
-  BarChart3, Calendar, CheckSquare, Coins, FileText, Flame, LayoutDashboard, Moon, Wallet,
+  BarChart3, BookOpen, Calendar, Check, CheckSquare, Coins, FileText, Flame, LayoutDashboard, Moon, Wallet,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { FinanceMock, FocusMock, HabitsMock, SleepMock, TasksMock, panel } from './mocks';
+import { FinanceMock, FocusMock, HabitsMock, PrayerStrip, SleepMock, TasksMock, panel } from './mocks';
 
 const NAV = [
   { icon: LayoutDashboard, name: 'Dashboard', active: true },
   { icon: CheckSquare, name: 'Tasks' },
   { icon: Flame, name: 'Habits' },
+  { icon: BookOpen, name: 'Quran' },
   { icon: Calendar, name: 'Calendar' },
   { icon: Wallet, name: 'Finance' },
   { icon: Moon, name: 'Sleep' },
@@ -92,6 +93,8 @@ export function HeroFrame({ scroller }: { scroller: RefObject<HTMLDivElement | n
                 </span>
               </div>
 
+              <div className="mb-3"><PrayerStrip /></div>
+
               <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
                 <div className={cn(panel, 'p-4 md:col-span-5 md:h-[264px]')}><TasksMock /></div>
                 <div className={cn(panel, 'p-4 md:col-span-3 md:h-[264px]')}><FocusMock /></div>
@@ -103,28 +106,29 @@ export function HeroFrame({ scroller }: { scroller: RefObject<HTMLDivElement | n
           </div>
         </div>
 
-        {/* floating tiles, each on its own depth */}
+        {/* Floating tiles, each on its own depth. They hang off the frame's outer corners
+            (the empty foot of the sidebar, and the window bar) so they never cover content. */}
         {!reduce && (
           <>
             <motion.div
               aria-hidden
               style={{ z: lift }}
-              className="absolute -left-10 top-[30%] hidden items-center gap-3 rounded-[14px] border border-[var(--lp-line)] bg-[var(--lp-raised)] px-4 py-3 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.9)] xl:flex"
+              className="absolute -left-16 bottom-10 hidden w-[196px] items-center gap-3 rounded-[14px] border border-[var(--lp-line)] bg-[var(--lp-raised)] px-4 py-3 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.9)] xl:flex"
             >
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-[var(--lp-sunken)] text-[var(--lp-warn)]"><Flame size={17} /></span>
-              <span>
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--lp-sunken)] text-[var(--lp-warn)]"><Flame size={17} /></span>
+              <span className="min-w-0">
                 <span className="block text-[14px] font-semibold text-[var(--lp-ink)]">12 day streak</span>
-                <span className="block text-[12px] text-[var(--lp-ink-3)]">Read 5 pages</span>
+                <span className="block truncate text-[12px] text-[var(--lp-ink-3)]">Morning azkar</span>
               </span>
             </motion.div>
             <motion.div
               aria-hidden
               style={{ z: liftFar }}
-              className="absolute -right-8 top-[14%] hidden items-center gap-3 rounded-[14px] border border-[var(--lp-line)] bg-[var(--lp-raised)] px-4 py-3 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.9)] xl:flex"
+              className="absolute -right-14 top-14 hidden w-[196px] items-center gap-3 rounded-[14px] border border-[var(--lp-line)] bg-[var(--lp-raised)] px-4 py-3 shadow-[0_24px_48px_-16px_rgb(0_0_0/0.9)] xl:flex"
             >
-              <span className="flex size-9 items-center justify-center rounded-[10px] bg-[var(--lp-sunken)] text-[var(--lp-ok)]"><CheckSquare size={17} /></span>
-              <span>
-                <span className="block text-[14px] font-semibold text-[var(--lp-ink)]">Task done</span>
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-[10px] bg-[var(--lp-sunken)] text-[var(--lp-ok)]"><Check size={17} strokeWidth={3} /></span>
+              <span className="min-w-0">
+                <span className="block text-[14px] font-semibold text-[var(--lp-ink)]">Fajr, on time</span>
                 <span className="block text-[12px] tabular-nums text-[var(--lp-ink-3)]">+20 XP earned</span>
               </span>
             </motion.div>

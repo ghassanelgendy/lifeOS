@@ -3,11 +3,11 @@
  * only (no layout animation) and rests in its final state under
  * prefers-reduced-motion.
  */
-import { useEffect, useRef, type PointerEvent } from 'react';
+import { useEffect, useRef } from 'react';
 import { animate, motion, useReducedMotion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 
-const EASE_OUT = [0.2, 0.7, 0.2, 1] as const;
+const EASE_OUT = [0.2, 0.8, 0.2, 1] as const;
 
 /** Props for a card that rises into place once on load, staggered by its index. */
 export function useRise() {
@@ -61,21 +61,8 @@ export function GrowBar({ pct, className, trackClassName, delay = 0 }: { pct: nu
         className={cn('block h-full w-full rounded-pill', className)}
         initial={reduce ? false : { x: '-100%' }}
         animate={{ x: offset }}
-        transition={{ type: 'spring', stiffness: 70, damping: 18, delay }}
+        transition={{ duration: 0.7, ease: EASE_OUT, delay }}
       />
     </span>
   );
-}
-
-/**
- * Pointer handler for a container of `.fx-card` elements: it tells the card
- * under the pointer where the pointer is, and the CSS draws the highlight.
- */
-export function trackSpotlight(e: PointerEvent<HTMLElement>) {
-  if (e.pointerType !== 'mouse') return;
-  const card = (e.target as HTMLElement).closest<HTMLElement>('.fx-card');
-  if (!card) return;
-  const r = card.getBoundingClientRect();
-  card.style.setProperty('--fx-x', `${e.clientX - r.left}px`);
-  card.style.setProperty('--fx-y', `${e.clientY - r.top}px`);
 }

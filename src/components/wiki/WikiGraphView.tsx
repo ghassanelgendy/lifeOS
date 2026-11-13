@@ -50,6 +50,9 @@ export default function WikiGraphView({ onNavigate }: WikiGraphViewProps) {
   const simRef = useRef<{ nodes: GraphNode[]; edges: WikiGraphEdge[] } | null>(null);
   const rafRef = useRef<number>(0);
   const draggingRef = useRef<string | null>(null);
+  // Where the pointer went down, and whether it has moved far enough since to count as a drag.
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didDragRef = useRef(false);
   const alphaRef = useRef<number>(1.0); // Physics simulation heat / temperature
 
   const initSim = useCallback(() => {
@@ -269,6 +272,11 @@ export default function WikiGraphView({ onNavigate }: WikiGraphViewProps) {
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
+    if (draggingRef.current && dragStartRef.current && !didDragRef.current) {
+      const moved = Math.hypot(e.clientX - dragStartRef.current.x, e.clientY - dragStartRef.current.y);
+      if (moved > 4) didDragRef.current = true;
+    }
+
     if (draggingRef.current && simRef.current) {
       alphaRef.current = 1.0; // Re-heat simulation on drag
       const node = simRef.current.nodes.find((n) => n.id === draggingRef.current);
@@ -292,6 +300,8 @@ export default function WikiGraphView({ onNavigate }: WikiGraphViewProps) {
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
     const nodeId = getNodeAt(x, y);
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    didDragRef.current = false;
     if (nodeId) {
       draggingRef.current = nodeId;
       alphaRef.current = 1.0; // Re-heat simulation on click/grab
@@ -303,6 +313,12 @@ export default function WikiGraphView({ onNavigate }: WikiGraphViewProps) {
   };
 
   const handleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    // A drag ends with a click event on the canvas too. Moving a node must not open it:
+    // only a press and release in place navigates.
+    if (didDragRef.current) {
+      didDragRef.current = false;
+      return;
+    }
     const rect = e.currentTarget.getBoundingClientRect();
     const scaleX = WIDTH / (rect.width || 1);
     const scaleY = HEIGHT / (rect.height || 1);
@@ -338,7 +354,7 @@ export default function WikiGraphView({ onNavigate }: WikiGraphViewProps) {
             Click <strong>{hoveredNodeText.includes('#') ? hoveredNodeText.split('#')[1] : hoveredNodeText}</strong> to open
           </span>
         ) : (
-          'Drag nodes to rearrange · Click a node to navigate'
+          'Drag nodes to rearrange · Click a node to open it'
         )}
       </div>
       <canvas

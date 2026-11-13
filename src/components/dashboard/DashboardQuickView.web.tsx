@@ -2,7 +2,7 @@ import { useMemo, useState, useCallback, useEffect, useRef, useLayoutEffect } fr
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { createPortal } from 'react-dom';
-import { AnimatedNumber, GrowBar, trackSpotlight, useRise } from './dashboardMotion';
+import { AnimatedNumber, GrowBar, useRise } from './dashboardMotion';
 import { Link } from 'react-router-dom';
 import { format, isToday, parseISO, subDays } from 'date-fns';
 import { Sparkles, ArrowRight, Coins, CheckCircle2, Check, ChevronDown, ChevronRight, MoreVertical, X, Trash2, Copy, BookOpen } from 'lucide-react';
@@ -1513,7 +1513,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   return (
     <>
-    <div className="flex flex-col gap-4 sm:gap-5 w-full" onPointerMove={trackSpotlight}>
+    <div className="flex flex-col gap-4 sm:gap-5 w-full">
       {/* Today Header & Points Balance */}
       <div className="flex items-center justify-between">
         <h2 id="qv-today-heading" className="text-caption font-bold text-ink-3">

@@ -203,3 +203,98 @@ export function SleepMock() {
     </div>
   );
 }
+
+const PRAYERS = [
+  { name: 'Fajr', time: '05:02', status: 'On time' },
+  { name: 'Dhuhr', time: '11:44', status: 'On time' },
+  { name: 'Asr', time: '14:41', status: 'Late' },
+  { name: 'Maghrib', time: '17:03', status: 'Next' },
+  { name: 'Isha', time: '18:25', status: '' },
+] as const;
+
+const PRAYER_TONE: Record<string, string> = {
+  'On time': 'var(--lp-ok)',
+  Late: 'var(--lp-warn)',
+  Next: 'var(--lp-accent)',
+  '': 'var(--lp-ink-3)',
+};
+
+/** One compact row of the five prayers, used along the top of the hero frame. */
+export function PrayerStrip() {
+  return (
+    <ul className="grid grid-cols-5 gap-2">
+      {PRAYERS.map((p) => (
+        <li
+          key={p.name}
+          className={cn(
+            'flex min-w-0 flex-col gap-0.5 rounded-[10px] border px-1.5 py-2 sm:px-2.5',
+            p.status === 'Next' ? 'border-[var(--lp-accent)] bg-[var(--lp-sunken)]' : 'border-[var(--lp-line)] bg-[var(--lp-raised)]',
+          )}
+        >
+          <span className="flex items-center justify-between gap-1">
+            <span className="truncate text-[12px] font-semibold tracking-tight text-[var(--lp-ink)] sm:text-[13px] sm:tracking-normal">{p.name}</span>
+            {(p.status === 'On time' || p.status === 'Late') && <Check size={13} strokeWidth={3} className="hidden shrink-0 sm:block" style={{ color: PRAYER_TONE[p.status] }} />}
+          </span>
+          <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{p.time}</span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Today's prayers with their status, and the qadaa plan underneath. */
+export function PrayerMock() {
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span className={label}>Today's prayers</span>
+        <span className="text-[12px] text-[var(--lp-ink-3)]">3 of 5</span>
+      </div>
+      <ul className="flex flex-1 flex-col justify-between">
+        {PRAYERS.map((p) => (
+          <li key={p.name} className="flex items-center gap-3 border-b border-[var(--lp-line)] py-2 last:border-b-0">
+            <span className="size-2 shrink-0 rounded-full" style={{ background: PRAYER_TONE[p.status] }} />
+            <span className="flex-1 text-[14px] font-medium text-[var(--lp-ink)]">{p.name}</span>
+            <span className="text-[12px] font-medium" style={{ color: PRAYER_TONE[p.status] }}>{p.status}</span>
+            <span className="w-11 text-right text-[12px] tabular-nums text-[var(--lp-ink-3)]">{p.time}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="flex items-center justify-between rounded-[10px] bg-[var(--lp-sunken)] px-3 py-2 text-[12px]">
+        <span className="text-[var(--lp-ink-2)]">Qadaa plan · 3 a day</span>
+        <span className="font-semibold tabular-nums text-[var(--lp-ok)]">4 days ahead</span>
+      </div>
+    </div>
+  );
+}
+
+/** Evening wird: an azkar counter you can actually tap, and today's khatmah pages. */
+export function QuranMock() {
+  const TARGET = 33;
+  const [count, setCount] = useState(21);
+  const done = count >= TARGET;
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span className={label}>Evening azkar</span>
+        <span className="text-[12px] tabular-nums text-[var(--lp-ink-3)]">{Math.min(count, TARGET)} / {TARGET}</span>
+      </div>
+      <button
+        type="button"
+        onClick={() => setCount((c) => (c >= TARGET ? 0 : c + 1))}
+        aria-label={done ? 'Reset the counter' : 'Count one'}
+        className="lp-btn flex flex-1 flex-col items-center justify-center gap-2 rounded-[12px] border border-[var(--lp-line)] bg-[var(--lp-sunken)] px-4 hover:border-[var(--lp-ink-3)]"
+      >
+        <span dir="rtl" lang="ar" className="text-[22px] font-semibold leading-relaxed text-[var(--lp-ink)]">سُبْحَانَ اللَّهِ وَبِحَمْدِهِ</span>
+        <span className="text-[12px] text-[var(--lp-ink-3)]">{done ? 'Done. Tap to start again' : 'Tap to count'}</span>
+        <span className="h-1 w-full max-w-[180px] overflow-hidden rounded-full bg-[var(--lp-line)]" aria-hidden>
+          <span className="block h-full rounded-full" style={{ width: `${(Math.min(count, TARGET) / TARGET) * 100}%`, background: done ? 'var(--lp-ok)' : 'var(--lp-accent)', transition: 'width 160ms ease' }} />
+        </span>
+      </button>
+      <div className="flex items-center justify-between rounded-[10px] bg-[var(--lp-sunken)] px-3 py-2 text-[12px]">
+        <span className="text-[var(--lp-ink-2)]">Khatmah · today</span>
+        <span className="font-semibold tabular-nums text-[var(--lp-ink)]">pages 282 to 291</span>
+      </div>
+    </div>
+  );
+}

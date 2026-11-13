@@ -149,6 +149,12 @@ On desktop widths the Quick View shall lay out Day progress, Today's targets and
 #### FR-DASH-002B: Quick View Motion (PC Web)
 The web Quick View shall animate card entrance (once per load, staggered), numeric values (count to value, roll on change), progress fills, the day bar and the weekly bars, and shall provide pointer-follow hover feedback on cards. Animations shall use transform, opacity or clip-path only (no layout properties), shall not delay interaction, and shall be fully disabled under `prefers-reduced-motion`, leaving every element in its final state. Effect classes live in `src/styles/effects.web.css` and helpers in `src/components/dashboard/dashboardMotion.tsx`.
 
+#### FR-DS-001: Web Design Tokens Follow the App Theme
+The web design tokens shall resolve their surface, text and accent colors from the app theme variables (`--color-background`, `--color-card`, `--color-secondary`, `--color-border`, `--color-foreground`, `--color-muted-foreground`, `--color-primary`), so token-based components follow dark/light mode and the selected accent theme. Dashboard cards shall not use pointer-follow highlights; only a card that is itself a link shall move on hover.
+
+#### FR-LAND-002: Landing Content and Interaction
+The landing page shall present, without invented figures or testimonials: trust facts drawn from the product (row-level security, offline use, privacy mode, public source), use cases including prayer and qadaa tracking, khatmah planning and bank SMS automation, an assistant demonstration in which proposed actions run only after the visitor presses Execute, and an integration hub listing the data sources that feed lifeOS. Continuously moving diagrams shall offer a pause control. In the wiki knowledge graph, dragging a node shall move it without opening it; only a press and release in place shall navigate.
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 

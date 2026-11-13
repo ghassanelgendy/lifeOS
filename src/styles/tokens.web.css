@@ -6,8 +6,8 @@
  *  - New names only (ds-*, text-caption, rounded-control...). Nothing here
  *    overrides a default Tailwind or existing --color-* value, so adopting a
  *    token is opt-in per component.
- *  - Text on page and raised surfaces passes 4.5:1 in both themes
- *    (checked: ink-3 5.5:1 light, 7.1:1 dark; accent 4.6:1 light, 8.0:1 dark).
+ *  - Surfaces, text and accent are the app theme's, so they follow dark/light
+ *    and the accent themes. Text on page and raised surfaces must pass 4.5:1.
  *  - Minimum text size is 12px (text-caption). Do not use 9-11px.
  *  - Two radii for UI (control, card) plus pill. No others.
  *  - No gradients, glows, or colored shadows. Elevation is a border plus at
@@ -17,43 +17,39 @@
  */
 
 :root {
-  /* Surfaces: page, raised (cards, sheets), sunken (inputs, tracks) */
-  --ds-surface: #0c0c0e;
-  --ds-raised: #161618;
-  --ds-sunken: #1e1e21;
-  --ds-separator: #2a2a2e;
+  /*
+   * Surfaces, text and accent come from the app theme (src/index.web.css), so
+   * token-based components follow dark/light and the user's accent theme
+   * exactly like everything that still uses bg-card / bg-background. Change a
+   * card's look here once and every Card on the web build changes with it.
+   */
+  --ds-surface: var(--color-background);
+  --ds-raised: var(--color-card);
+  --ds-sunken: var(--color-secondary);
+  --ds-separator: var(--color-border);
   --ds-hover: rgb(255 255 255 / 0.06);
 
   /* Text levels */
-  --ds-ink: #f4f4f5;
-  --ds-ink-2: #b8b8c0;
-  --ds-ink-3: #9b9ba4;
+  --ds-ink: var(--color-foreground);
+  --ds-ink-2: color-mix(in srgb, var(--color-foreground) 55%, var(--color-muted-foreground));
+  --ds-ink-3: var(--color-muted-foreground);
 
-  /* One accent, plus status colors used for meaning only */
-  --ds-accent: #5aa9ff;
-  --ds-on-accent: #04101f;
+  /* One accent (the theme's), plus status colors used for meaning only */
+  --ds-accent: var(--color-primary);
+  --ds-on-accent: var(--color-primary-foreground);
   --ds-danger: #ff6b6b;
   --ds-success: #4cc38a;
   --ds-warning: #f0b429;
 
-  --ds-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  /* Cards: a 1px top highlight on dark so the surface reads as raised without going gray. */
+  --ds-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4);
   --ds-shadow-overlay: 0 8px 24px rgb(0 0 0 / 0.5);
   --ds-focus: 0 0 0 2px var(--ds-surface), 0 0 0 4px var(--ds-accent);
 }
 
 html.light {
-  --ds-surface: #f5f5f6;
-  --ds-raised: #ffffff;
-  --ds-sunken: #ececee;
-  --ds-separator: #dcdce0;
   --ds-hover: rgb(0 0 0 / 0.05);
 
-  --ds-ink: #18181b;
-  --ds-ink-2: #4f4f57;
-  --ds-ink-3: #62626b;
-
-  --ds-accent: #0a6cde;
-  --ds-on-accent: #ffffff;
   --ds-danger: #c92a2a;
   --ds-success: #1c7c4f;
   --ds-warning: #8a5a00;

@@ -1,6 +1,6 @@
 /**
  * "A day in lifeOS": a pinned section. While it is pinned, scrolling turns a
- * five-sided prism whose faces are live module fragments, and the chapter
+ * six-sided prism whose faces are live module fragments, and the chapter
  * list beside it follows. Clicking a chapter scrolls to its face.
  *
  * Under prefers-reduced-motion nothing is pinned or turned: the five chapters
@@ -11,16 +11,17 @@ import {
   motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform, type MotionValue,
 } from 'framer-motion';
 import { cn } from '../../lib/utils';
-import { FinanceMock, FocusMock, HabitsMock, SleepMock, TasksMock } from './mocks';
+import { FinanceMock, FocusMock, PrayerMock, QuranMock, SleepMock, TasksMock } from './mocks';
 
 type Chapter = { time: string; module: string; title: string; body: string; mock: ReactNode };
 
 const CHAPTERS: Chapter[] = [
-  { time: '07:00', module: 'Tasks', title: 'Plan the day', body: 'Smart task management with priorities, due dates, subtasks, and recurrence.', mock: <TasksMock /> },
-  { time: '10:00', module: 'Focus', title: 'Protect deep work', body: 'Pomodoro timer to protect deep work time and track productive sessions.', mock: <FocusMock autoStart={false} /> },
-  { time: '13:00', module: 'Habits', title: 'Keep the streak', body: 'Build streaks, track daily habits, and watch consistency compound.', mock: <HabitsMock /> },
-  { time: '18:00', module: 'Finance', title: 'Know where money goes', body: 'Track income, expenses, and budgets so your money goes where you want.', mock: <FinanceMock /> },
-  { time: '23:00', module: 'Sleep', title: 'Close the day rested', body: 'Log sleep sessions and review quality trends to protect your recovery.', mock: <SleepMock /> },
+  { time: 'Fajr', module: 'Prayers', title: 'Start with what matters', body: 'Log each prayer as on time, late or missed. A missed prayer goes straight into your qadaa plan.', mock: <PrayerMock /> },
+  { time: 'Duha', module: 'Tasks', title: 'Plan the day', body: 'Smart task management with priorities, due dates, subtasks, and recurrence.', mock: <TasksMock /> },
+  { time: 'Dhuhr', module: 'Focus', title: 'Protect deep work', body: 'Pomodoro timer to protect deep work time and track productive sessions.', mock: <FocusMock autoStart={false} /> },
+  { time: 'Asr', module: 'Finance', title: 'Know where money goes', body: 'Bank SMS messages become categorised transactions on their own, against the budget you set.', mock: <FinanceMock /> },
+  { time: 'Maghrib', module: 'Quran & Azkar', title: 'Keep your wird', body: 'Evening azkar with a counter, and a khatmah plan that tells you which pages are today\'s.', mock: <QuranMock /> },
+  { time: 'Isha', module: 'Sleep', title: 'Close the day rested', body: 'Log sleep sessions and review quality trends to protect your recovery.', mock: <SleepMock /> },
 ];
 
 const N = CHAPTERS.length;
@@ -68,7 +69,7 @@ function ChapterHead({ c, active }: { c: Chapter; active: boolean }) {
         <span className={active ? 'text-[var(--lp-accent)]' : 'text-[var(--lp-ink-3)]'}>{c.time}</span>
         <span className="text-[var(--lp-ink-3)]">{c.module}</span>
       </span>
-      <span className={cn('mt-1 block text-[22px] font-bold leading-tight tracking-tight', active ? 'text-[var(--lp-ink)]' : 'text-[var(--lp-ink-3)]')}>
+      <span className={cn('mt-0.5 block text-[20px] font-bold leading-tight tracking-tight', active ? 'text-[var(--lp-ink)]' : 'text-[var(--lp-ink-3)]')}>
         {c.title}
       </span>
     </>
@@ -121,14 +122,14 @@ export function DayPrism({ scroller, heading }: { scroller: RefObject<HTMLDivEle
   }
 
   return (
-    <section id="day" ref={section} className="relative overflow-x-clip" style={{ height: `${N * 90}vh` }}>
+    <section id="day" ref={section} className="relative overflow-x-clip" style={{ height: `${N * 72}vh` }}>
       <div className="sticky top-0 flex h-[100dvh] flex-col justify-center px-5 pb-6 pt-20 sm:px-8">
         <div className="mx-auto grid w-full max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-12">
           <div>
             {heading}
 
             {/* chapter list: full list on desktop, the active chapter only on small screens */}
-            <ol className="relative mt-8 hidden lg:block">
+            <ol className="relative mt-6 hidden lg:block">
               <span aria-hidden className="absolute bottom-2 left-0 top-2 w-px bg-[var(--lp-line)]" />
               <motion.span aria-hidden className="absolute left-0 top-2 w-px origin-top bg-[var(--lp-accent)]" style={{ height: 'calc(100% - 16px)', scaleY: bar }} />
               {CHAPTERS.map((c, i) => (
@@ -137,7 +138,7 @@ export function DayPrism({ scroller, heading }: { scroller: RefObject<HTMLDivEle
                     type="button"
                     onClick={() => goTo(i)}
                     aria-current={active === i ? 'step' : undefined}
-                    className="block w-full rounded-[10px] py-3 pl-6 pr-3 text-left transition-colors duration-150 hover:bg-[var(--lp-hover)]"
+                    className="block w-full rounded-[10px] py-2 pl-6 pr-3 text-left transition-colors duration-150 hover:bg-[var(--lp-hover)]"
                   >
                     <ChapterHead c={c} active={active === i} />
                     <motion.span

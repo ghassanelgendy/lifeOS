@@ -2,36 +2,21 @@
  * Opt-in effects for the web dashboard (imported from src/index.web.css).
  * tokens.web.css keeps the base system flat; these classes add motion on top
  * where a screen asks for it. Everything is off under prefers-reduced-motion.
+ * Curves are plain ease-outs: nothing bounces or overshoots.
  */
 
-/* Card: lifts on hover, and a soft accent highlight follows the pointer.
-   --fx-x / --fx-y are set by trackSpotlight() in dashboardMotion.tsx. */
+/* Card hover. Only a card that is itself a link moves: it lifts 2px and its
+   border steps up. Cards that merely hold controls stay still. No light, glow
+   or pointer-follow effect. */
 .fx-card {
-  position: relative;
   /* `translate`, not `transform`: framer-motion owns the inline transform of these cards. */
-  transition: translate 200ms cubic-bezier(0.2, 0.7, 0.2, 1), border-color 200ms ease, box-shadow 200ms ease;
+  transition: translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 180ms ease;
 }
-.fx-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 250ms ease;
-  background: radial-gradient(
-    260px circle at var(--fx-x, 50%) var(--fx-y, 50%),
-    color-mix(in srgb, var(--ds-accent) 12%, transparent),
-    transparent 70%
-  );
-}
-@media (hover: hover) {
-  .fx-card:hover {
+@media (hover: hover) and (pointer: fine) {
+  a.fx-card:hover {
     translate: 0 -2px;
-    border-color: color-mix(in srgb, var(--ds-accent) 45%, var(--ds-separator));
-    box-shadow: var(--ds-shadow-overlay);
+    border-color: color-mix(in srgb, var(--ds-ink) 28%, var(--ds-separator));
   }
-  .fx-card:hover::after { opacity: 1; }
 }
 
 /* "Now" marker on the day bar: a ring that breathes outward. */
@@ -87,7 +72,7 @@
   .fx-rows .task-item:hover { transform: translateX(3px); }
 }
 .fx-rows .task-item [role='checkbox'][aria-checked='true'] > div {
-  animation: fx-pop 320ms cubic-bezier(0.3, 1.6, 0.5, 1);
+  animation: fx-pop 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 @keyframes fx-pop {
   0% { transform: scale(0.6); }
@@ -95,8 +80,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .fx-card, .fx-card::after, .fx-rows .task-item { transition: none; }
-  .fx-card:hover { translate: none; }
+  .fx-card, .fx-rows .task-item { transition: none; }
+  a.fx-card:hover { translate: none; }
   .fx-rows .task-item:hover { transform: none; }
   .fx-now::after, .fx-wipe, .fx-grow-y,
   .fx-rows .task-item [role='checkbox'][aria-checked='true'] > div { animation: none; }

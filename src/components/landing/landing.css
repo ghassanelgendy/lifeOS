@@ -13,6 +13,7 @@
   --lp-ink-2: #b8b8c0;
   --lp-ink-3: #9b9ba4;
   --lp-accent: #5aa9ff;
+  --lp-accent-deep: #2f6fb8;
   --lp-on-accent: #04101f;
   --lp-ok: #4cc38a;
   --lp-warn: #f0b429;
@@ -24,15 +25,100 @@
 
 .lp :focus-visible {
   outline: 2px solid var(--lp-accent);
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-/* Buttons step up on hover and press on click. */
+/*
+ * Keys. The page's buttons are keycaps: a flat face on a hard lower edge.
+ * Hover raises the cap a little, pressing pushes it down onto its edge.
+ */
+.lp-key {
+  --edge: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  height: 3rem;
+  padding: 0 1.125rem;
+  border-radius: 9px;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--lp-on-accent);
+  background: var(--lp-accent);
+  box-shadow: 0 var(--edge) 0 var(--lp-accent-deep);
+  transform: translateY(calc(var(--edge) * -1));
+  transition: transform 90ms ease, box-shadow 90ms ease, background-color 120ms ease;
+}
+.lp-key:hover { --edge: 6px; }
+.lp-key:active { --edge: 1px; transition-duration: 40ms; }
+
+.lp-key-dark {
+  color: var(--lp-ink);
+  background: var(--lp-sunken);
+  box-shadow: 0 var(--edge) 0 #000, inset 0 0 0 1px var(--lp-line);
+}
+.lp-key-sm { height: 2.5rem; padding: 0 0.875rem; font-size: 14px; --edge: 3px; }
+.lp-key-sm:hover { --edge: 4px; }
+
+/* The arrow sits in its own cell and steps forward on hover. */
+.lp-key-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 5px;
+  background: rgb(4 16 31 / 0.16);
+  transition: transform 140ms ease;
+}
+.lp-key:hover .lp-key-cell { transform: translateX(2px); }
+
+/* Text links: the underline draws in from the start edge. */
+.lp-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--lp-ink);
+}
+.lp-link::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0.55rem;
+  height: 1.5px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp-link:hover::after { transform: scaleX(1); }
+
+/* Nav words rest bare; a 1px line draws under the word on hover and stays under the current section. */
+.lp-navword { position: relative; }
+.lp-navword::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: -4px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+a:hover > .lp-navword::after, .lp-navword.is-current::after { transform: scaleX(1); }
+.lp-navword.is-current::after { height: 2px; }
+
+/* Quiet row/tile press feedback for the interactive demos. */
 .lp-btn {
   transition: transform 120ms ease, background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
-.lp-btn:hover { transform: translateY(-1px); }
-.lp-btn:active { transform: translateY(0) scale(0.98); }
+.lp-btn:active { transform: scale(0.985); }
 
 /* Faint dot grid behind the hero, fading out toward the bottom. */
 .lp-dots {
@@ -42,7 +128,20 @@
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 85%);
 }
 
+/* Integration hub: dashes travel along each line toward the centre. */
+.lp-flow {
+  stroke-dasharray: 3 11;
+  animation: lp-flow 1.6s linear infinite;
+}
+.lp-paused .lp-flow { animation-play-state: paused; }
+@keyframes lp-flow { to { stroke-dashoffset: -28; } }
+
 @media (prefers-reduced-motion: reduce) {
-  .lp-btn { transition: none; }
-  .lp-btn:hover, .lp-btn:active { transform: none; }
+  .lp-key, .lp-key-cell, .lp-link::after, .lp-navword::after, .lp-btn { transition: none; }
+  .lp-key:hover { --edge: 4px; }
+  .lp-key-sm:hover { --edge: 3px; }
+  .lp-key:hover .lp-key-cell { transform: none; }
+  .lp-btn:active { transform: none; }
+  .lp-link::after { transform: scaleX(1); opacity: 0.4; }
+  .lp-flow { animation: none; }
 }
