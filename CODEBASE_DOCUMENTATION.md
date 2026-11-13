@@ -578,6 +578,9 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### supabase/functions/send-task-reminders
 - [supabase/functions/send-task-reminders/index.ts](#supabase-functions-send-task-reminders-index-ts)
 
+### supabase/functions/send-welcome-email
+- [supabase/functions/send-welcome-email/index.ts](#supabase-functions-send-welcome-email-index-ts)
+
 ### supabase/functions/send-test-notification
 - [supabase/functions/send-test-notification/index.ts](#supabase-functions-send-test-notification-index-ts)
 
@@ -7551,6 +7554,11 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 **Lines:** 250
 
 ---
+
+<a name="supabase-functions-send-welcome-email-index-ts"></a>
+### supabase/functions/send-welcome-email/index.ts
+
+**File Purpose:** Edge function that sends the Arabic welcome email through Resend. Called by the `welcome_email_on_insert` / `welcome_email_on_confirm` triggers on `auth.users` with the Vault secret `welcome_email_secret`. Needs the `RESEND_API_KEY` secret; `APP_URL` optionally adds the open-app button.
 
 <a name="supabase-functions-send-test-notification-index-ts"></a>
 ### supabase/functions/send-test-notification/index.ts

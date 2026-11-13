@@ -213,6 +213,8 @@ export default function SettingsPage() {
     setShowSystemTray,
     showAppFooter,
     setShowAppFooter,
+    showTaskCreatedTime,
+    setShowTaskCreatedTime,
     mobileNavItems,
     setMobileNavItems,
     desktopNavOrder,
@@ -845,6 +847,13 @@ export default function SettingsPage() {
             title="Footer"
             description={'Show or hide the bottom bar ("Made with ❤️ by Ghassan", GitHub link, and sync status).'}
             control={<ToggleSwitch checked={showAppFooter} onChange={() => setShowAppFooter(!showAppFooter)} label="App footer" />}
+          />
+
+          {/* Task added-time Toggle */}
+          <SettingsRow
+            title="Time added on tasks"
+            description="Show when each task was created on its row in the task list. Off by default."
+            control={<ToggleSwitch checked={showTaskCreatedTime} onChange={() => setShowTaskCreatedTime(!showTaskCreatedTime)} label="Time added on tasks" />}
           />
         </div>
       </section>

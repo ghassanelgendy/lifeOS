@@ -170,6 +170,12 @@ Wherever the app greets or labels the signed-in user, it shall use the provider-
 #### FR-UI-FOCUS-001: Field Focus Shape
 Text inputs, textareas and selects shall show a focus indicator that follows their own border radius; fields without a border of their own shall transfer the indicator to their rounded parent (`src/index.web.css`).
 
+#### FR-AUTH-MAIL-001: Welcome Email
+A Postgres trigger on `auth.users` (insert with a confirmed email, or the update that confirms it) shall call the `send-welcome-email` edge function through `pg_net`, authenticated by the Vault secret `welcome_email_secret`. The function shall send an Arabic RTL email through Resend using the `RESEND_API_KEY` secret and shall never block sign-up on failure.
+
+#### FR-TASK-UI-001: Task Created Time
+The task list shall show each task's created time only when `showTaskCreatedTime` is on (default off), a persisted and synced UI setting.
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 

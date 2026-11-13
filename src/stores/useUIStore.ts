@@ -117,6 +117,9 @@ interface UIState {
   /** Web/desktop only: the bottom bar reading "Made with ❤️ by Ghassan" + GitHub link + sync status. */
   showAppFooter: boolean;
   setShowAppFooter: (show: boolean) => void;
+  /** Show the "added at" time on task rows. Off by default. */
+  showTaskCreatedTime: boolean;
+  setShowTaskCreatedTime: (show: boolean) => void;
 
   // Mobile Navigation Customization
   mobileNavItems: string[];
@@ -255,6 +258,7 @@ export type PersistedUiSlice = {
   platformUIOverride: 'auto' | 'web' | 'pake' | 'linux';
   showSystemTray: boolean;
   showAppFooter: boolean;
+  showTaskCreatedTime: boolean;
   mobileNavItems: string[];
   pinnedNavItems: string[];
   desktopNavOrder: string[];
@@ -387,6 +391,8 @@ export const useUIStore = create<UIState>()(
       setShowSystemTray: (showSystemTray) => set({ showSystemTray }),
       showAppFooter: true,
       setShowAppFooter: (showAppFooter) => set({ showAppFooter }),
+      showTaskCreatedTime: false,
+      setShowTaskCreatedTime: (showTaskCreatedTime) => set({ showTaskCreatedTime }),
 
       // Mobile Navigation
       mobileNavItems: DEFAULT_MOBILE_NAV,
@@ -628,6 +634,7 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     platformUIOverride: state.platformUIOverride,
     showSystemTray: state.showSystemTray,
     showAppFooter: state.showAppFooter,
+    showTaskCreatedTime: state.showTaskCreatedTime,
     mobileNavItems: state.mobileNavItems,
     pinnedNavItems: state.pinnedNavItems,
     desktopNavOrder: state.desktopNavOrder,

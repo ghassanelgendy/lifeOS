@@ -39,6 +39,7 @@ import {
   Lock,
   FileText,
   Sparkles,
+  Clock,
 } from 'lucide-react';
 import packageJson from '../../package.json';
 import { cn } from '../lib/utils';
@@ -196,6 +197,8 @@ export default function SettingsPage() {
   const {
     privacyMode,
     togglePrivacyMode,
+    showTaskCreatedTime,
+    setShowTaskCreatedTime,
     analyticsShowTips,
     setAnalyticsShowTips,
     showWrappedReport,
@@ -1953,6 +1956,12 @@ export default function SettingsPage() {
                 title="Privacy Mode"
                 description="Blur sensitive data like numbers and amounts"
                 control={<ToggleSwitch checked={privacyMode} onChange={togglePrivacyMode} label="Privacy mode" />}
+              />
+              <SettingsRow
+                icon={<Clock size={20} className="text-muted-foreground" />}
+                title="Time added on tasks"
+                description="Show when each task was created on its row. Off by default."
+                control={<ToggleSwitch checked={showTaskCreatedTime} onChange={() => setShowTaskCreatedTime(!showTaskCreatedTime)} label="Time added on tasks" />}
                 divider={false}
               />
               <SettingsRow
