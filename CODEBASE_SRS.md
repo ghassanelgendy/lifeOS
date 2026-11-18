@@ -174,7 +174,7 @@ Text inputs, textareas and selects shall show a focus indicator that follows the
 A Postgres trigger on `auth.users` (insert with a confirmed email, or the update that confirms it) shall call the `send-welcome-email` edge function through `pg_net`, authenticated by the Vault secret `welcome_email_secret`. The function shall send an Arabic RTL email through Resend using the `RESEND_API_KEY` secret and shall never block sign-up on failure.
 
 #### FR-AUTH-MAIL-002: Branded Auth Email Templates
-Supabase Auth emails (confirmation, recovery, magic link, email change, invite) shall use the HTML templates in `supabase/templates/`, written Arabic-first with an English copy in the app's dark brand style (the lifeOS mark, a plain text link in place of a button), wired for local development in `supabase/config.toml`.
+Supabase Auth emails (confirmation, recovery, magic link, email change, invite, reauthentication) and the security notifications (password, email, phone, identity and two-step changes) shall use the HTML templates in `supabase/templates/`, written Arabic-first with an English copy in the app's dark brand style (the lifeOS mark, a plain text link in place of a button), wired for local development in `supabase/config.toml`.
 
 #### FR-TASK-UI-001: Task Created Time
 The task list shall show each task's created time only when `showTaskCreatedTime` is on (default off), a persisted and synced UI setting.
