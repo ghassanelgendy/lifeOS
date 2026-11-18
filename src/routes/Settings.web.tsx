@@ -15,7 +15,6 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
-  LogOut,
   User,
   RotateCcw,
   MapPin,
@@ -57,7 +56,6 @@ import {
 } from '../stores/useUIStore';
 import { useAuth } from '../hooks/useAuth';
 import { useTaskLists } from '../hooks/useTasks';
-import { UserBlobatar } from '../components/ui/UserBlobatar';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { useEffectiveTheme } from '../lib/theme';
 import { dbUtils } from '../db/database';
@@ -70,6 +68,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 import { AISettingsSection } from '../components/AISettingsSection';
+import { AccountSecuritySection } from '../components/AccountSecuritySection';
 import { BankAccountsSettingsSection } from '../components/BankAccountsSettingsSection';
 import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
 
@@ -195,7 +194,7 @@ function SettingsRow({
 }
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const {
     privacyMode,
     togglePrivacyMode,
@@ -630,18 +629,8 @@ export default function SettingsPage() {
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Account</h2>
         </div>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-3">
-            <UserBlobatar identifier={user?.email || user?.id} size={48} />
-            <div>
-              <p className="font-medium">{user?.email ?? '—'}</p>
-              <p className="text-sm text-muted-foreground">Signed in with Supabase Auth</p>
-            </div>
-          </div>
-          <Button variant="outline" onClick={() => signOut()} className="gap-2">
-            <LogOut size={18} />
-            Sign out
-          </Button>
+        <div className="p-4">
+          <AccountSecuritySection />
         </div>
       </section>
 

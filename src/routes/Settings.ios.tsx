@@ -15,7 +15,6 @@ import {
   ChevronUp,
   ChevronDown,
   GripVertical,
-  LogOut,
   User,
   RotateCcw,
   MapPin,
@@ -59,6 +58,7 @@ import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 import { AISettingsSection } from '../components/AISettingsSection';
+import { AccountSecuritySection } from '../components/AccountSecuritySection';
 import { BankAccountsSettingsSection } from '../components/BankAccountsSettingsSection';
 import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
 import { Capacitor } from '@capacitor/core';
@@ -187,7 +187,7 @@ function SettingsRow({
 }
 
 export default function SettingsPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const [localLogs, setLocalLogs] = useState<SystemLog[]>([]);
 
   useEffect(() => {
@@ -755,18 +755,8 @@ export default function SettingsPage() {
           <section id="settings-account" className="scroll-mt-20">
             <h2 className="px-4 pb-2 text-[13px] font-semibold text-muted-foreground">Account</h2>
             <div className="liquid-glass-card">
-            <div className="p-4 space-y-4">
-              <div className="flex items-center gap-3">
-                <UserBlobatar identifier={user?.email || user?.id} size={48} />
-                <div>
-                  <p className="font-medium">{user?.email ?? '—'}</p>
-                  <p className="text-sm text-muted-foreground">Signed in with Supabase Auth</p>
-                </div>
-              </div>
-              <Button variant="outline" onClick={() => signOut()} className="gap-2">
-                <LogOut size={18} />
-                Sign out
-              </Button>
+            <div className="p-4">
+              <AccountSecuritySection />
             </div>
                       </div>
 </section>

@@ -77,6 +77,9 @@ export default function Login() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <EmailField value={email} onChange={setEmail} disabled={locked} />
           <PasswordField value={password} onChange={setPassword} disabled={locked} autoComplete="current-password" describedBy={error ? 'auth-error' : undefined} />
+          <div className="-mt-1 flex justify-end">
+            <Link to="/forgot-password" className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline">{t.auth.recover.forgot}</Link>
+          </div>
 
           {error && (
             <div id="auth-error" role="alert" className="rounded-lg border border-destructive/40 px-3 py-2.5 text-sm">

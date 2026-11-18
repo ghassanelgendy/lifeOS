@@ -578,6 +578,10 @@ Generated comprehensive documentation covering every source file in the lifeOS p
 ### supabase/functions/send-task-reminders
 - [supabase/functions/send-task-reminders/index.ts](#supabase-functions-send-task-reminders-index-ts)
 
+### supabase/functions/delete-account
+- Deletes the caller's account: identifies the user from their JWT, requires the body `confirm: "DELETE"`, removes their storage files, then `auth.admin.deleteUser` (all `user_id` foreign keys cascade; migration `20261118120000_account_delete_cascade.sql` made the last two cascade).
+- Client side: `src/lib/accountSecurity.ts` (reset, password, email, TOTP, identities, delete), `src/components/AccountSecuritySection.tsx` (Settings, Account), `src/routes/ForgotPassword.tsx`, `src/routes/ResetPassword.tsx`, `src/components/auth/MfaGate.tsx`.
+
 ### supabase/functions/send-welcome-email
 - [supabase/functions/send-welcome-email/index.ts](#supabase-functions-send-welcome-email-index-ts)
 

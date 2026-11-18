@@ -45,6 +45,9 @@ import SettingsPage from './routes/Settings';
 import Points from './routes/Points';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
+import ForgotPassword from './routes/ForgotPassword';
+import ResetPassword from './routes/ResetPassword';
+import { MfaGate } from './components/auth/MfaGate';
 import Chat from './routes/Chat';
 import QuranRoute from './routes/Quran';
 import Azkar from './routes/Azkar';
@@ -80,7 +83,7 @@ function ProtectedRoute() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  return <Outlet />;
+  return <MfaGate><Outlet /></MfaGate>;
 }
 
 function RequireGuest({ children }: { children: React.ReactNode }) {
@@ -580,6 +583,8 @@ function AppInner() {
         <Routes>
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
+          <Route path="/forgot-password" element={<RequireGuest><ForgotPassword /></RequireGuest>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/" element={<ProtectedRoute />}>
             <Route element={<AppShell />}>
               <Route index element={<Dashboard />} />

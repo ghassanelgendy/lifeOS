@@ -60,3 +60,6 @@ content_path = "./supabase/templates/invite.html"
 [auth.email.template.reauthentication]
 subject = "رمز التحقق | Your lifeOS verification code"
 content_path = "./supabase/templates/reauthentication.html"
+
+[functions.delete-account]
+verify_jwt = false

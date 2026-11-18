@@ -41,6 +41,9 @@ import Points from './routes/Points';
 import Wiki from './routes/Wiki';
 import Login from './routes/Login';
 import Signup from './routes/Signup';
+import ForgotPassword from './routes/ForgotPassword';
+import ResetPassword from './routes/ResetPassword';
+import { MfaGate } from './components/auth/MfaGate';
 import Chat from './routes/Chat';
 import { useDailyPointsSync } from './hooks/usePoints';
 import Landing from './routes/Landing';
@@ -60,7 +63,7 @@ function ProtectedRoute() {
   const { user, loading } = useAuth();
   if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
-  return <Outlet />;
+  return <MfaGate><Outlet /></MfaGate>;
 }
 
 function RequireGuest({ children }: { children: React.ReactNode }) {
@@ -440,6 +443,8 @@ function AppInner() {
           <Route path="/" element={<PublicHome />} />
           <Route path="/login" element={<RequireGuest><Login /></RequireGuest>} />
           <Route path="/signup" element={<RequireGuest><Signup /></RequireGuest>} />
+          <Route path="/forgot-password" element={<RequireGuest><ForgotPassword /></RequireGuest>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/wiki" element={<Wiki />} />
           <Route path="/wiki/:pageTitle" element={<Wiki />} />
           <Route path="*" element={<ProtectedRoute />}>

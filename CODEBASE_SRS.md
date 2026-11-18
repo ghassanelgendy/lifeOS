@@ -176,6 +176,12 @@ A Postgres trigger on `auth.users` (insert with a confirmed email, or the update
 #### FR-AUTH-MAIL-002: Branded Auth Email Templates
 Supabase Auth emails (confirmation, recovery, magic link, email change, invite, reauthentication) and the security notifications (password, email, phone, identity and two-step changes) shall use the HTML templates in `supabase/templates/`, written Arabic-first with an English copy in the app's dark brand style (the lifeOS mark, a plain text link in place of a button), wired for local development in `supabase/config.toml`.
 
+#### FR-AUTH-ACCT-001: Account Recovery and Security
+The sign-in page shall link to a forgot-password page that emails a reset link (the response shall be identical whether or not the account exists). The link shall open `/reset-password`, where the user chooses a new password that meets the sign-up rules. Settings, Account shall let a signed-in user change their name, password (asking for an emailed code when Supabase requires a fresh sign-in), and email (confirmed by email), link or remove Google as a sign-in method (never the last one), sign out other devices, and turn two-step verification (TOTP authenticator app) on or off. A user with two-step verification shall be asked for their code before any protected page loads (`MfaGate`). The offline workspace shall show none of these controls.
+
+#### FR-AUTH-ACCT-002: Delete Account
+Settings, Account shall let a signed-in user permanently delete their account after typing `DELETE` and their email. The `delete-account` edge function identifies the user from their own JWT, removes their storage files, then deletes the auth user; every `user_id` foreign key cascades, so all their data goes with it. It shall refuse a call without the confirmation word.
+
 #### FR-TASK-UI-001: Task Created Time
 The task list shall show each task's created time only when `showTaskCreatedTime` is on (default off), a persisted and synced UI setting.
 
