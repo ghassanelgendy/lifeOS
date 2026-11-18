@@ -17,23 +17,32 @@ function render(name: string, appUrl: string | null) {
     ['فعّل مواقيت الصلاة والأذكار', 'من الإعدادات، ليصلك التذكير في وقته.'],
     ['جرّب المساعد', 'اضغط Ctrl + A في أي صفحة واطلب منه ترتيب يومك.'],
   ];
+  const F = "Cairo,Tahoma,'Segoe UI',Arial,sans-serif";
   const html = `<!doctype html>
-<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light dark"></head>
-<body style="margin:0;background:#f6f5f2;font-family:Tahoma,'Segoe UI',Arial,sans-serif;color:#1c1b19">
-<div style="max-width:520px;margin:0 auto;padding:32px 20px">
-  <div style="font-size:20px;font-weight:700;letter-spacing:-0.01em;margin-bottom:24px" dir="ltr">lifeOS</div>
-  <div style="background:#ffffff;border:1px solid #e4e1da;border-radius:14px;padding:28px 24px;line-height:1.9;font-size:16px">
-    <p style="margin:0 0 14px;font-size:18px;font-weight:700">${hello}</p>
-    <p style="margin:0 0 14px">أهلًا بك في lifeOS. حسابك جاهز.</p>
-    <p style="margin:0 0 22px;padding:12px 14px;background:#f3f1ec;border-radius:10px">لا تنسَ أن تجدد نيتك: اجعل تنظيم يومك كله لله، وما تبنيه هنا عونًا لك على طاعته.</p>
-    <p style="margin:0 0 8px;font-weight:700">ابدأ بثلاث خطوات</p>
-    <ol style="margin:0 0 22px;padding:0 20px 0 0">
-      ${steps.map(([t, d]) => `<li style="margin-bottom:8px"><strong>${t}.</strong> ${d}</li>`).join('')}
-    </ol>
-    ${appUrl ? `<p style="margin:0 0 6px"><a href="${esc(appUrl)}" style="display:inline-block;background:#1c1b19;color:#ffffff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:700">افتح lifeOS</a></p>` : ''}
-  </div>
-  <p style="margin:18px 4px 0;font-size:13px;line-height:1.8;color:#6b675f">بياناتك خاصة بك وحدك، ولا يراها أحد غيرك. إن لم تنشئ هذا الحساب فتجاهل الرسالة.</p>
-</div></body></html>`;
+<html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark light"><meta name="supported-color-schemes" content="dark light"><title>lifeOS</title>
+<style>
+@media (prefers-color-scheme: light){
+  body,.bg{background:#f4f4f5 !important}
+  .ink{color:#0c0c0e !important;border-color:#0c0c0e !important}
+  .mute{color:#52525b !important}
+  .rule{border-color:#d4d4d8 !important}
+}
+</style></head>
+<body class="bg" style="margin:0;padding:0;background:#0c0c0e">
+<table role="presentation" class="bg" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#0c0c0e"><tr><td align="center" style="padding:44px 24px 56px">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:440px">
+<tr><td style="padding-bottom:40px"><img src="https://life-os-tan.vercel.app/brand/lifeos-mark-email.png" width="36" height="36" alt="lifeOS" style="display:block;border:0;border-radius:9px"></td></tr>
+<tr><td class="ink" style="font-family:${F};color:#f4f4f5">
+<h1 style="margin:0 0 10px;font-size:24px;line-height:1.45;font-weight:700">${hello}</h1>
+<p class="mute" style="margin:0 0 26px;font-size:16px;line-height:2;color:#c4c4cb">أهلًا بك في lifeOS. حسابك جاهز.</p>
+<p class="ink" style="margin:0 0 30px;padding:2px 16px 2px 0;border-right:3px solid #f4f4f5;font-size:16px;line-height:2;color:#f4f4f5">لا تنسَ أن تجدد نيتك: اجعل تنظيم يومك كله لله، وما تبنيه هنا عونًا لك على طاعته.</p>
+${steps.map(([t, d], i) => `<p style="margin:0 0 14px;font-size:15px;line-height:1.9"><span class="mute" style="color:#8e8e96">${i + 1}</span>&nbsp;&nbsp;<strong>${t}.</strong> <span class="mute" style="color:#c4c4cb">${d}</span></p>`).join('')}
+${appUrl ? `<p style="margin:30px 0 0"><a class="ink" href="${esc(appUrl)}" style="font-size:18px;font-weight:700;color:#f4f4f5;text-decoration:none;border-bottom:2px solid #f4f4f5;padding-bottom:3px">افتح lifeOS&nbsp;&larr;</a></p>` : ''}
+</td></tr>
+<tr><td style="padding:34px 0 22px"><div class="rule" style="border-top:1px solid #2a2a2e;height:1px;line-height:1px;font-size:1px">&nbsp;</div></td></tr>
+<tr><td class="mute" style="font-family:${F};font-size:13px;line-height:1.9;color:#8e8e96">بياناتك خاصة بك وحدك، ولا يراها أحد غيرك. إن لم تنشئ هذا الحساب فتجاهل الرسالة.</td></tr>
+</table></td></tr></table>
+</body></html>`;
   const text = [
     hello,
     '',
