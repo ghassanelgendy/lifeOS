@@ -16,6 +16,7 @@ describe('parsePersistedUiFromRemote', () => {
       hasCompletedTour: false,
       hasCompletedOnboarding: true,
       hasDismissedGettingStarted: true,
+      settingsComplexityMode: 'advanced',
       onboardingProfile: {
         focusAreas: ['salah_anchor', 'jannah_detox'],
         workflowStyle: 'prayer_anchored',
@@ -31,6 +32,7 @@ describe('parsePersistedUiFromRemote', () => {
 
     expect(patch?.hasCompletedOnboarding).toBe(true);
     expect(patch?.hasDismissedGettingStarted).toBe(true);
+    expect(patch?.settingsComplexityMode).toBe('advanced');
     expect(patch?.onboardingProfile).toEqual({
       focusAreas: ['salah_anchor', 'jannah_detox'],
       workflowStyle: 'prayer_anchored',

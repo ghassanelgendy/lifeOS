@@ -250,6 +250,40 @@ chrome.idle.onStateChanged.addListener((state) => {
   activeSession.isIdle = state !== 'active';
 });
 
+// Listen for 1-click session pairing and status pings from lifeOS web tabs
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request?.action === 'LIFEOS_SYNC_FROM_PAGE' && request.payload) {
+    (async () => {
+      try {
+        await supabaseClient.saveConfig(request.payload.supabase || {});
+        await aiClient.saveConfig(request.payload.ai || {});
+        try {
+          chrome.action.setBadgeText({ text: '' });
+          chrome.action.setTitle({ title: 'lifeOS Extension' });
+        } catch (e) {}
+        sendResponse({
+          connected: Boolean(request.payload.supabase?.accessToken || request.payload.supabase?.userId),
+          userEmail: request.payload.supabase?.userEmail || '',
+        });
+      } catch (err) {
+        sendResponse({ connected: false, error: err.message });
+      }
+    })();
+    return true;
+  }
+
+  if (request?.action === 'LIFEOS_GET_STATUS') {
+    (async () => {
+      await supabaseClient.loadConfig();
+      sendResponse({
+        connected: Boolean(supabaseClient.isConfigured() && (supabaseClient.accessToken || supabaseClient.userId)),
+        userEmail: supabaseClient.userEmail || '',
+      });
+    })();
+    return true;
+  }
+});
+
 // Periodic flush alarm
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'flush-screentime') {

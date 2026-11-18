@@ -15,8 +15,11 @@ import {
   Monitor,
   Bot,
   RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Modal, Button } from '../ui';
+import { DeviceSyncHub } from '../integrations/DeviceSyncHub';
 import { UserBlobatar } from '../ui/UserBlobatar';
 import { useAuth } from '../../hooks/useAuth';
 import { useCreateTask } from '../../hooks/useTasks';
@@ -91,6 +94,7 @@ export function OnboardingWizardModal() {
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [locationCustomized, setLocationCustomized] = useState(false);
   const [customFirstTask, setCustomFirstTask] = useState('');
+  const [showSyncHub, setShowSyncHub] = useState(false);
 
   const generationAbortRef = useRef<AbortController | null>(null);
 
@@ -994,13 +998,30 @@ export function OnboardingWizardModal() {
             </div>
 
             {/* Reality Insights Sync Overview */}
-            <div className="rounded-xl border border-separator bg-sunken/40 p-3 space-y-1.5">
-              <p className="text-xs font-semibold text-ink">How lifeOS tracks what you actually do</p>
-              <p className="text-[11px] text-ink-2 leading-relaxed">
-                {answers.context.hasDesktop && 'Install the Browser Extension or Desktop app for automatic Screen Time & distraction awareness. '}
-                {answers.context.hasIOS && 'Connect Apple Health & Bank SMS shortcuts on iOS for automatic Sleep and Spending logs. '}
-                You can set these up anytime from Screen Time, Sleep, or Settings.
-              </p>
+            <div className="rounded-xl border border-separator bg-sunken/40 p-3 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold text-ink">How lifeOS tracks what you actually do</p>
+                  <p className="text-[11px] text-ink-2 leading-relaxed">
+                    {answers.context.hasDesktop && 'Pair the Browser Extension or PC tracker for automatic Screen Time awareness. '}
+                    {answers.context.hasIOS && 'Connect Apple Health & Bank SMS shortcuts on iPhone for automatic Sleep and Spending logs. '}
+                    You can pair devices right here or anytime from Settings → Connected Devices.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowSyncHub((v) => !v)}
+                  className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-separator bg-raised px-2.5 py-1.5 text-[11px] font-medium text-ink hover:bg-hover transition-colors"
+                >
+                  {showSyncHub ? 'Hide setup' : 'Connect now'}
+                  {showSyncHub ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
+                </button>
+              </div>
+              {showSyncHub && (
+                <div className="pt-2 border-t border-separator">
+                  <DeviceSyncHub compact />
+                </div>
+              )}
             </div>
 
             {/* Footer Step 3 */}

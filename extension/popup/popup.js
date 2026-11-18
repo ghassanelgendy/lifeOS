@@ -670,12 +670,13 @@ async function syncFromOpenTabs(interactive = false) {
       let aiBaseUrl = '';
       let aiModel = '';
 
-      if (storage['lifeos_ui_storage']) {
+      const rawUiStorage = storage['lifeos-ui-store'] || storage['lifeos_ui_storage'];
+      if (rawUiStorage) {
         try {
-          const uiStore = JSON.parse(storage['lifeos_ui_storage']);
+          const uiStore = JSON.parse(rawUiStorage);
           const s = uiStore.state || uiStore;
-          if (s.aiApiKey || s.aiDahlApiKey || s.aiBynaraApiKey) {
-            aiApiKey = s.aiDahlApiKey || s.aiApiKey || s.aiBynaraApiKey || '';
+          if (s.aiApiKey || s.aiDahlApiKey || s.aiBynaraApiKey || s.aiGroqApiKey) {
+            aiApiKey = s.aiDahlApiKey || s.aiApiKey || s.aiBynaraApiKey || s.aiGroqApiKey || '';
           }
           if (s.aiBaseUrl) aiBaseUrl = s.aiBaseUrl;
           if (s.aiActiveModel || s.aiModel) {

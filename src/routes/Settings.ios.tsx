@@ -22,9 +22,7 @@ import {
   BookOpen,
   ChevronRight,
   ChevronLeft,
-  Copy,
   Zap,
-  ExternalLink,
   Search,
   X,
   Palette,
@@ -48,12 +46,12 @@ import { useTaskLists } from '../hooks/useTasks';
 import { useArchivedHabits, useUnarchiveHabit } from '../hooks/useHabits';
 import { dbUtils } from '../db/database';
 import { resetDatabase } from '../db/seed';
-import { Button, ConfirmSheet, Input, Modal, Spinner } from '../components/ui';
+import { Button, ConfirmSheet, Input, Spinner } from '../components/ui';
 import { UserBlobatar } from '../components/ui/UserBlobatar';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { getSystemLogs, clearSystemLogs, type SystemLog } from '../lib/logger';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
@@ -61,6 +59,7 @@ import { AISettingsSection } from '../components/AISettingsSection';
 import { AccountSecuritySection } from '../components/AccountSecuritySection';
 import { BankAccountsSettingsSection } from '../components/BankAccountsSettingsSection';
 import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
+import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
 import { Capacitor } from '@capacitor/core';
 import { sendTestNotification } from '../lib/nativeBridge';
 import { useEffectiveTheme } from '../lib/theme';
@@ -104,7 +103,7 @@ const SETTINGS_NAV: SettingsNavItem[] = [
   { id: 'account', label: 'Account', category: 'General', icon: User, keywords: 'user email profile avatar login signout' },
   { id: 'appearance', label: 'Appearance', category: 'General', icon: Palette, keywords: 'theme dark mode light accent color glass background' },
   { id: 'defaults', label: 'App defaults', category: 'General', icon: SlidersHorizontal, keywords: 'default tab task view calendar modals' },
-  { id: 'shortcuts', label: 'Apple Shortcuts', category: 'General', icon: Zap, keywords: 'ios siri shortcuts capture quick action user id share sheet' },
+  { id: 'shortcuts', label: 'Connect Devices & Sync', category: 'General', icon: Zap, keywords: 'ios android chronos windows linux chrome extension screentime sleep sms shortcuts' },
 
   { id: 'layout', label: 'Layout & widgets', category: 'Personalization', icon: LayoutGrid, keywords: 'dashboard widgets order hide reorder drag nav items' },
   { id: 'ai', label: 'AI Integration', category: 'Personalization', icon: Bot, keywords: 'gemini groq openai api key artificial intelligence assistant model' },
@@ -121,6 +120,20 @@ const SETTINGS_NAV: SettingsNavItem[] = [
   { id: 'help', label: 'Help & Docs', category: 'System', icon: HelpCircle, keywords: 'wiki documentation tour guide assistant guide faq' },
   { id: 'about', label: 'About', category: 'System', icon: Info, keywords: 'version release storage local developer restart tour' },
 ];
+
+const ESSENTIAL_SETTINGS_IDS = new Set([
+  'account',
+  'appearance',
+  'layout',
+  'prayer',
+  'goals',
+  'shortcuts',
+  'help',
+]);
+
+const ADVANCED_ONLY_SETTINGS_IDS = SETTINGS_NAV
+  .map((item) => item.id)
+  .filter((id) => !ESSENTIAL_SETTINGS_IDS.has(id));
 
 type LayoutWidgetPage = 'habits' | 'sleep';
 
@@ -253,6 +266,8 @@ export default function SettingsPage() {
     setReportSleepTargetCurrent,
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
+    settingsComplexityMode,
+    setSettingsComplexityMode,
   } = useUIStore();
   const navigate = useNavigate();
   const { data: taskLists = [] } = useTaskLists();
@@ -265,6 +280,29 @@ export default function SettingsPage() {
   const [activeSection, setActiveSection] = useState<string>('account');
   // Phone: null shows the Settings index, an id shows only that section
   const [mobileSection, setMobileSection] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Deep-link directly to a Settings section via ?section=<id> or #settings-<id>
+  useEffect(() => {
+    const paramSection = searchParams.get('section')?.trim();
+    const hashSection = location.hash ? location.hash.replace(/^#(?:settings-)?/, '').trim() : '';
+    const targetId = paramSection || hashSection;
+    if (!targetId) return;
+    if (!SETTINGS_NAV.some((item) => item.id === targetId)) return;
+
+    if (!ESSENTIAL_SETTINGS_IDS.has(targetId) && useUIStore.getState().settingsComplexityMode === 'simple') {
+      setSettingsComplexityMode('advanced');
+    }
+
+    setActiveSection(targetId);
+    setMobileSection(targetId);
+    const timer = window.setTimeout(() => {
+      document.querySelector('[data-lifeos-scroll-root]')?.scrollTo({ top: 0 });
+      document.getElementById(`settings-${targetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, location.hash, setSettingsComplexityMode]);
 
   // Track active section as user scrolls
   useEffect(() => {
@@ -298,18 +336,6 @@ export default function SettingsPage() {
   const [prayerCityLoading, setPrayerCityLoading] = useState(false);
   const [prayerGeoLoading, setPrayerGeoLoading] = useState(false);
   const [prayerGeoError, setPrayerGeoError] = useState<string | null>(null);
-  const [shortcutModal, setShortcutModal] = useState<{
-    isOpen: boolean;
-    type: 'expense' | 'braindump' | 'sms' | 'sleep';
-    title: string;
-    url: string;
-  }>({
-    isOpen: false,
-    type: 'expense',
-    title: '',
-    url: '',
-  });
-  const [copiedShortcutUrl, setCopiedShortcutUrl] = useState(false);
 
   // Report targets are typed numbers, so they're batched into a draft and only written to the
   // store (and the "current" trackers used elsewhere in the app) when Save is pressed — that
@@ -515,7 +541,10 @@ export default function SettingsPage() {
     .map((href) => desktopNavCandidates.find((item) => item.href === href))
     .filter((item, index, items): item is (typeof NAV_ITEMS)[number] => !!item && items.findIndex((candidate) => candidate?.href === item.href) === index);
 
+  const isSimpleMode = settingsComplexityMode === 'simple' && !searchQuery.trim();
+
   const filteredNavItems = SETTINGS_NAV.filter((item) => {
+    if (isSimpleMode && !ESSENTIAL_SETTINGS_IDS.has(item.id)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return item.label.toLowerCase().includes(q) || item.keywords.toLowerCase().includes(q);
@@ -525,10 +554,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
+      {isSimpleMode && (
+        <style>{`@media (min-width: 1024px) { ${ADVANCED_ONLY_SETTINGS_IDS.map((id) => `[data-settings-pane] > #settings-${id}`).join(', ')} { display: none !important; } }`}</style>
+      )}
       <div className="hidden lg:flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-0.5">Manage preferences, customize appearance, and configure integrations</p>
+          <p className="text-muted-foreground mt-0.5">
+            {isSimpleMode
+              ? 'Essential preferences & 1-click device sync'
+              : 'Manage preferences, customize appearance, and configure integrations'}
+          </p>
           {user ? (
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
@@ -537,19 +573,48 @@ export default function SettingsPage() {
           ) : null}
         </div>
 
-        {/* Global Quick Action: Replay Tour */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            useUIStore.getState().restartTour();
-            navigate('/dashboard');
-          }}
-          className="gap-2 shrink-0 text-xs self-start sm:self-auto"
-        >
-          <RotateCcw size={14} />
-          <span>Interactive Tour</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <div className="inline-flex rounded-xl border border-border bg-secondary/50 p-0.5 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setSettingsComplexityMode('simple')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg transition-colors',
+                settingsComplexityMode === 'simple'
+                  ? 'bg-background text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Essentials
+            </button>
+            <button
+              type="button"
+              onClick={() => setSettingsComplexityMode('advanced')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg transition-colors',
+                settingsComplexityMode === 'advanced'
+                  ? 'bg-background text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              All Settings
+            </button>
+          </div>
+
+          {/* Global Quick Action: Replay Tour */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              useUIStore.getState().restartTour();
+              navigate('/dashboard');
+            }}
+            className="gap-2 shrink-0 text-xs"
+          >
+            <RotateCcw size={14} />
+            <span>Take 30s Tour</span>
+          </Button>
+        </div>
       </div>
 
       <style>{`@media (max-width: 1023px) { [data-settings-pane] > * { display: none !important; } ${
@@ -562,7 +627,14 @@ export default function SettingsPage() {
           <div className="flex items-center gap-1 -ml-2">
             <button
               type="button"
-              onClick={() => setMobileSection(null)}
+              onClick={() => {
+                setMobileSection(null);
+                if (searchParams.has('section')) {
+                  const next = new URLSearchParams(searchParams);
+                  next.delete('section');
+                  setSearchParams(next, { replace: true });
+                }
+              }}
               className="flex items-center gap-0.5 min-h-[44px] pl-1 pr-3 text-[17px] text-primary active:opacity-60"
               aria-label="Back to Settings"
             >
@@ -602,7 +674,11 @@ export default function SettingsPage() {
             )}
 
             {(searchQuery.trim() ? [null] : categories).map((cat) => {
-              const items = cat ? SETTINGS_NAV.filter((i) => i.category === cat && i.id !== 'account') : filteredNavItems;
+              const items = cat
+                ? SETTINGS_NAV.filter(
+                    (i) => i.category === cat && i.id !== 'account' && (!isSimpleMode || ESSENTIAL_SETTINGS_IDS.has(i.id))
+                  )
+                : filteredNavItems;
               if (items.length === 0) return cat ? null : (
                 <p key="none" className="px-4 text-[15px] text-muted-foreground">No matching settings</p>
               );
@@ -634,7 +710,15 @@ export default function SettingsPage() {
             })}
 
             {!searchQuery.trim() && (
-              <div className="rounded-[20px] bg-card overflow-hidden">
+              <div className="rounded-[20px] bg-card overflow-hidden divide-y divide-border">
+                <button
+                  type="button"
+                  onClick={() => setSettingsComplexityMode(settingsComplexityMode === 'simple' ? 'advanced' : 'simple')}
+                  className="w-full flex items-center justify-between px-4 min-h-[52px] text-left text-[15px] text-foreground active:bg-secondary/60"
+                >
+                  <span>{settingsComplexityMode === 'simple' ? 'Show All Settings (Advanced)' : 'Switch to Essentials Only'}</span>
+                  <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+                </button>
                 <button
                   type="button"
                   onClick={() => {
@@ -644,7 +728,7 @@ export default function SettingsPage() {
                   className="w-full flex items-center gap-3 px-4 min-h-[52px] text-left text-[17px] text-primary active:bg-secondary/60"
                 >
                   <RotateCcw size={18} />
-                  Interactive tour
+                  Take 30s tour
                 </button>
               </div>
             )}
@@ -714,7 +798,9 @@ export default function SettingsPage() {
             ) : (
               // Grouped by Category
               categories.map((cat) => {
-                const itemsInCat = SETTINGS_NAV.filter((item) => item.category === cat);
+                const itemsInCat = SETTINGS_NAV.filter(
+                  (item) => item.category === cat && (!isSimpleMode || ESSENTIAL_SETTINGS_IDS.has(item.id))
+                );
                 if (itemsInCat.length === 0) return null;
                 return (
                   <div key={cat} className="space-y-0.5 mb-2.5 last:mb-0">
@@ -761,316 +847,23 @@ export default function SettingsPage() {
                       </div>
 </section>
 
-          {/* Apple Shortcuts & Siri Integrations */}
+          {/* Connect Devices & Sync */}
           <section id="settings-shortcuts" className="liquid-glass-card overflow-hidden scroll-mt-20">
             <div className="p-4 border-b border-border flex items-center justify-between">
               <div>
                 <h2 className="font-semibold flex items-center gap-2">
                   <Zap size={18} className="text-amber-400" />
-                  Apple Shortcuts & Siri
+                  Connect Devices &amp; Sync
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  1-Click install into iOS Shortcuts with your account pre-configured
+                  Zero-config setup for iPhone Shortcuts, Android, Browser Extension &amp; Desktop PC
                 </p>
               </div>
             </div>
-            <div className="p-4 space-y-4">
-              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">Your Account User ID</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (user?.id) {
-                        navigator.clipboard.writeText(user.id);
-                        alert('User ID copied to clipboard!');
-                      }
-                    }}
-                    className="flex items-center gap-1 text-xs text-amber-400 hover:text-amber-300 transition-colors font-medium"
-                  >
-                    <Copy size={13} /> Copy ID
-                  </button>
-                </div>
-                <p className="font-mono text-xs text-foreground/80 break-all select-all bg-black/30 p-2 rounded-lg">
-                  {user?.id ?? 'Not signed in'}
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                {/* 1. Quick Expense */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
-                  <div>
-                    <p className="font-medium text-sm">Quick Expense Shortcut</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Log expenses hands-free via Siri or Back Tap directly into LifeOS
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="gap-1.5 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
-                    onClick={() => {
-                      if (user?.id) {
-                        navigator.clipboard.writeText(user.id);
-                      }
-                      setShortcutModal({
-                        isOpen: true,
-                        type: 'expense',
-                        title: 'Quick Expense Apple Shortcut',
-                        url: 'lifeos://finance?quick=expense',
-                      });
-                    }}
-                  >
-                    <Zap size={14} />
-                    Set Up Shortcut
-                  </Button>
-                </div>
-
-                {/* 2. Bank SMS Automated Ingestion */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">Automated Bank SMS Ingestion</p>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        Zero Manual Entry
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Automatically parse incoming CIB, NBE, QNB, or Vodafone Cash SMS
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 shrink-0 border-emerald-500/40 text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10"
-                    onClick={() => {
-                      if (user?.id) {
-                        navigator.clipboard.writeText(user.id);
-                      }
-                      setShortcutModal({
-                        isOpen: true,
-                        type: 'sms',
-                        title: 'Bank SMS Automation Setup',
-                        url: `https://vlbgxbzwasgpbfzfabnl.supabase.co/functions/v1/process-sms?user_id=${user?.id || ''}`,
-                      });
-                    }}
-                  >
-                    <Zap size={14} />
-                    Set Up SMS Sync
-                  </Button>
-                </div>
-
-                {/* 3. Sleep & Apple Health Automation */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">Apple Health Sleep Sync</p>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                        Apple Watch
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Sync nightly stages (Core, Deep, REM) automatically upon waking up
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 shrink-0 border-indigo-500/40 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/10"
-                    onClick={() => {
-                      if (user?.id) {
-                        navigator.clipboard.writeText(user.id);
-                      }
-                      setShortcutModal({
-                        isOpen: true,
-                        type: 'sleep',
-                        title: 'Apple Health Sleep Automation',
-                        url: `https://vlbgxbzwasgpbfzfabnl.supabase.co/functions/v1/upload-sleep`,
-                      });
-                    }}
-                  >
-                    <Moon size={14} />
-                    Set Up Sleep Sync
-                  </Button>
-                </div>
-
-                {/* 4. Brain Dump Voice Capture */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-secondary/40 border border-border">
-                  <div>
-                    <p className="font-medium text-sm">Brain Dump / Voice Capture</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Dictate thoughts directly to your daily midnight AI organizer
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="gap-1.5 shrink-0"
-                    onClick={() => {
-                      if (user?.id) {
-                        navigator.clipboard.writeText(user.id);
-                      }
-                      setShortcutModal({
-                        isOpen: true,
-                        type: 'braindump',
-                        title: 'Brain Dump Voice Capture Shortcut',
-                        url: 'lifeos://braindump',
-                      });
-                    }}
-                  >
-                    <Zap size={14} />
-                    Set Up Shortcut
-                  </Button>
-                </div>
-              </div>
-
-              <p className="text-[11px] text-muted-foreground leading-relaxed">
-                <strong>Instant iOS Integration:</strong> Use the buttons above to get 1-click deep links, Back Tap triggers, or Webhook URLs tailored with your User ID.
-              </p>
+            <div className="p-4">
+              <DeviceSyncHub />
             </div>
           </section>
-
-          {/* Apple Shortcut Guide Modal */}
-          <Modal
-            isOpen={shortcutModal.isOpen}
-            onClose={() => setShortcutModal((s) => ({ ...s, isOpen: false }))}
-            title={shortcutModal.title}
-          >
-            <div className="space-y-4 text-xs select-text">
-              {shortcutModal.type === 'sms' ? (
-                <>
-                  <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 space-y-2">
-                    <p className="font-semibold text-emerald-400">Autonomous iOS Personal Automation</p>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Whenever your bank (CIB, NBE, QNB, Vodafone Cash, etc.) texts you an expense or transfer, iOS automatically forwards it to LifeOS AI to parse and record without opening the app!
-                    </p>
-                    <div className="pt-1 flex items-center gap-2">
-                      <code className="flex-1 bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
-                        {shortcutModal.url}
-                      </code>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="shrink-0 gap-1"
-                        onClick={() => {
-                          navigator.clipboard.writeText(shortcutModal.url);
-                          setCopiedShortcutUrl(true);
-                          setTimeout(() => setCopiedShortcutUrl(false), 2000);
-                        }}
-                      >
-                        {copiedShortcutUrl ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                        {copiedShortcutUrl ? 'Copied' : 'Copy Webhook'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
-                    <p className="font-semibold text-foreground">3-Step Setup in Apple Shortcuts:</p>
-                    <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
-                      <li>Open the iOS <strong>Shortcuts</strong> app → Tap the <strong>Automation</strong> tab at bottom.</li>
-                      <li>Tap <strong>+</strong> (New Automation) → Choose <strong>Message</strong>.</li>
-                      <li>Set <strong>Sender</strong> to your Bank Name/Number (e.g. CIB or Vodafone Cash) and select <strong>Run Immediately</strong> (Turn off &quot;Ask Before Running&quot;).</li>
-                      <li>Add Action: <strong>&quot;Get Contents of URL&quot;</strong>, paste the Webhook URL above, set Method to <strong>POST</strong>, and pass Request Body JSON with <code className="text-emerald-400 font-mono">&#123;&quot;message&quot;: Shortcut Input&#125;</code>.</li>
-                    </ol>
-                  </div>
-                </>
-              ) : shortcutModal.type === 'sleep' ? (
-                <>
-                  <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 space-y-2">
-                    <p className="font-semibold text-indigo-400">Apple Watch & Health Sleep Sync</p>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Every morning upon wake-up or alarm turn-off, your Apple Watch sleep stages (Core, Deep, REM) sync straight to LifeOS.
-                    </p>
-                    <div className="pt-1 flex items-center gap-2">
-                      <code className="flex-1 bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
-                        {shortcutModal.url}
-                      </code>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="shrink-0 gap-1"
-                        onClick={() => {
-                          navigator.clipboard.writeText(shortcutModal.url);
-                          setCopiedShortcutUrl(true);
-                          setTimeout(() => setCopiedShortcutUrl(false), 2000);
-                        }}
-                      >
-                        {copiedShortcutUrl ? <Check size={13} className="text-indigo-400" /> : <Copy size={13} />}
-                        {copiedShortcutUrl ? 'Copied' : 'Copy URL'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
-                    <p className="font-semibold text-foreground">Quick Setup:</p>
-                    <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
-                      <li>In Apple Shortcuts → Tap <strong>Automation</strong> → <strong>+</strong> → Choose <strong>When Waking Up</strong> (or When Alarm is Stopped).</li>
-                      <li>Set to <strong>Run Immediately</strong>.</li>
-                      <li>Add Action: <strong>Find Health Samples</strong> (Type: Sleep Analysis, Start Date is Today).</li>
-                      <li>Add Action: <strong>Get Contents of URL</strong> → POST to the endpoint above with your User ID <code className="text-indigo-400 font-mono">({user?.id || 'User ID'})</code>.</li>
-                    </ol>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 space-y-1">
-                    <p className="font-semibold text-primary">Option 1: 1-Tap Native App Deep Link (Recommended)</p>
-                    <p className="text-muted-foreground leading-relaxed">
-                      Opens the native LifeOS app instantly and launches the {shortcutModal.type === 'expense' ? 'expense logger' : 'voice brain dump modal'}!
-                    </p>
-                    <div className="pt-2 flex items-center gap-2">
-                      <code className="flex-1 bg-black/40 px-2.5 py-1.5 rounded-lg border border-border font-mono text-[11px] text-foreground select-all break-all">
-                        {shortcutModal.url}
-                      </code>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="shrink-0 gap-1"
-                        onClick={() => {
-                          navigator.clipboard.writeText(shortcutModal.url);
-                          setCopiedShortcutUrl(true);
-                          setTimeout(() => setCopiedShortcutUrl(false), 2000);
-                        }}
-                      >
-                        {copiedShortcutUrl ? <Check size={13} className="text-emerald-500" /> : <Copy size={13} />}
-                        {copiedShortcutUrl ? 'Copied' : 'Copy'}
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 p-3 rounded-xl bg-secondary/40 border border-border">
-                    <p className="font-semibold text-foreground">How to add in Apple Shortcuts:</p>
-                    <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground leading-relaxed">
-                      <li>Open the iOS <strong>Shortcuts</strong> app on your iPhone.</li>
-                      <li>Tap <strong>+</strong> in the top right to create a new shortcut.</li>
-                      <li>Add the action <strong>&quot;Open URL&quot;</strong> and paste the link above: <code className="text-primary font-mono">{shortcutModal.url}</code></li>
-                      <li>Rename the shortcut to <em>&quot;{shortcutModal.type === 'expense' ? 'Log Expense' : 'Brain Dump'}&quot;</em>.</li>
-                      <li>Optional: Go to <strong>Settings → Accessibility → Touch → Back Tap</strong> and assign it to Double Tap!</li>
-                    </ol>
-                  </div>
-                </>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2 border-t border-border">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    window.open('shortcuts://', '_blank');
-                  }}
-                  className="gap-1.5"
-                >
-                  <ExternalLink size={13} />
-                  Open Shortcuts App
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => setShortcutModal((s) => ({ ...s, isOpen: false }))}
-                >
-                  Done
-                </Button>
-              </div>
-            </div>
-          </Modal>
 
           {/* Appearance */}
           <section id="settings-appearance" className="scroll-mt-20">

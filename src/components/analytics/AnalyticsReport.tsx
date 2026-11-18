@@ -535,9 +535,10 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
       })()}
 
       {/* ── Section 2: Best & Worst Day ─────────────────────────── */}
-      {(data.bestDay || data.worstDay) && (
+      {/* Only shown as a symmetric pair; a lone card (ties / too little data) carries no contrast */}
+      {data.bestDay && data.worstDay && data.worstDay.date !== data.bestDay.date && (
         <Section delay={200}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 [&>*]:h-full">
             {data.bestDay && (
               <div
                 onClick={() => onOpenDayDetails?.(data.bestDay!.date)}
@@ -555,7 +556,7 @@ export function AnalyticsReport({ onDismiss, isWeeklyWrapDay, isMonthlyWrapDay, 
                 </div>
               </div>
             )}
-            {data.worstDay && data.worstDay.date !== data.bestDay?.date && (
+            {data.worstDay && (
               <div
                 onClick={() => onOpenDayDetails?.(data.worstDay!.date)}
                 className="rounded-xl border border-border/70 bg-card p-4 cursor-pointer hover:bg-muted/30 transition-colors shadow-sm"

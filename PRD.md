@@ -215,7 +215,8 @@ Simple by default, powerful by choice. Beginners see basic views. Power users un
 ### 5.7 Digital Wellbeing (Screen Time)
 **Purpose:** Take back your attention.
 
-- Screen time data upload via Edge Function (`upload-screentime` & `upload-screentime-chronos`)
+- **Screen time data upload & zero-friction Device Sync Hub (`DeviceSyncHub`):** Pre-configured 1-click pairing for the Browser Extension (`window.postMessage` + `lifeos_extension_sync` automatic session handoff), downloadable pre-filled `chronos.config.json` & PowerShell/Bash 1-line setup commands for Windows/Linux PCs (Chronos), pre-filled personalized URLs for iPhone/Apple Watch Shortcuts (`process-sms`, `upload-sleep`, `lifeos://`), and direct native permission & sync controls on Android (`LifeOSAndroidBridge`), embedded in both Settings and Screen Time empty states.
+- **Settings Simplicity Mode (`Essentials` vs `All Settings`):** Normal users start in `Essentials` mode (`settingsComplexityMode: 'simple'`, displaying 7 core sections: Account, Appearance, Prayer Location & Notifications, Focus & Goals, Navigation & Layout, Connected Devices & Shortcuts, and Support & Guides) while power-user configuration (AI providers, Data & Storage, Privacy, Alerts, Desktop Engine, System Logs) stays one toggle away in `All Settings` (`'advanced'`) or reveals automatically when searching or opening direct `?section=` deep-links.
 - App usage: Duration, session count, switches per app (categorized)
 - Website visits: Duration, sessions per domain
 - Daily summary: Total usage, top apps, top websites

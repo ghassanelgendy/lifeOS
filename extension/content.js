@@ -121,3 +121,124 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
   return true;
 });
+
+// Zero-config lifeOS session bridge: if this page has lifeos_extension_sync in localStorage,
+// silently push fresh tokens to the extension background worker and answer 1-click pair requests.
+(function initLifeOSSessionBridge() {
+  function readLifeOSPayload() {
+    try {
+      const rawSync = window.localStorage.getItem('lifeos_extension_sync');
+      if (!rawSync) return null;
+      const syncData = JSON.parse(rawSync);
+      let accessToken = syncData.accessToken || '';
+      let refreshToken = syncData.refreshToken || '';
+      let userId = syncData.userId || '';
+      let userEmail = syncData.userEmail || '';
+      let supabaseUrl = syncData.supabaseUrl || window.__LIFEOS_CONFIG__?.supabaseUrl || '';
+      const supabaseKey = syncData.supabaseAnonKey || window.__LIFEOS_CONFIG__?.supabaseAnonKey || '';
+
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const k = window.localStorage.key(i);
+        if (!k) continue;
+        if (k.includes('auth-token') || k === 'supabase.auth.token') {
+          try {
+            const parsed = JSON.parse(window.localStorage.getItem(k) || '{}');
+            accessToken = parsed.access_token || parsed.currentSession?.access_token || accessToken;
+            refreshToken = parsed.refresh_token || parsed.currentSession?.refresh_token || refreshToken;
+            userId = parsed.user?.id || parsed.currentSession?.user?.id || userId;
+            userEmail = parsed.user?.email || parsed.currentSession?.user?.email || userEmail;
+          } catch (e) {}
+        }
+        const refMatch = k.match(/^sb-([a-zA-Z0-9_-]+)-auth-token$/);
+        if (refMatch && refMatch[1] && !supabaseUrl) {
+          supabaseUrl = `https://${refMatch[1]}.supabase.co`;
+        }
+      }
+
+      let aiApiKey = '';
+      let aiBaseUrl = '';
+      let aiModel = '';
+      const rawUi = window.localStorage.getItem('lifeos-ui-store') || window.localStorage.getItem('lifeos_ui_storage');
+      if (rawUi) {
+        try {
+          const uiStore = JSON.parse(rawUi);
+          const s = uiStore.state || uiStore;
+          aiApiKey = s.aiDahlApiKey || s.aiApiKey || s.aiBynaraApiKey || s.aiGroqApiKey || '';
+          aiBaseUrl = s.aiBaseUrl || '';
+          aiModel = s.aiActiveModel || s.aiModel || '';
+        } catch (e) {}
+      }
+
+      return {
+        supabase: {
+          lifeOsUrl: window.location.origin,
+          ...(supabaseUrl ? { supabaseUrl } : {}),
+          ...(supabaseKey ? { supabaseKey } : {}),
+          ...(accessToken ? { accessToken } : {}),
+          ...(refreshToken ? { refreshToken } : {}),
+          ...(userId ? { userId } : {}),
+          ...(userEmail ? { userEmail } : {}),
+        },
+        ai: {
+          lifeOsUrl: window.location.origin,
+          ...(aiApiKey ? { aiApiKey } : {}),
+          ...(aiBaseUrl ? { aiBaseUrl } : {}),
+          ...(aiModel ? { aiModel } : {}),
+        },
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function pushSessionToExtension(callback) {
+    const payload = readLifeOSPayload();
+    if (!payload) {
+      if (callback) callback({ connected: false });
+      return;
+    }
+    try {
+      chrome.runtime.sendMessage({ action: 'LIFEOS_SYNC_FROM_PAGE', payload }, (res) => {
+        if (callback) callback(res || { connected: Boolean(payload.supabase?.userId) });
+      });
+    } catch (e) {
+      if (callback) callback({ connected: false });
+    }
+  }
+
+  // Only run automatically if this tab is actually a lifeOS app tab
+  if (window.localStorage.getItem('lifeos_extension_sync')) {
+    pushSessionToExtension();
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.source !== window || !event.data || typeof event.data !== 'object') return;
+    if (event.data.type === 'LIFEOS_EXTENSION_PING') {
+      try {
+        chrome.runtime.sendMessage({ action: 'LIFEOS_GET_STATUS' }, (res) => {
+          window.postMessage(
+            {
+              type: 'LIFEOS_EXTENSION_PONG',
+              installed: true,
+              connected: Boolean(res?.connected),
+              userEmail: res?.userEmail || '',
+            },
+            window.location.origin
+          );
+        });
+      } catch (e) {}
+    } else if (event.data.type === 'LIFEOS_EXTENSION_PAIR_REQUEST') {
+      pushSessionToExtension((res) => {
+        window.postMessage(
+          {
+            type: 'LIFEOS_EXTENSION_PAIR_RESULT',
+            installed: true,
+            connected: Boolean(res?.connected),
+            userEmail: res?.userEmail || '',
+          },
+          window.location.origin
+        );
+      });
+    }
+  });
+})();

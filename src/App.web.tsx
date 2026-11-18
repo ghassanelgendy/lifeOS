@@ -15,6 +15,7 @@ import { useTransactionsRealtime } from './hooks/useFinance';
 import { useAzkarRealtime } from './hooks/useAzkar';
 import { usePakeLocalNotifications } from './hooks/usePakeLocalNotifications';
 import { useNativeTraySync } from './hooks/useNativeTraySync';
+import { syncAndroidNativeBridge } from './lib/nativeBridge';
 import { AuthProvider } from './contexts/AuthContext';
 import { useAuth } from './hooks/useAuth';
 import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
@@ -138,6 +139,7 @@ function ThemeSync() {
 }
 
 function AppInner() {
+  const { user } = useAuth();
   useTransactionsRealtime(); // refetch transactions (and expenses) when table changes
   useAzkarRealtime(); // refetch azkar favorites/progress when changed from another device
   usePakeLocalNotifications(); // Run Pake local notifications engine in the background
@@ -146,6 +148,11 @@ function AppInner() {
   useEffect(() => {
     if (isOnline()) seedDatabase();
   }, []);
+  useEffect(() => {
+    if (user?.id) {
+      void syncAndroidNativeBridge(user.id);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     let syncInProgress = false;

@@ -1066,6 +1066,9 @@ Desktop users shall be able to collapse/expand the sidebar.
 #### FR-SET-020: Keyboard Shortcuts Modal
 The system shall provide a modal displaying available keyboard shortcuts.
 
+#### FR-SET-021: Settings Complexity Toggle (Essentials vs All Settings)
+Settings (`Settings.web.tsx`, `Settings.ios.tsx`) shall support a persisted `settingsComplexityMode` (`'simple' | 'advanced'`, defaulting to `'simple'` / **Essentials**), surfacing 7 core everyday sections (`account`, `appearance`, `prayer`, `goals`, `layout`, `shortcuts`, `help`) by default and revealing advanced sections (`privacy`, `ai`, `alerts`, `data`, `engine`, `logs`, etc.) automatically on user search, `?section=` deep-links, or toggling **All Settings**.
+
 ---
 
 ### 3.16 Notifications
@@ -1171,8 +1174,11 @@ The Android application shall provide a custom Capacitor plugin `LifeOSAndroidBr
 #### FR-DL-005: InBody Sync Integration
 Supabase Edge Function shall sync InBody data from external APIs.
 
-#### FR-DL-006: Screen Time Upload Integration
-Supabase Edge Functions shall parse and ingest screen time data from external trackers and native Android WorkManager workers.
+#### FR-DL-006: Screen Time Upload Integration & Unified Device Sync Hub
+Supabase Edge Functions shall parse and ingest screen time data from external trackers, the Browser Extension, Chronos PC trackers, and native Android WorkManager workers. The frontend (`DeviceSyncHub` in `src/components/integrations/DeviceSyncHub.tsx`, mounted in Settings `#settings-shortcuts`, Screen Time empty states, and Setup Wizard Step 3) shall provide:
+- **Browser Extension 1-Click Auto-Pairing**: Automatic session sync via `lifeos_extension_sync` in `localStorage` and `window.postMessage` (`LIFEOS_EXTENSION_PING`, `LIFEOS_EXTENSION_PAIR_REQUEST`) bridged through `extension/content.js` and `extension/background.js`, eliminating manual Project ID, User ID, and token entry.
+- **Windows / Linux Chronos Zero-Edit Setup**: Downloadable pre-filled `chronos.config.json` and 1-line PowerShell / Bash setup commands embedding the active `user_id`, Supabase URL, and anon key.
+- **iPhone / Watch Personalized Shortcuts & Android Native Controls**: Pre-filled `user_id` shortcut URLs on iOS and native `LifeOSAndroidBridge` permission/status/sync actions (`requestUsageStatsPermission`, `requestPermissions({ permissions: ['sms'] })`, `triggerScreenTimeSyncNow`) on Android.
 
 #### FR-DL-007: Sleep Data Upload Integration
 Supabase Edge Functions shall parse and ingest sleep data from Chronos and other formats.

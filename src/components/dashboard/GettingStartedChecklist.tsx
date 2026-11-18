@@ -61,7 +61,7 @@ export function GettingStartedChecklist({ variant = 'web' }: { variant?: 'web' |
         actionLabel: 'Set city',
         onAction: () => {
           markDone('customized_location', true);
-          navigate('/settings');
+          navigate('/settings?section=prayer');
         },
       },
       daily_routine: {
@@ -70,7 +70,7 @@ export function GettingStartedChecklist({ variant = 'web' }: { variant?: 'web' |
         detail: 'Anchor your day with one spiritual or Jannah routine',
         done: anyHabitToday || azkarCompletedCount > 0 || Boolean(extras.daily_routine_logged),
         actionLabel: 'Open Habits',
-        onAction: () => navigate('/habits'),
+        onAction: () => navigate('/habits?section=prayers'),
       },
       first_task: {
         key: 'first_task',
@@ -110,7 +110,7 @@ export function GettingStartedChecklist({ variant = 'web' }: { variant?: 'web' |
         actionLabel: 'Open Finance',
         onAction: () => {
           markDone('visited_finance', true);
-          navigate('/finance');
+          navigate('/finance?quick=expense');
         },
       },
     };

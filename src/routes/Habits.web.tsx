@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -170,6 +170,14 @@ export default function Habits() {
   const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
   const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
   const [prayerViewTab, setPrayerViewTab] = useState<'daily' | 'qadaa'>('daily');
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('section') === 'prayers') {
+      setPrayerSectionExpanded(true);
+      setPrayerViewTab('daily');
+    }
+  }, [searchParams]);
 
   const [mobileListRef] = useAutoAnimate();
   const [pendingListRef] = useAutoAnimate();

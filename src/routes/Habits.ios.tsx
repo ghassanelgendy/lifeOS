@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Flame, Check, Edit2, Trash2, Calendar, TrendingUp, Clock, ListTodo, Bell, BellOff, ChevronDown, ChevronRight, BookOpen, Sparkles } from 'lucide-react';
@@ -155,6 +155,14 @@ export default function Habits() {
   const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
   const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
   const [prayerViewTab, setPrayerViewTab] = useState<'daily' | 'qadaa'>('daily');
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('section') === 'prayers') {
+      setPrayerSectionExpanded(true);
+      setPrayerViewTab('daily');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const handleTriggerAddHabit = () => {

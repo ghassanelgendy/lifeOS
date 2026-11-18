@@ -318,6 +318,16 @@ export default function Tasks() {
     requestAnimationFrame(() => quickAddRef.current?.focus());
   }, [isAddingTask]);
 
+  useEffect(() => {
+    if (searchParams.get('quick') === 'add' || searchParams.get('action') === 'new') {
+      setIsAddingTask(true);
+      requestAnimationFrame(() => quickAddRef.current?.focus());
+      searchParams.delete('quick');
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Smart task input: parse time (12:00), date (wed, tmrw, 15 June), ~ lists, ! priority, # tags.
   // Date/time are applied while typing; shortcut text is stripped only when adding the task.
   const handleQuickAddTitleChange = (rawTitle: string) => {

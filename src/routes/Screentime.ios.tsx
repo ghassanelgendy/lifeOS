@@ -10,6 +10,7 @@ import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScr
 import { useUIStore } from '../stores/useUIStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button, SectionLoader } from '../components/ui';
+import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -812,7 +813,7 @@ import { Button, SectionLoader } from '../components/ui';
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="liquid-glass-card p-5">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-blue-500/10">
@@ -1409,22 +1410,25 @@ import { Button, SectionLoader } from '../components/ui';
         )}
 
         {!isLoading && topApps.length === 0 && topWebsites.length === 0 && (
-          <div className="liquid-glass-card rounded-2xl p-8 text-center space-y-4">
-            <Monitor className="mx-auto text-primary opacity-80" size={40} />
-            <div className="space-y-1.5 max-w-sm mx-auto">
-              <p className="text-base font-semibold text-foreground">See where your hours actually go</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                No screen time is logged for this period yet. Connect the browser extension, Desktop app, or iOS Screen Time sync to uncover hidden time drains.
-              </p>
+          <div className="liquid-glass-card rounded-2xl p-6 space-y-5">
+            <div className="text-center space-y-3">
+              <Monitor className="mx-auto text-primary opacity-80" size={38} />
+              <div className="space-y-1.5 max-w-sm mx-auto">
+                <p className="text-base font-semibold text-foreground">See where your hours actually go</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  No screen time is logged for this period yet. Connect your phone, browser, or PC below in one tap — no manual IDs needed.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link to="/settings?section=goals">
+                  <Button size="sm" variant="outline">Set Screen Limit</Button>
+                </Link>
+                <Link to="/habits">
+                  <Button size="sm" variant="ghost">Start a Detox Habit</Button>
+                </Link>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Link to="/settings">
-                <Button size="sm" variant="outline">Configure Sync &amp; Limit</Button>
-              </Link>
-              <Link to="/habits">
-                <Button size="sm" variant="ghost">Start a Detox Habit</Button>
-              </Link>
-            </div>
+            <DeviceSyncHub compact />
           </div>
         )}
       </div>

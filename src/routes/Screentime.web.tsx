@@ -8,6 +8,7 @@ import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platfo
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
 import { Button, SectionLoader } from '../components/ui';
+import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -748,7 +749,7 @@ import { Button, SectionLoader } from '../components/ui';
         )}
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-blue-500/10">
@@ -1331,22 +1332,25 @@ import { Button, SectionLoader } from '../components/ui';
         )}
 
         {!isLoading && topApps.length === 0 && topWebsites.length === 0 && (
-          <div className="rounded-2xl border border-border bg-card p-8 sm:p-10 text-center space-y-4">
-            <Monitor className="mx-auto text-primary opacity-80" size={40} />
-            <div className="space-y-1.5 max-w-lg mx-auto">
-              <p className="text-base font-semibold text-foreground">See where your hours actually go</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                No screen time is logged for this period yet. Connect the lifeOS Browser Extension for web usage, the Desktop app for PC apps, or sync from iOS to uncover hidden time drains.
-              </p>
+          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 space-y-5">
+            <div className="text-center space-y-3">
+              <Monitor className="mx-auto text-primary opacity-80" size={38} />
+              <div className="space-y-1.5 max-w-lg mx-auto">
+                <p className="text-base font-semibold text-foreground">See where your hours actually go</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  No screen time is logged for this period yet. Pair your browser, PC, or phone below in one click — no manual IDs needed.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link to="/settings?section=goals">
+                  <Button size="sm" variant="outline">Set Screen Limit</Button>
+                </Link>
+                <Link to="/habits">
+                  <Button size="sm" variant="ghost">Start a Digital Detox Habit</Button>
+                </Link>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2">
-              <Link to="/settings">
-                <Button size="sm" variant="outline">Configure Screen Limit &amp; Sync</Button>
-              </Link>
-              <Link to="/habits">
-                <Button size="sm" variant="ghost">Start a Digital Detox Habit</Button>
-              </Link>
-            </div>
+            <DeviceSyncHub compact />
           </div>
         )}
       </div>

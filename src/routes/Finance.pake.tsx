@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { Plus, ArrowUpRight, ArrowDownRight, Edit2, Trash2, ChevronLeft, ChevronRight, Utensils, Car, Zap, Gamepad2, Heart, GraduationCap, ShoppingBag, ArrowLeftRight, MoreHorizontal, Briefcase, Code2, TrendingUp as TrendingUpIcon, Wallet, PieChart, Landmark, Pencil, Check, X, Settings2, type LucideIcon } from 'lucide-react';
 import { BarChart, Bar, AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell, CartesianGrid } from 'recharts';
 import { format, subMonths, addMonths, startOfMonth, endOfMonth, startOfDay, differenceInCalendarDays } from 'date-fns';
@@ -91,6 +91,7 @@ export default function Finance() {
   const renameInvestmentAccount = useRenameInvestmentAccount();
   const removeInvestmentAccount = useRemoveInvestmentAccount();
   const { privacyMode } = useUIStore();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { user } = useAuth();
   const hasEnsuredDefaults = useRef(false);
@@ -764,15 +765,23 @@ export default function Finance() {
 
   useEffect(() => {
     const state = location.state as { triggerAdd?: boolean } | null;
-    if (state?.triggerAdd) {
-      navigate(location.pathname, { replace: true, state: {} });
-      if (activeTab === 'investments') {
+    const isQuickExpense = searchParams.get('quick') === 'expense' || searchParams.get('action') === 'new';
+    if (isQuickExpense) {
+      searchParams.delete('quick');
+      searchParams.delete('action');
+      setSearchParams(searchParams, { replace: true });
+    }
+    if (state?.triggerAdd || isQuickExpense) {
+      if (state?.triggerAdd) {
+        navigate(location.pathname, { replace: true, state: {} });
+      }
+      if (activeTab === 'investments' && !isQuickExpense) {
         handleOpenInvestmentModalRef.current();
       } else {
         handleOpenModalRef.current();
       }
     }
-  }, [location.state, navigate, location.pathname, activeTab]);
+  }, [location.state, navigate, location.pathname, activeTab, searchParams, setSearchParams]);
 
   if (isLoading) {
     return <SectionLoader />;

@@ -607,7 +607,7 @@ export function AppShell() {
           })}
           {!isSidebarCollapsed && Object.values(desktopNavVisible).some((v) => v === false) && (
             <NavLink
-              to="/settings"
+              to="/settings?section=layout"
               className="mt-2 px-3 py-1.5 text-[11px] font-medium text-ink-3 hover:text-ink transition-colors"
             >
               + Customize modules

@@ -11,9 +11,11 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.en
 
 if (typeof window !== 'undefined' && supabaseUrl && supabaseAnonKey) {
   try {
+    const existing = JSON.parse(window.localStorage.getItem('lifeos_extension_sync') || '{}');
     window.localStorage.setItem(
       'lifeos_extension_sync',
       JSON.stringify({
+        ...existing,
         supabaseUrl,
         supabaseAnonKey,
         syncedAt: new Date().toISOString(),

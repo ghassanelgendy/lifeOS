@@ -24,11 +24,6 @@ import {
   Sparkles,
   Puzzle,
   Zap,
-  Copy,
-  Share2,
-  MessageSquare,
-  Clock,
-  Lightbulb,
   Search,
   X,
   Palette,
@@ -64,13 +59,14 @@ import { Button, ConfirmSheet, Input, Spinner } from '../components/ui';
 import { NAV_ITEMS } from '../components/navItems';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { usePrayerNotificationSettings } from '../hooks/usePrayerHabits';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { searchCities, reverseGeocodeLabel } from '../lib/prayerGeocoding';
 import type { GeocodeHit } from '../lib/prayerGeocoding';
 import { AISettingsSection } from '../components/AISettingsSection';
 import { AccountSecuritySection } from '../components/AccountSecuritySection';
 import { BankAccountsSettingsSection } from '../components/BankAccountsSettingsSection';
 import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
+import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
 
 const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
   prayer: 'Prayer times',
@@ -111,7 +107,7 @@ const SETTINGS_NAV: SettingsNavItem[] = [
   { id: 'account', label: 'Account', category: 'General', icon: User, keywords: 'user email profile avatar login signout' },
   { id: 'appearance', label: 'Appearance', category: 'General', icon: Palette, keywords: 'theme dark mode light accent color glass background' },
   { id: 'defaults', label: 'App defaults', category: 'General', icon: SlidersHorizontal, keywords: 'default tab task view calendar modals' },
-  { id: 'shortcuts', label: 'Shortcuts & Mobile', category: 'General', icon: Zap, keywords: 'android pwa ios capture quick action user id share sheet' },
+  { id: 'shortcuts', label: 'Connect Devices & Sync', category: 'General', icon: Zap, keywords: 'android pwa ios chronos windows linux chrome extension screentime sleep sms shortcuts' },
 
   { id: 'layout', label: 'Layout & widgets', category: 'Personalization', icon: LayoutGrid, keywords: 'dashboard widgets order hide reorder drag nav items' },
   { id: 'ai', label: 'AI Integration', category: 'Personalization', icon: Bot, keywords: 'gemini groq openai api key artificial intelligence assistant model' },
@@ -128,6 +124,20 @@ const SETTINGS_NAV: SettingsNavItem[] = [
   { id: 'help', label: 'Help & Docs', category: 'System', icon: HelpCircle, keywords: 'wiki documentation tour guide assistant guide faq' },
   { id: 'about', label: 'About', category: 'System', icon: Info, keywords: 'version release storage local developer restart tour' },
 ];
+
+const ESSENTIAL_SETTINGS_IDS = new Set([
+  'account',
+  'appearance',
+  'layout',
+  'prayer',
+  'goals',
+  'shortcuts',
+  'help',
+]);
+
+const ADVANCED_ONLY_SETTINGS_IDS = SETTINGS_NAV
+  .map((item) => item.id)
+  .filter((id) => !ESSENTIAL_SETTINGS_IDS.has(id));
 
 type LayoutWidgetPage = 'habits' | 'sleep';
 
@@ -254,6 +264,8 @@ export default function SettingsPage() {
     setReportSleepTargetCurrent,
     setReportScreenTargetCurrent,
     setReportHabitsTargetCurrent,
+    settingsComplexityMode,
+    setSettingsComplexityMode,
   } = useUIStore();
   const navigate = useNavigate();
   const { data: taskLists = [] } = useTaskLists();
@@ -264,6 +276,27 @@ export default function SettingsPage() {
   const effectiveTheme = useEffectiveTheme();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeSection, setActiveSection] = useState<string>('account');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  // Deep-link directly to a Settings section via ?section=<id> or #settings-<id>
+  useEffect(() => {
+    const paramSection = searchParams.get('section')?.trim();
+    const hashSection = location.hash ? location.hash.replace(/^#(?:settings-)?/, '').trim() : '';
+    const targetId = paramSection || hashSection;
+    if (!targetId) return;
+    if (!SETTINGS_NAV.some((item) => item.id === targetId)) return;
+
+    if (!ESSENTIAL_SETTINGS_IDS.has(targetId) && useUIStore.getState().settingsComplexityMode === 'simple') {
+      setSettingsComplexityMode('advanced');
+    }
+
+    setActiveSection(targetId);
+    const timer = window.setTimeout(() => {
+      document.getElementById(`settings-${targetId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [searchParams, location.hash, setSettingsComplexityMode]);
 
   // Track active section as user scrolls
   useEffect(() => {
@@ -491,7 +524,10 @@ export default function SettingsPage() {
     .map((href) => desktopNavCandidates.find((item) => item.href === href))
     .filter((item, index, items): item is (typeof NAV_ITEMS)[number] => !!item && items.findIndex((candidate) => candidate?.href === item.href) === index);
 
+  const isSimpleMode = settingsComplexityMode === 'simple' && !searchQuery.trim();
+
   const filteredNavItems = SETTINGS_NAV.filter((item) => {
+    if (isSimpleMode && !ESSENTIAL_SETTINGS_IDS.has(item.id)) return false;
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
     return item.label.toLowerCase().includes(q) || item.keywords.toLowerCase().includes(q);
@@ -501,10 +537,17 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
+      {isSimpleMode && (
+        <style>{`${ADVANCED_ONLY_SETTINGS_IDS.map((id) => `[data-settings-pane] > #settings-${id}`).join(', ')} { display: none !important; }`}</style>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-0.5">Manage preferences, customize appearance, and configure integrations</p>
+          <p className="text-muted-foreground mt-0.5">
+            {isSimpleMode
+              ? 'Essential preferences & 1-click device sync'
+              : 'Manage preferences, customize appearance, and configure integrations'}
+          </p>
           {user ? (
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
@@ -513,19 +556,48 @@ export default function SettingsPage() {
           ) : null}
         </div>
 
-        {/* Global Quick Action: Replay Tour */}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            useUIStore.getState().restartTour();
-            navigate('/dashboard');
-          }}
-          className="gap-2 shrink-0 text-xs self-start sm:self-auto"
-        >
-          <RotateCcw size={14} />
-          <span>Interactive Tour</span>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <div className="inline-flex rounded-xl border border-border bg-secondary/50 p-0.5 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setSettingsComplexityMode('simple')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg transition-colors',
+                settingsComplexityMode === 'simple'
+                  ? 'bg-background text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              Essentials
+            </button>
+            <button
+              type="button"
+              onClick={() => setSettingsComplexityMode('advanced')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg transition-colors',
+                settingsComplexityMode === 'advanced'
+                  ? 'bg-background text-foreground shadow-xs font-semibold'
+                  : 'text-muted-foreground hover:text-foreground'
+              )}
+            >
+              All Settings
+            </button>
+          </div>
+
+          {/* Global Quick Action: Replay Tour */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              useUIStore.getState().restartTour();
+              navigate('/dashboard');
+            }}
+            className="gap-2 shrink-0 text-xs"
+          >
+            <RotateCcw size={14} />
+            <span>Take 30s Tour</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 lg:items-start">
@@ -587,7 +659,9 @@ export default function SettingsPage() {
             ) : (
               // Grouped by Category
               categories.map((cat) => {
-                const itemsInCat = SETTINGS_NAV.filter((item) => item.category === cat);
+                const itemsInCat = SETTINGS_NAV.filter(
+                  (item) => item.category === cat && (!isSimpleMode || ESSENTIAL_SETTINGS_IDS.has(item.id))
+                );
                 if (itemsInCat.length === 0) return null;
                 return (
                   <div key={cat} className="space-y-0.5 mb-2.5 last:mb-0">
@@ -623,7 +697,7 @@ export default function SettingsPage() {
           </nav>
         </aside>
 
-        <div className="flex-1 min-w-0 space-y-10">
+        <div data-settings-pane className="flex-1 min-w-0 space-y-10">
       {/* Account */}
       <section id="settings-account" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border">
@@ -634,87 +708,21 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Shortcuts & Mobile Launcher */}
+      {/* Connect Devices & Sync */}
       <section id="settings-shortcuts" className="rounded-xl border border-border bg-card overflow-hidden scroll-mt-20">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div>
             <h2 className="font-semibold flex items-center gap-2">
               <Zap size={18} className="text-amber-400" />
-              Mobile App Shortcuts & Quick Actions
+              Connect Devices &amp; Sync
             </h2>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Instant 1-tap capture on Android & iOS without installing external automation apps
+              Zero-config setup for Browser Extension, Windows/Linux Chronos, iPhone, and Android
             </p>
           </div>
         </div>
-        <div className="p-4 space-y-4">
-          <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-caption font-semibold text-amber-800 dark:text-amber-300">Your account user ID</span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (user?.id) {
-                    navigator.clipboard.writeText(user.id);
-                    alert('User ID copied to clipboard!');
-                  }
-                }}
-                className="flex items-center gap-1 text-caption text-amber-800 hover:text-amber-950 dark:text-amber-400 dark:hover:text-amber-300 transition-colors font-medium"
-              >
-                <Copy size={13} /> Copy ID
-              </button>
-            </div>
-            <p className="font-mono text-xs text-foreground/80 break-all select-all bg-black/30 p-2 rounded-lg">
-              {user?.id ?? 'Not signed in'}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
-              <p className="font-medium text-sm flex items-center gap-2">
-                <Smartphone size={16} className="text-primary shrink-0" />
-                <span>Android Homescreen Shortcuts</span>
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Install LifeOS as an app (Chrome menu → <em>Install App</em> or native APK). <strong>Long-press</strong> the LifeOS icon to reveal instant shortcuts: <em>Add Expense</em>, <em>Brain Dump</em>, <em>New Task</em>, and <em>Quran</em>. You can drag any of them onto your home screen!
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
-              <p className="font-medium text-sm flex items-center gap-2">
-                <Share2 size={16} className="text-sky-500 shrink-0" />
-                <span>Android Share Sheet</span>
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                When reading articles, tweets, or text in any Android browser/app, tap the system <strong>Share</strong> button and choose <strong>LifeOS</strong> to automatically drop the link or text into your Brain Dump note.
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
-              <p className="font-medium text-sm flex items-center gap-2">
-                <MessageSquare size={16} className="text-emerald-500 shrink-0" />
-                <span>Native Bank SMS Parser</span>
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                In the native Android app, bank transaction SMS alerts (QNB, NBE, CIB, Instapay, Fawry, Vodafone Cash, etc.) are intercepted in the background and automatically logged with zero manual steps!
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-secondary/40 border border-border space-y-1.5">
-              <p className="font-medium text-sm flex items-center gap-2">
-                <Clock size={16} className="text-violet-500 shrink-0" />
-                <span>Native Background Screen Time</span>
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Android UsageStats runs periodic background syncs into LifeOS Screen Time analytics automatically. No third-party tools (Tasker, HTTP Shortcuts) required.
-              </p>
-            </div>
-          </div>
-
-          <p className="text-caption text-muted-foreground leading-relaxed flex items-center gap-1.5">
-            <Lightbulb size={13} className="text-amber-400 shrink-0" />
-            <span><strong>Native Integration:</strong> Works natively with zero external automation tools, no manual webhook URLs, and no JSON editing required.</span>
-          </p>
+        <div className="p-4">
+          <DeviceSyncHub />
         </div>
       </section>
 
@@ -1009,75 +1017,88 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* Desktop Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Desktop Sidebar</h2>
-        </div>
-        <div className="p-4 space-y-4">
+      {/* Desktop Navigation (hidden on phone-width viewports) */}
+      <section className="hidden md:block rounded-xl border border-border bg-card overflow-hidden">
+        <div className="p-4 border-b border-border flex items-start justify-between gap-4">
           <div>
-            <p className="font-medium">Sidebar Items</p>
-            <p className="text-sm text-muted-foreground">
-              Choose which pages show in the desktop sidebar and in what order. Settings stays available separately at the bottom.
+            <h2 className="font-semibold">Desktop Sidebar</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Choose which pages appear in the sidebar and their order. Settings always stays at the bottom.
             </p>
           </div>
-          <div className="flex items-center justify-end">
-            <Button variant="outline" size="sm" onClick={resetDesktopNavItems}>
-              <RotateCcw size={14} />
-              Reset
-            </Button>
-          </div>
-          <div className="space-y-2">
-            {desktopNavSettingItems.map((item, index) => {
-              const visible = desktopNavVisible[item.href] !== false;
-              return (
-                <div
-                  key={item.href}
+          <Button variant="outline" size="sm" onClick={resetDesktopNavItems} className="shrink-0">
+            <RotateCcw size={14} />
+            Reset
+          </Button>
+        </div>
+        <ul className="p-2 grid grid-cols-1 xl:grid-cols-2 gap-1">
+          {desktopNavSettingItems.map((item, index) => {
+            const visible = desktopNavVisible[item.href] !== false;
+            return (
+              <li
+                key={item.href}
+                className={cn(
+                  "group flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-secondary/60",
+                  !visible && "opacity-60"
+                )}
+              >
+                <span
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                    visible ? "border-border bg-card" : "border-border/50 bg-secondary/20 opacity-75"
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-md",
+                    visible ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
                   )}
                 >
-                  <GripVertical size={16} className="text-muted-foreground flex-shrink-0" />
-                  <label className="flex-1 flex items-center gap-2 cursor-pointer min-h-[44px]">
-                    <input
-                      type="checkbox"
-                      checked={visible}
-                      onChange={() => toggleDesktopNavItem(item.href)}
-                      className="rounded border-border"
-                    />
-                    <item.icon size={16} className="text-muted-foreground" />
-                    <span className="font-medium">{item.label}</span>
-                  </label>
-                  <div className="flex flex-col gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => moveDesktopNavItem(item.href, 'up')}
-                      disabled={index === 0}
-                      className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                      title="Move up"
-                    >
-                      <ChevronUp size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveDesktopNavItem(item.href, 'down')}
-                      disabled={index === desktopNavSettingItems.length - 1}
-                      className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                      title="Move down"
-                    >
-                      <ChevronDown size={18} />
-                    </button>
-                  </div>
+                  <item.icon size={16} />
+                </span>
+                <span className="flex-1 text-sm font-medium truncate">{item.label}</span>
+                <div className="flex items-center opacity-60 group-hover:opacity-100 transition-opacity">
+                  <button
+                    type="button"
+                    onClick={() => moveDesktopNavItem(item.href, 'up')}
+                    disabled={index === 0}
+                    className="p-1.5 rounded hover:bg-secondary transition-colors disabled:opacity-30"
+                    title="Move up"
+                    aria-label={`Move ${item.label} up`}
+                  >
+                    <ChevronUp size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveDesktopNavItem(item.href, 'down')}
+                    disabled={index === desktopNavSettingItems.length - 1}
+                    className="p-1.5 rounded hover:bg-secondary transition-colors disabled:opacity-30"
+                    title="Move down"
+                    aria-label={`Move ${item.label} down`}
+                  >
+                    <ChevronDown size={16} />
+                  </button>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={visible}
+                  aria-label={`Show ${item.label} in sidebar`}
+                  onClick={() => toggleDesktopNavItem(item.href)}
+                  className={cn(
+                    "relative h-5 w-9 shrink-0 rounded-full transition-colors",
+                    visible ? "bg-primary" : "bg-border"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform",
+                      visible && "translate-x-4"
+                    )}
+                  />
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
-      {/* Mobile Navigation */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
+      {/* Mobile Navigation (hidden on desktop-width viewports) */}
+      <section className="md:hidden rounded-xl border border-border bg-card overflow-hidden">
         <div className="p-4 border-b border-border">
           <h2 className="font-semibold">Mobile Navigation</h2>
         </div>
@@ -1772,6 +1793,17 @@ export default function SettingsPage() {
           </div>
         </div>
       </section>
+      {isSimpleMode && (
+        <div className="rounded-xl border border-dashed border-border bg-secondary/20 p-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">Need AI keys, notifications, bank accounts, or backups?</p>
+            <p className="text-xs text-muted-foreground">Switch to All Settings to access all 16 configuration sections.</p>
+          </div>
+          <Button variant="outline" size="sm" onClick={() => setSettingsComplexityMode('advanced')}>
+            Show All Settings
+          </Button>
+        </div>
+      )}
         </div>
       </div>
 

@@ -508,7 +508,7 @@ export function AppShell() {
             })}
             {Object.values(desktopNavVisible).some((v) => v === false) && (
               <NavLink
-                to="/settings"
+                to="/settings?section=layout"
                 onClick={() => setMobileSidebarOpen(false)}
                 className="mt-2 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
               >

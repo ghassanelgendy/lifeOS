@@ -198,14 +198,7 @@ export function useQadaaTracker() {
         task_offset_minutes: settings.task_offset_minutes ?? 60,
       };
     }
-    const defBaseline = calculateQadaaBaseline({
-      madhab: 'shafii',
-      calculationBasis: 'actual_age',
-      currentAge: 23,
-      takleefAge: 14,
-      isLunarCalendar: true,
-      includeWitr: false,
-    });
+    // Not set up yet: no prayers owed until the user configures their backlog.
     return {
       id: '',
       user_id: user?.id || '',
@@ -216,11 +209,11 @@ export function useQadaaTracker() {
       current_age: 23,
       is_lunar_calendar: true,
       include_witr: false,
-      target_fajr: defBaseline.targetPerPrayer,
-      target_dhuhr: defBaseline.targetPerPrayer,
-      target_asr: defBaseline.targetPerPrayer,
-      target_maghrib: defBaseline.targetPerPrayer,
-      target_isha: defBaseline.targetPerPrayer,
+      target_fajr: 0,
+      target_dhuhr: 0,
+      target_asr: 0,
+      target_maghrib: 0,
+      target_isha: 0,
       target_witr: 0,
       daily_target_prayers: 5,
       auto_push_tasks: false,

@@ -241,7 +241,7 @@ export default function Sleep() {
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Link to="/settings">
+            <Link to="/settings?section=goals">
               <Button variant="outline" size="sm">Adjust Sleep Target</Button>
             </Link>
             <Link to="/habits">

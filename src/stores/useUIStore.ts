@@ -257,6 +257,9 @@ interface UIState {
   /** Transient gate: true once initial user_app_settings load has settled (or offline) */
   isRemoteUiSettingsReady: boolean;
   setRemoteUiSettingsReady: (ready: boolean) => void;
+  /** Settings page complexity mode: simple shows essentials, advanced shows all 16+ sections */
+  settingsComplexityMode: 'simple' | 'advanced';
+  setSettingsComplexityMode: (mode: 'simple' | 'advanced') => void;
   setAiEnabled: (enabled: boolean) => void;
   setAiApiKey: (key: string) => void;
   setAiBaseUrl: (url: string) => void;
@@ -331,6 +334,7 @@ export type PersistedUiSlice = {
   aiFallbackEnabled: boolean;
   aiActiveModel: string;
   brainDumpAutoOrganizeEnabled: boolean;
+  settingsComplexityMode: 'simple' | 'advanced';
   hasCompletedTour: boolean;
   hasCompletedOnboarding: boolean;
   hasDismissedGettingStarted: boolean;
@@ -544,6 +548,8 @@ export const useUIStore = create<UIState>()(
         })),
       isRemoteUiSettingsReady: false,
       setRemoteUiSettingsReady: (isRemoteUiSettingsReady) => set({ isRemoteUiSettingsReady }),
+      settingsComplexityMode: 'simple',
+      setSettingsComplexityMode: (settingsComplexityMode) => set({ settingsComplexityMode }),
 
       // AI Default values & Setters
       aiEnabled: Boolean(
@@ -729,6 +735,7 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     aiFallbackEnabled: state.aiFallbackEnabled,
     aiActiveModel: state.aiActiveModel,
     brainDumpAutoOrganizeEnabled: state.brainDumpAutoOrganizeEnabled,
+    settingsComplexityMode: state.settingsComplexityMode,
     hasCompletedTour: state.hasCompletedTour,
     hasCompletedOnboarding: state.hasCompletedOnboarding,
     hasDismissedGettingStarted: state.hasDismissedGettingStarted,

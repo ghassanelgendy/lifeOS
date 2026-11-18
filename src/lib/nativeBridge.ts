@@ -937,6 +937,7 @@ export interface LifeOSAndroidBridgePluginType {
   }>;
   requestUsageStatsPermission(): Promise<{ granted?: boolean; openedSettings?: boolean }>;
   triggerScreenTimeSyncNow(): Promise<{ triggered: boolean }>;
+  requestPermissions?(options: { permissions: string[] }): Promise<{ sms?: string }>;
 }
 
 export const LifeOSAndroidBridge = registerPlugin<LifeOSAndroidBridgePluginType>('LifeOSAndroidBridge');
@@ -944,7 +945,7 @@ export const LifeOSAndroidBridge = registerPlugin<LifeOSAndroidBridgePluginType>
 export async function syncAndroidNativeBridge(userId: string) {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
   try {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://wckvsmeymvwchwweadfs.supabase.co';
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://vlbgxbzwasgpbfzfabnl.supabase.co';
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY || '';
     await LifeOSAndroidBridge.configureUser({
       userId,
