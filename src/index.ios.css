@@ -750,3 +750,30 @@ html.dark footer.chat-blend-surface {
   touch-action: pan-x;
   overscroll-behavior-x: contain;
 }
+
+/* Modals: nothing may push past the sheet's width. The sheet clips sideways overflow, so without
+   these rules a long word, a wide date field or an unshrinkable flex child is cut off instead of fitting. */
+[data-lifeos-modal] :where(.flex, .grid, .inline-flex) > * {
+  min-width: 0;
+}
+[data-lifeos-modal] :where(input, select, textarea) {
+  max-width: 100%;
+  min-width: 0;
+}
+[data-lifeos-modal] input:is([type='date'], [type='time'], [type='datetime-local'], [type='month'], [type='week']) {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  -webkit-appearance: none;
+  appearance: none;
+}
+[data-lifeos-modal] :where(h1, h2, h3, h4, p, span, label, a, li, button) {
+  overflow-wrap: anywhere;
+}
+[data-lifeos-modal] :where(img, video, canvas, svg:not([width])) {
+  max-width: 100%;
+}
+[data-lifeos-modal] :where(pre, code) {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

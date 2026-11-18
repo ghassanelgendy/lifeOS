@@ -179,6 +179,9 @@ Supabase Auth emails (confirmation, recovery, magic link, email change, invite) 
 #### FR-TASK-UI-001: Task Created Time
 The task list shall show each task's created time only when `showTaskCreatedTime` is on (default off), a persisted and synced UI setting.
 
+#### FR-TASK-AI-001: Duplicate Check Latency
+Task creation shall not wait on the model unnecessarily: with no lexical candidate it shall skip the AI call, with a near-identical title (score 85 or more) it shall report a duplicate locally, and otherwise it shall wait at most 3.5 seconds for the AI before using local matches (`src/lib/taskSimilarityAnalyzer.ts`).
+
 #### FR-LAND-001: Public Landing Page
 The system shall show a public landing page at `/` to unauthenticated visitors and redirect authenticated users to their default tab. The page shall always render in the dark palette regardless of the stored app theme, shall present scroll-driven 3D sections (hero frame, pinned prism) built from live UI fragments with no network requests, shall keep every scroll-driven section readable and unpinned under `prefers-reduced-motion`, and shall not scroll horizontally at 390px width.
 

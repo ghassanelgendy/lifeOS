@@ -1,6 +1,11 @@
 import { askAI, extractJSON } from './ai';
 import type { Task, TaskList, Tag } from '../types/schema';
 
+/** A lexical score at or above this is treated as a duplicate without asking the model. */
+const CONFIDENT_LEXICAL_SCORE = 85;
+/** How long task creation waits for the model's opinion before going on with local matches. */
+const AI_CHECK_TIMEOUT_MS = 3500;
+
 export interface TaskSimilarityMatch {
   existingTask: Task;
   similarityScore: number; // 0 - 100
@@ -100,15 +105,30 @@ export async function analyzeTaskSimilarityWithAI(
   // 1. Pre-filter top candidate tasks using fast multilingual lexical scoring
   const candidates = findLexicalCandidates(trimmed, existingTasks, 10);
 
-  // If no candidates even remotely match lexically, take the most recent 15 active tasks for semantic inspection
-  let targetPool = candidates.map((c) => c.task);
-  if (targetPool.length === 0) {
-    targetPool = existingTasks.filter((t) => !t.is_completed).slice(0, 15);
-  }
-
-  if (targetPool.length === 0) {
+  // Nothing resembles it: there is nothing for a model to compare, so skip the network call.
+  if (candidates.length === 0) {
     return { hasDuplicate: false, highestScore: 0, matches: [] };
   }
+
+  const lexicalMatches = (min: number): TaskSimilarityMatch[] =>
+    candidates
+      .filter((c) => c.score >= min)
+      .map((c) => ({
+        existingTask: c.task,
+        similarityScore: c.score,
+        reason: `Lexically similar to existing task "${c.task.title}"`,
+        suggestedAction: 'merge_into_existing' as const,
+        mergedTitle: c.task.title,
+        mergedDescription: c.task.description || undefined,
+      }));
+
+  // A near-identical title is a duplicate by itself; answer at once instead of waiting on a model.
+  if (candidates[0].score >= CONFIDENT_LEXICAL_SCORE) {
+    const matches = lexicalMatches(CONFIDENT_LEXICAL_SCORE);
+    return { hasDuplicate: true, highestScore: matches[0].similarityScore, matches };
+  }
+
+  const targetPool = candidates.map((c) => c.task);
 
   const listMap = new Map(taskLists.map((l) => [l.id, l.name]));
   const tagMap = new Map(tags.map((t) => [t.id, t.name]));
@@ -162,7 +182,11 @@ ${newDescription ? `- Description: "${newDescription}"` : ''}
 ${JSON.stringify(candidateSummaries, null, 2)}`;
 
   try {
-    const rawResponse = await askAI(systemPrompt, userPrompt, true);
+    // Creating a task must never wait long on the model: past the limit, use the local matches.
+    const rawResponse = await Promise.race([
+      askAI(systemPrompt, userPrompt, true),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('similarity check timed out')), AI_CHECK_TIMEOUT_MS)),
+    ]);
     const parsed = extractJSON(rawResponse);
 
     const matches: TaskSimilarityMatch[] = [];
@@ -198,16 +222,7 @@ ${JSON.stringify(candidateSummaries, null, 2)}`;
   } catch (err) {
     console.warn('[Task Similarity] AI analysis error, falling back to lexical matches:', err);
     // Graceful fallback to lexical candidates
-    const fallbackMatches: TaskSimilarityMatch[] = candidates
-      .filter((c) => c.score >= 50)
-      .map((c) => ({
-        existingTask: c.task,
-        similarityScore: c.score,
-        reason: `Lexically similar to existing task "${c.task.title}"`,
-        suggestedAction: 'merge_into_existing',
-        mergedTitle: c.task.title,
-        mergedDescription: c.task.description || undefined,
-      }));
+    const fallbackMatches = lexicalMatches(50);
 
     return {
       hasDuplicate: fallbackMatches.length > 0 && fallbackMatches[0].similarityScore >= 70,
