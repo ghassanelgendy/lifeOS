@@ -1,14 +1,14 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format, parseISO, subDays } from 'date-fns';
-import { Moon } from 'lucide-react';
+import { Moon, SlidersHorizontal } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../components/ui/cn';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
 import { Button, PageHeader, SectionLoader } from '../components/ui';
-import { useUIStore } from '../stores/useUIStore';
+import { PAGE_WIDGET_DEFAULTS, useUIStore } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
 const STAGE_COLORS: Record<string, string> = {
@@ -178,7 +178,18 @@ export default function Sleep() {
     };
   }, [weekly]);
 
-  const { privacyMode } = useUIStore();
+  const { privacyMode, pageWidgetOrder, pageWidgetVisible, resetPageWidgets } = useUIStore();
+  const sleepOrder = useMemo(() => {
+    const defaultSleepOrder = PAGE_WIDGET_DEFAULTS.sleep ?? [];
+    const savedSleepOrder = pageWidgetOrder.sleep ?? [];
+    return [
+      ...savedSleepOrder.filter((id) => defaultSleepOrder.includes(id)),
+      ...defaultSleepOrder.filter((id) => !savedSleepOrder.includes(id)),
+    ];
+  }, [pageWidgetOrder.sleep]);
+  const sleepVisible = pageWidgetVisible.sleep ?? {};
+  const isSleepWidgetVisible = (id: string) => sleepVisible[id] !== false;
+  const visibleSleepWidgets = sleepOrder.filter(isSleepWidgetVisible);
 
   const donutData = active ? [
     { name: 'Deep', value: active.deepMinutes, fill: STAGE_COLORS.Deep },
@@ -206,26 +217,34 @@ export default function Sleep() {
         title="Sleep"
         subtitle="Sleep stages, patterns, and longitudinal trends"
         actions={
-          active ? (
-            <div className="flex items-center gap-3">
-              <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
-                <span className="text-muted-foreground">Typical Window:</span>
-                <span className="font-semibold text-foreground">
-                  {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake
-                    ? `${format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – ${format(weeklyAvgWindow.avgWake, 'h:mm a')}`
-                    : 'N/A'}
-                </span>
-              </div>
-              <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
-                <span className="text-muted-foreground">30d Avg:</span>
-                <span className={cn("font-semibold text-foreground", privacyMode && "blur-sm")}>
-                  {monthly.length > 0
-                    ? formatDuration(Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length)))
-                    : '0h 0m'}
-                </span>
-              </div>
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            {active && (
+              <>
+                <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
+                  <span className="text-muted-foreground">Typical Window:</span>
+                  <span className="font-semibold text-foreground">
+                    {weeklyAvgWindow.avgBedtime && weeklyAvgWindow.avgWake
+                      ? `${format(weeklyAvgWindow.avgBedtime, 'h:mm a')} – ${format(weeklyAvgWindow.avgWake, 'h:mm a')}`
+                      : 'N/A'}
+                  </span>
+                </div>
+                <div className="px-3 py-1.5 rounded-xl border border-border bg-card text-xs flex items-center gap-2">
+                  <span className="text-muted-foreground">30d Avg:</span>
+                  <span className={cn("font-semibold text-foreground", privacyMode && "blur-sm")}>
+                    {monthly.length > 0
+                      ? formatDuration(Math.round((monthly.reduce((acc, s) => acc + s.sleepMinutes, 0) / monthly.length)))
+                      : '0h 0m'}
+                  </span>
+                </div>
+              </>
+            )}
+            <Link to="/settings?section=layout&widgets=sleep">
+              <Button size="sm" variant="outline" className="gap-1.5" title="Customize Sleep widgets">
+                <SlidersHorizontal size={14} />
+                <span className="hidden sm:inline">Widgets</span>
+              </Button>
+            </Link>
+          </div>
         }
       />
 
@@ -249,10 +268,29 @@ export default function Sleep() {
             </Link>
           </div>
         </div>
+      ) : visibleSleepWidgets.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-3">
+          <p className="text-sm font-semibold text-foreground">All Sleep widgets are hidden</p>
+          <p className="text-xs text-muted-foreground">Restore the default Sleep layout or choose which sections to display.</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" onClick={() => resetPageWidgets('sleep')}>Restore Default Widgets</Button>
+            <Link to="/settings?section=layout&widgets=sleep">
+              <Button size="sm" variant="outline">Customize Widgets</Button>
+            </Link>
+          </div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Top Left: Last Night Hero Card (7 Cols on PC) */}
-          <div className="lg:col-span-7 rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm">
+          {visibleSleepWidgets.map((sectionId) => {
+            if (sectionId === 'score') {
+              return (
+                <div
+                  key="score"
+                  className={cn(
+                    isSleepWidgetVisible('metrics') ? 'lg:col-span-7' : 'lg:col-span-12',
+                    'rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm'
+                  )}
+                >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground">
@@ -385,9 +423,18 @@ export default function Sleep() {
               </div>
             </div>
           </div>
+              );
+            }
 
-          {/* Top Right: 7-Day Sleep Metrics (5 Cols on PC) */}
-          <div className="lg:col-span-5 rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm">
+            if (sectionId === 'metrics') {
+              return (
+                <div
+                  key="metrics"
+                  className={cn(
+                    isSleepWidgetVisible('score') ? 'lg:col-span-5' : 'lg:col-span-12',
+                    'rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm'
+                  )}
+                >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xs font-bold text-muted-foreground">7-Day Rolling Averages</h2>
@@ -434,9 +481,12 @@ export default function Sleep() {
               <span>Avg Core / Light: <strong className="text-foreground">{weeklyMetrics.corePct}%</strong></span>
             </div>
           </div>
+              );
+            }
 
-          {/* Middle: Sleep Stages Timeline Full Width (12 Cols) */}
-          <div className="lg:col-span-12 rounded-2xl border border-border bg-card p-6 shadow-sm">
+            if (sectionId === 'timeline') {
+              return (
+                <div key="timeline" className="lg:col-span-12 rounded-2xl border border-border bg-card p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
               <div>
                 <h2 className="text-sm font-bold text-foreground">Sleep Stages Timeline (Hypnogram)</h2>
@@ -471,9 +521,18 @@ export default function Sleep() {
               <span>Waketime: <strong>{format(active.waketime, 'h:mm a')}</strong></span>
             </div>
           </div>
+              );
+            }
 
-          {/* Bottom Left: 30-Day Trends Chart (7 Cols) */}
-          <div className="lg:col-span-7 rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
+            if (sectionId === 'weekly') {
+              return (
+                <div
+                  key="weekly"
+                  className={cn(
+                    isSleepWidgetVisible('sessions') ? 'lg:col-span-7' : 'lg:col-span-12',
+                    'rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between'
+                  )}
+                >
             <div>
               <div className="flex items-start justify-between mb-4">
                 <div>
@@ -554,9 +613,18 @@ export default function Sleep() {
               })()}
             </div>
           </div>
+              );
+            }
 
-          {/* Bottom Right: Recent Sessions List (5 Cols) */}
-          <div className="lg:col-span-5 rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
+            if (sectionId === 'sessions') {
+              return (
+                <div
+                  key="sessions"
+                  className={cn(
+                    isSleepWidgetVisible('weekly') ? 'lg:col-span-5' : 'lg:col-span-12',
+                    'rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between'
+                  )}
+                >
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -612,6 +680,11 @@ export default function Sleep() {
               </div>
             </div>
           </div>
+              );
+            }
+
+            return null;
+          })}
         </div>
       )}
       {/* Selected Session Details Sheet */}

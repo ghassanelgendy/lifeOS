@@ -1,7 +1,7 @@
-import { useMemo } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { format, parseISO, subDays } from 'date-fns';
-import { Moon, ExternalLink, Zap, Check, Copy } from 'lucide-react';
+import { Moon, ExternalLink, Zap, Check, Copy, SlidersHorizontal } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
 import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { useAuth } from '../hooks/useAuth';
@@ -182,10 +182,11 @@ export default function Sleep() {
     };
   }, [weekly]);
 
-  const { pageWidgetOrder, pageWidgetVisible, privacyMode } = useUIStore();
+  const { pageWidgetOrder, pageWidgetVisible, resetPageWidgets, privacyMode } = useUIStore();
   const sleepOrder = pageWidgetOrder.sleep?.length ? pageWidgetOrder.sleep : (PAGE_WIDGET_DEFAULTS.sleep ?? []);
   const sleepVisible = pageWidgetVisible.sleep ?? {};
   const visible = (id: string) => sleepVisible[id] !== false;
+  const visibleSleepOrder = sleepOrder.filter(visible);
 
   const weeklyMetrics = useMemo(() => {
     if (!weekly.length) return { deepPct: 0, corePct: 0, remPct: 0, continuity: 0, wakeCount: 0 };
@@ -207,15 +208,23 @@ export default function Sleep() {
           <h1 className="text-3xl font-bold tracking-tight">Sleep</h1>
           <p className="text-muted-foreground">Track your sleep quality and patterns</p>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          className="gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
-          onClick={() => setShowSyncModal(true)}
-        >
-          <Zap size={14} />
-          Apple Health Sync
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link to="/settings?section=layout&widgets=sleep">
+            <Button size="sm" variant="outline" className="gap-1.5" title="Customize Sleep widgets">
+              <SlidersHorizontal size={14} />
+              Widgets
+            </Button>
+          </Link>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10"
+            onClick={() => setShowSyncModal(true)}
+          >
+            <Zap size={14} />
+            Apple Health Sync
+          </Button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -238,8 +247,19 @@ export default function Sleep() {
             Set Up Apple Health Auto-Sync
           </Button>
         </div>
+      ) : visibleSleepOrder.length === 0 ? (
+        <div className="liquid-glass-card p-6 rounded-2xl text-center space-y-3">
+          <p className="text-sm font-semibold text-foreground">All Sleep widgets are hidden</p>
+          <p className="text-xs text-muted-foreground">Restore the default layout or choose which sections to display.</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" onClick={() => resetPageWidgets('sleep')}>Restore Default Widgets</Button>
+            <Link to="/settings?section=layout&widgets=sleep">
+              <Button size="sm" variant="outline">Customize Widgets</Button>
+            </Link>
+          </div>
+        </div>
       ) : (
-        sleepOrder.filter(visible).map((sectionId) => {
+        visibleSleepOrder.map((sectionId) => {
           if (sectionId === 'score') {
             return (
               <div key="score" className="liquid-glass-card p-5 rounded-2xl animate-in fade-in duration-300">

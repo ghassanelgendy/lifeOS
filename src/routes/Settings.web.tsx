@@ -14,7 +14,6 @@ import {
   Bell,
   ChevronUp,
   ChevronDown,
-  GripVertical,
   User,
   RotateCcw,
   MapPin,
@@ -42,7 +41,6 @@ import {
   useUIStore,
   DASHBOARD_MODES,
   DASHBOARD_MODE_LABELS,
-  PAGE_WIDGET_DEFAULTS,
   DEFAULT_DESKTOP_NAV,
   ACCENT_THEMES,
   ACCENT_THEME_LABELS,
@@ -67,33 +65,7 @@ import { AccountSecuritySection } from '../components/AccountSecuritySection';
 import { BankAccountsSettingsSection } from '../components/BankAccountsSettingsSection';
 import { QuranOfflineDownloader } from '../components/QuranOfflineDownloader';
 import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
-
-const DASHBOARD_WIDGET_LABELS: Record<string, string> = {
-  prayer: 'Prayer times',
-  stats: 'Stats (Weight, Muscle, Habits, Balance)',
-  overdue: 'Overdue tasks',
-  events: 'Upcoming events',
-  quickstats: 'Quick stats (Projects, Body fat, BMR, Expenses)',
-  habits: "Today's habits",
-  magic_week: 'Magic Week Report',
-};
-
-const PAGE_WIDGET_LABELS: Record<string, Record<string, string>> = {
-  dashboard: DASHBOARD_WIDGET_LABELS,
-  habits: {
-    stats: 'Stats cards',
-    prayer: 'Prayer tracking',
-    weekly: 'This week',
-    today: "Today's habits",
-  },
-  sleep: {
-    score: 'Score summary',
-    timeline: 'Sleep timeline',
-    metrics: 'Metrics cards',
-    weekly: 'Weekly bars',
-    sessions: 'Sessions list',
-  },
-};
+import { PageWidgetsSection } from '../components/settings/PageWidgetsSection';
 
 export interface SettingsNavItem {
   id: string;
@@ -138,8 +110,6 @@ const ESSENTIAL_SETTINGS_IDS = new Set([
 const ADVANCED_ONLY_SETTINGS_IDS = SETTINGS_NAV
   .map((item) => item.id)
   .filter((id) => !ESSENTIAL_SETTINGS_IDS.has(id));
-
-type LayoutWidgetPage = 'habits' | 'sleep';
 
 /** Single shared toggle-switch look used across every settings section, so on/off controls
  *  render identically instead of each section rolling its own button + color. */
@@ -239,11 +209,6 @@ export default function SettingsPage() {
     setDefaultTaskListId,
     dashboardMode,
     setDashboardMode,
-    pageWidgetOrder,
-    pageWidgetVisible,
-    togglePageWidget,
-    movePageWidget,
-    resetPageWidgets,
     prayerLocationMode,
     setPrayerLocationMode,
     prayerLocationLabel,
@@ -322,7 +287,6 @@ export default function SettingsPage() {
   const [exportStatus, setExportStatus] = useState<string | null>(null);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const [pushStatus, setPushStatus] = useState<string | null>(null);
-  const [selectedWidgetPage, setSelectedWidgetPage] = useState<LayoutWidgetPage>('habits');
   const [confirmAction, setConfirmAction] = useState<'reset' | 'clear' | null>(null);
   const [prayerCityQuery, setPrayerCityQuery] = useState('');
   const [prayerCityHits, setPrayerCityHits] = useState<GeocodeHit[]>([]);
@@ -944,78 +908,7 @@ export default function SettingsPage() {
     <BankAccountsSettingsSection />
 
     <div id="settings-layout" className="space-y-10 scroll-mt-20">
-      {/* Page Widgets */}
-      <section className="rounded-xl border border-border bg-card overflow-hidden">
-        <div className="p-4 border-b border-border">
-          <h2 className="font-semibold">Page Widgets</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Choose which sections to show and in what order per page. Habits layout applies on desktop only.
-          </p>
-        </div>
-        <div className="p-4 space-y-2">
-          <div className="flex items-center justify-between pb-2">
-            <select
-              aria-label="Layout page"
-              value={selectedWidgetPage}
-              onChange={(e) => setSelectedWidgetPage(e.target.value as LayoutWidgetPage)}
-              className="px-3 py-2 rounded-lg bg-secondary/50 border border-border text-foreground outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="habits">Habits</option>
-              <option value="sleep">Sleep</option>
-            </select>
-            <Button variant="outline" size="sm" onClick={() => resetPageWidgets(selectedWidgetPage)}>
-              <RotateCcw size={14} />
-              Reset
-            </Button>
-          </div>
-
-          {(pageWidgetOrder?.[selectedWidgetPage]?.length ? pageWidgetOrder[selectedWidgetPage] : (PAGE_WIDGET_DEFAULTS[selectedWidgetPage] ?? [])).map((id, index) => {
-            const visible = pageWidgetVisible?.[selectedWidgetPage]?.[id] !== false;
-            const label = PAGE_WIDGET_LABELS[selectedWidgetPage]?.[id] ?? id;
-            const currentLen = (pageWidgetOrder?.[selectedWidgetPage]?.length ?? PAGE_WIDGET_DEFAULTS[selectedWidgetPage]?.length ?? 0);
-            return (
-              <div
-                key={id}
-                className={cn(
-                  "flex items-center gap-3 p-3 rounded-lg border transition-colors",
-                  visible ? "border-border bg-card" : "border-border/50 bg-secondary/20 opacity-75"
-                )}
-              >
-                <GripVertical size={16} className="text-muted-foreground flex-shrink-0" />
-                <label className="flex-1 flex items-center gap-2 cursor-pointer min-h-[44px]">
-                  <input
-                    type="checkbox"
-                    checked={visible}
-                    onChange={() => togglePageWidget(selectedWidgetPage, id)}
-                    className="rounded border-border"
-                  />
-                  <span className="font-medium">{label}</span>
-                </label>
-                <div className="flex flex-col gap-0.5">
-                  <button
-                    type="button"
-                    onClick={() => movePageWidget(selectedWidgetPage, id, 'up')}
-                    disabled={index === 0}
-                    className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                    title="Move up"
-                  >
-                    <ChevronUp size={18} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => movePageWidget(selectedWidgetPage, id, 'down')}
-                    disabled={index === currentLen - 1}
-                    className="p-2 rounded hover:bg-secondary transition-colors disabled:opacity-30 icon-touch"
-                    title="Move down"
-                  >
-                    <ChevronDown size={18} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
+      <PageWidgetsSection variant="web" />
 
       {/* Desktop Navigation (hidden on phone-width viewports) */}
       <section className="hidden md:block rounded-xl border border-border bg-card overflow-hidden">

@@ -1031,7 +1031,7 @@ Users shall be able to reorder and toggle visibility of desktop sidebar navigati
 Users shall be able to reorder and toggle visibility of dashboard widgets.
 
 #### FR-SET-009: Page Widget Customization
-Sleep and Habits pages shall support widget ordering and visibility customization.
+Sleep (`Sleep.web.tsx`, `Sleep.ios.tsx`) and Habits (`Habits.web.tsx`, `Habits.ios.tsx`) pages shall support widget ordering and visibility customization across all viewports via `<PageWidgetsSection />` (`src/components/settings/PageWidgetsSection.tsx`), supporting segmented page tabs (`?widgets=habits|sleep` deep-links), plain-English widget cards, drag-and-drop plus arrow reordering, `Compact` / `Show All` / `Reset` presets, and all-hidden recovery banners on both Settings and target pages.
 
 #### FR-SET-010: Default Tab Configuration
 Users shall be able to set any page as the default landing tab.

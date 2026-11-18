@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -17,6 +17,7 @@ import {
   ChevronRight,
   BookOpen,
   Sparkles,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { getSpecificSurahHabitTarget } from '../../lib/quran-memorizer';
 import { getAzkarHabitCategory } from '../hooks/useAzkar';
@@ -168,6 +169,7 @@ export default function Habits() {
   const habitsPrayerDefaultExpanded = useUIStore((s) => s.habitsPrayerDefaultExpanded);
   const habitsPageWidgetOrder = useUIStore((s) => s.pageWidgetOrder.habits);
   const habitsPageWidgetVisible = useUIStore((s) => s.pageWidgetVisible.habits);
+  const resetPageWidgets = useUIStore((s) => s.resetPageWidgets);
   const [prayerSectionExpanded, setPrayerSectionExpanded] = useState(habitsPrayerDefaultExpanded);
   const [prayerViewTab, setPrayerViewTab] = useState<'daily' | 'qadaa'>('daily');
   const [searchParams] = useSearchParams();
@@ -426,9 +428,11 @@ export default function Habits() {
   );
 
   const getDesktopSectionProps = (id: HabitsWidgetId) => ({
-    className: cn('md:[order:var(--desktop-order)]', !desktopSectionVisible[id] && 'md:hidden'),
-    style: { '--desktop-order': desktopSectionOrderIndex[id] } as React.CSSProperties,
+    className: cn('[order:var(--desktop-order)]', !desktopSectionVisible[id] && 'hidden'),
+    style: { '--desktop-order': desktopSectionOrderIndex[id] + 1 } as React.CSSProperties,
   });
+
+  const allHabitsWidgetsHidden = HABITS_WIDGET_IDS.every((id) => !desktopSectionVisible[id]);
 
   const scheduledTodayHabits = habits.filter((habit: Habit) => isHabitScheduledForDate(habit, today));
 
@@ -601,13 +605,34 @@ export default function Habits() {
   return (
     <div className="flex flex-col gap-6 w-full max-w-7xl mx-auto px-3 sm:px-6 pb-28 sm:pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Habits</h1>
           <p className="text-muted-foreground">Build good habits and detox bad ones</p>
         </div>
-        <AddButton onClick={() => handleOpenModal()} label="New habit" />
+        <div className="flex items-center gap-2">
+          <Link to="/settings?section=layout&widgets=habits">
+            <Button size="sm" variant="outline" className="gap-1.5" title="Customize Habits widgets">
+              <SlidersHorizontal size={14} />
+              <span className="hidden sm:inline">Widgets</span>
+            </Button>
+          </Link>
+          <AddButton onClick={() => handleOpenModal()} label="New habit" />
+        </div>
       </div>
+
+      {allHabitsWidgetsHidden && (
+        <div className="rounded-xl border border-border bg-card p-6 text-center space-y-3">
+          <p className="text-sm font-semibold text-foreground">All Habits sections are hidden</p>
+          <p className="text-xs text-muted-foreground">Restore the default layout or pick which widgets to show.</p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Button size="sm" onClick={() => resetPageWidgets('habits')}>Restore Default Widgets</Button>
+            <Link to="/settings?section=layout&widgets=habits">
+              <Button size="sm" variant="outline">Customize Widgets</Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div {...getDesktopSectionProps('stats')}>
       {/* Stats Cards */}
