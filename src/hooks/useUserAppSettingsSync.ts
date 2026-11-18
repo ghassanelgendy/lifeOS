@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { getPersistedUiSlice, useUIStore } from '../stores/useUIStore';
 import { parsePersistedUiFromRemote } from '../lib/userAppSettings';
+import { useAuth } from './useAuth';
 
 const DEBOUNCE_MS = 1200;
 
@@ -10,6 +11,7 @@ const DEBOUNCE_MS = 1200;
  * Waits for the initial fetch before writing, so a stale localStorage theme does not overwrite the server.
  */
 export function useUserAppSettingsSync(userId: string | null | undefined) {
+  const { user } = useAuth();
   const applyingRemote = useRef(false);
   const loadDoneRef = useRef(false);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -19,6 +21,7 @@ export function useUserAppSettingsSync(userId: string | null | undefined) {
   useEffect(() => {
     if (!userId) {
       loadDoneRef.current = false;
+      useUIStore.getState().setRemoteUiSettingsReady(false);
       return;
     }
 
@@ -29,7 +32,25 @@ export function useUserAppSettingsSync(userId: string | null | undefined) {
       if (cancelled) return;
       lastFlushedJson.current = JSON.stringify(getPersistedUiSlice(useUIStore.getState()));
       loadDoneRef.current = true;
+      useUIStore.getState().setRemoteUiSettingsReady(true);
     };
+
+    const isOfflineSession =
+      user?.app_metadata?.provider === 'offline' ||
+      (typeof navigator !== 'undefined' && !navigator.onLine);
+
+    if (isOfflineSession) {
+      // Offline mode shouldn't block on Supabase before showing first-run setup.
+      if (useUIStore.getState().hasCompletedTour && !useUIStore.getState().hasCompletedOnboarding) {
+        useUIStore.getState().setOnboardingCompleted(true);
+      }
+      finishLoad();
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    useUIStore.getState().setRemoteUiSettingsReady(false);
 
     (async () => {
       const { data, error } = await supabase
@@ -47,6 +68,9 @@ export function useUserAppSettingsSync(userId: string | null | undefined) {
 
       const raw = data?.settings;
       if (raw == null || (typeof raw === 'object' && raw !== null && Object.keys(raw as object).length === 0)) {
+        if (useUIStore.getState().hasCompletedTour && !useUIStore.getState().hasCompletedOnboarding) {
+          useUIStore.getState().setOnboardingCompleted(true);
+        }
         finishLoad();
         return;
       }
@@ -57,9 +81,12 @@ export function useUserAppSettingsSync(userId: string | null | undefined) {
         return;
       }
 
-      // Completed tour is sticky: a stale remote `false` must not re-trigger it.
+      // Completed tour / onboarding is sticky: a stale remote `false` must not re-trigger it.
       if (useUIStore.getState().hasCompletedTour) {
         patch.hasCompletedTour = true;
+      }
+      if (useUIStore.getState().hasCompletedOnboarding) {
+        patch.hasCompletedOnboarding = true;
       }
 
       applyingRemote.current = true;
@@ -71,7 +98,7 @@ export function useUserAppSettingsSync(userId: string | null | undefined) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [userId, user?.app_metadata?.provider]);
 
   useEffect(() => {
     if (!userId) return;

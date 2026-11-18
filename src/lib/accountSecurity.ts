@@ -14,12 +14,25 @@ export async function requestPasswordReset(email: string): Promise<Result> {
   return { error: error ? error.message : null };
 }
 
-/** Supabase asks for a fresh email code when the session is old; `needsNonce` tells the UI to ask for it. */
-export async function updatePassword(password: string, nonce?: string): Promise<Result & { needsNonce?: boolean }> {
-  const { error } = await supabase.auth.updateUser(nonce ? { password, nonce } : { password });
+/**
+ * `currentPassword` is checked by Supabase itself when "Require current password when updating" is on.
+ * Supabase asks for a fresh email code when the session is old; `needsNonce` tells the UI to ask for it.
+ */
+export async function updatePassword(
+  password: string,
+  opts: { nonce?: string; currentPassword?: string } = {},
+): Promise<Result & { needsNonce?: boolean; wrongCurrent?: boolean }> {
+  const attrs: { password: string; nonce?: string; current_password?: string } = { password };
+  if (opts.nonce) attrs.nonce = opts.nonce;
+  if (opts.currentPassword) attrs.current_password = opts.currentPassword;
+  const { error } = await supabase.auth.updateUser(attrs);
   if (!error) return { error: null };
-  const needsNonce = /reauth|nonce/i.test(`${error.message} ${(error as { code?: string }).code ?? ''}`);
-  return { error: error.message, needsNonce };
+  const text = `${error.message} ${(error as { code?: string }).code ?? ''}`;
+  return {
+    error: error.message,
+    needsNonce: /reauth|nonce/i.test(text),
+    wrongCurrent: /current.?password|invalid.*password/i.test(text),
+  };
 }
 
 export async function sendReauthCode(): Promise<Result> {

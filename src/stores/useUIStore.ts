@@ -68,6 +68,14 @@ export const DASHBOARD_MODE_LABELS: Record<DashboardMode, string> = {
 
 export type StrategicHorizonDays = 30 | 90 | 180;
 
+export interface OnboardingProfileMeta {
+  focusAreas: string[];
+  workflowStyle: string;
+  tailoredChecklistKeys?: string[];
+  profileLabel?: string;
+  source?: 'ai' | 'deterministic';
+}
+
 interface UIState {
   // Sidebar
   isSidebarCollapsed: boolean;
@@ -227,9 +235,28 @@ interface UIState {
   /** Whether the user has completed or dismissed the introductory React Joyride tour */
   hasCompletedTour: boolean;
   setTourCompleted: (completed: boolean) => void;
+  /** Transient flag controlling whether the opt-in tour overlay is currently open */
+  isTourOpen: boolean;
+  setTourOpen: (open: boolean) => void;
   /** Counter or token to force restart the tour even if previously completed */
   tourSessionKey: number;
   restartTour: () => void;
+  /** First-time personalized setup wizard completion */
+  hasCompletedOnboarding: boolean;
+  setOnboardingCompleted: (completed: boolean) => void;
+  restartOnboarding: () => void;
+  /** Whether the user dismissed the Dashboard Getting Started checklist */
+  hasDismissedGettingStarted: boolean;
+  setDismissedGettingStarted: (dismissed: boolean) => void;
+  /** Metadata saved by the personalized onboarding recommender */
+  onboardingProfile: OnboardingProfileMeta | null;
+  setOnboardingProfile: (profile: OnboardingProfileMeta | null) => void;
+  /** Non-data milestone flags for the Getting Started checklist */
+  onboardingChecklistExtras: Record<string, boolean>;
+  markOnboardingStepDone: (key: string, done?: boolean) => void;
+  /** Transient gate: true once initial user_app_settings load has settled (or offline) */
+  isRemoteUiSettingsReady: boolean;
+  setRemoteUiSettingsReady: (ready: boolean) => void;
   setAiEnabled: (enabled: boolean) => void;
   setAiApiKey: (key: string) => void;
   setAiBaseUrl: (url: string) => void;
@@ -305,6 +332,10 @@ export type PersistedUiSlice = {
   aiActiveModel: string;
   brainDumpAutoOrganizeEnabled: boolean;
   hasCompletedTour: boolean;
+  hasCompletedOnboarding: boolean;
+  hasDismissedGettingStarted: boolean;
+  onboardingProfile: OnboardingProfileMeta | null;
+  onboardingChecklistExtras: Record<string, boolean>;
 };
 
 export const useUIStore = create<UIState>()(
@@ -492,8 +523,27 @@ export const useUIStore = create<UIState>()(
 
       hasCompletedTour: false,
       setTourCompleted: (hasCompletedTour) => set({ hasCompletedTour }),
+      isTourOpen: false,
+      setTourOpen: (isTourOpen) => set({ isTourOpen }),
       tourSessionKey: 0,
-      restartTour: () => set((state) => ({ hasCompletedTour: false, tourSessionKey: state.tourSessionKey + 1 })),
+      restartTour: () => set((state) => ({ isTourOpen: true, tourSessionKey: state.tourSessionKey + 1 })),
+      hasCompletedOnboarding: false,
+      setOnboardingCompleted: (hasCompletedOnboarding) => set({ hasCompletedOnboarding }),
+      restartOnboarding: () => set({ hasCompletedOnboarding: false, hasDismissedGettingStarted: false }),
+      hasDismissedGettingStarted: false,
+      setDismissedGettingStarted: (hasDismissedGettingStarted) => set({ hasDismissedGettingStarted }),
+      onboardingProfile: null,
+      setOnboardingProfile: (onboardingProfile) => set({ onboardingProfile }),
+      onboardingChecklistExtras: {},
+      markOnboardingStepDone: (key, done = true) =>
+        set((state) => ({
+          onboardingChecklistExtras: {
+            ...state.onboardingChecklistExtras,
+            [key]: done,
+          },
+        })),
+      isRemoteUiSettingsReady: false,
+      setRemoteUiSettingsReady: (isRemoteUiSettingsReady) => set({ isRemoteUiSettingsReady }),
 
       // AI Default values & Setters
       aiEnabled: Boolean(
@@ -680,5 +730,9 @@ export function getPersistedUiSlice(state: UIState): PersistedUiSlice {
     aiActiveModel: state.aiActiveModel,
     brainDumpAutoOrganizeEnabled: state.brainDumpAutoOrganizeEnabled,
     hasCompletedTour: state.hasCompletedTour,
+    hasCompletedOnboarding: state.hasCompletedOnboarding,
+    hasDismissedGettingStarted: state.hasDismissedGettingStarted,
+    onboardingProfile: state.onboardingProfile,
+    onboardingChecklistExtras: state.onboardingChecklistExtras,
   };
 }

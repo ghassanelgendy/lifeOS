@@ -45,7 +45,8 @@ import {
   getHabitRescueCost,
 } from '../hooks/useHabits';
 import { usePointsBalance, useAddPointsTransaction } from '../hooks/usePoints';
-import { AddButton, DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
+import { AddButton, Button, DetailsSheet, Input, Select, ConfirmSheet, SectionLoader } from '../components/ui';
+import { DETOX_STARTER_HABITS, SPIRITUAL_STARTER_HABITS, seedStarterHabits } from '../db/seed';
 import { CompactPrayerHabit } from '../components/CompactPrayerHabit';
 import { PrayerBacklog } from '../components/PrayerBacklog';
 import { QadaaWidget } from '../components/QadaaWidget';
@@ -716,10 +717,31 @@ export default function Habits() {
         <h2 className="text-lg font-semibold mb-4">This Week</h2>
 
         {habits.length === 0 ? (
-          <div className="text-center py-12">
-            <Flame className="mx-auto h-12 w-12 text-muted-foreground opacity-50" />
-            <h3 className="mt-4 text-lg font-semibold">No habits yet</h3>
-            <p className="text-muted-foreground">Create your first habit to start building streaks</p>
+          <div className="text-center py-10 space-y-3">
+            <Flame className="mx-auto h-11 w-11 text-muted-foreground opacity-50" />
+            <div className="space-y-1">
+              <h3 className="text-base font-semibold">No habits yet</h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                Build Jannah routines or add a progressive Detox habit to leave distractions and harmful habits behind.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              <Button size="sm" onClick={() => handleOpenModal()}>
+                Create Habit or Detox
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={async () => {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  if (!session?.user?.id) return;
+                  await seedStarterHabits(session.user.id, [...SPIRITUAL_STARTER_HABITS, ...DETOX_STARTER_HABITS]);
+                  queryClient.invalidateQueries({ queryKey: ['habits'] });
+                }}
+              >
+                Load Jannah &amp; Detox Starter Pack
+              </Button>
+            </div>
           </div>
         ) : (
           <>

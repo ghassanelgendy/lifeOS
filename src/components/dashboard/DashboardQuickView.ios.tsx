@@ -24,6 +24,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToggleCalendarEvent } from '../../hooks/useCalendar';
 import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
+import { GettingStartedChecklist } from './GettingStartedChecklist';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
@@ -1944,6 +1945,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
   return (
     <div className="space-y-5 sm:space-y-6">
+      <GettingStartedChecklist variant="ios" />
       <section data-tour="spiritual-banners" aria-labelledby="qv-today-heading" className="animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
         <div className="flex items-center justify-between mb-3">
           <h2 id="qv-today-heading" className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -1984,6 +1986,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {todayScreentime.totalMinutes > 0 ? `${Math.round(todayScreentime.totalMinutes / 60)}h` : '—'}
               </p>
+              {todayScreentime.totalMinutes === 0 && (
+                <span className="text-[10px] text-muted-foreground mt-0.5">Connect</span>
+              )}
             </Link>
             <div className="w-px bg-muted-foreground/10 self-stretch my-1" />
             <Link to="/sleep" className="flex-1 min-w-0 flex flex-col justify-center items-center text-center">
@@ -1991,6 +1996,9 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
               <p className={cn('text-2xl sm:text-3xl font-black tabular-nums tracking-tight', privacyMode && 'blur-sm')}>
                 {lastNightSleep && lastNightSleep > 0 ? `${Math.round(lastNightSleep / 60)}h` : '—'}
               </p>
+              {(!lastNightSleep || lastNightSleep === 0) && (
+                <span className="text-[10px] text-muted-foreground mt-0.5">Log sleep</span>
+              )}
             </Link>
           </div>
         </div>
@@ -2162,7 +2170,23 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
         <div className="p-0">
           {!hasDueTodayContent ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Nothing due today. Enjoy the calm.</p>
+            <div className="flex flex-col items-center gap-2.5 px-4 py-6 text-center">
+              <p className="text-sm text-muted-foreground">Nothing due yet today. Anchor your next block around Salah.</p>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  to="/tasks?quick=add"
+                  className="inline-flex items-center gap-1 rounded-xl border border-border bg-secondary/60 px-3 py-1.5 text-xs font-semibold text-foreground active:scale-95 transition-transform"
+                >
+                  + Add task
+                </Link>
+                <Link
+                  to="/habits"
+                  className="inline-flex items-center gap-1 rounded-xl border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground active:scale-95 transition-transform"
+                >
+                  Habits &amp; Prayers
+                </Link>
+              </div>
+            </div>
           ) : (
             <motion.ul layout className="flex flex-col bg-transparent">
               <AnimatePresence mode="popLayout" initial={false}>

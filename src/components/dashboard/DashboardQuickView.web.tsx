@@ -26,6 +26,7 @@ import { supabase } from '../../lib/supabase';
 import type { Task } from '../../types/schema';
 import { HadithWidget } from './HadithWidget';
 import { AzkarDashboardWidget } from './AzkarDashboardWidget';
+import { GettingStartedChecklist } from './GettingStartedChecklist';
 import { MarqueeTitle } from '../ui/MarqueeTitle';
 
 
@@ -1505,7 +1506,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       key: 'sleep', to: '/sleep', label: 'Sleep', tour: undefined as string | undefined, private: true,
       num: null as number | null, decimals: 0, unit: '',
       displayText: lastNightSleep && lastNightSleep > 0 ? formatDurationMinutes(lastNightSleep) : '—',
-      detail: `target ${formatDurationMinutes(Math.round(SLEEP_TARGET_H * 60))}`,
+      detail: lastNightSleep && lastNightSleep > 0 ? `target ${formatDurationMinutes(Math.round(SLEEP_TARGET_H * 60))}` : 'Tap to log sleep',
       tooltip: `Sleep: ${lastNightSleep && lastNightSleep > 0 ? formatDurationMinutes(lastNightSleep) : '0m'} (target ${formatDurationMinutes(Math.round(SLEEP_TARGET_H * 60))})`,
       pct: sleepHours > 0 ? Math.round(Math.min(100, (sleepHours / SLEEP_TARGET_H) * 100)) : 0,
       tone: tone(sleepHours >= 7, sleepHours >= 5.5, sleepHours > 0),
@@ -1514,7 +1515,7 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
       key: 'screen', to: '/screentime', label: 'Screen time', tour: 'metric-screentime', private: true,
       num: null as number | null, decimals: 0, unit: '',
       displayText: todayScreentime.totalMinutes > 0 ? formatDurationMinutes(todayScreentime.totalMinutes) : '—',
-      detail: `limit ${formatDurationMinutes(SCREEN_TARGET_H * 60)}`,
+      detail: todayScreentime.totalMinutes > 0 ? `limit ${formatDurationMinutes(SCREEN_TARGET_H * 60)}` : 'Connect tracker',
       tooltip: `Screen time: ${todayScreentime.totalMinutes > 0 ? formatDurationMinutes(todayScreentime.totalMinutes) : '0m'} (limit ${formatDurationMinutes(SCREEN_TARGET_H * 60)})`,
       pct: screenHours > 0 ? Math.round(Math.min(100, (screenHours / SCREEN_TARGET_H) * 100)) : 0,
       tone: tone(screenHours > 0 && screenHours <= SCREEN_TARGET_H, screenHours <= SCREEN_TARGET_H * 1.4, screenHours > 0),
@@ -1550,6 +1551,8 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
           <AzkarDashboardWidget className="h-full" />
         </motion.div>
       </div>
+
+      <GettingStartedChecklist variant="web" />
 
 
       {/* Top row: 12 columns on desktop (day 5, targets 4, week 3), 2 columns on tablet, stacked on mobile */}
@@ -1838,7 +1841,23 @@ export function DashboardQuickView({ onSelectEntry }: { onSelectEntry: (entry: a
 
         <div className="p-3 sm:p-4">
           {!hasDueTodayContent ? (
-            <p className="text-label text-ink-3 text-center py-8">Nothing due today. Enjoy the calm.</p>
+            <div className="flex flex-col items-center gap-2.5 py-7 text-center">
+              <p className="text-label text-ink-2">Nothing due yet today. Anchor your next block around Salah.</p>
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link
+                  to="/tasks?quick=add"
+                  className="inline-flex items-center gap-1.5 rounded-control border border-separator bg-sunken px-3 py-1.5 text-xs font-semibold text-ink hover:bg-hover transition-colors"
+                >
+                  + Add task for today
+                </Link>
+                <Link
+                  to="/habits"
+                  className="inline-flex items-center gap-1.5 rounded-control border border-separator px-3 py-1.5 text-xs font-medium text-ink-2 hover:text-ink hover:bg-hover transition-colors"
+                >
+                  Habits &amp; Prayers
+                </Link>
+              </div>
+            </div>
           ) : (
             <ul ref={parent} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-2.5">
               {timelineItems.map((item) => item.element)}

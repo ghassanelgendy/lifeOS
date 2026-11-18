@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Monitor, Globe, TrendingUp, TrendingDown, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search, ChevronDown, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,7 +9,7 @@ import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platfo
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
 import { useQueryClient } from '@tanstack/react-query';
-import { SectionLoader } from '../components/ui';
+import { Button, SectionLoader } from '../components/ui';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -1408,10 +1409,22 @@ import { SectionLoader } from '../components/ui';
         )}
 
         {!isLoading && topApps.length === 0 && topWebsites.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Monitor className="mx-auto mb-2 opacity-50" size={48} />
-            <p className="text-lg font-medium mb-1">No screentime data</p>
-            <p className="text-sm">Upload data from your PC or mobile tracker to see your usage here.</p>
+          <div className="liquid-glass-card rounded-2xl p-8 text-center space-y-4">
+            <Monitor className="mx-auto text-primary opacity-80" size={40} />
+            <div className="space-y-1.5 max-w-sm mx-auto">
+              <p className="text-base font-semibold text-foreground">See where your hours actually go</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                No screen time is logged for this period yet. Connect the browser extension, Desktop app, or iOS Screen Time sync to uncover hidden time drains.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Link to="/settings">
+                <Button size="sm" variant="outline">Configure Sync &amp; Limit</Button>
+              </Link>
+              <Link to="/habits">
+                <Button size="sm" variant="ghost">Start a Detox Habit</Button>
+              </Link>
+            </div>
           </div>
         )}
       </div>

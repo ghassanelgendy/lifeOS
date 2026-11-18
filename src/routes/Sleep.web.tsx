@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { format, parseISO, subDays } from 'date-fns';
 import { Moon } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, ReferenceLine } from 'recharts';
@@ -7,7 +7,7 @@ import { useSleepStages, useSleepMetrics } from '../hooks/useSleep';
 import { cn } from '../components/ui/cn';
 import { DataCard } from '../components/DataCard';
 import { DetailsSheet } from '../components/ui/DetailsSheet';
-import { PageHeader, SectionLoader } from '../components/ui';
+import { Button, PageHeader, SectionLoader } from '../components/ui';
 import { useUIStore } from '../stores/useUIStore';
 import type { SleepStage } from '../types/schema';
 
@@ -232,10 +232,22 @@ export default function Sleep() {
       {isLoading ? (
         <SectionLoader label="Loading sleep metrics..." />
       ) : !active ? (
-        <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-          <Moon className="mx-auto mb-3 text-primary" size={32} />
-          <p className="text-base font-semibold text-foreground">No sleep sessions recorded yet.</p>
-          <p className="text-xs mt-1">Sync your Apple Health / Wearable or record sleep to view analytics here.</p>
+        <div className="rounded-2xl border border-border bg-card p-8 sm:p-12 text-center text-muted-foreground space-y-4">
+          <Moon className="mx-auto text-primary" size={32} />
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <p className="text-base font-semibold text-foreground">No sleep sessions recorded yet.</p>
+            <p className="text-xs leading-relaxed">
+              Sleep powers your 24-hour Day Progress and protects Fajr consistency. Open the lifeOS iOS app to sync Apple Health automatically, or adjust your sleep target in Settings.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <Link to="/settings">
+              <Button variant="outline" size="sm">Adjust Sleep Target</Button>
+            </Link>
+            <Link to="/habits">
+              <Button variant="ghost" size="sm">Add Evening Wind-Down Habit</Button>
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

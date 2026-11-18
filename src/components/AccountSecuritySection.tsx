@@ -1,24 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { UserIdentity } from '@supabase/supabase-js';
-import { Check, Loader2, LogOut, ShieldCheck, Trash2 } from 'lucide-react';
+import { Loader2, LogOut, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button, Input, Modal } from './ui';
 import { toast } from './ui/Toast';
 import { UserBlobatar } from './ui/UserBlobatar';
 import { useAuth } from '../hooks/useAuth';
 import { getDisplayName } from '../lib/utils';
-import { checkPassword, isPasswordAcceptable, type PasswordRuleId } from '../lib/passwordRules';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import {
   DELETE_CONFIRM_WORD, canConfirmDelete, deleteAccount, linkGoogle, listIdentities, listTotpFactors,
-  removeTotpFactor, sendReauthCode, signOutOtherDevices, startTotpEnrollment, unlinkIdentity,
-  updateDisplayName, updateEmail, updatePassword, verifyTotp, type TotpEnrollment, type TotpFactor,
+  removeTotpFactor, signOutOtherDevices, startTotpEnrollment, unlinkIdentity,
+  updateDisplayName, updateEmail, verifyTotp, type TotpEnrollment, type TotpFactor,
 } from '../lib/accountSecurity';
-
-const RULES: Record<PasswordRuleId, string> = {
-  length: '8 or more characters',
-  case: 'An uppercase and a lowercase letter',
-  digit: 'A number',
-  unique: 'Not common, and not your name or email',
-};
 
 function Block({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -52,28 +45,7 @@ export function AccountSecuritySection() {
   };
 
   // ---- password ----
-  const [pw, setPw] = useState('');
-  const [pwBusy, setPwBusy] = useState(false);
-  const [nonce, setNonce] = useState<string | null>(null);
-  const checks = checkPassword(pw, { email, name });
-  const savePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isPasswordAcceptable(pw, { email, name })) { toast.error('Meet every password requirement first'); return; }
-    setPwBusy(true);
-    const r = await updatePassword(pw, nonce ?? undefined);
-    if (r.needsNonce && nonce === null) {
-      const sent = await sendReauthCode();
-      setPwBusy(false);
-      if (sent.error) { toast.error(sent.error); return; }
-      setNonce('');
-      toast.show('We emailed you a code to confirm it is you');
-      return;
-    }
-    setPwBusy(false);
-    if (r.error) { toast.error(r.error); return; }
-    setPw(''); setNonce(null);
-    toast.show('Password updated');
-  };
+  const [pwOpen, setPwOpen] = useState(false);
 
   // ---- email ----
   const [newEmail, setNewEmail] = useState('');
@@ -95,6 +67,7 @@ export function AccountSecuritySection() {
     if (r.data) setIdentities(r.data);
   }, []);
   const hasGoogle = identities.some((i) => i.provider === 'google');
+  const hasPassword = identities.length === 0 || identities.some((i) => i.provider === 'email');
   const unlink = async (i: UserIdentity) => {
     const r = await unlinkIdentity(i);
     if (r.error) { toast.error(r.error); return; }
@@ -190,23 +163,8 @@ export function AccountSecuritySection() {
             </div>
           </Block>
 
-          <Block title="Password" hint="Choose one you do not use anywhere else.">
-            <form onSubmit={savePassword} className={`${mailBox} space-y-3`}>
-              <Input label="New password" type="password" autoComplete="new-password" dir="ltr" value={pw} onChange={(e) => setPw(e.target.value)} className="h-10" />
-              {pw.length > 0 && (
-                <ul className="space-y-1" aria-label="Password requirements">
-                  {(Object.keys(RULES) as PasswordRuleId[]).map((r) => (
-                    <li key={r} className={`flex items-center gap-2 text-sm ${checks[r] ? 'text-foreground' : 'text-muted-foreground'}`}>
-                      <Check size={14} className={checks[r] ? 'opacity-100' : 'opacity-25'} aria-hidden />{RULES[r]}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {nonce !== null && (
-                <Input label="Code from your email" inputMode="numeric" autoComplete="one-time-code" dir="ltr" value={nonce} onChange={(e) => setNonce(e.target.value.replace(/\D/g, ''))} className="h-10" />
-              )}
-              <Button type="submit" variant="outline" disabled={pwBusy || !pw || (nonce !== null && nonce.length < 6)}><Busy on={pwBusy}>{nonce !== null ? 'Confirm and save' : 'Update password'}</Busy></Button>
-            </form>
+          <Block title="Password" hint={hasPassword ? 'Choose one you do not use anywhere else.' : 'You sign in with Google. Add a password to also sign in with your email.'}>
+            <Button type="button" variant="outline" onClick={() => setPwOpen(true)}>{hasPassword ? 'Change password' : 'Set a password'}</Button>
           </Block>
 
           <Block title="Email" hint={`Now ${email}. We confirm the change by email.`}>
@@ -273,6 +231,8 @@ export function AccountSecuritySection() {
           </Button>
         </Block>
       )}
+
+      <ChangePasswordModal isOpen={pwOpen} onClose={() => setPwOpen(false)} email={email} name={name} hasPassword={hasPassword} />
 
       <Modal isOpen={delOpen} onClose={() => !delBusy && setDelOpen(false)} title="Delete your account?">
         <div className="space-y-4">

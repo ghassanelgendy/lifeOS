@@ -67,17 +67,72 @@ function hostnameMatchesDomain(baseUrl: string | null | undefined, domain: strin
   }
 }
 
+export interface AskAIOptions {
+  /** Override request timeout in milliseconds (e.g., 3500 for onboarding). */
+  timeoutMs?: number;
+  /** External AbortSignal to cancel in-flight requests cleanly. */
+  signal?: AbortSignal;
+  /** Prioritize `fast` tier models ahead of heavier flagship models. */
+  preferFastTier?: boolean;
+  /** Cap the number of fallback candidates tried. */
+  maxCandidates?: number;
+  /** Cap response token length for faster completions. */
+  maxTokens?: number;
+  /** On hosted Web, allow trying `/api/ai` even when no client BYOK key is configured. */
+  allowProxyFallback?: boolean;
+  /** Override temperature (defaults to 0.1). */
+  temperature?: number;
+}
+
+function createAbortError(): Error {
+  const err = new Error('AI request aborted');
+  err.name = 'AbortError';
+  return err;
+}
+
+function createMergedSignal(timeoutMs: number, externalSignal?: AbortSignal): { signal: AbortSignal; cleanup: () => void } {
+  const controller = new AbortController();
+  const onExternalAbort = () => controller.abort(externalSignal?.reason ?? createAbortError());
+
+  if (externalSignal) {
+    if (externalSignal.aborted) {
+      controller.abort(externalSignal.reason ?? createAbortError());
+    } else {
+      externalSignal.addEventListener('abort', onExternalAbort, { once: true });
+    }
+  }
+
+  const timer = setTimeout(() => controller.abort(new Error(`AI request timed out after ${timeoutMs}ms`)), timeoutMs);
+
+  return {
+    signal: controller.signal,
+    cleanup: () => {
+      clearTimeout(timer);
+      if (externalSignal) {
+        externalSignal.removeEventListener('abort', onExternalAbort);
+      }
+    },
+  };
+}
+
 /**
  * Executes a single chat completion request against a specific candidate model and provider.
  */
 async function executeCandidateCompletion(
   candidate: FallbackCandidate,
   payload: any,
-  isNative: boolean
+  isNative: boolean,
+  options?: { timeoutMs?: number; signal?: AbortSignal }
 ): Promise<CompletionResult> {
   const startTime = performance.now();
   const cleanBaseUrl = candidate.baseUrl.trim().replace(/\/+$/, '');
   const apiKey = candidate.apiKey.trim();
+  const timeoutMs = options?.timeoutMs ?? 60000;
+  const externalSignal = options?.signal;
+
+  if (externalSignal?.aborted) {
+    throw createAbortError();
+  }
 
   if (isNative) {
     const nativeEndpoint = `${cleanBaseUrl}/chat/completions`;
@@ -92,12 +147,40 @@ async function executeCandidateCompletion(
 
     // 1. Primary on Native: direct native HTTPS request via CapacitorHttp (bypasses CORS with zero intermediate hops)
     try {
-      const response = await CapacitorHttp.post({
+      const capPromise = CapacitorHttp.post({
         url: nativeEndpoint,
         headers: nativeHeaders,
         data: payload,
-        connectTimeout: 15000,
-        readTimeout: 40000,
+        connectTimeout: Math.min(15000, timeoutMs),
+        readTimeout: Math.min(40000, timeoutMs),
+      });
+
+      const response = await new Promise<Awaited<typeof capPromise>>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(`AI request timed out after ${timeoutMs}ms`)), timeoutMs);
+        const onAbort = () => {
+          clearTimeout(timer);
+          reject(createAbortError());
+        };
+        if (externalSignal) {
+          if (externalSignal.aborted) {
+            clearTimeout(timer);
+            reject(createAbortError());
+            return;
+          }
+          externalSignal.addEventListener('abort', onAbort, { once: true });
+        }
+        capPromise.then(
+          (res) => {
+            clearTimeout(timer);
+            externalSignal?.removeEventListener('abort', onAbort);
+            resolve(res);
+          },
+          (err) => {
+            clearTimeout(timer);
+            externalSignal?.removeEventListener('abort', onAbort);
+            reject(err);
+          }
+        );
       });
 
       let resData = response.data;
@@ -125,22 +208,24 @@ async function executeCandidateCompletion(
       err.status = response.status;
       throw err;
     } catch (nativeErr: any) {
+      if (externalSignal?.aborted || nativeErr?.name === 'AbortError') {
+        throw nativeErr;
+      }
       // If error is 429/401/402/404, propagate directly so the smart fallback engine cascades
       if (nativeErr?.status && (nativeErr.status === 429 || nativeErr.status === 401 || nativeErr.status === 402 || nativeErr.status === 404)) {
         throw nativeErr;
       }
 
       // 2. Secondary fallback: direct web fetch from WebView
+      const { signal: directSignal, cleanup: cleanupDirect } = createMergedSignal(Math.min(20000, timeoutMs), externalSignal);
       try {
-        const directController = new AbortController();
-        const directTimer = setTimeout(() => directController.abort(), 20000);
         const directResponse = await fetch(nativeEndpoint, {
           method: 'POST',
-          signal: directController.signal,
+          signal: directSignal,
           headers: nativeHeaders,
           body: JSON.stringify(payload),
         });
-        clearTimeout(directTimer);
+        cleanupDirect();
 
         if (directResponse.ok) {
           const directData = await directResponse.json();
@@ -150,21 +235,22 @@ async function executeCandidateCompletion(
             return { text, latencyMs };
           }
         }
-      } catch {}
+      } catch {
+        cleanupDirect();
+      }
 
       throw nativeErr;
     }
   }
 
   // 2. Web Browser environment: execute via /api/ai proxy
-  const proxyController = new AbortController();
-  const proxyTimer = setTimeout(() => proxyController.abort(), 60000);
+  const { signal: proxySignal, cleanup: cleanupProxy } = createMergedSignal(timeoutMs, externalSignal);
   let proxyResponse;
 
   try {
     proxyResponse = await fetch('/api/ai', {
       method: 'POST',
-      signal: proxyController.signal,
+      signal: proxySignal,
       headers: {
         'Content-Type': 'application/json',
         'X-AI-Api-Key': apiKey,
@@ -172,9 +258,12 @@ async function executeCandidateCompletion(
       },
       body: JSON.stringify(payload),
     });
-    clearTimeout(proxyTimer);
+    cleanupProxy();
   } catch (netErr: any) {
-    clearTimeout(proxyTimer);
+    cleanupProxy();
+    if (externalSignal?.aborted || netErr?.name === 'AbortError') {
+      throw netErr;
+    }
     
     // If proxy failed and the domain is known to block CORS in browsers, fail fast to candidate router
     if (hostnameMatchesDomain(cleanBaseUrl, 'bynara.id')) {
@@ -183,20 +272,19 @@ async function executeCandidateCompletion(
 
     // Otherwise attempt direct fetch
     const directEndpoint = `${cleanBaseUrl}/chat/completions`;
-    const directController = new AbortController();
-    const directTimer = setTimeout(() => directController.abort(), 45000);
+    const { signal: directSignal, cleanup: cleanupDirect } = createMergedSignal(Math.min(45000, timeoutMs), externalSignal);
 
     try {
       const directResponse = await fetch(directEndpoint, {
         method: 'POST',
-        signal: directController.signal,
+        signal: directSignal,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
         },
         body: JSON.stringify(payload),
       });
-      clearTimeout(directTimer);
+      cleanupDirect();
 
       if (!directResponse.ok) {
         const errorBody = await directResponse.text().catch(() => '');
@@ -218,7 +306,7 @@ async function executeCandidateCompletion(
       const latencyMs = Math.round(performance.now() - startTime);
       return { text, latencyMs };
     } catch (directErr: any) {
-      clearTimeout(directTimer);
+      cleanupDirect();
       throw directErr;
     }
   }
@@ -250,7 +338,8 @@ async function executeCandidateCompletion(
 export async function askAI(
   systemPrompt: string,
   userPrompt: string,
-  jsonMode = false
+  jsonMode = false,
+  options?: AskAIOptions
 ): Promise<string> {
   const store = useUIStore.getState();
   const {
@@ -264,9 +353,16 @@ export async function askAI(
     aiFallbackEnabled = true,
   } = store;
 
-  if (!aiEnabled) {
+  const isNative = isNativeOrDesktop();
+  const canUseProxyFallback = Boolean(options?.allowProxyFallback && !isNative);
+
+  if (!aiEnabled && !canUseProxyFallback) {
     addSystemLog('askAI aborted: AI Integration is disabled in Settings', 'warn');
     throw new Error('AI Integration is currently disabled. Enable it in Settings.');
+  }
+
+  if (options?.signal?.aborted) {
+    throw createAbortError();
   }
 
   // Get prioritized fallback candidate list based on health scores and active cooldowns
@@ -284,16 +380,35 @@ export async function askAI(
     throw new Error('No AI model candidates available. Please configure your API keys in Settings.');
   }
 
-  const isNative = isNativeOrDesktop();
-  addSystemLog(`askAI starting: ${candidates.length} candidate models in queue (FallbackEnabled=${aiFallbackEnabled}, Native=${isNative})`, 'info');
+  // Filter candidates: try healthy models first, neglect models in cooldown
+  const healthyCandidates = candidates.filter((c) => !c.inCooldown);
+  let executionQueue = healthyCandidates.length > 0 ? [...healthyCandidates] : [...candidates];
+
+  if (options?.preferFastTier) {
+    executionQueue.sort((a, b) => {
+      const aFast = a.tier === 'fast' ? 1 : 0;
+      const bFast = b.tier === 'fast' ? 1 : 0;
+      if (aFast !== bFast) return bFast - aFast;
+      return b.score - a.score;
+    });
+  }
+
+  if (typeof options?.maxCandidates === 'number' && options.maxCandidates > 0) {
+    executionQueue = executionQueue.slice(0, options.maxCandidates);
+  }
+
+  addSystemLog(
+    `askAI starting: ${executionQueue.length} candidate models in queue (FallbackEnabled=${aiFallbackEnabled}, Native=${isNative})`,
+    'info'
+  );
 
   const failureLog: Array<{ model: string; provider: string; status: number | null; error: string }> = [];
 
-  // Filter candidates: try healthy models first, neglect models in cooldown
-  const healthyCandidates = candidates.filter((c) => !c.inCooldown);
-  const executionQueue = healthyCandidates.length > 0 ? healthyCandidates : candidates;
-
   for (let i = 0; i < executionQueue.length; i++) {
+    if (options?.signal?.aborted) {
+      throw createAbortError();
+    }
+
     const candidate = executionQueue[i];
     const payload: any = {
       model: candidate.model,
@@ -301,8 +416,12 @@ export async function askAI(
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.1,
+      temperature: options?.temperature ?? 0.1,
     };
+
+    if (typeof options?.maxTokens === 'number' && options.maxTokens > 0) {
+      payload.max_tokens = options.maxTokens;
+    }
 
     if (jsonMode) {
       payload.response_format = { type: 'json_object' };
@@ -314,7 +433,10 @@ export async function askAI(
     );
 
     try {
-      const result = await executeCandidateCompletion(candidate, payload, isNative);
+      const result = await executeCandidateCompletion(candidate, payload, isNative, {
+        timeoutMs: options?.timeoutMs,
+        signal: options?.signal,
+      });
       const cleaned = cleanAiResponse(result.text);
 
       if (!cleaned) {
@@ -332,6 +454,10 @@ export async function askAI(
 
       return cleaned;
     } catch (err: any) {
+      if (options?.signal?.aborted || err?.name === 'AbortError') {
+        throw err;
+      }
+
       const statusCode = typeof err?.status === 'number' ? err.status : (err?.message?.match(/\b(429|402|404|400|500|502|503|504)\b/)?.[1] ? parseInt(err.message.match(/\b(429|402|404|400|500|502|503|504)\b/)[1]) : null);
       const errorMessage = err?.message || String(err);
 
@@ -373,6 +499,25 @@ export async function askAI(
   const finalError = `All AI models in the fallback chain failed — ${kind} (${failureLog.length} attempted). Details: ${summary}`;
   addSystemLog(`askAI exhausted: ${finalError}`, 'error');
   throw new Error(finalError);
+}
+
+/**
+ * Bounded fast-tier AI completion helper for latency-sensitive UI flows (e.g. onboarding).
+ * Prioritizes fast models, limits fallback cascades, and enforces a strict timeout budget.
+ */
+export async function askAIFast(
+  systemPrompt: string,
+  userPrompt: string,
+  options: Omit<AskAIOptions, 'preferFastTier'> & { jsonMode?: boolean } = {}
+): Promise<string> {
+  const { jsonMode = false, timeoutMs = 3500, maxCandidates = 2, maxTokens = 700, ...rest } = options;
+  return askAI(systemPrompt, userPrompt, jsonMode, {
+    ...rest,
+    timeoutMs,
+    maxCandidates,
+    maxTokens,
+    preferFastTier: true,
+  });
 }
 
 /**

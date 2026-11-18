@@ -1317,6 +1317,22 @@ Return ONLY raw JSON object.`;
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {displayedTransactions.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-10 text-center">
+                    <div className="flex flex-col items-center gap-2.5 text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground">No transactions logged yet</p>
+                      <p className="text-xs max-w-md">
+                        Track where your money goes or paste a bank SMS notification to parse it automatically.
+                      </p>
+                      <div className="flex items-center gap-2 pt-1">
+                        <Button size="sm" onClick={() => setIsModalOpen(true)}>Add Transaction</Button>
+                        <Button size="sm" variant="outline" onClick={() => setIsPasteOpen(true)}>Paste Bank SMS</Button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {displayedTransactions.map((transaction) => {
                 const categoryLabel = transaction.type === 'income'
                   ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
@@ -1385,7 +1401,14 @@ Return ONLY raw JSON object.`;
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-white/[0.04]">
           {displayedTransactions.length === 0 && (
-            <p className="text-center text-muted-foreground text-sm py-10">No transactions</p>
+            <div className="text-center py-10 px-4 space-y-2.5">
+              <p className="text-sm font-medium text-foreground">No transactions yet</p>
+              <p className="text-xs text-muted-foreground">Log a transaction or paste a bank SMS to start.</p>
+              <div className="flex items-center justify-center gap-2 pt-1">
+                <Button size="sm" onClick={() => setIsModalOpen(true)}>Add Transaction</Button>
+                <Button size="sm" variant="outline" onClick={() => setIsPasteOpen(true)}>Paste SMS</Button>
+              </div>
+            </div>
           )}
           {displayedTransactions.map((transaction) => {
             const categoryLabel =

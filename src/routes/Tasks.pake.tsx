@@ -2413,14 +2413,42 @@ export default function Tasks() {
 
           {/* Empty state */}
           {mainTasksToRender.length === 0 && (activeView !== 'completed' || wontDoTasksToRender.length === 0) && (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <CheckCircle2 size={48} className="opacity-20 mb-4" />
-              <p className="text-lg font-medium">
-                {searchQueryNormalized
-                  ? 'No matching tasks'
-                  : activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'All done!'}
-              </p>
-              <p className="text-sm">{searchQueryNormalized ? `No tasks match "${searchQuery.trim()}"` : 'No tasks to show'}</p>
+            <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground space-y-3">
+              <CheckCircle2 size={44} className="opacity-20" />
+              <div className="space-y-1">
+                <p className="text-lg font-medium text-foreground">
+                  {searchQueryNormalized
+                    ? 'No matching tasks'
+                    : activeView === 'completed' ? 'No completed tasks' : activeView === 'wontdo' ? "No won't-do tasks" : 'Clear slate'}
+                </p>
+                <p className="text-sm max-w-sm">
+                  {searchQueryNormalized
+                    ? `No tasks match "${searchQuery.trim()}"`
+                    : activeView === 'completed' || activeView === 'wontdo'
+                      ? 'No tasks to show'
+                      : 'Add your first priority and anchor it around today’s prayers.'}
+                </p>
+              </div>
+              {!searchQueryNormalized && activeView !== 'completed' && activeView !== 'wontdo' && (
+                <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      setIsAddingTask(true);
+                      requestAnimationFrame(() => quickAddRef.current?.focus());
+                    }}
+                  >
+                    + New Task
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => window.dispatchEvent(new CustomEvent('lifeos:openBrainDump'))}
+                  >
+                    Brain Dump (Alt+B)
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

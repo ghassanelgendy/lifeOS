@@ -1694,17 +1694,30 @@ export default function SettingsPage() {
                 Revisit the introductory guidance tour explaining your lifeOS Assistant avatar, timeline, widgets, and key navigation modules.
               </p>
             </div>
-            <Button
-              variant="outline"
-              onClick={() => {
-                useUIStore.getState().restartTour();
-                navigate('/dashboard');
-              }}
-              className="gap-2 shrink-0"
-            >
-              <RotateCcw size={15} />
-              Replay Tour Now
-            </Button>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  useUIStore.getState().restartOnboarding();
+                  navigate('/dashboard');
+                }}
+                className="gap-2"
+              >
+                <Sparkles size={15} />
+                Re-run Setup Wizard
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  useUIStore.getState().restartTour();
+                  navigate('/dashboard');
+                }}
+                className="gap-2"
+              >
+                <RotateCcw size={15} />
+                Replay Tour Now
+              </Button>
+            </div>
           </div>
           <div className="pt-4 border-t border-border/50">
             <p className="text-xs font-semibold text-muted-foreground mb-2">Popular Articles</p>

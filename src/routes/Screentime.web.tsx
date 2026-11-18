@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { format, subDays, subMonths, subWeeks, addWeeks, startOfWeek, endOfWeek, startOfMonth, endOfMonth, getDay, parseISO, differenceInCalendarDays } from 'date-fns';
 import { Monitor, Globe, TrendingUp, TrendingDown, RefreshCw, Lightbulb, Calendar, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LineChart, Line } from 'recharts';
@@ -6,7 +7,7 @@ import { cn } from '../components/ui/cn';
 import { screentimeDateKey, screentimeUiPlatform, platformLabelTracked as platformLabel } from '../lib/screentimePlatform';
 import { useTodayScreentime, useScreentimeMetrics, useScreentimeAppStats, useScreentimeWebsiteStats, useScreentimeDailySummaries } from '../hooks/useScreentime';
 import { useUIStore } from '../stores/useUIStore';
-import { SectionLoader } from '../components/ui';
+import { Button, SectionLoader } from '../components/ui';
   /** Format minutes as hours when eligible (e.g. 90 → "1.5h", 45 → "45m"). */
   function formatDurationMinutes(mins: number): string {
     if (mins >= 60) {
@@ -1330,10 +1331,22 @@ import { SectionLoader } from '../components/ui';
         )}
 
         {!isLoading && topApps.length === 0 && topWebsites.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Monitor className="mx-auto mb-2 opacity-50" size={48} />
-            <p className="text-lg font-medium mb-1">No screentime data</p>
-            <p className="text-sm">Upload data from your PC or mobile tracker to see your usage here.</p>
+          <div className="rounded-2xl border border-border bg-card p-8 sm:p-10 text-center space-y-4">
+            <Monitor className="mx-auto text-primary opacity-80" size={40} />
+            <div className="space-y-1.5 max-w-lg mx-auto">
+              <p className="text-base font-semibold text-foreground">See where your hours actually go</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                No screen time is logged for this period yet. Connect the lifeOS Browser Extension for web usage, the Desktop app for PC apps, or sync from iOS to uncover hidden time drains.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Link to="/settings">
+                <Button size="sm" variant="outline">Configure Screen Limit &amp; Sync</Button>
+              </Link>
+              <Link to="/habits">
+                <Button size="sm" variant="ghost">Start a Digital Detox Habit</Button>
+              </Link>
+            </div>
           </div>
         )}
       </div>

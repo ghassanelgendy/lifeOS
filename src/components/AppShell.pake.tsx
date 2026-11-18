@@ -17,6 +17,8 @@ import { LinuxTitleBar } from './LinuxTitleBar';
 import { LinuxWindowResizer } from './LinuxWindowResizer';
 import { BrainDumpModal } from './BrainDumpModal';
 import { AIChatModal } from './AIChatModal';
+import { AppJoyrideTour } from './AppJoyrideTour';
+import { OnboardingWizardModal } from './onboarding/OnboardingWizardModal';
 import { useAuth } from '../hooks/useAuth';
 import { UserBlobatar } from './ui/UserBlobatar';
 
@@ -54,6 +56,12 @@ export function AppShell() {
   const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [chatModalPrompt, setChatModalPrompt] = useState('');
+
+  useEffect(() => {
+    if (isBrainDumpOpen) {
+      useUIStore.getState().markOnboardingStepDone('visited_brain_dump', true);
+    }
+  }, [isBrainDumpOpen]);
 
   // The Ctrl/Alt+B and Ctrl/Alt+A global shortcuts (handled in App.web.tsx,
   // which dispatches these events regardless of platform) had nothing
@@ -362,7 +370,7 @@ export function AppShell() {
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto overflow-x-hidden py-2 gap-[2px] flex flex-col px-2">
+          <nav data-tour="sidebar-nav" className="flex-1 overflow-y-auto overflow-x-hidden py-2 gap-[2px] flex flex-col px-2">
             {desktopNavigation.map((item) => {
               const isAnalytics = item.href === '/analytics';
               const showDot = isAnalytics && showWrappedTakeover;
@@ -401,10 +409,19 @@ export function AppShell() {
                 </NavLink>
               );
             })}
+            {!isSidebarCollapsed && Object.values(desktopNavVisible).some((v) => v === false) && (
+              <NavLink
+                to="/settings"
+                className="mt-2 px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                + Customize modules
+              </NavLink>
+            )}
           </nav>
 
           <div className="p-2 border-t flex flex-col gap-[2px]" style={{ borderColor: 'var(--colorNeutralStroke2)' }}>
             <NavLink
+              data-tour="settings-nav"
               to="/settings"
               className={({ isActive }) => cn(
                 "flex items-center gap-3 w-full rounded-md px-2.5 py-1.5 text-[13px] font-normal transition-all duration-150 relative group",
@@ -477,6 +494,8 @@ export function AppShell() {
       </div>
       <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
       <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
+      <OnboardingWizardModal />
+      <AppJoyrideTour />
     </FluentProvider>
   );
 }

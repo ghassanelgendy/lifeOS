@@ -1204,6 +1204,21 @@ export default function Finance() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {displayedTransactions.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-10 text-center">
+                    <div className="flex flex-col items-center gap-2.5 text-muted-foreground">
+                      <p className="text-sm font-medium text-foreground">No transactions logged yet</p>
+                      <p className="text-xs max-w-md">
+                        Track where your money goes by adding your first income or expense.
+                      </p>
+                      <FluentButton appearance="primary" size="small" onClick={() => setIsModalOpen(true)}>
+                        Add Transaction
+                      </FluentButton>
+                    </div>
+                  </td>
+                </tr>
+              )}
               {displayedTransactions.map((transaction) => {
                 const categoryLabel = transaction.type === 'income'
                   ? INCOME_CATEGORIES.find(c => c.value === transaction.category)?.label
@@ -1272,7 +1287,12 @@ export default function Finance() {
         {/* Mobile Card View */}
         <div className="md:hidden divide-y divide-white/[0.04]">
           {displayedTransactions.length === 0 && (
-            <p className="text-center text-muted-foreground text-sm py-10">No transactions</p>
+            <div className="text-center py-10 px-4 space-y-2.5">
+              <p className="text-sm font-medium text-foreground">No transactions yet</p>
+              <FluentButton appearance="primary" size="small" onClick={() => setIsModalOpen(true)}>
+                Add Transaction
+              </FluentButton>
+            </div>
           )}
           {displayedTransactions.map((transaction) => {
             const categoryLabel =

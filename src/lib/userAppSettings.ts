@@ -10,6 +10,7 @@ import {
   isDashboardMode,
   type AccentTheme,
   type DashboardMode,
+  type OnboardingProfileMeta,
   type PersistedUiSlice,
   type StrategicHorizonDays,
 } from '../stores/useUIStore';
@@ -97,6 +98,24 @@ function asAnnualReviewNotesByYear(x: unknown): Record<string, string> {
     if (typeof v === 'string') out[k] = v;
   }
   return out;
+}
+
+function asOnboardingProfile(x: unknown): OnboardingProfileMeta | null {
+  if (!isRecord(x)) return null;
+  const focusAreas = asStrArray(x.focusAreas, []);
+  const workflowStyle = asStr(x.workflowStyle, 'prayer_anchored');
+  const tailoredChecklistKeys = Array.isArray(x.tailoredChecklistKeys)
+    ? asStrArray(x.tailoredChecklistKeys, [])
+    : undefined;
+  const profileLabel = typeof x.profileLabel === 'string' ? x.profileLabel : undefined;
+  const source = x.source === 'ai' || x.source === 'deterministic' ? x.source : undefined;
+  return {
+    focusAreas,
+    workflowStyle,
+    ...(tailoredChecklistKeys ? { tailoredChecklistKeys } : {}),
+    ...(profileLabel ? { profileLabel } : {}),
+    ...(source ? { source } : {}),
+  };
 }
 
 /** Turn remote JSON into a safe partial to merge into the UI store. */
@@ -195,6 +214,22 @@ export function parsePersistedUiFromRemote(remote: unknown): Partial<PersistedUi
   patch.brainDumpAutoOrganizeEnabled = asBool(remote.brainDumpAutoOrganizeEnabled, false);
   if (typeof remote.hasCompletedTour === 'boolean') {
     patch.hasCompletedTour = remote.hasCompletedTour;
+  }
+  if (typeof remote.hasCompletedOnboarding === 'boolean') {
+    patch.hasCompletedOnboarding = remote.hasCompletedOnboarding;
+  } else if (remote.hasCompletedTour === true) {
+    // Legacy migration: users who already finished the old onboarding tour should not
+    // be interrupted by the new setup wizard after upgrade.
+    patch.hasCompletedOnboarding = true;
+  }
+  if (typeof remote.hasDismissedGettingStarted === 'boolean') {
+    patch.hasDismissedGettingStarted = remote.hasDismissedGettingStarted;
+  }
+  if (remote.onboardingProfile !== undefined) {
+    patch.onboardingProfile = asOnboardingProfile(remote.onboardingProfile);
+  }
+  if (isRecord(remote.onboardingChecklistExtras)) {
+    patch.onboardingChecklistExtras = asRecordBool(remote.onboardingChecklistExtras, {});
   }
 
   return patch;

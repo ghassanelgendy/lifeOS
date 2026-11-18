@@ -16,6 +16,7 @@ import { NAV_ITEMS, type NavItem } from './navItems';
 import { DEFAULT_DESKTOP_NAV } from '../stores/useUIStore';
 import { checkWrapStatus } from '../lib/wrapHelpers';
 import { AppJoyrideTour } from './AppJoyrideTour';
+import { OnboardingWizardModal } from './onboarding/OnboardingWizardModal';
 import { useAuth } from '../hooks/useAuth';
 import { UserBlobatar } from './ui/UserBlobatar';
 import { IconButton } from './ui/IconButton';
@@ -108,6 +109,12 @@ export function AppShell() {
   const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [chatModalPrompt, setChatModalPrompt] = useState('');
+
+  useEffect(() => {
+    if (isBrainDumpOpen) {
+      useUIStore.getState().markOnboardingStepDone('visited_brain_dump', true);
+    }
+  }, [isBrainDumpOpen]);
 
   // First visit on a wide screen: show labels. The store default (collapsed) is
   // shared with pake, so this is a one-time web-only override; the user's later
@@ -598,6 +605,14 @@ export function AppShell() {
               </NavLink>
             );
           })}
+          {!isSidebarCollapsed && Object.values(desktopNavVisible).some((v) => v === false) && (
+            <NavLink
+              to="/settings"
+              className="mt-2 px-3 py-1.5 text-[11px] font-medium text-ink-3 hover:text-ink transition-colors"
+            >
+              + Customize modules
+            </NavLink>
+          )}
         </nav>
 
         <div className="p-2 border-t border-border/40 flex flex-col gap-[2px]">
@@ -746,6 +761,7 @@ export function AppShell() {
         <FocusPiPWindow />
         <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
         <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
+        <OnboardingWizardModal />
         <AppJoyrideTour />
 
         {/* Wrap Toast Notification */}

@@ -17,6 +17,7 @@ import { checkWrapStatus } from '../lib/wrapHelpers';
 import { triggerHaptics } from '../lib/nativeBridge';
 import LiquidTabBar from './LiquidTabBar';
 import { AppJoyrideTour } from './AppJoyrideTour';
+import { OnboardingWizardModal } from './onboarding/OnboardingWizardModal';
 import { useAuth } from '../hooks/useAuth';
 import { UserBlobatar } from './ui/UserBlobatar';
 
@@ -49,6 +50,12 @@ export function AppShell() {
   const [brainDumpInitialText, setBrainDumpInitialText] = useState('');
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [chatModalPrompt, setChatModalPrompt] = useState('');
+
+  useEffect(() => {
+    if (isBrainDumpOpen) {
+      useUIStore.getState().markOnboardingStepDone('visited_brain_dump', true);
+    }
+  }, [isBrainDumpOpen]);
 
   useEffect(() => {
     const handleOpenBrainDump = (e: Event) => {
@@ -499,6 +506,15 @@ export function AppShell() {
                 </NavLink>
               );
             })}
+            {Object.values(desktopNavVisible).some((v) => v === false) && (
+              <NavLink
+                to="/settings"
+                onClick={() => setMobileSidebarOpen(false)}
+                className="mt-2 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                + Customize modules
+              </NavLink>
+            )}
           </nav>
           <div className="p-2.5 border-t border-border/40">
             {showWrappedTakeover ? (
@@ -743,6 +759,7 @@ export function AppShell() {
           <FocusPiPWindow />
           <BrainDumpModal isOpen={isBrainDumpOpen} onClose={() => setIsBrainDumpOpen(false)} initialText={brainDumpInitialText} />
           <AIChatModal isOpen={isChatModalOpen} onClose={() => setIsChatModalOpen(false)} initialPrompt={chatModalPrompt} />
+          <OnboardingWizardModal />
           <AppJoyrideTour />
 
         {/* iOS Quick Plus Dashboard Menu */}
