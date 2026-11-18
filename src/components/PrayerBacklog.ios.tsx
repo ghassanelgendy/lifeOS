@@ -6,6 +6,7 @@ import { useSetPrayerStatusAtDate } from '../hooks/usePrayerHabits';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { getPrayerTrackingStart, isUnloggedDayMissed } from '../lib/prayerTracking';
 import type { PrayerLog } from '../types/schema';
 import { Spinner } from './ui/Spinner';
 
@@ -26,6 +27,8 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
   const [view, setView] = useState<'weekly' | 'monthly'>('weekly');
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
   const today = useMemo(() => new Date(), []);
+  const todayStr = toDateOnly(today);
+  const trackingStart = useMemo(() => getPrayerTrackingStart(user?.created_at), [user?.created_at]);
 
   // Get prayer habits to map logs to prayer names
   const { data: prayerHabits = [], isLoading: isHabitsLoading } = useQuery({
@@ -116,8 +119,8 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
           else if (log.status === 'Late') late++;
           else missed++;
         } else {
-          // If no log and date is in the past, count as missed
-          if (day < today && !isToday(day)) {
+          // Unlogged past days count as missed, but only from the day tracking began
+          if (isUnloggedDayMissed(dayStr, todayStr, trackingStart)) {
             missed++;
           }
         }
@@ -125,7 +128,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
     });
 
     return { missed, late, prayed };
-  }, [dateRange.days, logsByDate, today]);
+  }, [dateRange.days, logsByDate, todayStr, trackingStart]);
 
   const shell = embedded
     ? 'bg-transparent p-0 h-full flex flex-col min-h-0'
@@ -268,7 +271,7 @@ export function PrayerBacklog({ embedded = false }: PrayerBacklogProps) {
                         : log.status === 'Late'
                           ? 'late'
                           : 'missed';
-                    } else if (isPast) {
+                    } else if (isUnloggedDayMissed(dayStr, todayStr, trackingStart)) {
                       status = 'missed';
                     }
                     const link = prayerHabitByName.get(prayerName);

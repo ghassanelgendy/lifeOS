@@ -1,24 +1,44 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Sparkles,
-  Compass,
+  Activity,
+  BookOpen,
+  Bot,
+  CalendarClock,
   Check,
-  MapPin,
+  ChevronDown,
+  ChevronUp,
+  Leaf,
+  ListChecks,
   Loader2,
-  ArrowRight,
-  ArrowLeft,
+  MapPin,
+  Monitor,
+  Moon,
+  NotebookPen,
+  RotateCcw,
+  ShieldCheck,
   ShieldOff,
   Flame,
   Smartphone,
-  Monitor,
-  Bot,
-  RotateCcw,
-  ChevronDown,
-  ChevronUp,
+  Sun,
+  Sunrise,
+  Wallet,
+  Zap,
 } from 'lucide-react';
-import { Modal, Button } from '../ui';
+import {
+  BackButton,
+  Chip,
+  ChoiceTile,
+  OnboardingShell,
+  PrimaryButton,
+  ScreenHeading,
+  SecondaryButton,
+  Segmented,
+  Stack,
+  WordReveal,
+} from './onboardingUi';
 import { DeviceSyncHub } from '../integrations/DeviceSyncHub';
 import { UserBlobatar } from '../ui/UserBlobatar';
 import { useAuth } from '../../hooks/useAuth';
@@ -39,6 +59,7 @@ import {
   DEFAULT_ONBOARDING_ANSWERS,
   FOCUS_AREA_OPTIONS,
   INTENTION_CHIP_OPTIONS,
+  PRAYER_BACKLOG_OPTIONS,
   WORKFLOW_STYLE_OPTIONS,
   buildRecommendedSetup,
   generateSmartOnboardingSetup,
@@ -48,7 +69,44 @@ import {
 } from '../../lib/onboardingRecommendations';
 import { cn, getDisplayName } from '../../lib/utils';
 
-type WizardStep = 1 | 2 | 3;
+type Screen =
+  | 'welcome'
+  | 'focus'
+  | 'prayer'
+  | 'style'
+  | 'intent'
+  | 'setup'
+  | 'summary'
+  | 'modules'
+  | 'habits'
+  | 'location'
+  | 'finish';
+
+const FOCUS_ICONS: Record<OnboardingFocusArea, ReactNode> = {
+  salah_anchor: <Moon className="size-5" />,
+  quran_azkar: <BookOpen className="size-5" />,
+  jannah_detox: <ShieldCheck className="size-5" />,
+  life_insights: <Activity className="size-5" />,
+  tasks_focus: <ListChecks className="size-5" />,
+  finance_rizq: <Wallet className="size-5" />,
+  notes_brain: <NotebookPen className="size-5" />,
+};
+
+const STYLE_ICONS: Record<string, ReactNode> = {
+  prayer_anchored: <Sunrise className="size-5" />,
+  time_blocked: <CalendarClock className="size-5" />,
+  capture_first: <Zap className="size-5" />,
+  minimal_calm: <Leaf className="size-5" />,
+};
+
+const ACCENT_HEX: Record<string, string> = {
+  zinc: '#52525b',
+  blue: '#3b82f6',
+  green: '#10b981',
+  violet: '#8b5cf6',
+  rose: '#f43f5e',
+  amber: '#f59e0b',
+};
 
 const DEFAULT_CAIRO_LABEL = 'Cairo, Egypt';
 
@@ -71,7 +129,8 @@ export function OnboardingWizardModal() {
 
   const isOpen = Boolean(user && isRemoteUiSettingsReady && !hasCompletedOnboarding);
 
-  const [step, setStep] = useState<WizardStep>(1);
+  const [screen, setScreen] = useState<Screen>('welcome');
+  const [direction, setDirection] = useState<1 | -1>(1);
   const [answers, setAnswers] = useState<OnboardingAnswers>(DEFAULT_ONBOARDING_ANSWERS);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
@@ -178,12 +237,17 @@ export function OnboardingWizardModal() {
     });
   };
 
+  const goTo = (next: Screen, dir: 1 | -1) => {
+    setDirection(dir);
+    setScreen(next);
+  };
+
   const handleGenerateSetup = async (forceInstant = false) => {
     generationAbortRef.current?.abort();
     if (forceInstant) {
       setIsGenerating(false);
       applyRecommendationToLocalDraft(buildRecommendedSetup(answers));
-      setStep(2);
+      goTo('summary', 1);
       return;
     }
 
@@ -198,7 +262,7 @@ export function OnboardingWizardModal() {
       });
       if (!controller.signal.aborted) {
         applyRecommendationToLocalDraft(rec);
-        setStep(2);
+        goTo('summary', 1);
       }
     } finally {
       if (!controller.signal.aborted) {
@@ -313,6 +377,36 @@ export function OnboardingWizardModal() {
         }
       }
 
+      // 3b. Qadaa: only start tracking when the user said they have something to make up.
+      //     "recent" starts at zero so each prayer marked missed adds one; "years" is done
+      //     later through the Qadaa setup (checklist item), where the real count is worked out.
+      if (recommendation.qadaaPlan === 'recent' && user?.id && !isOfflineUser && navigator.onLine) {
+        await supabase
+          .from('qadaa_settings')
+          .upsert(
+            {
+              user_id: user.id,
+              madhab: 'shafii',
+              calculation_basis: 'actual_age',
+              birth_date: null,
+              takleef_age: 14,
+              current_age: 14,
+              is_lunar_calendar: true,
+              include_witr: false,
+              target_fajr: 0,
+              target_dhuhr: 0,
+              target_asr: 0,
+              target_maghrib: 0,
+              target_isha: 0,
+              target_witr: 0,
+              daily_target_prayers: 1,
+              is_active: true,
+            },
+            { onConflict: 'user_id', ignoreDuplicates: true }
+          )
+          .then(() => undefined, () => undefined);
+      }
+
       // 4. Create approved starter tasks + optional custom first task
       const approvedTasks = recommendation.starterTasks.filter((t) => selectedTaskKeys[t.key]);
       for (const task of approvedTasks) {
@@ -360,705 +454,591 @@ export function OnboardingWizardModal() {
     return map;
   }, []);
 
+
+  const wantsPrayerQuestion = answers.focusAreas.includes('salah_anchor');
+  const screens = useMemo<Screen[]>(
+    () => [
+      'welcome',
+      'focus',
+      ...(wantsPrayerQuestion ? (['prayer'] as Screen[]) : []),
+      'style',
+      'intent',
+      'setup',
+      'summary',
+      'modules',
+      'habits',
+      'location',
+      'finish',
+    ],
+    [wantsPrayerQuestion]
+  );
+
   if (!isOpen) return null;
 
-  const progressPct = Math.round((step / 3) * 100);
+  const screenIndex = Math.max(0, screens.indexOf(screen));
+  const progress = screenIndex / (screens.length - 1);
+  const groupLabel =
+    screenIndex <= screens.indexOf('setup')
+      ? 'About you'
+      : screen === 'location' || screen === 'finish'
+        ? 'Finish'
+        : 'Your setup';
   const selectedHabitCount = recommendation.starterHabits.filter((h) => selectedHabitKeys[h.key]).length;
   const userIdentifier = user?.email || user?.id || 'lifeos-user';
 
+  const goNext = () => {
+    if (screen === 'setup') {
+      void handleGenerateSetup(false);
+      return;
+    }
+    goTo(screens[Math.min(screenIndex + 1, screens.length - 1)], 1);
+  };
+  const goBack = () => goTo(screens[Math.max(screenIndex - 1, 0)], -1);
+
+  const nextLabel: Record<Screen, string> = {
+    welcome: 'Start',
+    focus: 'Next',
+    prayer: 'Next',
+    style: 'Next',
+    intent: 'Next',
+    setup: 'Build my setup',
+    summary: 'Looks good',
+    modules: 'Next',
+    habits: 'Next',
+    location: 'Next',
+    finish: 'Enter lifeOS',
+  };
+
+  const footer =
+    screen === 'welcome' ? (
+      <>
+        <span className="text-sm text-ink-3">Takes about a minute</span>
+        <PrimaryButton onClick={goNext}>{nextLabel.welcome}</PrimaryButton>
+      </>
+    ) : screen === 'finish' ? (
+      <>
+        <BackButton onClick={goBack} />
+        <div className="flex items-center gap-2">
+          <SecondaryButton onClick={() => void finalizeAndEnter(true)} disabled={isApplying}>
+            Take a 30s tour
+          </SecondaryButton>
+          <PrimaryButton onClick={() => void finalizeAndEnter(false)} loading={isApplying}>
+            Enter lifeOS
+          </PrimaryButton>
+        </div>
+      </>
+    ) : (
+      <>
+        <BackButton onClick={goBack} />
+        <div className="flex items-center gap-3">
+          {screen === 'setup' && isGenerating && (
+            <button
+              type="button"
+              onClick={() => void handleGenerateSetup(true)}
+              className="text-sm font-medium text-ink-2 underline underline-offset-4 hover:text-ink"
+            >
+              Skip the wait
+            </button>
+          )}
+          <PrimaryButton onClick={goNext} loading={screen === 'setup' && isGenerating}>
+            {screen === 'setup' && isGenerating ? 'Building your setup' : nextLabel[screen]}
+          </PrimaryButton>
+        </div>
+      </>
+    );
+
+  const toggleContext = (key: 'hasDesktop' | 'hasIOS' | 'wantAI') =>
+    setAnswers((p) => ({ ...p, context: { ...p.context, [key]: !p.context[key] } }));
+
+  const stagger = { hidden: {}, show: { transition: { staggerChildren: 0.045 } } };
+
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleSkipSetup}
-      title={
-        step === 1
-          ? 'Welcome to lifeOS — Let’s personalize your space'
-          : step === 2
-            ? 'Your Suggested Setup'
-            : 'Prayer Location & Reality Sync'
-      }
-      className="max-w-2xl"
+    <OnboardingShell
+      screenKey={screen}
+      direction={direction}
+      progress={progress}
+      groupLabel={groupLabel}
+      onSkip={handleSkipSetup}
+      footer={footer}
     >
-      <div className="space-y-5">
-        {/* Progress bar + step indicator */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex-1 h-1.5 rounded-full bg-sunken overflow-hidden">
-            <div
-              className="h-full bg-primary transition-[width] duration-300 ease-out"
-              style={{ width: `${progressPct}%` }}
+      {screen === 'welcome' && (
+        <div className="flex flex-col gap-6">
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+            className="flex items-center gap-3"
+          >
+            <UserBlobatar identifier={userIdentifier} size={52} className="shrink-0 ring-1 ring-border" />
+            <p className="text-base text-ink-2">As-salamu alaykum</p>
+          </motion.div>
+          <WordReveal
+            text="Set up lifeOS around your day."
+            className="max-w-[14ch] text-balance text-5xl font-semibold leading-[1.05] tracking-tight sm:text-6xl"
+          />
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.4 }}
+            className="max-w-prose text-lg text-ink-2"
+          >
+            Answer a few questions and lifeOS shows only the pages and habits that fit. You can change any of it later.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.75, duration: 0.4 }}
+            className="max-w-sm"
+          >
+            <label htmlFor="onboarding-display-name" className="mb-1.5 block text-sm font-medium text-ink-2">
+              What should we call you?
+            </label>
+            <input
+              id="onboarding-display-name"
+              type="text"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your name"
+              onKeyDown={(e) => e.key === 'Enter' && goNext()}
+              className="h-12 w-full rounded-2xl border border-separator bg-raised px-4 text-base text-ink placeholder:text-ink-3 transition-shadow focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </motion.div>
+        </div>
+      )}
+
+      {screen === 'focus' && (
+        <>
+          <ScreenHeading
+            title="What do you want help with?"
+            hint="Pick as many as you like. Each one adds pages to your sidebar."
+          />
+          <Stack className="sm:grid sm:grid-cols-2">
+            {FOCUS_AREA_OPTIONS.map((opt, i) => (
+              <ChoiceTile
+                key={opt.id}
+                index={i}
+                selected={answers.focusAreas.includes(opt.id)}
+                onClick={() => toggleFocusArea(opt.id)}
+                icon={FOCUS_ICONS[opt.id]}
+                title={opt.title}
+                subtitle={opt.subtitle}
+              />
+            ))}
+          </Stack>
+        </>
+      )}
+
+      {screen === 'prayer' && (
+        <>
+          <ScreenHeading
+            title="Do you have prayers to make up?"
+            hint="This decides whether Qadaa shows up at all. You can change it any time."
+          />
+          <Stack>
+            {PRAYER_BACKLOG_OPTIONS.map((opt, i) => (
+              <ChoiceTile
+                key={opt.id}
+                index={i}
+                kind="radio"
+                selected={(answers.prayerBacklog ?? 'none') === opt.id}
+                onClick={() => setAnswers((p) => ({ ...p, prayerBacklog: opt.id }))}
+                title={opt.title}
+                subtitle={opt.subtitle}
+              />
+            ))}
+          </Stack>
+        </>
+      )}
+
+      {screen === 'style' && (
+        <>
+          <ScreenHeading title="How do you plan your day?" hint="This sets which pages sit closest to hand." />
+          <Stack>
+            {WORKFLOW_STYLE_OPTIONS.map((opt, i) => (
+              <ChoiceTile
+                key={opt.id}
+                index={i}
+                kind="radio"
+                selected={answers.workflowStyle === opt.id}
+                onClick={() => setAnswers((p) => ({ ...p, workflowStyle: opt.id }))}
+                icon={STYLE_ICONS[opt.id]}
+                title={opt.title}
+                subtitle={opt.subtitle}
+              />
+            ))}
+          </Stack>
+        </>
+      )}
+
+      {screen === 'intent' && (
+        <>
+          <ScreenHeading
+            title="Anything you want to build or quit?"
+            hint="Tap a few, or write your own. We turn these into starter habits."
+          />
+          <motion.div
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+            className="flex flex-wrap gap-2.5"
+          >
+            {INTENTION_CHIP_OPTIONS.map((chip) => (
+              <motion.div
+                key={chip}
+                variants={{ hidden: { opacity: 0, y: 8 }, show: { opacity: 1, y: 0 } }}
+              >
+                <Chip selected={answers.intentionChips.includes(chip)} onClick={() => toggleIntentionChip(chip)}>
+                  {chip}
+                </Chip>
+              </motion.div>
+            ))}
+          </motion.div>
+          <label htmlFor="onboarding-intention-input" className="mb-1.5 mt-7 block text-sm font-medium text-ink-2">
+            In your own words (optional)
+          </label>
+          <textarea
+            id="onboarding-intention-input"
+            rows={3}
+            value={answers.freeTextGoal}
+            onChange={(e) => setAnswers((p) => ({ ...p, freeTextGoal: e.target.value }))}
+            placeholder="Stop missing Fajr, quit late-night YouTube, finish my thesis"
+            className="w-full resize-none rounded-2xl border border-separator bg-raised px-4 py-3 text-base text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+        </>
+      )}
+
+      {screen === 'setup' && (
+        <>
+          <ScreenHeading title="Your devices and daily limits" hint="Used for reminders, sync and your weekly review." />
+          <div className="flex flex-wrap gap-2.5">
+            <Chip
+              selected={answers.context.hasDesktop}
+              onClick={() => toggleContext('hasDesktop')}
+              icon={<Monitor className="size-4" />}
+            >
+              PC or web
+            </Chip>
+            <Chip
+              selected={answers.context.hasIOS}
+              onClick={() => toggleContext('hasIOS')}
+              icon={<Smartphone className="size-4" />}
+            >
+              iPhone
+            </Chip>
+            <Chip
+              selected={answers.context.wantAI}
+              onClick={() => toggleContext('wantAI')}
+              icon={<Bot className="size-4" />}
+            >
+              AI suggestions
+            </Chip>
+          </div>
+          <div className="mt-8 flex flex-col gap-5 rounded-2xl border border-separator bg-raised/60 p-5">
+            <Segmented
+              label="Tasks per day"
+              value={answers.rhythm.tasksPerDay}
+              onChange={(n) => setAnswers((p) => ({ ...p, rhythm: { ...p.rhythm, tasksPerDay: n } }))}
+              options={([3, 5, 8] as const).map((n) => ({ value: n, label: String(n) }))}
+            />
+            <Segmented
+              label="Sleep"
+              value={answers.rhythm.sleepHours}
+              onChange={(h) => setAnswers((p) => ({ ...p, rhythm: { ...p.rhythm, sleepHours: h } }))}
+              options={([7, 8, 9] as const).map((h) => ({ value: h, label: `${h}h` }))}
+            />
+            <Segmented
+              label="Screen time up to"
+              value={answers.rhythm.screenLimitHours}
+              onChange={(h) => setAnswers((p) => ({ ...p, rhythm: { ...p.rhythm, screenLimitHours: h } }))}
+              options={([4, 6, 8] as const).map((h) => ({ value: h, label: `${h}h` }))}
             />
           </div>
-          <span className="text-caption font-semibold text-ink-3 tabular-nums">
-            Step {step} of 3
-          </span>
-          <button
-            type="button"
-            onClick={handleSkipSetup}
-            className="text-caption font-medium text-ink-3 hover:text-ink transition-colors"
+        </>
+      )}
+
+      {screen === 'summary' && (
+        <div className="flex flex-col gap-5">
+          <p className="text-sm font-medium text-ink-3">
+            {recommendation.source === 'ai' ? 'Built with AI from your answers' : 'Built from your answers'}
+          </p>
+          <WordReveal
+            text={recommendation.profileLabel}
+            className="max-w-[16ch] text-balance text-4xl font-semibold leading-tight tracking-tight sm:text-5xl"
+          />
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.4 }}
+            className="max-w-prose text-lg text-ink-2"
           >
-            Skip setup
-          </button>
+            {recommendation.profileSummary}
+          </motion.p>
+          {recommendation.source === 'ai' && (
+            <button
+              type="button"
+              onClick={() => applyRecommendationToLocalDraft(buildRecommendedSetup(answers))}
+              className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-3 underline-offset-4 hover:text-ink hover:underline"
+            >
+              <RotateCcw className="size-3.5" /> Use the basic preset instead
+            </button>
+          )}
+
+          <div className="mt-2 flex flex-col gap-4">
+            <p className="text-base font-semibold">How should it look?</p>
+            <div className="flex flex-wrap gap-2.5">
+              {(
+                [
+                  ['system', 'Auto', <Monitor key="s" className="size-4" />],
+                  ['light', 'Light', <Sun key="l" className="size-4" />],
+                  ['dark', 'Dark', <Moon key="d" className="size-4" />],
+                ] as const
+              ).map(([mode, label, icon]) => (
+                <Chip key={mode} selected={theme === mode} onClick={() => setTheme(mode)} icon={icon}>
+                  {label}
+                </Chip>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-3" role="radiogroup" aria-label="Accent colour">
+              {ACCENT_THEMES.map((ac: AccentTheme) => (
+                <motion.button
+                  key={ac}
+                  type="button"
+                  role="radio"
+                  aria-checked={accentTheme === ac}
+                  aria-label={ACCENT_THEME_LABELS[ac]}
+                  title={ACCENT_THEME_LABELS[ac]}
+                  onClick={() => setAccentTheme(ac)}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  animate={{ scale: accentTheme === ac ? 1.12 : 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 24 }}
+                  className={cn(
+                    'flex size-11 items-center justify-center rounded-full ring-offset-2 ring-offset-background transition-shadow',
+                    accentTheme === ac ? 'ring-2 ring-ink' : 'ring-0'
+                  )}
+                  style={{ backgroundColor: ACCENT_HEX[ac] ?? '#52525b' }}
+                >
+                  {accentTheme === ac && <Check className="size-5 text-white" strokeWidth={3} />}
+                </motion.button>
+              ))}
+            </div>
+          </div>
         </div>
+      )}
 
-        {/* STEP 1: Personalized Questions */}
-        {step === 1 && (
-          <div className="space-y-5">
-            <div className="flex items-center gap-3 rounded-xl border border-separator bg-sunken/70 p-3.5">
-              <UserBlobatar identifier={userIdentifier} size={44} className="shrink-0 ring-1 ring-border" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink">
-                  Assalamu Alaikum{displayName ? `, ${displayName}` : ''}
-                </p>
-                <p className="text-xs text-ink-2 leading-relaxed">
-                  lifeOS helps you guard your prayers, build Jannah habits, leave harmful ones behind, and see where your hours actually go.
-                </p>
-              </div>
-            </div>
-
-            {/* Q1: Focus Areas */}
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <label className="text-sm font-semibold text-ink">
-                  1. What do you want to focus on right now?
-                </label>
-                <span className="text-caption text-ink-3">Pick one or more</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {FOCUS_AREA_OPTIONS.map((opt) => {
-                  const active = answers.focusAreas.includes(opt.id);
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => toggleFocusArea(opt.id)}
-                      className={cn(
-                        'flex items-start gap-2.5 rounded-xl border p-3 text-left transition-all',
-                        active
-                          ? 'border-primary bg-primary/8 text-ink'
-                          : 'border-separator bg-sunken/40 text-ink-2 hover:bg-hover'
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border text-[10px]',
-                          active
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-ink-3/40'
-                        )}
-                      >
-                        {active && <Check className="size-3" strokeWidth={3} />}
-                      </span>
-                      <span className="min-w-0">
-                        <span className="block text-xs font-semibold text-ink leading-snug">
-                          {opt.title}
-                        </span>
-                        <span className="block text-[11px] text-ink-3 mt-0.5 leading-snug">
-                          {opt.subtitle}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Q2: Workflow Style */}
-            <div className="space-y-2">
-              <label className="block text-sm font-semibold text-ink">
-                2. How do you want to organize your day?
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {WORKFLOW_STYLE_OPTIONS.map((opt) => {
-                  const active = answers.workflowStyle === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => setAnswers((p) => ({ ...p, workflowStyle: opt.id }))}
-                      className={cn(
-                        'rounded-xl border p-2.5 text-left transition-all',
-                        active
-                          ? 'border-primary bg-primary/8 text-ink'
-                          : 'border-separator bg-sunken/40 text-ink-2 hover:bg-hover'
-                      )}
-                    >
-                      <span className="block text-xs font-semibold text-ink">{opt.title}</span>
-                      <span className="block text-[11px] text-ink-3 mt-0.5">{opt.subtitle}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Q3: Personal Intention / Detox Prompt */}
-            <div className="space-y-2">
-              <label htmlFor="onboarding-intention-input" className="block text-sm font-semibold text-ink">
-                3. Any habit you want to build for Jannah — or leave behind?
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {INTENTION_CHIP_OPTIONS.map((chip) => {
-                  const active = answers.intentionChips.includes(chip);
-                  return (
-                    <button
-                      key={chip}
-                      type="button"
-                      onClick={() => toggleIntentionChip(chip)}
-                      className={cn(
-                        'rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                        active
-                          ? 'border-primary bg-primary/12 text-ink'
-                          : 'border-separator bg-sunken text-ink-2 hover:bg-hover'
-                      )}
-                    >
-                      {chip}
-                    </button>
-                  );
-                })}
-              </div>
-              <textarea
-                id="onboarding-intention-input"
-                rows={2}
-                value={answers.freeTextGoal}
-                onChange={(e) => setAnswers((p) => ({ ...p, freeTextGoal: e.target.value }))}
-                placeholder="Optional: e.g. 'Stop missing Fajr, quit late-night YouTube, and finish my thesis'"
-                className="w-full rounded-xl border border-separator bg-sunken px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-primary/40"
-              />
-            </div>
-
-            {/* Q4: Devices, AI & Daily Targets */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-separator bg-sunken/40 p-3">
-              <div className="space-y-2">
-                <span className="block text-xs font-semibold text-ink">4. Your devices & assistant</span>
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAnswers((p) => ({ ...p, context: { ...p.context, hasDesktop: !p.context.hasDesktop } }))
-                    }
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium',
-                      answers.context.hasDesktop ? 'border-primary bg-primary/10 text-ink' : 'border-separator text-ink-3'
-                    )}
-                  >
-                    <Monitor className="size-3.5" /> PC / Web
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAnswers((p) => ({ ...p, context: { ...p.context, hasIOS: !p.context.hasIOS } }))
-                    }
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium',
-                      answers.context.hasIOS ? 'border-primary bg-primary/10 text-ink' : 'border-separator text-ink-3'
-                    )}
-                  >
-                    <Smartphone className="size-3.5" /> iPhone / iOS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setAnswers((p) => ({ ...p, context: { ...p.context, wantAI: !p.context.wantAI } }))
-                    }
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium',
-                      answers.context.wantAI ? 'border-primary bg-primary/10 text-ink' : 'border-separator text-ink-3'
-                    )}
-                  >
-                    <Bot className="size-3.5" /> Smart AI
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <span className="block text-xs font-semibold text-ink">Daily targets</span>
-                <div className="flex flex-wrap gap-2 text-[11px]">
-                  <div className="flex items-center gap-1">
-                    <span className="text-ink-3">Tasks:</span>
-                    {([3, 5, 8] as const).map((n) => (
-                      <button
-                        key={n}
-                        type="button"
-                        onClick={() => setAnswers((p) => ({ ...p, rhythm: { ...p.rhythm, tasksPerDay: n } }))}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 font-semibold',
-                          answers.rhythm.tasksPerDay === n ? 'bg-primary text-primary-foreground' : 'bg-raised text-ink-2'
-                        )}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-ink-3">Sleep:</span>
-                    {([7, 8, 9] as const).map((h) => (
-                      <button
-                        key={h}
-                        type="button"
-                        onClick={() => setAnswers((p) => ({ ...p, rhythm: { ...p.rhythm, sleepHours: h } }))}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 font-semibold',
-                          answers.rhythm.sleepHours === h ? 'bg-primary text-primary-foreground' : 'bg-raised text-ink-2'
-                        )}
-                      >
-                        {h}h
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-ink-3">Screen:</span>
-                    {([4, 6, 8] as const).map((h) => (
-                      <button
-                        key={h}
-                        type="button"
-                        onClick={() => setAnswers((p) => ({ ...p, rhythm: { ...p.rhythm, screenLimitHours: h } }))}
-                        className={cn(
-                          'rounded px-1.5 py-0.5 font-semibold',
-                          answers.rhythm.screenLimitHours === h ? 'bg-primary text-primary-foreground' : 'bg-raised text-ink-2'
-                        )}
-                      >
-                        ≤{h}h
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer Step 1 */}
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-separator">
-              {isGenerating ? (
-                <button
-                  type="button"
-                  onClick={() => void handleGenerateSetup(true)}
-                  className="text-xs font-medium text-ink-2 hover:text-ink underline underline-offset-4"
+      {screen === 'modules' && (
+        <>
+          <ScreenHeading
+            title="Which pages go in your sidebar?"
+            hint="We picked these from your answers. Tap to add or remove. All pages stay available in Settings."
+          />
+          <motion.div layout className="flex flex-wrap gap-2.5">
+            {DEFAULT_DESKTOP_NAV.map((href) => {
+              const locked = href === '/dashboard' || href === '/habits';
+              const active = locked ? true : editableNavVisible[href] !== false;
+              const Icon = NAV_ITEMS.find((n) => n.href === href)?.icon;
+              return (
+                <Chip
+                  key={href}
+                  selected={active}
+                  disabled={locked}
+                  icon={Icon ? <Icon size={16} /> : undefined}
+                  onClick={() => setEditableNavVisible((prev) => ({ ...prev, [href]: !active }))}
                 >
-                  Use instant preset now
-                </button>
-              ) : (
-                <span className="text-[11px] text-ink-3">
-                  {answers.context.wantAI
-                    ? 'AI tailors your setup in <3.5s (instant fallback if slower)'
-                    : 'Instant deterministic personalization'}
-                </span>
-              )}
-              <Button
-                onClick={() => void handleGenerateSetup(false)}
-                disabled={isGenerating}
-                className="gap-1.5"
-              >
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Tailoring your setup...
-                  </>
-                ) : (
-                  <>
-                    Build my setup
-                    <ArrowRight className="size-3.5" />
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
+                  {navLabelMap.get(href) ?? href.replace('/', '')}
+                </Chip>
+              );
+            })}
+          </motion.div>
+        </>
+      )}
 
-        {/* STEP 2: Review Suggested Setup */}
-        {step === 2 && (
-          <div className="space-y-4">
-            {/* Suggested Profile Summary */}
-            <div className="rounded-xl border border-primary/25 bg-primary/5 p-3.5 space-y-1.5">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-primary shrink-0" />
-                  <h3 className="text-sm font-semibold text-ink">{recommendation.profileLabel}</h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full border border-separator bg-raised px-2 py-0.5 text-[11px] font-medium text-ink-2">
-                    {recommendation.source === 'ai' ? 'Tailored by AI' : 'Instant Smart Preset'}
-                  </span>
-                  {recommendation.source === 'ai' && (
-                    <button
-                      type="button"
-                      onClick={() => applyRecommendationToLocalDraft(buildRecommendedSetup(answers))}
-                      className="inline-flex items-center gap-1 text-[11px] text-ink-3 hover:text-ink"
-                    >
-                      <RotateCcw className="size-3" /> Reset
-                    </button>
-                  )}
-                </div>
-              </div>
-              <p className="text-xs text-ink-2 leading-relaxed">{recommendation.profileSummary}</p>
-            </div>
-
-            {/* Identity & Theme */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-separator bg-sunken/40 p-3">
-              <div className="space-y-1.5">
-                <label htmlFor="onboarding-display-name" className="text-xs font-semibold text-ink">
-                  Your name
-                </label>
-                <div className="flex items-center gap-2">
-                  <UserBlobatar identifier={userIdentifier} size={34} className="shrink-0" />
-                  <input
-                    id="onboarding-display-name"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Your name"
-                    className="w-full rounded-lg border border-separator bg-raised px-2.5 py-1.5 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <span className="block text-xs font-semibold text-ink">Appearance & accent</span>
-                <div className="flex flex-wrap items-center gap-1.5">
-                  {(['system', 'light', 'dark'] as const).map((tMode) => (
-                    <button
-                      key={tMode}
-                      type="button"
-                      onClick={() => setTheme(tMode)}
-                      className={cn(
-                        'rounded-lg border px-2 py-1 text-[11px] font-medium capitalize',
-                        theme === tMode ? 'border-primary bg-primary/10 text-ink' : 'border-separator text-ink-2'
-                      )}
-                    >
-                      {tMode}
-                    </button>
-                  ))}
-                  <div className="flex items-center gap-1 ml-1">
-                    {ACCENT_THEMES.map((ac: AccentTheme) => (
-                      <button
-                        key={ac}
-                        type="button"
-                        title={ACCENT_THEME_LABELS[ac]}
-                        aria-label={`Accent ${ACCENT_THEME_LABELS[ac]}`}
-                        onClick={() => setAccentTheme(ac)}
-                        className={cn(
-                          'size-4 rounded-full border transition-transform',
-                          accentTheme === ac ? 'scale-125 ring-2 ring-primary/50 border-foreground' : 'border-separator opacity-75'
-                        )}
-                        style={{
-                          backgroundColor:
-                            ac === 'zinc'
-                              ? '#52525b'
-                              : ac === 'blue'
-                                ? '#3b82f6'
-                                : ac === 'green'
-                                  ? '#10b981'
-                                  : ac === 'violet'
-                                    ? '#8b5cf6'
-                                    : ac === 'rose'
-                                      ? '#f43f5e'
-                                      : '#f59e0b',
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Active Modules */}
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-semibold text-ink">Suggested sidebar modules</span>
-                <span className="text-[11px] text-ink-3">You can show/hide all 18 anytime in Settings</span>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {DEFAULT_DESKTOP_NAV.map((href) => {
-                  const locked = href === '/dashboard' || href === '/habits';
-                  const active = locked ? true : editableNavVisible[href] !== false;
-                  return (
-                    <button
-                      key={href}
-                      type="button"
-                      disabled={locked}
-                      onClick={() =>
-                        setEditableNavVisible((prev) => ({
-                          ...prev,
-                          [href]: !active,
-                        }))
-                      }
-                      className={cn(
-                        'inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium transition-colors',
-                        active
-                          ? 'border-primary/40 bg-primary/10 text-ink'
-                          : 'border-separator bg-sunken/40 text-ink-3 hover:text-ink-2',
-                        locked && 'opacity-80 cursor-default'
-                      )}
-                    >
-                      {active && <Check className="size-3 text-primary" />}
-                      {navLabelMap.get(href) ?? href.replace('/', '')}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Starter Habits (Jannah + Detox) & Starter Tasks */}
-            <div className="space-y-2">
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-semibold text-ink">
-                  Suggested Jannah & Detox starter habits ({selectedHabitCount} selected)
-                </span>
-              </div>
-              <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
-                {recommendation.starterHabits.map((h) => {
-                  const checked = Boolean(selectedHabitKeys[h.key]);
-                  const isDetox = h.habit_type === 'detox';
-                  return (
-                    <button
-                      key={h.key}
-                      type="button"
-                      onClick={() =>
-                        setSelectedHabitKeys((prev) => ({ ...prev, [h.key]: !prev[h.key] }))
-                      }
-                      className={cn(
-                        'w-full flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-left transition-colors',
-                        checked ? 'border-primary/40 bg-primary/5' : 'border-separator bg-sunken/30 opacity-75'
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <span
-                          className={cn(
-                            'flex size-4 shrink-0 items-center justify-center rounded border',
-                            checked ? 'border-primary bg-primary text-primary-foreground' : 'border-ink-3/40'
-                          )}
-                        >
-                          {checked && <Check className="size-3" strokeWidth={3} />}
-                        </span>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-xs font-semibold text-ink truncate" dir="auto">
-                              {h.title}
-                            </span>
-                            <span
-                              className={cn(
-                                'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
-                                isDetox
-                                  ? 'bg-rose-500/10 text-rose-500'
-                                  : 'bg-emerald-500/10 text-emerald-500'
-                              )}
-                            >
-                              {isDetox ? <ShieldOff className="size-2.5" /> : <Flame className="size-2.5" />}
-                              {isDetox ? 'Detox' : 'Habit'}
-                            </span>
-                          </div>
-                          {h.description && (
-                            <p className="text-[11px] text-ink-3 truncate" dir="auto">
-                              {h.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-medium text-ink-3 tabular-nums shrink-0">
-                        {h.time}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {recommendation.starterTasks.length > 0 && (
-              <div className="space-y-1.5">
-                <span className="block text-xs font-semibold text-ink">Starter tasks for today</span>
-                <div className="space-y-1">
-                  {recommendation.starterTasks.map((t) => {
-                    const checked = Boolean(selectedTaskKeys[t.key]);
-                    return (
-                      <button
-                        key={t.key}
-                        type="button"
-                        onClick={() =>
-                          setSelectedTaskKeys((prev) => ({ ...prev, [t.key]: !prev[t.key] }))
-                        }
-                        className={cn(
-                          'w-full flex items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-colors',
-                          checked ? 'border-primary/40 bg-primary/5 text-ink' : 'border-separator text-ink-3'
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'flex size-3.5 shrink-0 items-center justify-center rounded border',
-                            checked ? 'border-primary bg-primary text-primary-foreground' : 'border-ink-3/40'
-                          )}
-                        >
-                          {checked && <Check className="size-2.5" strokeWidth={3} />}
-                        </span>
-                        <span className="truncate">{t.title}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Footer Step 2 */}
-            <div className="flex items-center justify-between pt-2 border-t border-separator">
-              <Button variant="ghost" size="sm" onClick={() => setStep(1)} className="gap-1">
-                <ArrowLeft className="size-3.5" /> Back
-              </Button>
-              <Button onClick={() => setStep(3)} className="gap-1.5">
-                Next: Prayer & Sync <ArrowRight className="size-3.5" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 3: Prayer Location, First Task & Launch */}
-        {step === 3 && (
-          <div className="space-y-4">
-            {/* Prayer Location Calibration */}
-            <div className="rounded-xl border border-separator bg-sunken/40 p-3.5 space-y-3">
-              <div className="flex items-start justify-between gap-2 flex-wrap">
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-ink">
-                    <Compass className="size-4 text-primary" />
-                    <span>Your Prayer City</span>
-                  </div>
-                  <p className="text-[11px] text-ink-3 mt-0.5">
-                    Current: <strong className="text-ink">{prayerLocationLabel}</strong> — used to anchor your 24h Day Progress and prayer reminders.
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleDetectGps}
-                  disabled={isDetectingGps}
-                  className="gap-1.5 text-xs"
-                >
-                  {isDetectingGps ? <Loader2 className="size-3 animate-spin" /> : <MapPin className="size-3" />}
-                  Use GPS
-                </Button>
-              </div>
-
-              <div className="relative">
-                <input
-                  type="text"
-                  value={cityQuery}
-                  onChange={(e) => setCityQuery(e.target.value)}
-                  placeholder="Search city (e.g. London, Riyadh, Cairo, Kuala Lumpur)..."
-                  className="w-full rounded-lg border border-separator bg-raised px-3 py-1.5 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-primary/40"
+      {screen === 'habits' && (
+        <>
+          <ScreenHeading
+            title="Starter habits and tasks"
+            hint={`${selectedHabitCount} habit${selectedHabitCount === 1 ? '' : 's'} selected. Untick anything you don't want.`}
+          />
+          <Stack>
+            {recommendation.starterHabits.map((h, i) => {
+              const isDetox = h.habit_type === 'detox';
+              return (
+                <ChoiceTile
+                  key={h.key}
+                  index={i}
+                  selected={Boolean(selectedHabitKeys[h.key])}
+                  onClick={() => setSelectedHabitKeys((prev) => ({ ...prev, [h.key]: !prev[h.key] }))}
+                  icon={isDetox ? <ShieldOff className="size-5" /> : <Flame className="size-5" />}
+                  title={h.title}
+                  titleDir="auto"
+                  subtitle={h.description || (isDetox ? 'Quit' : 'Build')}
+                  trailing={<span className="text-sm tabular-nums text-ink-3">{h.time}</span>}
                 />
-                {isSearchingCity && (
-                  <Loader2 className="size-3.5 animate-spin text-ink-3 absolute right-2.5 top-2" />
-                )}
-                {cityResults.length > 0 && (
-                  <div className="mt-1 rounded-lg border border-separator bg-raised shadow-lg divide-y divide-separator max-h-36 overflow-y-auto">
-                    {cityResults.map((hit, i) => (
-                      <button
-                        key={`${hit.label}-${i}`}
-                        type="button"
-                        onClick={() => handleSelectCity(hit)}
-                        className="w-full px-3 py-1.5 text-left text-xs text-ink hover:bg-hover transition-colors"
-                      >
-                        {hit.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              );
+            })}
+          </Stack>
+          {recommendation.starterTasks.length > 0 && (
+            <>
+              <h2 className="mb-3 mt-8 text-lg font-semibold">Tasks for today</h2>
+              <Stack>
+                {recommendation.starterTasks.map((t, i) => (
+                  <ChoiceTile
+                    key={t.key}
+                    index={i}
+                    selected={Boolean(selectedTaskKeys[t.key])}
+                    onClick={() => setSelectedTaskKeys((prev) => ({ ...prev, [t.key]: !prev[t.key] }))}
+                    title={t.title}
+                    titleDir="auto"
+                  />
+                ))}
+              </Stack>
+            </>
+          )}
+        </>
+      )}
 
-              {gpsError && <p className="text-[11px] text-destructive">{gpsError}</p>}
-
-              {/* Live Prayer Preview */}
-              {prayerTimes.length > 0 && (
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 pt-1">
-                  {prayerTimes.map((pt) => (
-                    <div
-                      key={pt.name}
-                      className={cn(
-                        'rounded-lg border px-2 py-1 text-center',
-                        pt.isNext ? 'border-primary/50 bg-primary/10' : 'border-separator bg-raised'
-                      )}
-                    >
-                      <span className="block text-[10px] font-medium text-ink-3">{pt.name}</span>
-                      <span className="block text-[11px] font-semibold text-ink tabular-nums">
-                        {pt.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Optional Personal First Task */}
-            <div className="space-y-1.5">
-              <label htmlFor="onboarding-first-task" className="block text-xs font-semibold text-ink">
-                Add one personal task for today (optional)
-              </label>
+      {screen === 'location' && (
+        <>
+          <ScreenHeading
+            title="Where do you pray?"
+            hint={`Used for prayer times and reminders. Now set to ${prayerLocationLabel}.`}
+          />
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative flex-1">
               <input
-                id="onboarding-first-task"
                 type="text"
-                value={customFirstTask}
-                onChange={(e) => setCustomFirstTask(e.target.value)}
-                placeholder="e.g. Call parents after Asr, or 30m focused study..."
-                className="w-full rounded-lg border border-separator bg-sunken px-3 py-2 text-xs text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                aria-label="Search for your city"
+                value={cityQuery}
+                onChange={(e) => setCityQuery(e.target.value)}
+                placeholder="Search your city"
+                className="h-12 w-full rounded-2xl border border-separator bg-raised px-4 text-base text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
+              {isSearchingCity && <Loader2 className="absolute right-4 top-3.5 size-5 animate-spin text-ink-3" />}
             </div>
-
-            {/* Reality Insights Sync Overview */}
-            <div className="rounded-xl border border-separator bg-sunken/40 p-3 space-y-2.5">
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-ink">How lifeOS tracks what you actually do</p>
-                  <p className="text-[11px] text-ink-2 leading-relaxed">
-                    {answers.context.hasDesktop && 'Pair the Browser Extension or PC tracker for automatic Screen Time awareness. '}
-                    {answers.context.hasIOS && 'Connect Apple Health & Bank SMS shortcuts on iPhone for automatic Sleep and Spending logs. '}
-                    You can pair devices right here or anytime from Settings → Connected Devices.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowSyncHub((v) => !v)}
-                  className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-separator bg-raised px-2.5 py-1.5 text-[11px] font-medium text-ink hover:bg-hover transition-colors"
-                >
-                  {showSyncHub ? 'Hide setup' : 'Connect now'}
-                  {showSyncHub ? <ChevronUp className="size-3.5" /> : <ChevronDown className="size-3.5" />}
-                </button>
-              </div>
-              {showSyncHub && (
-                <div className="pt-2 border-t border-separator">
-                  <DeviceSyncHub compact />
-                </div>
-              )}
-            </div>
-
-            {/* Footer Step 3 */}
-            <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-separator">
-              <Button variant="ghost" size="sm" onClick={() => setStep(2)} className="gap-1">
-                <ArrowLeft className="size-3.5" /> Back
-              </Button>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => void finalizeAndEnter(true)}
-                  disabled={isApplying}
-                >
-                  Take 30s tour
-                </Button>
-                <Button
-                  onClick={() => void finalizeAndEnter(false)}
-                  disabled={isApplying}
-                  className="gap-1.5"
-                >
-                  {isApplying ? (
-                    <>
-                      <Loader2 className="size-3.5 animate-spin" />
-                      Setting up...
-                    </>
-                  ) : (
-                    <>
-                      Enter lifeOS
-                      <ArrowRight className="size-3.5" />
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
+            <SecondaryButton onClick={handleDetectGps} disabled={isDetectingGps}>
+              {isDetectingGps ? <Loader2 className="mr-2 size-4 animate-spin" /> : <MapPin className="mr-2 size-4" />}
+              Use my location
+            </SecondaryButton>
           </div>
-        )}
-      </div>
-    </Modal>
+          <AnimatePresence initial={false}>
+            {cityResults.length > 0 && (
+              <motion.ul
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-2 divide-y divide-separator overflow-hidden rounded-2xl border border-separator bg-raised"
+              >
+                {cityResults.map((hit, i) => (
+                  <li key={`${hit.label}-${i}`}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCity(hit)}
+                      className="min-h-12 w-full px-4 text-left text-base text-ink transition-colors hover:bg-hover"
+                    >
+                      {hit.label}
+                    </button>
+                  </li>
+                ))}
+              </motion.ul>
+            )}
+          </AnimatePresence>
+          {gpsError && <p className="mt-2 text-sm text-destructive">{gpsError}</p>}
+
+          {prayerTimes.length > 0 && (
+            <motion.div
+              variants={stagger}
+              initial="hidden"
+              animate="show"
+              className="mt-8 grid grid-cols-3 gap-2.5 sm:grid-cols-6"
+            >
+              {prayerTimes.map((pt) => (
+                <motion.div
+                  key={pt.name}
+                  variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }}
+                  className={cn(
+                    'rounded-2xl border px-2 py-3 text-center',
+                    pt.isNext ? 'border-primary bg-primary/10' : 'border-separator bg-raised/70'
+                  )}
+                >
+                  <span className="block text-xs font-medium text-ink-3">{pt.name}</span>
+                  <span className="mt-0.5 block text-base font-semibold tabular-nums text-ink">
+                    {pt.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </>
+      )}
+
+      {screen === 'finish' && (
+        <div className="flex flex-col gap-6">
+          <motion.svg
+            viewBox="0 0 52 52"
+            className="size-16 text-primary"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <motion.circle
+              cx="26"
+              cy="26"
+              r="23"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.6, ease: 'easeOut' }}
+            />
+            <motion.path
+              d="M15 27l8 8 14-16"
+              initial={{ pathLength: 0 }}
+              animate={{ pathLength: 1 }}
+              transition={{ duration: 0.4, delay: 0.5, ease: 'easeOut' }}
+            />
+          </motion.svg>
+          <ScreenHeading title="You're ready" hint="One last thing, then you're in." />
+          <div>
+            <label htmlFor="onboarding-first-task" className="mb-1.5 block text-sm font-medium text-ink-2">
+              Add a task for today (optional)
+            </label>
+            <input
+              id="onboarding-first-task"
+              type="text"
+              value={customFirstTask}
+              onChange={(e) => setCustomFirstTask(e.target.value)}
+              placeholder="Call parents after Asr"
+              className="h-12 w-full rounded-2xl border border-separator bg-raised px-4 text-base text-ink placeholder:text-ink-3 focus:outline-none focus:ring-2 focus:ring-primary/50"
+            />
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowSyncHub((v) => !v)}
+              aria-expanded={showSyncHub}
+              className="inline-flex min-h-11 items-center gap-2 rounded-full text-base font-medium text-ink-2 transition-colors hover:text-ink"
+            >
+              Connect screen time, sleep and bank SMS
+              {showSyncHub ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            </button>
+            <AnimatePresence initial={false}>
+              {showSyncHub && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="pt-3">
+                    <DeviceSyncHub compact />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+    </OnboardingShell>
   );
 }

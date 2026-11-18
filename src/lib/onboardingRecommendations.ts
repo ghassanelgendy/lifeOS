@@ -29,8 +29,12 @@ export type OnboardingWorkflowStyle =
   | 'capture_first'
   | 'minimal_calm';
 
+/** Whether the user has prayers to make up. null = not asked / skipped, treated as none. */
+export type PrayerBacklogAnswer = 'none' | 'recent' | 'years';
+
 export interface OnboardingAnswers {
   focusAreas: OnboardingFocusArea[];
+  prayerBacklog: PrayerBacklogAnswer | null;
   workflowStyle: OnboardingWorkflowStyle;
   intentionChips: string[];
   freeTextGoal: string;
@@ -74,6 +78,8 @@ export interface RecommendedSetup {
   starterHabits: Array<StarterHabitTemplate & { selectedByDefault: boolean }>;
   starterTasks: Array<StarterTaskTemplate & { selectedByDefault: boolean }>;
   tailoredChecklistKeys: string[];
+  /** What to do about Qadaa: nothing, start an empty tracker, or run the full setup later. */
+  qadaaPlan: PrayerBacklogAnswer;
   fallbackReason?: string;
 }
 
@@ -86,8 +92,8 @@ export const FOCUS_AREA_OPTIONS: Array<{
   {
     id: 'salah_anchor',
     title: 'Guard 5 Prayers & Plan Around Salah',
-    subtitle: 'Keep prayers at the center of your day and track Qadaa',
-    routes: ['/habits', '/qadaa'],
+    subtitle: 'Prayer times, a daily tracker and reminders',
+    routes: ['/habits'],
   },
   {
     id: 'quran_azkar',
@@ -154,6 +160,28 @@ export const WORKFLOW_STYLE_OPTIONS: Array<{
   },
 ];
 
+export const PRAYER_BACKLOG_OPTIONS: Array<{
+  id: PrayerBacklogAnswer;
+  title: string;
+  subtitle: string;
+}> = [
+  {
+    id: 'none',
+    title: 'No, I have prayed them all',
+    subtitle: 'Nothing to make up. Qadaa stays out of your way.',
+  },
+  {
+    id: 'recent',
+    title: 'A few recent ones',
+    subtitle: 'Starts an empty Qadaa count. Each prayer you mark missed adds one.',
+  },
+  {
+    id: 'years',
+    title: 'A lot, over the years',
+    subtitle: 'You will enter your age and madhab to work out the number.',
+  },
+];
+
 export const INTENTION_CHIP_OPTIONS: string[] = [
   'Pray Fajr on time',
   'Quit late-night scrolling',
@@ -165,6 +193,7 @@ export const INTENTION_CHIP_OPTIONS: string[] = [
 
 export const DEFAULT_ONBOARDING_ANSWERS: OnboardingAnswers = {
   focusAreas: ['salah_anchor', 'quran_azkar', 'jannah_detox', 'life_insights', 'tasks_focus'],
+  prayerBacklog: null,
   workflowStyle: 'prayer_anchored',
   intentionChips: ['Pray Fajr on time', 'Daily Quran & Azkar'],
   freeTextGoal: '',
@@ -189,6 +218,7 @@ const CHECKLIST_KEYS = {
   BRAIN_DUMP: 'brain_dump',
   REALITY_SYNC: 'reality_sync',
   FINANCE_CHECK: 'finance_check',
+  QADAA_SETUP: 'qadaa_setup',
 } as const;
 
 function detectTextSignals(rawText: string) {
@@ -386,12 +416,21 @@ export function buildRecommendedSetup(answers: OnboardingAnswers): RecommendedSe
 
   // Starter tasks
   const starterTasks: Array<StarterTaskTemplate & { selectedByDefault: boolean }> = [];
-  if (signals.wantsFajr || focusSet.has('salah_anchor')) {
+  const qadaaPlan: PrayerBacklogAnswer = answers.prayerBacklog ?? 'none';
+  if (qadaaPlan === 'years') {
     starterTasks.push({
-      key: 'task_qadaa_audit',
-      title: 'Check today’s prayer times & review Qadaa plan',
+      key: 'task_qadaa_setup',
+      title: 'Work out my Qadaa count and set a daily pace',
       priority: 'high',
       due_time: '13:00',
+      selectedByDefault: true,
+    });
+  } else if (signals.wantsFajr || focusSet.has('salah_anchor')) {
+    starterTasks.push({
+      key: 'task_prayer_times',
+      title: 'Check today’s prayer times and plan around them',
+      priority: 'medium',
+      due_time: '09:00',
       selectedByDefault: true,
     });
   }
@@ -435,6 +474,9 @@ export function buildRecommendedSetup(answers: OnboardingAnswers): RecommendedSe
   }
   if (focusSet.has('finance_rizq')) {
     tailoredChecklistKeys.push(CHECKLIST_KEYS.FINANCE_CHECK);
+  }
+  if (qadaaPlan === 'years') {
+    tailoredChecklistKeys.unshift(CHECKLIST_KEYS.QADAA_SETUP);
   }
 
   // Profile label & rationale
@@ -490,6 +532,7 @@ export function buildRecommendedSetup(answers: OnboardingAnswers): RecommendedSe
     starterHabits,
     starterTasks: starterTasks.slice(0, 3),
     tailoredChecklistKeys: Array.from(new Set(tailoredChecklistKeys)).slice(0, 5),
+    qadaaPlan,
   };
 }
 
@@ -553,7 +596,7 @@ Return ONLY strict JSON matching:
   ]
 }
 Valid routes: ${DEFAULT_DESKTOP_NAV.join(', ')}, /qadaa, /chat, /settings.
-Always keep habits realistic (2-4 new personalized habits max; use habit_type: "detox" for habits the user wants to quit/avoid). Never invent fake routes.`;
+Only mention Qadaa or missed prayers when prayerBacklog is "recent" or "years"; if it is "none", never suggest them. Always keep habits realistic (2-4 new personalized habits max; use habit_type: "detox" for habits the user wants to quit/avoid). Never invent fake routes.`;
 
 export interface SmartOnboardingOptions {
   /** Hard time budget in milliseconds before falling back to deterministic setup. Defaults to 3500ms. */
@@ -591,6 +634,7 @@ export async function generateSmartOnboardingSetup(
   try {
     const userPayload = JSON.stringify({
       focusAreas: answers.focusAreas,
+      prayerBacklog: answers.prayerBacklog ?? 'none',
       workflowStyle: answers.workflowStyle,
       intentionChips: answers.intentionChips,
       freeTextGoal: answers.freeTextGoal.trim(),
@@ -668,16 +712,16 @@ export async function generateSmartOnboardingSetup(
     );
     const mergedHabits = [...aiHabits, ...preservedBaselineHabits].slice(0, 7);
 
-    const mergedTasks: Array<StarterTaskTemplate & { selectedByDefault: boolean }> =
-      validated.starterTasks && validated.starterTasks.length > 0
-        ? validated.starterTasks.map((t, idx) => ({
-            key: `ai_task_${idx}`,
-            title: t.title.trim(),
-            priority: t.priority,
-            due_time: t.due_time,
-            selectedByDefault: true,
-          }))
-        : baseline.starterTasks;
+    const aiTasks: Array<StarterTaskTemplate & { selectedByDefault: boolean }> = (validated.starterTasks ?? [])
+      .filter((t) => baseline.qadaaPlan !== 'none' || !/qadaa|قضاء|missed prayer/i.test(t.title))
+      .map((t, idx) => ({
+        key: `ai_task_${idx}`,
+        title: t.title.trim(),
+        priority: t.priority,
+        due_time: t.due_time,
+        selectedByDefault: true,
+      }));
+    const mergedTasks = aiTasks.length > 0 ? aiTasks : baseline.starterTasks;
 
     return {
       ...baseline,

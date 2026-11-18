@@ -75,7 +75,7 @@ describe('OnboardingWizardModal', () => {
   it('waits until isRemoteUiSettingsReady is true before rendering', () => {
     useUIStore.setState({ isRemoteUiSettingsReady: false, hasCompletedOnboarding: false });
     renderWizard();
-    expect(screen.queryByText(/Welcome to lifeOS/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Set up lifeOS/i)).not.toBeInTheDocument();
   });
 
   it('progresses from discovery questions to suggested setup and enters lifeOS without auto-starting tour', async () => {
@@ -90,20 +90,31 @@ describe('OnboardingWizardModal', () => {
 
     renderWizard();
 
-    expect(screen.getByText(/What do you want to focus on right now/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Set up lifeOS around your day/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Start/i }));
+    expect(await screen.findByText(/What do you want help with/i)).toBeInTheDocument();
+
+    // Default focus includes prayers, so the prayer-backlog question is asked.
+    fireEvent.click(screen.getByRole('button', { name: /^Next/i }));
+    expect(await screen.findByText(/Do you have prayers to make up/i)).toBeInTheDocument();
+    for (const heading of [/How do you plan your day/i, /Anything you want to build or quit/i, /Your devices and daily limits/i]) {
+      fireEvent.click(screen.getByRole('button', { name: /^Next/i }));
+      expect(await screen.findByText(heading)).toBeInTheDocument();
+    }
 
     fireEvent.click(screen.getByRole('button', { name: /Build my setup/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText('Prayer-Anchored Builder')).toBeInTheDocument();
-      expect(screen.getByText('Tailored by AI')).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/Built with AI from your answers/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Prayer-Anchored Builder')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /Next: Prayer & Sync/i }));
-
-    await waitFor(() => {
-      expect(screen.getByText(/Your Prayer City/i)).toBeInTheDocument();
-    });
+    fireEvent.click(screen.getByRole('button', { name: /Looks good/i }));
+    expect(await screen.findByText(/Which pages go in your sidebar/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Next/i }));
+    expect(await screen.findByText(/Starter habits and tasks/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Next/i }));
+    expect(await screen.findByText(/Where do you pray/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /^Next/i }));
+    expect(await screen.findByText(/You're ready/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /Enter lifeOS/i }));
 
@@ -111,6 +122,16 @@ describe('OnboardingWizardModal', () => {
       expect(useUIStore.getState().hasCompletedOnboarding).toBe(true);
       expect(useUIStore.getState().isTourOpen).toBe(false);
     });
+  });
+
+  it('skips the prayer-backlog question when prayers are not a focus', async () => {
+    renderWizard();
+    // Untick the prayer focus area, then step forward.
+    fireEvent.click(screen.getByRole('button', { name: /^Start/i }));
+    fireEvent.click(await screen.findByText(/Guard 5 Prayers/i));
+    fireEvent.click(screen.getByRole('button', { name: /^Next/i }));
+    expect(await screen.findByText(/How do you plan your day/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Do you have prayers to make up/i)).not.toBeInTheDocument();
   });
 
   it('allows skipping setup immediately from Step 1', () => {

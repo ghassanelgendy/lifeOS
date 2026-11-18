@@ -72,6 +72,17 @@ export function GettingStartedChecklist({ variant = 'web' }: { variant?: 'web' |
         actionLabel: 'Open Habits',
         onAction: () => navigate('/habits?section=prayers'),
       },
+      qadaa_setup: {
+        key: 'qadaa_setup',
+        label: 'Work out your Qadaa count',
+        detail: 'Enter your age and madhab to get a number and a daily pace',
+        done: Boolean(extras.visited_qadaa),
+        actionLabel: 'Open Qadaa',
+        onAction: () => {
+          markDone('visited_qadaa', true);
+          navigate('/qadaa');
+        },
+      },
       first_task: {
         key: 'first_task',
         label: 'Add your first task',
@@ -129,6 +140,7 @@ export function GettingStartedChecklist({ variant = 'web' }: { variant?: 'web' |
     extras.reviewed_integrations,
     extras.visited_brain_dump,
     extras.visited_finance,
+    extras.visited_qadaa,
     lastNightSleep,
     markDone,
     navigate,
