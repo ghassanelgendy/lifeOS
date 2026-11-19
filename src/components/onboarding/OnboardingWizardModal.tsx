@@ -271,31 +271,62 @@ export function OnboardingWizardModal() {
     }
   };
 
-  const handleDetectGps = () => {
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      setGpsError('Location services are unavailable in this browser.');
-      return;
+  const applyDetectedLocation = async (lat: number, lng: number, knownLabel?: string) => {
+    const label = knownLabel || (await reverseGeocodeLabel(lat, lng));
+    setPrayerLocationMode('device');
+    setPrayerLocation(lat, lng, label);
+    setLocationCustomized(true);
+    setGpsError(null);
+  };
+
+  /** Approximate location from IP, used when the browser cannot provide GPS. */
+  const detectByIp = async (): Promise<boolean> => {
+    try {
+      const res = await fetch('https://ipwho.is/');
+      const data = (await res.json()) as {
+        success?: boolean;
+        latitude?: number;
+        longitude?: number;
+        city?: string;
+        country?: string;
+      };
+      if (!data.success || !Number.isFinite(data.latitude) || !Number.isFinite(data.longitude)) return false;
+      const label = [data.city, data.country].filter(Boolean).join(', ') || undefined;
+      await applyDetectedLocation(data.latitude as number, data.longitude as number, label);
+      return true;
+    } catch {
+      return false;
     }
+  };
+
+  const handleDetectGps = () => {
     setGpsError(null);
     setIsDetectingGps(true);
+    const fallback = async (message: string) => {
+      const ok = await detectByIp();
+      if (!ok) setGpsError(message);
+      setIsDetectingGps(false);
+    };
+    if (typeof navigator === 'undefined' || !navigator.geolocation) {
+      void fallback('Location services are unavailable here. Search for your city instead.');
+      return;
+    }
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
         try {
-          const label = await reverseGeocodeLabel(lat, lng);
-          setPrayerLocationMode('device');
-          setPrayerLocation(lat, lng, label);
-          setLocationCustomized(true);
+          await applyDetectedLocation(pos.coords.latitude, pos.coords.longitude);
         } finally {
           setIsDetectingGps(false);
         }
       },
-      () => {
-        setIsDetectingGps(false);
-        setGpsError('Could not access GPS. Search for your city below instead.');
+      (err) => {
+        void fallback(
+          err.code === err.PERMISSION_DENIED
+            ? 'Location permission was denied. Allow it in your browser, or search for your city.'
+            : 'Could not detect your location. Search for your city instead.'
+        );
       },
-      { timeout: 8000 }
+      { timeout: 10000, maximumAge: 5 * 60 * 1000 }
     );
   };
 
@@ -901,8 +932,17 @@ export function OnboardingWizardModal() {
         <>
           <ScreenHeading
             title="Where do you pray?"
-            hint={`Used for prayer times and reminders. Now set to ${prayerLocationLabel}.`}
+            hint="Used for prayer times and reminders."
           />
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-primary/40 bg-primary/10 px-4 py-3">
+            <MapPin className="size-5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <span className="block text-xs font-medium text-ink-3">Current location</span>
+              <span className="block truncate text-base font-semibold text-ink" data-testid="prayer-location-label">
+                {prayerLocationLabel}
+              </span>
+            </div>
+          </div>
           <div className="flex flex-col gap-3 sm:flex-row">
             <div className="relative flex-1">
               <input
