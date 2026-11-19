@@ -189,7 +189,12 @@ export default function Sleep() {
   }, [pageWidgetOrder.sleep]);
   const sleepVisible = pageWidgetVisible.sleep ?? {};
   const isSleepWidgetVisible = (id: string) => sleepVisible[id] !== false;
-  const visibleSleepWidgets = sleepOrder.filter(isSleepWidgetVisible);
+  // Fixed layout order keeps the 12-col rows paired (7+5, 12, 5+7) regardless of any previously saved order.
+  const SLEEP_LAYOUT_ORDER = ['score', 'sessions', 'timeline', 'metrics', 'weekly'];
+  const visibleSleepWidgets = [
+    ...SLEEP_LAYOUT_ORDER.filter((id) => sleepOrder.includes(id)),
+    ...sleepOrder.filter((id) => !SLEEP_LAYOUT_ORDER.includes(id)),
+  ].filter(isSleepWidgetVisible);
 
   const donutData = active ? [
     { name: 'Deep', value: active.deepMinutes, fill: STAGE_COLORS.Deep },
