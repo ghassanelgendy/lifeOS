@@ -665,24 +665,25 @@ export default function Analytics() {
 
       {/* Header and Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+        <div>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
             <p className="text-muted-foreground mt-1">
               Insights across Sleep, Screen Time, Tasks, Habits, and Finance
             </p>
           </div>
-          {isWrapDay && (
-            <button
-              onClick={() => setShowWrap(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-lg shadow-sm hover:bg-primary/90 transition-all cursor-pointer sm:mt-1 w-fit"
-            >
-              <Sparkles size={14} />
-              View Wrap
-            </button>
-          )}
         </div>
 
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        {isWrapDay && (
+          <button
+            onClick={() => setShowWrap(true)}
+            className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold bg-primary text-primary-foreground rounded-lg shadow-sm hover:bg-primary/90 transition-all cursor-pointer w-fit"
+          >
+            <Sparkles size={14} />
+            View Wrap
+          </button>
+        )}
         <div className="flex p-1 bg-secondary/50 rounded-xl w-full sm:w-fit shadow-inner">
           {([7, 30, 90] as const).map((d) => (
             <button
@@ -697,6 +698,7 @@ export default function Analytics() {
               {d}D
             </button>
           ))}
+        </div>
         </div>
       </div>
 

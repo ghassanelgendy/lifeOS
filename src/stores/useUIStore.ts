@@ -26,7 +26,7 @@ export const DEFAULT_DESKTOP_NAV = [
 // Dashboard widget ids (default order)
 export const DASHBOARD_WIDGET_IDS = ['prayer', 'stats', 'overdue', 'events', 'quickstats', 'habits'] as const;
 export type DashboardWidgetId = (typeof DASHBOARD_WIDGET_IDS)[number];
-export const SLEEP_WIDGET_IDS = ['score', 'timeline', 'metrics', 'weekly', 'sessions'] as const;
+export const SLEEP_WIDGET_IDS = ['score', 'sessions', 'timeline', 'metrics', 'weekly'] as const;
 export type SleepWidgetId = (typeof SLEEP_WIDGET_IDS)[number];
 export const HABITS_WIDGET_IDS = ['stats', 'prayer', 'weekly', 'today'] as const;
 export type HabitsWidgetId = (typeof HABITS_WIDGET_IDS)[number];

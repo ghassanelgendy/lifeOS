@@ -39,7 +39,7 @@ export function AnalyticsDigital({
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="rounded-xl border border-border bg-card p-5">
             <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Avg Time / Day</p>
             <p className="mt-2 text-3xl font-bold tabular-nums">{formatSeconds(screentimeAgg.avgSeconds)}</p>

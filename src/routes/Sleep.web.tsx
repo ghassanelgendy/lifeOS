@@ -287,7 +287,7 @@ export default function Sleep() {
                 <div
                   key="score"
                   className={cn(
-                    isSleepWidgetVisible('metrics') ? 'lg:col-span-7' : 'lg:col-span-12',
+                    isSleepWidgetVisible('sessions') ? 'lg:col-span-7' : 'lg:col-span-12',
                     'rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm'
                   )}
                 >
@@ -431,7 +431,7 @@ export default function Sleep() {
                 <div
                   key="metrics"
                   className={cn(
-                    isSleepWidgetVisible('score') ? 'lg:col-span-5' : 'lg:col-span-12',
+                    isSleepWidgetVisible('weekly') ? 'lg:col-span-5' : 'lg:col-span-12',
                     'rounded-2xl border border-border bg-card p-6 flex flex-col justify-between shadow-sm'
                   )}
                 >
@@ -529,7 +529,7 @@ export default function Sleep() {
                 <div
                   key="weekly"
                   className={cn(
-                    isSleepWidgetVisible('sessions') ? 'lg:col-span-7' : 'lg:col-span-12',
+                    isSleepWidgetVisible('metrics') ? 'lg:col-span-7' : 'lg:col-span-12',
                     'rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between'
                   )}
                 >
@@ -621,7 +621,7 @@ export default function Sleep() {
                 <div
                   key="sessions"
                   className={cn(
-                    isSleepWidgetVisible('weekly') ? 'lg:col-span-5' : 'lg:col-span-12',
+                    isSleepWidgetVisible('score') ? 'lg:col-span-5' : 'lg:col-span-12',
                     'rounded-2xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between'
                   )}
                 >

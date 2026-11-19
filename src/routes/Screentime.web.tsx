@@ -625,8 +625,9 @@ import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
           </p>
         </div>
 
-        {/* Period selector + day filter */}
-        <div className="overflow-x-auto -mx-4 px-4">
+        {/* Period selector + device sync timestamps */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div className="overflow-x-auto -mx-4 px-4 lg:mx-0 lg:px-0">
           <div className="flex items-center gap-2 min-w-max">
             {(['today', 'yesterday', 'week', 'month', 'lastMonth', '30days', 'custom'] as ViewPeriod[]).map((p) => (
               <button
@@ -708,7 +709,7 @@ import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
 
         {/* Tiny indicator: which devices pushed and when (date + time, 12h AM/PM) */}
         {(deviceLastPush.windowsLast || deviceLastPush.iosLast || deviceLastPush.linuxLast) && (
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 text-caption text-muted-foreground">
+          <div className="flex flex-wrap items-center lg:justify-end gap-x-3 gap-y-0.5 text-caption text-muted-foreground">
             {deviceLastPush.windowsLast && (
               <span title="Windows last synced at this time">
                 <span className="font-medium text-foreground/80">Windows</span>
@@ -748,8 +749,10 @@ import { DeviceSyncHub } from '../components/integrations/DeviceSyncHub';
           </div>
         )}
 
+        </div>
+
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-xl border border-border bg-card p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-blue-500/10">
