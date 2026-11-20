@@ -28,7 +28,7 @@ import { useUserAppSettingsSync } from './hooks/useUserAppSettingsSync';
 import { AppShell } from './components/AppShell';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { FaviconSync } from './components/FaviconSync';
-import { LoadingScreen } from './components/LoadingScreen';
+import { LifeLoader } from './components/LifeLoader';
 import Dashboard from './routes/Dashboard';
 import Tasks from './routes/Tasks';
 import WeeklyPlanner from './routes/WeeklyPlanner';
@@ -81,14 +81,14 @@ void registerNotificationActionTypes();
 
 function ProtectedRoute() {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LifeLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return <MfaGate><Outlet /></MfaGate>;
 }
 
 function RequireGuest({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <LoadingScreen />;
+  if (loading) return <LifeLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
