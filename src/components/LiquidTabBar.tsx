@@ -56,7 +56,7 @@ export default function LiquidTabBar({
           box-shadow: 0 10px 35px rgba(0, 0, 0, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.3);
           display: flex;
           align-items: center;
-          padding: 0 6px;
+          padding: 0 4px;
           z-index: 49;
           user-select: none;
           -webkit-tap-highlight-color: transparent;
@@ -79,8 +79,8 @@ export default function LiquidTabBar({
 
         .active-indicator {
           position: absolute;
-          inset: 6px 4px;
-          border-radius: 28px;
+          inset: 3px 0px;
+          border-radius: 30px;
           background: rgba(255, 255, 255, 0.75);
           box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
           z-index: 1;
@@ -93,7 +93,9 @@ export default function LiquidTabBar({
 
         .tab-item-btn {
           flex: 1;
+          min-width: 0;
           height: 100%;
+          padding: 0 4px;
           background: none;
           border: none;
           display: flex;
