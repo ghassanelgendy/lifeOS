@@ -220,6 +220,7 @@ ${note.mistakesNote}
       onCreateQuranTask={handleCreateQuranTask}
       onCreateHalqahNote={handleCreateHalqahNote}
       onBookmarkAyah={handleBookmarkAyah}
+      bleedHeader={import.meta.env.MODE !== 'ios'}
     />
   );
 }

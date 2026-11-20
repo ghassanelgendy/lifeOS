@@ -2456,7 +2456,7 @@ export default function Tasks() {
   };
 
   return (
-    <div className="flex flex-1 min-h-0 -m-4 md:-m-6 relative bg-background">
+    <div className="flex flex-1 min-h-0 relative bg-background">
       {/* Mobile Sidebar Backdrop */}
       {showListsSidebar && (
         <div

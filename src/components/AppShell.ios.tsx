@@ -738,13 +738,11 @@ export function AppShell() {
                 transition={{ duration: 0.12, ease: "easeOut" }}
                 className={cn(
                   "flex flex-col w-full flex-1",
-                  location.pathname === '/chat' || location.pathname === '/notes' || location.pathname === '/azkar'
+                  location.pathname === '/chat' || location.pathname === '/notes' || location.pathname === '/azkar' || isOnTasks
                     ? "h-full min-h-0 overflow-hidden p-0"
                     : isOnQuran
-                    ? "min-h-full overflow-x-hidden px-1.5 pt-4 pb-[calc(112px+env(safe-area-inset-bottom))]"
-                    : (isOnTasks
-                        ? "h-full min-h-0 overflow-hidden p-4 md:p-6"
-                        : "min-h-full overflow-x-hidden p-4 md:p-6 pb-[calc(100px+env(safe-area-inset-bottom))] md:pb-6")
+                    ? "min-h-full overflow-x-hidden overflow-y-visible p-0 pb-[env(safe-area-inset-bottom)]"
+                    : "min-h-full overflow-x-hidden overflow-y-visible pt-4 px-1 pb-[env(safe-area-inset-bottom)] sm:px-0 sm:pb-[calc(56px+env(safe-area-inset-bottom))] md:pt-6 md:pb-[env(safe-area-inset-bottom)]"
                 )}
                 style={{
                   backfaceVisibility: 'hidden',

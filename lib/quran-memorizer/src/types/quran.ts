@@ -137,5 +137,7 @@ export interface LifeOSIntegrationProps {
   onCreateQuranTask?: (title: string, dueDate: string) => void;
   onCreateHalqahNote?: (note: SheikhHalqahNote) => void;
   onBookmarkAyah?: (surahName: string, surahNumber: number, ayahNumber: number, ayahText: string) => void;
+  /** Pull sticky tab header into outer shell padding (true on web/desktop, false when iOS shell uses p-0). */
+  bleedHeader?: boolean;
 }
 

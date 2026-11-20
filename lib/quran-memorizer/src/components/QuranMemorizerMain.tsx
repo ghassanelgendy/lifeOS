@@ -61,6 +61,7 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
   onCreateQuranTask,
   onCreateHalqahNote,
   onBookmarkAyah,
+  bleedHeader = true,
 }) => {
   const [activeTab, setActiveTab] = useState<'reader' | 'khatmah' | 'revision' | 'mutashabihat'>(() => {
     try {
@@ -553,7 +554,9 @@ export const QuranMemorizerMain: React.FC<LifeOSIntegrationProps> = ({
     <div dir="rtl" className="flex flex-col font-arabic-body text-right">
       {/* Native iOS Segmented Control Navbar */}
       <header
-        className={`sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/30 px-3 py-2.5 -mx-4 md:-mx-6 -mt-4 md:-mt-6 ${
+        className={`sticky top-0 z-30 bg-background/80 backdrop-blur-2xl border-b border-border/30 px-3 py-2.5 ${
+          bleedHeader ? '-mx-4 md:-mx-6 -mt-4 md:-mt-6' : 'mx-0 mt-0'
+        } ${
           activeTab === 'reader' ? 'mb-2 sm:mb-3' : 'mb-4'
         }`}
       >
